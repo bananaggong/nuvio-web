@@ -11,6 +11,8 @@ import {
   Shield,
 } from "lucide-react";
 import { announcements, programs, reviews } from "@/lib/data";
+import type { ProgramLead } from "@/lib/types";
+import { ProgramLeadQueue } from "./program-lead-queue";
 
 type Submission = Record<string, string>;
 
@@ -36,6 +38,23 @@ export function AdminDashboard() {
     setDrafts(next);
     window.localStorage.setItem("nuvio:admin-program-drafts", JSON.stringify(next));
     event.currentTarget.reset();
+  }
+
+  function createDraftFromLead(lead: ProgramLead) {
+    const draft: Submission = {
+      title: lead.title,
+      region: lead.suggestedRegion ?? "",
+      subsidy: lead.suggestedThemes.includes("benefit")
+        ? "지원 조건 확인 필요"
+        : "혜택 확인 필요",
+      summary: lead.summary,
+      sourceName: lead.sourceName,
+      sourceUrl: lead.sourceUrl ?? "",
+      createdAt: new Date().toISOString(),
+    };
+    const next = [draft, ...drafts];
+    setDrafts(next);
+    window.localStorage.setItem("nuvio:admin-program-drafts", JSON.stringify(next));
   }
 
   return (
@@ -122,6 +141,10 @@ export function AdminDashboard() {
       <section className="mt-6 grid gap-6 lg:grid-cols-2">
         <AdminList title="파트너 제출" empty="아직 파트너 제출이 없습니다." items={submissions} />
         <AdminList title="프로그램 초안" empty="아직 저장한 초안이 없습니다." items={drafts} />
+      </section>
+
+      <section className="mt-6">
+        <ProgramLeadQueue onCreateDraft={createDraftFromLead} />
       </section>
     </div>
   );

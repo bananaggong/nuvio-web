@@ -84,11 +84,14 @@ npm run start
 - 홈 실시간 띠배너: `src/components/live-announcement-strip.tsx`
 - 기본 캐시: `ANNOUNCEMENT_REFRESH_SECONDS=300`
 - 외부 소스 추가: `.env.local`의 `EXTERNAL_ANNOUNCEMENT_SOURCES`에 JSON 배열로 RSS URL 추가
+- 외부 공고 후보 큐: `/api/program-leads`와 운영자 콘솔의 후보 목록
+- 후보 최소 점수: `PROGRAM_LEAD_MIN_SCORE=2`
 
 예시:
 
 ```bash
 ANNOUNCEMENT_REFRESH_SECONDS=300
+PROGRAM_LEAD_MIN_SCORE=2
 EXTERNAL_ANNOUNCEMENT_SOURCES=[{"id":"mcst-notice","name":"문화체육관광부 공지 RSS","type":"rss","url":"http://www.mcst.go.kr/common/rss/notice.jsp","keywords":["관광","여행","지원","공모","모집"],"minimumKeywordMatches":0}]
 ```
 

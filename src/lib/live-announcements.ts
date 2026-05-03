@@ -224,7 +224,7 @@ function normalizeRssItem(
     date,
     body:
       description ||
-      `${source.name}에서 가져온 최신 공지입니다. 원문 링크에서 상세 조건을 확인하세요.`,
+      "외부 원문에서 가져온 최신 공지입니다. 원문 링크에서 상세 조건을 확인하세요.",
     programId: findRelatedProgramId(textForMatching),
     sourceId: source.id,
     sourceName: source.name,

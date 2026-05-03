@@ -98,3 +98,19 @@ export type LiveAnnouncement = Omit<Announcement, "id"> & {
   relevance: number;
   fetchedAt?: string;
 };
+
+export type ProgramLead = {
+  id: string;
+  title: string;
+  summary: string;
+  sourceAnnouncementId: string;
+  sourceName: string;
+  sourceUrl?: string;
+  publishedAt: string;
+  confidence: "high" | "medium" | "low";
+  score: number;
+  suggestedRegion?: string;
+  suggestedThemes: ThemeKey[];
+  suggestedStatus: ProgramStatus;
+  reasons: string[];
+};
