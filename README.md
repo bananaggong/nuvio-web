@@ -75,6 +75,23 @@ npm run start
 
 사용자 프로필, 보관, 알림, 지원 기록, 후기 임시 저장, 파트너 제출, 관리자 초안은 브라우저 `localStorage`에 저장됩니다. 정식 서비스에서는 이 영역을 인증, DB, 관리자 승인 워크플로우로 교체하면 됩니다.
 
+## 외부 공지 연동
+
+`/api/announcements`는 이제 내부 시드 공지와 외부 RSS 공지를 함께 반환합니다. 기본값은 문화체육관광부 공식 공지 RSS이며, HTML 화면을 무단 스크래핑하지 않고 공개 RSS/API 또는 파트너가 허용한 피드만 연결하는 구조입니다.
+
+- 수집기: `src/lib/live-announcements.ts`
+- 링크 처리: `src/lib/announcement-links.ts`
+- 홈 실시간 띠배너: `src/components/live-announcement-strip.tsx`
+- 기본 캐시: `ANNOUNCEMENT_REFRESH_SECONDS=300`
+- 외부 소스 추가: `.env.local`의 `EXTERNAL_ANNOUNCEMENT_SOURCES`에 JSON 배열로 RSS URL 추가
+
+예시:
+
+```bash
+ANNOUNCEMENT_REFRESH_SECONDS=300
+EXTERNAL_ANNOUNCEMENT_SOURCES=[{"id":"mcst-notice","name":"문화체육관광부 공지 RSS","type":"rss","url":"http://www.mcst.go.kr/common/rss/notice.jsp","keywords":["관광","여행","지원","공모","모집"],"minimumKeywordMatches":0}]
+```
+
 ## 구현 메모
 
 - 이미지는 Unsplash 원격 이미지를 사용하며 `next.config.ts`에 `images.unsplash.com`을 허용했습니다.

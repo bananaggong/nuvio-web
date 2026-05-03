@@ -1,8 +1,20 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { AlertTriangle, BellRing, CheckCircle2, Clock, Megaphone } from "lucide-react";
-import { announcements, getProgramById } from "@/lib/data";
+import {
+  AlertTriangle,
+  BellRing,
+  CheckCircle2,
+  Clock,
+  ExternalLink,
+  Megaphone,
+} from "lucide-react";
+import {
+  getAnnouncementHref,
+  shouldOpenAnnouncementExternally,
+} from "@/lib/announcement-links";
+import { getProgramById } from "@/lib/data";
 import { formatDateTime } from "@/lib/format";
+import { getLiveAnnouncementFeed } from "@/lib/live-announcements";
 import type { AnnouncementType } from "@/lib/types";
 
 export const metadata: Metadata = {
@@ -33,7 +45,9 @@ const typeMeta: Record<AnnouncementType, { label: string; icon: typeof Megaphone
   },
 };
 
-export default function AnnouncementsPage() {
+export default async function AnnouncementsPage() {
+  const feed = await getLiveAnnouncementFeed();
+
   return (
     <div>
       <section className="border-b border-[var(--line)] bg-white">
@@ -54,17 +68,21 @@ export default function AnnouncementsPage() {
 
       <section className="mx-auto max-w-3xl px-5 py-6 md:px-8">
         <div className="grid gap-3">
-          {announcements.map((announcement) => {
+          {feed.items.map((announcement) => {
             const meta = typeMeta[announcement.type];
             const Icon = meta.icon;
             const program = announcement.programId
               ? getProgramById(announcement.programId)
               : undefined;
+            const href = getAnnouncementHref(announcement);
+            const openExternally = shouldOpenAnnouncementExternally(announcement);
             return (
               <Link
                 className="block rounded-md border border-slate-200 bg-white p-4 shadow-sm hover:border-[var(--primary)]"
-                href={`/announcements/${announcement.id}`}
+                href={href}
                 key={announcement.id}
+                rel={openExternally ? "noreferrer" : undefined}
+                target={openExternally ? "_blank" : undefined}
               >
                 <div className="flex items-start justify-between gap-4">
                   <div>
@@ -82,6 +100,10 @@ export default function AnnouncementsPage() {
                         연결 프로그램: {program.title}
                       </p>
                     ) : null}
+                    <p className="mt-2 inline-flex items-center gap-1 text-xs font-bold text-slate-400">
+                      {announcement.isExternal ? <ExternalLink size={13} /> : null}
+                      {announcement.sourceName}
+                    </p>
                   </div>
                   <time className="min-w-fit text-xs font-bold text-slate-400">
                     {formatDateTime(announcement.date)}

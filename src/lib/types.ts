@@ -87,3 +87,14 @@ export type Announcement = {
   programId?: number;
   body: string;
 };
+
+export type LiveAnnouncement = Omit<Announcement, "id"> & {
+  id: string;
+  internalId?: number;
+  sourceId?: string;
+  sourceName: string;
+  sourceUrl?: string;
+  isExternal: boolean;
+  relevance: number;
+  fetchedAt?: string;
+};
