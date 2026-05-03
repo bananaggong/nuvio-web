@@ -12,6 +12,7 @@ import {
 } from "lucide-react";
 import { announcements, programs, reviews } from "@/lib/data";
 import type { ProgramLead } from "@/lib/types";
+import { AnnouncementSourceMonitor } from "./announcement-source-monitor";
 import { ProgramLeadQueue } from "./program-lead-queue";
 
 type Submission = Record<string, string>;
@@ -141,6 +142,10 @@ export function AdminDashboard() {
       <section className="mt-6 grid gap-6 lg:grid-cols-2">
         <AdminList title="파트너 제출" empty="아직 파트너 제출이 없습니다." items={submissions} />
         <AdminList title="프로그램 초안" empty="아직 저장한 초안이 없습니다." items={drafts} />
+      </section>
+
+      <section className="mt-6">
+        <AnnouncementSourceMonitor />
       </section>
 
       <section className="mt-6">

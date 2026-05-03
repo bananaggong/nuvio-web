@@ -1,21 +1,13 @@
 import { XMLParser } from "fast-xml-parser";
+import { getConfiguredAnnouncementSources } from "./announcement-sources";
 import { announcements, programs } from "./data";
+import type { ExternalAnnouncementSource } from "./announcement-sources";
 import type {
   Announcement,
   AnnouncementType,
   LiveAnnouncement,
   Program,
 } from "./types";
-
-export type ExternalAnnouncementSource = {
-  id: string;
-  name: string;
-  type: "rss";
-  url: string;
-  enabled?: boolean;
-  keywords?: string[];
-  minimumKeywordMatches?: number;
-};
 
 type RssDocument = {
   rss?: {
@@ -55,17 +47,6 @@ export type LiveAnnouncementFeed = {
 
 const DEFAULT_REFRESH_SECONDS = 300;
 
-const defaultAnnouncementSources: ExternalAnnouncementSource[] = [
-  {
-    id: "mcst-notice",
-    name: "문화체육관광부 공지 RSS",
-    type: "rss",
-    url: "http://www.mcst.go.kr/common/rss/notice.jsp",
-    keywords: ["관광", "여행", "지원", "공모", "모집", "체류", "워케이션"],
-    minimumKeywordMatches: 0,
-  },
-];
-
 const parser = new XMLParser({
   cdataPropName: "__cdata",
   ignoreAttributes: false,
@@ -83,7 +64,9 @@ export async function getLiveAnnouncementFeed(
 ): Promise<LiveAnnouncementFeed> {
   const sources = getExternalAnnouncementSources();
   const sourceResults = await Promise.all(sources.map(fetchSourceAnnouncements));
-  const externalItems = sourceResults.flatMap((result) => result.items);
+  const externalItems = dedupeAnnouncements(
+    sourceResults.flatMap((result) => result.items),
+  );
   const internalItems = announcements.map(toLiveAnnouncement);
   const items = dedupeAnnouncements([...externalItems, ...internalItems])
     .sort(compareAnnouncements)
@@ -115,41 +98,7 @@ export async function fetchLiveAnnouncements(
 }
 
 function getExternalAnnouncementSources(): ExternalAnnouncementSource[] {
-  const rawSources = process.env.EXTERNAL_ANNOUNCEMENT_SOURCES;
-  if (!rawSources) return defaultAnnouncementSources;
-
-  try {
-    const parsed = JSON.parse(rawSources) as unknown;
-    const sourceList = Array.isArray(parsed) ? parsed : [parsed];
-    const sources = sourceList
-      .map(normalizeSource)
-      .filter((source): source is ExternalAnnouncementSource => Boolean(source));
-
-    return sources.length > 0 ? sources : defaultAnnouncementSources;
-  } catch {
-    return defaultAnnouncementSources;
-  }
-}
-
-function normalizeSource(value: unknown): ExternalAnnouncementSource | null {
-  if (!value || typeof value !== "object") return null;
-
-  const source = value as Partial<ExternalAnnouncementSource>;
-  if (!source.id || !source.name || !source.url) return null;
-  if (source.enabled === false) return null;
-
-  return {
-    id: source.id,
-    name: source.name,
-    type: "rss",
-    url: source.url,
-    enabled: source.enabled,
-    keywords: Array.isArray(source.keywords) ? source.keywords : [],
-    minimumKeywordMatches:
-      typeof source.minimumKeywordMatches === "number"
-        ? source.minimumKeywordMatches
-        : 0,
-  };
+  return getConfiguredAnnouncementSources();
 }
 
 async function fetchSourceAnnouncements(
@@ -353,11 +302,38 @@ function dedupeAnnouncements(items: LiveAnnouncement[]): LiveAnnouncement[] {
   const seen = new Set<string>();
 
   return items.filter((item) => {
-    const key = normalizeForMatch(item.sourceUrl || item.title);
-    if (seen.has(key)) return false;
-    seen.add(key);
+    const keys = getAnnouncementDedupeKeys(item);
+    if (keys.some((key) => seen.has(key))) return false;
+    keys.forEach((key) => seen.add(key));
     return true;
   });
+}
+
+function getAnnouncementDedupeKeys(item: LiveAnnouncement): string[] {
+  const keys = new Set<string>();
+  const canonicalUrl = canonicalizeUrlForDedupe(item.sourceUrl);
+
+  if (canonicalUrl) keys.add(`url:${normalizeForMatch(canonicalUrl)}`);
+  if (item.title) keys.add(`title:${normalizeForMatch(item.title)}`);
+
+  return [...keys];
+}
+
+function canonicalizeUrlForDedupe(value: string | undefined): string {
+  if (!value) return "";
+
+  try {
+    const url = new URL(value, "https://nuvio.local");
+    ["menuNo", "utm_source", "utm_medium", "utm_campaign", "utm_term", "utm_content"].forEach(
+      (parameter) => url.searchParams.delete(parameter),
+    );
+    url.hash = "";
+    return url.origin === "https://nuvio.local"
+      ? `${url.pathname}${url.search}`
+      : url.toString();
+  } catch {
+    return value;
+  }
 }
 
 function compareAnnouncements(a: LiveAnnouncement, b: LiveAnnouncement): number {
