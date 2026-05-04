@@ -88,6 +88,44 @@ export const partnerSubmissionStatusEnum = pgEnum("partner_submission_status", [
   "approved",
   "rejected",
 ]);
+export const applicationStatusEnum = pgEnum("application_status", [
+  "submitted",
+  "screening",
+  "accepted",
+  "rejected",
+  "checkedIn",
+  "completed",
+]);
+export const messageChannelEnum = pgEnum("message_channel", ["sms", "email", "kakao"]);
+export const messageDeliveryStatusEnum = pgEnum("message_delivery_status", [
+  "draft",
+  "scheduled",
+  "sent",
+  "failed",
+]);
+export const participantDocumentTypeEnum = pgEnum("participant_document_type", [
+  "receipt",
+  "signature",
+  "review",
+  "transfer",
+]);
+export const participantDocumentStatusEnum = pgEnum("participant_document_status", [
+  "pending",
+  "submitted",
+  "approved",
+  "rejected",
+]);
+export const reportProjectStatusEnum = pgEnum("report_project_status", [
+  "draft",
+  "collecting",
+  "ready",
+  "submitted",
+]);
+export const reportExportStatusEnum = pgEnum("report_export_status", [
+  "generated",
+  "submitted",
+  "revised",
+]);
 
 const emptyArray = sql`'[]'::jsonb`;
 const emptyObject = sql`'{}'::jsonb`;
@@ -332,6 +370,188 @@ export const partnerSubmissions = pgTable(
   (table) => [
     index("partner_submissions_status_idx").on(table.status),
     index("partner_submissions_contact_email_idx").on(table.contactEmail),
+  ],
+);
+
+export const programApplicationForms = pgTable(
+  "program_application_forms",
+  {
+    id: uuid("id").defaultRandom().primaryKey(),
+    programId: uuid("program_id").references(() => programs.id, {
+      onDelete: "cascade",
+    }),
+    title: text("title").notNull(),
+    description: text("description"),
+    fields: jsonb("fields").$type<Array<Record<string, unknown>>>().default(emptyArray).notNull(),
+    createdBy: uuid("created_by"),
+    createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+    updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
+  },
+  (table) => [index("program_application_forms_program_id_idx").on(table.programId)],
+);
+
+export const programApplications = pgTable(
+  "program_applications",
+  {
+    id: uuid("id").defaultRandom().primaryKey(),
+    programId: uuid("program_id")
+      .references(() => programs.id, { onDelete: "cascade" })
+      .notNull(),
+    formId: uuid("form_id").references(() => programApplicationForms.id, {
+      onDelete: "set null",
+    }),
+    applicantName: text("applicant_name").notNull(),
+    email: text("email").notNull(),
+    phone: text("phone"),
+    status: applicationStatusEnum("status").default("submitted").notNull(),
+    answers: jsonb("answers").$type<Record<string, unknown>>().default(emptyObject).notNull(),
+    paymentAmount: integer("payment_amount").default(0).notNull(),
+    paymentMethod: text("payment_method"),
+    receiptCount: integer("receipt_count").default(0).notNull(),
+    signatureCompleted: boolean("signature_completed").default(false).notNull(),
+    reviewSubmitted: boolean("review_submitted").default(false).notNull(),
+    submittedAt: timestamp("submitted_at", { withTimezone: true }).defaultNow().notNull(),
+    createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+    updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
+  },
+  (table) => [
+    index("program_applications_program_id_idx").on(table.programId),
+    index("program_applications_status_idx").on(table.status),
+    index("program_applications_email_idx").on(table.email),
+  ],
+);
+
+export const applicationStatusEvents = pgTable(
+  "application_status_events",
+  {
+    id: uuid("id").defaultRandom().primaryKey(),
+    applicationId: uuid("application_id")
+      .references(() => programApplications.id, { onDelete: "cascade" })
+      .notNull(),
+    fromStatus: applicationStatusEnum("from_status"),
+    toStatus: applicationStatusEnum("to_status").notNull(),
+    note: text("note"),
+    actorId: uuid("actor_id"),
+    createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+  },
+  (table) => [
+    index("application_status_events_application_id_idx").on(table.applicationId),
+  ],
+);
+
+export const messageTemplates = pgTable(
+  "message_templates",
+  {
+    id: uuid("id").defaultRandom().primaryKey(),
+    programId: uuid("program_id").references(() => programs.id, {
+      onDelete: "cascade",
+    }),
+    name: text("name").notNull(),
+    channel: messageChannelEnum("channel").default("sms").notNull(),
+    trigger: text("trigger").notNull(),
+    body: text("body").notNull(),
+    createdBy: uuid("created_by"),
+    createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+    updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
+  },
+  (table) => [index("message_templates_program_id_idx").on(table.programId)],
+);
+
+export const scheduledMessages = pgTable(
+  "scheduled_messages",
+  {
+    id: uuid("id").defaultRandom().primaryKey(),
+    templateId: uuid("template_id").references(() => messageTemplates.id, {
+      onDelete: "set null",
+    }),
+    applicationId: uuid("application_id").references(() => programApplications.id, {
+      onDelete: "cascade",
+    }),
+    channel: messageChannelEnum("channel").default("sms").notNull(),
+    recipient: text("recipient").notNull(),
+    body: text("body").notNull(),
+    deliveryStatus: messageDeliveryStatusEnum("delivery_status")
+      .default("draft")
+      .notNull(),
+    scheduledFor: timestamp("scheduled_for", { withTimezone: true }),
+    sentAt: timestamp("sent_at", { withTimezone: true }),
+    error: text("error"),
+    createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+    updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
+  },
+  (table) => [
+    index("scheduled_messages_application_id_idx").on(table.applicationId),
+    index("scheduled_messages_delivery_status_idx").on(table.deliveryStatus),
+  ],
+);
+
+export const participantDocuments = pgTable(
+  "participant_documents",
+  {
+    id: uuid("id").defaultRandom().primaryKey(),
+    applicationId: uuid("application_id")
+      .references(() => programApplications.id, { onDelete: "cascade" })
+      .notNull(),
+    type: participantDocumentTypeEnum("type").notNull(),
+    status: participantDocumentStatusEnum("status").default("pending").notNull(),
+    fileUrl: text("file_url"),
+    amount: integer("amount"),
+    note: text("note"),
+    submittedAt: timestamp("submitted_at", { withTimezone: true }),
+    reviewedAt: timestamp("reviewed_at", { withTimezone: true }),
+    createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+    updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
+  },
+  (table) => [
+    index("participant_documents_application_id_idx").on(table.applicationId),
+    index("participant_documents_status_idx").on(table.status),
+  ],
+);
+
+export const reportProjects = pgTable(
+  "report_projects",
+  {
+    id: uuid("id").defaultRandom().primaryKey(),
+    programId: uuid("program_id").references(() => programs.id, {
+      onDelete: "set null",
+    }),
+    name: text("name").notNull(),
+    organizationName: text("organization_name").notNull(),
+    reportType: text("report_type").notNull(),
+    status: reportProjectStatusEnum("status").default("draft").notNull(),
+    schema: jsonb("schema").$type<Record<string, unknown>>().default(emptyObject).notNull(),
+    dueDate: date("due_date"),
+    createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+    updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
+  },
+  (table) => [
+    index("report_projects_program_id_idx").on(table.programId),
+    index("report_projects_status_idx").on(table.status),
+  ],
+);
+
+export const reportExports = pgTable(
+  "report_exports",
+  {
+    id: uuid("id").defaultRandom().primaryKey(),
+    reportProjectId: uuid("report_project_id")
+      .references(() => reportProjects.id, { onDelete: "cascade" })
+      .notNull(),
+    version: integer("version").default(1).notNull(),
+    status: reportExportStatusEnum("status").default("generated").notNull(),
+    payload: jsonb("payload").$type<Record<string, unknown>>().default(emptyObject).notNull(),
+    fileUrl: text("file_url"),
+    generatedBy: uuid("generated_by"),
+    generatedAt: timestamp("generated_at", { withTimezone: true })
+      .defaultNow()
+      .notNull(),
+  },
+  (table) => [
+    index("report_exports_report_project_id_idx").on(table.reportProjectId),
+    uniqueIndex("report_exports_project_version_idx").on(
+      table.reportProjectId,
+      table.version,
+    ),
   ],
 );
 

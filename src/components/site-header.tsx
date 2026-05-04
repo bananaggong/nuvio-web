@@ -18,6 +18,7 @@ const navItems = [
   { href: "/half-price-travel", label: "반값여행" },
   { href: "/reviews", label: "후기" },
   { href: "/announcements", label: "실시간공지" },
+  { href: "/host", label: "호스트" },
 ];
 
 export function SiteHeader() {
