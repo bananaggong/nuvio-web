@@ -89,6 +89,7 @@ npm run supabase:db:reset
 | --- | --- |
 | `/` | 프로그램 탐색 홈 |
 | `/programs/[id]` | 프로그램 상세 |
+| `/programs/[id]/apply` | 누비오 내부 신청서 |
 | `/half-price-travel` | 반값여행 가이드 |
 | `/reviews` | 후기/팁 목록 |
 | `/reviews/[id]` | 후기 상세 |

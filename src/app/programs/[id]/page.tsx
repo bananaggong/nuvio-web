@@ -229,9 +229,7 @@ export default async function ProgramDetailPage({
             <div className="mt-4 grid gap-2">
               <a
                 className="inline-flex h-12 items-center justify-center gap-2 rounded-md bg-[var(--primary)] px-4 text-sm font-black text-white hover:bg-[var(--primary-strong)]"
-                href={program.applyUrl}
-                rel="noreferrer"
-                target="_blank"
+                href={`/programs/${program.id}/apply`}
               >
                 <Ticket size={18} />
                 신청하기

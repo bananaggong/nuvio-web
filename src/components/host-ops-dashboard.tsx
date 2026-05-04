@@ -18,9 +18,10 @@ import {
   applicationStatusLabels,
   buildHostReportCsv,
   buildReportMetrics,
-  seedHostApplications,
   seedMessageTemplates,
+  readHostApplicationsFromStorage,
   summarizeApplications,
+  writeHostApplicationsToStorage,
 } from "@/lib/host-operations";
 import type {
   HostApplication,
@@ -28,7 +29,6 @@ import type {
   MessageTemplate,
 } from "@/lib/host-operations";
 
-const APPLICATION_STORAGE_KEY = "nuvio:host-applications";
 const TEMPLATE_STORAGE_KEY = "nuvio:message-templates";
 
 const tabs = [
@@ -65,7 +65,7 @@ export function HostOpsDashboard() {
       application.id === applicationId ? { ...application, status } : application,
     );
     setApplications(next);
-    window.localStorage.setItem(APPLICATION_STORAGE_KEY, JSON.stringify(next));
+    writeHostApplicationsToStorage(next);
   }
 
   function toggleApplicationFlag(
@@ -78,7 +78,7 @@ export function HostOpsDashboard() {
         : application,
     );
     setApplications(next);
-    window.localStorage.setItem(APPLICATION_STORAGE_KEY, JSON.stringify(next));
+    writeHostApplicationsToStorage(next);
   }
 
   async function copyTemplate(template: MessageTemplate) {
@@ -505,15 +505,7 @@ function ReportBlock({ label, value }: { label: string; value: string }) {
 }
 
 function readStoredApplications(): HostApplication[] {
-  if (typeof window === "undefined") return seedHostApplications;
-
-  try {
-    const rawValue = window.localStorage.getItem(APPLICATION_STORAGE_KEY);
-    if (!rawValue) return seedHostApplications;
-    return JSON.parse(rawValue) as HostApplication[];
-  } catch {
-    return seedHostApplications;
-  }
+  return readHostApplicationsFromStorage();
 }
 
 function readStoredTemplates(): MessageTemplate[] {

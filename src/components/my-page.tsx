@@ -2,8 +2,16 @@
 
 import Link from "next/link";
 import { useMemo, useState } from "react";
-import { Bell, Bookmark, CheckCircle2, UserRound } from "lucide-react";
+import {
+  Bell,
+  Bookmark,
+  CheckCircle2,
+  ClipboardList,
+  UserRound,
+} from "lucide-react";
 import { getProgramById } from "@/lib/data";
+import { applicationStatusLabels } from "@/lib/host-operations";
+import { readMyApplicationsFromStorage } from "@/lib/my-applications";
 
 type Profile = {
   name: string;
@@ -31,6 +39,7 @@ export function MyPage() {
   const [bookmarks] = useState<StateMap>(() => readMap("nuvio:bookmarks"));
   const [alerts] = useState<StateMap>(() => readMap("nuvio:alerts"));
   const [tracks] = useState<StateMap>(() => readMap("nuvio:tracks"));
+  const [applications] = useState(readMyApplicationsFromStorage);
 
   const sections = useMemo(
     () => [
@@ -42,7 +51,7 @@ export function MyPage() {
           .filter(Boolean),
       },
       {
-        title: "알림받는 프로그램",
+        title: "알림 받는 프로그램",
         icon: Bell,
         items: Object.keys(alerts)
           .map((id) => getProgramById(Number(id)))
@@ -68,12 +77,12 @@ export function MyPage() {
           </div>
           <div>
             <h1 className="text-2xl font-black text-slate-950">
-              {profile ? `${profile.name}님의 여행지원금 노트` : "내 여행지원금 노트"}
+              {profile ? `${profile.name}님의 누비오 노트` : "내 누비오 노트"}
             </h1>
             <p className="mt-1 text-sm text-slate-500">
               {profile
                 ? `${profile.email} · 관심사 ${profile.interest}`
-                : "로그인 정보를 저장하면 관심 프로그램을 한곳에서 볼 수 있습니다."}
+                : "프로필을 만들면 관심 프로그램과 신청 기록을 한 곳에서 볼 수 있습니다."}
             </p>
           </div>
         </div>
@@ -87,11 +96,49 @@ export function MyPage() {
         ) : null}
       </section>
 
+      <section className="mt-6 rounded-md border border-slate-200 bg-white p-4">
+        <h2 className="flex items-center gap-2 text-base font-black text-slate-950">
+          <ClipboardList className="text-[var(--primary)]" size={18} />
+          신청 내역
+        </h2>
+        <div className="mt-4 grid gap-2">
+          {applications.length > 0 ? (
+            applications.map((application) => (
+              <div
+                className="rounded-md bg-[var(--surface-muted)] p-3"
+                key={application.id}
+              >
+                <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+                  <div>
+                    <p className="font-black text-slate-950">
+                      {application.programTitle}
+                    </p>
+                    <p className="mt-1 text-xs font-bold text-slate-500">
+                      {new Date(application.submittedAt).toLocaleString("ko-KR")}
+                    </p>
+                  </div>
+                  <span className="inline-flex w-fit rounded-md bg-white px-2 py-1 text-xs font-black text-[var(--primary)]">
+                    {applicationStatusLabels[application.status]}
+                  </span>
+                </div>
+              </div>
+            ))
+          ) : (
+            <p className="rounded-md border border-dashed border-slate-300 p-3 text-sm text-slate-500">
+              아직 제출한 신청서가 없습니다.
+            </p>
+          )}
+        </div>
+      </section>
+
       <div className="mt-6 grid gap-4 lg:grid-cols-3">
         {sections.map((section) => {
           const Icon = section.icon;
           return (
-            <section className="rounded-md border border-slate-200 bg-white p-4" key={section.title}>
+            <section
+              className="rounded-md border border-slate-200 bg-white p-4"
+              key={section.title}
+            >
               <h2 className="flex items-center gap-2 text-base font-black text-slate-950">
                 <Icon className="text-[var(--primary)]" size={18} />
                 {section.title}
