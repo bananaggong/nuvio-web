@@ -333,6 +333,24 @@ function MessagePanel({
 }) {
   return (
     <section className="mt-6 grid gap-3">
+      <div className="flex flex-col gap-3 rounded-md border border-slate-200 bg-white p-5 sm:flex-row sm:items-center sm:justify-between">
+        <div>
+          <h2 className="flex items-center gap-2 text-xl font-black text-slate-950">
+            <MessageSquareText className="text-[var(--primary)]" size={20} />
+            안내 메시지 템플릿
+          </h2>
+          <p className="mt-1 text-sm leading-6 text-slate-500">
+            상태별 수신자 큐와 예약 발송은 자동화 센터에서 관리합니다.
+          </p>
+        </div>
+        <Link
+          className="inline-flex h-10 items-center justify-center gap-2 rounded-md bg-[var(--primary)] px-3 text-sm font-black text-white"
+          href="/host/messages"
+        >
+          <Send size={16} />
+          메시지 자동화
+        </Link>
+      </div>
       {templates.map((template) => (
         <article
           className="rounded-md border border-slate-200 bg-white p-5"

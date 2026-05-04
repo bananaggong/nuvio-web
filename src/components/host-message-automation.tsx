@@ -1,0 +1,419 @@
+"use client";
+
+import Link from "next/link";
+import {
+  ArrowLeft,
+  Check,
+  Clock3,
+  Download,
+  MailCheck,
+  MessageSquareText,
+  Plus,
+  Save,
+  Send,
+  Sparkles,
+  Users,
+} from "lucide-react";
+import { useMemo, useState } from "react";
+import { readHostApplicationsFromStorage } from "@/lib/host-operations";
+import {
+  buildMessageExportCsv,
+  buildMessageRecipientPreview,
+  campaignStatusLabels,
+  channelLabels,
+  createMessageCampaign,
+  readMessageCampaigns,
+  readMessageTemplates,
+  targetStatusLabels,
+  targetStatusOptions,
+  writeMessageCampaigns,
+} from "@/lib/message-automation";
+import type {
+  MessageCampaign,
+  MessageCampaignStatus,
+  MessageChannel,
+  MessageTargetStatus,
+} from "@/lib/message-automation";
+
+const channelOptions: MessageChannel[] = ["email", "sms", "kakao"];
+const campaignStatusOptions: MessageCampaignStatus[] = [
+  "draft",
+  "scheduled",
+  "sent",
+];
+
+export function HostMessageAutomation() {
+  const [applications] = useState(readHostApplicationsFromStorage);
+  const [templates] = useState(readMessageTemplates);
+  const [campaigns, setCampaigns] = useState<MessageCampaign[]>(
+    readMessageCampaigns,
+  );
+  const [selectedId, setSelectedId] = useState(campaigns[0]?.id);
+  const [saved, setSaved] = useState(false);
+  const selectedCampaign = useMemo(
+    () =>
+      campaigns.find((campaign) => campaign.id === selectedId) ?? campaigns[0],
+    [campaigns, selectedId],
+  );
+  const recipients = useMemo(() => {
+    if (!selectedCampaign) return [];
+    return buildMessageRecipientPreview(
+      selectedCampaign,
+      templates,
+      applications,
+    );
+  }, [applications, selectedCampaign, templates]);
+  const scheduledCount = campaigns.filter(
+    (campaign) => campaign.status === "scheduled",
+  ).length;
+  const sentCount = campaigns.filter((campaign) => campaign.status === "sent").length;
+
+  function saveCampaigns(nextCampaigns: MessageCampaign[]) {
+    setCampaigns(nextCampaigns);
+    writeMessageCampaigns(nextCampaigns);
+    setSaved(true);
+    window.setTimeout(() => setSaved(false), 1400);
+  }
+
+  function updateCampaign(patch: Partial<MessageCampaign>) {
+    if (!selectedCampaign) return;
+    saveCampaigns(
+      campaigns.map((campaign) =>
+        campaign.id === selectedCampaign.id
+          ? { ...campaign, ...patch, updatedAt: new Date().toISOString() }
+          : campaign,
+      ),
+    );
+  }
+
+  function addCampaign() {
+    const nextCampaign = createMessageCampaign(templates);
+    saveCampaigns([nextCampaign, ...campaigns]);
+    setSelectedId(nextCampaign.id);
+  }
+
+  function markSent() {
+    updateCampaign({ status: "sent" });
+  }
+
+  function downloadCampaignCsv() {
+    if (!selectedCampaign) return;
+    downloadTextFile(
+      "nuvio-message-queue.csv",
+      buildMessageExportCsv(selectedCampaign, templates, applications),
+      "text/csv",
+    );
+  }
+
+  if (!selectedCampaign) {
+    return (
+      <div className="mx-auto max-w-5xl px-4 py-8 md:px-8">
+        <button
+          className="inline-flex h-11 items-center gap-2 rounded-md bg-[var(--primary)] px-4 text-sm font-black text-white"
+          onClick={addCampaign}
+          type="button"
+        >
+          <Plus size={17} />
+          캠페인 만들기
+        </button>
+      </div>
+    );
+  }
+
+  return (
+    <div className="mx-auto min-w-0 max-w-6xl px-4 py-8 md:px-8">
+      <div className="mb-5 grid gap-3 sm:grid-cols-[1fr_auto_auto]">
+        <Link
+          className="inline-flex h-10 items-center justify-center gap-2 rounded-md border border-slate-200 bg-white px-3 text-sm font-black text-slate-700"
+          href="/host"
+        >
+          <ArrowLeft size={16} />
+          운영 콘솔
+        </Link>
+        <button
+          className="inline-flex h-10 items-center justify-center gap-2 rounded-md border border-slate-200 bg-white px-3 text-sm font-black text-slate-700"
+          onClick={addCampaign}
+          type="button"
+        >
+          <Plus size={16} />
+          새 캠페인
+        </button>
+        <button
+          className="inline-flex h-10 items-center justify-center gap-2 rounded-md bg-slate-950 px-3 text-sm font-black text-white"
+          onClick={downloadCampaignCsv}
+          type="button"
+        >
+          <Download size={16} />
+          큐 내보내기
+        </button>
+      </div>
+
+      <section className="overflow-hidden rounded-md bg-slate-950 p-5 text-white sm:p-6">
+        <p className="inline-flex items-center gap-2 text-sm font-black text-teal-200">
+          <Sparkles size={18} />
+          메시지 자동화 센터
+        </p>
+        <div className="mt-4 grid gap-5 lg:grid-cols-[minmax(0,1fr)_320px]">
+          <div className="min-w-0">
+            <h1 className="max-w-3xl text-2xl font-black leading-tight sm:text-3xl md:text-4xl">
+              신청자 상태에 맞춰 안내 메시지를 예약합니다.
+            </h1>
+            <p className="mt-3 max-w-3xl text-sm leading-7 text-slate-300">
+              템플릿, 대상 상태, 발송 채널을 조합해 수신자 큐를 만들고 DB 연결
+              후에는 예약 발송 이력을 서버에 기록합니다.
+            </p>
+          </div>
+          <div className="grid gap-2 sm:grid-cols-3 lg:grid-cols-1">
+            <HeroMetric label="수신 대상" value={`${recipients.length}명`} />
+            <HeroMetric label="예약 캠페인" value={`${scheduledCount}개`} />
+            <HeroMetric label="발송 완료" value={`${sentCount}개`} />
+          </div>
+        </div>
+      </section>
+
+      <div className="mt-6 grid min-w-0 gap-6 lg:grid-cols-[280px_minmax(0,1fr)]">
+        <aside className="min-w-0 space-y-2">
+          {campaigns.map((campaign) => (
+            <button
+              className={`w-full rounded-md border p-3 text-left ${
+                campaign.id === selectedCampaign.id
+                  ? "border-[var(--primary)] bg-teal-50"
+                  : "border-slate-200 bg-white"
+              }`}
+              key={campaign.id}
+              onClick={() => setSelectedId(campaign.id)}
+              type="button"
+            >
+              <p className="break-words font-black text-slate-950">
+                {campaign.name}
+              </p>
+              <p className="mt-1 text-xs font-bold text-slate-500">
+                {channelLabels[campaign.channel]} ·{" "}
+                {campaignStatusLabels[campaign.status]}
+              </p>
+            </button>
+          ))}
+        </aside>
+
+        <main className="grid min-w-0 gap-6 xl:grid-cols-[minmax(0,1fr)_360px]">
+          <section className="min-w-0 rounded-md border border-slate-200 bg-white p-5">
+            <h2 className="flex items-center gap-2 text-xl font-black text-slate-950">
+              <MessageSquareText className="text-[var(--primary)]" size={20} />
+              캠페인 설정
+            </h2>
+            <div className="mt-5 grid gap-4">
+              <label className="grid gap-2">
+                <span className="text-sm font-black text-slate-700">캠페인명</span>
+                <input
+                  className="h-11 w-full min-w-0 rounded-md border border-slate-200 px-3 text-sm outline-none focus:border-[var(--primary)]"
+                  onChange={(event) => updateCampaign({ name: event.target.value })}
+                  value={selectedCampaign.name}
+                />
+              </label>
+              <div className="grid gap-4 md:grid-cols-2">
+                <label className="grid gap-2">
+                  <span className="text-sm font-black text-slate-700">템플릿</span>
+                  <select
+                    className="h-11 w-full min-w-0 rounded-md border border-slate-200 px-3 text-sm outline-none focus:border-[var(--primary)]"
+                    onChange={(event) =>
+                      updateCampaign({ templateId: event.target.value })
+                    }
+                    value={selectedCampaign.templateId}
+                  >
+                    {templates.map((template) => (
+                      <option key={template.id} value={template.id}>
+                        {template.name}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+                <label className="grid gap-2">
+                  <span className="text-sm font-black text-slate-700">발송 채널</span>
+                  <select
+                    className="h-11 w-full min-w-0 rounded-md border border-slate-200 px-3 text-sm outline-none focus:border-[var(--primary)]"
+                    onChange={(event) =>
+                      updateCampaign({
+                        channel: event.target.value as MessageChannel,
+                      })
+                    }
+                    value={selectedCampaign.channel}
+                  >
+                    {channelOptions.map((channel) => (
+                      <option key={channel} value={channel}>
+                        {channelLabels[channel]}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+              </div>
+              <div className="grid gap-4 md:grid-cols-2">
+                <label className="grid gap-2">
+                  <span className="text-sm font-black text-slate-700">대상 상태</span>
+                  <select
+                    className="h-11 w-full min-w-0 rounded-md border border-slate-200 px-3 text-sm outline-none focus:border-[var(--primary)]"
+                    onChange={(event) =>
+                      updateCampaign({
+                        targetStatus: event.target.value as MessageTargetStatus,
+                      })
+                    }
+                    value={selectedCampaign.targetStatus}
+                  >
+                    {targetStatusOptions.map((status) => (
+                      <option key={status} value={status}>
+                        {targetStatusLabels[status]}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+                <label className="grid gap-2">
+                  <span className="text-sm font-black text-slate-700">예약 시간</span>
+                  <input
+                    className="h-11 w-full min-w-0 rounded-md border border-slate-200 px-3 text-sm outline-none focus:border-[var(--primary)]"
+                    onChange={(event) =>
+                      updateCampaign({ scheduledAt: event.target.value })
+                    }
+                    type="datetime-local"
+                    value={selectedCampaign.scheduledAt}
+                  />
+                </label>
+              </div>
+              <label className="grid gap-2">
+                <span className="text-sm font-black text-slate-700">상태</span>
+                <select
+                  className="h-11 w-full min-w-0 rounded-md border border-slate-200 px-3 text-sm outline-none focus:border-[var(--primary)]"
+                  onChange={(event) =>
+                    updateCampaign({
+                      status: event.target.value as MessageCampaignStatus,
+                    })
+                  }
+                  value={selectedCampaign.status}
+                >
+                  {campaignStatusOptions.map((status) => (
+                    <option key={status} value={status}>
+                      {campaignStatusLabels[status]}
+                    </option>
+                  ))}
+                </select>
+              </label>
+            </div>
+
+            <div className="mt-5 flex flex-col gap-2 sm:flex-row">
+              <button
+                className="inline-flex h-10 items-center justify-center gap-2 rounded-md bg-[var(--primary)] px-3 text-sm font-black text-white"
+                onClick={() => updateCampaign({ status: "scheduled" })}
+                type="button"
+              >
+                <Clock3 size={16} />
+                예약 처리
+              </button>
+              <button
+                className="inline-flex h-10 items-center justify-center gap-2 rounded-md border border-slate-200 px-3 text-sm font-black text-slate-700"
+                onClick={markSent}
+                type="button"
+              >
+                <Send size={16} />
+                발송 완료
+              </button>
+            </div>
+
+            <div className="mt-5 flex items-center gap-2 text-sm font-bold text-slate-500">
+              {saved ? <Check size={16} className="text-[var(--primary)]" /> : <Save size={16} />}
+              {saved ? "저장됨" : "변경 사항 자동 저장"}
+            </div>
+          </section>
+
+          <aside className="min-w-0 space-y-4">
+            <section className="rounded-md border border-slate-200 bg-white p-5">
+              <h2 className="flex items-center gap-2 text-lg font-black text-slate-950">
+                <Users className="text-[var(--primary)]" size={19} />
+                수신자 큐
+              </h2>
+              <div className="mt-4 grid gap-2">
+                {recipients.length > 0 ? (
+                  recipients.map((recipient) => (
+                    <div
+                      className="rounded-md bg-[var(--surface-muted)] p-3"
+                      key={recipient.applicationId}
+                    >
+                      <p className="font-black text-slate-950">
+                        {recipient.applicantName}
+                      </p>
+                      <p className="mt-1 break-words text-xs font-bold text-slate-500">
+                        {recipient.contact} · {targetStatusLabels[recipient.status]}
+                      </p>
+                    </div>
+                  ))
+                ) : (
+                  <p className="rounded-md bg-[var(--surface-muted)] p-3 text-sm font-bold text-slate-500">
+                    현재 조건에 맞는 수신자가 없습니다.
+                  </p>
+                )}
+              </div>
+            </section>
+
+            <section className="rounded-md border border-slate-200 bg-white p-5">
+              <h2 className="flex items-center gap-2 text-lg font-black text-slate-950">
+                <MailCheck className="text-[var(--primary)]" size={19} />
+                발송 파일
+              </h2>
+              <button
+                className="mt-4 inline-flex h-10 w-full items-center justify-center gap-2 rounded-md bg-slate-950 px-3 text-sm font-black text-white"
+                onClick={downloadCampaignCsv}
+                type="button"
+              >
+                <Download size={16} />
+                CSV 다운로드
+              </button>
+            </section>
+          </aside>
+
+          <section className="min-w-0 rounded-md border border-slate-200 bg-white p-5 xl:col-span-2">
+            <h2 className="flex items-center gap-2 text-xl font-black text-slate-950">
+              <Sparkles className="text-[var(--primary)]" size={20} />
+              메시지 미리보기
+            </h2>
+            <div className="mt-4 grid gap-3">
+              {recipients.slice(0, 5).map((recipient) => (
+                <article
+                  className="rounded-md bg-[var(--surface-muted)] p-4"
+                  key={recipient.applicationId}
+                >
+                  <p className="text-sm font-black text-[var(--primary)]">
+                    {recipient.applicantName} · {recipient.programTitle}
+                  </p>
+                  <p className="mt-2 break-words text-sm leading-7 text-slate-700">
+                    {recipient.body}
+                  </p>
+                </article>
+              ))}
+              {recipients.length === 0 ? (
+                <p className="rounded-md bg-[var(--surface-muted)] p-4 text-sm font-bold text-slate-500">
+                  대상 상태를 바꾸면 메시지 미리보기가 생성됩니다.
+                </p>
+              ) : null}
+            </div>
+          </section>
+        </main>
+      </div>
+    </div>
+  );
+}
+
+function HeroMetric({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="rounded-md bg-white/10 p-3">
+      <p className="text-xs font-black text-slate-300">{label}</p>
+      <p className="mt-1 text-xl font-black text-white">{value}</p>
+    </div>
+  );
+}
+
+function downloadTextFile(fileName: string, content: string, mimeType: string) {
+  const blob = new Blob([content], { type: `${mimeType};charset=utf-8` });
+  const url = window.URL.createObjectURL(blob);
+  const link = document.createElement("a");
+  link.href = url;
+  link.download = fileName;
+  link.click();
+  window.URL.revokeObjectURL(url);
+}

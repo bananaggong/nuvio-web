@@ -99,6 +99,7 @@ npm run supabase:db:reset
 | `/partners/apply` | 파트너 등록/제보 |
 | `/host` | 호스트 운영 콘솔 |
 | `/host/forms` | 호스트 신청서 빌더 |
+| `/host/messages` | 호스트 메시지 자동화 센터 |
 | `/host/reports` | 호스트 보고 자동화 센터 |
 | `/login` | MVP 프로필 저장 |
 | `/me` | 내 보관/알림/지원 기록 |
