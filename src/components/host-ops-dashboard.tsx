@@ -126,7 +126,14 @@ export function HostOpsDashboard() {
               </span>
             </p>
           </div>
-          <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
+          <div className="grid gap-2 sm:grid-cols-2">
+            <Link
+              className="inline-flex h-11 items-center justify-center gap-2 rounded-md bg-white px-4 text-sm font-black text-slate-950 hover:bg-slate-100"
+              href="/host/programs"
+            >
+              <ClipboardList size={17} />
+              프로그램 스튜디오
+            </Link>
             <Link
               className="inline-flex h-11 items-center justify-center gap-2 rounded-md bg-white px-4 text-sm font-black text-slate-950 hover:bg-slate-100"
               href="/host/forms"
