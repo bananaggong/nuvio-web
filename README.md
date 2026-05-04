@@ -134,7 +134,7 @@ npm run supabase:db:reset
 ANNOUNCEMENT_REFRESH_SECONDS=300
 PROGRAM_LEAD_MIN_SCORE=2
 DISABLED_ANNOUNCEMENT_SOURCE_IDS=
-EXTERNAL_ANNOUNCEMENT_SOURCES=[{"id":"mcst-notice","name":"문화체육관광부 공지 RSS","type":"rss","url":"http://www.mcst.go.kr/common/rss/notice.jsp","keywords":["관광","여행","지원","공모","모집"],"minimumKeywordMatches":0}]
+EXTERNAL_ANNOUNCEMENT_SOURCES=[{"id":"mcst-notice","name":"문화체육관광부 공지 RSS","type":"rss","url":"https://www.mcst.go.kr/common/rss/notice.jsp","keywords":["관광","여행","지원","공모","모집"],"minimumKeywordMatches":0}]
 ```
 
 ## 구현 메모
