@@ -126,13 +126,20 @@ export function HostOpsDashboard() {
               </span>
             </p>
           </div>
-          <div className="grid gap-2 sm:grid-cols-2">
+          <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
             <Link
               className="inline-flex h-11 items-center justify-center gap-2 rounded-md bg-white px-4 text-sm font-black text-slate-950 hover:bg-slate-100"
               href="/host/forms"
             >
               <FilePlus2 size={17} />
               신청서 빌더
+            </Link>
+            <Link
+              className="inline-flex h-11 items-center justify-center gap-2 rounded-md border border-white/20 px-4 text-sm font-black text-white hover:bg-white/10"
+              href="/host/reports"
+            >
+              <FileText size={17} />
+              보고 자동화
             </Link>
             <button
               className="inline-flex h-11 items-center justify-center gap-2 rounded-md border border-white/20 px-4 text-sm font-black text-white hover:bg-white/10"
@@ -446,14 +453,23 @@ function ReportPanel({
             L3 ERP에서는 이 데이터를 정부/기업 제출 양식으로 자동 변환합니다.
           </p>
         </div>
-        <button
-          className="inline-flex h-10 items-center justify-center gap-2 rounded-md bg-[var(--primary)] px-3 text-sm font-black text-white"
-          onClick={onDownloadReportCsv}
-          type="button"
-        >
-          <FileDown size={16} />
-          CSV 내보내기
-        </button>
+        <div className="grid gap-2 sm:grid-cols-2">
+          <Link
+            className="inline-flex h-10 items-center justify-center gap-2 rounded-md bg-[var(--primary)] px-3 text-sm font-black text-white"
+            href="/host/reports"
+          >
+            <FileText size={16} />
+            보고 자동화
+          </Link>
+          <button
+            className="inline-flex h-10 items-center justify-center gap-2 rounded-md border border-slate-200 px-3 text-sm font-black text-slate-700"
+            onClick={onDownloadReportCsv}
+            type="button"
+          >
+            <FileDown size={16} />
+            CSV 내보내기
+          </button>
+        </div>
       </div>
 
       <div className="mt-5 grid gap-3 md:grid-cols-3">
