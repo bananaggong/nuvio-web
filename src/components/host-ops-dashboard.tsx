@@ -1,9 +1,11 @@
 "use client";
 
+import Link from "next/link";
 import {
   Check,
   ClipboardList,
   FileDown,
+  FilePlus2,
   FileText,
   MailCheck,
   MessageSquareText,
@@ -124,14 +126,23 @@ export function HostOpsDashboard() {
               </span>
             </p>
           </div>
-          <button
-            className="inline-flex h-11 items-center justify-center gap-2 rounded-md bg-white px-4 text-sm font-black text-slate-950 hover:bg-slate-100"
-            onClick={downloadReportCsv}
-            type="button"
-          >
-            <FileDown size={17} />
-            보고 CSV
-          </button>
+          <div className="grid gap-2 sm:grid-cols-2">
+            <Link
+              className="inline-flex h-11 items-center justify-center gap-2 rounded-md bg-white px-4 text-sm font-black text-slate-950 hover:bg-slate-100"
+              href="/host/forms"
+            >
+              <FilePlus2 size={17} />
+              신청서 빌더
+            </Link>
+            <button
+              className="inline-flex h-11 items-center justify-center gap-2 rounded-md border border-white/20 px-4 text-sm font-black text-white hover:bg-white/10"
+              onClick={downloadReportCsv}
+              type="button"
+            >
+              <FileDown size={17} />
+              보고 CSV
+            </button>
+          </div>
         </div>
       </section>
 
