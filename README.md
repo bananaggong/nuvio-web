@@ -60,6 +60,7 @@ npm run db:studio
 NEXT_PUBLIC_SUPABASE_URL=
 NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY=
 NEXT_PUBLIC_SUPABASE_ANON_KEY=
+NEXT_PUBLIC_SUPABASE_NAVER_PROVIDER=custom:naver
 SUPABASE_SERVICE_ROLE_KEY=
 DATABASE_URL=
 DIRECT_DATABASE_URL=
@@ -70,6 +71,33 @@ EXTERNAL_ANNOUNCEMENT_SOURCES=
 ```
 
 Vercel Production, Preview, Development 환경에도 같은 Supabase 연결 변수가 필요합니다.
+
+## 소셜 로그인
+
+Supabase Auth OAuth 흐름을 사용합니다.
+
+- Google: Supabase 내장 `google` provider
+- Kakao: Supabase 내장 `kakao` provider
+- Naver: Supabase Custom OAuth/OIDC provider, 기본 provider id는 `custom:naver`
+
+구현 파일:
+
+- 로그인 UI: `src/components/login-panel.tsx`
+- OAuth provider 설정: `src/lib/auth-providers.ts`
+- OAuth callback: `src/app/auth/callback/route.ts`
+- 세션 API: `src/app/api/auth/session/route.ts`
+- 로그아웃 API: `src/app/api/auth/logout/route.ts`
+- 프로필 API: `src/app/api/me/profile/route.ts`
+- 프로필 DB sync: `src/lib/auth-profile-db.ts`
+
+Supabase Dashboard에서 각 provider의 Client ID/Secret을 등록하고, Auth URL allow list에 아래 redirect URL을 추가합니다.
+
+```bash
+http://localhost:3000/auth/callback
+https://nuvio-web-blue.vercel.app/auth/callback
+```
+
+Naver는 Supabase Auth Providers의 Custom OAuth provider로 `custom:naver`를 생성합니다. 다른 identifier를 쓰면 `NEXT_PUBLIC_SUPABASE_NAVER_PROVIDER` 값을 함께 바꿉니다.
 
 ## Supabase
 
@@ -124,6 +152,10 @@ npm run supabase:db:push
 
 | API | 설명 |
 | --- | --- |
+| `GET /api/auth/providers` | 소셜 로그인 provider 목록 |
+| `GET /api/auth/session` | 현재 Supabase 세션/프로필 조회 |
+| `POST /api/auth/logout` | 로그아웃 |
+| `GET, PATCH /api/me/profile` | 내 프로필 조회/수정 |
 | `GET /api/programs` | 프로그램 JSON |
 | `GET /api/reviews` | 후기 JSON |
 | `GET /api/announcements` | 내부/외부 공지 JSON |
