@@ -4,6 +4,12 @@ import { programs as programsTable } from "@/db/schema";
 import type { Program } from "@/lib/types";
 
 type ProgramInsert = typeof programsTable.$inferInsert;
+type ProgramRow = typeof programsTable.$inferSelect;
+
+export type ProgramRecordSummary = Pick<
+  ProgramRow,
+  "id" | "legacyId" | "slug" | "title" | "publishedAt"
+>;
 
 export async function ensureProgramRecord(program: Program): Promise<string> {
   const insertValue = mapProgramToInsert(program);
@@ -35,9 +41,33 @@ export async function getProgramRecordIdByLegacyId(
   return row?.id;
 }
 
+export async function getProgramRecordByIdentifier(
+  identifier: number | string,
+): Promise<ProgramRecordSummary | undefined> {
+  const key = String(identifier).trim();
+  if (!key) return undefined;
+
+  const numericId = Number(key);
+  const rows = await getDb()
+    .select({
+      id: programsTable.id,
+      legacyId: programsTable.legacyId,
+      slug: programsTable.slug,
+      title: programsTable.title,
+      publishedAt: programsTable.publishedAt,
+    })
+    .from(programsTable)
+    .limit(500);
+
+  return rows.find((row) => {
+    if (Number.isInteger(numericId) && row.legacyId === numericId) return true;
+    return row.id === key || row.slug === key;
+  });
+}
+
 function mapProgramToInsert(program: Program): ProgramInsert {
   return {
-    legacyId: program.id,
+    legacyId: typeof program.id === "number" ? program.id : null,
     title: program.title,
     slug: program.slug,
     region: program.region,

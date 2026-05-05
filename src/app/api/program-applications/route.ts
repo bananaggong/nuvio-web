@@ -7,7 +7,8 @@ export async function POST(request: Request) {
   try {
     const body = await request.json();
     const application = await createProgramApplication({
-      programId: Number(body.programId),
+      programId: normalizeProgramId(body.programId),
+      formId: typeof body.formId === "string" ? body.formId : undefined,
       applicantName: String(body.applicantName ?? ""),
       email: String(body.email ?? ""),
       phone: String(body.phone ?? ""),
@@ -27,6 +28,13 @@ export async function POST(request: Request) {
       { status: 400 },
     );
   }
+}
+
+function normalizeProgramId(value: unknown): number | string {
+  if (typeof value === "number") return value;
+  const text = String(value ?? "").trim();
+  const numericValue = Number(text);
+  return Number.isInteger(numericValue) ? numericValue : text;
 }
 
 function normalizeAnswers(value: unknown): Record<string, unknown> {

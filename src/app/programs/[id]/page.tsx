@@ -18,6 +18,13 @@ import { ProgramActions } from "@/components/program-actions";
 import { StatusBadge } from "@/components/status-badge";
 import { announcements, getProgramById, programs, reviews } from "@/lib/data";
 import { formatDate, formatRange, formatWon, getDday } from "@/lib/format";
+import {
+  getPublicProgramByIdentifier,
+  listPublicPrograms,
+} from "@/lib/public-program-db";
+
+export const dynamic = "force-dynamic";
+export const runtime = "nodejs";
 
 export function generateStaticParams() {
   return programs.map((program) => ({ id: String(program.id) }));
@@ -29,7 +36,7 @@ export async function generateMetadata({
   params: Promise<{ id: string }>;
 }): Promise<Metadata> {
   const { id } = await params;
-  const program = getProgramById(Number(id));
+  const program = await getPublicProgramByIdentifier(id);
   if (!program) return {};
 
   return {
@@ -49,21 +56,26 @@ export default async function ProgramDetailPage({
   params: Promise<{ id: string }>;
 }) {
   const { id } = await params;
-  const program = getProgramById(Number(id));
+  const program = await getPublicProgramByIdentifier(id);
 
   if (!program) notFound();
 
-  const relatedPrograms = programs
+  const publicPrograms = await listPublicPrograms();
+  const relatedPrograms = publicPrograms
     .filter(
       (item) =>
         item.id !== program.id &&
         (item.region === program.region || item.categories.includes(program.theme)),
     )
     .slice(0, 3);
-  const relatedReviews = reviews.filter((review) => review.programId === program.id);
-  const relatedAnnouncements = announcements.filter(
-    (announcement) => announcement.programId === program.id,
-  );
+  const staticProgram =
+    typeof program.id === "number" ? getProgramById(program.id) : undefined;
+  const relatedReviews = staticProgram
+    ? reviews.filter((review) => review.programId === staticProgram.id)
+    : [];
+  const relatedAnnouncements = staticProgram
+    ? announcements.filter((announcement) => announcement.programId === staticProgram.id)
+    : [];
 
   return (
     <div className="bg-white">

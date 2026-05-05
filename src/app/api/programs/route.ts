@@ -1,6 +1,10 @@
 import { NextResponse } from "next/server";
-import { programs } from "@/lib/data";
+import { listPublicPrograms } from "@/lib/public-program-db";
 
-export function GET() {
+export const runtime = "nodejs";
+
+export async function GET() {
+  const programs = await listPublicPrograms();
+
   return NextResponse.json({ data: programs });
 }

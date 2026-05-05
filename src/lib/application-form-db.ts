@@ -1,11 +1,13 @@
 import { desc, eq } from "drizzle-orm";
 import { getDb } from "@/db/client";
 import { programApplicationForms } from "@/db/schema";
+import { getProgramRecordByIdentifier } from "@/lib/program-db";
 import type {
   ApplicationFieldType,
   ApplicationFormField,
   ApplicationFormTemplate,
 } from "@/lib/application-form-builder";
+import type { Program } from "@/lib/types";
 
 type FormInsert = typeof programApplicationForms.$inferInsert;
 type FormRow = typeof programApplicationForms.$inferSelect;
@@ -20,6 +22,28 @@ export async function listApplicationFormTemplatesFromDb(): Promise<
     .limit(200);
 
   return rows.map(mapFormRowToTemplate);
+}
+
+export async function getApplicationFormTemplateForProgram(
+  program: Program,
+): Promise<ApplicationFormTemplate | undefined> {
+  try {
+    const rows = await getDb()
+      .select()
+      .from(programApplicationForms)
+      .orderBy(desc(programApplicationForms.updatedAt))
+      .limit(200);
+    const programRecord = await getProgramRecordByIdentifier(program.id);
+    const normalizedTitle = normalizeText(program.title);
+    const row = rows.find((item) => {
+      if (programRecord?.id && item.programId === programRecord.id) return true;
+      return normalizeText(item.programTitle ?? "") === normalizedTitle;
+    });
+
+    return row ? mapFormRowToTemplate(row) : undefined;
+  } catch {
+    return undefined;
+  }
 }
 
 export async function upsertApplicationFormTemplate(
@@ -132,6 +156,10 @@ function asString(value: unknown): string {
 function asStringArray(value: unknown): string[] {
   if (!Array.isArray(value)) return [];
   return value.map((item) => String(item).trim()).filter(Boolean);
+}
+
+function normalizeText(value: string): string {
+  return value.trim().toLowerCase().replace(/\s+/gu, " ");
 }
 
 function isUuid(value: string): boolean {

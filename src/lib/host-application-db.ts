@@ -10,10 +10,14 @@ import type {
   HostApplication,
   HostApplicationStatus,
 } from "@/lib/host-operations";
-import { ensureProgramRecord } from "@/lib/program-db";
+import {
+  ensureProgramRecord,
+  getProgramRecordByIdentifier,
+} from "@/lib/program-db";
 
 export type ProgramApplicationInput = {
-  programId: number;
+  programId: number | string;
+  formId?: string;
   applicantName: string;
   email: string;
   phone: string;
@@ -24,17 +28,12 @@ export type ProgramApplicationInput = {
 export async function createProgramApplication(
   input: ProgramApplicationInput,
 ): Promise<HostApplication> {
-  const program = programs.find((item) => item.id === input.programId);
-
-  if (!program) {
-    throw new Error(`Program ${input.programId} was not found.`);
-  }
-
-  const programUuid = await ensureProgramRecord(program);
+  const program = await resolveApplicationProgram(input.programId);
   const [row] = await getDb()
     .insert(programApplications)
     .values({
-      programId: programUuid,
+      programId: program.id,
+      formId: isUuid(input.formId ?? "") ? input.formId : null,
       applicantName: input.applicantName,
       email: input.email,
       phone: input.phone,
@@ -69,6 +68,30 @@ export async function createProgramApplication(
     reviewSubmitted: row.reviewSubmitted,
     memo: input.memo ?? String(input.answers.motivation ?? "").slice(0, 72),
   };
+}
+
+async function resolveApplicationProgram(
+  programId: number | string,
+): Promise<{ id: string; title: string }> {
+  const key = String(programId).trim();
+  const numericId = Number(key);
+  const staticProgram = Number.isInteger(numericId)
+    ? programs.find((item) => item.id === numericId)
+    : undefined;
+
+  if (staticProgram) {
+    return {
+      id: await ensureProgramRecord(staticProgram),
+      title: staticProgram.title,
+    };
+  }
+
+  const programRecord = await getProgramRecordByIdentifier(key);
+  if (programRecord) {
+    return { id: programRecord.id, title: programRecord.title };
+  }
+
+  throw new Error(`Program ${key} was not found.`);
 }
 
 export async function listHostApplications(): Promise<HostApplication[]> {
@@ -142,4 +165,10 @@ function extractMemo(answers: Record<string, unknown>): string {
     "";
 
   return String(memo).slice(0, 72);
+}
+
+function isUuid(value: string): boolean {
+  return /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{12}$/iu.test(
+    value,
+  );
 }

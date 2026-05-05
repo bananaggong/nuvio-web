@@ -18,7 +18,13 @@ function writeState(key: string, value: StateMap) {
   window.localStorage.setItem(key, JSON.stringify(value));
 }
 
-export function ProgramActions({ programId, title }: { programId: number; title: string }) {
+export function ProgramActions({
+  programId,
+  title,
+}: {
+  programId: number | string;
+  title: string;
+}) {
   const id = String(programId);
   const [bookmarks, setBookmarks] = useState<StateMap>(() =>
     readState("nuvio:bookmarks"),

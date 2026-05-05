@@ -40,6 +40,8 @@ export function ProgramLeadQueue({ onCreateDraft }: ProgramLeadQueueProps) {
   const [leads, setLeads] = useState<ProgramLead[]>([]);
   const [meta, setMeta] = useState<ProgramLeadResponse["meta"]>();
   const [loading, setLoading] = useState(true);
+  const [pendingLeadIds, setPendingLeadIds] = useState<Set<string>>(new Set());
+  const [leadErrors, setLeadErrors] = useState<Record<string, string>>({});
   const [leadDecisions, setLeadDecisions] = useState<LeadDecisionMap>(
     readStoredLeadDecisions,
   );
@@ -71,13 +73,58 @@ export function ProgramLeadQueue({ onCreateDraft }: ProgramLeadQueueProps) {
     };
   }, []);
 
-  function saveDraft(lead: ProgramLead) {
-    onCreateDraft(lead);
-    saveDecision(lead.id, "approved");
+  async function saveDraft(lead: ProgramLead) {
+    setPendingLeadIds((current) => new Set(current).add(lead.id));
+    setLeadErrors((current) => ({ ...current, [lead.id]: "" }));
+    try {
+      const response = await fetch("/api/program-leads", {
+        body: JSON.stringify({ action: "createDraft", lead }),
+        headers: { "Content-Type": "application/json" },
+        method: "POST",
+      });
+
+      if (!response.ok) throw new Error("Failed to create lead draft.");
+
+      onCreateDraft(lead);
+      saveDecision(lead.id, "approved");
+    } catch {
+      setLeadErrors((current) => ({
+        ...current,
+        [lead.id]: "초안 생성에 실패했습니다. 잠시 후 다시 시도해 주세요.",
+      }));
+    } finally {
+      setPendingLeadIds((current) => {
+        const next = new Set(current);
+        next.delete(lead.id);
+        return next;
+      });
+    }
   }
 
-  function rejectLead(lead: ProgramLead) {
-    saveDecision(lead.id, "rejected");
+  async function rejectLead(lead: ProgramLead) {
+    setPendingLeadIds((current) => new Set(current).add(lead.id));
+    setLeadErrors((current) => ({ ...current, [lead.id]: "" }));
+    try {
+      const response = await fetch("/api/program-leads", {
+        body: JSON.stringify({ action: "reject", lead }),
+        headers: { "Content-Type": "application/json" },
+        method: "POST",
+      });
+
+      if (!response.ok) throw new Error("Failed to reject lead.");
+      saveDecision(lead.id, "rejected");
+    } catch {
+      setLeadErrors((current) => ({
+        ...current,
+        [lead.id]: "반려 저장에 실패했습니다. 잠시 후 다시 시도해 주세요.",
+      }));
+    } finally {
+      setPendingLeadIds((current) => {
+        const next = new Set(current);
+        next.delete(lead.id);
+        return next;
+      });
+    }
   }
 
 function saveDecision(leadId: string, decision: LeadDecision) {
@@ -113,10 +160,12 @@ function saveDecision(leadId: string, decision: LeadDecision) {
           leads.map((lead) => (
             <LeadCard
               decision={leadDecisions[lead.id]}
+              error={leadErrors[lead.id]}
               key={lead.id}
               lead={lead}
               onReject={rejectLead}
               onSaveDraft={saveDraft}
+              pending={pendingLeadIds.has(lead.id)}
             />
           ))
         ) : (
@@ -144,13 +193,17 @@ function readStoredLeadDecisions(): LeadDecisionMap {
 function LeadCard({
   lead,
   decision,
+  error,
+  pending,
   onSaveDraft,
   onReject,
 }: {
   lead: ProgramLead;
   decision?: LeadDecision;
-  onSaveDraft: (lead: ProgramLead) => void;
-  onReject: (lead: ProgramLead) => void;
+  error?: string;
+  pending: boolean;
+  onSaveDraft: (lead: ProgramLead) => void | Promise<void>;
+  onReject: (lead: ProgramLead) => void | Promise<void>;
 }) {
   const approved = decision === "approved";
   const rejected = decision === "rejected";
@@ -202,7 +255,7 @@ function LeadCard({
         <div className="flex min-w-fit flex-wrap gap-2">
           <button
             className="inline-flex items-center justify-center gap-1 rounded-md bg-[var(--primary)] px-3 py-2 text-xs font-black text-white disabled:bg-slate-300"
-            disabled={approved || rejected}
+            disabled={approved || rejected || pending}
             onClick={() => onSaveDraft(lead)}
             type="button"
           >
@@ -211,7 +264,7 @@ function LeadCard({
           </button>
           <button
             className="inline-flex items-center justify-center gap-1 rounded-md border border-slate-200 bg-white px-3 py-2 text-xs font-black text-slate-700 hover:border-rose-200 hover:text-rose-700 disabled:text-slate-400"
-            disabled={approved || rejected}
+            disabled={approved || rejected || pending}
             onClick={() => onReject(lead)}
             type="button"
           >
@@ -231,6 +284,11 @@ function LeadCard({
           ) : null}
         </div>
       </div>
+      {error ? (
+        <p className="mt-3 rounded-md bg-rose-50 px-3 py-2 text-xs font-black text-rose-700 ring-1 ring-rose-100">
+          {error}
+        </p>
+      ) : null}
       <div className="mt-3 flex flex-wrap gap-2">
         {lead.suggestedThemes.map((theme) => (
           <span

@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { HostAccessBanner } from "@/components/host-access-banner";
 import { HostOpsDashboard } from "@/components/host-ops-dashboard";
 
 export const metadata: Metadata = {
@@ -8,5 +9,10 @@ export const metadata: Metadata = {
 };
 
 export default function HostPage() {
-  return <HostOpsDashboard />;
+  return (
+    <>
+      <HostAccessBanner />
+      <HostOpsDashboard />
+    </>
+  );
 }

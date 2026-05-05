@@ -236,7 +236,7 @@ function findRelatedProgramId(text: string): number | undefined {
     }),
   );
 
-  return relatedProgram?.id;
+  return typeof relatedProgram?.id === "number" ? relatedProgram.id : undefined;
 }
 
 function getProgramTokens(program: Program): string[] {

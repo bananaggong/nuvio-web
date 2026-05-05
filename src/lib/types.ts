@@ -20,7 +20,7 @@ export type ThemeKey =
 export type PeriodKey = "under4" | "week" | "twoWeeks" | "threeWeeks" | "month";
 
 export type Program = {
-  id: number;
+  id: number | string;
   title: string;
   slug: string;
   region: string;

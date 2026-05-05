@@ -17,11 +17,17 @@ import {
 import {
   announcements,
   periodOptions,
-  programs,
+  programs as seedPrograms,
   regions,
   themeOptions,
 } from "@/lib/data";
-import type { PeriodKey, ProgramSort, ProgramStatus, ThemeKey } from "@/lib/types";
+import type {
+  PeriodKey,
+  Program,
+  ProgramSort,
+  ProgramStatus,
+  ThemeKey,
+} from "@/lib/types";
 import { getDday } from "@/lib/format";
 import { LiveAnnouncementStrip } from "./live-announcement-strip";
 import { ProgramCard } from "./program-card";
@@ -43,7 +49,16 @@ const sortOptions: Array<{ key: ProgramSort; label: string }> = [
 
 const popularRegions = ["강원", "전남", "전북", "경남", "제주", "부산"];
 
-export function ProgramExplorer({ initialTheme }: { initialTheme?: ThemeKey }) {
+type ProgramExplorerProps = {
+  initialTheme?: ThemeKey;
+  programs?: Program[];
+};
+
+export function ProgramExplorer({
+  initialTheme,
+  programs = seedPrograms,
+}: ProgramExplorerProps) {
+  const availablePrograms = programs.length > 0 ? programs : seedPrograms;
   const [keyword, setKeyword] = useState("");
   const [themes, setThemes] = useState<ThemeKey[]>(
     initialTheme ? [initialTheme] : [],
@@ -58,7 +73,7 @@ export function ProgramExplorer({ initialTheme }: { initialTheme?: ThemeKey }) {
   const filteredPrograms = useMemo(() => {
     const normalized = keyword.trim().toLowerCase();
 
-    return programs
+    return availablePrograms
       .filter((program) => {
         const matchesKeyword =
           !normalized ||
@@ -89,7 +104,7 @@ export function ProgramExplorer({ initialTheme }: { initialTheme?: ThemeKey }) {
         if (sort === "subsidy") return b.subsidyAmount - a.subsidyAmount;
         return new Date(b.recruitStart).getTime() - new Date(a.recruitStart).getTime();
       });
-  }, [keyword, periods, region, sort, status, themes]);
+  }, [availablePrograms, keyword, periods, region, sort, status, themes]);
 
   const activeFilterCount =
     themes.length +
@@ -98,19 +113,24 @@ export function ProgramExplorer({ initialTheme }: { initialTheme?: ThemeKey }) {
     (status === "all" ? 0 : 1);
 
   const visiblePrograms = filteredPrograms.slice(0, visibleCount);
-  const featuredProgram = programs.find((program) => program.id === 1002) ?? programs[0];
-  const endingSoonPrograms = [...programs]
+  const featuredProgram =
+    availablePrograms.find((program) => program.id === 1002) ??
+    availablePrograms[0] ??
+    seedPrograms[0];
+  const endingSoonPrograms = [...availablePrograms]
     .filter((program) => program.status === "open")
     .sort(
       (a, b) =>
         new Date(a.recruitEnd).getTime() - new Date(b.recruitEnd).getTime(),
     )
     .slice(0, 3);
-  const highSubsidyPrograms = [...programs]
+  const highSubsidyPrograms = [...availablePrograms]
     .filter((program) => program.subsidyAmount > 0)
     .sort((a, b) => b.subsidyAmount - a.subsidyAmount)
     .slice(0, 3);
-  const openProgramCount = programs.filter((program) => program.status === "open").length;
+  const openProgramCount = availablePrograms.filter(
+    (program) => program.status === "open",
+  ).length;
 
   function toggleTheme(theme: ThemeKey) {
     setVisibleCount(8);
