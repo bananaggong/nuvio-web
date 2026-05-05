@@ -194,7 +194,9 @@ npm run supabase:db:push
 
 ## 외부 공고 수집
 
-`/api/announcements`는 내부 공지와 DB에 저장된 외부 RSS 공고를 함께 반환합니다. Vercel Cron은 `/api/cron/refresh-announcements`를 15분마다 호출해 외부 소스를 수집하고 `external_announcements`, `program_leads`에 적재합니다.
+`/api/announcements`는 내부 공지와 DB에 저장된 외부 RSS 공고를 함께 반환합니다. 저장본이 `ANNOUNCEMENT_REFRESH_SECONDS`보다 오래되면 API 요청 시 수집 파이프라인을 실행해 `external_announcements`, `program_leads`에 다시 적재합니다.
+
+현재 연결된 Vercel 계정은 Hobby 제한이 있어 Vercel Cron은 하루 1회 백업 수집으로 설정했습니다. Pro 플랜에서는 `vercel.json`의 schedule을 `*/15 * * * *`로 바꾸면 15분 주기 Cron으로 전환할 수 있습니다.
 
 Cron 요청은 `Authorization: Bearer $CRON_SECRET`로 보호합니다. 프로덕션 Vercel 환경 변수에 `CRON_SECRET`을 반드시 설정해야 합니다.
 
@@ -264,4 +266,5 @@ npx vercel ls nuvio-web --scope bananaggongs-projects
 - `profiles.role`을 partner/admin으로 승격하는 운영자 UI 또는 정책 추가
 - 메시지 실제 발송 채널(Resend/SMS/카카오 알림톡) 연동
 - 보고서 PDF/XLSX export
+- Vercel Pro 전환 시 15분 Cron으로 스케줄 상향
 - 외부 공고 소스 확대와 RSS 없는 기관 사이트 파서 추가

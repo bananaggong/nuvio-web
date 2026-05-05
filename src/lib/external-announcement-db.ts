@@ -105,6 +105,28 @@ export async function listPersistedExternalAnnouncements(
   }));
 }
 
+export async function shouldRefreshPersistedAnnouncements(
+  maxAgeSeconds: number,
+): Promise<boolean> {
+  try {
+    const rows = await getDb()
+      .select({
+        lastFetchedAt: externalAnnouncementSources.lastFetchedAt,
+      })
+      .from(externalAnnouncementSources)
+      .where(eq(externalAnnouncementSources.enabled, true))
+      .orderBy(desc(externalAnnouncementSources.lastFetchedAt))
+      .limit(1);
+    const latestFetch = rows[0]?.lastFetchedAt;
+
+    if (!latestFetch) return true;
+
+    return Date.now() - latestFetch.getTime() > maxAgeSeconds * 1000;
+  } catch {
+    return false;
+  }
+}
+
 export async function upsertAnnouncementSource(
   source: ExternalAnnouncementSource,
 ): Promise<AnnouncementSourceStatus> {

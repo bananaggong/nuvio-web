@@ -139,7 +139,7 @@ export const implementationStatus: {
           title: "Cron-backed external announcement ingestion",
           state: "implemented",
           summary:
-            "Vercel Cron refreshes external RSS sources every 15 minutes, stores announcements, and persists scored program leads.",
+            "Announcement APIs refresh stale RSS data on demand, Vercel Cron provides a daily backup refresh, and scored program leads are persisted.",
           routes: [
             { label: "Cron API", href: "/api/cron/refresh-announcements" },
             { label: "Sources API", href: "/api/announcement-sources" },
@@ -147,7 +147,7 @@ export const implementationStatus: {
             { label: "Admin", href: "/admin" },
           ],
           verification:
-            "Check CRON_SECRET in Vercel env, then confirm /api/announcement-sources shows lastFetchedAt and item counts after deployment.",
+            "Confirm /api/announcement-sources shows lastFetchedAt and item counts after calling /api/announcements or the protected cron endpoint.",
         },
       ],
     },
