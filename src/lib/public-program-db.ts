@@ -1,24 +1,14 @@
 import { desc, isNotNull } from "drizzle-orm";
 import { getDb } from "@/db/client";
 import { programs as programsTable } from "@/db/schema";
-import {
-  getCrawledProgramByIdentifier,
-  listCrawledPrograms,
-} from "@/lib/crawled-programs";
+import { getCrawledProgramByIdentifier } from "@/lib/crawled-programs";
 import { getProgramById, programs as seedPrograms } from "@/lib/data";
 import type { Program } from "@/lib/types";
 
 type ProgramRow = typeof programsTable.$inferSelect;
 
 export async function listPublicPrograms(): Promise<Program[]> {
-  let crawledPrograms: Program[] = [];
   let databasePrograms: Program[] = [];
-
-  try {
-    crawledPrograms = await listCrawledPrograms();
-  } catch {
-    crawledPrograms = [];
-  }
 
   try {
     const rows = await getDb()
@@ -33,10 +23,10 @@ export async function listPublicPrograms(): Promise<Program[]> {
     databasePrograms = [];
   }
 
-  const actualPrograms = mergePrograms(crawledPrograms, databasePrograms);
-  return actualPrograms.length > 0
-    ? actualPrograms
-    : seedPrograms.map((program) => ({ ...program, dataSource: "seed" as const }));
+  return mergePrograms(
+    databasePrograms,
+    seedPrograms.map((program) => ({ ...program, dataSource: "seed" as const })),
+  );
 }
 
 export async function getPublicProgramByIdentifier(

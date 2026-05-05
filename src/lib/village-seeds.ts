@@ -3,6 +3,9 @@ import type { Village } from "@/lib/village-types";
 const image = (id: string) =>
   `https://images.unsplash.com/${id}?auto=format&fit=crop&w=1600&q=82`;
 
+const boseongTeaFieldImage =
+  "https://upload.wikimedia.org/wikipedia/commons/b/b3/Boseong_Green_Tea_Field.jpg";
+
 export const seedVillages: Village[] = [
   {
     id: "seed-boseong",
@@ -12,10 +15,10 @@ export const seedVillages: Village[] = [
     city: "보성군",
     tagline: "차밭과 바다 사이에서 기수별 체류를 운영하는 로컬 커뮤니티",
     summary:
-      "문화체험, 살아보기, 블렌딩티 프로그램을 한곳에서 소개하고 신청자-선정자-참여자를 이어주는 보성형 마을 홈입니다.",
+      "문화체험, 차밭 살아보기, 블렌딩티 워크숍을 한곳에서 소개하고 신청자-선정자-참여자를 이어주는 보성형 마을 홈입니다.",
     description:
       "기존 구글폼, 개인 문자, 단체 카카오톡방으로 흩어져 있던 운영 흐름을 NUVIO 안에서 공지, 신청, 결제 확인, 후기 수집까지 연결하는 기준 마을입니다.",
-    heroImage: image("photo-1500534314209-a25ddb2bd429"),
+    heroImage: boseongTeaFieldImage,
     logoText: "BS",
     brandColor: "#0f766e",
     accentColor: "#d97706",
@@ -24,8 +27,14 @@ export const seedVillages: Village[] = [
     contactEmail: "hello@nuvio.kr",
     contactPhone: "061-000-2026",
     address: "전라남도 보성군",
-    programIds: [],
+    programIds: [1013, 1014, 1015],
     links: [
+      {
+        id: "photo-credit",
+        label: "대표 이미지 출처",
+        type: "website",
+        url: "https://commons.wikimedia.org/wiki/File:Boseong_Green_Tea_Field.jpg",
+      },
       {
         id: "instagram",
         label: "인스타그램",
@@ -51,8 +60,8 @@ export const seedVillages: Village[] = [
         id: "programs",
         type: "programs",
         title: "운영 프로그램",
-        body: "기존 운영 논의를 반영해 무료/유료 프로그램을 같은 구조로 관리할 수 있게 설계합니다.",
-        items: ["문화체험 4회", "살아보기 8회", "블렌딩티 워크숍", "후기 공유방"],
+        body: "무료 프로그램과 유료 프로그램을 같은 신청/선정/입금/공지/후기 구조로 관리합니다.",
+        items: ["문화체험 4회", "차밭 살아보기 8회", "블렌딩티 워크숍", "후기 공유방"],
       },
       {
         id: "community",

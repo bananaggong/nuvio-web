@@ -2,8 +2,9 @@ import { desc, eq, isNotNull } from "drizzle-orm";
 import { getDb } from "@/db/client";
 import { villages as villagesTable } from "@/db/schema";
 import { getPublicProgramByIdentifier, listPublicPrograms } from "@/lib/public-program-db";
+import { reviews } from "@/lib/data";
 import { seedVillages } from "@/lib/village-seeds";
-import type { Program } from "@/lib/types";
+import type { Program, Review } from "@/lib/types";
 import type { Village, VillageLink, VillageSection } from "@/lib/village-types";
 
 type VillageInsert = typeof villagesTable.$inferInsert;
@@ -80,6 +81,21 @@ export async function getVillagePrograms(village: Village): Promise<Program[]> {
   return programs.filter(
     (program) => programIds.has(String(program.id)) || programIds.has(program.slug),
   );
+}
+
+export function getVillageReviews(village: Village, programs: Program[]): Review[] {
+  const numericProgramIds = new Set(
+    programs
+      .map((program) => (typeof program.id === "number" ? program.id : Number(program.id)))
+      .filter((id) => Number.isInteger(id)),
+  );
+
+  if (numericProgramIds.size === 0) return [];
+
+  return reviews
+    .filter((review) => review.programId && numericProgramIds.has(review.programId))
+    .sort((a, b) => Date.parse(b.date) - Date.parse(a.date))
+    .slice(0, village.slug === "boseong" ? 6 : 4);
 }
 
 export async function resolveVillageProgram(

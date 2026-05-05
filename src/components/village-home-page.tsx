@@ -10,7 +10,9 @@ import {
   MapPin,
   MessageCircle,
   Phone,
+  Quote,
   Sparkles,
+  Ticket,
   UsersRound,
 } from "lucide-react";
 import { StatusBadge } from "@/components/status-badge";
@@ -19,15 +21,17 @@ import {
   canonicalVillagePath,
   villageProgramPath,
 } from "@/lib/village-routing";
-import type { Program } from "@/lib/types";
+import type { Program, Review } from "@/lib/types";
 import type { Village, VillageSection } from "@/lib/village-types";
 
 export function VillageHomePage({
   village,
   programs,
+  reviews,
 }: {
   village: Village;
   programs: Program[];
+  reviews: Review[];
 }) {
   const primaryProgram = programs[0];
 
@@ -147,6 +151,41 @@ export function VillageHomePage({
             )}
           </section>
 
+          <section className="mt-12" id="reviews">
+            <div className="flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
+              <div>
+                <h2 className="text-2xl font-black text-slate-950">
+                  프로그램 후기
+                </h2>
+                <p className="mt-1 text-sm leading-6 text-slate-500">
+                  참여자가 남긴 경험을 다음 기수 안내와 운영 보고서 자료로 모읍니다.
+                </p>
+              </div>
+              <Link
+                className="inline-flex h-10 items-center justify-center gap-2 rounded-md border border-slate-200 px-3 text-sm font-black text-slate-700 hover:border-[var(--primary)] hover:text-[var(--primary)]"
+                href="/reviews"
+              >
+                전체 후기
+                <ArrowRight size={16} />
+              </Link>
+            </div>
+
+            {reviews.length > 0 ? (
+              <div className="mt-5 grid gap-3 md:grid-cols-2">
+                {reviews.map((review) => (
+                  <VillageReviewCard key={review.id} review={review} village={village} />
+                ))}
+              </div>
+            ) : (
+              <div className="mt-5 rounded-md border border-dashed border-slate-300 bg-white p-5">
+                <p className="font-black text-slate-950">아직 연결된 후기가 없습니다.</p>
+                <p className="mt-2 text-sm leading-6 text-slate-600">
+                  참여자가 활동 후기를 남기면 이 마을 페이지에 함께 모입니다.
+                </p>
+              </div>
+            )}
+          </section>
+
           <section className="mt-12 grid gap-4 md:grid-cols-2">
             {village.sections.map((section) => (
               <VillageSectionBlock
@@ -253,8 +292,62 @@ function VillageProgramCard({
             </span>
           ))}
         </div>
+        <div className="mt-5 flex flex-wrap gap-2">
+          <Link
+            className="inline-flex h-10 items-center justify-center gap-2 rounded-md px-3 text-sm font-black text-white hover:opacity-90"
+            href={`/programs/${program.id}/apply`}
+            style={{ backgroundColor: village.brandColor }}
+          >
+            <Ticket size={16} />
+            신청하기
+          </Link>
+          <Link
+            className="inline-flex h-10 items-center justify-center gap-2 rounded-md border border-slate-200 px-3 text-sm font-black text-slate-700 hover:border-[var(--primary)] hover:text-[var(--primary)]"
+            href={villageProgramPath(village.slug, program.slug)}
+          >
+            자세히
+            <ArrowRight size={16} />
+          </Link>
+        </div>
       </div>
     </article>
+  );
+}
+
+function VillageReviewCard({
+  review,
+  village,
+}: {
+  review: Review;
+  village: Village;
+}) {
+  return (
+    <Link
+      className="rounded-md border border-slate-200 bg-white p-5 shadow-sm hover:border-[var(--primary)]"
+      href={`/reviews/${review.id}`}
+    >
+      <div className="flex items-center justify-between gap-3">
+        <span
+          className="inline-flex items-center gap-2 rounded-md px-2.5 py-1 text-xs font-black text-white"
+          style={{ backgroundColor: village.brandColor }}
+        >
+          <Quote size={14} />
+          {review.badge ?? "후기"}
+        </span>
+        <span className="text-xs font-bold text-slate-400">
+          {formatDate(review.date)}
+        </span>
+      </div>
+      <h3 className="mt-3 line-clamp-2 text-lg font-black leading-7 text-slate-950">
+        {review.title}
+      </h3>
+      <p className="mt-2 line-clamp-2 text-sm leading-6 text-slate-600">
+        {review.excerpt}
+      </p>
+      <p className="mt-4 text-xs font-black text-slate-500">
+        {review.author} · 좋아요 {review.likes} · 댓글 {review.comments}
+      </p>
+    </Link>
   );
 }
 

@@ -4,6 +4,7 @@ import { VillageHomePage } from "@/components/village-home-page";
 import {
   getPublicVillageBySlug,
   getVillagePrograms,
+  getVillageReviews,
   listPublicVillages,
 } from "@/lib/village-db";
 import { isReservedVillageSlug } from "@/lib/village-routing";
@@ -51,6 +52,7 @@ export default async function ShortVillagePage({
   if (!village) notFound();
 
   const programs = await getVillagePrograms(village);
+  const reviews = getVillageReviews(village, programs);
 
-  return <VillageHomePage programs={programs} village={village} />;
+  return <VillageHomePage programs={programs} reviews={reviews} village={village} />;
 }

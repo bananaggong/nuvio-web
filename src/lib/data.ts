@@ -62,6 +62,9 @@ export const regions = [
 const image = (id: string) =>
   `https://images.unsplash.com/${id}?auto=format&fit=crop&w=1200&q=80`;
 
+const boseongTeaFieldImage =
+  "https://upload.wikimedia.org/wikipedia/commons/b/b3/Boseong_Green_Tea_Field.jpg";
+
 export const programs: Program[] = [
   {
     id: 1001,
@@ -560,6 +563,135 @@ export const programs: Program[] = [
       "선정자는 개별 연락을 통해 방문 미션과 콘텐츠 제출 기준을 안내받습니다.",
     ],
   },
+  {
+    id: 1013,
+    title: "보성 차밭 문화체험 1기",
+    slug: "boseong-tea-culture-1",
+    region: "전남",
+    city: "보성군",
+    summary:
+      "보성 차밭과 로컬 공방을 하루 동안 경험하는 문화체험형 프로그램입니다.",
+    description:
+      "차밭 산책, 다원 해설, 로컬 공방 체험, 참여자 네트워킹을 묶어 보성의 생활권을 가볍게 경험합니다.",
+    theme: "local",
+    categories: ["local", "short", "benefit"],
+    hashtags: ["보성", "문화체험", "차밭"],
+    periodKey: "under4",
+    activityStart: "2026-06-08",
+    activityEnd: "2026-06-08",
+    recruitStart: "2026-05-06",
+    recruitEnd: "2026-05-28",
+    target: "보성 로컬 문화와 차밭 체험에 관심 있는 누구나",
+    capacity: "20명",
+    announcement: "2026-05-31 개별 안내",
+    subsidyLabel: "체험비 전액 지원",
+    subsidyAmount: 80000,
+    fee: "무료",
+    applicants: 34,
+    status: "open",
+    sourceName: "보성 청년마을 운영팀",
+    sourceUrl: "https://nuvio.kr/boseong/boseong-tea-culture-1",
+    applyUrl: "https://nuvio.kr/programs/1013/apply",
+    phone: "061-000-2026",
+    image: boseongTeaFieldImage,
+    gallery: [
+      boseongTeaFieldImage,
+      image("photo-1473773508845-188df298d2d1"),
+      image("photo-1500534314209-a25ddb2bd429"),
+    ],
+    badges: ["무료", "문화체험", "기수제", "후기 제출"],
+    body: [
+      "참가자는 보성 청년마을이 준비한 차밭 해설과 로컬 공방 체험에 참여합니다.",
+      "선정자는 공식 안내 페이지에서 집결 장소, 준비물, 후기 제출 기준을 다시 확인합니다.",
+      "참여 후기는 다음 기수 모집과 운영 보고서 자료로 활용됩니다.",
+    ],
+  },
+  {
+    id: 1014,
+    title: "보성 차밭 살아보기 2박 3일",
+    slug: "boseong-tea-stay-2n3d",
+    region: "전남",
+    city: "보성군",
+    summary:
+      "차밭 가까운 숙소에 머물며 보성의 일상과 지역 프로그램을 경험하는 짧은 살아보기입니다.",
+    description:
+      "숙소 안내, 마을 오리엔테이션, 차밭 산책, 로컬 식당 미션, 후기 공유까지 기수별로 운영되는 보성 체류 프로그램입니다.",
+    theme: "month",
+    categories: ["month", "local", "benefit"],
+    hashtags: ["보성", "살아보기", "체류"],
+    periodKey: "under4",
+    activityStart: "2026-06-14",
+    activityEnd: "2026-06-16",
+    recruitStart: "2026-05-06",
+    recruitEnd: "2026-06-02",
+    target: "지역 체류를 경험하고 싶은 만 19세 이상 개인 또는 팀",
+    capacity: "12명",
+    announcement: "2026-06-05 문자 및 마이페이지 안내",
+    subsidyLabel: "숙박 2박 및 체험비 일부 지원",
+    subsidyAmount: 220000,
+    fee: "자부담 50,000원",
+    applicants: 57,
+    status: "open",
+    sourceName: "보성 청년마을 운영팀",
+    sourceUrl: "https://nuvio.kr/boseong/boseong-tea-stay-2n3d",
+    applyUrl: "https://nuvio.kr/programs/1014/apply",
+    phone: "061-000-2026",
+    image: boseongTeaFieldImage,
+    gallery: [
+      boseongTeaFieldImage,
+      image("photo-1493558103817-58b2924bce98"),
+      image("photo-1473773508845-188df298d2d1"),
+    ],
+    badges: ["숙박지원", "기수제", "입금확인", "만족도 조사"],
+    body: [
+      "신청 후 선정된 참가자는 참가비 입금 확인이 완료되면 기수별 공식 공지 페이지로 안내됩니다.",
+      "숙소 위치, 집결 장소, 프로그램 일정은 선정자에게만 공개되는 안내 페이지에서 다시 확인합니다.",
+      "운영자는 NUVIO 호스트 콘솔에서 신청, 선정, 입금, 후기 제출 상태를 한 번에 확인합니다.",
+    ],
+  },
+  {
+    id: 1015,
+    title: "보성 블렌딩티 워크숍",
+    slug: "boseong-blending-tea-workshop",
+    region: "전남",
+    city: "보성군",
+    summary:
+      "보성 차를 기반으로 나만의 블렌딩티를 만들고 결과물을 공유하는 유료 워크숍입니다.",
+    description:
+      "차 재료 이해, 블렌딩 실습, 패키징, 후기 공유까지 이어지는 소규모 워크숍입니다. 유료 프로그램도 신청과 입금 확인을 같은 흐름으로 관리합니다.",
+    theme: "local",
+    categories: ["local", "event", "benefit"],
+    hashtags: ["보성", "블렌딩티", "워크숍"],
+    periodKey: "under4",
+    activityStart: "2026-06-22",
+    activityEnd: "2026-06-22",
+    recruitStart: "2026-05-10",
+    recruitEnd: "2026-06-12",
+    target: "차, 로컬 브랜드, 체험 콘텐츠에 관심 있는 개인",
+    capacity: "16명",
+    announcement: "입금 확인 후 순차 안내",
+    subsidyLabel: "재료비 일부 지원",
+    subsidyAmount: 50000,
+    fee: "30,000원",
+    applicants: 21,
+    status: "upcoming",
+    sourceName: "보성 청년마을 운영팀",
+    sourceUrl: "https://nuvio.kr/boseong/boseong-blending-tea-workshop",
+    applyUrl: "https://nuvio.kr/programs/1015/apply",
+    phone: "061-000-2026",
+    image: image("photo-1471943311424-646960669fbc"),
+    gallery: [
+      image("photo-1471943311424-646960669fbc"),
+      image("photo-1544787219-7f47ccb76574"),
+      boseongTeaFieldImage,
+    ],
+    badges: ["유료", "입금확인", "소규모", "후기 공유"],
+    body: [
+      "신청자는 선정 안내를 받은 뒤 참가비 입금을 완료해야 최종 참여자로 확정됩니다.",
+      "운영자는 입금 여부와 참석 여부를 호스트 콘솔에서 관리하고, 종료 후 후기 제출을 요청합니다.",
+      "완성한 블렌딩티와 활동 후기는 마을 페이지의 후기 영역에 모아집니다.",
+    ],
+  },
 ];
 
 export const reviewCategories: Array<{ key: "all" | ReviewCategory; label: string }> = [
@@ -663,6 +795,38 @@ export const reviews: Review[] = [
     images: [],
     likes: 9,
     comments: 8,
+  },
+  {
+    id: 507,
+    title: "보성 차밭 체험은 공지 페이지가 있어서 덜 헤맸어요",
+    category: "programTip",
+    programId: 1013,
+    author: "초록노트",
+    date: "2026-05-05T10:20:00",
+    excerpt:
+      "집결 장소와 준비물이 마을 페이지에 정리돼 있어서 카카오톡을 다시 뒤지지 않아도 됐습니다.",
+    body:
+      "예전에는 공지방에서 안내를 찾아야 했는데, 이번에는 프로그램 페이지에 일정과 준비물이 모여 있어서 편했습니다. 후기 제출 링크도 같은 곳에 있으면 더 좋겠습니다.",
+    images: [boseongTeaFieldImage],
+    likes: 16,
+    comments: 3,
+    badge: "보성 1기",
+  },
+  {
+    id: 508,
+    title: "살아보기는 입금 확인과 숙소 안내가 한 흐름이면 정말 편합니다",
+    category: "trip",
+    programId: 1014,
+    author: "차밭산책",
+    date: "2026-05-04T19:05:00",
+    excerpt:
+      "선정, 입금, 숙소 위치, 만족도 조사까지 따로 오지 않고 한곳에서 확인되면 운영자도 참가자도 편해요.",
+    body:
+      "2박 3일 프로그램은 짧지만 안내가 많습니다. 선정 안내 후 입금 확인, 숙소 위치, 후기 작성까지 한 화면에서 이어지면 다음 기수 운영도 훨씬 안정적일 것 같습니다.",
+    images: [boseongTeaFieldImage],
+    likes: 24,
+    comments: 7,
+    badge: "살아보기",
   },
 ];
 
