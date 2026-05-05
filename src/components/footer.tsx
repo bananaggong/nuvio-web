@@ -14,9 +14,8 @@ export function Footer() {
               <span className="text-lg font-black">NUVIO</span>
             </div>
             <p className="mt-3 max-w-xl text-sm leading-6 text-slate-600">
-              NUVIO는 여행지원금, 지역 체류, 워케이션, 로컬 프로젝트 정보를
-              모아 보여주는 정보 중개 서비스입니다. 최종 조건과 신청 가능 여부는
-              각 운영기관의 공식 공고를 기준으로 확인해 주세요.
+              NUVIO는 지역 체류 프로그램의 탐색, 신청, 선정 안내, 운영 관리,
+              후기와 보고서 준비를 한 흐름으로 묶는 로컬 체류 운영 플랫폼입니다.
             </p>
           </div>
           <div className="flex flex-wrap items-center gap-3 text-sm">
@@ -37,15 +36,14 @@ export function Footer() {
         <div className="flex flex-col gap-5 border-t border-slate-200 pt-6 md:flex-row md:items-end md:justify-between">
           <div className="space-y-2 text-xs leading-5 text-slate-500">
             <p>
-              NUVIO는 통신판매의 당사자가 아니며 프로그램 정보, 신청 조건,
-              선정, 지급에 대한 최종 책임은 각 운영기관에 있습니다.
+              각 프로그램의 최종 조건, 선정, 지원금 지급 책임은 운영기관에
+              있습니다. NUVIO는 공고와 운영 데이터를 더 쉽게 확인하도록 돕습니다.
             </p>
             <p>
               외부 공고, 파트너 제출, 사용자 후기 콘텐츠는 출처와 이용 권한을
-              확인한 범위에서 게시합니다. 무단 복제된 콘텐츠는 신고 접수 후
-              검토합니다.
+              확인한 범위에서 게시합니다.
             </p>
-            <p>회사명: 누비오랩 | 문의: hello@nuvio.local | © 2026 NUVIO</p>
+            <p>회사명: 누비오 | 문의: hello@nuvio.local | 2026 NUVIO</p>
           </div>
           <div className="flex gap-2 text-slate-500">
             <a
@@ -64,13 +62,13 @@ export function Footer() {
             >
               <Mail size={18} />
             </a>
-            <a
-              aria-label="제보하기"
+            <Link
+              aria-label="프로그램 제보"
               className="rounded-md border border-slate-200 p-2 hover:border-[var(--primary)] hover:text-[var(--primary)]"
               href="/partners/apply"
             >
               <Send size={18} />
-            </a>
+            </Link>
             <a
               aria-label="문의 채널"
               className="rounded-md border border-slate-200 p-2 hover:border-[var(--primary)] hover:text-[var(--primary)]"

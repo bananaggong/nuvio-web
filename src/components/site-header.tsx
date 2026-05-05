@@ -14,10 +14,11 @@ import {
 import { useState } from "react";
 
 const navItems = [
-  { href: "/", label: "여행지원금" },
+  { href: "/", label: "지원 프로그램" },
+  { href: "/villages", label: "마을" },
   { href: "/half-price-travel", label: "반값여행" },
   { href: "/reviews", label: "후기" },
-  { href: "/announcements", label: "실시간공지" },
+  { href: "/announcements", label: "실시간 공지" },
   { href: "/host", label: "호스트" },
 ];
 
@@ -35,7 +36,7 @@ export function SiteHeader() {
           <div className="leading-tight">
             <div className="text-lg font-black tracking-tight">NUVIO</div>
             <div className="hidden text-[11px] font-medium text-slate-500 sm:block">
-              여행지원금 필수 탐색 앱
+              로컬 체류 운영 플랫폼
             </div>
           </div>
         </Link>
@@ -77,7 +78,7 @@ export function SiteHeader() {
             시작하기
           </Link>
           <button
-            aria-label="앱 다운로드"
+            aria-label="자료 다운로드"
             className="inline-flex size-10 items-center justify-center rounded-md border border-slate-200 text-slate-600 hover:border-[var(--primary)] hover:text-[var(--primary)]"
             type="button"
           >

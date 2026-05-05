@@ -20,7 +20,7 @@ export const implementationStatus: {
   updatedAt: string;
   groups: ImplementationStatusGroup[];
 } = {
-  updatedAt: "2026-05-05",
+  updatedAt: "2026-05-06",
   groups: [
     {
       title: "Public Program Experience",
@@ -48,6 +48,22 @@ export const implementationStatus: {
           ],
           verification:
             "Open a DB-published program slug from /host/programs after publishing it.",
+        },
+        {
+          title: "Village home pages and path-first routing",
+          state: "implemented",
+          summary:
+            "Each village can have a public homepage, short path alias, canonical /villages route, and village-scoped program detail route.",
+          routes: [
+            { label: "Village directory", href: "/villages" },
+            { label: "Short village URL", href: "/boseong" },
+            {
+              label: "Village program URL",
+              href: "/gangneung-wave/gangneung-wave-workation",
+            },
+          ],
+          verification:
+            "Open /villages, /boseong, and a village program path, then confirm the page resolves from seed or Supabase data.",
         },
       ],
     },
@@ -121,6 +137,18 @@ export const implementationStatus: {
           ],
           verification:
             "Promote the profile role to partner or admin in Supabase and refresh host screens.",
+        },
+        {
+          title: "Host village homepage studio",
+          state: "implemented",
+          summary:
+            "Hosts can draft, preview, publish, and persist village home data including slug, program links, contact channels, and future domain fields.",
+          routes: [
+            { label: "Village studio", href: "/host/villages" },
+            { label: "Villages API", href: "/api/host/villages" },
+          ],
+          verification:
+            "Create or edit a village in /host/villages, save it to Supabase, then confirm it appears on the public village route.",
         },
         {
           title: "External lead approval to program draft",

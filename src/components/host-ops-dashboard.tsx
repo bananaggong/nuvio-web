@@ -7,6 +7,7 @@ import {
   FileDown,
   FilePlus2,
   FileText,
+  Globe2,
   MailCheck,
   MessageSquareText,
   ReceiptText,
@@ -157,6 +158,13 @@ export function HostOpsDashboard() {
             </p>
           </div>
           <div className="grid gap-2 sm:grid-cols-2">
+            <Link
+              className="inline-flex h-11 items-center justify-center gap-2 rounded-md bg-white px-4 text-sm font-black text-slate-950 hover:bg-slate-100"
+              href="/host/villages"
+            >
+              <Globe2 size={17} />
+              마을 홈
+            </Link>
             <Link
               className="inline-flex h-11 items-center justify-center gap-2 rounded-md bg-white px-4 text-sm font-black text-slate-950 hover:bg-slate-100"
               href="/host/programs"

@@ -1,0 +1,156 @@
+import type { Village } from "@/lib/village-types";
+
+const image = (id: string) =>
+  `https://images.unsplash.com/${id}?auto=format&fit=crop&w=1600&q=82`;
+
+export const seedVillages: Village[] = [
+  {
+    id: "seed-boseong",
+    slug: "boseong",
+    name: "보성 청년마을",
+    region: "전남",
+    city: "보성군",
+    tagline: "차밭과 바다 사이에서 기수별 체류를 운영하는 로컬 커뮤니티",
+    summary:
+      "문화체험, 살아보기, 블렌딩티 프로그램을 한곳에서 소개하고 신청자-선정자-참여자를 이어주는 보성형 마을 홈입니다.",
+    description:
+      "기존 구글폼, 개인 문자, 단체 카카오톡방으로 흩어져 있던 운영 흐름을 NUVIO 안에서 공지, 신청, 결제 확인, 후기 수집까지 연결하는 기준 마을입니다.",
+    heroImage: image("photo-1500534314209-a25ddb2bd429"),
+    logoText: "BS",
+    brandColor: "#0f766e",
+    accentColor: "#d97706",
+    instagramUrl: "https://www.instagram.com/",
+    kakaoUrl: "https://pf.kakao.com/",
+    contactEmail: "hello@nuvio.kr",
+    contactPhone: "061-000-2026",
+    address: "전라남도 보성군",
+    programIds: [],
+    links: [
+      {
+        id: "instagram",
+        label: "인스타그램",
+        type: "instagram",
+        url: "https://www.instagram.com/",
+      },
+      {
+        id: "kakao",
+        label: "카카오 채널",
+        type: "kakao",
+        url: "https://pf.kakao.com/",
+      },
+    ],
+    sections: [
+      {
+        id: "story",
+        type: "story",
+        title: "마을 소개",
+        body: "보성 청년마을은 기수별 참여자들이 지역 프로그램을 경험하고 서로 연결될 수 있도록 운영되는 체류형 커뮤니티입니다.",
+        items: ["차밭과 로컬 생활권 안내", "기수별 OT와 공지방 운영", "활동 후기와 만족도 수집"],
+      },
+      {
+        id: "programs",
+        type: "programs",
+        title: "운영 프로그램",
+        body: "기존 운영 논의를 반영해 무료/유료 프로그램을 같은 구조로 관리할 수 있게 설계합니다.",
+        items: ["문화체험 4회", "살아보기 8회", "블렌딩티 워크숍", "후기 공유방"],
+      },
+      {
+        id: "community",
+        type: "community",
+        title: "참여자 커뮤니티",
+        body: "신청, 선정, 입금, 입장 안내가 완료되면 참여자가 해당 기수의 공지와 커뮤니티를 놓치지 않도록 연결합니다.",
+        items: ["공지용 방과 후기방 분리", "개인정보 노출 최소화", "기수 종료 후에도 소식 구독"],
+      },
+      {
+        id: "faq",
+        type: "faq",
+        title: "운영 메모",
+        body: "보고서에 필요한 필드는 신청폼에서 먼저 받고, 참여 이력과 중복 참여 여부는 회원관리 풀에서 확인합니다.",
+        items: ["신청폼 필드 표준화", "입금 상태 추적", "리뷰와 만족도 한곳에 보관"],
+      },
+    ],
+    published: true,
+    updatedAt: "2026-05-06T00:00:00.000Z",
+    subdomain: "boseong",
+  },
+  {
+    id: "seed-gangneung-wave",
+    slug: "gangneung-wave",
+    name: "강릉 파도 워케이션",
+    region: "강원",
+    city: "강릉시",
+    tagline: "바다 가까운 업무공간과 로컬 네트워크가 있는 워케이션 마을",
+    summary:
+      "강릉 워케이션 프로그램을 중심으로 참여자 모집, 안내, 후기까지 이어지는 마을 페이지입니다.",
+    description:
+      "공유오피스, 로컬 카페, 바다 생활권을 묶어 원격근무자와 창작자가 머무를 수 있는 마을형 워케이션 브랜드입니다.",
+    heroImage: image("photo-1507525428034-b723cf961d3e"),
+    logoText: "GW",
+    brandColor: "#0369a1",
+    accentColor: "#ea580c",
+    contactEmail: "gangneung@nuvio.kr",
+    contactPhone: "033-000-1201",
+    address: "강원도 강릉시",
+    programIds: [1001, "gangneung-wave-workation"],
+    links: [],
+    sections: [
+      {
+        id: "story",
+        type: "story",
+        title: "마을 소개",
+        body: "업무 집중과 지역 체험을 같은 일정 안에서 설계하는 워케이션형 마을입니다.",
+        items: ["공유오피스 이용", "로컬 카페 네트워킹", "해변 생활권 안내"],
+      },
+      {
+        id: "stay",
+        type: "stay",
+        title: "체류 안내",
+        body: "숙소 위치, 업무공간, 프로그램 동선은 선정자에게 공식 안내 페이지로 다시 제공합니다.",
+        items: ["숙소 위치 안내", "업무 좌석 예약", "참여자 OT"],
+      },
+    ],
+    published: true,
+    updatedAt: "2026-05-06T00:00:00.000Z",
+    subdomain: "gangneung-wave",
+  },
+  {
+    id: "seed-namhae-island",
+    slug: "namhae-island",
+    name: "남해 섬마을 한달살이",
+    region: "경남",
+    city: "남해군",
+    tagline: "느린 체류와 로컬 기록을 연결하는 섬마을 홈",
+    summary:
+      "한달살이 모집과 체류 안내, 활동 기록을 묶어 참여자가 이후에도 마을 소식을 이어 받을 수 있게 합니다.",
+    description:
+      "섬마을 숙소와 생활권, 후기 수집, 기수별 소통을 운영자가 한 화면에서 관리할 수 있도록 설계된 마을 페이지입니다.",
+    heroImage: image("photo-1519046904884-53103b34b206"),
+    logoText: "NH",
+    brandColor: "#0f766e",
+    accentColor: "#2563eb",
+    contactEmail: "namhae@nuvio.kr",
+    contactPhone: "055-000-4812",
+    address: "경상남도 남해군",
+    programIds: [1002, "namhae-island-month"],
+    links: [],
+    sections: [
+      {
+        id: "story",
+        type: "story",
+        title: "마을 소개",
+        body: "남해 섬마을 한달살이는 긴 체류를 통해 지역의 일상과 관계를 천천히 알아가는 프로그램입니다.",
+        items: ["장기 체류", "로컬 기록", "기수별 커뮤니티"],
+      },
+      {
+        id: "community",
+        type: "community",
+        title: "후기와 소식",
+        body: "참여자가 남긴 후기와 사진을 다음 기수 모집과 보고서 자료로 다시 활용합니다.",
+        items: ["만족도 조사", "활동 후기", "마을 소식 구독"],
+      },
+    ],
+    published: true,
+    updatedAt: "2026-05-06T00:00:00.000Z",
+    subdomain: "namhae-island",
+  },
+];

@@ -145,6 +145,54 @@ export const profiles = pgTable(
   (table) => [uniqueIndex("profiles_email_idx").on(table.email)],
 );
 
+export const villages = pgTable(
+  "villages",
+  {
+    id: uuid("id").defaultRandom().primaryKey(),
+    slug: text("slug").notNull(),
+    name: text("name").notNull(),
+    region: text("region").notNull(),
+    city: text("city").notNull(),
+    tagline: text("tagline").notNull(),
+    summary: text("summary").notNull(),
+    description: text("description").notNull(),
+    heroImageUrl: text("hero_image_url").notNull(),
+    logoText: text("logo_text"),
+    brandColor: text("brand_color").default("#0f766e").notNull(),
+    accentColor: text("accent_color").default("#f59e0b").notNull(),
+    instagramUrl: text("instagram_url"),
+    kakaoUrl: text("kakao_url"),
+    contactEmail: text("contact_email"),
+    contactPhone: text("contact_phone"),
+    address: text("address"),
+    programIds: jsonb("program_ids")
+      .$type<Array<number | string>>()
+      .default(emptyArray)
+      .notNull(),
+    links: jsonb("links")
+      .$type<Array<Record<string, unknown>>>()
+      .default(emptyArray)
+      .notNull(),
+    sections: jsonb("sections")
+      .$type<Array<Record<string, unknown>>>()
+      .default(emptyArray)
+      .notNull(),
+    subdomain: text("subdomain"),
+    customDomain: text("custom_domain"),
+    publishedAt: timestamp("published_at", { withTimezone: true }),
+    createdBy: uuid("created_by"),
+    createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+    updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
+  },
+  (table) => [
+    uniqueIndex("villages_slug_idx").on(table.slug),
+    uniqueIndex("villages_subdomain_idx").on(table.subdomain),
+    uniqueIndex("villages_custom_domain_idx").on(table.customDomain),
+    index("villages_region_idx").on(table.region),
+    index("villages_published_at_idx").on(table.publishedAt),
+  ],
+);
+
 export const programs = pgTable(
   "programs",
   {
@@ -181,6 +229,9 @@ export const programs = pgTable(
     gallery: jsonb("gallery").$type<string[]>().default(emptyArray).notNull(),
     badges: jsonb("badges").$type<string[]>().default(emptyArray).notNull(),
     body: jsonb("body").$type<string[]>().default(emptyArray).notNull(),
+    villageId: uuid("village_id").references(() => villages.id, {
+      onDelete: "set null",
+    }),
     publishedAt: timestamp("published_at", { withTimezone: true }),
     createdBy: uuid("created_by"),
     approvedBy: uuid("approved_by"),
@@ -192,6 +243,7 @@ export const programs = pgTable(
     index("programs_region_idx").on(table.region),
     index("programs_status_idx").on(table.status),
     index("programs_recruit_end_idx").on(table.recruitEnd),
+    index("programs_village_id_idx").on(table.villageId),
   ],
 );
 
