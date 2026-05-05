@@ -76,6 +76,24 @@ export function writeApplicationFormTemplates(
   );
 }
 
+export function mergeApplicationFormTemplates(
+  primaryTemplates: ApplicationFormTemplate[],
+  secondaryTemplates: ApplicationFormTemplate[],
+): ApplicationFormTemplate[] {
+  const seen = new Set<string>();
+  const mergedTemplates: ApplicationFormTemplate[] = [];
+
+  for (const template of [...primaryTemplates, ...secondaryTemplates]) {
+    const key = template.id || template.name;
+    if (seen.has(key)) continue;
+
+    seen.add(key);
+    mergedTemplates.push(template);
+  }
+
+  return mergedTemplates;
+}
+
 export function createEmptyField(): ApplicationFormField {
   return {
     id: `field-${Date.now()}`,

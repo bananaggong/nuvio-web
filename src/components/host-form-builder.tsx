@@ -4,17 +4,20 @@ import Link from "next/link";
 import {
   ArrowLeft,
   Check,
+  Database,
   Eye,
   FilePlus2,
   GripVertical,
+  Loader2,
   Plus,
   Save,
   Trash2,
 } from "lucide-react";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import {
   createEmptyField,
   createEmptyTemplate,
+  mergeApplicationFormTemplates,
   readApplicationFormTemplates,
   writeApplicationFormTemplates,
 } from "@/lib/application-form-builder";
@@ -37,10 +40,50 @@ export function HostFormBuilder() {
   );
   const [selectedId, setSelectedId] = useState(templates[0]?.id);
   const [saved, setSaved] = useState(false);
+  const [isSyncing, setIsSyncing] = useState(false);
+  const [syncMessage, setSyncMessage] = useState("");
+  const [syncError, setSyncError] = useState("");
   const selectedTemplate = useMemo(
     () => templates.find((template) => template.id === selectedId) ?? templates[0],
     [selectedId, templates],
   );
+
+  useEffect(() => {
+    let isMounted = true;
+
+    async function loadDatabaseTemplates() {
+      try {
+        const response = await fetch("/api/host/forms", { cache: "no-store" });
+        if (!response.ok) return;
+
+        const payload = (await response.json()) as {
+          data?: ApplicationFormTemplate[];
+        };
+        const databaseTemplates = Array.isArray(payload.data) ? payload.data : [];
+        if (!isMounted || databaseTemplates.length === 0) return;
+
+        setTemplates((currentTemplates) => {
+          const nextTemplates = mergeApplicationFormTemplates(
+            databaseTemplates,
+            currentTemplates,
+          );
+          writeApplicationFormTemplates(nextTemplates);
+          return nextTemplates;
+        });
+        setSelectedId((currentId) => currentId ?? databaseTemplates[0]?.id);
+      } catch {
+        if (isMounted) {
+          setSyncError("DB 신청서를 불러오지 못했습니다.");
+        }
+      }
+    }
+
+    loadDatabaseTemplates();
+
+    return () => {
+      isMounted = false;
+    };
+  }, []);
 
   function saveTemplates(nextTemplates: ApplicationFormTemplate[]) {
     setTemplates(nextTemplates);
@@ -51,6 +94,8 @@ export function HostFormBuilder() {
 
   function updateTemplate(patch: Partial<ApplicationFormTemplate>) {
     if (!selectedTemplate) return;
+    setSyncMessage("");
+    setSyncError("");
     const nextTemplates = templates.map((template) =>
       template.id === selectedTemplate.id
         ? { ...template, ...patch, updatedAt: new Date().toISOString() }
@@ -70,8 +115,53 @@ export function HostFormBuilder() {
 
   function addTemplate() {
     const nextTemplate = createEmptyTemplate();
+    setSyncMessage("");
+    setSyncError("");
     saveTemplates([nextTemplate, ...templates]);
     setSelectedId(nextTemplate.id);
+  }
+
+  async function syncSelectedTemplate() {
+    if (!selectedTemplate) return;
+
+    setIsSyncing(true);
+    setSyncMessage("");
+    setSyncError("");
+
+    try {
+      const response = await fetch("/api/host/forms", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(selectedTemplate),
+      });
+      const payload = (await response.json()) as {
+        data?: ApplicationFormTemplate;
+        error?: string;
+      };
+
+      if (!response.ok || !payload.data) {
+        throw new Error(payload.error ?? "DB 저장에 실패했습니다.");
+      }
+
+      const nextTemplates = mergeApplicationFormTemplates(
+        [payload.data],
+        templates.filter(
+          (template) =>
+            template.id !== selectedTemplate.id &&
+            template.id !== payload.data?.id,
+        ),
+      );
+
+      saveTemplates(nextTemplates);
+      setSelectedId(payload.data.id);
+      setSyncMessage("Supabase DB에 저장되었습니다.");
+    } catch (error) {
+      setSyncError(
+        error instanceof Error ? error.message : "DB 저장에 실패했습니다.",
+      );
+    } finally {
+      setIsSyncing(false);
+    }
   }
 
   function addField() {
@@ -111,14 +201,29 @@ export function HostFormBuilder() {
           <ArrowLeft size={16} />
           운영 콘솔
         </Link>
-        <button
-          className="inline-flex h-10 items-center justify-center gap-2 rounded-md bg-slate-950 px-3 text-sm font-black text-white"
-          onClick={addTemplate}
-          type="button"
-        >
-          <Plus size={16} />
-          새 신청서
-        </button>
+        <div className="flex flex-col gap-2 sm:flex-row">
+          <button
+            className="inline-flex h-10 items-center justify-center gap-2 rounded-md bg-slate-950 px-3 text-sm font-black text-white"
+            onClick={addTemplate}
+            type="button"
+          >
+            <Plus size={16} />
+            새 신청서
+          </button>
+          <button
+            className="inline-flex h-10 items-center justify-center gap-2 rounded-md bg-[var(--primary)] px-3 text-sm font-black text-white disabled:cursor-wait disabled:opacity-70"
+            disabled={isSyncing}
+            onClick={syncSelectedTemplate}
+            type="button"
+          >
+            {isSyncing ? (
+              <Loader2 className="animate-spin" size={16} />
+            ) : (
+              <Database size={16} />
+            )}
+            DB 저장
+          </button>
+        </div>
       </div>
 
       <section className="overflow-hidden rounded-md bg-slate-950 p-5 text-white sm:p-6">
@@ -213,9 +318,22 @@ export function HostFormBuilder() {
               ))}
             </div>
 
-            <div className="mt-5 flex items-center gap-2 text-sm font-bold text-slate-500">
+            <div
+              aria-live="polite"
+              className="mt-5 flex flex-wrap items-center gap-2 text-sm font-bold text-slate-500"
+            >
               {saved ? <Check size={16} className="text-[var(--primary)]" /> : <Save size={16} />}
               {saved ? "저장됨" : "변경 시 자동 저장"}
+              {syncMessage ? (
+                <span className="rounded-md bg-teal-50 px-2 py-1 text-xs font-black text-teal-700">
+                  {syncMessage}
+                </span>
+              ) : null}
+              {syncError ? (
+                <span className="rounded-md bg-red-50 px-2 py-1 text-xs font-black text-red-700">
+                  {syncError}
+                </span>
+              ) : null}
             </div>
           </section>
 

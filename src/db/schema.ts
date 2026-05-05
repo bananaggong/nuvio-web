@@ -380,6 +380,7 @@ export const programApplicationForms = pgTable(
     programId: uuid("program_id").references(() => programs.id, {
       onDelete: "cascade",
     }),
+    programTitle: text("program_title"),
     title: text("title").notNull(),
     description: text("description"),
     fields: jsonb("fields").$type<Array<Record<string, unknown>>>().default(emptyArray).notNull(),
