@@ -109,6 +109,24 @@ export function writeReportProjects(projects: ReportProject[]) {
   );
 }
 
+export function mergeReportProjects(
+  primaryProjects: ReportProject[],
+  secondaryProjects: ReportProject[],
+): ReportProject[] {
+  const seen = new Set<string>();
+  const mergedProjects: ReportProject[] = [];
+
+  for (const project of [...primaryProjects, ...secondaryProjects]) {
+    const key = project.id || project.title;
+    if (seen.has(key)) continue;
+
+    seen.add(key);
+    mergedProjects.push(project);
+  }
+
+  return mergedProjects;
+}
+
 export function createReportProject(): ReportProject {
   return {
     id: `report-${Date.now()}`,

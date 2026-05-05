@@ -6,22 +6,26 @@ import {
   BarChart3,
   Check,
   CheckCircle2,
+  Database,
   Download,
   FileJson,
   FileText,
   ListChecks,
+  Loader2,
   Plus,
   Save,
   Sparkles,
 } from "lucide-react";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { readHostApplicationsFromStorage } from "@/lib/host-operations";
+import type { HostApplication } from "@/lib/host-operations";
 import {
   buildGeneratedReportSections,
   buildReportChecklist,
   buildReportJson,
   buildReportMarkdown,
   createReportProject,
+  mergeReportProjects,
   readReportProjects,
   reportSectionLabels,
   reportSectionOrder,
@@ -37,10 +41,13 @@ import type {
 const reportStatusOptions: ReportProjectStatus[] = ["draft", "review", "ready"];
 
 export function HostReportAutomation() {
-  const [applications] = useState(readHostApplicationsFromStorage);
+  const [applications, setApplications] = useState(readHostApplicationsFromStorage);
   const [projects, setProjects] = useState<ReportProject[]>(readReportProjects);
   const [selectedId, setSelectedId] = useState(projects[0]?.id);
   const [saved, setSaved] = useState(false);
+  const [isSyncing, setIsSyncing] = useState(false);
+  const [syncMessage, setSyncMessage] = useState("");
+  const [syncError, setSyncError] = useState("");
   const selectedProject = useMemo(
     () => projects.find((project) => project.id === selectedId) ?? projects[0],
     [projects, selectedId],
@@ -66,6 +73,61 @@ export function HostReportAutomation() {
   }, [applications, selectedProject]);
   const readyCount = checklist.filter((item) => item.done).length;
 
+  useEffect(() => {
+    let isMounted = true;
+
+    async function loadDatabaseState() {
+      try {
+        const [applicationsResponse, reportsResponse] = await Promise.all([
+          fetch("/api/host/applications", { cache: "no-store" }),
+          fetch("/api/host/reports", { cache: "no-store" }),
+        ]);
+
+        if (applicationsResponse.ok) {
+          const payload = (await applicationsResponse.json()) as {
+            data?: HostApplication[];
+          };
+          const databaseApplications = Array.isArray(payload.data)
+            ? payload.data
+            : [];
+
+          if (isMounted && databaseApplications.length > 0) {
+            setApplications(databaseApplications);
+          }
+        }
+
+        if (reportsResponse.ok) {
+          const payload = (await reportsResponse.json()) as {
+            data?: ReportProject[];
+          };
+          const databaseProjects = Array.isArray(payload.data) ? payload.data : [];
+
+          if (isMounted && databaseProjects.length > 0) {
+            setProjects((currentProjects) => {
+              const nextProjects = mergeReportProjects(
+                databaseProjects,
+                currentProjects,
+              );
+              writeReportProjects(nextProjects);
+              return nextProjects;
+            });
+            setSelectedId((currentId) => currentId ?? databaseProjects[0]?.id);
+          }
+        }
+      } catch {
+        if (isMounted) {
+          setSyncError("DB 보고서를 불러오지 못했습니다.");
+        }
+      }
+    }
+
+    loadDatabaseState();
+
+    return () => {
+      isMounted = false;
+    };
+  }, []);
+
   function saveProjects(nextProjects: ReportProject[]) {
     setProjects(nextProjects);
     writeReportProjects(nextProjects);
@@ -75,6 +137,8 @@ export function HostReportAutomation() {
 
   function updateProject(patch: Partial<ReportProject>) {
     if (!selectedProject) return;
+    setSyncMessage("");
+    setSyncError("");
     saveProjects(
       projects.map((project) =>
         project.id === selectedProject.id
@@ -86,8 +150,52 @@ export function HostReportAutomation() {
 
   function addProject() {
     const nextProject = createReportProject();
+    setSyncMessage("");
+    setSyncError("");
     saveProjects([nextProject, ...projects]);
     setSelectedId(nextProject.id);
+  }
+
+  async function syncSelectedProject() {
+    if (!selectedProject) return;
+
+    setIsSyncing(true);
+    setSyncMessage("");
+    setSyncError("");
+
+    try {
+      const response = await fetch("/api/host/reports", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(selectedProject),
+      });
+      const payload = (await response.json()) as {
+        data?: ReportProject;
+        error?: string;
+      };
+
+      if (!response.ok || !payload.data) {
+        throw new Error(payload.error ?? "DB 저장에 실패했습니다.");
+      }
+
+      const nextProjects = mergeReportProjects(
+        [payload.data],
+        projects.filter(
+          (project) =>
+            project.id !== selectedProject.id && project.id !== payload.data?.id,
+        ),
+      );
+
+      saveProjects(nextProjects);
+      setSelectedId(payload.data.id);
+      setSyncMessage("Supabase DB에 저장되었습니다.");
+    } catch (error) {
+      setSyncError(
+        error instanceof Error ? error.message : "DB 저장에 실패했습니다.",
+      );
+    } finally {
+      setIsSyncing(false);
+    }
   }
 
   function toggleSection(sectionId: ReportSectionId) {
@@ -130,7 +238,7 @@ export function HostReportAutomation() {
 
   return (
     <div className="mx-auto min-w-0 max-w-6xl px-4 py-8 md:px-8">
-      <div className="mb-5 grid gap-3 sm:grid-cols-[1fr_auto_auto]">
+      <div className="mb-5 grid gap-3 sm:grid-cols-[1fr_auto_auto_auto]">
         <Link
           className="inline-flex h-10 items-center justify-center gap-2 rounded-md border border-slate-200 bg-white px-3 text-sm font-black text-slate-700"
           href="/host"
@@ -145,6 +253,19 @@ export function HostReportAutomation() {
         >
           <Plus size={16} />
           새 보고서
+        </button>
+        <button
+          className="inline-flex h-10 items-center justify-center gap-2 rounded-md bg-[var(--primary)] px-3 text-sm font-black text-white disabled:cursor-wait disabled:opacity-70"
+          disabled={isSyncing}
+          onClick={syncSelectedProject}
+          type="button"
+        >
+          {isSyncing ? (
+            <Loader2 className="animate-spin" size={16} />
+          ) : (
+            <Database size={16} />
+          )}
+          DB 저장
         </button>
         <button
           className="inline-flex h-10 items-center justify-center gap-2 rounded-md bg-slate-950 px-3 text-sm font-black text-white"
@@ -314,9 +435,22 @@ export function HostReportAutomation() {
               </div>
             </div>
 
-            <div className="mt-5 flex items-center gap-2 text-sm font-bold text-slate-500">
+            <div
+              aria-live="polite"
+              className="mt-5 flex flex-wrap items-center gap-2 text-sm font-bold text-slate-500"
+            >
               {saved ? <Check size={16} className="text-[var(--primary)]" /> : <Save size={16} />}
               {saved ? "저장됨" : "변경 사항 자동 저장"}
+              {syncMessage ? (
+                <span className="rounded-md bg-teal-50 px-2 py-1 text-xs font-black text-teal-700">
+                  {syncMessage}
+                </span>
+              ) : null}
+              {syncError ? (
+                <span className="rounded-md bg-red-50 px-2 py-1 text-xs font-black text-red-700">
+                  {syncError}
+                </span>
+              ) : null}
             </div>
           </section>
 
