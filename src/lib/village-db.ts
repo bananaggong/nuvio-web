@@ -162,8 +162,6 @@ export function normalizeHostVillage(input: unknown): Village {
     sections: normalizeSections(value.sections, name),
     published: Boolean(value.published),
     updatedAt: asString(value.updatedAt) || now,
-    subdomain: asOptionalString(value.subdomain),
-    customDomain: asOptionalString(value.customDomain),
   };
 }
 
@@ -200,8 +198,6 @@ function mapVillageToInsert(village: Village): VillageInsert {
     programIds: village.programIds,
     links: village.links,
     sections: village.sections,
-    subdomain: village.subdomain?.trim() || null,
-    customDomain: village.customDomain?.trim() || null,
     publishedAt: village.published ? new Date() : null,
   };
 }
@@ -230,8 +226,6 @@ function mapVillageRowToVillage(row: VillageRow): Village {
     sections: normalizeSections(row.sections, row.name),
     published: Boolean(row.publishedAt),
     updatedAt: row.updatedAt.toISOString(),
-    subdomain: row.subdomain ?? undefined,
-    customDomain: row.customDomain ?? undefined,
   };
 }
 

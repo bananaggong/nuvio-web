@@ -142,7 +142,7 @@ export const implementationStatus: {
           title: "Host village homepage studio",
           state: "implemented",
           summary:
-            "Hosts can draft, preview, publish, and persist village home data including slug, program links, contact channels, and future domain fields.",
+            "Hosts can draft, preview, publish, and persist village home data including slug, program links, and contact channels.",
           routes: [
             { label: "Village studio", href: "/host/villages" },
             { label: "Villages API", href: "/api/host/villages" },

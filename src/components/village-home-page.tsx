@@ -191,19 +191,14 @@ export function VillageHomePage({
           </section>
 
           <section className="rounded-md border border-slate-200 bg-[var(--surface-muted)] p-5">
-            <h2 className="text-base font-black text-slate-950">도메인 전략</h2>
+            <h2 className="text-base font-black text-slate-950">공개 경로</h2>
             <div className="mt-3 grid gap-2 text-sm text-slate-600">
               <p className="rounded-md bg-white p-3 font-bold">
-                기본: nuvio.kr/{village.slug}
+                짧은 주소: nuvio.kr/{village.slug}
               </p>
               <p className="rounded-md bg-white p-3 font-bold">
-                확장: {village.subdomain ?? village.slug}.nuvio.kr
+                표준 주소: nuvio.kr/villages/{village.slug}
               </p>
-              {village.customDomain ? (
-                <p className="rounded-md bg-white p-3 font-bold">
-                  커스텀: {village.customDomain}
-                </p>
-              ) : null}
             </div>
           </section>
         </aside>

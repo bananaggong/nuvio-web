@@ -46,6 +46,4 @@ export type Village = {
   sections: VillageSection[];
   published: boolean;
   updatedAt: string;
-  subdomain?: string;
-  customDomain?: string;
 };

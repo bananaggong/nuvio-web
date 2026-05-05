@@ -177,8 +177,6 @@ export const villages = pgTable(
       .$type<Array<Record<string, unknown>>>()
       .default(emptyArray)
       .notNull(),
-    subdomain: text("subdomain"),
-    customDomain: text("custom_domain"),
     publishedAt: timestamp("published_at", { withTimezone: true }),
     createdBy: uuid("created_by"),
     createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
@@ -186,8 +184,6 @@ export const villages = pgTable(
   },
   (table) => [
     uniqueIndex("villages_slug_idx").on(table.slug),
-    uniqueIndex("villages_subdomain_idx").on(table.subdomain),
-    uniqueIndex("villages_custom_domain_idx").on(table.customDomain),
     index("villages_region_idx").on(table.region),
     index("villages_published_at_idx").on(table.publishedAt),
   ],

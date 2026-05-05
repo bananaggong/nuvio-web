@@ -71,7 +71,6 @@ export const seedVillages: Village[] = [
     ],
     published: true,
     updatedAt: "2026-05-06T00:00:00.000Z",
-    subdomain: "boseong",
   },
   {
     id: "seed-gangneung-wave",
@@ -111,7 +110,6 @@ export const seedVillages: Village[] = [
     ],
     published: true,
     updatedAt: "2026-05-06T00:00:00.000Z",
-    subdomain: "gangneung-wave",
   },
   {
     id: "seed-namhae-island",
@@ -151,6 +149,5 @@ export const seedVillages: Village[] = [
     ],
     published: true,
     updatedAt: "2026-05-06T00:00:00.000Z",
-    subdomain: "namhae-island",
   },
 ];

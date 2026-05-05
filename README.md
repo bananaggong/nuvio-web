@@ -13,11 +13,7 @@ NUVIO는 지역 체류 프로그램의 탐색, 신청, 선정 안내, 운영 관
 - 마을 프로그램 주소: `/[villageSlug]/[programSlug]`
 - 예시: `/boseong`, `/gangneung-wave/gangneung-wave-workation`
 
-서브도메인과 커스텀 도메인은 나중에 바로 확장할 수 있도록 마을 데이터에 미리 필드를 둡니다.
-
-- 서브도메인 후보: `boseong.nuvio.kr`
-- 커스텀 도메인 후보: `village.example.com`
-- 관련 DB 필드: `villages.subdomain`, `villages.custom_domain`
+서브도메인과 커스텀 도메인은 현재 구현 범위에서 제외합니다. 마을 운영자는 slug만 관리하고, NUVIO는 모든 마을을 같은 도메인의 경로형 주소로 제공합니다.
 
 ## 주요 기능
 
@@ -31,7 +27,7 @@ NUVIO는 지역 체류 프로그램의 탐색, 신청, 선정 안내, 운영 관
 - 호스트 신청폼 빌더와 공개 신청 페이지 템플릿 반영
 - 신청자 DB 저장, 상태 변경, 운영 콘솔 파이프라인
 - 메시지 캠페인, 보고서 프로젝트, CSV 내보내기 기반
-- 마을 홈 스튜디오: 마을 소개, 대표 이미지, 연락처, 연결 프로그램, 도메인 후보 관리
+- 마을 홈 스튜디오: 마을 소개, 대표 이미지, 연락처, 연결 프로그램 관리
 - 공개 마을 홈: `/villages`, `/boseong`, `/gangneung-wave/gangneung-wave-workation`
 - 구현 현황 대시보드와 JSON API
 
@@ -232,4 +228,4 @@ npx vercel ls nuvio-web --scope bananaggongs-projects
 - 메시지 실제 발송 채널 연동(Resend/SMS/카카오 알림톡)
 - 보고서 PDF/XLSX export
 - 결제 PG 연동과 입금/결제 상태 자동 확인
-- Vercel wildcard domain 설정 후 서브도메인 라우팅 활성화
+- 경로형 마을 URL 기준의 SEO/공유 메타데이터 보강

@@ -231,7 +231,7 @@ export function HostVillageStudio() {
               슬래시페이지처럼 마을별 홈페이지를 만들고 프로그램을 연결합니다.
             </h1>
             <p className="mt-3 max-w-3xl text-sm leading-7 text-slate-300">
-              지금은 경로형 주소를 기본으로 쓰고, 서브도메인과 커스텀 도메인은 마을 데이터에 함께 보관합니다.
+              지금은 경로형 주소만 사용합니다. 운영자는 마을 slug만 정하면 공개 주소가 자동으로 정리됩니다.
             </p>
           </div>
           <div className="grid gap-2 sm:grid-cols-3 lg:grid-cols-1">
@@ -295,9 +295,10 @@ export function HostVillageStudio() {
                 onChange={updateProgramIds}
                 placeholder="1001, gangneung-wave-workation"
               />
-              <div className="grid gap-4 md:grid-cols-2">
-                <TextField label="서브도메인" value={selectedVillage.subdomain ?? ""} onChange={(value) => updateVillage({ subdomain: value || undefined })} placeholder="boseong" />
-                <TextField label="커스텀 도메인" value={selectedVillage.customDomain ?? ""} onChange={(value) => updateVillage({ customDomain: value || undefined })} placeholder="village.example.com" />
+              <div className="rounded-md border border-slate-200 bg-[var(--surface-muted)] p-4 text-sm leading-6 text-slate-600">
+                <p className="font-black text-slate-950">공개 주소</p>
+                <p className="mt-1 font-bold">짧은 주소: /{selectedVillage.slug}</p>
+                <p className="font-bold">표준 주소: /villages/{selectedVillage.slug}</p>
               </div>
               <div className="grid gap-4 md:grid-cols-2">
                 <TextField label="연락처" value={selectedVillage.contactPhone ?? ""} onChange={(value) => updateVillage({ contactPhone: value || undefined })} />
@@ -510,7 +511,7 @@ function VillagePreview({ village }: { village: Village }) {
           </span>
           <span className="flex items-center gap-1.5">
             <Globe2 size={16} />
-            {village.subdomain ?? village.slug}.nuvio.kr
+            /{village.slug}
           </span>
         </div>
       </div>
@@ -532,7 +533,7 @@ function buildVillageChecklist(village: Village) {
     {
       id: "slug",
       label: "URL slug",
-      helper: "짧은 주소와 서브도메인 후보로 사용할 값입니다.",
+      helper: "짧은 주소와 표준 경로에 사용할 값입니다.",
       done: village.slug.length >= 3,
     },
     {

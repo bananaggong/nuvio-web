@@ -19,8 +19,6 @@ create table if not exists public.villages (
   program_ids jsonb not null default '[]'::jsonb,
   links jsonb not null default '[]'::jsonb,
   sections jsonb not null default '[]'::jsonb,
-  subdomain text,
-  custom_domain text,
   published_at timestamptz,
   created_by uuid references auth.users (id) on delete set null,
   created_at timestamptz not null default now(),
@@ -29,14 +27,6 @@ create table if not exists public.villages (
 
 create unique index if not exists villages_slug_idx
   on public.villages (slug);
-
-create unique index if not exists villages_subdomain_idx
-  on public.villages (subdomain)
-  where subdomain is not null;
-
-create unique index if not exists villages_custom_domain_idx
-  on public.villages (custom_domain)
-  where custom_domain is not null;
 
 create index if not exists villages_region_idx
   on public.villages (region);
