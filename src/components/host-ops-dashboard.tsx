@@ -14,12 +14,13 @@ import {
   ShieldCheck,
   Users,
 } from "lucide-react";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import {
   applicationStatusFlow,
   applicationStatusLabels,
   buildHostReportCsv,
   buildReportMetrics,
+  mergeHostApplications,
   seedMessageTemplates,
   readHostApplicationsFromStorage,
   summarizeApplications,
@@ -59,6 +60,34 @@ export function HostOpsDashboard() {
     [applications],
   );
 
+  useEffect(() => {
+    let cancelled = false;
+
+    async function loadRemoteApplications() {
+      try {
+        const response = await fetch("/api/host/applications", {
+          cache: "no-store",
+        });
+        if (!response.ok) return;
+
+        const payload = (await response.json()) as { data?: HostApplication[] };
+        if (!payload.data || cancelled) return;
+
+        setApplications((current) =>
+          mergeHostApplications(current, payload.data ?? []),
+        );
+      } catch {
+        // The console keeps the local fallback data when the DB is unavailable.
+      }
+    }
+
+    void loadRemoteApplications();
+
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
   function updateApplicationStatus(
     applicationId: string,
     status: HostApplicationStatus,
@@ -68,6 +97,7 @@ export function HostOpsDashboard() {
     );
     setApplications(next);
     writeHostApplicationsToStorage(next);
+    void persistApplicationStatus(applicationId, status);
   }
 
   function toggleApplicationFlag(
@@ -570,4 +600,23 @@ function readStoredTemplates(): MessageTemplate[] {
   } catch {
     return seedMessageTemplates;
   }
+}
+
+async function persistApplicationStatus(
+  applicationId: string,
+  status: HostApplicationStatus,
+) {
+  if (!isUuid(applicationId)) return;
+
+  await fetch(`/api/host/applications/${applicationId}`, {
+    body: JSON.stringify({ status }),
+    headers: { "Content-Type": "application/json" },
+    method: "PATCH",
+  }).catch(() => undefined);
+}
+
+function isUuid(value: string): boolean {
+  return /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/iu.test(
+    value,
+  );
 }

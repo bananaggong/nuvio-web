@@ -4,6 +4,7 @@ import Link from "next/link";
 import { CheckCircle2, FileText, Send, ShieldCheck } from "lucide-react";
 import { useState } from "react";
 import { appendHostApplication } from "@/lib/host-operations";
+import type { HostApplication } from "@/lib/host-operations";
 import { appendMyApplication } from "@/lib/my-applications";
 import type { Program } from "@/lib/types";
 
@@ -36,6 +37,8 @@ const initialFormState: ApplicationFormState = {
 export function ProgramApplicationForm({ program }: ProgramApplicationFormProps) {
   const [form, setForm] = useState<ApplicationFormState>(initialFormState);
   const [submittedId, setSubmittedId] = useState<string>();
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [submitError, setSubmitError] = useState<string>();
 
   function updateField<Key extends keyof ApplicationFormState>(
     key: Key,
@@ -44,11 +47,13 @@ export function ProgramApplicationForm({ program }: ProgramApplicationFormProps)
     setForm((current) => ({ ...current, [key]: value }));
   }
 
-  function submitApplication(event: React.FormEvent<HTMLFormElement>) {
+  async function submitApplication(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
+    setIsSubmitting(true);
+    setSubmitError(undefined);
 
     const id = `app-${program.id}-${Date.now()}`;
-    const application = {
+    const fallbackApplication: HostApplication = {
       id,
       programTitle: program.title,
       applicantName: form.applicantName,
@@ -61,10 +66,46 @@ export function ProgramApplicationForm({ program }: ProgramApplicationFormProps)
       signatureCompleted: false,
       reviewSubmitted: false,
       memo: form.motivation.slice(0, 72) || "누비오 신청서 접수",
-    } as const;
-    appendHostApplication(application);
-    appendMyApplication(application);
-    setSubmittedId(id);
+    };
+
+    try {
+      const response = await fetch("/api/program-applications", {
+        body: JSON.stringify({
+          programId: program.id,
+          applicantName: form.applicantName,
+          email: form.email,
+          phone: form.phone,
+          memo: fallbackApplication.memo,
+          answers: {
+            companions: form.companions,
+            motivation: form.motivation,
+            workStyle: form.workStyle,
+            receiptPlan: form.receiptPlan,
+          },
+        }),
+        headers: { "Content-Type": "application/json" },
+        method: "POST",
+      });
+
+      if (!response.ok) {
+        throw new Error("Failed to persist application.");
+      }
+
+      const payload = (await response.json()) as { data?: HostApplication };
+      const application = payload.data ?? fallbackApplication;
+      appendHostApplication(application);
+      appendMyApplication(application);
+      setSubmittedId(application.id);
+    } catch {
+      appendHostApplication(fallbackApplication);
+      appendMyApplication(fallbackApplication);
+      setSubmitError(
+        "DB 저장에 실패해 이 브라우저에 임시 저장했습니다. 운영자가 다시 동기화할 수 있습니다.",
+      );
+      setSubmittedId(id);
+    } finally {
+      setIsSubmitting(false);
+    }
   }
 
   if (submittedId) {
@@ -79,6 +120,11 @@ export function ProgramApplicationForm({ program }: ProgramApplicationFormProps)
             호스트 콘솔의 신청자 파이프라인에 바로 반영했습니다. 실제 서비스에서는
             Supabase DB에 저장되고, 호스트에게 알림이 발송됩니다.
           </p>
+          {submitError ? (
+            <p className="mt-3 rounded-md bg-amber-50 px-3 py-2 text-sm font-bold text-amber-800">
+              {submitError}
+            </p>
+          ) : null}
           <div className="mt-6 grid gap-2 sm:grid-cols-2">
             <Link
               className="inline-flex h-11 items-center justify-center rounded-md bg-[var(--primary)] px-4 text-sm font-black text-white"
@@ -190,7 +236,8 @@ export function ProgramApplicationForm({ program }: ProgramApplicationFormProps)
             받을 수 있음에 동의합니다.
           </label>
           <button
-            className="inline-flex h-12 items-center justify-center gap-2 rounded-md bg-[var(--primary)] px-4 text-sm font-black text-white hover:bg-[var(--primary-strong)]"
+            className="inline-flex h-12 items-center justify-center gap-2 rounded-md bg-[var(--primary)] px-4 text-sm font-black text-white hover:bg-[var(--primary-strong)] disabled:cursor-not-allowed disabled:opacity-60"
+            disabled={isSubmitting}
             type="submit"
           >
             <Send size={17} />

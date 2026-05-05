@@ -276,7 +276,7 @@ function escapeCsvValue(value: string): string {
   return `"${value.replace(/"/gu, '""')}"`;
 }
 
-function mergeHostApplications(
+export function mergeHostApplications(
   baseApplications: HostApplication[],
   overrideApplications: HostApplication[],
 ): HostApplication[] {
