@@ -13,8 +13,8 @@ export function getDb() {
       throw new Error("DATABASE_URL or DIRECT_DATABASE_URL is required.");
     }
 
-    databaseClient = postgres(databaseUrl.trim(), {
-      max: 3,
+    databaseClient = postgres(normalizeDatabaseUrl(databaseUrl), {
+      max: 1,
       prepare: false,
     });
   }
@@ -24,4 +24,20 @@ export function getDb() {
   }
 
   return database;
+}
+
+function normalizeDatabaseUrl(databaseUrl: string): string {
+  const trimmedUrl = databaseUrl.trim();
+
+  try {
+    const url = new URL(trimmedUrl);
+    if (url.hostname.endsWith(".pooler.supabase.com") && url.port === "5432") {
+      url.port = "6543";
+      return url.toString();
+    }
+  } catch {
+    return trimmedUrl;
+  }
+
+  return trimmedUrl;
 }

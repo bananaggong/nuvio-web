@@ -68,6 +68,7 @@ ANNOUNCEMENT_REFRESH_SECONDS=300
 PROGRAM_LEAD_MIN_SCORE=2
 DISABLED_ANNOUNCEMENT_SOURCE_IDS=
 EXTERNAL_ANNOUNCEMENT_SOURCES=
+CRON_SECRET=
 ```
 
 Vercel Production, Preview, Development 환경에도 같은 Supabase 연결 변수가 필요합니다.
@@ -163,6 +164,8 @@ npm run supabase:db:push
 | `GET /api/programs` | 공개 프로그램 JSON |
 | `GET /api/reviews` | 후기 JSON |
 | `GET /api/announcements` | 내부/외부 공지 JSON |
+| `GET, POST, PATCH /api/announcement-sources` | 외부 공고 소스 조회/추가/활성화 |
+| `GET /api/cron/refresh-announcements` | Cron 기반 외부 공고 수집/DB 적재 |
 | `GET, POST /api/program-leads` | 외부 공고 기반 후보 조회, 승인/반려 |
 | `POST /api/program-applications` | 프로그램 신청 저장 |
 | `GET /api/host/applications` | 호스트 신청자 목록 |
@@ -187,19 +190,28 @@ npm run supabase:db:push
 - `/me`가 Supabase Auth 세션, `profiles`, DB 신청 내역을 함께 표시
 - 호스트 화면에 현재 로그인 계정 role 상태 표시
 - `/api/program-leads` POST 승인/반려 처리와 승인 시 호스트 프로그램 초안 생성
+- Vercel Cron 기반 외부 공고 수집, DB 적재, 후보 적재
 
 ## 외부 공고 수집
 
-`/api/announcements`는 내부 공지와 외부 RSS 공고를 함께 반환합니다. 기본 소스는 `src/lib/announcement-sources.ts`에 있고, 추가 소스는 `EXTERNAL_ANNOUNCEMENT_SOURCES` 환경 변수로 넣을 수 있습니다.
+`/api/announcements`는 내부 공지와 DB에 저장된 외부 RSS 공고를 함께 반환합니다. Vercel Cron은 `/api/cron/refresh-announcements`를 15분마다 호출해 외부 소스를 수집하고 `external_announcements`, `program_leads`에 적재합니다.
+
+Cron 요청은 `Authorization: Bearer $CRON_SECRET`로 보호합니다. 프로덕션 Vercel 환경 변수에 `CRON_SECRET`을 반드시 설정해야 합니다.
+
+기본 소스는 `src/lib/announcement-sources.ts`에 있고, 추가 소스는 관리자 콘솔의 외부 공고 소스 화면 또는 `EXTERNAL_ANNOUNCEMENT_SOURCES` 환경 변수로 넣을 수 있습니다.
 
 관련 파일:
 
 - `src/lib/live-announcements.ts`
+- `src/lib/announcement-refresh.ts`
+- `src/lib/external-announcement-db.ts`
 - `src/lib/announcement-sources.ts`
 - `src/lib/announcement-links.ts`
 - `src/components/live-announcement-strip.tsx`
 - `src/lib/program-leads.ts`
 - `src/lib/program-lead-db.ts`
+- `src/app/api/cron/refresh-announcements/route.ts`
+- `vercel.json`
 
 ## 검증
 
@@ -225,6 +237,8 @@ Supabase 연결 후에는 공개/호스트 API에 테스트 데이터를 POST하
 - `/admin/implementation`
 - `/api/programs`
 - `/api/program-leads`
+- `/api/announcement-sources`
+- `/api/cron/refresh-announcements`
 - `/api/implementation-status`
 - `/api/host/applications`
 - `/api/host/programs`
@@ -250,4 +264,4 @@ npx vercel ls nuvio-web --scope bananaggongs-projects
 - `profiles.role`을 partner/admin으로 승격하는 운영자 UI 또는 정책 추가
 - 메시지 실제 발송 채널(Resend/SMS/카카오 알림톡) 연동
 - 보고서 PDF/XLSX export
-- 외부 공고 수집 결과를 `external_announcements`/`program_leads`에 주기적으로 적재하는 Vercel Cron
+- 외부 공고 소스 확대와 RSS 없는 기관 사이트 파서 추가

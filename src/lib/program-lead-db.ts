@@ -1,4 +1,4 @@
-import { eq } from "drizzle-orm";
+import { desc, eq } from "drizzle-orm";
 import { getDb } from "@/db/client";
 import {
   externalAnnouncements,
@@ -12,6 +12,71 @@ import type { HostProgramDraft } from "@/lib/host-program-studio";
 import type { ProgramLead, ProgramStatus, ThemeKey } from "@/lib/types";
 
 type LeadDecision = "approved" | "rejected";
+
+type LeadRow = typeof programLeads.$inferSelect;
+
+export async function listPersistedProgramLeads(
+  options: { limit?: number; includeDecided?: boolean } = {},
+): Promise<ProgramLead[]> {
+  const rows = await getDb()
+    .select()
+    .from(programLeads)
+    .orderBy(desc(programLeads.score), desc(programLeads.publishedAt))
+    .limit(options.limit ?? 20);
+  const visibleRows = options.includeDecided
+    ? rows
+    : rows.filter((row) => row.status === "new");
+
+  return visibleRows.map(mapProgramLeadRowToLead);
+}
+
+export async function persistProgramLeads(
+  leads: ProgramLead[],
+): Promise<{ upsertedLeadCount: number }> {
+  let upsertedLeadCount = 0;
+
+  for (const lead of leads) {
+    if (!lead.sourceAnnouncementId) continue;
+
+    await getDb()
+      .insert(programLeads)
+      .values({
+        sourceAnnouncementId: lead.sourceAnnouncementId,
+        title: lead.title,
+        summary: lead.summary || lead.title,
+        sourceName: lead.sourceName,
+        sourceUrl: lead.sourceUrl ?? null,
+        publishedAt: new Date(lead.publishedAt),
+        confidence: lead.confidence,
+        score: lead.score,
+        suggestedRegion: lead.suggestedRegion ?? null,
+        suggestedThemes: lead.suggestedThemes,
+        suggestedStatus: lead.suggestedStatus,
+        reasons: lead.reasons,
+        status: "new",
+      })
+      .onConflictDoUpdate({
+        target: programLeads.sourceAnnouncementId,
+        set: {
+          title: lead.title,
+          summary: lead.summary || lead.title,
+          sourceName: lead.sourceName,
+          sourceUrl: lead.sourceUrl ?? null,
+          publishedAt: new Date(lead.publishedAt),
+          confidence: lead.confidence,
+          score: lead.score,
+          suggestedRegion: lead.suggestedRegion ?? null,
+          suggestedThemes: lead.suggestedThemes,
+          suggestedStatus: lead.suggestedStatus,
+          reasons: lead.reasons,
+          updatedAt: new Date(),
+        },
+      });
+    upsertedLeadCount += 1;
+  }
+
+  return { upsertedLeadCount };
+}
 
 export async function createDraftFromProgramLead(
   lead: ProgramLead,
@@ -218,6 +283,25 @@ function toDateString(date: Date): string {
 function stableSuffix(value: string): string {
   const normalized = value.replace(/[^a-z0-9]/giu, "").slice(-24);
   return normalized || Date.now().toString(36);
+}
+
+function mapProgramLeadRowToLead(row: LeadRow): ProgramLead {
+  return {
+    id: row.id,
+    title: row.title,
+    summary: row.summary,
+    sourceAnnouncementId: row.sourceAnnouncementId ?? "",
+    sourceName: row.sourceName,
+    sourceUrl: row.sourceUrl ?? undefined,
+    publishedAt: row.publishedAt.toISOString(),
+    confidence: row.confidence,
+    score: row.score,
+    suggestedRegion: row.suggestedRegion ?? undefined,
+    suggestedThemes: row.suggestedThemes,
+    suggestedStatus: row.suggestedStatus,
+    reasons: row.reasons,
+    status: row.status,
+  };
 }
 
 const themeValues: ThemeKey[] = [

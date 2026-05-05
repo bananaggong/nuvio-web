@@ -1,5 +1,6 @@
 import { regions } from "./data";
 import { getLiveAnnouncementFeed } from "./live-announcements";
+import { listPersistedProgramLeads } from "./program-lead-db";
 import type { LiveAnnouncement, ProgramLead, ThemeKey } from "./types";
 
 type KeywordRule = {
@@ -90,17 +91,34 @@ export type ProgramLeadFeed = {
 export async function getProgramLeadFeed(
   options: { limit?: number; minimumScore?: number } = {},
 ): Promise<ProgramLeadFeed> {
+  const limit = options.limit ?? 20;
+
+  try {
+    const persistedLeads = await listPersistedProgramLeads({ limit });
+    if (persistedLeads.length > 0) {
+      return {
+        items: persistedLeads,
+        meta: {
+          generatedAt: new Date().toISOString(),
+          sourceAnnouncementCount: persistedLeads.length,
+          candidateCount: persistedLeads.length,
+          minimumScore: options.minimumScore ?? getProgramLeadMinimumScore(),
+        },
+      };
+    }
+  } catch {
+    // Fall through to on-demand lead scoring when persisted leads are unavailable.
+  }
+
   const announcementFeed = await getLiveAnnouncementFeed({ limit: 80 });
   const minimumScore = options.minimumScore ?? getProgramLeadMinimumScore();
   const externalAnnouncements = announcementFeed.items.filter(
     (announcement) => announcement.isExternal,
   );
-  const items = externalAnnouncements
-    .map(toProgramLead)
-    .filter((lead): lead is ProgramLead => Boolean(lead))
-    .filter((lead) => lead.score >= minimumScore)
-    .sort((a, b) => b.score - a.score || Date.parse(b.publishedAt) - Date.parse(a.publishedAt))
-    .slice(0, options.limit ?? 20);
+  const items = buildProgramLeadsFromAnnouncements(externalAnnouncements, {
+    limit,
+    minimumScore,
+  });
 
   return {
     items,
@@ -111,6 +129,23 @@ export async function getProgramLeadFeed(
       minimumScore,
     },
   };
+}
+
+export function buildProgramLeadsFromAnnouncements(
+  externalAnnouncements: LiveAnnouncement[],
+  options: { limit?: number; minimumScore?: number } = {},
+): ProgramLead[] {
+  const minimumScore = options.minimumScore ?? getProgramLeadMinimumScore();
+
+  return externalAnnouncements
+    .map(toProgramLead)
+    .filter((lead): lead is ProgramLead => Boolean(lead))
+    .filter((lead) => lead.score >= minimumScore)
+    .sort(
+      (a, b) =>
+        b.score - a.score || Date.parse(b.publishedAt) - Date.parse(a.publishedAt),
+    )
+    .slice(0, options.limit ?? 20);
 }
 
 function getProgramLeadMinimumScore(): number {

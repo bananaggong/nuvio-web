@@ -113,4 +113,5 @@ export type ProgramLead = {
   suggestedThemes: ThemeKey[];
   suggestedStatus: ProgramStatus;
   reasons: string[];
+  status?: "new" | "approved" | "rejected" | "draftCreated";
 };

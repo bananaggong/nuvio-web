@@ -135,6 +135,20 @@ export const implementationStatus: {
           verification:
             "Approve a lead in /admin, then confirm a new draft appears in /host/programs.",
         },
+        {
+          title: "Cron-backed external announcement ingestion",
+          state: "implemented",
+          summary:
+            "Vercel Cron refreshes external RSS sources every 15 minutes, stores announcements, and persists scored program leads.",
+          routes: [
+            { label: "Cron API", href: "/api/cron/refresh-announcements" },
+            { label: "Sources API", href: "/api/announcement-sources" },
+            { label: "Announcements API", href: "/api/announcements" },
+            { label: "Admin", href: "/admin" },
+          ],
+          verification:
+            "Check CRON_SECRET in Vercel env, then confirm /api/announcement-sources shows lastFetchedAt and item counts after deployment.",
+        },
       ],
     },
   ],

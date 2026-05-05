@@ -6,8 +6,10 @@ import {
 
 export const runtime = "nodejs";
 
-export async function GET() {
-  const feed = await getLiveAnnouncementFeed();
+export async function GET(request: Request) {
+  const url = new URL(request.url);
+  const forceRefresh = url.searchParams.get("refresh") === "1";
+  const feed = await getLiveAnnouncementFeed({ forceRefresh });
   const refreshSeconds = getAnnouncementRefreshSeconds();
 
   return NextResponse.json(

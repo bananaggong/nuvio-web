@@ -1,6 +1,11 @@
 import { XMLParser } from "fast-xml-parser";
 import { getConfiguredAnnouncementSources } from "./announcement-sources";
 import { announcements, programs } from "./data";
+import {
+  listAnnouncementSourceStatuses,
+  listPersistedExternalAnnouncements,
+  listRuntimeAnnouncementSources,
+} from "./external-announcement-db";
 import type { ExternalAnnouncementSource } from "./announcement-sources";
 import type {
   Announcement,
@@ -22,7 +27,7 @@ type RssDocument = {
 
 type RssItem = Record<string, unknown>;
 
-type SourceResult = {
+export type SourceResult = {
   source: ExternalAnnouncementSource;
   items: LiveAnnouncement[];
   error?: string;
@@ -60,17 +65,15 @@ export function getAnnouncementRefreshSeconds(): number {
 }
 
 export async function getLiveAnnouncementFeed(
-  options: { limit?: number } = {},
+  options: { limit?: number; forceRefresh?: boolean } = {},
 ): Promise<LiveAnnouncementFeed> {
-  const sources = getExternalAnnouncementSources();
-  const sourceResults = await Promise.all(sources.map(fetchSourceAnnouncements));
-  const externalItems = dedupeAnnouncements(
-    sourceResults.flatMap((result) => result.items),
-  );
+  const limit = options.limit ?? 40;
+  const persistedFeed = await getPersistedExternalFeed(limit, options.forceRefresh);
+  const externalItems = persistedFeed.items;
   const internalItems = announcements.map(toLiveAnnouncement);
   const items = dedupeAnnouncements([...externalItems, ...internalItems])
     .sort(compareAnnouncements)
-    .slice(0, options.limit ?? 40);
+    .slice(0, limit);
 
   return {
     items,
@@ -79,13 +82,7 @@ export async function getLiveAnnouncementFeed(
       refreshSeconds: getAnnouncementRefreshSeconds(),
       internalCount: internalItems.length,
       externalCount: externalItems.length,
-      sources: sourceResults.map((result) => ({
-        id: result.source.id,
-        name: result.source.name,
-        url: result.source.url,
-        itemCount: result.items.length,
-        error: result.error,
-      })),
+      sources: persistedFeed.sources,
     },
   };
 }
@@ -99,6 +96,69 @@ export async function fetchLiveAnnouncements(
 
 function getExternalAnnouncementSources(): ExternalAnnouncementSource[] {
   return getConfiguredAnnouncementSources();
+}
+
+export async function getRuntimeExternalAnnouncementSources(): Promise<
+  ExternalAnnouncementSource[]
+> {
+  return listRuntimeAnnouncementSources();
+}
+
+export async function fetchExternalAnnouncementResults(
+  sources?: ExternalAnnouncementSource[],
+): Promise<SourceResult[]> {
+  const sourceList = sources ?? (await getRuntimeExternalAnnouncementSources());
+  return Promise.all(sourceList.map(fetchSourceAnnouncements));
+}
+
+async function getPersistedExternalFeed(
+  limit: number,
+  forceRefresh = false,
+): Promise<{
+  items: LiveAnnouncement[];
+  sources: LiveAnnouncementFeed["meta"]["sources"];
+}> {
+  if (!forceRefresh) {
+    try {
+      const [items, sourceStatuses] = await Promise.all([
+        listPersistedExternalAnnouncements(limit),
+        listAnnouncementSourceStatuses(),
+      ]);
+
+      if (items.length > 0 || sourceStatuses.length > 0) {
+        return {
+          items,
+          sources: sourceStatuses.map((source) => ({
+            id: source.id,
+            name: source.name,
+            url: source.url,
+            itemCount: source.itemCount,
+            error: source.lastError ?? undefined,
+          })),
+        };
+      }
+    } catch {
+      // Fall through to on-demand fetching when the database is not ready.
+    }
+  }
+
+  const sourceResults = await fetchExternalAnnouncementResults(
+    getExternalAnnouncementSources(),
+  );
+  const items = dedupeAnnouncements(
+    sourceResults.flatMap((result) => result.items),
+  );
+
+  return {
+    items,
+    sources: sourceResults.map((result) => ({
+      id: result.source.id,
+      name: result.source.name,
+      url: result.source.url,
+      itemCount: result.items.length,
+      error: result.error,
+    })),
+  };
 }
 
 async function fetchSourceAnnouncements(
