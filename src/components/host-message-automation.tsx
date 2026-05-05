@@ -5,7 +5,9 @@ import {
   ArrowLeft,
   Check,
   Clock3,
+  Database,
   Download,
+  Loader2,
   MailCheck,
   MessageSquareText,
   Plus,
@@ -14,14 +16,16 @@ import {
   Sparkles,
   Users,
 } from "lucide-react";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { readHostApplicationsFromStorage } from "@/lib/host-operations";
+import type { HostApplication } from "@/lib/host-operations";
 import {
   buildMessageExportCsv,
   buildMessageRecipientPreview,
   campaignStatusLabels,
   channelLabels,
   createMessageCampaign,
+  mergeMessageCampaigns,
   readMessageCampaigns,
   readMessageTemplates,
   targetStatusLabels,
@@ -43,13 +47,16 @@ const campaignStatusOptions: MessageCampaignStatus[] = [
 ];
 
 export function HostMessageAutomation() {
-  const [applications] = useState(readHostApplicationsFromStorage);
+  const [applications, setApplications] = useState(readHostApplicationsFromStorage);
   const [templates] = useState(readMessageTemplates);
   const [campaigns, setCampaigns] = useState<MessageCampaign[]>(
     readMessageCampaigns,
   );
   const [selectedId, setSelectedId] = useState(campaigns[0]?.id);
   const [saved, setSaved] = useState(false);
+  const [isSyncing, setIsSyncing] = useState(false);
+  const [syncMessage, setSyncMessage] = useState("");
+  const [syncError, setSyncError] = useState("");
   const selectedCampaign = useMemo(
     () =>
       campaigns.find((campaign) => campaign.id === selectedId) ?? campaigns[0],
@@ -68,6 +75,61 @@ export function HostMessageAutomation() {
   ).length;
   const sentCount = campaigns.filter((campaign) => campaign.status === "sent").length;
 
+  useEffect(() => {
+    let isMounted = true;
+
+    async function loadDatabaseState() {
+      try {
+        const [applicationsResponse, campaignsResponse] = await Promise.all([
+          fetch("/api/host/applications", { cache: "no-store" }),
+          fetch("/api/host/message-campaigns", { cache: "no-store" }),
+        ]);
+
+        if (applicationsResponse.ok) {
+          const payload = (await applicationsResponse.json()) as {
+            data?: HostApplication[];
+          };
+          const databaseApplications = Array.isArray(payload.data)
+            ? payload.data
+            : [];
+
+          if (isMounted && databaseApplications.length > 0) {
+            setApplications(databaseApplications);
+          }
+        }
+
+        if (campaignsResponse.ok) {
+          const payload = (await campaignsResponse.json()) as {
+            data?: MessageCampaign[];
+          };
+          const databaseCampaigns = Array.isArray(payload.data) ? payload.data : [];
+
+          if (isMounted && databaseCampaigns.length > 0) {
+            setCampaigns((currentCampaigns) => {
+              const nextCampaigns = mergeMessageCampaigns(
+                databaseCampaigns,
+                currentCampaigns,
+              );
+              writeMessageCampaigns(nextCampaigns);
+              return nextCampaigns;
+            });
+            setSelectedId((currentId) => currentId ?? databaseCampaigns[0]?.id);
+          }
+        }
+      } catch {
+        if (isMounted) {
+          setSyncError("DB 캠페인을 불러오지 못했습니다.");
+        }
+      }
+    }
+
+    loadDatabaseState();
+
+    return () => {
+      isMounted = false;
+    };
+  }, []);
+
   function saveCampaigns(nextCampaigns: MessageCampaign[]) {
     setCampaigns(nextCampaigns);
     writeMessageCampaigns(nextCampaigns);
@@ -77,6 +139,8 @@ export function HostMessageAutomation() {
 
   function updateCampaign(patch: Partial<MessageCampaign>) {
     if (!selectedCampaign) return;
+    setSyncMessage("");
+    setSyncError("");
     saveCampaigns(
       campaigns.map((campaign) =>
         campaign.id === selectedCampaign.id
@@ -88,8 +152,53 @@ export function HostMessageAutomation() {
 
   function addCampaign() {
     const nextCampaign = createMessageCampaign(templates);
+    setSyncMessage("");
+    setSyncError("");
     saveCampaigns([nextCampaign, ...campaigns]);
     setSelectedId(nextCampaign.id);
+  }
+
+  async function syncSelectedCampaign() {
+    if (!selectedCampaign) return;
+
+    setIsSyncing(true);
+    setSyncMessage("");
+    setSyncError("");
+
+    try {
+      const response = await fetch("/api/host/message-campaigns", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(selectedCampaign),
+      });
+      const payload = (await response.json()) as {
+        data?: MessageCampaign;
+        error?: string;
+      };
+
+      if (!response.ok || !payload.data) {
+        throw new Error(payload.error ?? "DB 저장에 실패했습니다.");
+      }
+
+      const nextCampaigns = mergeMessageCampaigns(
+        [payload.data],
+        campaigns.filter(
+          (campaign) =>
+            campaign.id !== selectedCampaign.id &&
+            campaign.id !== payload.data?.id,
+        ),
+      );
+
+      saveCampaigns(nextCampaigns);
+      setSelectedId(payload.data.id);
+      setSyncMessage("Supabase DB에 저장되었습니다.");
+    } catch (error) {
+      setSyncError(
+        error instanceof Error ? error.message : "DB 저장에 실패했습니다.",
+      );
+    } finally {
+      setIsSyncing(false);
+    }
   }
 
   function markSent() {
@@ -122,7 +231,7 @@ export function HostMessageAutomation() {
 
   return (
     <div className="mx-auto min-w-0 max-w-6xl px-4 py-8 md:px-8">
-      <div className="mb-5 grid gap-3 sm:grid-cols-[1fr_auto_auto]">
+      <div className="mb-5 grid gap-3 sm:grid-cols-[1fr_auto_auto_auto]">
         <Link
           className="inline-flex h-10 items-center justify-center gap-2 rounded-md border border-slate-200 bg-white px-3 text-sm font-black text-slate-700"
           href="/host"
@@ -137,6 +246,19 @@ export function HostMessageAutomation() {
         >
           <Plus size={16} />
           새 캠페인
+        </button>
+        <button
+          className="inline-flex h-10 items-center justify-center gap-2 rounded-md bg-[var(--primary)] px-3 text-sm font-black text-white disabled:cursor-wait disabled:opacity-70"
+          disabled={isSyncing}
+          onClick={syncSelectedCampaign}
+          type="button"
+        >
+          {isSyncing ? (
+            <Loader2 className="animate-spin" size={16} />
+          ) : (
+            <Database size={16} />
+          )}
+          DB 저장
         </button>
         <button
           className="inline-flex h-10 items-center justify-center gap-2 rounded-md bg-slate-950 px-3 text-sm font-black text-white"
@@ -314,11 +436,37 @@ export function HostMessageAutomation() {
                 <Send size={16} />
                 발송 완료
               </button>
+              <button
+                className="inline-flex h-10 items-center justify-center gap-2 rounded-md bg-slate-950 px-3 text-sm font-black text-white disabled:cursor-wait disabled:opacity-70"
+                disabled={isSyncing}
+                onClick={syncSelectedCampaign}
+                type="button"
+              >
+                {isSyncing ? (
+                  <Loader2 className="animate-spin" size={16} />
+                ) : (
+                  <Database size={16} />
+                )}
+                Supabase
+              </button>
             </div>
 
-            <div className="mt-5 flex items-center gap-2 text-sm font-bold text-slate-500">
+            <div
+              aria-live="polite"
+              className="mt-5 flex flex-wrap items-center gap-2 text-sm font-bold text-slate-500"
+            >
               {saved ? <Check size={16} className="text-[var(--primary)]" /> : <Save size={16} />}
               {saved ? "저장됨" : "변경 사항 자동 저장"}
+              {syncMessage ? (
+                <span className="rounded-md bg-teal-50 px-2 py-1 text-xs font-black text-teal-700">
+                  {syncMessage}
+                </span>
+              ) : null}
+              {syncError ? (
+                <span className="rounded-md bg-red-50 px-2 py-1 text-xs font-black text-red-700">
+                  {syncError}
+                </span>
+              ) : null}
             </div>
           </section>
 

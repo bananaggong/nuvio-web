@@ -458,6 +458,25 @@ export const messageTemplates = pgTable(
   (table) => [index("message_templates_program_id_idx").on(table.programId)],
 );
 
+export const messageCampaigns = pgTable(
+  "message_campaigns",
+  {
+    id: uuid("id").defaultRandom().primaryKey(),
+    name: text("name").notNull(),
+    templateKey: text("template_key").notNull(),
+    channel: messageChannelEnum("channel").default("email").notNull(),
+    targetStatus: text("target_status").default("all").notNull(),
+    scheduledAt: timestamp("scheduled_at", { withTimezone: true }),
+    status: messageDeliveryStatusEnum("status").default("draft").notNull(),
+    createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+    updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
+  },
+  (table) => [
+    index("message_campaigns_status_idx").on(table.status),
+    index("message_campaigns_scheduled_at_idx").on(table.scheduledAt),
+  ],
+);
+
 export const scheduledMessages = pgTable(
   "scheduled_messages",
   {

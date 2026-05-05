@@ -114,6 +114,24 @@ export function writeMessageCampaigns(campaigns: MessageCampaign[]) {
   );
 }
 
+export function mergeMessageCampaigns(
+  primaryCampaigns: MessageCampaign[],
+  secondaryCampaigns: MessageCampaign[],
+): MessageCampaign[] {
+  const seen = new Set<string>();
+  const mergedCampaigns: MessageCampaign[] = [];
+
+  for (const campaign of [...primaryCampaigns, ...secondaryCampaigns]) {
+    const key = campaign.id || campaign.name;
+    if (seen.has(key)) continue;
+
+    seen.add(key);
+    mergedCampaigns.push(campaign);
+  }
+
+  return mergedCampaigns;
+}
+
 export function createMessageCampaign(
   templates = readMessageTemplates(),
 ): MessageCampaign {
