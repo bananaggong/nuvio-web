@@ -6,6 +6,7 @@ import type {
 
 export type HostProgramDraft = {
   id: string;
+  slug?: string;
   title: string;
   region: string;
   city: string;
@@ -92,6 +93,24 @@ export function writeHostProgramDrafts(drafts: HostProgramDraft[]) {
     HOST_PROGRAM_DRAFT_STORAGE_KEY,
     JSON.stringify(drafts),
   );
+}
+
+export function mergeHostProgramDrafts(
+  primaryDrafts: HostProgramDraft[],
+  secondaryDrafts: HostProgramDraft[],
+): HostProgramDraft[] {
+  const seen = new Set<string>();
+  const mergedDrafts: HostProgramDraft[] = [];
+
+  for (const draft of [...primaryDrafts, ...secondaryDrafts]) {
+    const key = draft.id || draft.slug || draft.title;
+    if (seen.has(key)) continue;
+
+    seen.add(key);
+    mergedDrafts.push(draft);
+  }
+
+  return mergedDrafts;
 }
 
 export function createHostProgramDraft(): HostProgramDraft {

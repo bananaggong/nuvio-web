@@ -7,21 +7,24 @@ import {
   CalendarDays,
   Check,
   CheckCircle2,
+  Database,
   Download,
   Eye,
   FilePlus2,
+  Loader2,
   MapPin,
   Plus,
   Save,
   WalletCards,
 } from "lucide-react";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { periodOptions, regions, themeOptions } from "@/lib/data";
 import { formatDate, formatWon } from "@/lib/format";
 import {
   buildHostProgramJson,
   buildProgramDraftChecklist,
   createHostProgramDraft,
+  mergeHostProgramDrafts,
   readHostProgramDrafts,
   writeHostProgramDrafts,
 } from "@/lib/host-program-studio";
@@ -46,6 +49,9 @@ export function HostProgramStudio() {
   const [drafts, setDrafts] = useState<HostProgramDraft[]>(readHostProgramDrafts);
   const [selectedId, setSelectedId] = useState(drafts[0]?.id);
   const [saved, setSaved] = useState(false);
+  const [isSyncing, setIsSyncing] = useState(false);
+  const [syncMessage, setSyncMessage] = useState("");
+  const [syncError, setSyncError] = useState("");
   const selectedDraft = useMemo(
     () => drafts.find((draft) => draft.id === selectedId) ?? drafts[0],
     [drafts, selectedId],
@@ -56,6 +62,38 @@ export function HostProgramStudio() {
   );
   const readyCount = checklist.filter((item) => item.done).length;
 
+  useEffect(() => {
+    let isMounted = true;
+
+    async function loadDatabaseDrafts() {
+      try {
+        const response = await fetch("/api/host/programs", { cache: "no-store" });
+        if (!response.ok) return;
+
+        const payload = (await response.json()) as { data?: HostProgramDraft[] };
+        const databaseDrafts = Array.isArray(payload.data) ? payload.data : [];
+        if (!isMounted || databaseDrafts.length === 0) return;
+
+        setDrafts((currentDrafts) => {
+          const nextDrafts = mergeHostProgramDrafts(databaseDrafts, currentDrafts);
+          writeHostProgramDrafts(nextDrafts);
+          return nextDrafts;
+        });
+        setSelectedId((currentId) => currentId ?? databaseDrafts[0]?.id);
+      } catch {
+        if (isMounted) {
+          setSyncError("DB 초안을 불러오지 못했습니다.");
+        }
+      }
+    }
+
+    loadDatabaseDrafts();
+
+    return () => {
+      isMounted = false;
+    };
+  }, []);
+
   function saveDrafts(nextDrafts: HostProgramDraft[]) {
     setDrafts(nextDrafts);
     writeHostProgramDrafts(nextDrafts);
@@ -65,6 +103,8 @@ export function HostProgramStudio() {
 
   function updateDraft(patch: Partial<HostProgramDraft>) {
     if (!selectedDraft) return;
+    setSyncMessage("");
+    setSyncError("");
     saveDrafts(
       drafts.map((draft) =>
         draft.id === selectedDraft.id
@@ -76,6 +116,8 @@ export function HostProgramStudio() {
 
   function addDraft() {
     const nextDraft = createHostProgramDraft();
+    setSyncMessage("");
+    setSyncError("");
     saveDrafts([nextDraft, ...drafts]);
     setSelectedId(nextDraft.id);
   }
@@ -92,6 +134,48 @@ export function HostProgramStudio() {
   function togglePublish() {
     if (!selectedDraft) return;
     updateDraft({ published: !selectedDraft.published });
+  }
+
+  async function syncSelectedDraft() {
+    if (!selectedDraft) return;
+
+    setIsSyncing(true);
+    setSyncMessage("");
+    setSyncError("");
+
+    try {
+      const response = await fetch("/api/host/programs", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(selectedDraft),
+      });
+      const payload = (await response.json()) as {
+        data?: HostProgramDraft;
+        error?: string;
+      };
+
+      if (!response.ok || !payload.data) {
+        throw new Error(payload.error ?? "DB 저장에 실패했습니다.");
+      }
+
+      const nextDrafts = mergeHostProgramDrafts(
+        [payload.data],
+        drafts.filter(
+          (draft) =>
+            draft.id !== selectedDraft.id && draft.id !== payload.data?.id,
+        ),
+      );
+
+      saveDrafts(nextDrafts);
+      setSelectedId(payload.data.id);
+      setSyncMessage("Supabase DB에 저장되었습니다.");
+    } catch (error) {
+      setSyncError(
+        error instanceof Error ? error.message : "DB 저장에 실패했습니다.",
+      );
+    } finally {
+      setIsSyncing(false);
+    }
   }
 
   function downloadDraftJson() {
@@ -120,7 +204,7 @@ export function HostProgramStudio() {
 
   return (
     <div className="mx-auto min-w-0 max-w-6xl px-4 py-8 md:px-8">
-      <div className="mb-5 grid gap-3 sm:grid-cols-[1fr_auto_auto]">
+      <div className="mb-5 grid gap-3 sm:grid-cols-[1fr_auto_auto_auto]">
         <Link
           className="inline-flex h-10 items-center justify-center gap-2 rounded-md border border-slate-200 bg-white px-3 text-sm font-black text-slate-700"
           href="/host"
@@ -135,6 +219,19 @@ export function HostProgramStudio() {
         >
           <Plus size={16} />
           새 프로그램
+        </button>
+        <button
+          className="inline-flex h-10 items-center justify-center gap-2 rounded-md bg-[var(--primary)] px-3 text-sm font-black text-white disabled:cursor-wait disabled:opacity-70"
+          disabled={isSyncing}
+          onClick={syncSelectedDraft}
+          type="button"
+        >
+          {isSyncing ? (
+            <Loader2 className="animate-spin" size={16} />
+          ) : (
+            <Database size={16} />
+          )}
+          DB 저장
         </button>
         <button
           className="inline-flex h-10 items-center justify-center gap-2 rounded-md bg-slate-950 px-3 text-sm font-black text-white"
@@ -396,11 +493,37 @@ export function HostProgramStudio() {
                 <Download size={16} />
                 JSON
               </button>
+              <button
+                className="inline-flex h-10 items-center justify-center gap-2 rounded-md bg-slate-950 px-3 text-sm font-black text-white disabled:cursor-wait disabled:opacity-70"
+                disabled={isSyncing}
+                onClick={syncSelectedDraft}
+                type="button"
+              >
+                {isSyncing ? (
+                  <Loader2 className="animate-spin" size={16} />
+                ) : (
+                  <Database size={16} />
+                )}
+                Supabase
+              </button>
             </div>
 
-            <div className="mt-5 flex items-center gap-2 text-sm font-bold text-slate-500">
+            <div
+              aria-live="polite"
+              className="mt-5 flex flex-wrap items-center gap-2 text-sm font-bold text-slate-500"
+            >
               {saved ? <Check size={16} className="text-[var(--primary)]" /> : <Save size={16} />}
               {saved ? "저장됨" : "변경 사항 자동 저장"}
+              {syncMessage ? (
+                <span className="rounded-md bg-teal-50 px-2 py-1 text-xs font-black text-teal-700">
+                  {syncMessage}
+                </span>
+              ) : null}
+              {syncError ? (
+                <span className="rounded-md bg-red-50 px-2 py-1 text-xs font-black text-red-700">
+                  {syncError}
+                </span>
+              ) : null}
             </div>
           </section>
 
