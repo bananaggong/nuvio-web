@@ -52,6 +52,9 @@ export type Program = {
   gallery: string[];
   badges: string[];
   body: string[];
+  dataSource?: "database" | "external" | "seed";
+  sourcePublishedAt?: string;
+  sourceFetchedAt?: string;
 };
 
 export type ReviewCategory =

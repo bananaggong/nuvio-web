@@ -63,7 +63,7 @@ export function ProgramActions({
         type="button"
       >
         <Bookmark size={17} />
-        보관하기
+        저장
       </button>
       <button
         className={`inline-flex h-11 items-center justify-center gap-2 rounded-md border px-3 text-sm font-black ${
@@ -75,7 +75,7 @@ export function ProgramActions({
         type="button"
       >
         <Bell size={17} />
-        알림받기
+        알림
       </button>
       <button
         className={`inline-flex h-11 items-center justify-center gap-2 rounded-md border px-3 text-sm font-black ${
@@ -87,7 +87,7 @@ export function ProgramActions({
         type="button"
       >
         <CheckCircle2 size={17} />
-        지원했어요
+        신청 표시
       </button>
       <button
         className="inline-flex h-11 items-center justify-center gap-2 rounded-md border border-slate-200 bg-white px-3 text-sm font-black text-slate-700"

@@ -26,10 +26,23 @@ export const implementationStatus: {
       title: "Public Program Experience",
       items: [
         {
+          title: "Crawler-first public program feed",
+          state: "implemented",
+          summary:
+            "Home and /api/programs now prioritize official RSS announcement candidates before DB-published programs, with seed data only as an empty-state fallback.",
+          routes: [
+            { label: "Home", href: "/" },
+            { label: "Programs API", href: "/api/programs" },
+            { label: "Announcements API", href: "/api/announcements" },
+          ],
+          verification:
+            "Refresh /api/announcements, then confirm external candidates marked as official-source data appear on the home list.",
+        },
+        {
           title: "Supabase-backed program listing",
           state: "implemented",
           summary:
-            "Published rows in Supabase programs are merged ahead of seed data on the home page and public API.",
+            "Published rows in Supabase programs are merged after crawled candidates and ahead of seed fallback on the home page and public API.",
           routes: [
             { label: "Home", href: "/" },
             { label: "Programs API", href: "/api/programs" },

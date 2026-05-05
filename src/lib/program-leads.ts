@@ -1,4 +1,3 @@
-import { regions } from "./data";
 import { getLiveAnnouncementFeed } from "./live-announcements";
 import { listPersistedProgramLeads } from "./program-lead-db";
 import type { LiveAnnouncement, ProgramLead, ThemeKey } from "./types";
@@ -11,35 +10,35 @@ type KeywordRule = {
 
 const positiveRules: KeywordRule[] = [
   {
-    words: ["모집", "접수", "참가자", "체험단", "서포터즈"],
+    words: ["모집", "접수", "참가자", "참여자", "체험단", "서포터즈"],
     reason: "모집/접수 성격",
     score: 3,
   },
   {
-    words: ["지원", "보조", "선정", "공모", "사업"],
+    words: ["지원", "보조", "선정", "공모", "지원사업"],
     reason: "지원사업 가능성",
     score: 2,
   },
   {
-    words: ["관광", "여행", "체류", "워케이션", "한달살기", "지역살이"],
-    reason: "여행지원금 주제",
+    words: ["관광", "여행", "체류", "워케이션", "한달살기", "살아보기", "생활인구"],
+    reason: "지역 체류/관광 주제",
     score: 3,
   },
   {
-    words: ["숙박", "교통", "체험", "리워드", "페이백", "할인"],
-    reason: "혜택/비용 지원 단서",
+    words: ["숙박", "교통", "체험", "리워드", "페이백", "할인", "쿠폰"],
+    reason: "비용 지원 또는 혜택 단서",
     score: 2,
   },
 ];
 
 const negativeRules: KeywordRule[] = [
   {
-    words: ["행정처분", "제재부가금", "공시송달", "인사발령", "채용"],
-    reason: "프로그램 모집과 관련 낮음",
+    words: ["행정처분", "제재", "고시", "인사발령", "채용", "입찰"],
+    reason: "프로그램 모집과 직접 관련 낮음",
     score: -4,
   },
   {
-    words: ["규정 개정", "의견수렴", "권리협회", "수수료"],
+    words: ["규정 개정", "의견수렴", "권리보호", "수수료"],
     reason: "제도 안내 성격",
     score: -2,
   },
@@ -47,18 +46,17 @@ const negativeRules: KeywordRule[] = [
 
 const themeRules: Array<{ theme: ThemeKey; words: string[] }> = [
   { theme: "workation", words: ["워케이션", "원격근무", "리모트"] },
-  { theme: "month", words: ["한달살기", "장기체류", "체류", "지역살이"] },
+  { theme: "month", words: ["한달살기", "일주일살기", "살아보기", "장기체류", "체류"] },
   { theme: "half", words: ["반값", "페이백", "환급", "할인"] },
-  { theme: "local", words: ["로컬", "지역", "마을", "생활관광"] },
+  { theme: "local", words: ["로컬", "지역", "마을", "생활관광", "생활인구"] },
   { theme: "returnFarm", words: ["귀농", "귀촌", "농촌", "어촌"] },
   { theme: "event", words: ["공모", "이벤트", "서포터즈", "체험단"] },
   { theme: "family", words: ["가족", "아이", "아동"] },
   { theme: "pet", words: ["반려", "반려견", "반려동물"] },
-  { theme: "benefit", words: ["지원", "보조", "리워드", "쿠폰"] },
+  { theme: "benefit", words: ["지원", "보조", "리워드", "쿠폰", "혜택"] },
 ];
 
 const regionCandidates = [
-  ...regions.filter((region) => region !== "전체" && region !== "전국" && region !== "해외"),
   "서울",
   "부산",
   "대구",
@@ -209,8 +207,8 @@ function inferRegion(normalizedText: string): string | undefined {
 
 function buildSummary(announcement: LiveAnnouncement): string {
   const body = announcement.body.replace(/\s+/gu, " ").trim();
-  if (body.length <= 110) return body;
-  return `${body.slice(0, 110)}...`;
+  if (body.length <= 130) return body;
+  return `${body.slice(0, 130)}...`;
 }
 
 function normalize(value: string): string {

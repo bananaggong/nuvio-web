@@ -1,12 +1,25 @@
 import { desc, isNotNull } from "drizzle-orm";
 import { getDb } from "@/db/client";
 import { programs as programsTable } from "@/db/schema";
+import {
+  getCrawledProgramByIdentifier,
+  listCrawledPrograms,
+} from "@/lib/crawled-programs";
 import { getProgramById, programs as seedPrograms } from "@/lib/data";
 import type { Program } from "@/lib/types";
 
 type ProgramRow = typeof programsTable.$inferSelect;
 
 export async function listPublicPrograms(): Promise<Program[]> {
+  let crawledPrograms: Program[] = [];
+  let databasePrograms: Program[] = [];
+
+  try {
+    crawledPrograms = await listCrawledPrograms();
+  } catch {
+    crawledPrograms = [];
+  }
+
   try {
     const rows = await getDb()
       .select()
@@ -15,10 +28,15 @@ export async function listPublicPrograms(): Promise<Program[]> {
       .orderBy(desc(programsTable.updatedAt))
       .limit(500);
 
-    return mergePrograms(rows.map(mapProgramRowToProgram), seedPrograms);
+    databasePrograms = rows.map(mapProgramRowToProgram);
   } catch {
-    return seedPrograms;
+    databasePrograms = [];
   }
+
+  const actualPrograms = mergePrograms(crawledPrograms, databasePrograms);
+  return actualPrograms.length > 0
+    ? actualPrograms
+    : seedPrograms.map((program) => ({ ...program, dataSource: "seed" as const }));
 }
 
 export async function getPublicProgramByIdentifier(
@@ -42,11 +60,18 @@ export async function getPublicProgramByIdentifier(
 
     if (row) return mapProgramRowToProgram(row);
   } catch {
-    const staticProgram = getStaticProgram(key);
-    if (staticProgram) return staticProgram;
+    // Continue to crawled and seed fallback.
   }
 
-  return getStaticProgram(key);
+  try {
+    const crawledProgram = await getCrawledProgramByIdentifier(key);
+    if (crawledProgram) return crawledProgram;
+  } catch {
+    // Continue to seed fallback.
+  }
+
+  const staticProgram = getStaticProgram(key);
+  return staticProgram ? { ...staticProgram, dataSource: "seed" } : undefined;
 }
 
 function mergePrograms(databasePrograms: Program[], staticPrograms: Program[]): Program[] {
@@ -110,6 +135,7 @@ function mapProgramRowToProgram(row: ProgramRow): Program {
     gallery: normalizeList(row.gallery, [image]),
     badges: normalizeList(row.badges, hashtags.slice(0, 4)),
     body: normalizeList(row.body, [row.description || row.summary]),
+    dataSource: "database",
   };
 }
 

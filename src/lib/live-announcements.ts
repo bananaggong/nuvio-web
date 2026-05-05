@@ -50,7 +50,7 @@ export type LiveAnnouncementFeed = {
   };
 };
 
-const DEFAULT_REFRESH_SECONDS = 300;
+const DEFAULT_REFRESH_SECONDS = 43_200;
 
 const parser = new XMLParser({
   cdataPropName: "__cdata",
@@ -60,7 +60,7 @@ const parser = new XMLParser({
 
 export function getAnnouncementRefreshSeconds(): number {
   const parsed = Number(process.env.ANNOUNCEMENT_REFRESH_SECONDS);
-  if (!Number.isFinite(parsed) || parsed < 30) return DEFAULT_REFRESH_SECONDS;
+  if (!Number.isFinite(parsed) || parsed < 3_600) return DEFAULT_REFRESH_SECONDS;
   return Math.floor(parsed);
 }
 
@@ -233,7 +233,7 @@ function normalizeRssItem(
     date,
     body:
       description ||
-      "외부 원문에서 가져온 최신 공지입니다. 원문 링크에서 상세 조건을 확인하세요.",
+      "공식 외부 소스에서 가져온 최신 공고입니다. 세부 조건은 원문 링크에서 확인하세요.",
     programId: findRelatedProgramId(textForMatching),
     sourceId: source.id,
     sourceName: source.name,

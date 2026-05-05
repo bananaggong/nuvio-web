@@ -33,8 +33,18 @@ export async function listRuntimeAnnouncementSources(): Promise<
     }
 
     for (const source of databaseSources) {
-      if (source.enabled !== false) byId.set(source.id, source);
-      else byId.delete(source.id);
+      const configuredSource = configuredSources.find((item) => item.id === source.id);
+
+      if (source.enabled === false) {
+        byId.delete(source.id);
+      } else if (configuredSource) {
+        byId.set(source.id, {
+          ...configuredSource,
+          enabled: source.enabled,
+        });
+      } else {
+        byId.set(source.id, source);
+      }
     }
 
     return [...byId.values()];
