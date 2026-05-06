@@ -139,6 +139,13 @@ export function VillageReviewDetailPage({
   review: Review;
   village: Village;
 }) {
+  const bodyParagraphs = review.body.split("\n").filter(Boolean);
+  const firstParagraph = bodyParagraphs[0] ?? "";
+  const showExcerpt =
+    review.excerpt.trim().length > 0 &&
+    !sameReviewText(review.excerpt, firstParagraph) &&
+    !sameReviewText(review.excerpt, review.title);
+
   return (
     <VillagePageFrame
       primaryProgram={programs[0]}
@@ -162,11 +169,15 @@ export function VillageReviewDetailPage({
               {review.author}
             </span>
           </div>
-          <p className="mt-6 text-lg font-bold leading-9 text-slate-800">
-            {review.excerpt}
-          </p>
-          <div className="mt-8 space-y-5 text-base leading-8 text-slate-700">
-            {review.body.split("\n").filter(Boolean).map((paragraph) => (
+          {showExcerpt ? (
+            <p className="mt-6 text-lg font-bold leading-9 text-slate-800">
+              {review.excerpt}
+            </p>
+          ) : null}
+          <div
+            className={`${showExcerpt ? "mt-8" : "mt-6"} space-y-5 text-base leading-8 text-slate-700`}
+          >
+            {bodyParagraphs.map((paragraph) => (
               <p key={paragraph}>{paragraph}</p>
             ))}
           </div>
@@ -204,6 +215,21 @@ export function VillageReviewDetailPage({
         </aside>
       </article>
     </VillagePageFrame>
+  );
+}
+
+function sameReviewText(left: string, right: string): boolean {
+  const normalize = (value: string) =>
+    value.replace(/\s+/g, " ").replace(/[.~…]+$/g, "").trim();
+
+  const normalizedLeft = normalize(left);
+  const normalizedRight = normalize(right);
+
+  return (
+    normalizedLeft.length > 0 &&
+    (normalizedLeft === normalizedRight ||
+      normalizedLeft.startsWith(normalizedRight) ||
+      normalizedRight.startsWith(normalizedLeft))
   );
 }
 
