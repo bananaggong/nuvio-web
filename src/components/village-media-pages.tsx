@@ -1,6 +1,6 @@
 import Image from "next/image";
 import Link from "next/link";
-import { ArrowLeft, ArrowRight, ExternalLink, PlayCircle } from "lucide-react";
+import { ArrowRight, ExternalLink, PlayCircle } from "lucide-react";
 import {
   VillageSiteFooter,
   VillageSiteHeader,
@@ -54,12 +54,19 @@ export function VillageMediaDetailPage({
   const related = media
     .filter((item) => item.id !== content.id)
     .slice(0, 3);
+  const isPortraitEmbed = content.provider === "instagram";
 
   return (
     <VillageMediaFrame primaryProgram={programs[0]} title={content.title} village={village}>
       <article className="grid gap-8 lg:grid-cols-[minmax(0,1fr)_320px]">
         <div>
-          <div className="relative aspect-video overflow-hidden bg-[#11130f]">
+          <div
+            className={
+              isPortraitEmbed
+                ? "relative mx-auto aspect-[9/16] max-h-[760px] w-full max-w-[430px] overflow-hidden bg-[#11130f]"
+                : "relative aspect-video overflow-hidden bg-[#11130f]"
+            }
+          >
             {content.embedUrl ? (
               <iframe
                 allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
@@ -103,7 +110,7 @@ export function VillageMediaDetailPage({
               rel="noreferrer"
               target="_blank"
             >
-              {content.provider === "youtube" ? "유튜브에서 보기" : "원문 보기"}
+              {getSourceButtonLabel(content.provider)}
               <ExternalLink size={16} />
             </a>
           </div>
@@ -166,21 +173,9 @@ function VillageMediaFrame({
       />
       <section className="border-b border-[#d9d6c9] bg-white px-5 py-10 md:px-8">
         <div className="mx-auto max-w-7xl">
-          <Link
-            className="inline-flex items-center gap-2 text-sm font-black text-[#4E7C3A]"
-            href={villagePath(village.slug)}
-          >
-            <ArrowLeft size={16} />
-            {village.name}
-          </Link>
-          <h1 className="mt-4 max-w-4xl text-4xl font-black leading-tight md:text-5xl">
+          <h1 className="max-w-4xl text-4xl font-black leading-tight md:text-5xl">
             {title}
           </h1>
-          <nav className="mt-6 flex flex-wrap gap-2 text-sm font-black">
-            <FrameLink href={`${villagePath(village.slug)}/programs`} label="체험활동" />
-            <FrameLink href={`${villagePath(village.slug)}/media`} label="미디어" />
-            <FrameLink href={`${villagePath(village.slug)}/reviews`} label="참여후기" />
-          </nav>
         </div>
       </section>
       <section className="mx-auto max-w-7xl px-5 py-12 md:px-8">
@@ -232,17 +227,6 @@ function MediaListCard({
   );
 }
 
-function FrameLink({ href, label }: { href: string; label: string }) {
-  return (
-    <Link
-      className="border border-[#d9d6c9] bg-[#f7f7f0] px-3 py-2 hover:bg-white"
-      href={href}
-    >
-      {label}
-    </Link>
-  );
-}
-
 function EmptyMedia({ village }: { village: Village }) {
   return (
     <div className="border border-dashed border-[#cfc9b9] bg-white px-6 py-12 text-center">
@@ -252,4 +236,10 @@ function EmptyMedia({ village }: { village: Village }) {
       </p>
     </div>
   );
+}
+
+function getSourceButtonLabel(provider?: VillageMediaContent["provider"]): string {
+  if (provider === "youtube") return "유튜브에서 보기";
+  if (provider === "instagram") return "인스타그램에서 보기";
+  return "원문 보기";
 }

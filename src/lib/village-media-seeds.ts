@@ -2,6 +2,8 @@ import type { VillageMediaContent } from "@/lib/types";
 
 const youtubeEmbed = (id: string) => `https://www.youtube.com/embed/${id}`;
 const youtubeWatch = (id: string) => `https://www.youtube.com/watch?v=${id}`;
+const instagramReel = (id: string) => `https://www.instagram.com/reel/${id}/`;
+const instagramEmbed = (id: string) => `https://www.instagram.com/reel/${id}/embed`;
 
 export const greentmosireLogoImage =
   "https://cdn.imweb.me/upload/S202509155ae6886607442/1e9758f9cc1c3.png";
@@ -13,6 +15,26 @@ export const greentmosireMediaHeroImage =
   "https://cdn.imweb.me/thumbnail/20240408/271b735ee0b0f.png";
 
 export const boseongMediaSeeds: VillageMediaContent[] = [
+  {
+    id: "boseong-media-instagram-reel-drryy",
+    villageSlug: "boseong",
+    title: "전체차LAB 인스타그램 릴스",
+    category: "archive",
+    provider: "instagram",
+    summary: "그린티모시레 인스타그램에 올라온 전체차LAB 릴스 기록입니다.",
+    body: [
+      "유튜브 콘텐츠뿐 아니라 인스타그램 릴스도 마을 미디어 아카이브 안에서 바로 확인할 수 있도록 연결했습니다.",
+      "릴스 원문은 인스타그램에서 열어볼 수 있고, 누비오 상세 페이지에서는 임베드로 먼저 재생합니다.",
+    ],
+    thumbnail: greentmosireSquareImage,
+    embedUrl: instagramEmbed("DRrYy-IAh_9"),
+    sourceName: "그린티모시레 인스타그램",
+    sourceUrl: instagramReel("DRrYy-IAh_9"),
+    date: "2026-05-06",
+    featured: true,
+    published: true,
+    updatedAt: "2026-05-06T00:00:00.000Z",
+  },
   {
     id: "boseong-media-sukjae-ep4",
     villageSlug: "boseong",

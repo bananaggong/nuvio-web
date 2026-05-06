@@ -260,7 +260,14 @@ function normalizeEmbedUrl(embedValue: unknown, sourceValue: unknown): string | 
   const directEmbed = normalizeYoutubeEmbedUrl(asString(embedValue));
   if (directEmbed) return directEmbed;
 
-  return normalizeYoutubeEmbedUrl(asString(sourceValue)) || undefined;
+  const instagramEmbed = normalizeInstagramEmbedUrl(asString(embedValue));
+  if (instagramEmbed) return instagramEmbed;
+
+  return (
+    normalizeYoutubeEmbedUrl(asString(sourceValue)) ||
+    normalizeInstagramEmbedUrl(asString(sourceValue)) ||
+    undefined
+  );
 }
 
 function normalizeYoutubeEmbedUrl(value: string): string | undefined {
@@ -287,6 +294,26 @@ function normalizeYoutubeEmbedUrl(value: string): string | undefined {
   }
 
   return undefined;
+}
+
+function normalizeInstagramEmbedUrl(value: string): string | undefined {
+  if (!value) return undefined;
+
+  try {
+    const url = new URL(value);
+    if (!url.hostname.endsWith("instagram.com")) return undefined;
+
+    const parts = url.pathname.split("/").filter(Boolean);
+    const type = parts[0];
+    const id = parts[1];
+    if (!id || (type !== "reel" && type !== "p" && type !== "tv")) {
+      return undefined;
+    }
+
+    return `https://www.instagram.com/${type}/${id}/embed`;
+  } catch {
+    return undefined;
+  }
 }
 
 function normalizeBody(value: unknown): string[] {
