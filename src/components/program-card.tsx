@@ -150,7 +150,7 @@ export function SourceNotice() {
   return (
     <p className="inline-flex items-center gap-2 rounded-md bg-blue-50 px-3 py-2 text-xs font-black text-blue-700 ring-1 ring-blue-100">
       <ShieldCheck size={15} />
-      외부 공고는 공식 원문 확인 전까지 후보 데이터로 표시됩니다.
+      공개 프로그램은 운영자 게시 또는 NUVIO 검수 후 노출됩니다.
     </p>
   );
 }

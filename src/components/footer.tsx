@@ -1,3 +1,4 @@
+import Image from "next/image";
 import Link from "next/link";
 import { Camera, Mail, MessageCircle, Send } from "lucide-react";
 
@@ -7,12 +8,13 @@ export function Footer() {
       <div className="mx-auto flex max-w-6xl flex-col gap-8 px-5 py-10 md:px-8">
         <div className="flex flex-col justify-between gap-6 md:flex-row">
           <div>
-            <div className="flex items-center gap-2">
-              <div className="flex size-9 items-center justify-center rounded-md bg-[var(--primary)] text-sm font-black text-white">
-                N
-              </div>
-              <span className="text-lg font-black">NUVIO</span>
-            </div>
+            <Image
+              alt="NUVIO"
+              className="h-9 w-auto"
+              height={40}
+              src="/brand/nuvio-wordmark.svg"
+              width={120}
+            />
             <p className="mt-3 max-w-xl text-sm leading-6 text-slate-600">
               NUVIO는 지역 체류 프로그램의 탐색, 신청, 선정 안내, 운영 관리,
               후기와 보고서 준비를 한 흐름으로 묶는 로컬 체류 운영 플랫폼입니다.

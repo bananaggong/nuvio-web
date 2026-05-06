@@ -2,20 +2,12 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import {
-  BriefcaseBusiness,
-  ClipboardList,
-  Home,
-  Megaphone,
-  MessageSquareText,
-} from "lucide-react";
+import { ClipboardList, MapPinned, UserRound } from "lucide-react";
 
 const tabs = [
-  { href: "/", label: "지원금", icon: ClipboardList },
-  { href: "/half-price-travel", label: "반값", icon: Home },
-  { href: "/reviews", label: "후기", icon: MessageSquareText },
-  { href: "/announcements", label: "공지", icon: Megaphone },
-  { href: "/host", label: "호스트", icon: BriefcaseBusiness },
+  { href: "/", label: "프로그램", icon: ClipboardList, match: ["/programs"] },
+  { href: "/villages", label: "로컬 홈", icon: MapPinned, match: ["/villages"] },
+  { href: "/me", label: "내 누비오", icon: UserRound, match: ["/me", "/login"] },
 ];
 
 export function MobileTabBar() {
@@ -23,11 +15,15 @@ export function MobileTabBar() {
 
   return (
     <nav className="safe-bottom fixed inset-x-0 bottom-0 z-40 border-t border-slate-200 bg-white/95 px-3 py-2 shadow-[0_-6px_20px_rgba(15,24,36,0.08)] backdrop-blur md:hidden">
-      <div className="grid grid-cols-5 gap-1">
+      <div className="grid grid-cols-3 gap-1">
         {tabs.map((tab) => {
           const Icon = tab.icon;
           const active =
-            tab.href === "/" ? pathname === "/" : pathname.startsWith(tab.href);
+            tab.href === "/"
+              ? pathname === "/" || tab.match.some((path) => pathname.startsWith(path))
+              : pathname.startsWith(tab.href) ||
+                tab.match.some((path) => pathname.startsWith(path));
+
           return (
             <Link
               aria-current={active ? "page" : undefined}

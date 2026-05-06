@@ -9,7 +9,7 @@ export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
 
 export const metadata: Metadata = {
-  title: "마을 홈 | NUVIO",
+  title: "로컬 홈 | NUVIO",
   description:
     "NUVIO에 등록된 청년마을, 로컬 체류지, 워케이션 마을의 공식 홈을 모아봅니다.",
 };
@@ -23,7 +23,7 @@ export default async function VillagesPage() {
         <div className="mx-auto max-w-6xl px-5 py-12 md:px-8">
           <p className="inline-flex items-center gap-2 text-sm font-black text-[var(--primary)]">
             <Globe2 size={18} />
-            Village Directory
+            Local Home Directory
           </p>
           <h1 className="mt-4 max-w-3xl text-3xl font-black leading-tight tracking-tight text-slate-950 md:text-5xl">
             각 마을의 모집, 공지, 후기, 커뮤니티를 하나의 공식 페이지로 엮습니다.
@@ -62,7 +62,7 @@ export default async function VillagesPage() {
                 {village.summary}
               </p>
               <span className="mt-5 inline-flex items-center gap-2 text-sm font-black text-slate-900 group-hover:text-[var(--primary)]">
-                마을 홈 열기
+                로컬 홈 열기
                 <ArrowRight size={16} />
               </span>
             </div>

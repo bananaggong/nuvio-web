@@ -198,19 +198,19 @@ export function ProgramExplorer({ initialTheme, programs }: ProgramExplorerProps
             <div>
               <p className="inline-flex items-center gap-2 text-sm font-black text-[var(--primary)]">
                 <RefreshCw size={17} />
-                공식 공고 수집 중
+                공개 프로그램 탐색
               </p>
               <h1 className="mt-2 max-w-4xl text-2xl font-black leading-tight text-slate-950 md:text-3xl">
                 지역 체류, 워케이션, 여행지원금 공고 탐색
               </h1>
               <p className="mt-3 max-w-3xl text-sm leading-6 text-slate-600">
-                공식 RSS와 공고 소스를 하루 1-2회 갱신하고 모집 가능성이 있는 항목만 후보로 분류합니다.
-                운영자가 검수한 항목은 신청, 결제, 기수 관리 흐름으로 이어집니다.
+                운영자가 게시했거나 NUVIO가 검수한 지역 체류 프로그램을 모아봅니다.
+                외부 공고는 관리자 검수 후 신청, 결제, 기수 관리 흐름으로 연결합니다.
               </p>
             </div>
             <div className="grid grid-cols-3 overflow-hidden rounded-md border border-slate-200 bg-[var(--surface-muted)]">
-              <Metric label="수집 후보" value={sourceStats.externalCount} />
-              <Metric label="공식 소스" value={sourceStats.sourceCount} />
+              <Metric label="공개 프로그램" value={availablePrograms.length} />
+              <Metric label="큐레이션" value={sourceStats.seedCount} />
               <Metric label="직접 게시" value={sourceStats.dbCount} />
             </div>
           </div>
@@ -324,19 +324,21 @@ export function ProgramExplorer({ initialTheme, programs }: ProgramExplorerProps
         <div className="mb-5 flex flex-col justify-between gap-2 sm:flex-row sm:items-end">
           <div>
             <h2 className="text-xl font-black text-slate-950">
-              공고 후보 {filteredPrograms.length.toLocaleString("ko-KR")}건
+              프로그램 {filteredPrograms.length.toLocaleString("ko-KR")}개
             </h2>
             <p className="mt-1 text-sm leading-6 text-slate-500">
-              자동 수집 항목은 후보입니다. 운영자가 검수해 프로그램으로 게시하면 신청/결제/기수 관리 흐름에 연결됩니다.
+              마을 페이지와 연결된 프로그램은 신청, 선정, 입금 확인, 후기 관리 흐름까지 이어집니다.
             </p>
           </div>
           <div className="flex flex-wrap gap-2">
             {sourceStats.seedCount > 0 ? (
-              <SmallBadge icon={<Database size={15} />} label={`예시 데이터 ${sourceStats.seedCount}`} />
+              <SmallBadge icon={<Database size={15} />} label={`큐레이션 ${sourceStats.seedCount}`} />
             ) : null}
-            <SmallBadge icon={<FileSearch size={15} />} label={`외부 공고 ${sourceStats.externalCount}`} />
+            {sourceStats.externalCount > 0 ? (
+              <SmallBadge icon={<FileSearch size={15} />} label={`검수 후보 ${sourceStats.externalCount}`} />
+            ) : null}
             <SmallBadge icon={<Database size={15} />} label={`직접 게시 ${sourceStats.dbCount}`} />
-            <SmallBadge icon={<Clock3 size={15} />} label="원문 우선" />
+            <SmallBadge icon={<Clock3 size={15} />} label="운영 연결" />
           </div>
         </div>
 

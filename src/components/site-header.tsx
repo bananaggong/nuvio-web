@@ -1,25 +1,15 @@
 "use client";
 
+import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import {
-  Bell,
-  BriefcaseBusiness,
-  ChevronDown,
-  Download,
-  Menu,
-  UserRound,
-  X,
-} from "lucide-react";
+import { ChevronDown, Menu, X } from "lucide-react";
 import { useState } from "react";
 
 const navItems = [
-  { href: "/", label: "지원 프로그램" },
-  { href: "/villages", label: "마을" },
-  { href: "/half-price-travel", label: "반값여행" },
-  { href: "/reviews", label: "후기" },
-  { href: "/announcements", label: "실시간 공지" },
-  { href: "/host", label: "호스트" },
+  { href: "/", label: "프로그램", match: ["/programs", "/half-price-travel"] },
+  { href: "/villages", label: "로컬 홈", match: ["/villages"] },
+  { href: "/me", label: "내 누비오", match: ["/me", "/login"] },
 ];
 
 export function SiteHeader() {
@@ -27,28 +17,36 @@ export function SiteHeader() {
   const [open, setOpen] = useState(false);
 
   return (
-    <header className="sticky top-0 z-50 border-b border-[var(--line)] bg-white/92 backdrop-blur">
+    <header className="sticky top-0 z-50 border-b border-[var(--line)] bg-white/95 backdrop-blur">
       <div className="mx-auto flex h-16 max-w-6xl items-center justify-between gap-4 px-4 md:px-8">
-        <Link className="flex items-center gap-2" href="/" onClick={() => setOpen(false)}>
-          <div className="flex size-10 items-center justify-center rounded-md bg-[var(--primary)] font-black text-white shadow-sm">
-            N
-          </div>
-          <div className="leading-tight">
-            <div className="text-lg font-black tracking-tight">NUVIO</div>
-            <div className="hidden text-[11px] font-medium text-slate-500 sm:block">
-              로컬 체류 운영 플랫폼
-            </div>
-          </div>
+        <Link
+          aria-label="NUVIO 홈"
+          className="flex min-w-fit items-center"
+          href="/"
+          onClick={() => setOpen(false)}
+        >
+          <Image
+            alt="NUVIO"
+            className="h-8 w-auto"
+            height={40}
+            priority
+            src="/brand/nuvio-wordmark.svg"
+            width={120}
+          />
         </Link>
 
-        <nav className="hidden items-center gap-1 lg:flex">
+        <nav className="hidden items-center gap-1 md:flex">
           {navItems.map((item) => {
             const active =
-              item.href === "/" ? pathname === "/" : pathname.startsWith(item.href);
+              item.href === "/"
+                ? pathname === "/" || item.match.some((path) => pathname.startsWith(path))
+                : pathname.startsWith(item.href) ||
+                  item.match.some((path) => pathname.startsWith(path));
+
             return (
               <Link
                 aria-current={active ? "page" : undefined}
-                className={`rounded-md px-3 py-2 text-sm font-bold ${
+                className={`rounded-md px-4 py-2 text-sm font-black ${
                   active
                     ? "bg-[var(--surface-muted)] text-[var(--primary-strong)]"
                     : "text-slate-600 hover:bg-slate-50 hover:text-slate-950"
@@ -62,41 +60,12 @@ export function SiteHeader() {
           })}
         </nav>
 
-        <div className="hidden items-center gap-2 md:flex">
-          <Link
-            className="inline-flex h-10 items-center gap-2 rounded-md border border-slate-200 px-3 text-sm font-bold text-slate-700 hover:border-[var(--primary)] hover:text-[var(--primary)]"
-            href="/partners/apply"
-          >
-            <BriefcaseBusiness size={17} />
-            파트너 등록
-          </Link>
-          <Link
-            className="inline-flex h-10 items-center gap-2 rounded-md bg-slate-950 px-3 text-sm font-bold text-white hover:bg-slate-800"
-            href="/login"
-          >
-            <UserRound size={17} />
-            시작하기
-          </Link>
-          <button
-            aria-label="자료 다운로드"
-            className="inline-flex size-10 items-center justify-center rounded-md border border-slate-200 text-slate-600 hover:border-[var(--primary)] hover:text-[var(--primary)]"
-            type="button"
-          >
-            <Download size={18} />
-          </button>
-          <Link
-            aria-label="내 알림"
-            className="inline-flex size-10 items-center justify-center rounded-md border border-slate-200 text-slate-600 hover:border-[var(--primary)] hover:text-[var(--primary)]"
-            href="/me"
-          >
-            <Bell size={18} />
-          </Link>
-        </div>
+        <div className="hidden min-w-[120px] md:block" aria-hidden="true" />
 
         <button
           aria-expanded={open}
           aria-label="메뉴 열기"
-          className="inline-flex size-10 items-center justify-center rounded-md border border-slate-200 text-slate-700 lg:hidden"
+          className="inline-flex size-10 items-center justify-center rounded-md border border-slate-200 text-slate-700 md:hidden"
           onClick={() => setOpen((value) => !value)}
           type="button"
         >
@@ -105,7 +74,7 @@ export function SiteHeader() {
       </div>
 
       {open ? (
-        <div className="border-t border-slate-200 bg-white px-4 py-4 lg:hidden">
+        <div className="border-t border-slate-200 bg-white px-4 py-4 md:hidden">
           <div className="mx-auto flex max-w-6xl flex-col gap-2">
             {navItems.map((item) => (
               <Link
@@ -118,22 +87,6 @@ export function SiteHeader() {
                 <ChevronDown className="-rotate-90" size={16} />
               </Link>
             ))}
-            <div className="mt-2 grid grid-cols-2 gap-2">
-              <Link
-                className="rounded-md border border-slate-200 px-3 py-3 text-center text-sm font-bold"
-                href="/partners/apply"
-                onClick={() => setOpen(false)}
-              >
-                파트너 등록
-              </Link>
-              <Link
-                className="rounded-md bg-slate-950 px-3 py-3 text-center text-sm font-bold text-white"
-                href="/login"
-                onClick={() => setOpen(false)}
-              >
-                시작하기
-              </Link>
-            </div>
           </div>
         </div>
       ) : null}
