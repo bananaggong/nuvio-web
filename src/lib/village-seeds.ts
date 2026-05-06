@@ -20,8 +20,8 @@ export const seedVillages: Village[] = [
       "2025년 청년마을 만들기 실적보고서의 사업개요, 공간, 프로그램, 성과, 후기 데이터를 기준으로 정리했습니다.",
     heroImage: boseongTeaFieldImage,
     logoText: "茶",
-    brandColor: "#0f766e",
-    accentColor: "#d97706",
+    brandColor: "#4E7C3A",
+    accentColor: "#6BAA50",
     instagramUrl: "https://www.instagram.com/",
     kakaoUrl: "https://pf.kakao.com/",
     contactEmail: "hello@nuvio.kr",
@@ -37,9 +37,9 @@ export const seedVillages: Village[] = [
       },
       {
         id: "photo-credit",
-        label: "대표 이미지 출처",
+        label: "레거시 미디어",
         type: "website",
-        url: "https://commons.wikimedia.org/wiki/File:Boseong_Green_Tea_Field.jpg",
+        url: "https://greentmosire.imweb.me/mediacontents",
       },
       {
         id: "instagram",

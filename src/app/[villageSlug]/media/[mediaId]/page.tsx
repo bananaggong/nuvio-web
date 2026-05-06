@@ -1,11 +1,9 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
-import { VillageHomePage } from "@/components/village-home-page";
+import { VillageMediaDetailPage } from "@/components/village-media-pages";
 import {
   getPublicVillageBySlug,
   getVillagePrograms,
-  getVillageReviews,
-  listPublicVillages,
 } from "@/lib/village-db";
 import { listPublicVillageMedia } from "@/lib/village-media-db";
 import { isReservedVillageSlug } from "@/lib/village-routing";
@@ -13,54 +11,54 @@ import { isReservedVillageSlug } from "@/lib/village-routing";
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
 
-export async function generateStaticParams() {
-  const villages = await listPublicVillages();
-  return villages.map((village) => ({ villageSlug: village.slug }));
-}
-
 export async function generateMetadata({
   params,
 }: {
-  params: Promise<{ villageSlug: string }>;
+  params: Promise<{ mediaId: string; villageSlug: string }>;
 }): Promise<Metadata> {
-  const { villageSlug } = await params;
+  const { mediaId, villageSlug } = await params;
   if (isReservedVillageSlug(villageSlug)) return {};
 
   const village = await getPublicVillageBySlug(villageSlug);
   if (!village) return {};
 
+  const media = await listPublicVillageMedia(village.slug);
+  const content = media.find((item) => String(item.id) === mediaId);
+  if (!content) return {};
+
   return {
-    title: `${village.name} | NUVIO`,
-    description: village.summary,
+    title: `${content.title} | ${village.name}`,
+    description: content.summary,
     openGraph: {
-      title: village.name,
-      description: village.summary,
-      images: [{ url: village.heroImage }],
+      title: content.title,
+      description: content.summary,
+      images: [{ url: content.thumbnail }],
     },
   };
 }
 
-export default async function ShortVillagePage({
+export default async function VillageMediaDetailRoute({
   params,
 }: {
-  params: Promise<{ villageSlug: string }>;
+  params: Promise<{ mediaId: string; villageSlug: string }>;
 }) {
-  const { villageSlug } = await params;
+  const { mediaId, villageSlug } = await params;
   if (isReservedVillageSlug(villageSlug)) notFound();
 
   const village = await getPublicVillageBySlug(villageSlug);
-
   if (!village) notFound();
 
   const programs = await getVillagePrograms(village);
-  const reviews = await getVillageReviews(village, programs, { limit: 6 });
-  const media = await listPublicVillageMedia(village.slug, { limit: 6 });
+  const media = await listPublicVillageMedia(village.slug);
+  const content = media.find((item) => String(item.id) === mediaId);
+
+  if (!content) notFound();
 
   return (
-    <VillageHomePage
+    <VillageMediaDetailPage
+      content={content}
       media={media}
       programs={programs}
-      reviews={reviews}
       village={village}
     />
   );

@@ -19,6 +19,7 @@ import type {
   ProgramStatus,
   ReviewCategory,
   ThemeKey,
+  VillageMediaCategory,
 } from "@/lib/types";
 
 export const userRoleEnum = pgEnum("user_role", ["user", "partner", "admin"]);
@@ -68,6 +69,11 @@ export const reviewStatusEnum = pgEnum("review_status", [
   "draft",
   "published",
   "hidden",
+]);
+export const villageMediaCategoryEnum = pgEnum("village_media_category", [
+  "original",
+  "broadcast",
+  "archive",
 ]);
 export const sourceTypeEnum = pgEnum("external_source_type", ["rss"]);
 export const leadConfidenceEnum = pgEnum("lead_confidence", [
@@ -383,6 +389,33 @@ export const reviews = pgTable(
     index("reviews_program_id_idx").on(table.programId),
     index("reviews_village_slug_idx").on(table.villageSlug),
     index("reviews_status_idx").on(table.status),
+  ],
+);
+
+export const villageMediaContents = pgTable(
+  "village_media_contents",
+  {
+    id: uuid("id").defaultRandom().primaryKey(),
+    legacyId: text("legacy_id").unique(),
+    villageSlug: text("village_slug").notNull(),
+    title: text("title").notNull(),
+    category: villageMediaCategoryEnum("category")
+      .$type<VillageMediaCategory>()
+      .notNull(),
+    summary: text("summary").notNull(),
+    body: jsonb("body").$type<string[]>().default(emptyArray).notNull(),
+    thumbnailUrl: text("thumbnail_url").notNull(),
+    sourceName: text("source_name").notNull(),
+    sourceUrl: text("source_url").notNull(),
+    featured: boolean("featured").default(false).notNull(),
+    publishedAt: timestamp("published_at", { withTimezone: true }),
+    createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+    updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
+  },
+  (table) => [
+    uniqueIndex("village_media_contents_legacy_id_idx").on(table.legacyId),
+    index("village_media_contents_village_slug_idx").on(table.villageSlug),
+    index("village_media_contents_published_at_idx").on(table.publishedAt),
   ],
 );
 

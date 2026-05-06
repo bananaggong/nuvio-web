@@ -1,7 +1,15 @@
+import Image from "next/image";
 import Link from "next/link";
-import { ArrowRight, Home, MessageCircle, Sparkles } from "lucide-react";
+import {
+  ArrowRight,
+  Camera,
+  Home,
+  MapPin,
+  MessageCircle,
+  Sparkles,
+} from "lucide-react";
 import { villagePath } from "@/lib/village-routing";
-import { getVillageEnglishLabel } from "@/lib/village-template";
+import { greentmosireLogoImage } from "@/lib/village-media-seeds";
 import type { Program } from "@/lib/types";
 import type { Village } from "@/lib/village-types";
 
@@ -14,114 +22,58 @@ type VillageSiteHeaderProps = {
 export function VillageSiteHeader({
   village,
   primaryProgram,
-  variant = "hero",
 }: VillageSiteHeaderProps) {
-  const isHero = variant === "hero";
-  const isDark = variant === "dark";
   const homePath = villagePath(village.slug);
+  const operatorLabel =
+    village.slug === "boseong"
+      ? "그린티모시레"
+      : `${village.region} ${village.city}`;
   const programHref = primaryProgram
     ? `${homePath}/${primaryProgram.slug}`
-    : `${homePath}#programs`;
-
-  if (isDark) {
-    return (
-      <header className="relative z-30 text-white">
-        <div className="bg-[#686864] px-5 py-2 text-center text-xs font-black md:text-sm">
-          {village.city} 청년마을
-        </div>
-        <div className="bg-[#242421]">
-          <div className="mx-auto flex h-24 max-w-7xl items-center justify-between gap-4 px-5 md:px-8">
-            <Link className="flex min-w-0 items-center gap-4" href={homePath}>
-              <VillageMark village={village} />
-              <span className="min-w-0">
-                <span className="block truncate text-xl font-black md:text-2xl">
-                  {village.name}
-                </span>
-                <span className="block text-xs font-medium text-white/62">
-                  {getVillageEnglishLabel(village)}
-                </span>
-              </span>
-            </Link>
-
-            <nav className="hidden items-center gap-14 text-lg font-black md:flex">
-              <Link className="hover:text-[#f0b434]" href={`${homePath}/about`}>
-                소개
-              </Link>
-              <Link className="hover:text-[#f0b434]" href={`${homePath}/programs`}>
-                프로그램
-              </Link>
-              <Link className="hover:text-[#f0b434]" href={`${homePath}/notice`}>
-                알림
-              </Link>
-            </nav>
-
-            <Link
-              className="hidden h-12 items-center justify-center rounded-full bg-white px-6 text-sm font-black text-slate-950 hover:bg-[#f0b434] md:inline-flex"
-              href={`${homePath}#guide`}
-            >
-              이용안내
-            </Link>
-
-            <Link
-              className="inline-flex h-10 items-center justify-center rounded-full bg-white px-4 text-sm font-black text-slate-950 md:hidden"
-              href={programHref}
-            >
-              신청
-            </Link>
-          </div>
-        </div>
-      </header>
-    );
-  }
+    : `${homePath}/programs`;
 
   return (
-    <header
-      className={
-        isHero
-          ? "absolute inset-x-0 top-0 z-20 text-white"
-          : "sticky top-0 z-30 border-b border-slate-200 bg-white/95 text-slate-950 backdrop-blur"
-      }
-    >
-      <div className="mx-auto flex h-16 max-w-6xl items-center justify-between gap-4 px-5 md:px-8">
-        <Link className="flex min-w-0 items-center gap-3" href={homePath}>
-          <VillageMark village={village} compact />
+    <header className="relative z-30 border-b border-[#d9d6c9] bg-[#11130f] text-white">
+      <div className="border-b border-white/10 bg-[#4E7C3A] px-4 py-2 text-center text-xs font-black md:text-sm">
+        {village.region} {village.city} 청년마을 · {village.name}
+      </div>
+      <div className="mx-auto flex h-20 max-w-7xl items-center justify-between gap-4 px-5 md:h-24 md:px-8">
+        <Link className="flex min-w-0 items-center gap-4" href={homePath}>
+          <VillageMark village={village} />
           <span className="min-w-0">
-            <span className="block truncate text-base font-black">
+            <span className="block truncate text-xl font-black md:text-2xl">
               {village.name}
             </span>
-            <span
-              className={
-                isHero
-                  ? "block text-xs font-bold text-white/70"
-                  : "block text-xs font-bold text-slate-500"
-              }
-            >
-              {village.region} {village.city} 공식 홈
+            <span className="mt-1 block truncate text-xs font-bold text-white/58">
+              {operatorLabel}
             </span>
           </span>
         </Link>
 
-        <nav
-          className={
-            isHero
-              ? "hidden items-center gap-1 rounded-md border border-white/15 bg-white/10 px-1 py-1 text-sm font-black backdrop-blur md:flex"
-              : "hidden items-center gap-1 rounded-md bg-slate-100 px-1 py-1 text-sm font-black md:flex"
-          }
-        >
-          <HeaderNavLink href={`${homePath}#story`} isHero={isHero} label="소개" />
-          <HeaderNavLink href={`${homePath}#programs`} isHero={isHero} label="프로그램" />
-          <HeaderNavLink href={`${homePath}#reviews`} isHero={isHero} label="후기" />
+        <nav className="hidden items-center gap-7 text-sm font-black lg:flex">
+          <HeaderNavLink href={`${homePath}/about`} label="소개" />
+          <HeaderNavLink href={`${homePath}/programs`} label="체험활동" />
+          <HeaderNavLink href={`${homePath}/media`} label="미디어" />
+          <HeaderNavLink href={`${homePath}/reviews`} label="참여후기" />
+          <HeaderNavLink href={`${homePath}/notice`} label="공지" />
         </nav>
 
         <div className="flex items-center gap-2">
+          {village.instagramUrl ? (
+            <a
+              aria-label={`${village.name} 인스타그램`}
+              className="hidden size-10 items-center justify-center border border-white/15 text-white/80 hover:border-white/40 hover:text-white sm:inline-flex"
+              href={village.instagramUrl}
+              rel="noreferrer"
+              target="_blank"
+            >
+              <Camera size={18} />
+            </a>
+          ) : null}
           {village.kakaoUrl ? (
             <a
               aria-label={`${village.name} 문의하기`}
-              className={
-                isHero
-                  ? "hidden size-10 items-center justify-center rounded-md border border-white/20 bg-white/10 text-white backdrop-blur hover:bg-white/20 sm:inline-flex"
-                  : "hidden size-10 items-center justify-center rounded-md border border-slate-200 text-slate-700 hover:border-slate-300 sm:inline-flex"
-              }
+              className="hidden size-10 items-center justify-center border border-white/15 text-white/80 hover:border-white/40 hover:text-white sm:inline-flex"
               href={village.kakaoUrl}
               rel="noreferrer"
               target="_blank"
@@ -130,9 +82,8 @@ export function VillageSiteHeader({
             </a>
           ) : null}
           <Link
-            className="inline-flex h-10 items-center justify-center gap-2 rounded-md px-3 text-sm font-black text-white shadow-sm hover:opacity-90"
+            className="inline-flex h-10 items-center justify-center gap-2 bg-white px-4 text-sm font-black text-[#11130f] hover:bg-[#6BAA50] hover:text-white"
             href={programHref}
-            style={{ backgroundColor: village.brandColor }}
           >
             신청
             <ArrowRight size={16} />
@@ -143,35 +94,27 @@ export function VillageSiteHeader({
   );
 }
 
-function VillageMark({
-  compact = false,
-  village,
-}: {
-  compact?: boolean;
-  village: Village;
-}) {
+function VillageMark({ village }: { village: Village }) {
+  if (village.slug === "boseong") {
+    return (
+      <span className="relative block h-10 w-28 shrink-0 overflow-hidden bg-black md:h-12 md:w-36">
+        <Image
+          alt="그린티모시레"
+          className="object-contain"
+          fill
+          sizes="144px"
+          src={greentmosireLogoImage}
+        />
+      </span>
+    );
+  }
+
   return (
     <span
-      className={
-        compact
-          ? "flex size-10 shrink-0 items-center justify-center rounded-md text-sm font-black text-white"
-          : "flex h-12 w-14 shrink-0 items-end gap-1"
-      }
-      style={compact ? { backgroundColor: village.brandColor } : undefined}
+      className="flex size-11 shrink-0 items-center justify-center text-sm font-black text-white"
+      style={{ backgroundColor: village.brandColor }}
     >
-      {compact ? (
-        village.logoText ?? village.name.slice(0, 2)
-      ) : (
-        <>
-          {[16, 24, 32, 40, 48].map((height) => (
-            <span
-              className="block w-1.5 bg-white"
-              key={height}
-              style={{ height }}
-            />
-          ))}
-        </>
-      )}
+      {village.logoText ?? village.name.slice(0, 2)}
     </span>
   );
 }
@@ -186,15 +129,15 @@ export function VillageSiteFooter({
   const homePath = villagePath(village.slug);
   const programHref = primaryProgram
     ? `${homePath}/${primaryProgram.slug}`
-    : `${homePath}#programs`;
+    : `${homePath}/programs`;
 
   return (
-    <footer className="border-t border-slate-200 bg-slate-950 text-white">
-      <div className="mx-auto grid max-w-6xl gap-8 px-5 py-10 md:grid-cols-[1fr_auto] md:px-8">
+    <footer className="border-t border-[#23261f] bg-[#11130f] text-white">
+      <div className="mx-auto grid max-w-7xl gap-8 px-5 py-10 md:grid-cols-[1fr_auto] md:px-8">
         <div>
           <div className="flex items-center gap-3">
             <span
-              className="flex size-10 items-center justify-center rounded-md text-sm font-black text-white"
+              className="flex size-10 items-center justify-center text-sm font-black text-white"
               style={{ backgroundColor: village.brandColor }}
             >
               {village.logoText ?? village.name.slice(0, 2)}
@@ -202,28 +145,32 @@ export function VillageSiteFooter({
             <div>
               <p className="text-lg font-black">{village.name}</p>
               <p className="text-sm font-bold text-white/55">
-                {village.region} {village.city} 로컬 체류 공식 홈
+                {village.region} {village.city} 로컬 체류 공식 공간
               </p>
             </div>
           </div>
           <p className="mt-4 max-w-2xl text-sm leading-6 text-white/62">
             {village.summary}
           </p>
+          <p className="mt-4 inline-flex items-center gap-2 text-xs font-bold text-white/45">
+            <MapPin size={14} />
+            {village.address ?? `${village.region} ${village.city}`}
+          </p>
         </div>
         <div className="flex flex-wrap items-start gap-2 md:justify-end">
           <Link
-            className="inline-flex h-11 items-center justify-center gap-2 rounded-md bg-white px-4 text-sm font-black text-slate-950"
+            className="inline-flex h-11 items-center justify-center gap-2 bg-white px-4 text-sm font-black text-[#11130f]"
             href={programHref}
           >
             <Sparkles size={17} />
-            프로그램 보기
+            체험활동 보기
           </Link>
           <Link
-            className="inline-flex h-11 items-center justify-center gap-2 rounded-md border border-white/15 px-4 text-sm font-black text-white/80 hover:bg-white/10"
+            className="inline-flex h-11 items-center justify-center gap-2 border border-white/15 px-4 text-sm font-black text-white/80 hover:bg-white/10"
             href="/villages"
           >
             <Home size={17} />
-            로컬 홈 목록
+            로컬 목록
           </Link>
         </div>
       </div>
@@ -231,24 +178,9 @@ export function VillageSiteFooter({
   );
 }
 
-function HeaderNavLink({
-  href,
-  isHero,
-  label,
-}: {
-  href: string;
-  isHero: boolean;
-  label: string;
-}) {
+function HeaderNavLink({ href, label }: { href: string; label: string }) {
   return (
-    <Link
-      className={
-        isHero
-          ? "rounded-md px-3 py-2 text-white/82 hover:bg-white/12 hover:text-white"
-          : "rounded-md px-3 py-2 text-slate-600 hover:bg-white hover:text-slate-950"
-      }
-      href={href}
-    >
+    <Link className="text-white/78 hover:text-[#A3FF5E]" href={href}>
       {label}
     </Link>
   );

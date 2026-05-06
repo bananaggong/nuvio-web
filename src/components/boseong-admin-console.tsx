@@ -6,6 +6,7 @@ import {
   CheckCircle2,
   Database,
   FilePlus2,
+  FileVideo2,
   Loader2,
   PencilLine,
   Search,
@@ -16,8 +17,13 @@ import {
   boseongImportedReviews,
   boseongReviewImportSource,
 } from "@/lib/boseong-review-seeds";
+import { boseongMediaSeeds } from "@/lib/village-media-seeds";
 import type { HostProgramDraft } from "@/lib/host-program-studio";
-import type { ProgramStatus, ReviewCategory } from "@/lib/types";
+import type {
+  ProgramStatus,
+  ReviewCategory,
+  VillageMediaCategory,
+} from "@/lib/types";
 
 type HostReviewDraft = {
   id: string;
@@ -33,7 +39,24 @@ type HostReviewDraft = {
   updatedAt: string;
 };
 
+type HostVillageMediaDraft = {
+  id: string;
+  villageSlug: string;
+  title: string;
+  category: VillageMediaCategory;
+  summary: string;
+  body: string[];
+  thumbnail: string;
+  sourceName: string;
+  sourceUrl: string;
+  date: string;
+  featured: boolean;
+  published: boolean;
+  updatedAt: string;
+};
+
 const REVIEW_STORAGE_KEY = "nuvio:boseong-review-uploads";
+const MEDIA_STORAGE_KEY = "nuvio:boseong-media-uploads";
 
 const boseongPrograms = [
   { id: 1013, slug: "talent-for-stay", label: "숙재받" },
@@ -57,6 +80,12 @@ const reviewCategoryLabels: Record<ReviewCategory, string> = {
   question: "질문",
 };
 
+const mediaCategoryLabels: Record<VillageMediaCategory, string> = {
+  original: "자체 컨텐츠",
+  broadcast: "방송출연",
+  archive: "아카이브",
+};
+
 export function BoseongAdminConsole() {
   const [programDraft, setProgramDraft] = useState<HostProgramDraft>(
     createBoseongProgramDraft,
@@ -64,15 +93,23 @@ export function BoseongAdminConsole() {
   const [reviewDraft, setReviewDraft] = useState<HostReviewDraft>(
     createBoseongReviewDraft,
   );
+  const [mediaDraft, setMediaDraft] = useState<HostVillageMediaDraft>(
+    createBoseongMediaDraft,
+  );
   const [localReviews, setLocalReviews] = useState<HostReviewDraft[]>(
     readLocalReviewDrafts,
+  );
+  const [localMedia, setLocalMedia] = useState<HostVillageMediaDraft[]>(
+    readLocalMediaDrafts,
   );
   const [keyword, setKeyword] = useState("");
   const [programFilter, setProgramFilter] = useState<"all" | string>("all");
   const [programSaving, setProgramSaving] = useState(false);
   const [reviewSaving, setReviewSaving] = useState(false);
+  const [mediaSaving, setMediaSaving] = useState(false);
   const [programMessage, setProgramMessage] = useState("");
   const [reviewMessage, setReviewMessage] = useState("");
+  const [mediaMessage, setMediaMessage] = useState("");
 
   const importedCounts = useMemo(
     () =>
@@ -174,6 +211,50 @@ export function BoseongAdminConsole() {
     }
   }
 
+  async function saveMediaDraft() {
+    setMediaSaving(true);
+    setMediaMessage("");
+
+    const nextMedia: HostVillageMediaDraft = {
+      ...mediaDraft,
+      id: mediaDraft.id || `media-${Date.now()}`,
+      summary:
+        mediaDraft.summary ||
+        mediaDraft.body[0] ||
+        "전체차LAB의 활동을 기록한 미디어 콘텐츠입니다.",
+      updatedAt: new Date().toISOString(),
+    };
+
+    const nextLocalMedia = [nextMedia, ...localMedia];
+    setLocalMedia(nextLocalMedia);
+    writeLocalMediaDrafts(nextLocalMedia);
+
+    try {
+      const response = await fetch("/api/host/media", {
+        body: JSON.stringify(nextMedia),
+        headers: { "Content-Type": "application/json" },
+        method: "POST",
+      });
+      const payload = (await response.json()) as {
+        data?: HostVillageMediaDraft;
+        error?: string;
+      };
+      if (!response.ok || !payload.data) {
+        throw new Error(payload.error ?? "미디어 DB 저장에 실패했습니다.");
+      }
+      setMediaMessage("미디어를 DB에 저장했습니다.");
+      setMediaDraft(createBoseongMediaDraft());
+    } catch (error) {
+      setMediaMessage(
+        error instanceof Error
+          ? `${error.message} 로컬 임시 목록에는 저장했습니다.`
+          : "로컬 임시 목록에는 저장했습니다.",
+      );
+    } finally {
+      setMediaSaving(false);
+    }
+  }
+
   return (
     <main className="mx-auto max-w-7xl px-4 py-8 md:px-8">
       <section className="border border-slate-200 bg-white p-5 md:p-7">
@@ -192,6 +273,7 @@ export function BoseongAdminConsole() {
           <div className="flex flex-wrap gap-2">
             <LinkButton href="/boseong" label="보성 사이트" />
             <LinkButton href="/boseong/programs" label="프로그램" />
+            <LinkButton href="/boseong/media" label="미디어" />
             <LinkButton href="/boseong/reviews" label="참여 후기" />
           </div>
         </div>
@@ -200,11 +282,11 @@ export function BoseongAdminConsole() {
       <section className="mt-5 grid gap-3 md:grid-cols-4">
         <Metric label="등록 프로그램" value="3개" />
         <Metric label="DOCX 후기" value={`${boseongReviewImportSource.totalCount}건`} />
-        <Metric label="로컬 추가 후기" value={`${localReviews.length}건`} />
+        <Metric label="미디어" value={`${boseongMediaSeeds.length + localMedia.length}개`} />
         <Metric label="개인정보 처리" value="이름 마스킹" />
       </section>
 
-      <section className="mt-6 grid gap-6 lg:grid-cols-[minmax(0,0.95fr)_minmax(0,1.05fr)]">
+      <section className="mt-6 grid gap-6 lg:grid-cols-3">
         <Panel icon={<FilePlus2 size={20} />} title="프로그램 업로드">
           <div className="grid gap-4">
             <TextInput
@@ -362,6 +444,87 @@ export function BoseongAdminConsole() {
           />
           <StatusMessage message={reviewMessage} />
         </Panel>
+
+        <Panel icon={<FileVideo2 size={20} />} title="미디어 업로드">
+          <div className="grid gap-4">
+            <TextInput
+              label="제목"
+              onChange={(value) => updateMediaDraft(setMediaDraft, { title: value })}
+              value={mediaDraft.title}
+            />
+            <label className="grid gap-2">
+              <span className="text-sm font-black text-slate-700">분류</span>
+              <select
+                className="h-11 rounded-md border border-slate-200 bg-white px-3 text-sm font-bold outline-none focus:border-teal-700"
+                onChange={(event) =>
+                  updateMediaDraft(setMediaDraft, {
+                    category: event.target.value as VillageMediaCategory,
+                  })
+                }
+                value={mediaDraft.category}
+              >
+                {Object.entries(mediaCategoryLabels).map(([key, label]) => (
+                  <option key={key} value={key}>
+                    {label}
+                  </option>
+                ))}
+              </select>
+            </label>
+            <TextInput
+              label="게시일"
+              onChange={(value) => updateMediaDraft(setMediaDraft, { date: value })}
+              type="date"
+              value={mediaDraft.date}
+            />
+            <TextInput
+              label="썸네일 URL"
+              onChange={(value) =>
+                updateMediaDraft(setMediaDraft, { thumbnail: value })
+              }
+              value={mediaDraft.thumbnail}
+            />
+            <TextInput
+              label="원문 URL"
+              onChange={(value) =>
+                updateMediaDraft(setMediaDraft, { sourceUrl: value })
+              }
+              value={mediaDraft.sourceUrl}
+            />
+            <TextArea
+              label="요약"
+              onChange={(value) => updateMediaDraft(setMediaDraft, { summary: value })}
+              value={mediaDraft.summary}
+            />
+            <TextArea
+              label="본문"
+              onChange={(value) =>
+                updateMediaDraft(setMediaDraft, {
+                  body: splitParagraphs(value),
+                })
+              }
+              value={mediaDraft.body.join("\n\n")}
+            />
+            <label className="flex items-center gap-2 text-sm font-black text-slate-700">
+              <input
+                checked={mediaDraft.featured}
+                onChange={(event) =>
+                  updateMediaDraft(setMediaDraft, {
+                    featured: event.target.checked,
+                  })
+                }
+                type="checkbox"
+              />
+              대표 미디어로 표시
+            </label>
+          </div>
+          <ActionButton
+            busy={mediaSaving}
+            icon={<UploadCloud size={16} />}
+            label="미디어 저장"
+            onClick={saveMediaDraft}
+          />
+          <StatusMessage message={mediaMessage} />
+        </Panel>
       </section>
 
       <section className="mt-6 border border-slate-200 bg-white p-5">
@@ -509,6 +672,24 @@ function createBoseongReviewDraft(): HostReviewDraft {
   };
 }
 
+function createBoseongMediaDraft(): HostVillageMediaDraft {
+  return {
+    id: `boseong-media-${Date.now()}`,
+    villageSlug: "boseong",
+    title: "전체차LAB 미디어",
+    category: "original",
+    summary: "전체차LAB의 활동을 기록한 미디어 콘텐츠입니다.",
+    body: ["콘텐츠의 맥락, 등장 프로그램, 참여자 경험을 정리합니다."],
+    thumbnail: "https://cdn.imweb.me/thumbnail/20251103/d38527c321388.jpg",
+    sourceName: "전체차LAB",
+    sourceUrl: "https://greentmosire.imweb.me/mediacontents",
+    date: new Date().toISOString().slice(0, 10),
+    featured: false,
+    published: true,
+    updatedAt: new Date().toISOString(),
+  };
+}
+
 function updateProgramDraft(
   setter: React.Dispatch<React.SetStateAction<HostProgramDraft>>,
   patch: Partial<HostProgramDraft>,
@@ -519,6 +700,13 @@ function updateProgramDraft(
 function updateReviewDraft(
   setter: React.Dispatch<React.SetStateAction<HostReviewDraft>>,
   patch: Partial<HostReviewDraft>,
+) {
+  setter((draft) => ({ ...draft, ...patch, updatedAt: new Date().toISOString() }));
+}
+
+function updateMediaDraft(
+  setter: React.Dispatch<React.SetStateAction<HostVillageMediaDraft>>,
+  patch: Partial<HostVillageMediaDraft>,
 ) {
   setter((draft) => ({ ...draft, ...patch, updatedAt: new Date().toISOString() }));
 }
@@ -554,6 +742,29 @@ function readLocalReviewDrafts(): HostReviewDraft[] {
 
 function writeLocalReviewDrafts(reviews: HostReviewDraft[]) {
   window.localStorage.setItem(REVIEW_STORAGE_KEY, JSON.stringify(reviews));
+}
+
+function readLocalMediaDrafts(): HostVillageMediaDraft[] {
+  if (typeof window === "undefined") return [];
+
+  try {
+    const rawValue = window.localStorage.getItem(MEDIA_STORAGE_KEY);
+    if (!rawValue) return [];
+    return JSON.parse(rawValue) as HostVillageMediaDraft[];
+  } catch {
+    return [];
+  }
+}
+
+function writeLocalMediaDrafts(media: HostVillageMediaDraft[]) {
+  window.localStorage.setItem(MEDIA_STORAGE_KEY, JSON.stringify(media));
+}
+
+function splitParagraphs(value: string): string[] {
+  return value
+    .split(/\n{2,}/)
+    .map((paragraph) => paragraph.trim())
+    .filter(Boolean);
 }
 
 function Panel({

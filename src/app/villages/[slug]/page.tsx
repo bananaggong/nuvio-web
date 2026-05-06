@@ -7,6 +7,7 @@ import {
   getVillageReviews,
   listPublicVillages,
 } from "@/lib/village-db";
+import { listPublicVillageMedia } from "@/lib/village-media-db";
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
@@ -48,6 +49,14 @@ export default async function VillagePage({
 
   const programs = await getVillagePrograms(village);
   const reviews = await getVillageReviews(village, programs, { limit: 6 });
+  const media = await listPublicVillageMedia(village.slug, { limit: 6 });
 
-  return <VillageHomePage programs={programs} reviews={reviews} village={village} />;
+  return (
+    <VillageHomePage
+      media={media}
+      programs={programs}
+      reviews={reviews}
+      village={village}
+    />
+  );
 }

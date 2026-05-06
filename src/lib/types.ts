@@ -119,3 +119,21 @@ export type ProgramLead = {
   reasons: string[];
   status?: "new" | "approved" | "rejected" | "draftCreated";
 };
+
+export type VillageMediaCategory = "original" | "broadcast" | "archive";
+
+export type VillageMediaContent = {
+  id: string;
+  villageSlug: string;
+  title: string;
+  category: VillageMediaCategory;
+  summary: string;
+  body: string[];
+  thumbnail: string;
+  sourceName: string;
+  sourceUrl: string;
+  date: string;
+  featured?: boolean;
+  published: boolean;
+  updatedAt: string;
+};

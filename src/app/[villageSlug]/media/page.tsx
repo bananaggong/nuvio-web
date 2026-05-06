@@ -1,22 +1,15 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
-import { VillageHomePage } from "@/components/village-home-page";
+import { VillageMediaIndexPage } from "@/components/village-media-pages";
 import {
   getPublicVillageBySlug,
   getVillagePrograms,
-  getVillageReviews,
-  listPublicVillages,
 } from "@/lib/village-db";
 import { listPublicVillageMedia } from "@/lib/village-media-db";
 import { isReservedVillageSlug } from "@/lib/village-routing";
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
-
-export async function generateStaticParams() {
-  const villages = await listPublicVillages();
-  return villages.map((village) => ({ villageSlug: village.slug }));
-}
 
 export async function generateMetadata({
   params,
@@ -30,17 +23,12 @@ export async function generateMetadata({
   if (!village) return {};
 
   return {
-    title: `${village.name} | NUVIO`,
-    description: village.summary,
-    openGraph: {
-      title: village.name,
-      description: village.summary,
-      images: [{ url: village.heroImage }],
-    },
+    title: `미디어 | ${village.name}`,
+    description: `${village.name}의 자체 컨텐츠, 방송출연, 활동 아카이브입니다.`,
   };
 }
 
-export default async function ShortVillagePage({
+export default async function VillageMediaRoute({
   params,
 }: {
   params: Promise<{ villageSlug: string }>;
@@ -49,19 +37,10 @@ export default async function ShortVillagePage({
   if (isReservedVillageSlug(villageSlug)) notFound();
 
   const village = await getPublicVillageBySlug(villageSlug);
-
   if (!village) notFound();
 
   const programs = await getVillagePrograms(village);
-  const reviews = await getVillageReviews(village, programs, { limit: 6 });
-  const media = await listPublicVillageMedia(village.slug, { limit: 6 });
+  const media = await listPublicVillageMedia(village.slug);
 
-  return (
-    <VillageHomePage
-      media={media}
-      programs={programs}
-      reviews={reviews}
-      village={village}
-    />
-  );
+  return <VillageMediaIndexPage media={media} programs={programs} village={village} />;
 }

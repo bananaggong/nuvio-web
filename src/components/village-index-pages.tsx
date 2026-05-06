@@ -255,6 +255,12 @@ function VillagePageFrame({
             </Link>
             <Link
               className="inline-flex items-center gap-2 border border-[#dedbd1] bg-[#f6f4ee] px-3 py-2 hover:bg-white"
+              href={`${villagePath(village.slug)}/media`}
+            >
+              미디어
+            </Link>
+            <Link
+              className="inline-flex items-center gap-2 border border-[#dedbd1] bg-[#f6f4ee] px-3 py-2 hover:bg-white"
               href={`${villagePath(village.slug)}/reviews`}
             >
               참여 후기

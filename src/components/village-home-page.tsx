@@ -5,97 +5,126 @@ import {
   CalendarDays,
   Clock3,
   MapPin,
-  Phone,
+  PlayCircle,
   Plus,
+  Quote,
 } from "lucide-react";
 import { StatusBadge } from "@/components/status-badge";
-import { VillageSiteFooter, VillageSiteHeader } from "@/components/village-site-chrome";
+import {
+  VillageSiteFooter,
+  VillageSiteHeader,
+} from "@/components/village-site-chrome";
 import { formatDate, getDday } from "@/lib/format";
 import { villagePath, villageProgramPath } from "@/lib/village-routing";
-import {
-  buildVillageNotices,
-  getVillageApplyLabel,
-  getVillageEnglishLabel,
-  getVillageHeroTitle,
-  sectionTypeLabels,
-} from "@/lib/village-template";
-import type { Program, Review } from "@/lib/types";
+import { buildVillageNotices, getVillageApplyLabel } from "@/lib/village-template";
+import type { Program, Review, VillageMediaContent } from "@/lib/types";
 import type { Village, VillageSection } from "@/lib/village-types";
 
+const mediaCategoryLabels: Record<VillageMediaContent["category"], string> = {
+  original: "자체 컨텐츠",
+  broadcast: "방송출연",
+  archive: "아카이브",
+};
+
 export function VillageHomePage({
-  village,
+  media = [],
   programs,
   reviews,
+  village,
 }: {
-  village: Village;
+  media?: VillageMediaContent[];
   programs: Program[];
   reviews: Review[];
+  village: Village;
 }) {
   const primaryProgram = programs[0];
   const homePath = villagePath(village.slug);
   const notices = buildVillageNotices(village, programs);
-  const featuredPrograms = programs.slice(0, 4);
+  const featuredPrograms = programs.slice(0, 3);
+  const featuredMedia = media.slice(0, 3);
   const activitySections = village.sections.slice(0, 4);
+  const isBoseong = village.slug === "boseong";
+  const heroKicker = isBoseong
+    ? "그린티모시레 · 보성청년마을"
+    : `${village.region} ${village.city} 로컬 체류`;
+  const metrics = isBoseong
+    ? [
+        { label: "숙재받", value: "8기" },
+        { label: "로컬살롱", value: "4기" },
+        { label: "참여 후기", value: `${reviews.length}건` },
+        { label: "미디어", value: `${media.length}개` },
+      ]
+    : [
+        { label: "체험활동", value: `${programs.length}개` },
+        { label: "참여 후기", value: `${reviews.length}건` },
+        { label: "미디어", value: `${media.length}개` },
+        { label: "기록", value: `${village.sections.length}개` },
+      ];
 
   return (
-    <div className="bg-[#f6f4ee] text-[#171717]">
+    <div className="bg-[#f7f7f0] text-[#181a16]">
       <VillageSiteHeader
         primaryProgram={primaryProgram}
         variant="dark"
         village={village}
       />
 
-      <section className="relative overflow-hidden bg-[#e8e3d4]">
+      <section className="relative min-h-[520px] overflow-hidden bg-[#11130f] text-white">
         <Image
-          alt={`${village.name} 대표 이미지`}
+          alt={`${village.name} 보성 녹차밭`}
           className="object-cover"
           fill
           priority
           sizes="100vw"
           src={village.heroImage}
         />
-        <div className="absolute inset-0 bg-[#12110f]/45" />
-        <div className="relative mx-auto flex min-h-[340px] max-w-7xl flex-col items-center justify-center px-5 py-14 text-center text-white md:min-h-[440px] md:px-8">
-          <p className="text-sm font-black uppercase">
-            {getVillageEnglishLabel(village)}
-          </p>
-          <h1 className="mt-4 font-serif text-4xl font-black leading-tight md:text-6xl">
-            {getVillageHeroTitle(village)}
+        <div className="absolute inset-0 bg-gradient-to-r from-black/76 via-black/42 to-black/12" />
+        <div className="relative mx-auto flex min-h-[520px] max-w-7xl flex-col justify-end px-5 pb-14 pt-28 md:px-8">
+          <p className="text-sm font-black text-white/72">{heroKicker}</p>
+          <h1 className="mt-3 max-w-3xl text-5xl font-black leading-[1.02] md:text-7xl">
+            {village.name}
           </h1>
-          <p className="mt-4 max-w-2xl text-base font-bold leading-7 text-white/88 md:text-lg">
+          <p className="mt-5 max-w-2xl text-lg font-bold leading-8 text-white/86">
             {village.tagline}
           </p>
+          <div className="mt-7 flex flex-wrap gap-3">
+            <Link
+              className="inline-flex h-11 items-center justify-center gap-2 bg-white px-5 text-sm font-black text-[#11130f] hover:bg-[#6BAA50] hover:text-white"
+              href={
+                primaryProgram
+                  ? villageProgramPath(village.slug, primaryProgram.slug)
+                  : `${homePath}/programs`
+              }
+            >
+              신청하기
+              <ArrowRight size={16} />
+            </Link>
+            <Link
+              className="inline-flex h-11 items-center justify-center gap-2 border border-white/30 px-5 text-sm font-black text-white hover:bg-white/10"
+              href={`${homePath}/media`}
+            >
+              미디어 보기
+              <PlayCircle size={16} />
+            </Link>
+          </div>
         </div>
       </section>
 
-      <section className="bg-[#efa92f] px-5 py-5 text-center md:px-8">
-        <p className="text-lg font-black text-black">
-          {getVillageApplyLabel(village)}
-        </p>
-        <Link
-          className="mt-3 inline-flex h-10 items-center justify-center bg-[#242421] px-6 text-sm font-black text-white hover:bg-black"
-          href={primaryProgram ? villageProgramPath(village.slug, primaryProgram.slug) : `${homePath}#programs`}
-        >
-          바로 신청하기
-        </Link>
+      <section className="border-y border-[#252920] bg-[#11130f] px-5 py-6 text-white md:px-8">
+        <div className="mx-auto grid max-w-7xl gap-5 md:grid-cols-4">
+          {metrics.map((metric) => (
+            <Metric key={metric.label} label={metric.label} value={metric.value} />
+          ))}
+        </div>
       </section>
 
-      <section className="mx-auto max-w-7xl px-5 py-14 md:px-8" id="programs">
-        <div className="mb-8 flex items-end justify-between gap-4">
-          <h2 className="font-serif text-3xl font-black md:text-4xl">
-            프로그램
-          </h2>
-          <Link
-            className="hidden items-center gap-2 text-sm font-black hover:text-[#0f766e] md:inline-flex"
-            href={`${homePath}/programs`}
-          >
-            더보기
-            <Plus size={18} />
-          </Link>
-        </div>
-
+      <SectionShell
+        actionHref={`${homePath}/programs`}
+        actionLabel="더보기"
+        title="체험활동"
+      >
         {featuredPrograms.length > 0 ? (
-          <div className="grid gap-5 md:grid-cols-2 lg:grid-cols-4">
+          <div className="grid gap-5 md:grid-cols-3">
             {featuredPrograms.map((program) => (
               <FeaturedProgramCard
                 key={`${program.id}-${program.slug}`}
@@ -105,122 +134,93 @@ export function VillageHomePage({
             ))}
           </div>
         ) : (
-          <EmptyProgram village={village} />
+          <EmptyBlock text="등록된 체험활동이 없습니다." village={village} />
         )}
-      </section>
+      </SectionShell>
 
-      <section className="border-y border-[#dfddd5] bg-white px-5 py-14 md:px-8" id="story">
-        <div className="mx-auto max-w-7xl">
-          <div className="mb-8 flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
-            <div>
-              <h2 className="font-serif text-3xl font-black md:text-4xl">
-                기록
-              </h2>
-            </div>
-            <Link
-              className="hidden items-center gap-2 text-sm font-black hover:text-[#0f766e] md:inline-flex"
-              href={`${homePath}/about`}
-            >
-              더보기
-              <Plus size={18} />
-            </Link>
-          </div>
-          <div className="grid gap-5 md:grid-cols-2 lg:grid-cols-4">
-            {activitySections.map((section) => (
-              <ActivityTile key={section.id} section={section} village={village} />
-            ))}
-          </div>
-        </div>
-      </section>
-
-      <section className="mx-auto max-w-7xl px-5 py-14 md:px-8" id="reviews">
-        <div className="mb-8 flex items-end justify-between gap-4">
-          <h2 className="font-serif text-3xl font-black md:text-4xl">
-            참여 후기
-          </h2>
-          <Link
-            className="hidden items-center gap-2 text-sm font-black hover:text-[#0f766e] md:inline-flex"
-            href={`${homePath}/reviews`}
-          >
-            더보기
-            <Plus size={18} />
-          </Link>
-        </div>
-
-        {reviews.length > 0 ? (
+      <SectionShell
+        actionHref={`${homePath}/media`}
+        actionLabel="더보기"
+        title="미디어"
+        tone="white"
+      >
+        {featuredMedia.length > 0 ? (
           <div className="grid gap-5 md:grid-cols-3">
-            {reviews.slice(0, 3).map((review) => (
-              <Link
-                className="border border-[#dfddd5] bg-white px-6 py-6 hover:border-[#0f766e]"
-                href={`${homePath}/reviews/${review.id}`}
-                key={review.id}
-              >
-                <p className="text-xs font-black text-slate-500">
-                  {formatDate(review.date)}
-                </p>
-                <h3 className="mt-3 line-clamp-2 text-xl font-black leading-7">
-                  {review.title}
-                </h3>
-                <p className="mt-3 line-clamp-3 text-sm leading-6 text-slate-600">
-                  {review.excerpt}
-                </p>
-                <p className="mt-5 text-sm font-black" style={{ color: village.brandColor }}>
-                  {review.author}
-                </p>
-              </Link>
+            {featuredMedia.map((content) => (
+              <MediaCard content={content} key={content.id} village={village} />
             ))}
           </div>
         ) : (
-          <div className="border border-dashed border-[#cfc9b9] bg-white px-6 py-10 text-center">
-            <p className="font-black">아직 공개된 참여 후기가 없습니다.</p>
-            <p className="mt-2 text-sm leading-6 text-slate-600">
-              기수 활동 후기가 등록되면 이곳에 모아 보여줍니다.
-            </p>
-          </div>
+          <EmptyBlock text="등록된 미디어가 없습니다." village={village} />
         )}
-      </section>
+      </SectionShell>
 
-      <section
-        className="mx-auto grid max-w-7xl gap-10 px-5 py-16 md:px-8 lg:grid-cols-[minmax(0,1fr)_minmax(420px,0.8fr)]"
-        id="notice"
+      <SectionShell
+        actionHref={`${homePath}/reviews`}
+        actionLabel="더보기"
+        title="참여후기"
       >
-        <Link
-          className="group relative min-h-[360px] overflow-hidden bg-slate-900 text-white"
-          href={`${homePath}#guide`}
-        >
-          <Image
-            alt={`${village.name} 둘러보기`}
-            className="object-cover transition duration-500 group-hover:scale-105"
-            fill
-            sizes="(max-width: 1024px) 100vw, 50vw"
-            src={village.heroImage}
-          />
-          <div className="absolute inset-0 bg-black/30" />
-          <div className="absolute inset-x-0 bottom-0 bg-black/70 px-6 py-5">
-            <span className="inline-flex items-center gap-2 text-base font-black">
-              {village.name} 이용안내
-              <ArrowRight size={18} />
-            </span>
+        {reviews.length > 0 ? (
+          <div className="grid gap-5 md:grid-cols-3">
+            {reviews.slice(0, 3).map((review) => (
+              <ReviewCard key={review.id} review={review} village={village} />
+            ))}
           </div>
-        </Link>
+        ) : (
+          <EmptyBlock text="등록된 참여후기가 없습니다." village={village} />
+        )}
+      </SectionShell>
+
+      <SectionShell
+        actionHref={`${homePath}/about`}
+        actionLabel="전체 보기"
+        title="전체차LAB 기록"
+        tone="white"
+      >
+        <div className="grid gap-5 md:grid-cols-2 lg:grid-cols-4">
+          {activitySections.map((section) => (
+            <ActivityTile key={section.id} section={section} village={village} />
+          ))}
+        </div>
+      </SectionShell>
+
+      <section className="mx-auto grid max-w-7xl gap-8 px-5 py-14 md:px-8 lg:grid-cols-[minmax(0,1fr)_420px]">
+        <div className="border-y border-[#d9d6c9]">
+          <div className="grid gap-5 py-6 md:grid-cols-3">
+            <GuideLine
+              icon={<Clock3 size={18} />}
+              label="운영"
+              text="기수별 일정에 맞춰 OT, 체류, 활동, 후기 수집을 진행합니다."
+            />
+            <GuideLine
+              icon={<CalendarDays size={18} />}
+              label="신청"
+              text={getVillageApplyLabel(village)}
+            />
+            <GuideLine
+              icon={<MapPin size={18} />}
+              label="장소"
+              text={village.address ?? `${village.region} ${village.city}`}
+            />
+          </div>
+        </div>
 
         <div>
-          <div className="mb-5 flex items-center justify-between">
-            <h2 className="font-serif text-3xl font-black md:text-4xl">
-              알림
-            </h2>
+          <div className="mb-4 flex items-center justify-between">
+            <h2 className="text-2xl font-black">공지</h2>
             <Link
-              className="inline-flex items-center gap-2 text-sm font-black hover:text-[#0f766e]"
+              className="inline-flex items-center gap-2 text-sm font-black"
               href={`${homePath}/notice`}
+              style={{ color: village.brandColor }}
             >
               더보기
-              <Plus size={18} />
+              <Plus size={16} />
             </Link>
           </div>
-          <div className="divide-y divide-[#dedbd1] border-y border-[#dedbd1] bg-[#f6f4ee]">
-            {notices.map((notice) => (
+          <div className="divide-y divide-[#d9d6c9] border-y border-[#d9d6c9]">
+            {notices.slice(0, 5).map((notice) => (
               <Link
-                className="grid gap-3 px-1 py-4 text-sm hover:bg-white md:grid-cols-[minmax(0,1fr)_112px]"
+                className="grid gap-2 py-4 text-sm hover:bg-white md:grid-cols-[minmax(0,1fr)_104px]"
                 href={notice.href}
                 key={`${notice.type}-${notice.title}`}
               >
@@ -236,45 +236,48 @@ export function VillageHomePage({
         </div>
       </section>
 
-      <section className="relative overflow-hidden bg-[#2b2b28] px-5 py-16 md:px-8" id="guide">
-        <Image
-          alt=""
-          aria-hidden
-          className="object-cover opacity-18"
-          fill
-          sizes="100vw"
-          src={village.heroImage}
-        />
-        <div className="relative mx-auto grid max-w-7xl gap-8 lg:grid-cols-2">
-          <GuideBox
-            icon={<Clock3 size={20} />}
-            title="프로그램 운영 시간"
-            body="기수별 일정에 따라 사전 안내된 시간에 운영합니다."
-            detail="선정자에게 OT, 숙소 위치, 준비물, 공지방 입장 안내를 순차 발송합니다."
-          />
-          <GuideBox
-            icon={<CalendarDays size={20} />}
-            title="신청 및 선정 안내"
-            body="신청 후 운영진 검토를 거쳐 선정 여부를 개별 안내합니다."
-            detail="유료 프로그램은 입금 확인 후 참여 확정 및 소통방 입장이 진행됩니다."
-          />
-          <GuideBox
-            icon={<MapPin size={20} />}
-            title="오시는 길"
-            body={village.address ?? `${village.region} ${village.city}`}
-            detail="세부 집결지와 숙소 위치는 선정자에게 별도 안내합니다."
-          />
-          <GuideBox
-            icon={<Phone size={20} />}
-            title="문의"
-            body={village.contactPhone ?? "운영 사무국 문의"}
-            detail={village.contactEmail ?? "카카오 채널 또는 공식 연락처를 통해 문의해 주세요."}
-          />
-        </div>
-      </section>
-
       <VillageSiteFooter primaryProgram={primaryProgram} village={village} />
     </div>
+  );
+}
+
+function SectionShell({
+  actionHref,
+  actionLabel,
+  children,
+  title,
+  tone = "cream",
+}: {
+  actionHref: string;
+  actionLabel: string;
+  children: React.ReactNode;
+  title: string;
+  tone?: "cream" | "white";
+}) {
+  return (
+    <section
+      className={
+        tone === "white"
+          ? "border-y border-[#d9d6c9] bg-white px-5 py-14 md:px-8"
+          : "px-5 py-14 md:px-8"
+      }
+    >
+      <div className="mx-auto max-w-7xl">
+        <div className="mb-7 flex items-center justify-between gap-4">
+          <h2 className="text-3xl font-black tracking-tight md:text-4xl">
+            {title}
+          </h2>
+          <Link
+            className="inline-flex items-center gap-2 text-sm font-black text-[#4E7C3A] hover:text-[#11130f]"
+            href={actionHref}
+          >
+            {actionLabel}
+            <Plus size={17} />
+          </Link>
+        </div>
+        {children}
+      </div>
+    </section>
   );
 }
 
@@ -286,39 +289,107 @@ function FeaturedProgramCard({
   village: Village;
 }) {
   return (
-    <article className="border border-[#ddd8ca] bg-white">
+    <article className="border border-[#d9d6c9] bg-white">
       <Link
-        className="relative block aspect-[4/5] overflow-hidden bg-[#ece8dd]"
+        className="relative block aspect-[16/10] overflow-hidden bg-[#e9e6d8]"
         href={villageProgramPath(village.slug, program.slug)}
       >
         <Image
           alt={program.title}
           className="object-cover transition duration-500 hover:scale-105"
           fill
-          sizes="(max-width: 768px) 100vw, 25vw"
+          sizes="(max-width: 768px) 100vw, 33vw"
           src={program.image}
         />
       </Link>
-      <div className="px-5 py-6 text-center">
-        <div className="mb-3 flex justify-center gap-2">
+      <div className="px-5 py-5">
+        <div className="flex flex-wrap gap-2">
           <StatusBadge program={program} />
-          <span className="rounded-full bg-[#242421] px-3 py-1 text-xs font-black text-white">
+          <span className="bg-[#11130f] px-3 py-1 text-xs font-black text-white">
             {getDday(program.recruitEnd, program.status)}
           </span>
         </div>
-        <p className="text-sm font-black" style={{ color: village.brandColor }}>
-          {program.city}
-        </p>
         <Link href={villageProgramPath(village.slug, program.slug)}>
-          <h3 className="mt-2 line-clamp-2 text-xl font-black leading-7 hover:text-[#0f766e]">
+          <h3 className="mt-4 line-clamp-2 text-xl font-black leading-7 hover:text-[#4E7C3A]">
             {program.title}
           </h3>
         </Link>
-        <p className="mt-2 line-clamp-2 text-sm leading-6 text-slate-600">
+        <p className="mt-3 line-clamp-3 text-sm leading-6 text-slate-600">
           {program.summary}
+        </p>
+        <p className="mt-5 text-sm font-bold text-slate-500">
+          {formatDate(program.activityStart)} - {formatDate(program.activityEnd)}
         </p>
       </div>
     </article>
+  );
+}
+
+function MediaCard({
+  content,
+  village,
+}: {
+  content: VillageMediaContent;
+  village: Village;
+}) {
+  return (
+    <article className="border border-[#d9d6c9] bg-[#f7f7f0]">
+      <Link
+        className="relative block aspect-video overflow-hidden bg-[#11130f]"
+        href={`${villagePath(village.slug)}/media/${content.id}`}
+      >
+        <Image
+          alt={content.title}
+          className="object-cover transition duration-500 hover:scale-105"
+          fill
+          sizes="(max-width: 768px) 100vw, 33vw"
+          src={content.thumbnail}
+        />
+        <span className="absolute left-3 top-3 inline-flex items-center gap-1 bg-black/76 px-2.5 py-1 text-xs font-black text-white">
+          <PlayCircle size={14} />
+          {mediaCategoryLabels[content.category]}
+        </span>
+      </Link>
+      <div className="px-5 py-5">
+        <p className="text-xs font-black text-slate-500">
+          {formatDate(content.date)}
+        </p>
+        <Link href={`${villagePath(village.slug)}/media/${content.id}`}>
+          <h3 className="mt-3 line-clamp-2 text-xl font-black leading-7 hover:text-[#4E7C3A]">
+            {content.title}
+          </h3>
+        </Link>
+        <p className="mt-3 line-clamp-2 text-sm leading-6 text-slate-600">
+          {content.summary}
+        </p>
+      </div>
+    </article>
+  );
+}
+
+function ReviewCard({ review, village }: { review: Review; village: Village }) {
+  return (
+    <Link
+      className="border border-[#d9d6c9] bg-white px-5 py-5 hover:border-[#4E7C3A]"
+      href={`${villagePath(village.slug)}/reviews/${review.id}`}
+    >
+      <span
+        className="inline-flex items-center gap-2 px-2.5 py-1 text-xs font-black text-white"
+        style={{ backgroundColor: village.brandColor }}
+      >
+        <Quote size={14} />
+        {review.badge ?? "후기"}
+      </span>
+      <h3 className="mt-4 line-clamp-2 text-xl font-black leading-7">
+        {review.title}
+      </h3>
+      <p className="mt-3 line-clamp-4 text-sm leading-7 text-slate-600">
+        {review.excerpt}
+      </p>
+      <p className="mt-5 text-sm font-black" style={{ color: village.brandColor }}>
+        {review.author}
+      </p>
+    </Link>
   );
 }
 
@@ -330,20 +401,16 @@ function ActivityTile({
   village: Village;
 }) {
   return (
-    <article className="border border-[#dfddd5] bg-[#fbfaf6] px-5 py-6 text-center">
-      <p className="text-xs font-black uppercase text-slate-500">
-        {sectionTypeLabels[section.type]}
-      </p>
-      <h3 className="mt-3 font-serif text-2xl font-black">{section.title}</h3>
-      <p className="mt-3 line-clamp-3 text-sm leading-6 text-slate-600">
+    <article className="border-l-4 bg-[#f7f7f0] px-5 py-5" style={{ borderColor: village.brandColor }}>
+      <h3 className="text-xl font-black">{section.title}</h3>
+      <p className="mt-3 line-clamp-4 text-sm leading-7 text-slate-600">
         {section.body}
       </p>
-      <div className="mt-5 flex flex-wrap justify-center gap-2">
+      <div className="mt-4 flex flex-wrap gap-2">
         {section.items.slice(0, 3).map((item) => (
           <span
-            className="border px-2.5 py-1 text-xs font-black"
+            className="border border-[#d9d6c9] bg-white px-2.5 py-1 text-xs font-black text-slate-700"
             key={item}
-            style={{ borderColor: village.accentColor, color: village.brandColor }}
           >
             {item}
           </span>
@@ -353,37 +420,41 @@ function ActivityTile({
   );
 }
 
-function GuideBox({
-  body,
-  detail,
-  icon,
-  title,
-}: {
-  body: string;
-  detail: string;
-  icon: React.ReactNode;
-  title: string;
-}) {
+function Metric({ label, value }: { label: string; value: string }) {
   return (
-    <section className="border border-black/20 bg-white px-8 py-8">
-      <div className="flex items-center gap-3 text-[#0f766e]">
-        {icon}
-        <h3 className="font-serif text-2xl font-black text-slate-950">{title}</h3>
-      </div>
-      <p className="mt-5 text-base font-black leading-7 text-slate-950">{body}</p>
-      <p className="mt-3 border-t border-slate-200 pt-4 text-sm leading-6 text-slate-600">
-        {detail}
-      </p>
-    </section>
+    <div>
+      <p className="text-xs font-black text-white/48">{label}</p>
+      <p className="mt-1 text-3xl font-black text-[#A3FF5E]">{value}</p>
+    </div>
   );
 }
 
-function EmptyProgram({ village }: { village: Village }) {
+function GuideLine({
+  icon,
+  label,
+  text,
+}: {
+  icon: React.ReactNode;
+  label: string;
+  text: string;
+}) {
+  return (
+    <div className="grid gap-2">
+      <p className="flex items-center gap-2 text-sm font-black text-[#4E7C3A]">
+        {icon}
+        {label}
+      </p>
+      <p className="text-sm font-bold leading-6 text-slate-700">{text}</p>
+    </div>
+  );
+}
+
+function EmptyBlock({ text, village }: { text: string; village: Village }) {
   return (
     <div className="border border-dashed border-[#cfc9b9] bg-white px-6 py-10 text-center">
-      <p className="font-black">{village.name}의 공개 프로그램을 준비 중입니다.</p>
+      <p className="font-black">{text}</p>
       <p className="mt-2 text-sm leading-6 text-slate-600">
-        모집 일정이 확정되면 이 영역에서 바로 신청할 수 있습니다.
+        {village.name} 운영자가 등록하면 이 공간에 노출됩니다.
       </p>
     </div>
   );
