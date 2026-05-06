@@ -265,33 +265,6 @@ function VillagePageFrame({
           >
             {title}
           </h1>
-          <div className="mt-6 flex flex-wrap gap-2 text-sm font-black">
-            <Link
-              className="inline-flex items-center gap-2 border border-[#dedbd1] bg-[#f6f4ee] px-3 py-2 hover:bg-white"
-              href={villagePath(village.slug)}
-            >
-              {village.name} 홈
-              <ArrowRight size={15} />
-            </Link>
-            <Link
-              className="inline-flex items-center gap-2 border border-[#dedbd1] bg-[#f6f4ee] px-3 py-2 hover:bg-white"
-              href={`${villagePath(village.slug)}/programs`}
-            >
-              프로그램
-            </Link>
-            <Link
-              className="inline-flex items-center gap-2 border border-[#dedbd1] bg-[#f6f4ee] px-3 py-2 hover:bg-white"
-              href={`${villagePath(village.slug)}/media`}
-            >
-              미디어
-            </Link>
-            <Link
-              className="inline-flex items-center gap-2 border border-[#dedbd1] bg-[#f6f4ee] px-3 py-2 hover:bg-white"
-              href={`${villagePath(village.slug)}/reviews`}
-            >
-              참여 후기
-            </Link>
-          </div>
         </div>
       </section>
       <section className="mx-auto max-w-7xl px-5 py-12 md:px-8">
