@@ -2,16 +2,22 @@ import { and, desc, eq, isNotNull } from "drizzle-orm";
 import { getDb } from "@/db/client";
 import { villageMediaContents as mediaTable } from "@/db/schema";
 import { boseongMediaSeeds } from "@/lib/village-media-seeds";
-import type { VillageMediaCategory, VillageMediaContent } from "@/lib/types";
+import type {
+  VillageMediaCategory,
+  VillageMediaContent,
+  VillageMediaProvider,
+} from "@/lib/types";
 
 export type HostVillageMediaDraft = {
   id: string;
   villageSlug: string;
   title: string;
   category: VillageMediaCategory;
+  provider: VillageMediaProvider;
   summary: string;
   body: string[];
   thumbnail: string;
+  embedUrl?: string;
   sourceName: string;
   sourceUrl: string;
   date: string;
@@ -27,6 +33,13 @@ const mediaCategories: VillageMediaCategory[] = [
   "original",
   "broadcast",
   "archive",
+];
+const mediaProviders: VillageMediaProvider[] = [
+  "youtube",
+  "instagram",
+  "naver",
+  "imweb",
+  "link",
 ];
 
 export async function listPublicVillageMedia(
@@ -109,9 +122,11 @@ export function normalizeHostVillageMediaDraft(
     villageSlug: createSlug(asString(value.villageSlug) || "boseong"),
     title: asString(value.title) || "전체차LAB 미디어",
     category: asMediaCategory(value.category),
+    provider: asMediaProvider(value.provider),
     summary,
     body,
     thumbnail: asString(value.thumbnail) || asString(value.thumbnailUrl) || "",
+    embedUrl: normalizeEmbedUrl(value.embedUrl, value.sourceUrl),
     sourceName: asString(value.sourceName) || "전체차LAB",
     sourceUrl: asString(value.sourceUrl) || "https://nuvio.kr/boseong/media",
     date: normalizeDate(asString(value.date) || asString(value.publishedAt)),
@@ -128,9 +143,11 @@ function mapHostDraftToMediaInsert(draft: HostVillageMediaDraft): MediaInsert {
     villageSlug: createSlug(draft.villageSlug),
     title: draft.title.trim() || "전체차LAB 미디어",
     category: draft.category,
+    provider: draft.provider,
     summary: draft.summary.trim(),
     body: draft.body.length > 0 ? draft.body : [draft.summary.trim()],
     thumbnailUrl: draft.thumbnail.trim(),
+    embedUrl: draft.embedUrl?.trim() || null,
     sourceName: draft.sourceName.trim() || "전체차LAB",
     sourceUrl: draft.sourceUrl.trim() || "https://nuvio.kr/boseong/media",
     featured: draft.featured,
@@ -144,9 +161,11 @@ function mapMediaRowToContent(row: MediaRow): VillageMediaContent {
     villageSlug: row.villageSlug,
     title: row.title,
     category: row.category,
+    provider: asMediaProvider(row.provider),
     summary: row.summary,
     body: row.body,
     thumbnail: row.thumbnailUrl,
+    embedUrl: row.embedUrl ?? undefined,
     sourceName: row.sourceName,
     sourceUrl: row.sourceUrl,
     date: (row.publishedAt ?? row.createdAt).toISOString(),
@@ -162,9 +181,11 @@ function mapMediaRowToHostDraft(row: MediaRow): HostVillageMediaDraft {
     villageSlug: row.villageSlug,
     title: row.title,
     category: row.category,
+    provider: asMediaProvider(row.provider),
     summary: row.summary,
     body: row.body,
     thumbnail: row.thumbnailUrl,
+    embedUrl: row.embedUrl ?? undefined,
     sourceName: row.sourceName,
     sourceUrl: row.sourceUrl,
     date: (row.publishedAt ?? row.createdAt).toISOString().slice(0, 10),
@@ -182,9 +203,11 @@ function mapContentToHostDraft(
     villageSlug: content.villageSlug,
     title: content.title,
     category: content.category,
+    provider: content.provider ?? "link",
     summary: content.summary,
     body: content.body,
     thumbnail: content.thumbnail,
+    embedUrl: content.embedUrl,
     sourceName: content.sourceName,
     sourceUrl: content.sourceUrl,
     date: content.date.slice(0, 10),
@@ -224,6 +247,46 @@ function asMediaCategory(value: unknown): VillageMediaCategory {
   return mediaCategories.includes(text as VillageMediaCategory)
     ? (text as VillageMediaCategory)
     : "original";
+}
+
+function asMediaProvider(value: unknown): VillageMediaProvider {
+  const text = asString(value);
+  return mediaProviders.includes(text as VillageMediaProvider)
+    ? (text as VillageMediaProvider)
+    : "link";
+}
+
+function normalizeEmbedUrl(embedValue: unknown, sourceValue: unknown): string | undefined {
+  const directEmbed = normalizeYoutubeEmbedUrl(asString(embedValue));
+  if (directEmbed) return directEmbed;
+
+  return normalizeYoutubeEmbedUrl(asString(sourceValue)) || undefined;
+}
+
+function normalizeYoutubeEmbedUrl(value: string): string | undefined {
+  if (!value) return undefined;
+
+  try {
+    const url = new URL(value);
+    if (url.hostname === "youtu.be") {
+      const id = url.pathname.replace("/", "");
+      return id ? `https://www.youtube.com/embed/${id}` : undefined;
+    }
+
+    if (url.hostname.endsWith("youtube.com")) {
+      if (url.pathname.startsWith("/embed/")) {
+        const id = url.pathname.split("/")[2];
+        return id ? `https://www.youtube.com/embed/${id}` : undefined;
+      }
+
+      const id = url.searchParams.get("v");
+      return id ? `https://www.youtube.com/embed/${id}` : undefined;
+    }
+  } catch {
+    return undefined;
+  }
+
+  return undefined;
 }
 
 function normalizeBody(value: unknown): string[] {

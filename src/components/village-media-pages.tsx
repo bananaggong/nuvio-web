@@ -60,14 +60,25 @@ export function VillageMediaDetailPage({
       <article className="grid gap-8 lg:grid-cols-[minmax(0,1fr)_320px]">
         <div>
           <div className="relative aspect-video overflow-hidden bg-[#11130f]">
-            <Image
-              alt={content.title}
-              className="object-cover"
-              fill
-              priority
-              sizes="(max-width: 1024px) 100vw, 70vw"
-              src={content.thumbnail}
-            />
+            {content.embedUrl ? (
+              <iframe
+                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                allowFullScreen
+                className="absolute inset-0 h-full w-full"
+                referrerPolicy="strict-origin-when-cross-origin"
+                src={content.embedUrl}
+                title={content.title}
+              />
+            ) : (
+              <Image
+                alt={content.title}
+                className="object-cover"
+                fill
+                priority
+                sizes="(max-width: 1024px) 100vw, 70vw"
+                src={content.thumbnail}
+              />
+            )}
             <span className="absolute left-4 top-4 inline-flex items-center gap-2 bg-black/78 px-3 py-1.5 text-sm font-black text-white">
               <PlayCircle size={16} />
               {mediaCategoryLabels[content.category]}
@@ -92,7 +103,7 @@ export function VillageMediaDetailPage({
               rel="noreferrer"
               target="_blank"
             >
-              원문 보기
+              {content.provider === "youtube" ? "유튜브에서 보기" : "원문 보기"}
               <ExternalLink size={16} />
             </a>
           </div>

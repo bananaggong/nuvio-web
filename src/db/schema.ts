@@ -402,9 +402,11 @@ export const villageMediaContents = pgTable(
     category: villageMediaCategoryEnum("category")
       .$type<VillageMediaCategory>()
       .notNull(),
+    provider: text("provider").default("link").notNull(),
     summary: text("summary").notNull(),
     body: jsonb("body").$type<string[]>().default(emptyArray).notNull(),
     thumbnailUrl: text("thumbnail_url").notNull(),
+    embedUrl: text("embed_url"),
     sourceName: text("source_name").notNull(),
     sourceUrl: text("source_url").notNull(),
     featured: boolean("featured").default(false).notNull(),

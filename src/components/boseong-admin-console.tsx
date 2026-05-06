@@ -23,6 +23,7 @@ import type {
   ProgramStatus,
   ReviewCategory,
   VillageMediaCategory,
+  VillageMediaProvider,
 } from "@/lib/types";
 
 type HostReviewDraft = {
@@ -44,9 +45,11 @@ type HostVillageMediaDraft = {
   villageSlug: string;
   title: string;
   category: VillageMediaCategory;
+  provider: VillageMediaProvider;
   summary: string;
   body: string[];
   thumbnail: string;
+  embedUrl?: string;
   sourceName: string;
   sourceUrl: string;
   date: string;
@@ -84,6 +87,14 @@ const mediaCategoryLabels: Record<VillageMediaCategory, string> = {
   original: "자체 컨텐츠",
   broadcast: "방송출연",
   archive: "아카이브",
+};
+
+const mediaProviderLabels: Record<VillageMediaProvider, string> = {
+  youtube: "YouTube",
+  instagram: "Instagram",
+  naver: "Naver",
+  imweb: "Imweb",
+  link: "링크",
 };
 
 export function BoseongAdminConsole() {
@@ -470,6 +481,24 @@ export function BoseongAdminConsole() {
                 ))}
               </select>
             </label>
+            <label className="grid gap-2">
+              <span className="text-sm font-black text-slate-700">플랫폼</span>
+              <select
+                className="h-11 rounded-md border border-slate-200 bg-white px-3 text-sm font-bold outline-none focus:border-teal-700"
+                onChange={(event) =>
+                  updateMediaDraft(setMediaDraft, {
+                    provider: event.target.value as VillageMediaProvider,
+                  })
+                }
+                value={mediaDraft.provider}
+              >
+                {Object.entries(mediaProviderLabels).map(([key, label]) => (
+                  <option key={key} value={key}>
+                    {label}
+                  </option>
+                ))}
+              </select>
+            </label>
             <TextInput
               label="게시일"
               onChange={(value) => updateMediaDraft(setMediaDraft, { date: value })}
@@ -482,6 +511,14 @@ export function BoseongAdminConsole() {
                 updateMediaDraft(setMediaDraft, { thumbnail: value })
               }
               value={mediaDraft.thumbnail}
+            />
+            <TextInput
+              label="임베드 URL"
+              onChange={(value) =>
+                updateMediaDraft(setMediaDraft, { embedUrl: value })
+              }
+              placeholder="https://www.youtube.com/embed/..."
+              value={mediaDraft.embedUrl ?? ""}
             />
             <TextInput
               label="원문 URL"
@@ -678,11 +715,13 @@ function createBoseongMediaDraft(): HostVillageMediaDraft {
     villageSlug: "boseong",
     title: "전체차LAB 미디어",
     category: "original",
+    provider: "youtube",
     summary: "전체차LAB의 활동을 기록한 미디어 콘텐츠입니다.",
     body: ["콘텐츠의 맥락, 등장 프로그램, 참여자 경험을 정리합니다."],
     thumbnail: "https://cdn.imweb.me/thumbnail/20251103/d38527c321388.jpg",
+    embedUrl: "https://www.youtube.com/embed/WtNVWrDM4HE",
     sourceName: "전체차LAB",
-    sourceUrl: "https://greentmosire.imweb.me/mediacontents",
+    sourceUrl: "https://www.youtube.com/watch?v=WtNVWrDM4HE",
     date: new Date().toISOString().slice(0, 10),
     featured: false,
     published: true,
