@@ -7,6 +7,7 @@ import type {
   ReviewCategory,
   ThemeKey,
 } from "./types";
+import { boseongImportedReviews } from "@/lib/boseong-review-seeds";
 
 export const themeOptions: Array<{
   key: ThemeKey;
@@ -704,7 +705,7 @@ export const reviewCategories: Array<{ key: "all" | ReviewCategory; label: strin
   { key: "question", label: "질문답변" },
 ];
 
-export const reviews: Review[] = [
+const seedReviews: Review[] = [
   {
     id: 501,
     title: "워케이션은 숙소 위치보다 업무공간 콘센트가 중요했어요",
@@ -830,6 +831,15 @@ export const reviews: Review[] = [
   },
 ];
 
+const nonBoseongSeedReviews = seedReviews.filter(
+  (review) => ![1013, 1014, 1015].includes(review.programId ?? -1),
+);
+
+export const reviews: Review[] = [
+  ...nonBoseongSeedReviews,
+  ...boseongImportedReviews,
+];
+
 export const announcements: Announcement[] = [
   {
     id: 701,
@@ -888,8 +898,8 @@ export function getProgramById(id: number): Program | undefined {
   return programs.find((program) => program.id === id);
 }
 
-export function getReviewById(id: number): Review | undefined {
-  return reviews.find((review) => review.id === id);
+export function getReviewById(id: number | string): Review | undefined {
+  return reviews.find((review) => String(review.id) === String(id));
 }
 
 export function getAnnouncementById(id: number): Announcement | undefined {

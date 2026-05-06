@@ -364,6 +364,7 @@ export const reviews = pgTable(
     programId: uuid("program_id").references(() => programs.id, {
       onDelete: "set null",
     }),
+    villageSlug: text("village_slug"),
     userId: uuid("user_id"),
     title: text("title").notNull(),
     category: reviewCategoryEnum("category").$type<ReviewCategory>().notNull(),
@@ -380,6 +381,7 @@ export const reviews = pgTable(
   },
   (table) => [
     index("reviews_program_id_idx").on(table.programId),
+    index("reviews_village_slug_idx").on(table.villageSlug),
     index("reviews_status_idx").on(table.status),
   ],
 );

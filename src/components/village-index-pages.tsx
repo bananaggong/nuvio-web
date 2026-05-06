@@ -23,7 +23,6 @@ export function VillageProgramsIndexPage({
 
   return (
     <VillagePageFrame
-      eyebrow="Programs"
       primaryProgram={primaryProgram}
       title="프로그램"
       village={village}
@@ -56,7 +55,6 @@ export function VillageReviewsIndexPage({
 }) {
   return (
     <VillagePageFrame
-      eyebrow="Reviews"
       primaryProgram={programs[0]}
       title="참여 후기"
       village={village}
@@ -83,7 +81,6 @@ export function VillageAboutIndexPage({
 }) {
   return (
     <VillagePageFrame
-      eyebrow="About"
       primaryProgram={programs[0]}
       title={`${village.name} 둘러보기`}
       village={village}
@@ -108,7 +105,6 @@ export function VillageNoticeIndexPage({
 
   return (
     <VillagePageFrame
-      eyebrow="Notice"
       primaryProgram={programs[0]}
       title="알림"
       village={village}
@@ -145,7 +141,6 @@ export function VillageReviewDetailPage({
 }) {
   return (
     <VillagePageFrame
-      eyebrow="Review"
       primaryProgram={programs[0]}
       title={review.title}
       village={village}
@@ -220,7 +215,7 @@ function VillagePageFrame({
   village,
 }: {
   children: React.ReactNode;
-  eyebrow: string;
+  eyebrow?: string;
   primaryProgram?: Program;
   title: string;
   village: Village;
@@ -234,10 +229,14 @@ function VillagePageFrame({
       />
       <section className="border-b border-[#dfddd5] bg-white px-5 py-12 md:px-8">
         <div className="mx-auto max-w-7xl">
-          <p className="text-sm font-black uppercase" style={{ color: village.brandColor }}>
-            {eyebrow}
-          </p>
-          <h1 className="mt-3 font-serif text-3xl font-black leading-tight md:text-5xl">
+          {eyebrow ? (
+            <p className="text-sm font-black" style={{ color: village.brandColor }}>
+              {eyebrow}
+            </p>
+          ) : null}
+          <h1
+            className={`${eyebrow ? "mt-3" : ""} font-serif text-3xl font-black leading-tight md:text-5xl`}
+          >
             {title}
           </h1>
           <div className="mt-6 flex flex-wrap gap-2 text-sm font-black">

@@ -52,7 +52,7 @@ export default async function ShortVillagePage({
   if (!village) notFound();
 
   const programs = await getVillagePrograms(village);
-  const reviews = getVillageReviews(village, programs);
+  const reviews = await getVillageReviews(village, programs, { limit: 6 });
 
   return <VillageHomePage programs={programs} reviews={reviews} village={village} />;
 }

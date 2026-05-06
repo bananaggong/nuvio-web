@@ -23,7 +23,8 @@ export async function generateMetadata({
   if (!village) return {};
 
   const programs = await getVillagePrograms(village);
-  const review = getVillageReviews(village, programs).find(
+  const reviews = await getVillageReviews(village, programs);
+  const review = reviews.find(
     (item) => String(item.id) === reviewId,
   );
   if (!review) return {};
@@ -46,7 +47,8 @@ export default async function VillageReviewDetailRoute({
   if (!village) notFound();
 
   const programs = await getVillagePrograms(village);
-  const review = getVillageReviews(village, programs).find(
+  const reviews = await getVillageReviews(village, programs);
+  const review = reviews.find(
     (item) => String(item.id) === reviewId,
   );
   if (!review) notFound();

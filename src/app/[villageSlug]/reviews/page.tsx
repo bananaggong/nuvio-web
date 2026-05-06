@@ -40,7 +40,7 @@ export default async function VillageReviewsRoute({
   if (!village) notFound();
 
   const programs = await getVillagePrograms(village);
-  const reviews = getVillageReviews(village, programs);
+  const reviews = await getVillageReviews(village, programs);
 
   return (
     <VillageReviewsIndexPage

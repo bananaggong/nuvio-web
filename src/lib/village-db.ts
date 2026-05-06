@@ -2,6 +2,7 @@ import { desc, eq, isNotNull } from "drizzle-orm";
 import { getDb } from "@/db/client";
 import { villages as villagesTable } from "@/db/schema";
 import { getPublicProgramByIdentifier, listPublicPrograms } from "@/lib/public-program-db";
+import { listPublicReviewsFromDb } from "@/lib/review-db";
 import { reviews } from "@/lib/data";
 import { seedVillages } from "@/lib/village-seeds";
 import type { Program, Review } from "@/lib/types";
@@ -83,19 +84,39 @@ export async function getVillagePrograms(village: Village): Promise<Program[]> {
   );
 }
 
-export function getVillageReviews(village: Village, programs: Program[]): Review[] {
+export async function getVillageReviews(
+  village: Village,
+  programs: Program[],
+  options: { limit?: number } = {},
+): Promise<Review[]> {
   const numericProgramIds = new Set(
     programs
       .map((program) => (typeof program.id === "number" ? program.id : Number(program.id)))
       .filter((id) => Number.isInteger(id)),
   );
 
-  if (numericProgramIds.size === 0) return [];
+  let databaseReviews: Review[] = [];
+  try {
+    databaseReviews = await listPublicReviewsFromDb();
+  } catch {
+    databaseReviews = [];
+  }
 
-  return reviews
-    .filter((review) => review.programId && numericProgramIds.has(review.programId))
+  const matchedReviews = [...databaseReviews, ...reviews]
+    .filter(
+      (review) =>
+        review.villageSlug === village.slug ||
+        (review.programId && numericProgramIds.has(review.programId)),
+    )
     .sort((a, b) => Date.parse(b.date) - Date.parse(a.date))
-    .slice(0, village.slug === "boseong" ? 6 : 4);
+    .filter(
+      (review, index, list) =>
+        list.findIndex((item) => String(item.id) === String(review.id)) === index,
+    );
+
+  return typeof options.limit === "number"
+    ? matchedReviews.slice(0, options.limit)
+    : matchedReviews;
 }
 
 export async function resolveVillageProgram(

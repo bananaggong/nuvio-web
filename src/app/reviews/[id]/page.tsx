@@ -16,7 +16,7 @@ export async function generateMetadata({
   params: Promise<{ id: string }>;
 }): Promise<Metadata> {
   const { id } = await params;
-  const review = getReviewById(Number(id));
+  const review = getReviewById(id);
   if (!review) return {};
   return {
     title: review.title,
@@ -30,7 +30,7 @@ export default async function ReviewDetailPage({
   params: Promise<{ id: string }>;
 }) {
   const { id } = await params;
-  const review = getReviewById(Number(id));
+  const review = getReviewById(id);
   if (!review) notFound();
 
   const program = review.programId ? getProgramById(review.programId) : undefined;

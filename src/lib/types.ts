@@ -66,10 +66,11 @@ export type ReviewCategory =
   | "question";
 
 export type Review = {
-  id: number;
+  id: number | string;
   title: string;
   category: ReviewCategory;
   programId?: number;
+  villageSlug?: string;
   author: string;
   date: string;
   excerpt: string;
