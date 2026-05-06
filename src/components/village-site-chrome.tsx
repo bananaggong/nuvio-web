@@ -27,7 +27,7 @@ export function VillageSiteHeader({
     return (
       <header className="relative z-30 text-white">
         <div className="bg-[#686864] px-5 py-2 text-center text-xs font-black md:text-sm">
-          {village.name} Visit Guide
+          {village.city} 청년마을
         </div>
         <div className="bg-[#242421]">
           <div className="mx-auto flex h-24 max-w-7xl items-center justify-between gap-4 px-5 md:px-8">
@@ -45,13 +45,13 @@ export function VillageSiteHeader({
 
             <nav className="hidden items-center gap-14 text-lg font-black md:flex">
               <Link className="hover:text-[#f0b434]" href={`${homePath}/about`}>
-                {village.name}은
+                소개
               </Link>
               <Link className="hover:text-[#f0b434]" href={`${homePath}/programs`}>
                 프로그램
               </Link>
               <Link className="hover:text-[#f0b434]" href={`${homePath}/notice`}>
-                알림마당
+                알림
               </Link>
             </nav>
 
@@ -59,7 +59,7 @@ export function VillageSiteHeader({
               className="hidden h-12 items-center justify-center rounded-full bg-white px-6 text-sm font-black text-slate-950 hover:bg-[#f0b434] md:inline-flex"
               href={`${homePath}#guide`}
             >
-              참여 및 이용안내
+              이용안내
             </Link>
 
             <Link

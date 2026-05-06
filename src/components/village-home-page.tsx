@@ -55,18 +55,15 @@ export function VillageHomePage({
           src={village.heroImage}
         />
         <div className="absolute inset-0 bg-[#12110f]/45" />
-        <div className="relative mx-auto flex min-h-[430px] max-w-7xl flex-col items-center justify-center px-5 py-16 text-center text-white md:min-h-[520px] md:px-8">
+        <div className="relative mx-auto flex min-h-[340px] max-w-7xl flex-col items-center justify-center px-5 py-14 text-center text-white md:min-h-[440px] md:px-8">
           <p className="text-sm font-black uppercase">
-            2026 {getVillageEnglishLabel(village)}
+            {getVillageEnglishLabel(village)}
           </p>
-          <h1 className="mt-5 font-serif text-5xl font-black leading-tight md:text-7xl">
+          <h1 className="mt-4 font-serif text-4xl font-black leading-tight md:text-6xl">
             {getVillageHeroTitle(village)}
           </h1>
-          <p className="mt-5 max-w-3xl text-lg font-bold leading-8 text-white/90">
+          <p className="mt-4 max-w-2xl text-base font-bold leading-7 text-white/88 md:text-lg">
             {village.tagline}
-          </p>
-          <p className="mt-4 max-w-3xl text-sm leading-7 text-white/76 md:text-base">
-            {village.summary}
           </p>
         </div>
       </section>
@@ -86,7 +83,7 @@ export function VillageHomePage({
       <section className="mx-auto max-w-7xl px-5 py-14 md:px-8" id="programs">
         <div className="mb-8 flex items-end justify-between gap-4">
           <h2 className="font-serif text-3xl font-black md:text-4xl">
-            진행중인 프로그램
+            프로그램
           </h2>
           <Link
             className="hidden items-center gap-2 text-sm font-black hover:text-[#0f766e] md:inline-flex"
@@ -117,11 +114,8 @@ export function VillageHomePage({
           <div className="mb-8 flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
             <div>
               <h2 className="font-serif text-3xl font-black md:text-4xl">
-                보성 청년마을 둘러보기
+                기록
               </h2>
-              <p className="mt-3 max-w-3xl text-sm leading-7 text-slate-600 md:text-base">
-                {village.description}
-              </p>
             </div>
             <Link
               className="hidden items-center gap-2 text-sm font-black hover:text-[#0f766e] md:inline-flex"
@@ -213,7 +207,7 @@ export function VillageHomePage({
         <div>
           <div className="mb-5 flex items-center justify-between">
             <h2 className="font-serif text-3xl font-black md:text-4xl">
-              공지사항
+              알림
             </h2>
             <Link
               className="inline-flex items-center gap-2 text-sm font-black hover:text-[#0f766e]"

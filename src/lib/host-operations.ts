@@ -126,7 +126,7 @@ export const seedHostApplications: HostApplication[] = [
   },
   {
     id: "app-006",
-    programTitle: "보성 차밭 살아보기 2박 3일",
+    programTitle: "로컬살롱",
     applicantName: "윤지후",
     email: "jihyu@example.com",
     phone: "010-5520-8821",
@@ -140,7 +140,7 @@ export const seedHostApplications: HostApplication[] = [
   },
   {
     id: "app-007",
-    programTitle: "보성 블렌딩티 워크숍",
+    programTitle: "나를 담는 차 실험실",
     applicantName: "한소민",
     email: "somin@example.com",
     phone: "010-7341-2901",
@@ -150,7 +150,7 @@ export const seedHostApplications: HostApplication[] = [
     receiptCount: 0,
     signatureCompleted: false,
     reviewSubmitted: false,
-    memo: "유료 워크숍 참가 동기 확인 필요",
+    memo: "블렌딩티 상품 기획 동기 확인 필요",
   },
 ];
 

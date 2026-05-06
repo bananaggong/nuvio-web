@@ -26,14 +26,11 @@ export function getVillageEnglishLabel(village: Village): string {
 }
 
 export function getVillageHeroTitle(village: Village): string {
-  const story = village.sections.find((section) => section.type === "story");
-  const keyword = story?.items[0]?.replace(/\s*안내$/u, "") ?? village.city;
-
-  return keyword ? `${keyword}에서 머무는 시간` : village.name;
+  return village.name;
 }
 
 export function getVillageApplyLabel(village: Village): string {
-  return `2026 ${village.name} 프로그램 신청 안내`;
+  return `${village.name} 프로그램 신청`;
 }
 
 export function buildVillageNotices(

@@ -25,7 +25,6 @@ export function VillageProgramsIndexPage({
     <VillagePageFrame
       eyebrow="Programs"
       primaryProgram={primaryProgram}
-      subtitle={`${village.name}에서 운영하는 모집, 체류, 체험 프로그램만 모았습니다.`}
       title="프로그램"
       village={village}
     >
@@ -59,7 +58,6 @@ export function VillageReviewsIndexPage({
     <VillagePageFrame
       eyebrow="Reviews"
       primaryProgram={programs[0]}
-      subtitle={`${village.name} 참여자들이 남긴 후기와 운영 기록을 모았습니다.`}
       title="참여 후기"
       village={village}
     >
@@ -87,7 +85,6 @@ export function VillageAboutIndexPage({
     <VillagePageFrame
       eyebrow="About"
       primaryProgram={programs[0]}
-      subtitle={village.description}
       title={`${village.name} 둘러보기`}
       village={village}
     >
@@ -113,8 +110,7 @@ export function VillageNoticeIndexPage({
     <VillagePageFrame
       eyebrow="Notice"
       primaryProgram={programs[0]}
-      subtitle={`${village.name} 신청, 선정, 숙소, 후기 제출 관련 안내만 모았습니다.`}
-      title="알림마당"
+      title="알림"
       village={village}
     >
       <div className="divide-y divide-[#dedbd1] border-y border-[#dedbd1]">
@@ -151,7 +147,6 @@ export function VillageReviewDetailPage({
     <VillagePageFrame
       eyebrow="Review"
       primaryProgram={programs[0]}
-      subtitle={`${village.name} 참여자가 남긴 활동 후기입니다.`}
       title={review.title}
       village={village}
     >
@@ -221,14 +216,12 @@ function VillagePageFrame({
   children,
   eyebrow,
   primaryProgram,
-  subtitle,
   title,
   village,
 }: {
   children: React.ReactNode;
   eyebrow: string;
   primaryProgram?: Program;
-  subtitle: string;
   title: string;
   village: Village;
 }) {
@@ -244,12 +237,9 @@ function VillagePageFrame({
           <p className="text-sm font-black uppercase" style={{ color: village.brandColor }}>
             {eyebrow}
           </p>
-          <h1 className="mt-3 font-serif text-4xl font-black leading-tight md:text-6xl">
+          <h1 className="mt-3 font-serif text-3xl font-black leading-tight md:text-5xl">
             {title}
           </h1>
-          <p className="mt-4 max-w-3xl text-base leading-8 text-slate-600">
-            {subtitle}
-          </p>
           <div className="mt-6 flex flex-wrap gap-2 text-sm font-black">
             <Link
               className="inline-flex items-center gap-2 border border-[#dedbd1] bg-[#f6f4ee] px-3 py-2 hover:bg-white"
