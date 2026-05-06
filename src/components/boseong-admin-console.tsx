@@ -17,6 +17,7 @@ import {
   boseongImportedReviews,
   boseongReviewImportSource,
 } from "@/lib/boseong-review-seeds";
+import { HostSocialConnectionPanel } from "@/components/host-social-connection-panel";
 import { boseongMediaSeeds } from "@/lib/village-media-seeds";
 import type { HostProgramDraft } from "@/lib/host-program-studio";
 import type {
@@ -296,6 +297,8 @@ export function BoseongAdminConsole() {
         <Metric label="미디어" value={`${boseongMediaSeeds.length + localMedia.length}개`} />
         <Metric label="개인정보 처리" value="이름 마스킹" />
       </section>
+
+      <HostSocialConnectionPanel villageSlug="boseong" />
 
       <section className="mt-6 grid gap-6 lg:grid-cols-3">
         <Panel icon={<FilePlus2 size={20} />} title="프로그램 업로드">

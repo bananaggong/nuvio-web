@@ -10,6 +10,7 @@ import {
   Quote,
 } from "lucide-react";
 import { StatusBadge } from "@/components/status-badge";
+import { BoseongIntroSection } from "@/components/boseong-intro-section";
 import {
   VillageSiteFooter,
   VillageSiteHeader,
@@ -110,13 +111,17 @@ export function VillageHomePage({
         </div>
       </section>
 
-      <section className="border-y border-[#252920] bg-[#11130f] px-5 py-6 text-white md:px-8">
-        <div className="mx-auto grid max-w-7xl gap-5 md:grid-cols-4">
-          {metrics.map((metric) => (
-            <Metric key={metric.label} label={metric.label} value={metric.value} />
-          ))}
-        </div>
-      </section>
+      {isBoseong ? (
+        <BoseongIntroSection />
+      ) : (
+        <section className="border-y border-[#252920] bg-[#11130f] px-5 py-6 text-white md:px-8">
+          <div className="mx-auto grid max-w-7xl gap-5 md:grid-cols-4">
+            {metrics.map((metric) => (
+              <Metric key={metric.label} label={metric.label} value={metric.value} />
+            ))}
+          </div>
+        </section>
+      )}
 
       <SectionShell
         actionHref={`${homePath}/programs`}
@@ -171,8 +176,9 @@ export function VillageHomePage({
         )}
       </SectionShell>
 
-      <SectionShell
-        actionHref={`${homePath}/about`}
+      {!isBoseong ? (
+        <SectionShell
+          actionHref={`${homePath}/about`}
         actionLabel="전체 보기"
         title="전체차LAB 기록"
         tone="white"
@@ -182,7 +188,8 @@ export function VillageHomePage({
             <ActivityTile key={section.id} section={section} village={village} />
           ))}
         </div>
-      </SectionShell>
+        </SectionShell>
+      ) : null}
 
       <section className="mx-auto grid max-w-7xl gap-8 px-5 py-14 md:px-8 lg:grid-cols-[minmax(0,1fr)_420px]">
         <div className="border-y border-[#d9d6c9]">

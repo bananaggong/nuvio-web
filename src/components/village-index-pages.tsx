@@ -1,6 +1,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import { ArrowRight, CalendarDays, MapPin, Quote } from "lucide-react";
+import { BoseongAboutContent } from "@/components/boseong-intro-section";
 import { StatusBadge } from "@/components/status-badge";
 import { VillageSiteFooter, VillageSiteHeader } from "@/components/village-site-chrome";
 import { formatDate, getDday } from "@/lib/format";
@@ -85,11 +86,15 @@ export function VillageAboutIndexPage({
       title={`${village.name} 둘러보기`}
       village={village}
     >
-      <div className="grid gap-5 md:grid-cols-2">
-        {village.sections.map((section) => (
-          <SectionCard key={section.id} section={section} village={village} />
-        ))}
-      </div>
+      {village.slug === "boseong" ? (
+        <BoseongAboutContent />
+      ) : (
+        <div className="grid gap-5 md:grid-cols-2">
+          {village.sections.map((section) => (
+            <SectionCard key={section.id} section={section} village={village} />
+          ))}
+        </div>
+      )}
     </VillagePageFrame>
   );
 }

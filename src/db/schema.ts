@@ -421,6 +421,37 @@ export const villageMediaContents = pgTable(
   ],
 );
 
+export const hostSocialConnections = pgTable(
+  "host_social_connections",
+  {
+    id: uuid("id").defaultRandom().primaryKey(),
+    villageSlug: text("village_slug").notNull(),
+    provider: text("provider").default("facebook").notNull(),
+    facebookUserId: text("facebook_user_id"),
+    pageId: text("page_id"),
+    pageName: text("page_name"),
+    pageAccessToken: text("page_access_token"),
+    instagramUserId: text("instagram_user_id"),
+    instagramUsername: text("instagram_username"),
+    accessToken: text("access_token").notNull(),
+    tokenExpiresAt: timestamp("token_expires_at", { withTimezone: true }),
+    permissions: jsonb("permissions").$type<string[]>().default(emptyArray).notNull(),
+    status: text("status").default("connected").notNull(),
+    lastSyncedAt: timestamp("last_synced_at", { withTimezone: true }),
+    lastSyncError: text("last_sync_error"),
+    raw: jsonb("raw").$type<Record<string, unknown>>().default(emptyObject).notNull(),
+    createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+    updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
+  },
+  (table) => [
+    uniqueIndex("host_social_connections_village_provider_idx").on(
+      table.villageSlug,
+      table.provider,
+    ),
+    index("host_social_connections_instagram_user_idx").on(table.instagramUserId),
+  ],
+);
+
 export const savedPrograms = pgTable(
   "saved_programs",
   {

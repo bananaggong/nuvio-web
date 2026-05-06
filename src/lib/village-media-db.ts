@@ -98,6 +98,16 @@ export async function upsertHostVillageMediaDraft(
     if (updatedRow) return mapMediaRowToHostDraft(updatedRow);
   }
 
+  if (!isUuid(draft.id) && draft.id) {
+    const [updatedRow] = await getDb()
+      .update(mediaTable)
+      .set({ ...insertValue, updatedAt: now })
+      .where(eq(mediaTable.legacyId, draft.id))
+      .returning();
+
+    if (updatedRow) return mapMediaRowToHostDraft(updatedRow);
+  }
+
   const [row] = await getDb().insert(mediaTable).values(insertValue).returning();
   return mapMediaRowToHostDraft(row);
 }
@@ -140,6 +150,7 @@ function mapHostDraftToMediaInsert(draft: HostVillageMediaDraft): MediaInsert {
   const publishedDate = normalizeDate(draft.date);
 
   return {
+    legacyId: isUuid(draft.id) ? null : draft.id,
     villageSlug: createSlug(draft.villageSlug),
     title: draft.title.trim() || "전체차LAB 미디어",
     category: draft.category,
