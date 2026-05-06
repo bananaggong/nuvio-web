@@ -12,24 +12,15 @@ import { StatusBadge } from "@/components/status-badge";
 import { VillageSiteFooter, VillageSiteHeader } from "@/components/village-site-chrome";
 import { formatDate, getDday } from "@/lib/format";
 import { villagePath, villageProgramPath } from "@/lib/village-routing";
+import {
+  buildVillageNotices,
+  getVillageApplyLabel,
+  getVillageEnglishLabel,
+  getVillageHeroTitle,
+  sectionTypeLabels,
+} from "@/lib/village-template";
 import type { Program, Review } from "@/lib/types";
 import type { Village, VillageSection } from "@/lib/village-types";
-
-type Notice = {
-  date: string;
-  href: string;
-  title: string;
-  type: string;
-};
-
-const sectionTypeLabels: Record<VillageSection["type"], string> = {
-  community: "커뮤니티",
-  faq: "안내",
-  notice: "공지",
-  programs: "프로그램",
-  stay: "체류",
-  story: "소개",
-};
 
 export function VillageHomePage({
   village,
@@ -42,7 +33,7 @@ export function VillageHomePage({
 }) {
   const primaryProgram = programs[0];
   const homePath = villagePath(village.slug);
-  const notices = buildNotices(village, programs);
+  const notices = buildVillageNotices(village, programs);
   const featuredPrograms = programs.slice(0, 4);
   const activitySections = village.sections.slice(0, 4);
 
@@ -66,10 +57,10 @@ export function VillageHomePage({
         <div className="absolute inset-0 bg-[#12110f]/45" />
         <div className="relative mx-auto flex min-h-[430px] max-w-7xl flex-col items-center justify-center px-5 py-16 text-center text-white md:min-h-[520px] md:px-8">
           <p className="text-sm font-black uppercase">
-            2026 Boseong Youth Village
+            2026 {getVillageEnglishLabel(village)}
           </p>
           <h1 className="mt-5 font-serif text-5xl font-black leading-tight md:text-7xl">
-            차밭에서 머무는 시간
+            {getVillageHeroTitle(village)}
           </h1>
           <p className="mt-5 max-w-3xl text-lg font-bold leading-8 text-white/90">
             {village.tagline}
@@ -82,7 +73,7 @@ export function VillageHomePage({
 
       <section className="bg-[#efa92f] px-5 py-5 text-center md:px-8">
         <p className="text-lg font-black text-black">
-          2026 보성 청년마을 프로그램 신청 안내
+          {getVillageApplyLabel(village)}
         </p>
         <Link
           className="mt-3 inline-flex h-10 items-center justify-center bg-[#242421] px-6 text-sm font-black text-white hover:bg-black"
@@ -99,7 +90,7 @@ export function VillageHomePage({
           </h2>
           <Link
             className="hidden items-center gap-2 text-sm font-black hover:text-[#0f766e] md:inline-flex"
-            href="/"
+            href={`${homePath}/programs`}
           >
             더보기
             <Plus size={18} />
@@ -134,7 +125,7 @@ export function VillageHomePage({
             </div>
             <Link
               className="hidden items-center gap-2 text-sm font-black hover:text-[#0f766e] md:inline-flex"
-              href={`${homePath}#story`}
+              href={`${homePath}/about`}
             >
               더보기
               <Plus size={18} />
@@ -155,7 +146,7 @@ export function VillageHomePage({
           </h2>
           <Link
             className="hidden items-center gap-2 text-sm font-black hover:text-[#0f766e] md:inline-flex"
-            href="/reviews"
+            href={`${homePath}/reviews`}
           >
             더보기
             <Plus size={18} />
@@ -167,7 +158,7 @@ export function VillageHomePage({
             {reviews.slice(0, 3).map((review) => (
               <Link
                 className="border border-[#dfddd5] bg-white px-6 py-6 hover:border-[#0f766e]"
-                href={`/reviews/${review.id}`}
+                href={`${homePath}/reviews/${review.id}`}
                 key={review.id}
               >
                 <p className="text-xs font-black text-slate-500">
@@ -226,7 +217,7 @@ export function VillageHomePage({
             </h2>
             <Link
               className="inline-flex items-center gap-2 text-sm font-black hover:text-[#0f766e]"
-              href="/announcements"
+              href={`${homePath}/notice`}
             >
               더보기
               <Plus size={18} />
@@ -402,29 +393,4 @@ function EmptyProgram({ village }: { village: Village }) {
       </p>
     </div>
   );
-}
-
-function buildNotices(village: Village, programs: Program[]): Notice[] {
-  const programNotices = programs.slice(0, 4).map((program) => ({
-    date: program.recruitStart,
-    href: villageProgramPath(village.slug, program.slug),
-    title: `${program.title} 신청 접수 안내`,
-    type: "모집",
-  }));
-
-  return [
-    ...programNotices,
-    {
-      date: village.updatedAt,
-      href: `${villagePath(village.slug)}#guide`,
-      title: "선정자 대상 OT, 숙소 위치, 공지방 입장 안내",
-      type: "공지",
-    },
-    {
-      date: village.updatedAt,
-      href: `${villagePath(village.slug)}#reviews`,
-      title: "활동 후기와 만족도 조사 제출 안내",
-      type: "후기",
-    },
-  ].slice(0, 6);
 }

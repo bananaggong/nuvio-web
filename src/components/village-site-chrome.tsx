@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { ArrowRight, Home, MessageCircle, Sparkles } from "lucide-react";
 import { villagePath } from "@/lib/village-routing";
+import { getVillageEnglishLabel } from "@/lib/village-template";
 import type { Program } from "@/lib/types";
 import type { Village } from "@/lib/village-types";
 
@@ -37,19 +38,19 @@ export function VillageSiteHeader({
                   {village.name}
                 </span>
                 <span className="block text-xs font-medium text-white/62">
-                  Boseong Youth Village
+                  {getVillageEnglishLabel(village)}
                 </span>
               </span>
             </Link>
 
             <nav className="hidden items-center gap-14 text-lg font-black md:flex">
-              <Link className="hover:text-[#f0b434]" href={`${homePath}#story`}>
-                보성 청년마을은
+              <Link className="hover:text-[#f0b434]" href={`${homePath}/about`}>
+                {village.name}은
               </Link>
-              <Link className="hover:text-[#f0b434]" href={`${homePath}#programs`}>
+              <Link className="hover:text-[#f0b434]" href={`${homePath}/programs`}>
                 프로그램
               </Link>
-              <Link className="hover:text-[#f0b434]" href={`${homePath}#notice`}>
+              <Link className="hover:text-[#f0b434]" href={`${homePath}/notice`}>
                 알림마당
               </Link>
             </nav>

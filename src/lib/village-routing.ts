@@ -48,7 +48,7 @@ export function canonicalVillageProgramPath(
 export function isVillageMicrositePath(pathname: string): boolean {
   const path = pathname.split(/[?#]/u)[0] ?? "";
   const segments = path.split("/").filter(Boolean);
-  const [first, , third] = segments;
+  const [first, second, third] = segments;
 
   if (!first) return false;
 
@@ -60,5 +60,9 @@ export function isVillageMicrositePath(pathname: string): boolean {
     return false;
   }
 
-  return segments.length === 1 || (segments.length === 2 && !third);
+  if (segments.length === 1 || (segments.length === 2 && !third)) {
+    return true;
+  }
+
+  return segments.length === 3 && second === "reviews" && Boolean(third);
 }
