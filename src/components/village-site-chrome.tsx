@@ -7,7 +7,7 @@ import type { Village } from "@/lib/village-types";
 type VillageSiteHeaderProps = {
   village: Village;
   primaryProgram?: Program;
-  variant?: "hero" | "light";
+  variant?: "dark" | "hero" | "light";
 };
 
 export function VillageSiteHeader({
@@ -16,10 +16,62 @@ export function VillageSiteHeader({
   variant = "hero",
 }: VillageSiteHeaderProps) {
   const isHero = variant === "hero";
+  const isDark = variant === "dark";
   const homePath = villagePath(village.slug);
   const programHref = primaryProgram
     ? `${homePath}/${primaryProgram.slug}`
     : `${homePath}#programs`;
+
+  if (isDark) {
+    return (
+      <header className="relative z-30 text-white">
+        <div className="bg-[#686864] px-5 py-2 text-center text-xs font-black md:text-sm">
+          {village.name} Visit Guide
+        </div>
+        <div className="bg-[#242421]">
+          <div className="mx-auto flex h-24 max-w-7xl items-center justify-between gap-4 px-5 md:px-8">
+            <Link className="flex min-w-0 items-center gap-4" href={homePath}>
+              <VillageMark village={village} />
+              <span className="min-w-0">
+                <span className="block truncate text-xl font-black md:text-2xl">
+                  {village.name}
+                </span>
+                <span className="block text-xs font-medium text-white/62">
+                  Boseong Youth Village
+                </span>
+              </span>
+            </Link>
+
+            <nav className="hidden items-center gap-14 text-lg font-black md:flex">
+              <Link className="hover:text-[#f0b434]" href={`${homePath}#story`}>
+                보성 청년마을은
+              </Link>
+              <Link className="hover:text-[#f0b434]" href={`${homePath}#programs`}>
+                프로그램
+              </Link>
+              <Link className="hover:text-[#f0b434]" href={`${homePath}#notice`}>
+                알림마당
+              </Link>
+            </nav>
+
+            <Link
+              className="hidden h-12 items-center justify-center rounded-full bg-white px-6 text-sm font-black text-slate-950 hover:bg-[#f0b434] md:inline-flex"
+              href={`${homePath}#guide`}
+            >
+              참여 및 이용안내
+            </Link>
+
+            <Link
+              className="inline-flex h-10 items-center justify-center rounded-full bg-white px-4 text-sm font-black text-slate-950 md:hidden"
+              href={programHref}
+            >
+              신청
+            </Link>
+          </div>
+        </div>
+      </header>
+    );
+  }
 
   return (
     <header
@@ -31,12 +83,7 @@ export function VillageSiteHeader({
     >
       <div className="mx-auto flex h-16 max-w-6xl items-center justify-between gap-4 px-5 md:px-8">
         <Link className="flex min-w-0 items-center gap-3" href={homePath}>
-          <span
-            className="flex size-10 shrink-0 items-center justify-center rounded-md text-sm font-black text-white"
-            style={{ backgroundColor: village.brandColor }}
-          >
-            {village.logoText ?? village.name.slice(0, 2)}
-          </span>
+          <VillageMark village={village} compact />
           <span className="min-w-0">
             <span className="block truncate text-base font-black">
               {village.name}
@@ -92,6 +139,39 @@ export function VillageSiteHeader({
         </div>
       </div>
     </header>
+  );
+}
+
+function VillageMark({
+  compact = false,
+  village,
+}: {
+  compact?: boolean;
+  village: Village;
+}) {
+  return (
+    <span
+      className={
+        compact
+          ? "flex size-10 shrink-0 items-center justify-center rounded-md text-sm font-black text-white"
+          : "flex h-12 w-14 shrink-0 items-end gap-1"
+      }
+      style={compact ? { backgroundColor: village.brandColor } : undefined}
+    >
+      {compact ? (
+        village.logoText ?? village.name.slice(0, 2)
+      ) : (
+        <>
+          {[16, 24, 32, 40, 48].map((height) => (
+            <span
+              className="block w-1.5 bg-white"
+              key={height}
+              style={{ height }}
+            />
+          ))}
+        </>
+      )}
+    </span>
   );
 }
 

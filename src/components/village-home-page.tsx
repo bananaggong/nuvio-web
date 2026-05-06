@@ -3,27 +3,33 @@ import Link from "next/link";
 import {
   ArrowRight,
   CalendarDays,
-  Camera,
-  ExternalLink,
-  Globe2,
-  Link2,
+  Clock3,
   MapPin,
-  MessageCircle,
   Phone,
-  Quote,
-  Sparkles,
-  Ticket,
-  UsersRound,
+  Plus,
 } from "lucide-react";
 import { StatusBadge } from "@/components/status-badge";
 import { VillageSiteFooter, VillageSiteHeader } from "@/components/village-site-chrome";
 import { formatDate, getDday } from "@/lib/format";
-import {
-  villagePath,
-  villageProgramPath,
-} from "@/lib/village-routing";
+import { villagePath, villageProgramPath } from "@/lib/village-routing";
 import type { Program, Review } from "@/lib/types";
 import type { Village, VillageSection } from "@/lib/village-types";
+
+type Notice = {
+  date: string;
+  href: string;
+  title: string;
+  type: string;
+};
+
+const sectionTypeLabels: Record<VillageSection["type"], string> = {
+  community: "커뮤니티",
+  faq: "안내",
+  notice: "공지",
+  programs: "프로그램",
+  stay: "체류",
+  story: "소개",
+};
 
 export function VillageHomePage({
   village,
@@ -35,11 +41,20 @@ export function VillageHomePage({
   reviews: Review[];
 }) {
   const primaryProgram = programs[0];
+  const homePath = villagePath(village.slug);
+  const notices = buildNotices(village, programs);
+  const featuredPrograms = programs.slice(0, 4);
+  const activitySections = village.sections.slice(0, 4);
 
   return (
-    <div className="bg-white">
-      <section className="relative min-h-[82vh] overflow-hidden text-white">
-        <VillageSiteHeader primaryProgram={primaryProgram} village={village} />
+    <div className="bg-[#f6f4ee] text-[#171717]">
+      <VillageSiteHeader
+        primaryProgram={primaryProgram}
+        variant="dark"
+        village={village}
+      />
+
+      <section className="relative overflow-hidden bg-[#e8e3d4]">
         <Image
           alt={`${village.name} 대표 이미지`}
           className="object-cover"
@@ -48,336 +63,281 @@ export function VillageHomePage({
           sizes="100vw"
           src={village.heroImage}
         />
-        <div className="absolute inset-0 bg-gradient-to-b from-black/65 via-black/35 to-black/75" />
-        <div className="relative mx-auto flex min-h-[82vh] max-w-6xl flex-col justify-end px-5 pb-12 pt-28 md:px-8">
-          <div className="max-w-3xl">
-            <span className="inline-flex items-center gap-2 rounded-md bg-white/12 px-3 py-2 text-sm font-black text-white backdrop-blur">
-              <MapPin size={16} />
-              {village.region} {village.city}
-            </span>
-            <h1 className="mt-5 max-w-4xl text-4xl font-black leading-tight tracking-tight md:text-6xl">
-              {village.name}
-            </h1>
-            <p className="mt-4 max-w-3xl text-lg font-bold leading-8 text-white/90 md:text-xl">
-              {village.tagline}
-            </p>
-            <p className="mt-4 max-w-2xl text-sm leading-7 text-white/78 md:text-base">
-              {village.summary}
-            </p>
-            <div className="mt-7 flex flex-wrap gap-3">
-              <Link
-                className="inline-flex h-12 items-center justify-center gap-2 rounded-md px-4 text-sm font-black text-white shadow-sm"
-                href={primaryProgram ? villageProgramPath(village.slug, primaryProgram.slug) : "#programs"}
-                style={{ backgroundColor: village.brandColor }}
-              >
-                <Sparkles size={18} />
-                프로그램 보기
-              </Link>
-              {village.kakaoUrl ? (
-                <a
-                  className="inline-flex h-12 items-center justify-center gap-2 rounded-md border border-white/25 bg-white/12 px-4 text-sm font-black text-white backdrop-blur hover:bg-white/20"
-                  href={village.kakaoUrl}
-                  rel="noreferrer"
-                  target="_blank"
-                >
-                  <MessageCircle size={18} />
-                  문의하기
-                </a>
-              ) : null}
+        <div className="absolute inset-0 bg-[#12110f]/45" />
+        <div className="relative mx-auto flex min-h-[430px] max-w-7xl flex-col items-center justify-center px-5 py-16 text-center text-white md:min-h-[520px] md:px-8">
+          <p className="text-sm font-black uppercase">
+            2026 Boseong Youth Village
+          </p>
+          <h1 className="mt-5 font-serif text-5xl font-black leading-tight md:text-7xl">
+            차밭에서 머무는 시간
+          </h1>
+          <p className="mt-5 max-w-3xl text-lg font-bold leading-8 text-white/90">
+            {village.tagline}
+          </p>
+          <p className="mt-4 max-w-3xl text-sm leading-7 text-white/76 md:text-base">
+            {village.summary}
+          </p>
+        </div>
+      </section>
+
+      <section className="bg-[#efa92f] px-5 py-5 text-center md:px-8">
+        <p className="text-lg font-black text-black">
+          2026 보성 청년마을 프로그램 신청 안내
+        </p>
+        <Link
+          className="mt-3 inline-flex h-10 items-center justify-center bg-[#242421] px-6 text-sm font-black text-white hover:bg-black"
+          href={primaryProgram ? villageProgramPath(village.slug, primaryProgram.slug) : `${homePath}#programs`}
+        >
+          바로 신청하기
+        </Link>
+      </section>
+
+      <section className="mx-auto max-w-7xl px-5 py-14 md:px-8" id="programs">
+        <div className="mb-8 flex items-end justify-between gap-4">
+          <h2 className="font-serif text-3xl font-black md:text-4xl">
+            진행중인 프로그램
+          </h2>
+          <Link
+            className="hidden items-center gap-2 text-sm font-black hover:text-[#0f766e] md:inline-flex"
+            href="/"
+          >
+            더보기
+            <Plus size={18} />
+          </Link>
+        </div>
+
+        {featuredPrograms.length > 0 ? (
+          <div className="grid gap-5 md:grid-cols-2 lg:grid-cols-4">
+            {featuredPrograms.map((program) => (
+              <FeaturedProgramCard
+                key={`${program.id}-${program.slug}`}
+                program={program}
+                village={village}
+              />
+            ))}
+          </div>
+        ) : (
+          <EmptyProgram village={village} />
+        )}
+      </section>
+
+      <section className="border-y border-[#dfddd5] bg-white px-5 py-14 md:px-8" id="story">
+        <div className="mx-auto max-w-7xl">
+          <div className="mb-8 flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
+            <div>
+              <h2 className="font-serif text-3xl font-black md:text-4xl">
+                보성 청년마을 둘러보기
+              </h2>
+              <p className="mt-3 max-w-3xl text-sm leading-7 text-slate-600 md:text-base">
+                {village.description}
+              </p>
             </div>
+            <Link
+              className="hidden items-center gap-2 text-sm font-black hover:text-[#0f766e] md:inline-flex"
+              href={`${homePath}#story`}
+            >
+              더보기
+              <Plus size={18} />
+            </Link>
+          </div>
+          <div className="grid gap-5 md:grid-cols-2 lg:grid-cols-4">
+            {activitySections.map((section) => (
+              <ActivityTile key={section.id} section={section} village={village} />
+            ))}
           </div>
         </div>
       </section>
 
-      <section className="border-b border-slate-200 bg-[var(--background)]">
-        <div className="mx-auto grid max-w-6xl gap-3 px-5 py-5 md:grid-cols-4 md:px-8">
-          <HeroFact icon={<MapPin size={18} />} label="지역" value={`${village.region} ${village.city}`} />
-          <HeroFact icon={<UsersRound size={18} />} label="운영 프로그램" value={`${programs.length}개 연결`} />
-          <HeroFact icon={<CalendarDays size={18} />} label="마지막 업데이트" value={formatDate(village.updatedAt)} />
-          <HeroFact
-            icon={<Globe2 size={18} />}
-            label="공개 주소"
-            value={villagePath(village.slug)}
+      <section className="mx-auto max-w-7xl px-5 py-14 md:px-8" id="reviews">
+        <div className="mb-8 flex items-end justify-between gap-4">
+          <h2 className="font-serif text-3xl font-black md:text-4xl">
+            참여 후기
+          </h2>
+          <Link
+            className="hidden items-center gap-2 text-sm font-black hover:text-[#0f766e] md:inline-flex"
+            href="/reviews"
+          >
+            더보기
+            <Plus size={18} />
+          </Link>
+        </div>
+
+        {reviews.length > 0 ? (
+          <div className="grid gap-5 md:grid-cols-3">
+            {reviews.slice(0, 3).map((review) => (
+              <Link
+                className="border border-[#dfddd5] bg-white px-6 py-6 hover:border-[#0f766e]"
+                href={`/reviews/${review.id}`}
+                key={review.id}
+              >
+                <p className="text-xs font-black text-slate-500">
+                  {formatDate(review.date)}
+                </p>
+                <h3 className="mt-3 line-clamp-2 text-xl font-black leading-7">
+                  {review.title}
+                </h3>
+                <p className="mt-3 line-clamp-3 text-sm leading-6 text-slate-600">
+                  {review.excerpt}
+                </p>
+                <p className="mt-5 text-sm font-black" style={{ color: village.brandColor }}>
+                  {review.author}
+                </p>
+              </Link>
+            ))}
+          </div>
+        ) : (
+          <div className="border border-dashed border-[#cfc9b9] bg-white px-6 py-10 text-center">
+            <p className="font-black">아직 공개된 참여 후기가 없습니다.</p>
+            <p className="mt-2 text-sm leading-6 text-slate-600">
+              기수 활동 후기가 등록되면 이곳에 모아 보여줍니다.
+            </p>
+          </div>
+        )}
+      </section>
+
+      <section
+        className="mx-auto grid max-w-7xl gap-10 px-5 py-16 md:px-8 lg:grid-cols-[minmax(0,1fr)_minmax(420px,0.8fr)]"
+        id="notice"
+      >
+        <Link
+          className="group relative min-h-[360px] overflow-hidden bg-slate-900 text-white"
+          href={`${homePath}#guide`}
+        >
+          <Image
+            alt={`${village.name} 둘러보기`}
+            className="object-cover transition duration-500 group-hover:scale-105"
+            fill
+            sizes="(max-width: 1024px) 100vw, 50vw"
+            src={village.heroImage}
+          />
+          <div className="absolute inset-0 bg-black/30" />
+          <div className="absolute inset-x-0 bottom-0 bg-black/70 px-6 py-5">
+            <span className="inline-flex items-center gap-2 text-base font-black">
+              {village.name} 이용안내
+              <ArrowRight size={18} />
+            </span>
+          </div>
+        </Link>
+
+        <div>
+          <div className="mb-5 flex items-center justify-between">
+            <h2 className="font-serif text-3xl font-black md:text-4xl">
+              공지사항
+            </h2>
+            <Link
+              className="inline-flex items-center gap-2 text-sm font-black hover:text-[#0f766e]"
+              href="/announcements"
+            >
+              더보기
+              <Plus size={18} />
+            </Link>
+          </div>
+          <div className="divide-y divide-[#dedbd1] border-y border-[#dedbd1] bg-[#f6f4ee]">
+            {notices.map((notice) => (
+              <Link
+                className="grid gap-3 px-1 py-4 text-sm hover:bg-white md:grid-cols-[minmax(0,1fr)_112px]"
+                href={notice.href}
+                key={`${notice.type}-${notice.title}`}
+              >
+                <span className="min-w-0 truncate font-bold">
+                  [{notice.type}] {notice.title}
+                </span>
+                <span className="text-left text-slate-500 md:text-right">
+                  {formatDate(notice.date)}
+                </span>
+              </Link>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      <section className="relative overflow-hidden bg-[#2b2b28] px-5 py-16 md:px-8" id="guide">
+        <Image
+          alt=""
+          aria-hidden
+          className="object-cover opacity-18"
+          fill
+          sizes="100vw"
+          src={village.heroImage}
+        />
+        <div className="relative mx-auto grid max-w-7xl gap-8 lg:grid-cols-2">
+          <GuideBox
+            icon={<Clock3 size={20} />}
+            title="프로그램 운영 시간"
+            body="기수별 일정에 따라 사전 안내된 시간에 운영합니다."
+            detail="선정자에게 OT, 숙소 위치, 준비물, 공지방 입장 안내를 순차 발송합니다."
+          />
+          <GuideBox
+            icon={<CalendarDays size={20} />}
+            title="신청 및 선정 안내"
+            body="신청 후 운영진 검토를 거쳐 선정 여부를 개별 안내합니다."
+            detail="유료 프로그램은 입금 확인 후 참여 확정 및 소통방 입장이 진행됩니다."
+          />
+          <GuideBox
+            icon={<MapPin size={20} />}
+            title="오시는 길"
+            body={village.address ?? `${village.region} ${village.city}`}
+            detail="세부 집결지와 숙소 위치는 선정자에게 별도 안내합니다."
+          />
+          <GuideBox
+            icon={<Phone size={20} />}
+            title="문의"
+            body={village.contactPhone ?? "운영 사무국 문의"}
+            detail={village.contactEmail ?? "카카오 채널 또는 공식 연락처를 통해 문의해 주세요."}
           />
         </div>
       </section>
 
-      <section className="mx-auto grid max-w-6xl gap-8 px-5 py-12 md:px-8 lg:grid-cols-[minmax(0,1fr)_340px]">
-        <main className="min-w-0">
-          <div className="max-w-3xl scroll-mt-24" id="story">
-            <p className="text-sm font-black" style={{ color: village.brandColor }}>
-              {village.city} 공식 홈
-            </p>
-            <h2 className="mt-3 text-2xl font-black leading-tight text-slate-950 md:text-4xl">
-              신청 전 안내부터 참여 후 후기까지, 이 마을의 공식 기준점을 만듭니다.
-            </h2>
-            <p className="mt-4 text-base leading-8 text-slate-600">
-              {village.description}
-            </p>
-          </div>
-
-          <section className="mt-10" id="programs">
-            <div className="flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
-              <div>
-                <h2 className="text-2xl font-black text-slate-950">
-                  운영 프로그램
-                </h2>
-                <p className="mt-1 text-sm leading-6 text-slate-500">
-                  마을과 연결된 모집 페이지를 같은 흐름으로 보여줍니다.
-                </p>
-              </div>
-              <Link
-                className="inline-flex h-10 items-center justify-center gap-2 rounded-md border border-slate-200 px-3 text-sm font-black text-slate-700 hover:border-[var(--primary)] hover:text-[var(--primary)]"
-                href="/"
-              >
-                전체 프로그램
-                <ArrowRight size={16} />
-              </Link>
-            </div>
-
-            {programs.length > 0 ? (
-              <div className="mt-5 grid gap-4">
-                {programs.map((program) => (
-                  <VillageProgramCard
-                    key={`${program.id}-${program.slug}`}
-                    program={program}
-                    village={village}
-                  />
-                ))}
-              </div>
-            ) : (
-              <EmptyProgramBlock village={village} />
-            )}
-          </section>
-
-          <section className="mt-12" id="reviews">
-            <div className="flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
-              <div>
-                <h2 className="text-2xl font-black text-slate-950">
-                  프로그램 후기
-                </h2>
-                <p className="mt-1 text-sm leading-6 text-slate-500">
-                  참여자가 남긴 경험을 다음 기수 안내와 운영 보고서 자료로 모읍니다.
-                </p>
-              </div>
-              <Link
-                className="inline-flex h-10 items-center justify-center gap-2 rounded-md border border-slate-200 px-3 text-sm font-black text-slate-700 hover:border-[var(--primary)] hover:text-[var(--primary)]"
-                href="/reviews"
-              >
-                전체 후기
-                <ArrowRight size={16} />
-              </Link>
-            </div>
-
-            {reviews.length > 0 ? (
-              <div className="mt-5 grid gap-3 md:grid-cols-2">
-                {reviews.map((review) => (
-                  <VillageReviewCard key={review.id} review={review} village={village} />
-                ))}
-              </div>
-            ) : (
-              <div className="mt-5 rounded-md border border-dashed border-slate-300 bg-white p-5">
-                <p className="font-black text-slate-950">아직 연결된 후기가 없습니다.</p>
-                <p className="mt-2 text-sm leading-6 text-slate-600">
-                  참여자가 활동 후기를 남기면 이 마을 페이지에 함께 모입니다.
-                </p>
-              </div>
-            )}
-          </section>
-
-          <section className="mt-12 grid gap-4 md:grid-cols-2">
-            {village.sections.map((section) => (
-              <VillageSectionBlock
-                key={section.id}
-                section={section}
-                village={village}
-              />
-            ))}
-          </section>
-        </main>
-
-        <aside className="space-y-4 lg:sticky lg:top-24 lg:self-start">
-          <section className="rounded-md border border-slate-200 bg-white p-5 shadow-sm">
-            <div
-              className="flex size-12 items-center justify-center rounded-md text-lg font-black text-white"
-              style={{ backgroundColor: village.brandColor }}
-            >
-              {village.logoText ?? village.name.slice(0, 2)}
-            </div>
-            <h2 className="mt-4 text-lg font-black text-slate-950">
-              마을 운영 정보
-            </h2>
-            <div className="mt-4 grid gap-3 text-sm">
-              {village.address ? (
-                <ContactLine icon={<MapPin size={16} />} label={village.address} />
-              ) : null}
-              {village.contactPhone ? (
-                <ContactLine icon={<Phone size={16} />} label={village.contactPhone} />
-              ) : null}
-              {village.contactEmail ? (
-                <ContactLine icon={<Link2 size={16} />} label={village.contactEmail} />
-              ) : null}
-            </div>
-            <div className="mt-5 grid gap-2">
-              {village.instagramUrl ? (
-                <ExternalButton href={village.instagramUrl} icon={<Camera size={17} />} label="인스타그램" />
-              ) : null}
-              {village.kakaoUrl ? (
-                <ExternalButton href={village.kakaoUrl} icon={<MessageCircle size={17} />} label="카카오 채널" />
-              ) : null}
-            </div>
-          </section>
-
-          <section className="rounded-md border border-slate-200 bg-[var(--surface-muted)] p-5">
-            <h2 className="text-base font-black text-slate-950">공개 경로</h2>
-            <div className="mt-3 grid gap-2 text-sm text-slate-600">
-              <p className="rounded-md bg-white p-3 font-bold">
-                짧은 주소: nuvio.kr/{village.slug}
-              </p>
-              <p className="rounded-md bg-white p-3 font-bold">
-                목록 주소: nuvio.kr/villages/{village.slug}
-              </p>
-            </div>
-          </section>
-        </aside>
-      </section>
       <VillageSiteFooter primaryProgram={primaryProgram} village={village} />
     </div>
   );
 }
 
-function VillageProgramCard({
-  village,
+function FeaturedProgramCard({
   program,
+  village,
 }: {
-  village: Village;
   program: Program;
+  village: Village;
 }) {
   return (
-    <article className="grid overflow-hidden rounded-md border border-slate-200 bg-white shadow-sm sm:grid-cols-[220px_minmax(0,1fr)]">
+    <article className="border border-[#ddd8ca] bg-white">
       <Link
-        className="relative aspect-[4/3] bg-slate-100 sm:aspect-auto"
+        className="relative block aspect-[4/5] overflow-hidden bg-[#ece8dd]"
         href={villageProgramPath(village.slug, program.slug)}
       >
         <Image
           alt={program.title}
-          className="object-cover"
+          className="object-cover transition duration-500 hover:scale-105"
           fill
-          sizes="(max-width: 640px) 100vw, 220px"
+          sizes="(max-width: 768px) 100vw, 25vw"
           src={program.image}
         />
       </Link>
-      <div className="min-w-0 p-5">
-        <div className="flex flex-wrap items-center gap-2">
+      <div className="px-5 py-6 text-center">
+        <div className="mb-3 flex justify-center gap-2">
           <StatusBadge program={program} />
-          <span className="rounded-md bg-slate-950 px-2.5 py-1 text-xs font-black text-white">
+          <span className="rounded-full bg-[#242421] px-3 py-1 text-xs font-black text-white">
             {getDday(program.recruitEnd, program.status)}
           </span>
         </div>
+        <p className="text-sm font-black" style={{ color: village.brandColor }}>
+          {program.city}
+        </p>
         <Link href={villageProgramPath(village.slug, program.slug)}>
-          <h3 className="mt-3 line-clamp-2 text-xl font-black leading-7 text-slate-950 hover:text-[var(--primary)]">
+          <h3 className="mt-2 line-clamp-2 text-xl font-black leading-7 hover:text-[#0f766e]">
             {program.title}
           </h3>
         </Link>
         <p className="mt-2 line-clamp-2 text-sm leading-6 text-slate-600">
           {program.summary}
         </p>
-        <div className="mt-4 flex flex-wrap gap-2">
-          {program.hashtags.slice(0, 4).map((tag) => (
-            <span
-              className="rounded-md bg-[var(--surface-muted)] px-2 py-1 text-xs font-bold text-slate-600"
-              key={tag}
-            >
-              #{tag}
-            </span>
-          ))}
-        </div>
-        <div className="mt-5 flex flex-wrap gap-2">
-          <Link
-            className="inline-flex h-10 items-center justify-center gap-2 rounded-md px-3 text-sm font-black text-white hover:opacity-90"
-            href={`/programs/${program.id}/apply`}
-            style={{ backgroundColor: village.brandColor }}
-          >
-            <Ticket size={16} />
-            신청하기
-          </Link>
-          <Link
-            className="inline-flex h-10 items-center justify-center gap-2 rounded-md border border-slate-200 px-3 text-sm font-black text-slate-700 hover:border-[var(--primary)] hover:text-[var(--primary)]"
-            href={villageProgramPath(village.slug, program.slug)}
-          >
-            자세히
-            <ArrowRight size={16} />
-          </Link>
-        </div>
       </div>
     </article>
   );
 }
 
-function VillageReviewCard({
-  review,
-  village,
-}: {
-  review: Review;
-  village: Village;
-}) {
-  return (
-    <Link
-      className="rounded-md border border-slate-200 bg-white p-5 shadow-sm hover:border-[var(--primary)]"
-      href={`/reviews/${review.id}`}
-    >
-      <div className="flex items-center justify-between gap-3">
-        <span
-          className="inline-flex items-center gap-2 rounded-md px-2.5 py-1 text-xs font-black text-white"
-          style={{ backgroundColor: village.brandColor }}
-        >
-          <Quote size={14} />
-          {review.badge ?? "후기"}
-        </span>
-        <span className="text-xs font-bold text-slate-400">
-          {formatDate(review.date)}
-        </span>
-      </div>
-      <h3 className="mt-3 line-clamp-2 text-lg font-black leading-7 text-slate-950">
-        {review.title}
-      </h3>
-      <p className="mt-2 line-clamp-2 text-sm leading-6 text-slate-600">
-        {review.excerpt}
-      </p>
-      <p className="mt-4 text-xs font-black text-slate-500">
-        {review.author} · 좋아요 {review.likes} · 댓글 {review.comments}
-      </p>
-    </Link>
-  );
-}
-
-function EmptyProgramBlock({ village }: { village: Village }) {
-  const programSection = village.sections.find((section) => section.type === "programs");
-
-  return (
-    <div className="mt-5 rounded-md border border-dashed border-slate-300 bg-white p-5">
-      <p className="font-black text-slate-950">연결된 공개 프로그램이 아직 없습니다.</p>
-      <p className="mt-2 text-sm leading-6 text-slate-600">
-        호스트 콘솔에서 프로그램을 게시한 뒤 마을의 연결 프로그램 ID/slug에 추가하면 이 영역에 바로 표시됩니다.
-      </p>
-      {programSection ? (
-        <div className="mt-4 flex flex-wrap gap-2">
-          {programSection.items.map((item) => (
-            <span
-              className="rounded-md px-2 py-1 text-xs font-black text-white"
-              key={item}
-              style={{ backgroundColor: village.accentColor }}
-            >
-              {item}
-            </span>
-          ))}
-        </div>
-      ) : null}
-    </div>
-  );
-}
-
-function VillageSectionBlock({
+function ActivityTile({
   section,
   village,
 }: {
@@ -385,77 +345,86 @@ function VillageSectionBlock({
   village: Village;
 }) {
   return (
-    <article className="rounded-md border border-slate-200 bg-white p-5">
-      <p className="text-xs font-black uppercase tracking-[0.08em]" style={{ color: village.brandColor }}>
-        {section.type}
+    <article className="border border-[#dfddd5] bg-[#fbfaf6] px-5 py-6 text-center">
+      <p className="text-xs font-black uppercase text-slate-500">
+        {sectionTypeLabels[section.type]}
       </p>
-      <h3 className="mt-2 text-xl font-black text-slate-950">{section.title}</h3>
-      <p className="mt-3 text-sm leading-7 text-slate-600">{section.body}</p>
-      {section.items.length > 0 ? (
-        <ul className="mt-4 grid gap-2">
-          {section.items.map((item) => (
-            <li className="flex gap-2 text-sm font-bold text-slate-700" key={item}>
-              <span
-                className="mt-1 size-2 shrink-0 rounded-full"
-                style={{ backgroundColor: village.accentColor }}
-              />
-              {item}
-            </li>
-          ))}
-        </ul>
-      ) : null}
+      <h3 className="mt-3 font-serif text-2xl font-black">{section.title}</h3>
+      <p className="mt-3 line-clamp-3 text-sm leading-6 text-slate-600">
+        {section.body}
+      </p>
+      <div className="mt-5 flex flex-wrap justify-center gap-2">
+        {section.items.slice(0, 3).map((item) => (
+          <span
+            className="border px-2.5 py-1 text-xs font-black"
+            key={item}
+            style={{ borderColor: village.accentColor, color: village.brandColor }}
+          >
+            {item}
+          </span>
+        ))}
+      </div>
     </article>
   );
 }
 
-function HeroFact({
+function GuideBox({
+  body,
+  detail,
   icon,
-  label,
-  value,
+  title,
 }: {
+  body: string;
+  detail: string;
   icon: React.ReactNode;
-  label: string;
-  value: string;
+  title: string;
 }) {
   return (
-    <div className="flex gap-3 rounded-md border border-slate-200 bg-white p-4">
-      <div className="text-[var(--primary)]">{icon}</div>
-      <div className="min-w-0">
-        <p className="text-xs font-black text-slate-400">{label}</p>
-        <p className="mt-1 truncate text-sm font-black text-slate-800">{value}</p>
+    <section className="border border-black/20 bg-white px-8 py-8">
+      <div className="flex items-center gap-3 text-[#0f766e]">
+        {icon}
+        <h3 className="font-serif text-2xl font-black text-slate-950">{title}</h3>
       </div>
+      <p className="mt-5 text-base font-black leading-7 text-slate-950">{body}</p>
+      <p className="mt-3 border-t border-slate-200 pt-4 text-sm leading-6 text-slate-600">
+        {detail}
+      </p>
+    </section>
+  );
+}
+
+function EmptyProgram({ village }: { village: Village }) {
+  return (
+    <div className="border border-dashed border-[#cfc9b9] bg-white px-6 py-10 text-center">
+      <p className="font-black">{village.name}의 공개 프로그램을 준비 중입니다.</p>
+      <p className="mt-2 text-sm leading-6 text-slate-600">
+        모집 일정이 확정되면 이 영역에서 바로 신청할 수 있습니다.
+      </p>
     </div>
   );
 }
 
-function ContactLine({ icon, label }: { icon: React.ReactNode; label: string }) {
-  return (
-    <p className="flex items-center gap-2 font-bold text-slate-700">
-      <span className="text-slate-400">{icon}</span>
-      <span className="min-w-0 break-words">{label}</span>
-    </p>
-  );
-}
+function buildNotices(village: Village, programs: Program[]): Notice[] {
+  const programNotices = programs.slice(0, 4).map((program) => ({
+    date: program.recruitStart,
+    href: villageProgramPath(village.slug, program.slug),
+    title: `${program.title} 신청 접수 안내`,
+    type: "모집",
+  }));
 
-function ExternalButton({
-  href,
-  icon,
-  label,
-}: {
-  href: string;
-  icon: React.ReactNode;
-  label: string;
-}) {
-  return (
-    <a
-      className="inline-flex h-10 items-center justify-center gap-2 rounded-md border border-slate-200 bg-white px-3 text-sm font-black text-slate-700 hover:border-[var(--primary)] hover:text-[var(--primary)]"
-      href={href}
-      rel="noreferrer"
-      target="_blank"
-    >
-      {icon}
-      {label}
-      <ExternalLink size={15} />
-    </a>
-  );
+  return [
+    ...programNotices,
+    {
+      date: village.updatedAt,
+      href: `${villagePath(village.slug)}#guide`,
+      title: "선정자 대상 OT, 숙소 위치, 공지방 입장 안내",
+      type: "공지",
+    },
+    {
+      date: village.updatedAt,
+      href: `${villagePath(village.slug)}#reviews`,
+      title: "활동 후기와 만족도 조사 제출 안내",
+      type: "후기",
+    },
+  ].slice(0, 6);
 }
