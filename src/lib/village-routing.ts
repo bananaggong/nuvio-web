@@ -4,15 +4,20 @@ const reservedTopLevelSegments = new Set([
   "announcements",
   "api",
   "auth",
+  "apple-icon.png",
   "favicon.ico",
   "half-price-travel",
   "host",
+  "icon.svg",
   "login",
+  "manifest.json",
   "me",
   "partners",
   "privacy",
+  "robots.txt",
   "programs",
   "reviews",
+  "sitemap.xml",
   "terms",
   "villages",
 ]);
@@ -38,4 +43,22 @@ export function canonicalVillageProgramPath(
   programSlug: string,
 ): string {
   return `/villages/${villageSlug}/programs/${programSlug}`;
+}
+
+export function isVillageMicrositePath(pathname: string): boolean {
+  const path = pathname.split(/[?#]/u)[0] ?? "";
+  const segments = path.split("/").filter(Boolean);
+  const [first, , third] = segments;
+
+  if (!first) return false;
+
+  if (first === "villages") {
+    return segments.length >= 2;
+  }
+
+  if (isReservedVillageSlug(first) || first.includes(".")) {
+    return false;
+  }
+
+  return segments.length === 1 || (segments.length === 2 && !third);
 }

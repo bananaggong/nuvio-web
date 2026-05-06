@@ -16,9 +16,10 @@ import {
   UsersRound,
 } from "lucide-react";
 import { StatusBadge } from "@/components/status-badge";
+import { VillageSiteFooter, VillageSiteHeader } from "@/components/village-site-chrome";
 import { formatDate, getDday } from "@/lib/format";
 import {
-  canonicalVillagePath,
+  villagePath,
   villageProgramPath,
 } from "@/lib/village-routing";
 import type { Program, Review } from "@/lib/types";
@@ -37,7 +38,8 @@ export function VillageHomePage({
 
   return (
     <div className="bg-white">
-      <section className="relative min-h-[78vh] overflow-hidden text-white">
+      <section className="relative min-h-[82vh] overflow-hidden text-white">
+        <VillageSiteHeader primaryProgram={primaryProgram} village={village} />
         <Image
           alt={`${village.name} 대표 이미지`}
           className="object-cover"
@@ -47,15 +49,12 @@ export function VillageHomePage({
           src={village.heroImage}
         />
         <div className="absolute inset-0 bg-gradient-to-b from-black/65 via-black/35 to-black/75" />
-        <div className="relative mx-auto flex min-h-[78vh] max-w-6xl flex-col justify-end px-5 pb-12 pt-24 md:px-8">
+        <div className="relative mx-auto flex min-h-[82vh] max-w-6xl flex-col justify-end px-5 pb-12 pt-28 md:px-8">
           <div className="max-w-3xl">
-            <Link
-              className="inline-flex items-center gap-2 rounded-md bg-white/12 px-3 py-2 text-sm font-black text-white backdrop-blur hover:bg-white/20"
-              href="/villages"
-            >
+            <span className="inline-flex items-center gap-2 rounded-md bg-white/12 px-3 py-2 text-sm font-black text-white backdrop-blur">
               <MapPin size={16} />
               {village.region} {village.city}
-            </Link>
+            </span>
             <h1 className="mt-5 max-w-4xl text-4xl font-black leading-tight tracking-tight md:text-6xl">
               {village.name}
             </h1>
@@ -98,16 +97,16 @@ export function VillageHomePage({
           <HeroFact
             icon={<Globe2 size={18} />}
             label="공개 주소"
-            value={canonicalVillagePath(village.slug)}
+            value={villagePath(village.slug)}
           />
         </div>
       </section>
 
       <section className="mx-auto grid max-w-6xl gap-8 px-5 py-12 md:px-8 lg:grid-cols-[minmax(0,1fr)_340px]">
         <main className="min-w-0">
-          <div className="max-w-3xl">
+          <div className="max-w-3xl scroll-mt-24" id="story">
             <p className="text-sm font-black" style={{ color: village.brandColor }}>
-              Village Home
+              {village.city} 공식 홈
             </p>
             <h2 className="mt-3 text-2xl font-black leading-tight text-slate-950 md:text-4xl">
               신청 전 안내부터 참여 후 후기까지, 이 마을의 공식 기준점을 만듭니다.
@@ -236,12 +235,13 @@ export function VillageHomePage({
                 짧은 주소: nuvio.kr/{village.slug}
               </p>
               <p className="rounded-md bg-white p-3 font-bold">
-                표준 주소: nuvio.kr/villages/{village.slug}
+                목록 주소: nuvio.kr/villages/{village.slug}
               </p>
             </div>
           </section>
         </aside>
       </section>
+      <VillageSiteFooter primaryProgram={primaryProgram} village={village} />
     </div>
   );
 }

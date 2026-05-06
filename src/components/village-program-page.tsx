@@ -11,6 +11,7 @@ import {
   WalletCards,
 } from "lucide-react";
 import { StatusBadge } from "@/components/status-badge";
+import { VillageSiteFooter, VillageSiteHeader } from "@/components/village-site-chrome";
 import { formatDate, formatRange, formatWon, getDday } from "@/lib/format";
 import { canonicalVillagePath } from "@/lib/village-routing";
 import type { Program } from "@/lib/types";
@@ -25,6 +26,7 @@ export function VillageProgramPage({
 }) {
   return (
     <div className="bg-white">
+      <VillageSiteHeader primaryProgram={program} variant="light" village={village} />
       <section className="border-b border-slate-200 bg-[var(--background)]">
         <div className="mx-auto grid max-w-6xl gap-8 px-5 py-8 md:px-8 lg:grid-cols-[minmax(0,1fr)_420px]">
           <div className="order-2 min-w-0 lg:order-1">
@@ -159,6 +161,7 @@ export function VillageProgramPage({
           </section>
         </aside>
       </div>
+      <VillageSiteFooter primaryProgram={program} village={village} />
     </div>
   );
 }

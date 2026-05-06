@@ -35,7 +35,7 @@ export async function generateMetadata({
   };
 }
 
-export default async function ShortVillageProgramPage({
+export default async function ShortVillageProgramRoute({
   params,
 }: {
   params: Promise<{ villageSlug: string; programSlug: string }>;
@@ -44,11 +44,9 @@ export default async function ShortVillageProgramPage({
   if (isReservedVillageSlug(villageSlug)) notFound();
 
   const village = await getPublicVillageBySlug(villageSlug);
-
   if (!village) notFound();
 
   const program = await resolveVillageProgram(village, programSlug);
-
   if (!program) notFound();
 
   return <VillageProgramPage program={program} village={village} />;
