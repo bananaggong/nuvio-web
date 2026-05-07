@@ -25,7 +25,10 @@ export function Footer() {
               이용약관
             </Link>
             <Link className="hover:text-[var(--primary)]" href="/privacy">
-              개인정보처리방침
+              개인정보 수집 및 이용
+            </Link>
+            <Link className="hover:text-[var(--primary)]" href="/privacy/third-party">
+              개인정보 제3자 제공 동의
             </Link>
             <Link className="hover:text-[var(--primary)]" href="/partners/apply">
               프로그램 제보

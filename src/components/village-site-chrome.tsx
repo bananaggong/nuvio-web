@@ -156,6 +156,20 @@ export function VillageSiteFooter({
             <MapPin size={14} />
             {village.address ?? `${village.region} ${village.city}`}
           </p>
+          <div className="mt-4 flex flex-wrap gap-3 text-xs font-bold text-white/45">
+            <Link className="hover:text-white" href={`${homePath}/terms`}>
+              이용약관
+            </Link>
+            <Link className="hover:text-white" href={`${homePath}/privacy`}>
+              개인정보 수집 및 이용
+            </Link>
+            <Link
+              className="hover:text-white"
+              href={`${homePath}/privacy/third-party`}
+            >
+              개인정보 제3자 제공 동의
+            </Link>
+          </div>
         </div>
         <div className="flex flex-wrap items-start gap-2 md:justify-end">
           <Link

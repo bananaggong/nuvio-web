@@ -66,7 +66,7 @@ export function isVillageMicrositePath(pathname: string): boolean {
 
   return (
     segments.length === 3 &&
-    (second === "media" || second === "reviews") &&
+    (second === "media" || second === "reviews" || second === "privacy") &&
     Boolean(third)
   );
 }

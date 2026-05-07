@@ -76,9 +76,20 @@ export function ProgramApplicationForm({
   }
 
   function buildAnswers(): Record<string, unknown> {
+    const legalConsent = {
+      agreed: form.agree,
+      agreedAt: new Date().toISOString(),
+      documents: [
+        { title: "이용약관", href: "/terms" },
+        { title: "개인정보 수집 및 이용", href: "/privacy" },
+        { title: "개인정보 제3자 제공 동의", href: "/privacy/third-party" },
+      ],
+    };
+
     if (formTemplate && hasTemplate) {
       return {
         companions: form.companions,
+        legalConsent,
         memo: buildMemo(),
         templateId: formTemplate.id,
         templateName: formTemplate.name,
@@ -93,6 +104,7 @@ export function ProgramApplicationForm({
 
     return {
       companions: form.companions,
+      legalConsent,
       motivation: form.motivation,
       workStyle: form.workStyle,
       receiptPlan: form.receiptPlan,
@@ -300,7 +312,7 @@ export function ProgramApplicationForm({
             </>
           )}
 
-          <label className="flex gap-3 rounded-md bg-[var(--surface-muted)] p-3 text-sm font-bold text-slate-600">
+          <label className="flex gap-3 rounded-md border border-slate-200 bg-[var(--surface-muted)] p-3 text-sm font-bold text-slate-700">
             <input
               checked={form.agree}
               className="mt-1"
@@ -308,8 +320,23 @@ export function ProgramApplicationForm({
               required
               type="checkbox"
             />
-            신청 정보가 프로그램 운영자에게 전달되며, 합격 안내와 운영 메시지를 받을 수
-            있음에 동의합니다.
+            <span>
+              <span className="block">
+                이용약관, 개인정보 수집 및 이용, 개인정보 제3자 제공 동의에 모두
+                동의합니다.
+              </span>
+              <span className="mt-2 flex flex-wrap gap-x-3 gap-y-1 text-xs font-black text-[var(--primary)]">
+                <Link href="/terms" target="_blank">
+                  이용약관
+                </Link>
+                <Link href="/privacy" target="_blank">
+                  개인정보 수집 및 이용
+                </Link>
+                <Link href="/privacy/third-party" target="_blank">
+                  개인정보 제3자 제공 동의
+                </Link>
+              </span>
+            </span>
           </label>
           <button
             className="inline-flex h-12 items-center justify-center gap-2 rounded-md bg-[var(--primary)] px-4 text-sm font-black text-white hover:bg-[var(--primary-strong)] disabled:cursor-not-allowed disabled:opacity-60"
