@@ -16,7 +16,7 @@ NUVIO 호스트 콘솔은 Meta/Facebook OAuth를 통해 마을 운영자의 Inst
 ```bash
 FACEBOOK_APP_ID=
 FACEBOOK_APP_SECRET=
-FACEBOOK_REDIRECT_URI=https://nuvio-web-blue.vercel.app/api/host/facebook/callback
+FACEBOOK_REDIRECT_URI=https://nuvio.kr/api/host/facebook/callback
 META_GRAPH_API_VERSION=v24.0
 SOCIAL_TOKEN_ENCRYPTION_KEY=
 ```
