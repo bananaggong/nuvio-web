@@ -105,7 +105,7 @@ export function BoseongOriginalCarousel({
 
         <div
           aria-hidden
-          className="absolute bottom-0 left-0 flex items-center gap-2 md:bottom-[12px]"
+          className="absolute bottom-0 right-0 flex items-center justify-end gap-2 md:bottom-[12px]"
         >
           {slides.map((slide, index) => (
             <span
