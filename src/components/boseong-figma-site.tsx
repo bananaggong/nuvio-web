@@ -38,7 +38,7 @@ const boseongAssets = {
 };
 
 const boseongNav = [
-  { label: "전체차LAB", href: "/boseong", width: 117 },
+  { label: "전체차LAB", href: "/boseong/about", width: 117 },
   { label: "전체차 오리지널", href: "/boseong/programs", width: 164 },
   { label: "전체차 이야기", href: "/boseong/media", width: 141 },
   { label: "전체차 후기", href: "/boseong/reviews", width: 119 },
@@ -52,10 +52,12 @@ const mediaCategoryLabels: Record<VillageMediaContent["category"], string> = {
 };
 
 export function BoseongFigmaHeader({
+  activeHref,
   primaryProgram,
   village,
   variant = "inner",
 }: {
+  activeHref?: string;
   primaryProgram?: Program;
   variant?: "home" | "inner";
   village: Village;
@@ -65,8 +67,8 @@ export function BoseongFigmaHeader({
     : `${villagePath(village.slug)}/programs`;
 
   return (
-    <header className="font-boseong relative z-40 border-b border-[#e2dfd2] bg-white text-[#171717]">
-      <div className="flex h-11 items-center justify-center bg-[#4f813f] px-4 text-center text-sm font-extrabold text-white md:h-[63px] md:text-[34px] md:font-medium md:leading-[24px]">
+    <header className="font-boseong relative z-40 border-b border-[#9d997e] bg-white text-[#171717]">
+      <div className="flex h-11 items-center justify-center bg-[#4c8244] px-4 text-center text-sm font-extrabold text-white md:h-[63px] md:text-[34px] md:font-medium md:leading-[1.10696]">
         전남 보성군 청년마을 그린티모시레
       </div>
       <div
@@ -88,10 +90,12 @@ export function BoseongFigmaHeader({
           />
         </Link>
 
-        <nav className="hidden items-center justify-end gap-[38px] text-[18px] font-extrabold leading-[18px] tracking-[-0.01em] text-[#2c2c2c] lg:absolute lg:left-[386px] lg:right-[26px] lg:top-[78px] lg:flex">
+        <nav className="hidden items-end justify-end gap-[38px] text-[26px] font-semibold leading-[1.10696] tracking-normal text-[#393939] lg:absolute lg:left-[386px] lg:right-[26px] lg:top-[78px] lg:flex">
           {boseongNav.map((item) => (
             <Link
-              className="text-center hover:text-[#4f813f]"
+              className={`text-center hover:text-[#4c8244] ${
+                activeHref === item.href ? "text-[#4c8244]" : ""
+              }`}
               href={item.href}
               key={item.href}
               style={{ width: item.width }}
@@ -120,7 +124,7 @@ export function BoseongFigmaFooter({
   village: Village;
 }) {
   return (
-    <footer className="font-boseong bg-[#e9e6dc] text-[#151813]">
+    <footer className="font-boseong bg-[#e5e3da] text-[#151813]">
       <div className="mx-auto grid min-h-[340px] max-w-[1440px] items-center gap-8 px-6 py-14 md:min-h-[479px] md:grid-cols-[320px_1fr_160px] md:px-40">
         <Link className="relative block h-[120px] w-[142px] md:h-[206px] md:w-[242px]" href="/boseong">
           <Image
@@ -336,28 +340,30 @@ export function BoseongFigmaAboutPage({
 
   return (
     <div className="font-boseong bg-white text-[#141414]">
-      <BoseongFigmaHeader primaryProgram={programs[0]} village={village} />
+      <BoseongFigmaHeader
+        activeHref="/boseong/about"
+        primaryProgram={programs[0]}
+        village={village}
+      />
 
       <main>
-        <section className="relative flex min-h-[520px] items-center justify-center bg-[#d7d2d2] px-6 text-center text-white md:h-[832px] md:min-h-0">
-          <div className="md:absolute md:left-[621px] md:top-[363px] md:w-[719px] md:text-left">
-            <p className="text-3xl font-semibold leading-tight md:text-[74px] md:leading-[1.1]">
+        <section className="relative flex min-h-[520px] items-center justify-center bg-[#dcd7d7] px-6 text-center text-white md:h-[832px] md:min-h-0">
+          <h1 className="flex flex-col text-3xl font-semibold leading-tight md:absolute md:left-[621px] md:top-[363px] md:w-[719px] md:items-end md:text-right md:text-[74.4394px] md:leading-[1.10696]">
+            <span className="md:whitespace-nowrap">
               {asString(aboutHeader.kicker, "녹차밭 옆에서 살아보는")}
-            </p>
-            <h1 className="mt-5 text-3xl font-semibold leading-tight md:text-[74px] md:leading-[1.1]">
-              {asString(aboutHeader.title, "진짜 보성")}
-            </h1>
-            <p className="mt-16 text-3xl font-semibold md:text-[74px] md:leading-[1.1]">
+            </span>
+            <span>{asString(aboutHeader.title, "진짜 보성")}</span>
+            <span className="mt-8 md:mt-[52px]">
               {asString(aboutHeader.brand, "전체차 LAB")}
-            </p>
-          </div>
+            </span>
+          </h1>
         </section>
 
         <section className="relative mx-auto max-w-[1440px] px-6 py-20 text-center md:h-[342px] md:px-0 md:py-0">
-          <h2 className="text-2xl font-semibold md:absolute md:left-0 md:top-[108px] md:w-full md:text-[47px] md:leading-[33px]">
+          <h2 className="text-2xl font-semibold text-[#1b1b1b] md:absolute md:left-0 md:top-[108px] md:w-full md:text-[47px] md:leading-[1.10696]">
             {asString(aboutGrid.introTitle, "보성 청년마을, 전체차LAB")}
           </h2>
-          <p className="mt-4 text-base font-medium text-[#424242] md:absolute md:left-0 md:top-[209px] md:mt-0 md:w-full md:text-[36px] md:leading-[25px]">
+          <p className="mt-4 text-base font-medium text-[#414840] md:absolute md:left-0 md:top-[209px] md:mt-0 md:w-full md:text-[36px] md:leading-[1.10696]">
             {asString(
               aboutGrid.introBody,
               "전체차(全體茶)는 차(茶)로 모든 것을 담는다는 뜻입니다.",
@@ -378,10 +384,8 @@ export function BoseongFigmaAboutPage({
         </section>
 
         <section className="relative mx-auto max-w-[1440px] px-6 py-12 text-center md:h-[211px] md:px-0 md:py-0">
-          <p className="text-base font-medium leading-8 text-[#4a4a4a] md:absolute md:left-0 md:top-[60px] md:w-full md:text-[36px] md:leading-[65px]">
-            차를 매개로 청년의 삶과 지역의 미래를 연결하는
-            <br />
-            실험이 보성 회천면에서 시작됩니다.
+          <p className="whitespace-pre-line text-base font-medium leading-8 text-[#414840] md:absolute md:left-0 md:top-[60px] md:w-full md:text-[36px] md:leading-[1.10696]">
+            {"차를 매개로 청년의 삶과  지역의 미래를 연결하는 \n실험이 보성 회천면에서 시작됩니다."}
           </p>
         </section>
 
@@ -404,6 +408,7 @@ export function BoseongFigmaProgramsPage({
 }) {
   return (
     <BoseongFigmaListFrame
+      activeHref="/boseong/programs"
       primaryProgram={programs[0]}
       subtitle="오직 전체차LAB에서만 피어나는 경험을 만나보세요."
       title="전체차LAB 오리지널"
@@ -429,6 +434,7 @@ export function BoseongFigmaMediaIndexPage({
 }) {
   return (
     <BoseongFigmaListFrame
+      activeHref="/boseong/media"
       primaryProgram={programs[0]}
       subtitle="보성을 경험하는 새로운 방식, 전체차LAB의 이야기를 만나보세요."
       title="전체차LAB 이야기"
@@ -458,6 +464,7 @@ export function BoseongFigmaReviewsPage({
 }) {
   return (
     <BoseongFigmaListFrame
+      activeHref="/boseong/reviews"
       primaryProgram={programs[0]}
       subtitle="보성에서 시간이 머무른 마음을 담았습니다."
       title="전체차LAB 후기"
@@ -498,6 +505,7 @@ export function BoseongFigmaMediaDetailPage({
 
   return (
     <BoseongFigmaListFrame
+      activeHref="/boseong/media"
       primaryProgram={programs[0]}
       subtitle={content.sourceName}
       title={content.title}
@@ -585,12 +593,14 @@ export function BoseongFigmaMediaDetailPage({
 }
 
 function BoseongFigmaListFrame({
+  activeHref,
   children,
   primaryProgram,
   subtitle,
   title,
   village,
 }: {
+  activeHref?: string;
   children: React.ReactNode;
   primaryProgram?: Program;
   subtitle: string;
@@ -599,7 +609,11 @@ function BoseongFigmaListFrame({
 }) {
   return (
     <div className="font-boseong bg-white text-[#141414]">
-      <BoseongFigmaHeader primaryProgram={primaryProgram} village={village} />
+      <BoseongFigmaHeader
+        activeHref={activeHref}
+        primaryProgram={primaryProgram}
+        village={village}
+      />
       <main>
         <section className="mx-auto max-w-[1440px] px-6 pb-14 pt-20 text-center md:px-20 md:pb-20 md:pt-28">
           <h1 className="text-3xl font-extrabold tracking-[-0.03em] md:text-[36px]">
@@ -760,13 +774,13 @@ function BoseongMediaPreviewCard({
 
   return (
     <article
-      className={`group border-b-2 border-[#b3df00] bg-white ${
+      className={`group bg-white ${
         exact ? "md:h-[671px] md:w-[445px]" : ""
       }`}
     >
       <Link
         className={`relative block overflow-hidden bg-[#d9d9d9] ${
-          exact ? "aspect-square" : "aspect-[1.16]"
+          exact ? "h-[320px] border-b-2 border-[#b1d014] md:h-[487px]" : "aspect-[1.16]"
         }`}
         href={`/boseong/media/${content.id}`}
       >
@@ -777,19 +791,40 @@ function BoseongMediaPreviewCard({
           sizes="(max-width: 768px) 100vw, 33vw"
           src={content.thumbnail}
         />
-        <span className="absolute bottom-3 right-3 flex size-8 items-center justify-center rounded-full bg-white/90 text-[#4f813f]">
-          <Play size={16} fill="currentColor" />
-        </span>
+        {exact ? null : (
+          <span className="absolute bottom-3 right-3 flex size-8 items-center justify-center rounded-full bg-white/90 text-[#4f813f]">
+            <Play size={16} fill="currentColor" />
+          </span>
+        )}
       </Link>
-      <div className="py-5">
-        <p className="text-xs font-extrabold text-[#55883f]">
-          {mediaCategoryLabels[content.category]}
-        </p>
+      <div className={exact ? "relative h-[159px] border-x border-b border-[#d9d9d9] px-[29px] pt-4" : "py-5"}>
+        {exact ? null : (
+          <p className="text-xs font-extrabold text-[#55883f]">
+            {mediaCategoryLabels[content.category]}
+          </p>
+        )}
         <Link href={`/boseong/media/${content.id}`}>
-          <h3 className="mt-3 line-clamp-2 text-lg font-extrabold leading-6 hover:text-[#4f813f]">
+          <h3
+            className={
+              exact
+                ? "line-clamp-3 max-w-[240px] text-[29px] font-semibold leading-[1.10696] hover:text-[#4f813f]"
+                : "mt-3 line-clamp-2 text-lg font-extrabold leading-6 hover:text-[#4f813f]"
+            }
+          >
             {content.title}
           </h3>
         </Link>
+        {exact ? (
+          <span className="absolute right-4 top-[86px] flex size-11 items-center justify-center text-[#d9d9d9]">
+            {content.provider === "instagram" ? (
+              <Camera size={34} strokeWidth={2.4} />
+            ) : (
+              <span className="flex h-[34px] w-11 items-center justify-center rounded-md bg-[#d9d9d9] text-white">
+                <Play size={17} fill="currentColor" />
+              </span>
+            )}
+          </span>
+        ) : null}
       </div>
     </article>
   );
@@ -808,16 +843,29 @@ function BoseongReviewTile({
 
   return (
     <Link
-      className={`${exact ? "md:h-[320px]" : "aspect-square"} p-6 transition hover:brightness-95 ${
-        dark ? "bg-[#092c05] text-white" : "bg-[#cbe98d] text-[#173314]"
-      }`}
+      className={`relative block transition hover:brightness-95 ${
+        exact ? "h-[180px] md:h-[320px]" : "aspect-square p-6"
+      } ${dark ? "bg-[#102c06] text-white" : "bg-[#cfe597] text-[#000000]"}`}
       href={`/boseong/reviews/${review.id}`}
     >
-      <p className="text-sm font-extrabold">#{review.badge ?? "전체차LAB 후기"}</p>
-      <h3 className="mt-4 line-clamp-3 text-base font-extrabold leading-6">
-        {review.title}
-      </h3>
-      <p className="mt-4 text-xs font-bold opacity-70">{review.author}</p>
+      {exact ? (
+        <>
+          <p className="absolute left-[26px] top-[116px] text-[16px] font-bold leading-[1.10696] md:top-[206px] md:text-[24px]">
+            #{review.badge ?? "전체차LAB 후기"}
+          </p>
+          <h3 className="absolute left-[26px] top-[145px] line-clamp-1 max-w-[260px] text-[13px] font-medium leading-[1.10696] md:top-[247px] md:text-[18px]">
+            {review.title}
+          </h3>
+        </>
+      ) : (
+        <>
+          <p className="text-sm font-extrabold">#{review.badge ?? "전체차LAB 후기"}</p>
+          <h3 className="mt-4 line-clamp-3 text-base font-extrabold leading-6">
+            {review.title}
+          </h3>
+          <p className="mt-4 text-xs font-bold opacity-70">{review.author}</p>
+        </>
+      )}
     </Link>
   );
 }
@@ -949,6 +997,7 @@ function asNumber(value: unknown, fallback: number): number {
 function AboutGrid({ content }: { content?: Record<string, unknown> }) {
   const defaultRows = [
     {
+      bodyTop: 275,
       title: "보성의 차 문화를 \n실험하는 청년마을 ",
       body:
         "전체차LAB은 \n전남 보성군 회천면 양동·영천마을에 \n뿌리를 두고 있습니다. \n보성의 차 문화를 매개로 청년들이 지역에 \n머물며 콘텐츠, 제품, 경험을 즐겁게 실험하며 \n지역에서 새로운 청년의 삶을 만들고 있습니다.",
@@ -961,6 +1010,7 @@ function AboutGrid({ content }: { content?: Record<string, unknown> }) {
       },
     },
     {
+      bodyTop: 275,
       title: "연고도 없던\n보성에 반하다",
       body:
         "도심에서 각자의 삶을 살던 2030 청년들이\n연고도 경험도 없던 보성의 매력에 반해\n귀촌을 선택했습니다.\n비슷한 성향의 사람들과 오순도순 모여\n살고 싶다는 바람으로 차를 매개로\n청년의 삶과 지역의 미래를 연결하는\n마을을 그리기 시작했어요.",
@@ -973,6 +1023,7 @@ function AboutGrid({ content }: { content?: Record<string, unknown> }) {
       },
     },
     {
+      bodyTop: 231,
       title: "그린티모시레",
       body:
         "그린티는 녹차,\n모시레는 전남 방언으로 마을을 뜻합니다. \n보성의 녹차마을에 뿌리를 내리고\n활동을 이어가겠다는 다짐을 담아 만든 청년단체로,\n2025년부터 전체차LAB을 운영하고 있습니다.",
@@ -985,6 +1036,7 @@ function AboutGrid({ content }: { content?: Record<string, unknown> }) {
       },
     },
     {
+      bodyTop: 231,
       title: "보성 회천면 곳곳에서",
       body:
         "마을 빈집과 창고를 리모델링해 \n우리만의 공간을 만들었습니다.\n숙소 공간 초록, 게스트만을 위한 작은 찻집\n머문 공간, 그리고 재료와 영감을 제공하는\n57ha 녹차밭까지\n보성 회천면 곳곳이 전체차LAB의 현장입니다.",
@@ -997,6 +1049,7 @@ function AboutGrid({ content }: { content?: Record<string, unknown> }) {
       },
     },
     {
+      bodyTop: 275,
       title: "차를 더 새롭게,\n보성을 더 색다르게",
       body:
         "지역에서 살아가는 청년들의 이야기를 \n영상 콘텐츠로 기록하고, 청년 로컬 크리에이터가 머물고 \n활동할 수 있는 프로그램을 운영합니다. \n차를 더 새롭게, \n보성을 더 색다르게 즐기는 방법을 지금도 실험 중입니다.",
@@ -1018,7 +1071,7 @@ function AboutGrid({ content }: { content?: Record<string, unknown> }) {
 
         return (
           <section
-            className="relative grid min-h-[520px] md:h-[664px] md:min-h-0 md:grid-cols-[724px_716px]"
+            className="relative grid min-h-[520px] bg-[#fdfdfd] md:h-[664px] md:min-h-0 md:grid-cols-[724px_716px]"
             key={row.title}
           >
             {flip ? <div className="bg-[#d9d9d9]" /> : null}
@@ -1026,17 +1079,18 @@ function AboutGrid({ content }: { content?: Record<string, unknown> }) {
               <div
                 className={
                   flip
-                    ? "md:ml-[90px] md:mt-[120px] md:w-[517px] md:text-right"
-                    : "md:ml-[115px] md:mt-[120px] md:w-[609px]"
+                    ? "md:absolute md:left-[814px] md:top-[120px] md:w-[517px] md:text-right"
+                    : "md:absolute md:left-[115px] md:top-[120px] md:w-[609px]"
                 }
               >
-                <h2 className="whitespace-pre-line text-2xl font-semibold leading-tight md:text-[36px] md:leading-[44px]">
+                <h2 className="whitespace-pre-line text-2xl font-semibold leading-tight text-[#414840] md:text-[36px] md:leading-[1.22]">
                   {row.title}
                 </h2>
                 <p
-                  className={`whitespace-pre-line text-base font-medium leading-8 text-[#4a4a4a] md:text-[26px] md:leading-[36px] ${
-                    row.title.includes("\n") ? "mt-[86px]" : "mt-[86px]"
+                  className={`mt-8 whitespace-pre-line text-base font-medium leading-8 md:absolute md:left-0 md:mt-0 md:w-full md:text-[26px] md:leading-[1.38] ${
+                    flip ? "text-[#000000]" : "text-[#414840]"
                   }`}
+                  style={{ top: row.bodyTop }}
                 >
                   {row.body}
                 </p>
@@ -1069,6 +1123,7 @@ function normalizeAboutRows(
   value: unknown,
   fallback: Array<{
     body: string;
+    bodyTop: number;
     icon: {
       height: number;
       left: number;

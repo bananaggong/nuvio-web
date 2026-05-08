@@ -253,7 +253,7 @@ export function getDefaultPublishedVillagePageSections(
         content: {
           kicker: "녹차밭 옆에서 살아보는",
           title: "진짜 보성",
-          brand: "전체차LAB",
+          brand: "전체차 LAB",
         },
         orderIndex: 10,
         visible: true,
@@ -268,7 +268,7 @@ export function getDefaultPublishedVillagePageSections(
         label: "소개 본문",
         content: {
           introTitle: "보성 청년마을, 전체차LAB",
-          introBody: "전체차 한잔에는 차 한 잔으로 모든 것을 잇는다는 뜻이 있습니다.",
+          introBody: "전체차(全體茶)는 차(茶)로 모든 것을 담는다는 뜻입니다.",
           rows: [
             {
               title: "보성의 차 문화를 \n실험하는 청년마을 ",
