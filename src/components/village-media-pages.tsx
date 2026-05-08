@@ -2,6 +2,10 @@ import Image from "next/image";
 import Link from "next/link";
 import { ArrowRight, ExternalLink, PlayCircle } from "lucide-react";
 import {
+  BoseongFigmaMediaDetailPage,
+  BoseongFigmaMediaIndexPage,
+} from "@/components/boseong-figma-site";
+import {
   VillageSiteFooter,
   VillageSiteHeader,
 } from "@/components/village-site-chrome";
@@ -25,6 +29,16 @@ export function VillageMediaIndexPage({
   programs: Program[];
   village: Village;
 }) {
+  if (village.slug === "boseong") {
+    return (
+      <BoseongFigmaMediaIndexPage
+        media={media}
+        programs={programs}
+        village={village}
+      />
+    );
+  }
+
   return (
     <VillageMediaFrame primaryProgram={programs[0]} title="미디어" village={village}>
       {media.length > 0 ? (
@@ -51,6 +65,17 @@ export function VillageMediaDetailPage({
   programs: Program[];
   village: Village;
 }) {
+  if (village.slug === "boseong") {
+    return (
+      <BoseongFigmaMediaDetailPage
+        content={content}
+        media={media}
+        programs={programs}
+        village={village}
+      />
+    );
+  }
+
   const related = media
     .filter((item) => item.id !== content.id)
     .slice(0, 3);

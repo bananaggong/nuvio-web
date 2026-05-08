@@ -8,6 +8,10 @@ import {
   MessageCircle,
   Sparkles,
 } from "lucide-react";
+import {
+  BoseongFigmaFooter,
+  BoseongFigmaHeader,
+} from "@/components/boseong-figma-site";
 import { villagePath } from "@/lib/village-routing";
 import { greentmosireLogoImage } from "@/lib/village-media-seeds";
 import type { Program } from "@/lib/types";
@@ -23,6 +27,10 @@ export function VillageSiteHeader({
   village,
   primaryProgram,
 }: VillageSiteHeaderProps) {
+  if (village.slug === "boseong") {
+    return <BoseongFigmaHeader primaryProgram={primaryProgram} village={village} />;
+  }
+
   const homePath = villagePath(village.slug);
   const operatorLabel =
     village.slug === "boseong"
@@ -126,6 +134,10 @@ export function VillageSiteFooter({
   village: Village;
   primaryProgram?: Program;
 }) {
+  if (village.slug === "boseong") {
+    return <BoseongFigmaFooter primaryProgram={primaryProgram} village={village} />;
+  }
+
   const homePath = villagePath(village.slug);
   const programHref = primaryProgram
     ? `${homePath}/${primaryProgram.slug}`

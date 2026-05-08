@@ -2,6 +2,11 @@ import Image from "next/image";
 import Link from "next/link";
 import { ArrowRight, CalendarDays, MapPin, Quote } from "lucide-react";
 import { BoseongAboutContent } from "@/components/boseong-intro-section";
+import {
+  BoseongFigmaAboutPage,
+  BoseongFigmaProgramsPage,
+  BoseongFigmaReviewsPage,
+} from "@/components/boseong-figma-site";
 import { StatusBadge } from "@/components/status-badge";
 import { VillageSiteFooter, VillageSiteHeader } from "@/components/village-site-chrome";
 import { formatDate, getDday } from "@/lib/format";
@@ -21,6 +26,10 @@ export function VillageProgramsIndexPage({
   village: Village;
 }) {
   const primaryProgram = programs[0];
+
+  if (village.slug === "boseong") {
+    return <BoseongFigmaProgramsPage programs={programs} village={village} />;
+  }
 
   return (
     <VillagePageFrame
@@ -54,6 +63,16 @@ export function VillageReviewsIndexPage({
   reviews: Review[];
   village: Village;
 }) {
+  if (village.slug === "boseong") {
+    return (
+      <BoseongFigmaReviewsPage
+        programs={programs}
+        reviews={reviews}
+        village={village}
+      />
+    );
+  }
+
   return (
     <VillagePageFrame
       primaryProgram={programs[0]}
@@ -80,6 +99,10 @@ export function VillageAboutIndexPage({
   programs: Program[];
   village: Village;
 }) {
+  if (village.slug === "boseong") {
+    return <BoseongFigmaAboutPage programs={programs} village={village} />;
+  }
+
   return (
     <VillagePageFrame
       primaryProgram={programs[0]}

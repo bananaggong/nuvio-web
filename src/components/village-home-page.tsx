@@ -15,6 +15,7 @@ import {
   VillageSiteFooter,
   VillageSiteHeader,
 } from "@/components/village-site-chrome";
+import { BoseongFigmaHomePage } from "@/components/boseong-figma-site";
 import { formatDate, getDday } from "@/lib/format";
 import { villagePath, villageProgramPath } from "@/lib/village-routing";
 import { buildVillageNotices, getVillageApplyLabel } from "@/lib/village-template";
@@ -61,6 +62,17 @@ export function VillageHomePage({
         { label: "미디어", value: `${media.length}개` },
         { label: "기록", value: `${village.sections.length}개` },
       ];
+
+  if (isBoseong) {
+    return (
+      <BoseongFigmaHomePage
+        media={media}
+        programs={programs}
+        reviews={reviews}
+        village={village}
+      />
+    );
+  }
 
   return (
     <div className="bg-[#f7f7f0] text-[#181a16]">
