@@ -16,6 +16,7 @@ import {
   sectionTypeLabels,
 } from "@/lib/village-template";
 import type { Program, Review } from "@/lib/types";
+import type { PublishedVillagePageSection } from "@/lib/village-page-cms";
 import type { Village, VillageSection } from "@/lib/village-types";
 
 export function VillageProgramsIndexPage({
@@ -93,14 +94,22 @@ export function VillageReviewsIndexPage({
 }
 
 export function VillageAboutIndexPage({
+  pageSections,
   programs,
   village,
 }: {
+  pageSections?: PublishedVillagePageSection[];
   programs: Program[];
   village: Village;
 }) {
   if (village.slug === "boseong") {
-    return <BoseongFigmaAboutPage programs={programs} village={village} />;
+    return (
+      <BoseongFigmaAboutPage
+        pageSections={pageSections}
+        programs={programs}
+        village={village}
+      />
+    );
   }
 
   return (

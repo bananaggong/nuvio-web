@@ -8,6 +8,7 @@ import {
   listPublicVillages,
 } from "@/lib/village-db";
 import { listPublicVillageMedia } from "@/lib/village-media-db";
+import { listPublicVillagePageSections } from "@/lib/village-page-cms";
 import { isReservedVillageSlug } from "@/lib/village-routing";
 
 export const dynamic = "force-dynamic";
@@ -55,10 +56,15 @@ export default async function ShortVillagePage({
   const programs = await getVillagePrograms(village);
   const reviews = await getVillageReviews(village, programs, { limit: 8 });
   const media = await listPublicVillageMedia(village.slug, { limit: 6 });
+  const pageSections =
+    village.slug === "boseong"
+      ? await listPublicVillagePageSections(village.slug, "home")
+      : undefined;
 
   return (
     <VillageHomePage
       media={media}
+      pageSections={pageSections}
       programs={programs}
       reviews={reviews}
       village={village}

@@ -14,6 +14,10 @@ import {
 } from "@/components/boseong-original-carousel";
 import { StatusBadge } from "@/components/status-badge";
 import { formatDate, formatRange, getDday } from "@/lib/format";
+import {
+  getSectionContent,
+  type PublishedVillagePageSection,
+} from "@/lib/village-page-cms";
 import { villagePath, villageProgramPath } from "@/lib/village-routing";
 import type { Program, Review, VillageMediaContent } from "@/lib/types";
 import type { Village } from "@/lib/village-types";
@@ -162,18 +166,138 @@ export function BoseongFigmaFooter({
 
 export function BoseongFigmaHomePage({
   media,
+  pageSections,
   programs,
   reviews,
   village,
 }: {
   media: VillageMediaContent[];
+  pageSections?: PublishedVillagePageSection[];
   programs: Program[];
   reviews: Review[];
   village: Village;
 }) {
   const primaryProgram = programs[0];
-  const featuredMedia = media.slice(0, 3);
-  const featuredReviews = reviews.slice(0, 8);
+  const heroSection = getSectionContent(pageSections, "home_hero", {
+    alt: "녹차밭 옆에서 살아보는 진짜 보성",
+    imageUrl: boseongAssets.hero,
+  });
+  const teaTimeSection = getSectionContent(pageSections, "home_tea_time", {
+    alt: "차 한 잔으로 나를 살펴보는 시간",
+    imageUrl: boseongAssets.teaTime,
+    linkHref: "/boseong/media",
+    linkLabel: "녹차밭 옆 이야기들",
+    title: "녹차밭에서 피어나는 시간",
+  });
+  const mediaSection = getSectionContent(pageSections, "media_preview", {
+    href: "/boseong/media",
+    limit: 3,
+    title: "전체차LAB 이야기",
+  });
+  const reviewSection = getSectionContent(pageSections, "reviews_preview", {
+    href: "/boseong/reviews",
+    limit: 8,
+    title: "전체차LAB 후기",
+  });
+  const featuredMedia = media.slice(0, asNumber(mediaSection.limit, 3));
+  const featuredReviews = reviews.slice(0, asNumber(reviewSection.limit, 8));
+  const renderedHomeSections = getOrderedHomeSectionKeys(pageSections).map((sectionKey) => {
+    if (!isPublishedSectionVisible(pageSections, sectionKey)) {
+      return null;
+    }
+
+    if (sectionKey === "home_hero") {
+      return (
+        <section className="mx-auto max-w-[1440px]" key={sectionKey}>
+          <Image
+            alt={asString(heroSection.alt, "녹차밭 옆에서 살아보는 진짜 보성")}
+            className="h-auto w-full"
+            height={967}
+            priority
+            sizes="100vw"
+            src={asString(heroSection.imageUrl, boseongAssets.hero)}
+            width={1440}
+          />
+        </section>
+      );
+    }
+
+    if (sectionKey === "home_tea_time") {
+      return (
+        <div key={sectionKey}>
+          <section className="relative mx-auto mt-[35px] flex max-w-[1440px] items-center justify-between gap-4 px-6 py-9 md:h-[115px] md:px-0 md:py-0">
+            <h1 className="text-2xl font-extrabold md:absolute md:left-[67px] md:top-[51px] md:text-[44px] md:leading-[31px]">
+              {asString(teaTimeSection.title, "녹차밭에서 피어나는 시간")}
+            </h1>
+            <span className="hidden border-t border-[#c6c6c6] md:absolute md:left-[532px] md:top-[67px] md:block md:w-[579px]" />
+            <Link
+              className="text-sm font-bold text-[#444] hover:text-[#4f813f] md:absolute md:left-[1137px] md:top-[55px] md:text-[32px] md:font-semibold md:leading-[23px]"
+              href={asString(teaTimeSection.linkHref, "/boseong/media")}
+            >
+              {asString(teaTimeSection.linkLabel, "녹차밭 옆 이야기들")}
+            </Link>
+          </section>
+
+          <section className="mx-auto mt-[35px] max-w-[1440px] bg-white px-0">
+            <Image
+              alt={asString(teaTimeSection.alt, "차 한 잔으로 나를 살펴보는 시간")}
+              className="h-auto w-full"
+              height={515}
+              sizes="100vw"
+              src={asString(teaTimeSection.imageUrl, boseongAssets.teaTime)}
+              width={1024}
+            />
+          </section>
+        </div>
+      );
+    }
+
+    if (sectionKey === "original_carousel") {
+      return (
+        <HomeOriginalCta
+          key={sectionKey}
+          pageSections={pageSections}
+          programs={programs}
+        />
+      );
+    }
+
+    if (sectionKey === "media_preview") {
+      return (
+        <BoseongHomeSection
+          exact
+          href={asString(mediaSection.href, "/boseong/media")}
+          key={sectionKey}
+          title={asString(mediaSection.title, "전체차LAB 이야기")}
+        >
+          <div className="grid gap-5 md:ml-[30px] md:grid-cols-[445px_445px_445px] md:gap-[23px]">
+            {featuredMedia.map((item) => (
+              <BoseongMediaPreviewCard content={item} exact key={item.id} />
+            ))}
+          </div>
+        </BoseongHomeSection>
+      );
+    }
+
+    if (sectionKey === "reviews_preview") {
+      return (
+        <BoseongHomeSection
+          exact
+          href={asString(reviewSection.href, "/boseong/reviews")}
+          key={sectionKey}
+          title={asString(reviewSection.title, "전체차LAB 후기")}
+        >
+          <div className="grid grid-cols-2 gap-0 md:grid-cols-4">
+            {featuredReviews.map((review, index) => (
+              <BoseongReviewTile exact index={index} key={review.id} review={review} />
+            ))}
+          </div>
+        </BoseongHomeSection>
+      );
+    }
+
+    return null;
+  });
 
   return (
     <div className="font-boseong bg-white text-[#141414]">
@@ -183,69 +307,7 @@ export function BoseongFigmaHomePage({
         village={village}
       />
 
-      <main>
-        <section className="mx-auto max-w-[1440px]">
-          <Image
-            alt="녹차밭 옆에서 살아보는 진짜 보성"
-            className="h-auto w-full"
-            height={967}
-            priority
-            sizes="100vw"
-            src={boseongAssets.hero}
-            width={1440}
-          />
-        </section>
-
-        <section className="relative mx-auto mt-[35px] flex max-w-[1440px] items-center justify-between gap-4 px-6 py-9 md:h-[115px] md:px-0 md:py-0">
-          <h1 className="text-2xl font-extrabold md:absolute md:left-[67px] md:top-[51px] md:text-[44px] md:leading-[31px]">
-            녹차밭에서 피어나는 시간
-          </h1>
-          <span className="hidden border-t border-[#c6c6c6] md:absolute md:left-[532px] md:top-[67px] md:block md:w-[579px]" />
-          <Link
-            className="text-sm font-bold text-[#444] hover:text-[#4f813f] md:absolute md:left-[1137px] md:top-[55px] md:text-[32px] md:font-semibold md:leading-[23px]"
-            href="/boseong/media"
-          >
-            녹차밭 옆 이야기들
-          </Link>
-        </section>
-
-        <section className="mx-auto mt-[35px] max-w-[1440px] bg-white px-0">
-          <Image
-            alt="차 한 잔으로 나를 살펴보는 시간"
-            className="h-auto w-full"
-            height={515}
-            sizes="100vw"
-            src={boseongAssets.teaTime}
-            width={1024}
-          />
-        </section>
-
-        <HomeOriginalCta programs={programs} />
-
-        <BoseongHomeSection
-          exact
-          href="/boseong/media"
-          title="전체차LAB 이야기"
-        >
-          <div className="grid gap-5 md:ml-[30px] md:grid-cols-[445px_445px_445px] md:gap-[23px]">
-            {featuredMedia.map((item) => (
-              <BoseongMediaPreviewCard content={item} exact key={item.id} />
-            ))}
-          </div>
-        </BoseongHomeSection>
-
-        <BoseongHomeSection
-          exact
-          href="/boseong/reviews"
-          title="전체차LAB 후기"
-        >
-          <div className="grid grid-cols-2 gap-0 md:grid-cols-4">
-            {featuredReviews.map((review, index) => (
-              <BoseongReviewTile exact index={index} key={review.id} review={review} />
-            ))}
-          </div>
-        </BoseongHomeSection>
-      </main>
+      <main>{renderedHomeSections}</main>
 
       <BoseongFigmaFooter primaryProgram={primaryProgram} village={village} />
     </div>
@@ -253,12 +315,25 @@ export function BoseongFigmaHomePage({
 }
 
 export function BoseongFigmaAboutPage({
+  pageSections,
   programs,
   village,
 }: {
+  pageSections?: PublishedVillagePageSection[];
   programs: Program[];
   village: Village;
 }) {
+  const aboutHeader = getSectionContent(pageSections, "about_header", {
+    brand: "전체차 LAB",
+    kicker: "녹차밭 옆에서 살아보는",
+    title: "진짜 보성",
+  });
+  const aboutGrid = getSectionContent(pageSections, "about_grid", {
+    introBody: "전체차(全體茶)는 차(茶)로 모든 것을 담는다는 뜻입니다.",
+    introTitle: "보성 청년마을, 전체차LAB",
+    rows: [],
+  });
+
   return (
     <div className="font-boseong bg-white text-[#141414]">
       <BoseongFigmaHeader primaryProgram={programs[0]} village={village} />
@@ -267,23 +342,26 @@ export function BoseongFigmaAboutPage({
         <section className="relative flex min-h-[520px] items-center justify-center bg-[#d7d2d2] px-6 text-center text-white md:h-[832px] md:min-h-0">
           <div className="md:absolute md:left-[621px] md:top-[363px] md:w-[719px] md:text-left">
             <p className="text-3xl font-semibold leading-tight md:text-[74px] md:leading-[1.1]">
-              녹차밭 옆에서 살아보는
+              {asString(aboutHeader.kicker, "녹차밭 옆에서 살아보는")}
             </p>
             <h1 className="mt-5 text-3xl font-semibold leading-tight md:text-[74px] md:leading-[1.1]">
-              진짜 보성
+              {asString(aboutHeader.title, "진짜 보성")}
             </h1>
             <p className="mt-16 text-3xl font-semibold md:text-[74px] md:leading-[1.1]">
-              전체차 LAB
+              {asString(aboutHeader.brand, "전체차 LAB")}
             </p>
           </div>
         </section>
 
         <section className="relative mx-auto max-w-[1440px] px-6 py-20 text-center md:h-[342px] md:px-0 md:py-0">
           <h2 className="text-2xl font-semibold md:absolute md:left-0 md:top-[108px] md:w-full md:text-[47px] md:leading-[33px]">
-            보성 청년마을, 전체차LAB
+            {asString(aboutGrid.introTitle, "보성 청년마을, 전체차LAB")}
           </h2>
           <p className="mt-4 text-base font-medium text-[#424242] md:absolute md:left-0 md:top-[209px] md:mt-0 md:w-full md:text-[36px] md:leading-[25px]">
-            전체차(全體茶)는 차(茶)로 모든 것을 담는다는 뜻입니다.
+            {asString(
+              aboutGrid.introBody,
+              "전체차(全體茶)는 차(茶)로 모든 것을 담는다는 뜻입니다.",
+            )}
           </p>
         </section>
 
@@ -308,7 +386,7 @@ export function BoseongFigmaAboutPage({
         </section>
 
         <section>
-          <AboutGrid />
+          <AboutGrid content={aboutGrid} />
         </section>
       </main>
 
@@ -540,14 +618,24 @@ function BoseongFigmaListFrame({
   );
 }
 
-function HomeOriginalCta({ programs }: { programs: Program[] }) {
+function HomeOriginalCta({
+  pageSections,
+  programs,
+}: {
+  pageSections?: PublishedVillagePageSection[];
+  programs: Program[];
+}) {
   const hrefBySlug = (slug: string) => {
     const program = programs.find((item) => item.slug === slug);
 
     return program ? villageProgramPath("boseong", program.slug) : "/boseong/programs";
   };
 
-  const slides: BoseongOriginalSlide[] = [
+  const content = getSectionContent(pageSections, "original_carousel", {
+    heading: "JEONCHECHA ORIGINAL",
+    slides: [],
+  });
+  const defaultSlides: BoseongOriginalSlide[] = [
     {
       body:
         "보성에 머무는 시간 동안 나의 재능을 지역과 나누고,\n숙소와 마을을 자연스럽게 오가는 체류 프로그램입니다.",
@@ -570,12 +658,13 @@ function HomeOriginalCta({ programs }: { programs: Program[] }) {
       title: "나를 담는\n차실험",
     },
   ];
+  const slides = normalizeOriginalSlides(content.slides, hrefBySlug, defaultSlides);
 
   return (
     <section className="relative mt-[35px] overflow-hidden bg-[#b3df00] md:h-[907px] md:bg-transparent">
       <div className="mx-auto max-w-[1440px] px-6 pb-14 pt-10 md:relative md:h-full md:px-0 md:py-0">
         <p className="pointer-events-none select-none text-[44px] font-black leading-none tracking-[-0.06em] text-[#b3df00] [text-shadow:0_-1px_0_#000] md:absolute md:left-[76px] md:top-[43px] md:z-10 md:text-[108px] md:leading-[76px]">
-          JEONCHECHA ORIGINAL
+          {asString(content.heading, "JEONCHECHA ORIGINAL")}
         </p>
         <div className="absolute inset-x-0 bottom-0 top-[119px] hidden bg-[#b3df00] md:block" />
         <BoseongOriginalCarousel logoSrc={boseongAssets.logo} slides={slides} />
@@ -777,8 +866,88 @@ function OriginalProgramRow({
   );
 }
 
-function AboutGrid() {
-  const rows = [
+function isPublishedSectionVisible(
+  sections: PublishedVillagePageSection[] | undefined,
+  sectionKey: string,
+): boolean {
+  const section = sections?.find((item) => item.sectionKey === sectionKey);
+  return section ? section.visible : true;
+}
+
+function getOrderedHomeSectionKeys(
+  sections: PublishedVillagePageSection[] | undefined,
+): string[] {
+  const fallback = [
+    "home_hero",
+    "home_tea_time",
+    "original_carousel",
+    "media_preview",
+    "reviews_preview",
+  ];
+
+  if (!sections || sections.length === 0) {
+    return fallback;
+  }
+
+  const knownKeys = new Set(fallback);
+  const orderedKeys = sections
+    .filter((section) => section.pageKey === "home" && knownKeys.has(section.sectionKey))
+    .sort((a, b) => a.orderIndex - b.orderIndex)
+    .map((section) => section.sectionKey);
+
+  for (const key of fallback) {
+    if (!orderedKeys.includes(key)) {
+      orderedKeys.push(key);
+    }
+  }
+
+  return orderedKeys;
+}
+
+function normalizeOriginalSlides(
+  value: unknown,
+  hrefBySlug: (slug: string) => string,
+  fallback: BoseongOriginalSlide[],
+): BoseongOriginalSlide[] {
+  if (!Array.isArray(value) || value.length === 0) {
+    return fallback;
+  }
+
+  const slides = value
+    .map((item) => {
+      if (!item || typeof item !== "object" || Array.isArray(item)) return undefined;
+
+      const record = item as Record<string, unknown>;
+      const title = asString(record.title);
+      const body = asString(record.body);
+
+      if (!title || !body) return undefined;
+
+      const programSlug = asString(record.programSlug);
+
+      return {
+        body,
+        hashtags: asString(record.hashtags),
+        href: asString(record.href) || (programSlug ? hrefBySlug(programSlug) : "/boseong/programs"),
+        title,
+      } satisfies BoseongOriginalSlide;
+    })
+    .filter((slide): slide is BoseongOriginalSlide => Boolean(slide));
+
+  return slides.length > 0 ? slides : fallback;
+}
+
+function asString(value: unknown, fallback = ""): string {
+  return typeof value === "string" && value.trim() ? value.trim() : fallback;
+}
+
+function asNumber(value: unknown, fallback: number): number {
+  const numeric = Number(value);
+  return Number.isFinite(numeric) && numeric > 0 ? numeric : fallback;
+}
+
+function AboutGrid({ content }: { content?: Record<string, unknown> }) {
+  const defaultRows = [
     {
       title: "보성의 차 문화를 \n실험하는 청년마을 ",
       body:
@@ -840,6 +1009,7 @@ function AboutGrid() {
       },
     },
   ];
+  const rows = normalizeAboutRows(content?.rows, defaultRows);
 
   return (
     <div className="mx-auto max-w-[1440px]">
@@ -893,4 +1063,42 @@ function AboutGrid() {
       })}
     </div>
   );
+}
+
+function normalizeAboutRows(
+  value: unknown,
+  fallback: Array<{
+    body: string;
+    icon: {
+      height: number;
+      left: number;
+      src: string;
+      top: number;
+      width: number;
+    };
+    title: string;
+  }>,
+): typeof fallback {
+  if (!Array.isArray(value) || value.length === 0) {
+    return fallback;
+  }
+
+  return fallback.map((row, index) => {
+    const item = value[index];
+    if (!item || typeof item !== "object" || Array.isArray(item)) {
+      return row;
+    }
+
+    const record = item as Record<string, unknown>;
+
+    return {
+      ...row,
+      body: asString(record.body, row.body),
+      icon: {
+        ...row.icon,
+        src: asString(record.iconSrc, row.icon.src),
+      },
+      title: asString(record.title, row.title),
+    };
+  });
 }

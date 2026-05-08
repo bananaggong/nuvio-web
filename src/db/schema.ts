@@ -132,6 +132,10 @@ export const reportExportStatusEnum = pgEnum("report_export_status", [
   "submitted",
   "revised",
 ]);
+export const villagePageSectionStatusEnum = pgEnum(
+  "village_page_section_status",
+  ["draft", "published", "archived"],
+);
 
 const emptyArray = sql`'[]'::jsonb`;
 const emptyObject = sql`'{}'::jsonb`;
@@ -449,6 +453,97 @@ export const hostSocialConnections = pgTable(
       table.provider,
     ),
     index("host_social_connections_instagram_user_idx").on(table.instagramUserId),
+  ],
+);
+
+export const villagePageSections = pgTable(
+  "village_page_sections",
+  {
+    id: uuid("id").defaultRandom().primaryKey(),
+    villageSlug: text("village_slug").notNull(),
+    pageKey: text("page_key").default("home").notNull(),
+    sectionKey: text("section_key").notNull(),
+    sectionType: text("section_type").notNull(),
+    label: text("label").notNull(),
+    draftContent: jsonb("draft_content")
+      .$type<Record<string, unknown>>()
+      .default(emptyObject)
+      .notNull(),
+    publishedContent: jsonb("published_content").$type<Record<string, unknown>>(),
+    orderIndex: integer("order_index").default(100).notNull(),
+    publishedOrderIndex: integer("published_order_index"),
+    visible: boolean("visible").default(true).notNull(),
+    publishedVisible: boolean("published_visible"),
+    status: villagePageSectionStatusEnum("status").default("draft").notNull(),
+    publishedAt: timestamp("published_at", { withTimezone: true }),
+    createdBy: uuid("created_by"),
+    updatedBy: uuid("updated_by"),
+    createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+    updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
+  },
+  (table) => [
+    uniqueIndex("village_page_sections_unique_idx").on(
+      table.villageSlug,
+      table.pageKey,
+      table.sectionKey,
+    ),
+    index("village_page_sections_public_idx").on(
+      table.villageSlug,
+      table.pageKey,
+      table.publishedAt,
+    ),
+    index("village_page_sections_status_idx").on(table.status),
+  ],
+);
+
+export const villagePageRevisions = pgTable(
+  "village_page_revisions",
+  {
+    id: uuid("id").defaultRandom().primaryKey(),
+    sectionId: uuid("section_id")
+      .references(() => villagePageSections.id, { onDelete: "cascade" })
+      .notNull(),
+    villageSlug: text("village_slug").notNull(),
+    pageKey: text("page_key").notNull(),
+    sectionKey: text("section_key").notNull(),
+    content: jsonb("content")
+      .$type<Record<string, unknown>>()
+      .default(emptyObject)
+      .notNull(),
+    orderIndex: integer("order_index").default(100).notNull(),
+    visible: boolean("visible").default(true).notNull(),
+    publishedBy: uuid("published_by"),
+    createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+  },
+  (table) => [
+    index("village_page_revisions_section_id_idx").on(table.sectionId),
+    index("village_page_revisions_page_idx").on(
+      table.villageSlug,
+      table.pageKey,
+      table.createdAt,
+    ),
+  ],
+);
+
+export const villageAssets = pgTable(
+  "village_assets",
+  {
+    id: uuid("id").defaultRandom().primaryKey(),
+    villageSlug: text("village_slug").notNull(),
+    fileName: text("file_name").notNull(),
+    url: text("url").notNull(),
+    altText: text("alt_text"),
+    usage: text("usage").default("page").notNull(),
+    metadata: jsonb("metadata")
+      .$type<Record<string, unknown>>()
+      .default(emptyObject)
+      .notNull(),
+    createdBy: uuid("created_by"),
+    createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+  },
+  (table) => [
+    index("village_assets_village_slug_idx").on(table.villageSlug),
+    index("village_assets_usage_idx").on(table.usage),
   ],
 );
 

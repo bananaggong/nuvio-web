@@ -20,6 +20,7 @@ import { formatDate, getDday } from "@/lib/format";
 import { villagePath, villageProgramPath } from "@/lib/village-routing";
 import { buildVillageNotices, getVillageApplyLabel } from "@/lib/village-template";
 import type { Program, Review, VillageMediaContent } from "@/lib/types";
+import type { PublishedVillagePageSection } from "@/lib/village-page-cms";
 import type { Village, VillageSection } from "@/lib/village-types";
 
 const mediaCategoryLabels: Record<VillageMediaContent["category"], string> = {
@@ -30,11 +31,13 @@ const mediaCategoryLabels: Record<VillageMediaContent["category"], string> = {
 
 export function VillageHomePage({
   media = [],
+  pageSections,
   programs,
   reviews,
   village,
 }: {
   media?: VillageMediaContent[];
+  pageSections?: PublishedVillagePageSection[];
   programs: Program[];
   reviews: Review[];
   village: Village;
@@ -67,6 +70,7 @@ export function VillageHomePage({
     return (
       <BoseongFigmaHomePage
         media={media}
+        pageSections={pageSections}
         programs={programs}
         reviews={reviews}
         village={village}
