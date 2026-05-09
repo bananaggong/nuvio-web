@@ -151,20 +151,59 @@ export function BoseongFigmaFooter({
             rel="noreferrer"
             target="_blank"
           >
-            <Camera size={18} />
+            <InstagramMark />
           </a>
           <a
             aria-label="전체차LAB 카카오 채널"
-            className="flex size-9 items-center justify-center rounded-full bg-[#f9df38] text-sm font-black text-[#2b2018]"
+            className="flex size-9 items-center justify-center rounded-full bg-[#f9df38] text-[#2b2018]"
             href={village.kakaoUrl ?? "https://pf.kakao.com/"}
             rel="noreferrer"
             target="_blank"
           >
-            ch
+            <KakaoTalkMark />
           </a>
         </div>
       </div>
     </footer>
+  );
+}
+
+function InstagramMark() {
+  return (
+    <svg
+      aria-hidden="true"
+      className="size-5"
+      fill="none"
+      viewBox="0 0 24 24"
+    >
+      <rect
+        height="17"
+        rx="5"
+        stroke="currentColor"
+        strokeWidth="2.2"
+        width="17"
+        x="3.5"
+        y="3.5"
+      />
+      <circle cx="12" cy="12" r="4" stroke="currentColor" strokeWidth="2.2" />
+      <circle cx="17" cy="7" fill="currentColor" r="1.3" />
+    </svg>
+  );
+}
+
+function KakaoTalkMark() {
+  return (
+    <svg
+      aria-hidden="true"
+      className="size-6"
+      fill="none"
+      viewBox="0 0 28 28"
+    >
+      <path
+        d="M14 5C8.5 5 4 8.55 4 12.92c0 2.75 1.79 5.17 4.5 6.59l-.71 3.1c-.08.35.31.61.61.41l3.67-2.41c.62.11 1.26.17 1.93.17 5.52 0 10-3.55 10-7.86C24 8.55 19.52 5 14 5Z"
+        fill="currentColor"
+      />
+    </svg>
   );
 }
 
@@ -230,15 +269,15 @@ export function BoseongFigmaHomePage({
       return (
         <div key={sectionKey}>
           <section className="relative mx-auto mt-[35px] flex max-w-[1440px] items-center justify-between gap-4 px-6 py-9 md:h-[115px] md:px-0 md:py-0">
-            <h1 className="text-2xl font-extrabold md:absolute md:left-[67px] md:top-[51px] md:text-[44px] md:leading-[31px]">
-              {asString(teaTimeSection.title, "녹차밭에서 피어나는 시간")}
+            <h1 className="text-2xl font-bold md:absolute md:left-[67px] md:top-[51px] md:text-[44px] md:leading-[1.10696]">
+              {asCleanString(teaTimeSection.title, "녹차밭에서 피어나는 시간")}
             </h1>
             <span className="hidden border-t border-[#c6c6c6] md:absolute md:left-[532px] md:top-[67px] md:block md:w-[579px]" />
             <Link
-              className="text-sm font-bold text-[#444] hover:text-[#4f813f] md:absolute md:left-[1137px] md:top-[55px] md:text-[32px] md:font-semibold md:leading-[23px]"
+              className="text-sm !font-semibold text-[#414840] hover:text-[#4f813f] md:absolute md:left-[1137px] md:top-[55px] md:!text-[32px] md:leading-[1.10696]"
               href={asString(teaTimeSection.linkHref, "/boseong/media")}
             >
-              {asString(teaTimeSection.linkLabel, "녹차밭 옆 이야기들")}
+              {asCleanString(teaTimeSection.linkLabel, "녹차밭 옆 이야기들")}
             </Link>
           </section>
 
@@ -291,7 +330,7 @@ export function BoseongFigmaHomePage({
           key={sectionKey}
           title={asString(reviewSection.title, "전체차LAB 후기")}
         >
-          <div className="grid grid-cols-2 gap-0 md:grid-cols-4">
+          <div className="grid grid-cols-2 gap-0 md:mx-auto md:w-[1280px] md:grid-cols-[repeat(4,320px)]">
             {featuredReviews.map((review, index) => (
               <BoseongReviewTile exact index={index} key={review.id} review={review} />
             ))}
@@ -708,11 +747,14 @@ function BoseongHomeSection({
             {title}
           </h2>
           <div
-            className={`absolute right-[56px] top-[51px] flex h-[59px] items-center justify-end border-t border-[#c6c6c6] ${
+            className={`absolute right-[56px] top-[51px] flex h-[59px] items-center justify-end ${
               isReviews ? "left-[370px]" : "left-[408px]"
             }`}
           >
-            <Link className="text-sm font-bold hover:text-[#4f813f]" href={href}>
+            <Link
+              className="text-sm !font-semibold leading-[1.10696] text-[#414840] hover:text-[#4f813f] md:!text-[32px]"
+              href={href}
+            >
               + 더보기
             </Link>
           </div>
@@ -839,13 +881,23 @@ function BoseongReviewTile({
   index: number;
   review: Review;
 }) {
-  const dark = index % 2 === 1;
+  const mobileDark = (Math.floor(index / 2) + (index % 2)) % 2 === 1;
+  const desktopDark = (Math.floor(index / 4) + (index % 4)) % 2 === 1;
+  const colorClass = exact
+    ? `${mobileDark ? "bg-[#102c06] text-white" : "bg-[#cfe597] text-[#000000]"} ${
+        desktopDark
+          ? "md:bg-[#102c06] md:text-white"
+          : "md:bg-[#cfe597] md:text-[#000000]"
+      }`
+    : index % 2 === 1
+      ? "bg-[#102c06] text-white"
+      : "bg-[#cfe597] text-[#000000]";
 
   return (
     <Link
       className={`relative block transition hover:brightness-95 ${
         exact ? "h-[180px] md:h-[320px]" : "aspect-square p-6"
-      } ${dark ? "bg-[#102c06] text-white" : "bg-[#cfe597] text-[#000000]"}`}
+      } ${colorClass}`}
       href={`/boseong/reviews/${review.id}`}
     >
       {exact ? (
@@ -987,6 +1039,12 @@ function normalizeOriginalSlides(
 
 function asString(value: unknown, fallback = ""): string {
   return typeof value === "string" && value.trim() ? value.trim() : fallback;
+}
+
+function asCleanString(value: unknown, fallback = ""): string {
+  const text = asString(value);
+
+  return text && !/[\uFFFD\u00C2\u00BF]/.test(text) ? text : fallback;
 }
 
 function asNumber(value: unknown, fallback: number): number {
