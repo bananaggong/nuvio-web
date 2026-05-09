@@ -2,28 +2,29 @@
 
 import Link from "next/link";
 import {
+  ArrowRight,
   Check,
+  CheckCircle2,
   ClipboardList,
-  FileDown,
+  Clock3,
   FilePlus2,
   FileText,
   Globe2,
   MailCheck,
   MessageSquareText,
-  ReceiptText,
   Send,
   ShieldCheck,
+  Sparkles,
   Users,
 } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import {
   applicationStatusFlow,
   applicationStatusLabels,
-  buildHostReportCsv,
-  buildReportMetrics,
   mergeHostApplications,
-  seedMessageTemplates,
   readHostApplicationsFromStorage,
+  seedMessageTemplates,
+  seedHostApplications,
   summarizeApplications,
   writeHostApplicationsToStorage,
 } from "@/lib/host-operations";
@@ -35,34 +36,53 @@ import type {
 
 const TEMPLATE_STORAGE_KEY = "nuvio:message-templates";
 
-const tabs = [
-  { key: "applications", label: "신청 관리", icon: ClipboardList },
-  { key: "messages", label: "안내 발송", icon: MessageSquareText },
-  { key: "evidence", label: "증빙/리뷰", icon: ReceiptText },
-  { key: "reports", label: "보고서", icon: FileText },
-] as const;
 const applicationStatusOptions: HostApplicationStatus[] = [
   ...applicationStatusFlow,
   "rejected",
 ];
 
-type HostTab = (typeof tabs)[number]["key"];
+const quickActions = [
+  {
+    href: "/host/applications",
+    label: "신청자 CRM",
+    helper: "신청자 검색, 상태 변경, 상세 응답 검토",
+    icon: Users,
+  },
+  {
+    href: "/host/programs",
+    label: "프로그램 스튜디오",
+    helper: "공급 데이터 등록과 공개 발행",
+    icon: ClipboardList,
+  },
+  {
+    href: "/host/forms",
+    label: "신청서 빌더",
+    helper: "프로그램별 질문과 답변 항목 구성",
+    icon: FilePlus2,
+  },
+  {
+    href: "/host/villages",
+    label: "마을 홈",
+    helper: "마을 사이트, 연락처, 프로그램 노출 관리",
+    icon: Globe2,
+  },
+] as const;
 
 export function HostOpsDashboard() {
-  const [activeTab, setActiveTab] = useState<HostTab>("applications");
   const [applications, setApplications] = useState<HostApplication[]>(
-    readStoredApplications,
+    seedHostApplications,
   );
-  const [templates] = useState<MessageTemplate[]>(readStoredTemplates);
+  const [templates, setTemplates] =
+    useState<MessageTemplate[]>(seedMessageTemplates);
   const [copiedTemplateId, setCopiedTemplateId] = useState<string>();
-  const summary = useMemo(() => summarizeApplications(applications), [applications]);
-  const reportMetrics = useMemo(
-    () => buildReportMetrics(applications),
-    [applications],
-  );
 
   useEffect(() => {
     let cancelled = false;
+    const storageTimeoutId = window.setTimeout(() => {
+      if (cancelled) return;
+      setApplications(readStoredApplications());
+      setTemplates(readStoredTemplates());
+    }, 0);
 
     async function loadRemoteApplications() {
       try {
@@ -74,11 +94,13 @@ export function HostOpsDashboard() {
         const payload = (await response.json()) as { data?: HostApplication[] };
         if (!payload.data || cancelled) return;
 
-        setApplications((current) =>
-          mergeHostApplications(current, payload.data ?? []),
-        );
+        setApplications((current) => {
+          const next = mergeHostApplications(current, payload.data ?? []);
+          writeHostApplicationsToStorage(next);
+          return next;
+        });
       } catch {
-        // The console keeps the local fallback data when the DB is unavailable.
+        // Keep the local fallback data visible while the DB is unavailable.
       }
     }
 
@@ -86,8 +108,66 @@ export function HostOpsDashboard() {
 
     return () => {
       cancelled = true;
+      window.clearTimeout(storageTimeoutId);
     };
   }, []);
+
+  const summary = useMemo(() => summarizeApplications(applications), [applications]);
+  const pendingCount = useMemo(
+    () =>
+      applications.filter((application) =>
+        ["submitted", "screening"].includes(application.status),
+      ).length,
+    [applications],
+  );
+  const activeCount = summary.accepted + summary.checkedIn + summary.completed;
+  const reportReadyCount = useMemo(
+    () =>
+      applications.filter(
+        (application) =>
+          application.signatureCompleted && application.reviewSubmitted,
+      ).length,
+    [applications],
+  );
+  const readinessRate =
+    applications.length === 0
+      ? 0
+      : Math.round((reportReadyCount / applications.length) * 100);
+  const recentApplications = useMemo(
+    () => applications.slice(0, 5),
+    [applications],
+  );
+
+  const metrics = [
+    {
+      label: "전체 신청",
+      value: `${summary.total}명`,
+      helper: "접수된 신청서",
+      icon: ClipboardList,
+      tone: "bg-blue-50 text-blue-700",
+    },
+    {
+      label: "검토 대기",
+      value: `${pendingCount}명`,
+      helper: "접수 또는 검토 상태",
+      icon: Clock3,
+      tone: "bg-amber-50 text-amber-700",
+    },
+    {
+      label: "선정 이후",
+      value: `${activeCount}명`,
+      helper: "선정, 참여중, 완료",
+      icon: CheckCircle2,
+      tone: "bg-emerald-50 text-emerald-700",
+    },
+    {
+      label: "보고 준비",
+      value: `${readinessRate}%`,
+      helper: "서명과 리뷰 기준",
+      icon: FileText,
+      tone: "bg-indigo-50 text-indigo-700",
+    },
+  ];
 
   function updateApplicationStatus(
     applicationId: string,
@@ -120,168 +200,149 @@ export function HostOpsDashboard() {
     window.setTimeout(() => setCopiedTemplateId(undefined), 1600);
   }
 
-  function downloadReportCsv() {
-    const blob = new Blob([buildHostReportCsv(applications)], {
-      type: "text/csv;charset=utf-8",
-    });
-    const url = window.URL.createObjectURL(blob);
-    const link = document.createElement("a");
-    link.href = url;
-    link.download = "nuvio-host-report.csv";
-    link.click();
-    window.URL.revokeObjectURL(url);
-  }
-
   return (
-    <div className="mx-auto max-w-6xl px-4 py-8 md:px-8">
-      <section className="overflow-hidden rounded-md bg-slate-950 p-6 text-white md:p-8">
-        <div className="flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
-          <div>
-            <p className="inline-flex items-center gap-2 text-sm font-black text-teal-200">
-              <ShieldCheck size={18} />
-              호스트 운영 콘솔
-            </p>
-            <h1 className="mt-4 max-w-full text-2xl font-black leading-tight tracking-tight sm:text-3xl md:text-4xl">
-              <span className="block">모집부터 보고까지</span>
-              <span className="block">한 번에 관리합니다.</span>
-            </h1>
-            <p className="mt-3 max-w-3xl break-all text-sm leading-7 text-slate-300 md:text-base">
-              <span className="block">
-                DB 연결 전에는 임시 운영 데이터로 동작합니다.
-              </span>
-              <span className="block">
-                연결 후에는 신청자 DB, 메시지, 증빙,
-              </span>
-              <span className="block">
-                보고서 이력이 서버로 이전됩니다.
-              </span>
-            </p>
-          </div>
-          <div className="grid gap-2 sm:grid-cols-2">
+    <div className="mx-auto max-w-7xl px-4 py-6 md:px-8">
+      <section className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_360px]">
+        <div className="rounded-md border border-slate-200 bg-white p-6">
+          <p className="inline-flex items-center gap-2 text-sm font-black text-[var(--primary)]">
+            <ShieldCheck size={18} />
+            호스트 운영 대시보드
+          </p>
+          <div className="mt-4 grid gap-4 lg:grid-cols-[minmax(0,1fr)_auto] lg:items-end">
+            <div>
+              <h1 className="max-w-3xl text-2xl font-black leading-tight tracking-tight text-slate-950 sm:text-3xl">
+                모집부터 참여 완료까지, 오늘 봐야 할 운영 큐를 모았습니다.
+              </h1>
+              <p className="mt-3 max-w-3xl text-sm leading-7 text-slate-600">
+                레거시 운영 화면의 카드형 대시보드 구조를 누비오 흐름에 맞춰
+                재구성했습니다. 신청자 검토, 메시지, 서명, 리뷰, 보고 준비를
+                먼저 연결하고 수동 입금 체크는 제외했습니다.
+              </p>
+            </div>
             <Link
-              className="inline-flex h-11 items-center justify-center gap-2 rounded-md bg-white px-4 text-sm font-black text-slate-950 hover:bg-slate-100"
+              className="inline-flex h-11 items-center justify-center gap-2 rounded-md bg-[var(--primary)] px-4 text-sm font-black text-white hover:bg-[var(--primary-strong)]"
               href="/host/applications"
             >
-              <Users size={17} />
-              신청자 CRM
+              신청자 CRM 열기
+              <ArrowRight size={16} />
             </Link>
-            <Link
-              className="inline-flex h-11 items-center justify-center gap-2 rounded-md bg-white px-4 text-sm font-black text-slate-950 hover:bg-slate-100"
-              href="/host/boseong"
-            >
-              <ClipboardList size={17} />
-              전체차LAB 운영
-            </Link>
-            <Link
-              className="inline-flex h-11 items-center justify-center gap-2 rounded-md bg-white px-4 text-sm font-black text-slate-950 hover:bg-slate-100"
-              href="/host/villages"
-            >
-              <Globe2 size={17} />
-              마을 홈
-            </Link>
-            <Link
-              className="inline-flex h-11 items-center justify-center gap-2 rounded-md bg-white px-4 text-sm font-black text-slate-950 hover:bg-slate-100"
-              href="/host/programs"
-            >
-              <ClipboardList size={17} />
-              프로그램 스튜디오
-            </Link>
-            <Link
-              className="inline-flex h-11 items-center justify-center gap-2 rounded-md bg-white px-4 text-sm font-black text-slate-950 hover:bg-slate-100"
-              href="/host/forms"
-            >
-              <FilePlus2 size={17} />
-              신청서 빌더
-            </Link>
-            <Link
-              className="inline-flex h-11 items-center justify-center gap-2 rounded-md border border-white/20 px-4 text-sm font-black text-white hover:bg-white/10"
+          </div>
+        </div>
+
+        <section className="rounded-md border border-slate-200 bg-white p-5">
+          <p className="text-sm font-black text-slate-950">오늘의 운영 체크</p>
+          <div className="mt-4 grid gap-3">
+            <ChecklistRow
+              href="/host/applications"
+              label="검토 대기 신청자"
+              value={`${pendingCount}명`}
+            />
+            <ChecklistRow
+              href="/host/messages"
+              label="발송 가능한 템플릿"
+              value={`${templates.length}개`}
+            />
+            <ChecklistRow
               href="/host/reports"
-            >
-              <FileText size={17} />
-              보고 자동화
-            </Link>
-            <button
-              className="inline-flex h-11 items-center justify-center gap-2 rounded-md border border-white/20 px-4 text-sm font-black text-white hover:bg-white/10"
-              onClick={downloadReportCsv}
-              type="button"
-            >
-              <FileDown size={17} />
-              보고 CSV
-            </button>
+              label="보고 준비율"
+              value={`${readinessRate}%`}
+            />
           </div>
-        </div>
+        </section>
       </section>
 
-      <section className="mt-6 grid gap-3 md:grid-cols-4">
-        {reportMetrics.map((metric) => (
-          <div
-            className="rounded-md border border-slate-200 bg-white p-4"
-            key={metric.label}
-          >
-            <p className="text-xs font-black text-slate-500">{metric.label}</p>
-            <p className="mt-2 text-2xl font-black text-slate-950">{metric.value}</p>
-            <p className="mt-1 text-xs font-bold text-slate-500">{metric.helper}</p>
-          </div>
-        ))}
+      <section className="mt-5 grid gap-3 md:grid-cols-2 xl:grid-cols-4">
+        {metrics.map((metric) => {
+          const Icon = metric.icon;
+
+          return (
+            <div
+              className="rounded-md border border-slate-200 bg-white p-4"
+              key={metric.label}
+            >
+              <div className="flex items-start justify-between gap-3">
+                <div>
+                  <p className="text-xs font-black text-slate-500">
+                    {metric.label}
+                  </p>
+                  <p className="mt-2 font-mono text-3xl font-black text-slate-950">
+                    {metric.value}
+                  </p>
+                  <p className="mt-1 text-xs font-bold text-slate-500">
+                    {metric.helper}
+                  </p>
+                </div>
+                <span className={`grid size-10 place-items-center rounded-md ${metric.tone}`}>
+                  <Icon size={20} />
+                </span>
+              </div>
+            </div>
+          );
+        })}
       </section>
 
-      <section className="mt-6">
-        <div className="flex flex-wrap gap-2">
-          {tabs.map((tab) => {
-            const Icon = tab.icon;
-            const active = activeTab === tab.key;
-
-            return (
-              <button
-                aria-pressed={active}
-                className={`inline-flex h-10 items-center gap-2 rounded-md px-3 text-sm font-black ${
-                  active
-                    ? "bg-[var(--primary)] text-white"
-                    : "border border-slate-200 bg-white text-slate-600 hover:border-[var(--primary)] hover:text-[var(--primary)]"
-                }`}
-                key={tab.key}
-                onClick={() => setActiveTab(tab.key)}
-                type="button"
-              >
-                <Icon size={16} />
-                {tab.label}
-              </button>
-            );
-          })}
-        </div>
-      </section>
-
-      {activeTab === "applications" ? (
-        <ApplicationPanel
-          applications={applications}
+      <section className="mt-6 grid gap-6 xl:grid-cols-[minmax(0,1fr)_360px]">
+        <RecentApplicationsPanel
+          applications={recentApplications}
           onStatusChange={updateApplicationStatus}
         />
-      ) : null}
-      {activeTab === "messages" ? (
+
+        <section className="rounded-md border border-slate-200 bg-white p-5">
+          <div className="flex items-center justify-between gap-3">
+            <div>
+              <p className="text-sm font-black text-slate-950">빠른 이동</p>
+              <p className="mt-1 text-xs font-bold text-slate-500">
+                운영자가 자주 여는 화면
+              </p>
+            </div>
+            <Sparkles className="text-[var(--primary)]" size={20} />
+          </div>
+          <div className="mt-4 grid gap-2">
+            {quickActions.map((action) => {
+              const Icon = action.icon;
+
+              return (
+                <Link
+                  className="grid grid-cols-[36px_minmax(0,1fr)_16px] items-center gap-3 rounded-md border border-slate-200 p-3 hover:border-[var(--primary)] hover:bg-teal-50"
+                  href={action.href}
+                  key={action.href}
+                >
+                  <span className="grid size-9 place-items-center rounded-md bg-slate-100 text-[var(--primary)]">
+                    <Icon size={18} />
+                  </span>
+                  <span className="min-w-0">
+                    <span className="block text-sm font-black text-slate-950">
+                      {action.label}
+                    </span>
+                    <span className="mt-1 block truncate text-xs font-bold text-slate-500">
+                      {action.helper}
+                    </span>
+                  </span>
+                  <ArrowRight size={15} className="text-slate-400" />
+                </Link>
+              );
+            })}
+          </div>
+        </section>
+      </section>
+
+      <section className="mt-6 grid gap-6 xl:grid-cols-3">
         <MessagePanel
           copiedTemplateId={copiedTemplateId}
           onCopyTemplate={copyTemplate}
           templates={templates}
         />
-      ) : null}
-      {activeTab === "evidence" ? (
         <EvidencePanel
           applications={applications}
           onToggleFlag={toggleApplicationFlag}
         />
-      ) : null}
-      {activeTab === "reports" ? (
-        <ReportPanel
-          applications={applications}
-          onDownloadReportCsv={downloadReportCsv}
-          summary={summary}
-        />
-      ) : null}
+        <ReportPanel applications={applications} readyCount={reportReadyCount} />
+      </section>
     </div>
   );
 }
 
-function ApplicationPanel({
+function RecentApplicationsPanel({
   applications,
   onStatusChange,
 }: {
@@ -292,29 +353,35 @@ function ApplicationPanel({
   ) => void;
 }) {
   return (
-    <section className="mt-6 rounded-md border border-slate-200 bg-white p-5">
-      <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+    <section className="overflow-hidden rounded-md border border-slate-200 bg-white">
+      <div className="flex flex-col gap-3 border-b border-slate-200 px-5 py-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h2 className="flex items-center gap-2 text-xl font-black text-slate-950">
+          <h2 className="flex items-center gap-2 text-lg font-black text-slate-950">
             <Users className="text-[var(--primary)]" size={20} />
-            신청자 파이프라인
+            최근 신청자 파이프라인
           </h2>
-          <p className="mt-1 text-sm leading-6 text-slate-500">
-            합격 처리, 참여 상태, 운영 메모를 한 테이블에서 확인합니다.
+          <p className="mt-1 text-sm font-bold text-slate-500">
+            최근 접수된 신청자부터 상태를 빠르게 확인합니다.
           </p>
         </div>
+        <Link
+          className="inline-flex h-10 items-center justify-center gap-2 rounded-md border border-slate-200 px-3 text-sm font-black text-slate-700 hover:border-[var(--primary)] hover:text-[var(--primary)]"
+          href="/host/applications"
+        >
+          전체 보기
+          <ArrowRight size={15} />
+        </Link>
       </div>
 
-      <div className="mt-4 overflow-x-auto">
-        <table className="w-full min-w-[860px] text-left text-sm">
+      <div className="overflow-x-auto">
+        <table className="w-full min-w-[840px] text-left text-sm">
           <thead>
             <tr className="border-b border-slate-200 text-xs font-black text-slate-500">
-              <th className="py-3 pr-4">신청자</th>
-              <th className="py-3 pr-4">프로그램</th>
-              <th className="py-3 pr-4">상태</th>
-              <th className="py-3 pr-4">결제</th>
-              <th className="py-3 pr-4">증빙</th>
-              <th className="py-3 pr-4">메모</th>
+              <th className="px-5 py-3">신청자</th>
+              <th className="px-5 py-3">프로그램</th>
+              <th className="px-5 py-3">상태</th>
+              <th className="px-5 py-3">운영 메모</th>
+              <th className="px-5 py-3 text-right">상세</th>
             </tr>
           </thead>
           <tbody>
@@ -323,19 +390,23 @@ function ApplicationPanel({
                 className="border-b border-slate-100 align-top last:border-0"
                 key={application.id}
               >
-                <td className="py-4 pr-4">
+                <td className="px-5 py-4">
                   <p className="font-black text-slate-950">
                     {application.applicantName}
                   </p>
                   <p className="mt-1 text-xs font-bold text-slate-500">
-                    {application.phone}
+                    {application.phone || application.email}
                   </p>
                 </td>
-                <td className="py-4 pr-4">
-                  <p className="font-bold text-slate-700">{application.programTitle}</p>
-                  <p className="mt-1 text-xs text-slate-500">{application.email}</p>
+                <td className="px-5 py-4">
+                  <p className="font-bold text-slate-700">
+                    {application.programTitle}
+                  </p>
+                  <p className="mt-1 text-xs font-bold text-slate-500">
+                    {formatDate(application.submittedAt)}
+                  </p>
                 </td>
-                <td className="py-4 pr-4">
+                <td className="px-5 py-4">
                   <select
                     className="h-9 rounded-md border border-slate-200 bg-white px-2 text-xs font-black text-slate-700"
                     onChange={(event) =>
@@ -353,24 +424,17 @@ function ApplicationPanel({
                     ))}
                   </select>
                 </td>
-                <td className="py-4 pr-4 font-bold text-slate-700">
-                  {application.paymentAmount.toLocaleString("ko-KR")}원
+                <td className="max-w-[280px] px-5 py-4 text-xs leading-5 text-slate-500">
+                  {application.memo || "메모 없음"}
                 </td>
-                <td className="py-4 pr-4">
-                  <div className="flex flex-wrap gap-1">
-                    <StatusChip
-                      active={application.signatureCompleted}
-                      label="서명"
-                    />
-                    <StatusChip
-                      active={application.receiptCount > 0}
-                      label={`영수증 ${application.receiptCount}`}
-                    />
-                    <StatusChip active={application.reviewSubmitted} label="리뷰" />
-                  </div>
-                </td>
-                <td className="max-w-[220px] py-4 pr-4 text-xs leading-5 text-slate-500">
-                  {application.memo}
+                <td className="px-5 py-4 text-right">
+                  <Link
+                    className="inline-flex h-9 items-center justify-center gap-2 rounded-md border border-slate-200 px-3 text-xs font-black text-slate-700 hover:border-[var(--primary)] hover:text-[var(--primary)]"
+                    href={`/host/applications/${application.id}`}
+                  >
+                    상세
+                    <ArrowRight size={14} />
+                  </Link>
                 </td>
               </tr>
             ))}
@@ -391,53 +455,46 @@ function MessagePanel({
   onCopyTemplate: (template: MessageTemplate) => Promise<void>;
 }) {
   return (
-    <section className="mt-6 grid gap-3">
-      <div className="flex flex-col gap-3 rounded-md border border-slate-200 bg-white p-5 sm:flex-row sm:items-center sm:justify-between">
+    <section className="rounded-md border border-slate-200 bg-white p-5">
+      <div className="flex items-start justify-between gap-3">
         <div>
-          <h2 className="flex items-center gap-2 text-xl font-black text-slate-950">
+          <h2 className="flex items-center gap-2 text-lg font-black text-slate-950">
             <MessageSquareText className="text-[var(--primary)]" size={20} />
-            안내 메시지 템플릿
+            안내 메시지
           </h2>
           <p className="mt-1 text-sm leading-6 text-slate-500">
-            상태별 수신자 큐와 예약 발송은 자동화 센터에서 관리합니다.
+            상태별 안내 문구를 복사하거나 자동화 화면으로 이어갑니다.
           </p>
         </div>
         <Link
-          className="inline-flex h-10 items-center justify-center gap-2 rounded-md bg-[var(--primary)] px-3 text-sm font-black text-white"
+          className="inline-flex size-10 items-center justify-center rounded-md border border-slate-200 text-slate-700 hover:border-[var(--primary)] hover:text-[var(--primary)]"
           href="/host/messages"
+          title="메시지 자동화"
         >
-          <Send size={16} />
-          메시지 자동화
+          <ArrowRight size={17} />
         </Link>
       </div>
-      {templates.map((template) => (
-        <article
-          className="rounded-md border border-slate-200 bg-white p-5"
-          key={template.id}
-        >
-          <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-            <div>
-              <p className="text-xs font-black text-[var(--primary)]">
-                {template.trigger}
-              </p>
-              <h2 className="mt-2 text-lg font-black text-slate-950">
-                {template.name}
-              </h2>
-              <p className="mt-2 max-w-3xl text-sm leading-6 text-slate-600">
-                {template.body}
-              </p>
-            </div>
+      <div className="mt-4 grid gap-3">
+        {templates.slice(0, 3).map((template) => (
+          <article className="rounded-md bg-slate-50 p-3" key={template.id}>
+            <p className="text-xs font-black text-[var(--primary)]">
+              {template.trigger}
+            </p>
+            <p className="mt-1 font-black text-slate-950">{template.name}</p>
+            <p className="mt-1 line-clamp-2 text-xs leading-5 text-slate-500">
+              {template.body}
+            </p>
             <button
-              className="inline-flex h-10 min-w-fit items-center justify-center gap-2 rounded-md border border-slate-200 px-3 text-sm font-black text-slate-700 hover:border-[var(--primary)] hover:text-[var(--primary)]"
+              className="mt-3 inline-flex h-9 items-center justify-center gap-2 rounded-md bg-white px-3 text-xs font-black text-slate-700 ring-1 ring-slate-200 hover:text-[var(--primary)]"
               onClick={() => void onCopyTemplate(template)}
               type="button"
             >
-              {copiedTemplateId === template.id ? <Check size={16} /> : <Send size={16} />}
-              {copiedTemplateId === template.id ? "복사됨" : "템플릿 복사"}
+              {copiedTemplateId === template.id ? <Check size={15} /> : <Send size={15} />}
+              {copiedTemplateId === template.id ? "복사됨" : "복사"}
             </button>
-          </div>
-        </article>
-      ))}
+          </article>
+        ))}
+      </div>
     </section>
   );
 }
@@ -452,52 +509,55 @@ function EvidencePanel({
     key: "signatureCompleted" | "reviewSubmitted",
   ) => void;
 }) {
+  const targets = applications
+    .filter(
+      (application) =>
+        application.status !== "rejected" &&
+        (!application.signatureCompleted || !application.reviewSubmitted),
+    )
+    .slice(0, 4);
+
   return (
-    <section className="mt-6 rounded-md border border-slate-200 bg-white p-5">
-      <h2 className="flex items-center gap-2 text-xl font-black text-slate-950">
+    <section className="rounded-md border border-slate-200 bg-white p-5">
+      <h2 className="flex items-center gap-2 text-lg font-black text-slate-950">
         <MailCheck className="text-[var(--primary)]" size={20} />
-        증빙과 리뷰 체크리스트
+        서명/리뷰 체크
       </h2>
+      <p className="mt-1 text-sm leading-6 text-slate-500">
+        참여 확정 이후 필요한 서명과 후기 제출 상태만 확인합니다.
+      </p>
+
       <div className="mt-4 grid gap-3">
-        {applications.map((application) => (
-          <div
-            className="grid gap-3 rounded-md bg-[var(--surface-muted)] p-4 md:grid-cols-[1fr_auto]"
-            key={application.id}
-          >
-            <div>
-              <p className="font-black text-slate-950">{application.applicantName}</p>
-              <p className="mt-1 text-sm text-slate-600">{application.programTitle}</p>
-              <p className="mt-2 text-xs font-bold text-slate-500">
-                영수증 {application.receiptCount}건 · 결제{" "}
-                {application.paymentAmount.toLocaleString("ko-KR")}원
+        {targets.length > 0 ? (
+          targets.map((application) => (
+            <div className="rounded-md bg-slate-50 p-3" key={application.id}>
+              <p className="font-black text-slate-950">
+                {application.applicantName}
               </p>
+              <p className="mt-1 line-clamp-1 text-xs font-bold text-slate-500">
+                {application.programTitle}
+              </p>
+              <div className="mt-3 flex flex-wrap gap-2">
+                <FlagButton
+                  active={application.signatureCompleted}
+                  label="서명"
+                  onClick={() =>
+                    onToggleFlag(application.id, "signatureCompleted")
+                  }
+                />
+                <FlagButton
+                  active={application.reviewSubmitted}
+                  label="리뷰"
+                  onClick={() => onToggleFlag(application.id, "reviewSubmitted")}
+                />
+              </div>
             </div>
-            <div className="flex flex-wrap gap-2">
-              <button
-                className={`rounded-md px-3 py-2 text-xs font-black ${
-                  application.signatureCompleted
-                    ? "bg-teal-50 text-teal-700 ring-1 ring-teal-200"
-                    : "bg-white text-slate-600 ring-1 ring-slate-200"
-                }`}
-                onClick={() => onToggleFlag(application.id, "signatureCompleted")}
-                type="button"
-              >
-                서명 {application.signatureCompleted ? "완료" : "대기"}
-              </button>
-              <button
-                className={`rounded-md px-3 py-2 text-xs font-black ${
-                  application.reviewSubmitted
-                    ? "bg-teal-50 text-teal-700 ring-1 ring-teal-200"
-                    : "bg-white text-slate-600 ring-1 ring-slate-200"
-                }`}
-                onClick={() => onToggleFlag(application.id, "reviewSubmitted")}
-                type="button"
-              >
-                리뷰 {application.reviewSubmitted ? "완료" : "대기"}
-              </button>
-            </div>
-          </div>
-        ))}
+          ))
+        ) : (
+          <p className="rounded-md border border-dashed border-slate-300 p-4 text-sm font-bold text-teal-700">
+            보완이 필요한 서명/리뷰 항목이 없습니다.
+          </p>
+        )}
       </div>
     </section>
   );
@@ -505,105 +565,116 @@ function EvidencePanel({
 
 function ReportPanel({
   applications,
-  summary,
-  onDownloadReportCsv,
+  readyCount,
 }: {
   applications: HostApplication[];
-  summary: ReturnType<typeof summarizeApplications>;
-  onDownloadReportCsv: () => void;
+  readyCount: number;
 }) {
-  const missingItems = applications.filter(
-    (application) =>
-      !application.signatureCompleted ||
-      application.receiptCount === 0 ||
-      !application.reviewSubmitted,
-  );
+  const missingItems = applications
+    .filter(
+      (application) =>
+        application.status !== "rejected" &&
+        (!application.signatureCompleted || !application.reviewSubmitted),
+    )
+    .slice(0, 5);
 
   return (
-    <section className="mt-6 rounded-md border border-slate-200 bg-white p-5">
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+    <section className="rounded-md border border-slate-200 bg-white p-5">
+      <div className="flex items-start justify-between gap-3">
         <div>
-          <h2 className="text-xl font-black text-slate-950">
-            제출 보고서 준비 현황
+          <h2 className="flex items-center gap-2 text-lg font-black text-slate-950">
+            <FileText className="text-[var(--primary)]" size={20} />
+            보고 준비
           </h2>
           <p className="mt-1 text-sm leading-6 text-slate-500">
-            L3 ERP에서는 이 데이터를 정부/기업 제출 양식으로 자동 변환합니다.
+            이번 홈 대시보드는 수동 입금 확인 없이 서명과 리뷰 기준으로만 봅니다.
           </p>
         </div>
-        <div className="grid gap-2 sm:grid-cols-2">
-          <Link
-            className="inline-flex h-10 items-center justify-center gap-2 rounded-md bg-[var(--primary)] px-3 text-sm font-black text-white"
-            href="/host/reports"
-          >
-            <FileText size={16} />
-            보고 자동화
-          </Link>
-          <button
-            className="inline-flex h-10 items-center justify-center gap-2 rounded-md border border-slate-200 px-3 text-sm font-black text-slate-700"
-            onClick={onDownloadReportCsv}
-            type="button"
-          >
-            <FileDown size={16} />
-            CSV 내보내기
-          </button>
-        </div>
+        <Link
+          className="inline-flex size-10 items-center justify-center rounded-md border border-slate-200 text-slate-700 hover:border-[var(--primary)] hover:text-[var(--primary)]"
+          href="/host/reports"
+          title="보고 자동화"
+        >
+          <ArrowRight size={17} />
+        </Link>
       </div>
 
-      <div className="mt-5 grid gap-3 md:grid-cols-3">
-        <ReportBlock
-          label="서명 완료"
-          value={`${summary.signatureCount}/${summary.total}`}
-        />
-        <ReportBlock label="영수증" value={`${summary.receiptCount}건`} />
-        <ReportBlock
-          label="리뷰 완료"
-          value={`${summary.reviewCount}/${summary.total}`}
-        />
+      <div className="mt-4 grid grid-cols-2 gap-3">
+        <ReportBlock label="준비 완료" value={`${readyCount}명`} />
+        <ReportBlock label="전체 대상" value={`${applications.length}명`} />
       </div>
 
-      <div className="mt-5 rounded-md bg-[var(--surface-muted)] p-4">
-        <p className="font-black text-slate-950">보완 필요 항목</p>
-        <div className="mt-3 grid gap-2">
-          {missingItems.length > 0 ? (
-            missingItems.map((application) => (
-              <p
-                className="rounded-md bg-white px-3 py-2 text-sm font-bold text-slate-600"
-                key={application.id}
-              >
-                {application.applicantName} ·{" "}
-                {!application.signatureCompleted ? "서명 " : ""}
-                {application.receiptCount === 0 ? "영수증 " : ""}
-                {!application.reviewSubmitted ? "리뷰" : ""}
-              </p>
-            ))
-          ) : (
-            <p className="rounded-md bg-white px-3 py-2 text-sm font-bold text-teal-700">
-              모든 참여자의 필수 보고 자료가 준비되었습니다.
+      <div className="mt-4 grid gap-2">
+        {missingItems.length > 0 ? (
+          missingItems.map((application) => (
+            <p
+              className="rounded-md bg-slate-50 px-3 py-2 text-xs font-bold text-slate-600"
+              key={application.id}
+            >
+              {application.applicantName} ·{" "}
+              {!application.signatureCompleted ? "서명 " : ""}
+              {!application.reviewSubmitted ? "리뷰" : ""}
             </p>
-          )}
-        </div>
+          ))
+        ) : (
+          <p className="rounded-md bg-teal-50 px-3 py-2 text-sm font-bold text-teal-700">
+            모든 참여자의 서명과 리뷰가 준비되었습니다.
+          </p>
+        )}
       </div>
     </section>
   );
 }
 
-function StatusChip({ active, label }: { active: boolean; label: string }) {
+function ChecklistRow({
+  label,
+  value,
+  href,
+}: {
+  label: string;
+  value: string;
+  href: string;
+}) {
   return (
-    <span
-      className={`rounded-md px-2 py-1 text-[11px] font-black ${
-        active ? "bg-teal-50 text-teal-700" : "bg-slate-100 text-slate-500"
-      }`}
+    <Link
+      className="flex items-center justify-between gap-3 rounded-md border border-slate-200 px-3 py-2.5 hover:border-[var(--primary)] hover:bg-teal-50"
+      href={href}
     >
-      {label}
-    </span>
+      <span className="text-sm font-bold text-slate-600">{label}</span>
+      <span className="font-mono text-lg font-black text-slate-950">{value}</span>
+    </Link>
+  );
+}
+
+function FlagButton({
+  active,
+  label,
+  onClick,
+}: {
+  active: boolean;
+  label: string;
+  onClick: () => void;
+}) {
+  return (
+    <button
+      className={`inline-flex h-9 items-center justify-center rounded-md px-3 text-xs font-black ${
+        active
+          ? "bg-teal-50 text-teal-700 ring-1 ring-teal-200"
+          : "bg-white text-slate-600 ring-1 ring-slate-200"
+      }`}
+      onClick={onClick}
+      type="button"
+    >
+      {label} {active ? "완료" : "대기"}
+    </button>
   );
 }
 
 function ReportBlock({ label, value }: { label: string; value: string }) {
   return (
-    <div className="rounded-md bg-[var(--surface-muted)] p-4">
+    <div className="rounded-md bg-slate-50 p-3">
       <p className="text-xs font-black text-slate-500">{label}</p>
-      <p className="mt-2 text-2xl font-black text-slate-950">{value}</p>
+      <p className="mt-2 font-mono text-2xl font-black text-slate-950">{value}</p>
     </div>
   );
 }
@@ -635,6 +706,12 @@ async function persistApplicationStatus(
     headers: { "Content-Type": "application/json" },
     method: "PATCH",
   }).catch(() => undefined);
+}
+
+function formatDate(value: string) {
+  return new Intl.DateTimeFormat("ko-KR", {
+    dateStyle: "medium",
+  }).format(new Date(value));
 }
 
 function isUuid(value: string): boolean {

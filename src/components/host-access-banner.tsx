@@ -40,12 +40,12 @@ export function HostAccessBanner() {
   const allowed = role === "partner" || role === "admin";
 
   return (
-    <section className="mx-auto max-w-6xl px-5 pt-6 md:px-8">
+    <section className="mx-auto max-w-7xl px-4 pt-4 md:px-8">
       <div
-        className={`flex flex-col gap-3 rounded-md border p-4 sm:flex-row sm:items-center sm:justify-between ${
+        className={`flex flex-col gap-3 rounded-md border px-4 py-3 sm:flex-row sm:items-center sm:justify-between ${
           allowed
-            ? "border-teal-200 bg-teal-50 text-teal-900"
-            : "border-amber-200 bg-amber-50 text-amber-950"
+            ? "border-teal-100 bg-white text-teal-900"
+            : "border-amber-200 bg-white text-amber-950"
         }`}
       >
         <div className="flex gap-3">
@@ -60,7 +60,7 @@ export function HostAccessBanner() {
                 ? "호스트 권한으로 접속 중입니다"
                 : "호스트 권한 확인이 필요합니다"}
             </p>
-            <p className="mt-1 text-sm leading-6">
+            <p className="mt-0.5 text-xs leading-5">
               {session.user
                 ? `${session.profile?.email ?? session.user.email ?? "계정"} · role: ${
                     role ?? "user"

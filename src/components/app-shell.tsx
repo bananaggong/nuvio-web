@@ -10,7 +10,16 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const isVillageMicrosite = isVillageMicrositePath(pathname);
   const isAuthPage = pathname === "/login" || pathname === "/signup";
-  const hideChrome = isVillageMicrosite || isAuthPage;
+  const isOpsConsole =
+    pathname === "/host" ||
+    pathname.startsWith("/host/") ||
+    pathname === "/admin" ||
+    pathname.startsWith("/admin/");
+  const hideChrome = isVillageMicrosite || isAuthPage || isOpsConsole;
+
+  if (isOpsConsole) {
+    return <>{children}</>;
+  }
 
   return (
     <>

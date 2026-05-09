@@ -28,7 +28,7 @@ export default function ImplementationStatusPage() {
   const summary = summarizeImplementationStatus();
 
   return (
-    <main className="mx-auto max-w-6xl px-5 py-8 md:px-8">
+    <div className="mx-auto max-w-6xl px-5 py-8 md:px-8">
       <section className="rounded-md bg-slate-950 p-5 text-white">
         <p className="inline-flex items-center gap-2 text-sm font-black text-teal-200">
           <ListChecks size={18} />
@@ -100,7 +100,7 @@ export default function ImplementationStatusPage() {
           </section>
         ))}
       </div>
-    </main>
+    </div>
   );
 }
 
