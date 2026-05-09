@@ -2,10 +2,9 @@ import { desc, eq } from "drizzle-orm";
 import { getDb } from "@/db/client";
 import { reportProjects } from "@/db/schema";
 import {
-  reportSectionOrder,
+  normalizeReportProjectModel,
   type ReportProject,
   type ReportProjectStatus,
-  type ReportSectionId,
 } from "@/lib/report-automation";
 
 type ReportProjectInsert = typeof reportProjects.$inferInsert;
@@ -55,35 +54,33 @@ export async function upsertReportProject(
 
 export function normalizeReportProject(input: unknown): ReportProject {
   if (!input || typeof input !== "object" || Array.isArray(input)) {
-    throw new Error("Report project payload is required.");
+    throw new Error("Operation project payload is required.");
   }
 
-  const value = input as Record<string, unknown>;
-
-  return {
-    id: asString(value.id) || `report-${Date.now()}`,
-    title: asString(value.title) || "결과보고서",
-    agencyName: asString(value.agencyName),
-    programTitle: asString(value.programTitle) || "전체 프로그램",
-    periodLabel: asString(value.periodLabel),
-    ownerName: asString(value.ownerName),
-    status: asReportStatus(value.status),
-    sections: normalizeSections(value.sections),
-    updatedAt: asString(value.updatedAt) || new Date().toISOString(),
-  };
+  return normalizeReportProjectModel(input);
 }
 
 function mapProjectToInsert(project: ReportProject): ReportProjectInsert {
   return {
-    name: project.title.trim() || "Report project",
-    organizationName: project.agencyName.trim() || "NUVIO",
-    reportType: "program-result",
+    name: project.title.trim() || "Operation project",
+    organizationName:
+      project.villageName.trim() || project.agencyName.trim() || "NUVIO",
+    reportType: "operation-closeout",
     status: mapReportStatusToDatabase(project.status),
     schema: {
-      programTitle: project.programTitle,
-      periodLabel: project.periodLabel,
+      activityEvents: project.activityEvents,
+      agencyName: project.agencyName,
+      budgetCategories: project.budgetCategories,
+      connectedProgramTitles: project.connectedProgramTitles,
+      evidenceRules: project.evidenceRules,
+      expenseEvents: project.expenseEvents,
+      manualFields: project.manualFields,
       ownerName: project.ownerName,
+      periodLabel: project.periodLabel,
+      programTitle: project.programTitle,
       sections: project.sections,
+      title: project.title,
+      villageName: project.villageName,
     },
   };
 }
@@ -91,36 +88,20 @@ function mapProjectToInsert(project: ReportProject): ReportProjectInsert {
 function mapReportRowToProject(row: ReportProjectRow): ReportProject {
   const payload = normalizeSchema(row.schema);
 
-  return {
+  return normalizeReportProjectModel({
+    ...payload,
+    agencyName: asString(payload.agencyName) || row.organizationName,
     id: row.id,
-    title: row.name,
-    agencyName: row.organizationName,
-    programTitle: asString(payload.programTitle) || "전체 프로그램",
-    periodLabel: asString(payload.periodLabel),
-    ownerName: asString(payload.ownerName),
     status: mapDatabaseStatusToReport(row.status),
-    sections: normalizeSections(payload.sections),
+    title: asString(payload.title) || row.name,
     updatedAt: row.updatedAt.toISOString(),
-  };
+    villageName: asString(payload.villageName) || row.organizationName,
+  });
 }
 
 function normalizeSchema(value: unknown): Record<string, unknown> {
   if (!value || typeof value !== "object" || Array.isArray(value)) return {};
   return value as Record<string, unknown>;
-}
-
-function normalizeSections(value: unknown): ReportSectionId[] {
-  if (!Array.isArray(value)) {
-    return ["overview", "participants", "payments", "evidence", "risks"];
-  }
-
-  const selectedSections = value.filter((item): item is ReportSectionId =>
-    reportSectionOrder.includes(item as ReportSectionId),
-  );
-
-  return reportSectionOrder.filter((sectionId) =>
-    selectedSections.includes(sectionId),
-  );
 }
 
 function mapReportStatusToDatabase(
@@ -136,13 +117,6 @@ function mapDatabaseStatusToReport(status: DatabaseReportStatus): ReportProjectS
   return status;
 }
 
-function asReportStatus(value: unknown): ReportProjectStatus {
-  const text = asString(value);
-  return reportStatusValues.includes(text as ReportProjectStatus)
-    ? (text as ReportProjectStatus)
-    : "draft";
-}
-
 function asString(value: unknown): string {
   return typeof value === "string" ? value.trim() : "";
 }
@@ -152,5 +126,3 @@ function isUuid(value: string): boolean {
     value,
   );
 }
-
-const reportStatusValues: ReportProjectStatus[] = ["draft", "review", "ready"];

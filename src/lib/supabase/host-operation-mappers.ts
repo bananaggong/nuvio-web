@@ -134,14 +134,23 @@ export function mapReportProjectToInsert(
   return {
     programId,
     name: project.title,
-    organizationName: project.agencyName,
-    reportType: "host_result",
+    organizationName: project.villageName || project.agencyName,
+    reportType: "operation-closeout",
     status: project.status === "review" ? "collecting" : project.status,
     schema: {
+      activityEvents: project.activityEvents,
+      agencyName: project.agencyName,
+      budgetCategories: project.budgetCategories,
+      connectedProgramTitles: project.connectedProgramTitles,
+      evidenceRules: project.evidenceRules,
+      expenseEvents: project.expenseEvents,
+      manualFields: project.manualFields,
       ownerName: project.ownerName,
       periodLabel: project.periodLabel,
       programTitle: project.programTitle,
       sections: project.sections,
+      title: project.title,
+      villageName: project.villageName,
     },
   };
 }

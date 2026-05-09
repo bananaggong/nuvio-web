@@ -3,9 +3,9 @@ import { HostAccessBanner } from "@/components/host-access-banner";
 import { HostReportAutomation } from "@/components/host-report-automation";
 
 export const metadata: Metadata = {
-  title: "보고 자동화 센터",
+  title: "운영 프로젝트 마감 | NUVIO",
   description:
-    "누비오 호스트가 신청, 정산, 증빙, 후기 데이터를 제출용 결과보고서 초안으로 변환하는 화면입니다.",
+    "로컬홈 운영자가 지출, 증빙, 활동, 참석자 데이터를 운영 프로젝트 단위로 모아 마감 자료를 준비하는 화면입니다.",
 };
 
 export default function HostReportsPage() {

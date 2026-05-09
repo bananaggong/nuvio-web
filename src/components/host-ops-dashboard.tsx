@@ -61,6 +61,12 @@ const quickActions = [
     icon: FilePlus2,
   },
   {
+    href: "/host/reports",
+    label: "운영 마감",
+    helper: "지출, 증빙, 활동 기록으로 마감 준비",
+    icon: FileText,
+  },
+  {
     href: "/host/villages",
     label: "마을 홈",
     helper: "마을 사이트, 연락처, 프로그램 노출 관리",
@@ -161,7 +167,7 @@ export function HostOpsDashboard() {
       tone: "bg-emerald-50 text-emerald-700",
     },
     {
-      label: "보고 준비",
+      label: "참여 자료",
       value: `${readinessRate}%`,
       helper: "서명과 리뷰 기준",
       icon: FileText,
@@ -215,8 +221,8 @@ export function HostOpsDashboard() {
               </h1>
               <p className="mt-3 max-w-3xl text-sm leading-7 text-slate-600">
                 레거시 운영 화면의 카드형 대시보드 구조를 누비오 흐름에 맞춰
-                재구성했습니다. 신청자 검토, 메시지, 서명, 리뷰, 보고 준비를
-                먼저 연결하고 수동 입금 체크는 제외했습니다.
+                재구성했습니다. 신청자 검토, 메시지, 서명, 리뷰, 활동/증빙
+                마감 준비를 먼저 연결하고 수동 입금 체크는 제외했습니다.
               </p>
             </div>
             <Link
@@ -244,7 +250,7 @@ export function HostOpsDashboard() {
             />
             <ChecklistRow
               href="/host/reports"
-              label="보고 준비율"
+              label="마감 준비율"
               value={`${readinessRate}%`}
             />
           </div>
@@ -584,16 +590,17 @@ function ReportPanel({
         <div>
           <h2 className="flex items-center gap-2 text-lg font-black text-slate-950">
             <FileText className="text-[var(--primary)]" size={20} />
-            보고 준비
+            운영 마감 준비
           </h2>
           <p className="mt-1 text-sm leading-6 text-slate-500">
-            이번 홈 대시보드는 수동 입금 확인 없이 서명과 리뷰 기준으로만 봅니다.
+            참여 서명과 리뷰는 참고 자료로 보고, 상세 마감은 지출/증빙 화면에서
+            관리합니다.
           </p>
         </div>
         <Link
           className="inline-flex size-10 items-center justify-center rounded-md border border-slate-200 text-slate-700 hover:border-[var(--primary)] hover:text-[var(--primary)]"
           href="/host/reports"
-          title="보고 자동화"
+          title="운영 마감 열기"
         >
           <ArrowRight size={17} />
         </Link>

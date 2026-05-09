@@ -67,12 +67,12 @@ const navigationByArea: Record<ConsoleArea, NavigationItem[]> = {
       ],
     },
     {
-      name: "보고서",
+      name: "운영 마감",
       href: "/host/reports",
       icon: BarChart3,
       children: [
-        { name: "보고 자동화", href: "/host/reports" },
-        { name: "서명/리뷰 현황", href: "/host/reports" },
+        { name: "운영 프로젝트", href: "/host/reports" },
+        { name: "지출/증빙", href: "/host/reports" },
       ],
     },
     {
@@ -114,12 +114,12 @@ const navigationByArea: Record<ConsoleArea, NavigationItem[]> = {
       ],
     },
     {
-      name: "보고서",
-      href: "/admin/implementation",
+      name: "운영 검토",
+      href: "/admin/reports",
       icon: BarChart3,
       children: [
+        { name: "마감 검토", href: "/admin/reports" },
         { name: "구현 현황", href: "/admin/implementation" },
-        { name: "운영 큐", href: "/admin" },
       ],
     },
     {
