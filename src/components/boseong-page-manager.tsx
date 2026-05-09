@@ -6,6 +6,7 @@ import {
   FileImage,
   GripVertical,
   Loader2,
+  PencilLine,
   Plus,
   Save,
   Send,
@@ -268,6 +269,13 @@ export function BoseongPageManager() {
             label="소개"
             onClick={() => setActivePageKey("about")}
           />
+          <Link
+            className="inline-flex h-10 items-center gap-2 rounded-md border border-slate-200 px-3 text-sm font-black text-slate-700 hover:border-teal-700 hover:text-teal-700"
+            href="/editor"
+          >
+            <PencilLine size={16} />
+            홈페이지에서 편집
+          </Link>
           <Link
             className="inline-flex h-10 items-center gap-2 rounded-md border border-slate-200 px-3 text-sm font-black text-slate-700 hover:border-teal-700 hover:text-teal-700"
             href="/boseong"

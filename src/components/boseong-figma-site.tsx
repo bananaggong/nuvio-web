@@ -1,5 +1,6 @@
 import Image from "next/image";
 import Link from "next/link";
+import { Fragment, type ReactNode } from "react";
 import {
   ArrowRight,
   CalendarDays,
@@ -16,7 +17,7 @@ import { formatDate } from "@/lib/format";
 import {
   getSectionContent,
   type PublishedVillagePageSection,
-} from "@/lib/village-page-cms";
+} from "@/lib/village-page-content";
 import { villagePath, villageProgramPath } from "@/lib/village-routing";
 import type { Program, Review, VillageMediaContent } from "@/lib/types";
 import type { Village } from "@/lib/village-types";
@@ -294,17 +295,28 @@ function KakaoTalkMark() {
   );
 }
 
+type BoseongHomeSectionFrame = (props: {
+  children: ReactNode;
+  label: string;
+  sectionKey: string;
+  visible: boolean;
+}) => ReactNode;
+
 export function BoseongFigmaHomePage({
   media,
   pageSections,
   programs,
   reviews,
+  sectionFrame,
+  showHiddenSections = false,
   village,
 }: {
   media: VillageMediaContent[];
   pageSections?: PublishedVillagePageSection[];
   programs: Program[];
   reviews: Review[];
+  sectionFrame?: BoseongHomeSectionFrame;
+  showHiddenSections?: boolean;
   village: Village;
 }) {
   const primaryProgram = programs[0];
@@ -331,14 +343,25 @@ export function BoseongFigmaHomePage({
   });
   const featuredMedia = media.slice(0, asNumber(mediaSection.limit, 3));
   const featuredReviews = reviews.slice(0, asNumber(reviewSection.limit, 8));
+  const renderHomeSection = (sectionKey: string, children: ReactNode) => {
+    const section = pageSections?.find((item) => item.sectionKey === sectionKey);
+    const visible = section ? section.visible : true;
+    const label = section?.label ?? sectionKey;
+    const rendered = sectionFrame
+      ? sectionFrame({ children, label, sectionKey, visible })
+      : children;
+
+    return <Fragment key={sectionKey}>{rendered}</Fragment>;
+  };
   const renderedHomeSections = getOrderedHomeSectionKeys(pageSections).map((sectionKey) => {
-    if (!isPublishedSectionVisible(pageSections, sectionKey)) {
+    if (!showHiddenSections && !isPublishedSectionVisible(pageSections, sectionKey)) {
       return null;
     }
 
     if (sectionKey === "home_hero") {
-      return (
-        <section className="mx-auto max-w-[1440px]" key={sectionKey}>
+      return renderHomeSection(
+        sectionKey,
+        <section className="mx-auto max-w-[1440px]">
           <Image
             alt={asString(heroSection.alt, "녹차밭 옆에서 살아보는 진짜 보성")}
             className="h-auto w-full"
@@ -348,13 +371,14 @@ export function BoseongFigmaHomePage({
             src={asString(heroSection.imageUrl, boseongAssets.hero)}
             width={1440}
           />
-        </section>
+        </section>,
       );
     }
 
     if (sectionKey === "home_tea_time") {
-      return (
-        <div key={sectionKey}>
+      return renderHomeSection(
+        sectionKey,
+        <div>
           <section className="relative mx-auto mt-[35px] flex max-w-[1440px] items-center justify-between gap-4 px-6 py-9 md:h-[115px] md:px-0 md:py-0">
             <h1 className="text-2xl font-bold md:absolute md:left-[67px] md:top-[51px] md:text-[44px] md:leading-[1.10696]">
               {asCleanString(teaTimeSection.title, "녹차밭에서 피어나는 시간")}
@@ -378,26 +402,26 @@ export function BoseongFigmaHomePage({
               width={1024}
             />
           </section>
-        </div>
+        </div>,
       );
     }
 
     if (sectionKey === "original_carousel") {
-      return (
+      return renderHomeSection(
+        sectionKey,
         <HomeOriginalCta
-          key={sectionKey}
           pageSections={pageSections}
           programs={programs}
-        />
+        />,
       );
     }
 
     if (sectionKey === "media_preview") {
-      return (
+      return renderHomeSection(
+        sectionKey,
         <BoseongHomeSection
           exact
           href={asString(mediaSection.href, "/boseong/media")}
-          key={sectionKey}
           title={asString(mediaSection.title, "전체차LAB 이야기")}
         >
           <div className="grid gap-5 md:ml-[30px] md:grid-cols-[445px_445px_445px] md:gap-[23px]">
@@ -410,16 +434,16 @@ export function BoseongFigmaHomePage({
               />
             ))}
           </div>
-        </BoseongHomeSection>
+        </BoseongHomeSection>,
       );
     }
 
     if (sectionKey === "reviews_preview") {
-      return (
+      return renderHomeSection(
+        sectionKey,
         <BoseongHomeSection
           exact
           href={asString(reviewSection.href, "/boseong/reviews")}
-          key={sectionKey}
           title={asString(reviewSection.title, "전체차LAB 후기")}
         >
           <div className="grid grid-cols-2 gap-0 md:mx-auto md:w-[1280px] md:grid-cols-[repeat(4,320px)]">
@@ -427,7 +451,7 @@ export function BoseongFigmaHomePage({
               <BoseongReviewTile exact index={index} key={review.id} review={review} />
             ))}
           </div>
-        </BoseongHomeSection>
+        </BoseongHomeSection>,
       );
     }
 
