@@ -12,6 +12,7 @@ import {
 import { formatDate } from "@/lib/format";
 import { villagePath } from "@/lib/village-routing";
 import type { Program, VillageMediaContent } from "@/lib/types";
+import type { PublishedVillagePageSection } from "@/lib/village-page-content";
 import type { Village } from "@/lib/village-types";
 
 const mediaCategoryLabels: Record<VillageMediaContent["category"], string> = {
@@ -22,10 +23,12 @@ const mediaCategoryLabels: Record<VillageMediaContent["category"], string> = {
 
 export function VillageMediaIndexPage({
   media,
+  pageSections,
   programs,
   village,
 }: {
   media: VillageMediaContent[];
+  pageSections?: PublishedVillagePageSection[];
   programs: Program[];
   village: Village;
 }) {
@@ -33,6 +36,7 @@ export function VillageMediaIndexPage({
     return (
       <BoseongFigmaMediaIndexPage
         media={media}
+        pageSections={pageSections}
         programs={programs}
         village={village}
       />

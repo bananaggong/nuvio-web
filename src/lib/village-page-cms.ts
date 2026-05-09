@@ -273,6 +273,92 @@ export function getDefaultPublishedVillagePageSections(
     ];
   }
 
+  if (pageKey === "media") {
+    return [
+      {
+        id: "boseong-media-index",
+        villageSlug: "boseong",
+        pageKey: "media",
+        sectionKey: "media_index",
+        sectionType: "media_preview",
+        label: "전체차LAB 이야기",
+        content: {
+          title: "전체차LAB 이야기",
+          subtitle:
+            "보성을 경험하는 새로운 방식, 전체차LAB의 이야기를 만나보세요.",
+          href: "/boseong/media",
+          limit: 9,
+        },
+        orderIndex: 10,
+        visible: true,
+        publishedAt: defaultDate,
+      },
+    ];
+  }
+
+  if (pageKey === "programs") {
+    return [
+      {
+        id: "boseong-programs-index",
+        villageSlug: "boseong",
+        pageKey: "programs",
+        sectionKey: "programs_index",
+        sectionType: "media_preview",
+        label: "전체차LAB 오리지널",
+        content: {
+          title: "전체차LAB 오리지널",
+          subtitle: "오직 전체차LAB에서만 피어나는 경험을 만나보세요.",
+          limit: 12,
+        },
+        orderIndex: 10,
+        visible: true,
+        publishedAt: defaultDate,
+      },
+    ];
+  }
+
+  if (pageKey === "reviews") {
+    return [
+      {
+        id: "boseong-reviews-index",
+        villageSlug: "boseong",
+        pageKey: "reviews",
+        sectionKey: "reviews_index",
+        sectionType: "reviews_preview",
+        label: "전체차LAB 후기",
+        content: {
+          title: "전체차LAB 후기",
+          subtitle: "보성에서 시간을 머문 마음을 이야기합니다.",
+          limit: 20,
+        },
+        orderIndex: 10,
+        visible: true,
+        publishedAt: defaultDate,
+      },
+    ];
+  }
+
+  if (pageKey === "notice") {
+    return [
+      {
+        id: "boseong-notice-index",
+        villageSlug: "boseong",
+        pageKey: "notice",
+        sectionKey: "notice_index",
+        sectionType: "media_preview",
+        label: "전체차LAB 소식",
+        content: {
+          title: "전체차LAB 소식",
+          subtitle: "신청, 일정, 운영 안내를 한곳에서 확인하세요.",
+          limit: 20,
+        },
+        orderIndex: 10,
+        visible: true,
+        publishedAt: defaultDate,
+      },
+    ];
+  }
+
   return [
     {
       id: "boseong-home-hero",
@@ -438,7 +524,17 @@ function mapSectionRowToPublished(
 }
 
 function asPageKey(value: unknown): VillagePageKey {
-  return asString(value) === "about" ? "about" : "home";
+  const text = asString(value);
+  if (
+    text === "about" ||
+    text === "media" ||
+    text === "programs" ||
+    text === "reviews" ||
+    text === "notice"
+  ) {
+    return text;
+  }
+  return "home";
 }
 
 function asSectionType(value: unknown): VillagePageSectionType {

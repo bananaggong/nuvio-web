@@ -5,6 +5,7 @@ import {
   getPublicVillageBySlug,
   getVillagePrograms,
 } from "@/lib/village-db";
+import { listPublicVillagePageSections } from "@/lib/village-page-cms";
 import { isReservedVillageSlug } from "@/lib/village-routing";
 
 export const dynamic = "force-dynamic";
@@ -39,6 +40,16 @@ export default async function VillageProgramsRoute({
   if (!village) notFound();
 
   const programs = await getVillagePrograms(village);
+  const pageSections =
+    village.slug === "boseong"
+      ? await listPublicVillagePageSections(village.slug, "programs")
+      : undefined;
 
-  return <VillageProgramsIndexPage programs={programs} village={village} />;
+  return (
+    <VillageProgramsIndexPage
+      pageSections={pageSections}
+      programs={programs}
+      village={village}
+    />
+  );
 }

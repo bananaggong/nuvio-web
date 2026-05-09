@@ -271,7 +271,7 @@ export function BoseongPageManager() {
           />
           <Link
             className="inline-flex h-10 items-center gap-2 rounded-md border border-slate-200 px-3 text-sm font-black text-slate-700 hover:border-teal-700 hover:text-teal-700"
-            href="/editor"
+            href="/host/boseong/editor"
           >
             <PencilLine size={16} />
             홈페이지에서 편집

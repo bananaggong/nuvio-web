@@ -6,6 +6,7 @@ import {
   getVillagePrograms,
 } from "@/lib/village-db";
 import { listPublicVillageMedia } from "@/lib/village-media-db";
+import { listPublicVillagePageSections } from "@/lib/village-page-cms";
 import { isReservedVillageSlug } from "@/lib/village-routing";
 
 export const dynamic = "force-dynamic";
@@ -41,6 +42,17 @@ export default async function VillageMediaRoute({
 
   const programs = await getVillagePrograms(village);
   const media = await listPublicVillageMedia(village.slug);
+  const pageSections =
+    village.slug === "boseong"
+      ? await listPublicVillagePageSections(village.slug, "media")
+      : undefined;
 
-  return <VillageMediaIndexPage media={media} programs={programs} village={village} />;
+  return (
+    <VillageMediaIndexPage
+      media={media}
+      pageSections={pageSections}
+      programs={programs}
+      village={village}
+    />
+  );
 }

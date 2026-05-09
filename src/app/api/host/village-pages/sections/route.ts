@@ -50,5 +50,14 @@ export async function POST(request: Request) {
 }
 
 function normalizePageKey(value: string | null): VillagePageKey {
-  return value === "about" ? "about" : "home";
+  if (
+    value === "about" ||
+    value === "media" ||
+    value === "programs" ||
+    value === "reviews" ||
+    value === "notice"
+  ) {
+    return value;
+  }
+  return "home";
 }

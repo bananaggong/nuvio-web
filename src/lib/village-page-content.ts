@@ -1,4 +1,10 @@
-export type VillagePageKey = "home" | "about";
+export type VillagePageKey =
+  | "home"
+  | "about"
+  | "media"
+  | "programs"
+  | "reviews"
+  | "notice";
 export type VillagePageSectionStatus = "draft" | "published" | "archived";
 export type VillagePageSectionType =
   | "hero"

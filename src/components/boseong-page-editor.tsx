@@ -16,14 +16,29 @@ import {
   SlidersHorizontal,
   Trash2,
 } from "lucide-react";
-import { useMemo, useState } from "react";
-import { BoseongFigmaHomePage } from "@/components/boseong-figma-site";
+import { useEffect, useMemo, useRef, useState } from "react";
+import {
+  BoseongFigmaAboutPage,
+  BoseongFigmaHomePage,
+  BoseongFigmaMediaIndexPage,
+  BoseongFigmaNoticePage,
+  BoseongFigmaProgramsPage,
+  BoseongFigmaReviewsPage,
+} from "@/components/boseong-figma-site";
 import type { Program, Review, VillageMediaContent } from "@/lib/types";
+import { buildVillageNotices } from "@/lib/village-template";
 import type {
   PublishedVillagePageSection,
+  VillagePageKey,
   VillagePageSectionDraft,
 } from "@/lib/village-page-content";
 import type { Village } from "@/lib/village-types";
+
+type EditablePageKey = Extract<
+  VillagePageKey,
+  "home" | "about" | "media" | "programs" | "reviews" | "notice"
+>;
+type SectionsByPage = Record<EditablePageKey, VillagePageSectionDraft[]>;
 
 type VillageAsset = {
   id: string;
@@ -42,76 +57,146 @@ type CarouselSlide = {
   title: string;
 };
 
+type AboutRow = {
+  body: string;
+  iconSrc: string;
+  title: string;
+};
+
 const villageSlug = "boseong";
+const previewCanvasWidth = 1440;
+
+const editablePages: Array<{
+  key: EditablePageKey;
+  label: string;
+  publicHref: string;
+}> = [
+  { key: "home", label: "홈", publicHref: "/boseong" },
+  { key: "about", label: "소개", publicHref: "/boseong/about" },
+  { key: "programs", label: "프로그램", publicHref: "/boseong/programs" },
+  { key: "media", label: "미디어", publicHref: "/boseong/media" },
+  { key: "reviews", label: "후기", publicHref: "/boseong/reviews" },
+  { key: "notice", label: "소식", publicHref: "/boseong/notice" },
+];
+
+const defaultSectionKeyByPage: Record<EditablePageKey, string> = {
+  about: "about_header",
+  home: "home_hero",
+  media: "media_index",
+  notice: "notice_index",
+  programs: "programs_index",
+  reviews: "reviews_index",
+};
 
 const sectionLabels: Record<string, string> = {
+  about_grid: "소개 본문",
+  about_header: "소개 상단",
   home_hero: "홈 히어로",
   home_tea_time: "녹차밭에서 피어나는 시간",
-  original_carousel: "전처차 오리지널 자동전환",
-  media_preview: "전처차LAB 이야기",
-  reviews_preview: "전처차LAB 후기",
+  media_index: "전체차LAB 이야기",
+  media_preview: "전체차LAB 이야기",
+  notice_index: "전체차LAB 소식",
+  original_carousel: "전체차 오리지널 자동전환",
+  programs_index: "전체차LAB 오리지널",
+  reviews_index: "전체차LAB 후기",
+  reviews_preview: "전체차LAB 후기",
 };
 
 export function BoseongPageEditor({
   assets: initialAssets,
+  initialPageKey = "home",
   media,
   programs,
   reviews,
-  sections: initialSections,
+  sectionsByPage: initialSectionsByPage,
   village,
 }: {
   assets: VillageAsset[];
+  initialPageKey?: EditablePageKey;
   media: VillageMediaContent[];
   programs: Program[];
   reviews: Review[];
-  sections: VillagePageSectionDraft[];
+  sectionsByPage: SectionsByPage;
   village: Village;
 }) {
-  const [sections, setSections] = useState(() => sortSections(initialSections));
+  const [sectionsByPage, setSectionsByPage] = useState(() =>
+    normalizeSectionsByPage(initialSectionsByPage),
+  );
   const [assets, setAssets] = useState(initialAssets);
+  const [activePageKey, setActivePageKey] =
+    useState<EditablePageKey>(initialPageKey);
   const [activeSectionKey, setActiveSectionKey] = useState(
-    initialSections[0]?.sectionKey ?? "home_hero",
+    getInitialSectionKey(initialPageKey, initialSectionsByPage),
   );
   const [dirtyKeys, setDirtyKeys] = useState<Set<string>>(new Set());
   const [saving, setSaving] = useState(false);
   const [publishing, setPublishing] = useState(false);
   const [uploadingField, setUploadingField] = useState("");
-  const [message, setMessage] = useState("편집할 섹션을 홈페이지에서 직접 선택하세요.");
+  const [message, setMessage] = useState(
+    "수정할 공개 페이지와 섹션을 선택하세요.",
+  );
 
-  const sortedSections = useMemo(() => sortSections(sections), [sections]);
+  const activeSections = useMemo(
+    () => sortSections(sectionsByPage[activePageKey] ?? []),
+    [activePageKey, sectionsByPage],
+  );
   const activeSection = useMemo(
     () =>
-      sections.find((section) => section.sectionKey === activeSectionKey) ??
-      sections[0],
-    [activeSectionKey, sections],
+      activeSections.find((section) => section.sectionKey === activeSectionKey) ??
+      activeSections[0],
+    [activeSectionKey, activeSections],
   );
   const previewSections = useMemo(
-    () => sortedSections.map(mapDraftToPreviewSection),
-    [sortedSections],
+    () => activeSections.map(mapDraftToPreviewSection),
+    [activeSections],
   );
+  const notices = useMemo(
+    () => buildVillageNotices(village, programs),
+    [programs, village],
+  );
+  const activePage = editablePages.find((page) => page.key === activePageKey) ?? editablePages[0];
 
-  function markDirty(sectionKey: string) {
-    setDirtyKeys((current) => new Set(current).add(sectionKey));
+  function switchPage(pageKey: EditablePageKey) {
+    setActivePageKey(pageKey);
+    setActiveSectionKey(getInitialSectionKey(pageKey, sectionsByPage));
+
+    if (typeof window !== "undefined") {
+      window.history.replaceState(
+        null,
+        "",
+        `/host/boseong/editor?page=${pageKey}`,
+      );
+    }
+  }
+
+  function dirtyKey(pageKey: EditablePageKey, sectionKey: string) {
+    return `${pageKey}:${sectionKey}`;
+  }
+
+  function markDirty(pageKey: EditablePageKey, sectionKey: string) {
+    setDirtyKeys((current) => new Set(current).add(dirtyKey(pageKey, sectionKey)));
   }
 
   function updateSection(
+    pageKey: EditablePageKey,
     sectionKey: string,
     patch: Partial<VillagePageSectionDraft>,
   ) {
-    setSections((current) =>
-      current.map((section) =>
+    setSectionsByPage((current) => ({
+      ...current,
+      [pageKey]: (current[pageKey] ?? []).map((section) =>
         section.sectionKey === sectionKey
           ? { ...section, ...patch, updatedAt: new Date().toISOString() }
           : section,
       ),
-    );
-    markDirty(sectionKey);
+    }));
+    markDirty(pageKey, sectionKey);
   }
 
   function updateActiveContent(patch: Record<string, unknown>) {
     if (!activeSection) return;
 
-    updateSection(activeSection.sectionKey, {
+    updateSection(activePageKey, activeSection.sectionKey, {
       draftContent: {
         ...activeSection.draftContent,
         ...patch,
@@ -122,16 +207,16 @@ export function BoseongPageEditor({
   function moveActiveSection(direction: "up" | "down") {
     if (!activeSection) return;
 
-    const currentIndex = sortedSections.findIndex(
+    const currentIndex = activeSections.findIndex(
       (section) => section.sectionKey === activeSection.sectionKey,
     );
     const targetIndex = direction === "up" ? currentIndex - 1 : currentIndex + 1;
 
-    if (currentIndex < 0 || targetIndex < 0 || targetIndex >= sortedSections.length) {
+    if (currentIndex < 0 || targetIndex < 0 || targetIndex >= activeSections.length) {
       return;
     }
 
-    const nextOrdered = [...sortedSections];
+    const nextOrdered = [...activeSections];
     [nextOrdered[currentIndex], nextOrdered[targetIndex]] = [
       nextOrdered[targetIndex],
       nextOrdered[currentIndex],
@@ -142,14 +227,22 @@ export function BoseongPageEditor({
       updatedAt: new Date().toISOString(),
     }));
 
-    setSections(nextSections);
-    setDirtyKeys(new Set(nextSections.map((section) => section.sectionKey)));
+    setSectionsByPage((current) => ({
+      ...current,
+      [activePageKey]: nextSections,
+    }));
+    setDirtyKeys((current) => {
+      const next = new Set(current);
+      nextSections.forEach((section) => next.add(dirtyKey(activePageKey, section.sectionKey)));
+      return next;
+    });
     setMessage("노출 순서가 바뀌었습니다. 임시저장 후 발행하면 공개 페이지에 반영됩니다.");
   }
 
   async function saveDrafts() {
+    const allSections = editablePages.flatMap((page) => sectionsByPage[page.key] ?? []);
     const targets = dirtyKeys.size
-      ? sortedSections.filter((section) => dirtyKeys.has(section.sectionKey))
+      ? allSections.filter((section) => dirtyKeys.has(dirtyKey(section.pageKey as EditablePageKey, section.sectionKey)))
       : activeSection
         ? [activeSection]
         : [];
@@ -191,7 +284,7 @@ export function BoseongPageEditor({
   }
 
   async function publishPage() {
-    if (sortedSections.length === 0) return;
+    if (activeSections.length === 0) return;
 
     setPublishing(true);
     setMessage("");
@@ -199,7 +292,7 @@ export function BoseongPageEditor({
     try {
       const publishedSections: VillagePageSectionDraft[] = [];
 
-      for (const section of sortedSections) {
+      for (const section of activeSections) {
         const response = await fetch("/api/host/village-pages/sections/publish", {
           body: JSON.stringify(section),
           headers: { "Content-Type": "application/json" },
@@ -218,8 +311,14 @@ export function BoseongPageEditor({
       }
 
       replaceSections(publishedSections);
-      setDirtyKeys(new Set());
-      setMessage("발행했습니다. 공개 보성 홈페이지에 반영됩니다.");
+      setDirtyKeys((current) => {
+        const next = new Set(current);
+        activeSections.forEach((section) =>
+          next.delete(dirtyKey(activePageKey, section.sectionKey)),
+        );
+        return next;
+      });
+      setMessage(`${activePage.label} 페이지를 발행했습니다.`);
     } catch (error) {
       setMessage(error instanceof Error ? error.message : "발행에 실패했습니다.");
     } finally {
@@ -228,15 +327,20 @@ export function BoseongPageEditor({
   }
 
   function replaceSections(nextSections: VillagePageSectionDraft[]) {
-    const nextByKey = new Map(
-      nextSections.map((section) => [section.sectionKey, section]),
-    );
+    setSectionsByPage((current) => {
+      const next = { ...current };
 
-    setSections((current) =>
-      sortSections(
-        current.map((section) => nextByKey.get(section.sectionKey) ?? section),
-      ),
-    );
+      for (const savedSection of nextSections) {
+        const pageKey = savedSection.pageKey as EditablePageKey;
+        next[pageKey] = sortSections(
+          (next[pageKey] ?? []).map((section) =>
+            section.sectionKey === savedSection.sectionKey ? savedSection : section,
+          ),
+        );
+      }
+
+      return next;
+    });
   }
 
   async function uploadImage(file: File, fieldName: string) {
@@ -276,6 +380,28 @@ export function BoseongPageEditor({
     }
   }
 
+  const renderFrame = ({
+    children,
+    label,
+    sectionKey,
+    visible,
+  }: {
+    children: React.ReactNode;
+    label: string;
+    sectionKey: string;
+    visible: boolean;
+  }) => (
+    <EditorSectionFrame
+      active={sectionKey === activeSection?.sectionKey}
+      label={cleanLabel(label, sectionKey)}
+      onSelect={() => setActiveSectionKey(sectionKey)}
+      sectionKey={sectionKey}
+      visible={visible}
+    >
+      {children}
+    </EditorSectionFrame>
+  );
+
   return (
     <div className="min-h-screen bg-[#111827] text-slate-950">
       <header className="sticky top-0 z-[90] border-b border-slate-800 bg-[#070b16]/95 px-4 py-3 text-white backdrop-blur md:px-6">
@@ -289,7 +415,7 @@ export function BoseongPageEditor({
             </Link>
             <div className="min-w-0">
               <p className="text-xs font-black uppercase tracking-[0.16em] text-teal-300">
-                Homepage Editor
+                Local Home Editor
               </p>
               <h1 className="truncate text-lg font-black md:text-2xl">
                 보성 공개 페이지 편집모드
@@ -300,11 +426,11 @@ export function BoseongPageEditor({
           <div className="flex flex-wrap items-center gap-2">
             <Link
               className="inline-flex h-10 items-center gap-2 rounded-md border border-white/15 px-3 text-sm font-black text-white hover:bg-white/10"
-              href="/boseong"
+              href={activePage.publicHref}
               target="_blank"
             >
               <Eye size={16} />
-              공개 페이지
+              현재 공개 페이지
             </Link>
             <button
               className="inline-flex h-10 items-center gap-2 rounded-md border border-white/15 px-3 text-sm font-black text-white hover:bg-white/10 disabled:cursor-wait disabled:opacity-60"
@@ -322,9 +448,26 @@ export function BoseongPageEditor({
               type="button"
             >
               {publishing ? <Loader2 className="animate-spin" size={16} /> : <Send size={16} />}
-              페이지 발행
+              {activePage.label} 발행
             </button>
           </div>
+        </div>
+
+        <div className="mt-3 flex flex-wrap gap-2">
+          {editablePages.map((page) => (
+            <button
+              className={`inline-flex h-9 items-center rounded-md border px-3 text-sm font-black ${
+                page.key === activePageKey
+                  ? "border-teal-300 bg-teal-300 text-[#061515]"
+                  : "border-white/15 text-white hover:bg-white/10"
+              }`}
+              key={page.key}
+              onClick={() => switchPage(page.key)}
+              type="button"
+            >
+              {page.label}
+            </button>
+          ))}
         </div>
 
         {message ? (
@@ -336,41 +479,83 @@ export function BoseongPageEditor({
       </header>
 
       <div className="grid min-h-[calc(100vh-64px)] lg:grid-cols-[minmax(0,1fr)_420px]">
-        <div className="min-w-0 bg-white">
-          <BoseongFigmaHomePage
-            media={media}
-            pageSections={previewSections}
-            programs={programs}
-            reviews={reviews}
-            sectionFrame={({ children, label, sectionKey, visible }) => (
-              <EditorSectionFrame
-                active={sectionKey === activeSection?.sectionKey}
-                label={cleanLabel(label, sectionKey)}
-                onSelect={() => setActiveSectionKey(sectionKey)}
-                sectionKey={sectionKey}
-                visible={visible}
-              >
-                {children}
-              </EditorSectionFrame>
-            )}
-            showHiddenSections
-            village={village}
-          />
+        <div className="min-w-0 bg-slate-200">
+          <EditorPreviewViewport pageKey={activePageKey}>
+            {activePageKey === "home" ? (
+              <BoseongFigmaHomePage
+                media={media}
+                pageSections={previewSections}
+                programs={programs}
+                reviews={reviews}
+                sectionFrame={renderFrame}
+                showHiddenSections
+                village={village}
+              />
+            ) : null}
+            {activePageKey === "about" ? (
+              <BoseongFigmaAboutPage
+                pageSections={previewSections}
+                programs={programs}
+                sectionFrame={renderFrame}
+                showHiddenSections
+                village={village}
+              />
+            ) : null}
+            {activePageKey === "programs" ? (
+              <BoseongFigmaProgramsPage
+                pageSections={previewSections}
+                programs={programs}
+                sectionFrame={renderFrame}
+                showHiddenSections
+                village={village}
+              />
+            ) : null}
+            {activePageKey === "media" ? (
+              <BoseongFigmaMediaIndexPage
+                media={media}
+                pageSections={previewSections}
+                programs={programs}
+                sectionFrame={renderFrame}
+                showHiddenSections
+                village={village}
+              />
+            ) : null}
+            {activePageKey === "reviews" ? (
+              <BoseongFigmaReviewsPage
+                pageSections={previewSections}
+                programs={programs}
+                reviews={reviews}
+                sectionFrame={renderFrame}
+                showHiddenSections
+                village={village}
+              />
+            ) : null}
+            {activePageKey === "notice" ? (
+              <BoseongFigmaNoticePage
+                notices={notices}
+                pageSections={previewSections}
+                programs={programs}
+                sectionFrame={renderFrame}
+                showHiddenSections
+                village={village}
+              />
+            ) : null}
+          </EditorPreviewViewport>
         </div>
 
-        <aside className="border-l border-slate-800 bg-slate-50 lg:sticky lg:top-[88px] lg:h-[calc(100vh-88px)] lg:overflow-y-auto">
+        <aside className="border-l border-slate-800 bg-slate-50 lg:sticky lg:top-[118px] lg:h-[calc(100vh-118px)] lg:overflow-y-auto">
           <div className="border-b border-slate-200 bg-white p-4">
             <p className="flex items-center gap-2 text-sm font-black text-teal-700">
               <SlidersHorizontal size={16} />
-              섹션 편집
+              {activePage.label} 섹션 편집
             </p>
             <p className="mt-1 text-sm leading-6 text-slate-500">
-              홈페이지 위 섹션을 클릭하거나 아래 목록에서 선택해서 수정합니다.
+              화면 위 섹션을 클릭하거나 아래 목록에서 선택해서 수정합니다.
             </p>
           </div>
 
           <div className="space-y-3 p-4">
-            {sortedSections.map((section) => (
+            {activeSections.map((section) => (
               <button
                 className={`flex w-full items-center justify-between rounded-md border px-3 py-3 text-left text-sm font-black ${
                   section.sectionKey === activeSection?.sectionKey
@@ -385,7 +570,11 @@ export function BoseongPageEditor({
                   {cleanLabel(section.label, section.sectionKey)}
                 </span>
                 <span className="ml-2 shrink-0 text-xs text-slate-400">
-                  {dirtyKeys.has(section.sectionKey) ? "수정됨" : section.visible ? "노출" : "숨김"}
+                  {dirtyKeys.has(dirtyKey(activePageKey, section.sectionKey))
+                    ? "수정됨"
+                    : section.visible
+                      ? "노출"
+                      : "숨김"}
                 </span>
               </button>
             ))}
@@ -422,7 +611,9 @@ export function BoseongPageEditor({
                 <TextInput
                   label="섹션 이름"
                   onChange={(value) =>
-                    updateSection(activeSection.sectionKey, { label: value })
+                    updateSection(activePageKey, activeSection.sectionKey, {
+                      label: value,
+                    })
                   }
                   value={activeSection.label}
                 />
@@ -434,7 +625,7 @@ export function BoseongPageEditor({
                   <input
                     checked={activeSection.visible}
                     onChange={(event) =>
-                      updateSection(activeSection.sectionKey, {
+                      updateSection(activePageKey, activeSection.sectionKey, {
                         visible: event.target.checked,
                       })
                     }
@@ -455,6 +646,89 @@ export function BoseongPageEditor({
             </div>
           ) : null}
         </aside>
+      </div>
+    </div>
+  );
+}
+
+function EditorPreviewViewport({
+  children,
+  pageKey,
+}: {
+  children: React.ReactNode;
+  pageKey: EditablePageKey;
+}) {
+  const viewportRef = useRef<HTMLDivElement>(null);
+  const canvasRef = useRef<HTMLDivElement>(null);
+  const [frame, setFrame] = useState({ height: 0, scale: 1 });
+
+  useEffect(() => {
+    const viewport = viewportRef.current;
+    const canvas = canvasRef.current;
+    if (!viewport || !canvas) return;
+
+    let frameRequest = 0;
+    const measure = () => {
+      window.cancelAnimationFrame(frameRequest);
+      frameRequest = window.requestAnimationFrame(() => {
+        const nextScale = Math.min(1, viewport.clientWidth / previewCanvasWidth);
+        const nextHeight = Math.ceil(canvas.scrollHeight * nextScale);
+
+        setFrame((current) =>
+          Math.abs(current.scale - nextScale) < 0.001 &&
+          Math.abs(current.height - nextHeight) < 1
+            ? current
+            : { height: nextHeight, scale: nextScale },
+        );
+      });
+    };
+
+    measure();
+
+    const resizeObserver = new ResizeObserver(measure);
+    resizeObserver.observe(viewport);
+    resizeObserver.observe(canvas);
+
+    const mutationObserver = new MutationObserver(measure);
+    mutationObserver.observe(canvas, {
+      attributes: true,
+      childList: true,
+      subtree: true,
+    });
+
+    window.addEventListener("resize", measure);
+
+    return () => {
+      window.cancelAnimationFrame(frameRequest);
+      resizeObserver.disconnect();
+      mutationObserver.disconnect();
+      window.removeEventListener("resize", measure);
+    };
+  }, [pageKey]);
+
+  return (
+    <div
+      className="min-w-0 overflow-x-hidden px-4 py-5 md:px-6"
+      ref={viewportRef}
+    >
+      <div
+        className="mx-auto overflow-hidden rounded-md border border-slate-300 bg-white shadow-2xl"
+        style={{
+          height: frame.height || undefined,
+          maxWidth: previewCanvasWidth,
+        }}
+      >
+        <div
+          className="origin-top-left bg-white"
+          ref={canvasRef}
+          style={{
+            transform: `scale(${frame.scale})`,
+            transformOrigin: "top left",
+            width: previewCanvasWidth,
+          }}
+        >
+          {children}
+        </div>
       </div>
     </div>
   );
@@ -531,6 +805,77 @@ function SectionContentFields({
   uploadingField: string;
 }) {
   const content = section.draftContent;
+
+  if (section.sectionKey === "about_header") {
+    return (
+      <div className="grid gap-4">
+        <TextInput
+          label="첫 문장"
+          onChange={(value) => onContentChange({ kicker: value })}
+          value={asString(content.kicker)}
+        />
+        <TextInput
+          label="제목"
+          onChange={(value) => onContentChange({ title: value })}
+          value={asString(content.title)}
+        />
+        <TextInput
+          label="브랜드명"
+          onChange={(value) => onContentChange({ brand: value })}
+          value={asString(content.brand)}
+        />
+      </div>
+    );
+  }
+
+  if (section.sectionType === "about_grid") {
+    const rows = normalizeAboutRows(content.rows);
+
+    return (
+      <div className="grid gap-4">
+        <TextInput
+          label="소개 제목"
+          onChange={(value) => onContentChange({ introTitle: value })}
+          value={asString(content.introTitle)}
+        />
+        <TextInput
+          label="소개 문장"
+          onChange={(value) => onContentChange({ introBody: value })}
+          value={asString(content.introBody)}
+        />
+        {rows.map((row, index) => (
+          <div className="rounded-md border border-slate-200 bg-slate-50 p-4" key={`${row.title}-${index}`}>
+            <p className="mb-3 text-sm font-black text-slate-700">
+              소개 문단 {index + 1}
+            </p>
+            <TextInput
+              label="제목"
+              onChange={(value) =>
+                onContentChange({ rows: replaceAboutRow(rows, index, { title: value }) })
+              }
+              value={row.title}
+            />
+            <TextArea
+              label="본문"
+              onChange={(value) =>
+                onContentChange({ rows: replaceAboutRow(rows, index, { body: value }) })
+              }
+              value={row.body}
+            />
+            <TextInput
+              label="아이콘 이미지 URL"
+              onChange={(value) =>
+                onContentChange({
+                  rows: replaceAboutRow(rows, index, { iconSrc: value }),
+                })
+              }
+              value={row.iconSrc}
+            />
+          </div>
+        ))}
+      </div>
+    );
+  }
 
   if (section.sectionType === "hero" || section.sectionType === "image_story") {
     return (
@@ -657,7 +1002,7 @@ function SectionContentFields({
                 ...slides,
                 {
                   body: "프로그램 소개 문구를 입력하세요.",
-                  hashtags: "#전처차LAB",
+                  hashtags: "#전체차LAB",
                   programSlug: "",
                   title: "새 프로그램",
                 },
@@ -680,6 +1025,13 @@ function SectionContentFields({
         onChange={(value) => onContentChange({ title: value })}
         value={asString(content.title)}
       />
+      {hasSubtitleField(section.sectionKey) ? (
+        <TextInput
+          label="설명 문장"
+          onChange={(value) => onContentChange({ subtitle: value })}
+          value={asString(content.subtitle)}
+        />
+      ) : null}
       <TextInput
         label="더보기 링크"
         onChange={(value) => onContentChange({ href: value })}
@@ -814,6 +1166,24 @@ function TextArea({
   );
 }
 
+function normalizeSectionsByPage(sectionsByPage: SectionsByPage): SectionsByPage {
+  return {
+    about: sortSections(sectionsByPage.about ?? []),
+    home: sortSections(sectionsByPage.home ?? []),
+    media: sortSections(sectionsByPage.media ?? []),
+    notice: sortSections(sectionsByPage.notice ?? []),
+    programs: sortSections(sectionsByPage.programs ?? []),
+    reviews: sortSections(sectionsByPage.reviews ?? []),
+  };
+}
+
+function getInitialSectionKey(
+  pageKey: EditablePageKey,
+  sectionsByPage: SectionsByPage,
+) {
+  return sectionsByPage[pageKey]?.[0]?.sectionKey ?? defaultSectionKeyByPage[pageKey];
+}
+
 function sortSections(sections: VillagePageSectionDraft[]) {
   return [...sections].sort((a, b) => a.orderIndex - b.orderIndex);
 }
@@ -867,6 +1237,44 @@ function replaceSlide(
   return slides.map((slide, slideIndex) =>
     slideIndex === index ? { ...slide, ...patch } : slide,
   );
+}
+
+function normalizeAboutRows(value: unknown): AboutRow[] {
+  if (!Array.isArray(value)) return [];
+
+  const rows: AboutRow[] = [];
+
+  for (const item of value) {
+    if (!item || typeof item !== "object" || Array.isArray(item)) continue;
+    const record = item as Record<string, unknown>;
+
+    rows.push({
+      body: asString(record.body),
+      iconSrc: asString(record.iconSrc),
+      title: asString(record.title),
+    });
+  }
+
+  return rows;
+}
+
+function replaceAboutRow(
+  rows: AboutRow[],
+  index: number,
+  patch: Partial<AboutRow>,
+): AboutRow[] {
+  return rows.map((row, rowIndex) =>
+    rowIndex === index ? { ...row, ...patch } : row,
+  );
+}
+
+function hasSubtitleField(sectionKey: string) {
+  return [
+    "media_index",
+    "notice_index",
+    "programs_index",
+    "reviews_index",
+  ].includes(sectionKey);
 }
 
 function cleanLabel(label: string, sectionKey: string) {

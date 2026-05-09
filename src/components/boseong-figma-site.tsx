@@ -302,6 +302,13 @@ type BoseongHomeSectionFrame = (props: {
   visible: boolean;
 }) => ReactNode;
 
+type BoseongNotice = {
+  date: string;
+  href: string;
+  title: string;
+  type: string;
+};
+
 export function BoseongFigmaHomePage({
   media,
   pageSections,
@@ -476,10 +483,14 @@ export function BoseongFigmaHomePage({
 export function BoseongFigmaAboutPage({
   pageSections,
   programs,
+  sectionFrame,
+  showHiddenSections = false,
   village,
 }: {
   pageSections?: PublishedVillagePageSection[];
   programs: Program[];
+  sectionFrame?: BoseongHomeSectionFrame;
+  showHiddenSections?: boolean;
   village: Village;
 }) {
   const aboutHeader = getSectionContent(pageSections, "about_header", {
@@ -492,6 +503,21 @@ export function BoseongFigmaAboutPage({
     introTitle: "보성 청년마을, 전체차LAB",
     rows: [],
   });
+  const renderAboutSection = (sectionKey: string, children: ReactNode) => {
+    const section = pageSections?.find((item) => item.sectionKey === sectionKey);
+    const visible = section ? section.visible : true;
+    const label = section?.label ?? sectionKey;
+
+    if (!showHiddenSections && !visible) {
+      return null;
+    }
+
+    const rendered = sectionFrame
+      ? sectionFrame({ children, label, sectionKey, visible })
+      : children;
+
+    return <Fragment key={sectionKey}>{rendered}</Fragment>;
+  };
 
   return (
     <div className="font-boseong bg-white text-[#141414]">
@@ -502,7 +528,9 @@ export function BoseongFigmaAboutPage({
       />
 
       <main>
-        <section className="relative flex min-h-[520px] items-center justify-center bg-[#dcd7d7] px-6 text-center text-white md:h-[832px] md:min-h-0">
+        {renderAboutSection(
+          "about_header",
+          <section className="relative flex min-h-[520px] items-center justify-center bg-[#dcd7d7] px-6 text-center text-white md:h-[832px] md:min-h-0">
           <h1 className="flex flex-col text-3xl font-semibold leading-tight md:absolute md:left-[621px] md:top-[363px] md:w-[719px] md:items-end md:text-right md:text-[74.4394px] md:leading-[1.10696]">
             <span className="md:whitespace-nowrap">
               {asString(aboutHeader.kicker, "녹차밭 옆에서 살아보는")}
@@ -512,9 +540,13 @@ export function BoseongFigmaAboutPage({
               {asString(aboutHeader.brand, "전체차 LAB")}
             </span>
           </h1>
-        </section>
+          </section>,
+        )}
 
-        <section className="relative mx-auto max-w-[1440px] px-6 py-20 text-center md:h-[342px] md:px-0 md:py-0">
+        {renderAboutSection(
+          "about_grid",
+          <>
+            <section className="relative mx-auto max-w-[1440px] px-6 py-20 text-center md:h-[342px] md:px-0 md:py-0">
           <h2 className="text-2xl font-semibold text-[#1b1b1b] md:absolute md:left-0 md:top-[108px] md:w-full md:text-[47px] md:leading-[1.10696]">
             {asString(aboutGrid.introTitle, "보성 청년마을, 전체차LAB")}
           </h2>
@@ -524,9 +556,9 @@ export function BoseongFigmaAboutPage({
               "전체차(全體茶)는 차(茶)로 모든 것을 담는다는 뜻입니다.",
             )}
           </p>
-        </section>
+            </section>
 
-        <section className="relative mx-auto max-w-[1440px] px-6 md:h-[808px] md:px-0">
+            <section className="relative mx-auto max-w-[1440px] px-6 md:h-[808px] md:px-0">
           <Image
             alt="전체차LAB 보성 지도"
             className="h-auto w-full md:absolute md:left-[103px] md:top-0 md:h-[762px] md:w-[1234px]"
@@ -536,17 +568,19 @@ export function BoseongFigmaAboutPage({
             src={boseongAssets.map}
             width={1234}
           />
-        </section>
+            </section>
 
-        <section className="relative mx-auto max-w-[1440px] px-6 py-12 text-center md:h-[211px] md:px-0 md:py-0">
+            <section className="relative mx-auto max-w-[1440px] px-6 py-12 text-center md:h-[211px] md:px-0 md:py-0">
           <p className="whitespace-pre-line text-base font-medium leading-8 text-[#414840] md:absolute md:left-0 md:top-[60px] md:w-full md:text-[36px] md:leading-[1.10696]">
             {"차를 매개로 청년의 삶과  지역의 미래를 연결하는 \n실험이 보성 회천면에서 시작됩니다."}
           </p>
-        </section>
+            </section>
 
-        <section>
-          <AboutGrid content={aboutGrid} />
-        </section>
+            <section>
+              <AboutGrid content={aboutGrid} />
+            </section>
+          </>,
+        )}
       </main>
 
       <BoseongFigmaFooter primaryProgram={programs[0]} village={village} />
@@ -555,50 +589,128 @@ export function BoseongFigmaAboutPage({
 }
 
 export function BoseongFigmaProgramsPage({
+  pageSections,
   programs,
+  sectionFrame,
+  showHiddenSections = false,
   village,
 }: {
+  pageSections?: PublishedVillagePageSection[];
   programs: Program[];
+  sectionFrame?: BoseongHomeSectionFrame;
+  showHiddenSections?: boolean;
   village: Village;
 }) {
-  return (
+  const programsSection = getSectionContent(pageSections, "programs_index", {
+    limit: 12,
+    subtitle: "오직 전체차LAB에서만 피어나는 경험을 만나보세요.",
+    title: "전체차LAB 오리지널",
+  });
+  const visible = isPublishedSectionVisible(pageSections, "programs_index");
+  const label =
+    pageSections?.find((item) => item.sectionKey === "programs_index")?.label ??
+    "전체차LAB 오리지널";
+
+  if (!showHiddenSections && !visible) {
+    return (
+      <div className="font-boseong bg-white text-[#141414]">
+        <BoseongFigmaHeader
+          activeHref="/boseong/programs"
+          primaryProgram={programs[0]}
+          village={village}
+        />
+        <BoseongFigmaFooter primaryProgram={programs[0]} village={village} />
+      </div>
+    );
+  }
+
+  const rendered = (
     <BoseongFigmaListFrame
       activeHref="/boseong/programs"
-      hideTitle
       primaryProgram={programs[0]}
-      subtitle="오직 전체차LAB에서만 피어나는 경험을 만나보세요."
-      title="전체차LAB 오리지널"
+      subtitle={asString(
+        programsSection.subtitle,
+        "오직 전체차LAB에서만 피어나는 경험을 만나보세요.",
+      )}
+      title={asString(programsSection.title, "전체차LAB 오리지널")}
       village={village}
     >
       <div className="mx-auto max-w-[948px] divide-y-[4px] divide-[#b3df00] border-b-[4px] border-[#b3df00]">
-        {programs.map((program) => (
+        {programs.slice(0, asNumber(programsSection.limit, programs.length)).map((program) => (
           <OriginalProgramRow key={`${program.id}-${program.slug}`} program={program} village={village} />
         ))}
       </div>
     </BoseongFigmaListFrame>
   );
+
+  return sectionFrame ? (
+    <Fragment>
+      {sectionFrame({
+        children: rendered,
+        label,
+        sectionKey: "programs_index",
+        visible,
+      })}
+    </Fragment>
+  ) : (
+    rendered
+  );
 }
 
 export function BoseongFigmaMediaIndexPage({
   media,
+  pageSections,
   programs,
+  sectionFrame,
+  showHiddenSections = false,
   village,
 }: {
   media: VillageMediaContent[];
+  pageSections?: PublishedVillagePageSection[];
   programs: Program[];
+  sectionFrame?: BoseongHomeSectionFrame;
+  showHiddenSections?: boolean;
   village: Village;
 }) {
-  return (
+  const mediaSection = getSectionContent(pageSections, "media_index", {
+    href: "/boseong/media",
+    limit: 9,
+    subtitle:
+      "보성을 경험하는 새로운 방식, 전체차LAB의 이야기를 만나보세요.",
+    title: "전체차LAB 이야기",
+  });
+  const visible = isPublishedSectionVisible(pageSections, "media_index");
+  const label =
+    pageSections?.find((item) => item.sectionKey === "media_index")?.label ??
+    "전체차LAB 이야기";
+
+  if (!showHiddenSections && !visible) {
+    return (
+      <div className="font-boseong bg-white text-[#141414]">
+        <BoseongFigmaHeader
+          activeHref="/boseong/media"
+          primaryProgram={programs[0]}
+          village={village}
+        />
+        <BoseongFigmaFooter primaryProgram={programs[0]} village={village} />
+      </div>
+    );
+  }
+
+  const rendered = (
     <BoseongFigmaListFrame
       activeHref="/boseong/media"
       compact
       primaryProgram={programs[0]}
-      subtitle="보성을 경험하는 새로운 방식, 전체차LAB의 이야기를 만나보세요."
-      title="전체차LAB 이야기"
+      subtitle={asString(
+        mediaSection.subtitle,
+        "보성을 경험하는 새로운 방식, 전체차LAB의 이야기를 만나보세요.",
+      )}
+      title={asString(mediaSection.title, "전체차LAB 이야기")}
       village={village}
     >
       <div className="mx-auto grid max-w-[1380px] gap-y-12 md:grid-cols-[repeat(3,445px)] md:gap-x-6">
-        {media.slice(0, 9).map((content) => (
+        {media.slice(0, asNumber(mediaSection.limit, 9)).map((content) => (
           <BoseongMediaPreviewCard
             content={content}
             exact
@@ -608,6 +720,19 @@ export function BoseongFigmaMediaIndexPage({
         ))}
       </div>
     </BoseongFigmaListFrame>
+  );
+
+  return sectionFrame ? (
+    <Fragment>
+      {sectionFrame({
+        children: rendered,
+        label,
+        sectionKey: "media_index",
+        visible,
+      })}
+    </Fragment>
+  ) : (
+    rendered
   );
 }
 
@@ -644,27 +769,58 @@ export function BoseongFigmaMediaAspectIndexPage({
 }
 
 export function BoseongFigmaReviewsPage({
+  pageSections,
   programs,
   reviewFilter,
   reviews,
+  sectionFrame,
+  showHiddenSections = false,
   village,
 }: {
+  pageSections?: PublishedVillagePageSection[];
   programs: Program[];
   reviewFilter?: string;
   reviews: Review[];
+  sectionFrame?: BoseongHomeSectionFrame;
+  showHiddenSections?: boolean;
   village: Village;
 }) {
   const activeFilter = normalizeBoseongReviewFilter(reviewFilter);
   const visibleReviews = reviews.filter((review) =>
     matchesBoseongReviewFilter(review, activeFilter),
   );
+  const reviewsSection = getSectionContent(pageSections, "reviews_index", {
+    limit: 20,
+    subtitle: "보성에서 시간이 머무른 마음을 담았습니다.",
+    title: "전체차LAB 후기",
+  });
+  const visible = isPublishedSectionVisible(pageSections, "reviews_index");
+  const label =
+    pageSections?.find((item) => item.sectionKey === "reviews_index")?.label ??
+    "전체차LAB 후기";
 
-  return (
+  if (!showHiddenSections && !visible) {
+    return (
+      <div className="font-boseong bg-white text-[#141414]">
+        <BoseongFigmaHeader
+          activeHref="/boseong/reviews"
+          primaryProgram={programs[0]}
+          village={village}
+        />
+        <BoseongFigmaFooter primaryProgram={programs[0]} village={village} />
+      </div>
+    );
+  }
+
+  const rendered = (
     <BoseongFigmaListFrame
       activeHref="/boseong/reviews"
       primaryProgram={programs[0]}
-      subtitle="보성에서 시간이 머무른 마음을 담았습니다."
-      title="전체차LAB 후기"
+      subtitle={asString(
+        reviewsSection.subtitle,
+        "보성에서 시간이 머무른 마음을 담았습니다.",
+      )}
+      title={asString(reviewsSection.title, "전체차LAB 후기")}
       village={village}
     >
       <div className="mx-auto mb-[22px] flex max-w-[1328px] flex-wrap gap-6 text-[#535353]">
@@ -685,11 +841,109 @@ export function BoseongFigmaReviewsPage({
         })}
       </div>
       <div className="mx-auto grid max-w-[1328px] grid-cols-2 gap-[6px] md:grid-cols-4">
-        {visibleReviews.slice(0, 20).map((review, index) => (
+        {visibleReviews.slice(0, asNumber(reviewsSection.limit, 20)).map((review, index) => (
           <BoseongReviewTile exact index={index} key={review.id} review={review} />
         ))}
       </div>
     </BoseongFigmaListFrame>
+  );
+
+  return sectionFrame ? (
+    <Fragment>
+      {sectionFrame({
+        children: rendered,
+        label,
+        sectionKey: "reviews_index",
+        visible,
+      })}
+    </Fragment>
+  ) : (
+    rendered
+  );
+}
+
+export function BoseongFigmaNoticePage({
+  notices,
+  pageSections,
+  programs,
+  sectionFrame,
+  showHiddenSections = false,
+  village,
+}: {
+  notices: BoseongNotice[];
+  pageSections?: PublishedVillagePageSection[];
+  programs: Program[];
+  sectionFrame?: BoseongHomeSectionFrame;
+  showHiddenSections?: boolean;
+  village: Village;
+}) {
+  const noticeSection = getSectionContent(pageSections, "notice_index", {
+    limit: 20,
+    subtitle: "신청, 일정, 운영 안내를 한곳에서 확인하세요.",
+    title: "전체차LAB 소식",
+  });
+  const visible = isPublishedSectionVisible(pageSections, "notice_index");
+  const label =
+    pageSections?.find((item) => item.sectionKey === "notice_index")?.label ??
+    "전체차LAB 소식";
+
+  if (!showHiddenSections && !visible) {
+    return (
+      <div className="font-boseong bg-white text-[#141414]">
+        <BoseongFigmaHeader
+          activeHref="/boseong/notice"
+          primaryProgram={programs[0]}
+          village={village}
+        />
+        <BoseongFigmaFooter primaryProgram={programs[0]} village={village} />
+      </div>
+    );
+  }
+
+  const rendered = (
+    <BoseongFigmaListFrame
+      activeHref="/boseong/notice"
+      primaryProgram={programs[0]}
+      subtitle={asString(
+        noticeSection.subtitle,
+        "신청, 일정, 운영 안내를 한곳에서 확인하세요.",
+      )}
+      title={asString(noticeSection.title, "전체차LAB 소식")}
+      village={village}
+    >
+      <div className="mx-auto max-w-[948px] divide-y-[4px] divide-[#b3df00] border-y-[4px] border-[#b3df00]">
+        {notices.slice(0, asNumber(noticeSection.limit, 20)).map((notice) => (
+          <Link
+            className="grid gap-3 px-4 py-6 text-[#171717] transition hover:bg-[#f6f9ec] md:grid-cols-[150px_minmax(0,1fr)_140px] md:items-center"
+            href={notice.href}
+            key={`${notice.type}-${notice.title}`}
+          >
+            <span className="text-[18px] font-extrabold text-[#55883f]">
+              [{notice.type}]
+            </span>
+            <span className="min-w-0 text-[24px] font-extrabold leading-[1.25]">
+              {notice.title}
+            </span>
+            <span className="text-left text-[18px] font-bold text-[#535353] md:text-right">
+              {formatDate(notice.date)}
+            </span>
+          </Link>
+        ))}
+      </div>
+    </BoseongFigmaListFrame>
+  );
+
+  return sectionFrame ? (
+    <Fragment>
+      {sectionFrame({
+        children: rendered,
+        label,
+        sectionKey: "notice_index",
+        visible,
+      })}
+    </Fragment>
+  ) : (
+    rendered
   );
 }
 

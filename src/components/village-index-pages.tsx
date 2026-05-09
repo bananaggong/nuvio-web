@@ -4,6 +4,7 @@ import { ArrowRight, CalendarDays, MapPin, Quote } from "lucide-react";
 import { BoseongAboutContent } from "@/components/boseong-intro-section";
 import {
   BoseongFigmaAboutPage,
+  BoseongFigmaNoticePage,
   BoseongFigmaProgramsPage,
   BoseongFigmaReviewsPage,
 } from "@/components/boseong-figma-site";
@@ -20,16 +21,24 @@ import type { PublishedVillagePageSection } from "@/lib/village-page-cms";
 import type { Village, VillageSection } from "@/lib/village-types";
 
 export function VillageProgramsIndexPage({
+  pageSections,
   programs,
   village,
 }: {
+  pageSections?: PublishedVillagePageSection[];
   programs: Program[];
   village: Village;
 }) {
   const primaryProgram = programs[0];
 
   if (village.slug === "boseong") {
-    return <BoseongFigmaProgramsPage programs={programs} village={village} />;
+    return (
+      <BoseongFigmaProgramsPage
+        pageSections={pageSections}
+        programs={programs}
+        village={village}
+      />
+    );
   }
 
   return (
@@ -56,11 +65,13 @@ export function VillageProgramsIndexPage({
 }
 
 export function VillageReviewsIndexPage({
+  pageSections,
   programs,
   reviewFilter,
   reviews,
   village,
 }: {
+  pageSections?: PublishedVillagePageSection[];
   programs: Program[];
   reviewFilter?: string;
   reviews: Review[];
@@ -69,6 +80,7 @@ export function VillageReviewsIndexPage({
   if (village.slug === "boseong") {
     return (
       <BoseongFigmaReviewsPage
+        pageSections={pageSections}
         programs={programs}
         reviewFilter={reviewFilter}
         reviews={reviews}
@@ -135,13 +147,26 @@ export function VillageAboutIndexPage({
 }
 
 export function VillageNoticeIndexPage({
+  pageSections,
   programs,
   village,
 }: {
+  pageSections?: PublishedVillagePageSection[];
   programs: Program[];
   village: Village;
 }) {
   const notices = buildVillageNotices(village, programs);
+
+  if (village.slug === "boseong") {
+    return (
+      <BoseongFigmaNoticePage
+        notices={notices}
+        pageSections={pageSections}
+        programs={programs}
+        village={village}
+      />
+    );
+  }
 
   return (
     <VillagePageFrame
