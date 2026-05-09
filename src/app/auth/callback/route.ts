@@ -25,22 +25,27 @@ export async function GET(request: Request) {
     data: { user },
   } = await supabase.auth.getUser();
 
-  if (user) {
-    await ensureUserProfile(user);
-  }
+  const profile = user ? await ensureUserProfile(user) : null;
+  const redirectPath = next ?? getRoleLandingPath(profile?.role);
 
   const forwardedHost = requestUrl.hostname === "localhost"
     ? null
     : requestUrl.host;
 
   if (forwardedHost) {
-    return NextResponse.redirect(`https://${forwardedHost}${next}`);
+    return NextResponse.redirect(`https://${forwardedHost}${redirectPath}`);
   }
 
-  return NextResponse.redirect(`${origin}${next}`);
+  return NextResponse.redirect(`${origin}${redirectPath}`);
 }
 
-function getSafeNextPath(value: string | null): string {
-  if (!value || !value.startsWith("/") || value.startsWith("//")) return "/me";
+function getSafeNextPath(value: string | null): string | null {
+  if (!value || !value.startsWith("/") || value.startsWith("//")) return null;
   return value;
+}
+
+function getRoleLandingPath(role?: "user" | "partner" | "admin"): string {
+  if (role === "admin") return "/admin";
+  if (role === "partner") return "/host";
+  return "/me";
 }

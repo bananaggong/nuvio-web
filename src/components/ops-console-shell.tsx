@@ -110,7 +110,7 @@ const navigationByArea: Record<ConsoleArea, NavigationItem[]> = {
       icon: Users,
       children: [
         { name: "신청자 CRM", href: "/host/applications" },
-        { name: "파트너 등록 폼", href: "/partners/apply" },
+        { name: "빌리지 가입 신청", href: "/partners/apply" },
       ],
     },
     {

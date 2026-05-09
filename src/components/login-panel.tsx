@@ -17,6 +17,8 @@ import { createSupabaseBrowserClient } from "@/lib/supabase/client";
 
 type LoginMode = "choice" | "email";
 
+type ProfileRole = AuthProfile["role"];
+
 type SessionPayload = {
   data?: {
     user: { id: string; email?: string } | null;
@@ -27,8 +29,8 @@ type SessionPayload = {
 
 const socialOrder: SocialProviderKey[] = ["kakao", "naver", "google"];
 
-function getSafeNextPath(value: string | null): string {
-  if (!value || !value.startsWith("/") || value.startsWith("//")) return "/me";
+function getSafeNextPath(value: string | null): string | null {
+  if (!value || !value.startsWith("/") || value.startsWith("//")) return null;
   return value;
 }
 
@@ -37,7 +39,7 @@ function getInitialAuthParams() {
     return {
       errorMessage: "",
       mode: "choice" as LoginMode,
-      nextPath: "/me",
+      nextPath: null,
     };
   }
 
@@ -50,6 +52,16 @@ function getInitialAuthParams() {
     mode: params.get("mode") === "email" ? ("email" as LoginMode) : "choice",
     nextPath: getSafeNextPath(params.get("next")),
   };
+}
+
+function getRoleLandingPath(role?: ProfileRole): string {
+  if (role === "admin") return "/admin";
+  if (role === "partner") return "/host";
+  return "/me";
+}
+
+function getPostLoginPath(profile: AuthProfile | null, nextPath: string | null): string {
+  return nextPath ?? getRoleLandingPath(profile?.role);
 }
 
 export function LoginPanel() {
@@ -111,7 +123,7 @@ export function LoginPanel() {
     try {
       const supabase = createSupabaseBrowserClient();
       const callback = new URL("/auth/callback", window.location.origin);
-      callback.searchParams.set("next", nextPath);
+      if (nextPath) callback.searchParams.set("next", nextPath);
       const { error } = await supabase.auth.signInWithOAuth({
         provider: providerConfig.provider,
         options: {
@@ -151,7 +163,14 @@ export function LoginPanel() {
 
       if (error) throw error;
 
-      router.push(nextPath);
+      const response = await fetch("/api/auth/session", { cache: "no-store" });
+      const payload = (await response.json()) as SessionPayload;
+
+      if (!response.ok) {
+        throw new Error(payload.error ?? "세션을 불러오지 못했습니다.");
+      }
+
+      router.push(getPostLoginPath(payload.data?.profile ?? null, nextPath));
       router.refresh();
     } catch (error) {
       setErrorMessage(
@@ -264,7 +283,16 @@ export function LoginPanel() {
                 className="font-semibold text-[#378ADD] hover:underline"
                 href="/signup"
               >
-                회원가입
+                일반 회원가입
+              </Link>
+            </p>
+            <p className="mt-2 text-[13px] font-medium text-[#888]">
+              프로그램을 운영하나요?{" "}
+              <Link
+                className="font-semibold text-[#378ADD] hover:underline"
+                href="/partners/apply"
+              >
+                빌리지로 가입하기
               </Link>
             </p>
           </div>
@@ -289,15 +317,15 @@ export function LoginPanel() {
               {authProfile.displayName || authProfile.email}님으로 이미 로그인되어 있어요.
             </p>
             <p className="mt-0.5 text-[12px] text-amber-700">
-              내 누비오로 이동하거나, 다른 계정으로 로그인하려면 먼저 로그아웃하세요.
+              계정 권한에 맞는 화면으로 이동하거나, 다른 계정으로 로그인하려면 먼저 로그아웃하세요.
             </p>
             <div className="mt-3 flex gap-2">
               <button
                 className="flex-1 rounded-lg bg-[#378ADD] py-2 text-[12px] font-bold text-white transition hover:bg-[#2a6fb5]"
-                onClick={() => router.push("/me")}
+                onClick={() => router.push(getRoleLandingPath(authProfile.role))}
                 type="button"
               >
-                내 누비오
+                계속하기
               </button>
               <button
                 className="flex-1 rounded-lg bg-amber-100 py-2 text-[12px] font-bold text-amber-900 transition hover:bg-amber-200 disabled:opacity-50"
@@ -358,12 +386,24 @@ export function LoginPanel() {
         </div>
 
         <div className="mt-5 text-center">
-          <Link
-            className="text-[14px] font-semibold text-[#378ADD] hover:underline"
-            href="/signup"
-          >
-            이메일로 회원가입
-          </Link>
+          <p className="text-[13px] font-medium text-[#888]">
+            처음인가요?{" "}
+            <Link
+              className="font-semibold text-[#378ADD] hover:underline"
+              href="/signup"
+            >
+              일반 회원가입
+            </Link>
+          </p>
+          <p className="mt-2 text-[13px] font-medium text-[#888]">
+            프로그램을 운영하나요?{" "}
+            <Link
+              className="font-semibold text-[#378ADD] hover:underline"
+              href="/partners/apply"
+            >
+              빌리지로 가입하기
+            </Link>
+          </p>
         </div>
 
         <div className="fixed bottom-6 left-0 right-0 w-full text-center lg:static lg:mt-8">

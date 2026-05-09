@@ -31,7 +31,7 @@ export function Footer() {
               개인정보 제3자 제공 동의
             </Link>
             <Link className="hover:text-[var(--primary)]" href="/partners/apply">
-              프로그램 제보
+              빌리지 가입
             </Link>
             <Link className="hover:text-[var(--primary)]" href="/admin">
               운영자
@@ -45,7 +45,7 @@ export function Footer() {
               있습니다. NUVIO는 공고와 운영 데이터를 더 쉽게 확인하도록 돕습니다.
             </p>
             <p>
-              외부 공고, 파트너 제출, 사용자 후기 콘텐츠는 출처와 이용 권한을
+              외부 공고, 빌리지 가입 요청, 사용자 후기 콘텐츠는 출처와 이용 권한을
               확인한 범위에서 게시합니다.
             </p>
             <p>회사명: 누비오 | 문의: hello@nuvio.local | 2026 NUVIO</p>
@@ -68,7 +68,7 @@ export function Footer() {
               <Mail size={18} />
             </a>
             <Link
-              aria-label="프로그램 제보"
+              aria-label="빌리지 가입"
               className="rounded-md border border-slate-200 p-2 hover:border-[var(--primary)] hover:text-[var(--primary)]"
               href="/partners/apply"
             >

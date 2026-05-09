@@ -5,9 +5,9 @@ import { usePathname } from "next/navigation";
 import { ClipboardList, MapPinned, UserRound } from "lucide-react";
 
 const tabs = [
-  { href: "/", label: "프로그램", icon: ClipboardList, match: ["/programs"] },
-  { href: "/villages", label: "로컬 홈", icon: MapPinned, match: ["/villages"] },
-  { href: "/me", label: "내 누비오", icon: UserRound, match: ["/me", "/login"] },
+  { href: "/", label: "프로그램탐색", icon: ClipboardList, match: ["/programs"] },
+  { href: "/villages", label: "로컬홈", icon: MapPinned, match: ["/villages"] },
+  { href: "/login", label: "로그인", icon: UserRound, match: ["/login", "/signup"] },
 ];
 
 export function MobileTabBar() {

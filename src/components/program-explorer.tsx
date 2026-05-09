@@ -3,16 +3,11 @@
 import { useMemo, useState } from "react";
 import {
   ArrowDownWideNarrow,
-  Clock3,
-  Database,
-  FileSearch,
   MapPinned,
-  RefreshCw,
   Search,
   SlidersHorizontal,
   X,
 } from "lucide-react";
-import { announcements } from "@/lib/data";
 import type {
   PeriodKey,
   Program,
@@ -20,19 +15,16 @@ import type {
   ProgramStatus,
   ThemeKey,
 } from "@/lib/types";
-import { LiveAnnouncementStrip } from "./live-announcement-strip";
-import { ProgramCard, SourceNotice } from "./program-card";
+import { ProgramCard } from "./program-card";
 import { ThemeIcon } from "./theme-icon";
 
 const themeOptions: Array<{ key: ThemeKey; label: string }> = [
-  { key: "short", label: "짧은여행" },
-  { key: "month", label: "7일~한달살기" },
   { key: "workation", label: "워케이션" },
+  { key: "month", label: "한달살기" },
+  { key: "short", label: "짧은여행" },
   { key: "local", label: "로컬프로젝트" },
-  { key: "returnFarm", label: "귀농귀촌" },
-  { key: "event", label: "공모/이벤트" },
   { key: "half", label: "반값여행" },
-  { key: "benefit", label: "지원혜택" },
+  { key: "returnFarm", label: "귀농귀촌" },
   { key: "family", label: "가족" },
   { key: "pet", label: "반려동물" },
 ];
@@ -63,15 +55,14 @@ const regions = [
 const statusOptions: Array<{ key: "all" | ProgramStatus; label: string }> = [
   { key: "all", label: "전체" },
   { key: "open", label: "모집중" },
-  { key: "upcoming", label: "원문 확인" },
+  { key: "upcoming", label: "확인 필요" },
   { key: "closed", label: "마감" },
   { key: "earlyClosed", label: "조기마감" },
 ];
 
 const sortOptions: Array<{ key: ProgramSort; label: string }> = [
-  { key: "recent", label: "최신 공고순" },
+  { key: "recent", label: "최신순" },
   { key: "deadline", label: "마감 임박순" },
-  { key: "subsidy", label: "지원금 높은순" },
 ];
 
 type ProgramExplorerProps = {
@@ -80,7 +71,6 @@ type ProgramExplorerProps = {
 };
 
 export function ProgramExplorer({ initialTheme, programs }: ProgramExplorerProps) {
-  const availablePrograms = programs;
   const [keyword, setKeyword] = useState("");
   const [themes, setThemes] = useState<ThemeKey[]>(
     initialTheme ? [initialTheme] : [],
@@ -90,12 +80,12 @@ export function ProgramExplorer({ initialTheme, programs }: ProgramExplorerProps
   const [status, setStatus] = useState<"all" | ProgramStatus>("all");
   const [sort, setSort] = useState<ProgramSort>("recent");
   const [filterOpen, setFilterOpen] = useState(false);
-  const [visibleCount, setVisibleCount] = useState(10);
+  const [visibleCount, setVisibleCount] = useState(12);
 
   const filteredPrograms = useMemo(() => {
     const normalized = keyword.trim().toLowerCase();
 
-    return availablePrograms
+    return programs
       .filter((program) => {
         const searchableText = [
           program.title,
@@ -130,29 +120,10 @@ export function ProgramExplorer({ initialTheme, programs }: ProgramExplorerProps
         if (sort === "deadline") {
           return new Date(a.recruitEnd).getTime() - new Date(b.recruitEnd).getTime();
         }
-        if (sort === "subsidy") return b.subsidyAmount - a.subsidyAmount;
+
         return new Date(b.recruitStart).getTime() - new Date(a.recruitStart).getTime();
       });
-  }, [availablePrograms, keyword, periods, region, sort, status, themes]);
-
-  const sourceStats = useMemo(() => {
-    const externalCount = availablePrograms.filter(
-      (program) => program.dataSource === "external",
-    ).length;
-    const dbCount = availablePrograms.filter(
-      (program) => program.dataSource === "database",
-    ).length;
-    const seedCount = availablePrograms.filter(
-      (program) => program.dataSource === "seed" || !program.dataSource,
-    ).length;
-    const sourceCount = new Set(
-      availablePrograms
-        .filter((program) => program.dataSource === "external")
-        .map((program) => program.sourceName),
-    ).size;
-
-    return { externalCount, dbCount, seedCount, sourceCount };
-  }, [availablePrograms]);
+  }, [keyword, periods, programs, region, sort, status, themes]);
 
   const activeFilterCount =
     themes.length +
@@ -163,7 +134,7 @@ export function ProgramExplorer({ initialTheme, programs }: ProgramExplorerProps
   const visiblePrograms = filteredPrograms.slice(0, visibleCount);
 
   function toggleTheme(theme: ThemeKey) {
-    setVisibleCount(10);
+    setVisibleCount(12);
     setThemes((current) =>
       current.includes(theme)
         ? current.filter((item) => item !== theme)
@@ -172,7 +143,7 @@ export function ProgramExplorer({ initialTheme, programs }: ProgramExplorerProps
   }
 
   function togglePeriod(period: PeriodKey) {
-    setVisibleCount(10);
+    setVisibleCount(12);
     setPeriods((current) =>
       current.includes(period)
         ? current.filter((item) => item !== period)
@@ -187,42 +158,12 @@ export function ProgramExplorer({ initialTheme, programs }: ProgramExplorerProps
     setRegion("전체");
     setStatus("all");
     setSort("recent");
-    setVisibleCount(10);
+    setVisibleCount(12);
   }
 
   return (
-    <div className="bg-[var(--background)]">
+    <div className="bg-white">
       <section className="border-b border-[var(--line)] bg-white">
-        <div className="mx-auto max-w-6xl px-5 py-5 md:px-8">
-          <div className="grid gap-5 lg:grid-cols-[minmax(0,1fr)_360px] lg:items-end">
-            <div>
-              <p className="inline-flex items-center gap-2 text-sm font-black text-[var(--primary)]">
-                <RefreshCw size={17} />
-                공개 프로그램 탐색
-              </p>
-              <h1 className="mt-2 max-w-4xl text-2xl font-black leading-tight text-slate-950 md:text-3xl">
-                지역 체류, 워케이션, 여행지원금 공고 탐색
-              </h1>
-              <p className="mt-3 max-w-3xl text-sm leading-6 text-slate-600">
-                운영자가 게시했거나 NUVIO가 검수한 지역 체류 프로그램을 모아봅니다.
-                외부 공고는 관리자 검수 후 신청, 결제, 기수 관리 흐름으로 연결합니다.
-              </p>
-            </div>
-            <div className="grid grid-cols-3 overflow-hidden rounded-md border border-slate-200 bg-[var(--surface-muted)]">
-              <Metric label="공개 프로그램" value={availablePrograms.length} />
-              <Metric label="큐레이션" value={sourceStats.seedCount} />
-              <Metric label="직접 게시" value={sourceStats.dbCount} />
-            </div>
-          </div>
-
-          <div className="mt-6 grid gap-3 lg:grid-cols-[minmax(0,1fr)_auto]">
-            <LiveAnnouncementStrip fallbackAnnouncement={announcements[0]} />
-            <SourceNotice />
-          </div>
-        </div>
-      </section>
-
-      <section className="sticky top-16 z-30 border-b border-[var(--line)] bg-[var(--background)]/95 backdrop-blur">
         <div className="mx-auto max-w-6xl px-5 py-4 md:px-8">
           <div className="grid gap-3 lg:grid-cols-[1fr_auto_auto]">
             <label className="relative">
@@ -234,9 +175,9 @@ export function ProgramExplorer({ initialTheme, programs }: ProgramExplorerProps
                 className="h-12 w-full rounded-md border border-slate-200 bg-white pl-12 pr-4 text-base font-semibold outline-none ring-[var(--primary)] placeholder:text-slate-400 focus:ring-2"
                 onChange={(event) => {
                   setKeyword(event.target.value);
-                  setVisibleCount(10);
+                  setVisibleCount(12);
                 }}
-                placeholder="지역, 공고명, 지원 키워드 검색"
+                placeholder="프로그램명, 지역, 로컬홈 검색"
                 type="search"
                 value={keyword}
               />
@@ -260,7 +201,7 @@ export function ProgramExplorer({ initialTheme, programs }: ProgramExplorerProps
                 size={18}
               />
               <select
-                className="h-12 w-full appearance-none rounded-md border border-slate-200 bg-white pl-10 pr-10 text-sm font-black outline-none ring-[var(--primary)] focus:ring-2 lg:w-44"
+                className="h-12 w-full appearance-none rounded-md border border-slate-200 bg-white pl-10 pr-10 text-sm font-black outline-none ring-[var(--primary)] focus:ring-2 lg:w-40"
                 onChange={(event) => setSort(event.target.value as ProgramSort)}
                 value={sort}
               >
@@ -276,6 +217,7 @@ export function ProgramExplorer({ initialTheme, programs }: ProgramExplorerProps
           <div className="mt-4 flex gap-2 overflow-x-auto pb-1">
             {themeOptions.map((theme) => {
               const active = themes.includes(theme.key);
+
               return (
                 <button
                   className={`flex min-w-fit items-center gap-2 rounded-md border px-3 py-2 text-sm font-black transition ${
@@ -309,7 +251,7 @@ export function ProgramExplorer({ initialTheme, programs }: ProgramExplorerProps
                 key={item}
                 onClick={() => {
                   setRegion(item);
-                  setVisibleCount(10);
+                  setVisibleCount(12);
                 }}
                 type="button"
               >
@@ -320,37 +262,29 @@ export function ProgramExplorer({ initialTheme, programs }: ProgramExplorerProps
         </div>
       </section>
 
-      <section className="mx-auto max-w-6xl px-5 py-8 md:px-8">
+      <section className="mx-auto max-w-6xl px-5 py-7 md:px-8 md:py-10">
         <div className="mb-5 flex flex-col justify-between gap-2 sm:flex-row sm:items-end">
           <div>
             <h2 className="text-xl font-black text-slate-950">
               프로그램 {filteredPrograms.length.toLocaleString("ko-KR")}개
             </h2>
             <p className="mt-1 text-sm leading-6 text-slate-500">
-              마을 페이지와 연결된 프로그램은 신청, 선정, 입금 확인, 후기 관리 흐름까지 이어집니다.
+              로컬홈 운영자가 등록했거나 NUVIO가 검수한 프로그램만 보여줍니다.
             </p>
-          </div>
-          <div className="flex flex-wrap gap-2">
-            {sourceStats.seedCount > 0 ? (
-              <SmallBadge icon={<Database size={15} />} label={`큐레이션 ${sourceStats.seedCount}`} />
-            ) : null}
-            {sourceStats.externalCount > 0 ? (
-              <SmallBadge icon={<FileSearch size={15} />} label={`검수 후보 ${sourceStats.externalCount}`} />
-            ) : null}
-            <SmallBadge icon={<Database size={15} />} label={`직접 게시 ${sourceStats.dbCount}`} />
-            <SmallBadge icon={<Clock3 size={15} />} label="운영 연결" />
           </div>
         </div>
 
         {visiblePrograms.length > 0 ? (
-          <div className="grid gap-3">
+          <div className="grid gap-x-6 gap-y-9 sm:grid-cols-2 lg:grid-cols-3">
             {visiblePrograms.map((program) => (
               <ProgramCard key={program.id} program={program} />
             ))}
           </div>
         ) : (
           <div className="rounded-md border border-dashed border-slate-300 bg-white p-8 text-center">
-            <p className="text-lg font-black text-slate-950">조건에 맞는 공고가 없습니다.</p>
+            <p className="text-lg font-black text-slate-950">
+              조건에 맞는 프로그램이 없습니다.
+            </p>
             <p className="mt-2 text-sm text-slate-500">
               지역이나 테마 필터를 줄여서 다시 확인해 주세요.
             </p>
@@ -358,10 +292,10 @@ export function ProgramExplorer({ initialTheme, programs }: ProgramExplorerProps
         )}
 
         {visibleCount < filteredPrograms.length ? (
-          <div className="mt-8 flex justify-center">
+          <div className="mt-10 flex justify-center">
             <button
               className="h-12 rounded-md bg-slate-950 px-6 text-sm font-black text-white hover:bg-slate-800"
-              onClick={() => setVisibleCount((count) => count + 10)}
+              onClick={() => setVisibleCount((count) => count + 12)}
               type="button"
             >
               더 보기
@@ -409,7 +343,7 @@ export function ProgramExplorer({ initialTheme, programs }: ProgramExplorerProps
                       key={option.key}
                       onClick={() => {
                         setStatus(option.key);
-                        setVisibleCount(10);
+                        setVisibleCount(12);
                       }}
                       type="button"
                     >
@@ -486,23 +420,5 @@ function FilterSection({
       <h3 className="mb-3 text-sm font-black text-slate-950">{title}</h3>
       {children}
     </section>
-  );
-}
-
-function Metric({ label, value }: { label: string; value: number }) {
-  return (
-    <div className="border-r border-slate-200 p-4 last:border-r-0">
-      <div className="font-mono text-2xl font-black text-slate-950">{value}</div>
-      <div className="mt-1 text-xs font-bold text-slate-500">{label}</div>
-    </div>
-  );
-}
-
-function SmallBadge({ icon, label }: { icon: React.ReactNode; label: string }) {
-  return (
-    <span className="inline-flex items-center gap-1.5 rounded-md border border-slate-200 bg-white px-2.5 py-1.5 text-xs font-black text-slate-600">
-      {icon}
-      {label}
-    </span>
   );
 }

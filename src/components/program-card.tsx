@@ -1,156 +1,62 @@
 import Image from "next/image";
 import Link from "next/link";
-import {
-  CalendarDays,
-  ExternalLink,
-  FileText,
-  MapPin,
-  ShieldCheck,
-  WalletCards,
-} from "lucide-react";
-import { formatDate, formatWon, getDday } from "@/lib/format";
+import { Building2, CalendarDays, MapPin } from "lucide-react";
+import { formatDate, getDday } from "@/lib/format";
 import type { Program } from "@/lib/types";
-import { StatusBadge } from "./status-badge";
 
 export function ProgramCard({ program }: { program: Program }) {
-  if (program.dataSource === "external") {
-    return <ExternalProgramCard program={program} />;
-  }
+  const href = `/programs/${program.id}`;
+  const deadline = getDday(program.recruitEnd, program.status);
 
   return (
-    <article className="grid overflow-hidden rounded-md border border-slate-200 bg-white shadow-sm transition hover:border-slate-300 hover:shadow-md sm:grid-cols-[180px_minmax(0,1fr)]">
+    <article className="group min-w-0">
       <Link
         aria-label={`${program.title} 상세 보기`}
-        className="relative block aspect-[4/3] overflow-hidden bg-slate-100 sm:aspect-auto"
-        href={`/programs/${program.id}`}
+        className="relative block aspect-[4/3] overflow-hidden rounded-md bg-slate-100 shadow-sm ring-1 ring-slate-200 transition group-hover:shadow-md group-hover:ring-slate-300"
+        href={href}
       >
         <Image
           alt={program.title}
-          className="object-cover transition duration-300 hover:scale-105"
+          className="object-cover transition duration-300 group-hover:scale-105"
           fill
-          sizes="(max-width: 640px) 100vw, 180px"
+          sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
           src={program.image}
         />
       </Link>
-      <div className="flex min-w-0 flex-col justify-between gap-4 p-4">
-        <div>
-          <div className="flex flex-wrap items-center gap-2">
-            <StatusBadge program={program} />
-            <span className="rounded-md bg-slate-950 px-2.5 py-1 text-xs font-black text-white">
-              {getDday(program.recruitEnd, program.status)}
-            </span>
-          </div>
-          <Link href={`/programs/${program.id}`}>
-            <h3 className="mt-3 line-clamp-2 text-lg font-black leading-7 text-slate-950 hover:text-[var(--primary)]">
+
+      <div className="pt-3">
+        <div className="flex min-w-0 items-start justify-between gap-3">
+          <Link className="min-w-0" href={href}>
+            <h3 className="line-clamp-2 text-base font-black leading-6 text-slate-950 group-hover:text-[var(--primary)]">
               {program.title}
             </h3>
           </Link>
-          <p className="mt-2 line-clamp-2 text-sm leading-6 text-slate-600">
-            {program.summary}
-          </p>
+          <span
+            className={`shrink-0 pt-0.5 text-base font-black ${
+              program.status === "open" || program.status === "upcoming"
+                ? "text-slate-950"
+                : "text-slate-400"
+            }`}
+          >
+            {deadline}
+          </span>
         </div>
 
-        <div className="grid gap-2 text-sm text-slate-600 sm:grid-cols-2">
-          <Meta icon={<MapPin size={16} />} value={`${program.region} ${program.city}`} />
-          <Meta icon={<CalendarDays size={16} />} value={`~${formatDate(program.recruitEnd)}`} />
-          <Meta
-            icon={<WalletCards size={16} />}
-            strong
-            value={
-              program.subsidyAmount > 0
-                ? formatWon(program.subsidyAmount)
-                : program.subsidyLabel
-            }
-          />
-          <Meta icon={<FileText size={16} />} value={program.sourceName} />
+        <div className="mt-2 space-y-1.5 text-sm leading-5 text-slate-500">
+          <Meta icon={<Building2 size={15} />} value={program.sourceName} />
+          <Meta icon={<MapPin size={15} />} value={`${program.region} ${program.city}`} />
+          <Meta icon={<CalendarDays size={15} />} value={`~${formatDate(program.recruitEnd)}`} />
         </div>
       </div>
     </article>
   );
 }
 
-function ExternalProgramCard({ program }: { program: Program }) {
+function Meta({ icon, value }: { icon: React.ReactNode; value: string }) {
   return (
-    <article className="grid gap-4 rounded-md border border-slate-200 bg-white p-4 shadow-sm transition hover:border-slate-300 hover:shadow-md md:grid-cols-[180px_minmax(0,1fr)_auto]">
-      <div className="rounded-md border border-slate-200 bg-[var(--surface-muted)] p-4">
-        <p className="text-xs font-black text-slate-500">수집 공고</p>
-        <p className="mt-2 text-sm font-black text-slate-950">{program.sourceName}</p>
-        <p className="mt-3 text-xs font-bold text-slate-500">
-          공고일 {program.sourcePublishedAt ? formatDate(program.sourcePublishedAt) : "원문 확인"}
-        </p>
-      </div>
-
-      <div className="min-w-0">
-        <div className="flex flex-wrap items-center gap-2">
-          <StatusBadge program={program} />
-          <span className="rounded-md bg-blue-50 px-2.5 py-1 text-xs font-black text-blue-700 ring-1 ring-blue-100">
-            실제 공고 기반
-          </span>
-          <span className="rounded-md bg-slate-100 px-2.5 py-1 text-xs font-black text-slate-600">
-            {program.region}
-          </span>
-        </div>
-        <Link href={`/programs/${program.id}`}>
-          <h3 className="mt-3 line-clamp-2 text-lg font-black leading-7 text-slate-950 hover:text-[var(--primary)]">
-            {program.title}
-          </h3>
-        </Link>
-        <p className="mt-2 line-clamp-2 text-sm leading-6 text-slate-600">
-          {program.summary}
-        </p>
-        <div className="mt-4 flex flex-wrap gap-1.5">
-          {program.hashtags.slice(0, 5).map((tag) => (
-            <span
-              className="rounded-md bg-[var(--surface-muted)] px-2 py-1 text-xs font-bold text-slate-600"
-              key={tag}
-            >
-              #{tag}
-            </span>
-          ))}
-        </div>
-      </div>
-
-      <div className="flex items-end md:items-center">
-        <a
-          className="inline-flex h-10 items-center justify-center gap-2 rounded-md bg-slate-950 px-3 text-sm font-black text-white hover:bg-slate-800"
-          href={program.sourceUrl}
-          rel="noreferrer"
-          target="_blank"
-        >
-          원문
-          <ExternalLink size={16} />
-        </a>
-      </div>
-    </article>
-  );
-}
-
-function Meta({
-  icon,
-  value,
-  strong = false,
-}: {
-  icon: React.ReactNode;
-  value: string;
-  strong?: boolean;
-}) {
-  return (
-    <span
-      className={`flex min-w-0 items-center gap-1.5 ${
-        strong ? "font-bold text-slate-800" : ""
-      }`}
-    >
+    <span className="flex min-w-0 items-center gap-1.5">
       <span className="shrink-0 text-slate-400">{icon}</span>
       <span className="truncate">{value}</span>
     </span>
-  );
-}
-
-export function SourceNotice() {
-  return (
-    <p className="inline-flex items-center gap-2 rounded-md bg-blue-50 px-3 py-2 text-xs font-black text-blue-700 ring-1 ring-blue-100">
-      <ShieldCheck size={15} />
-      공개 프로그램은 운영자 게시 또는 NUVIO 검수 후 노출됩니다.
-    </p>
   );
 }
