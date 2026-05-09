@@ -30,10 +30,14 @@ export async function generateMetadata({
 
 export default async function VillageReviewsRoute({
   params,
+  searchParams,
 }: {
   params: Promise<{ villageSlug: string }>;
+  searchParams?: Promise<Record<string, string | string[] | undefined>>;
 }) {
   const { villageSlug } = await params;
+  const query = (await searchParams) ?? {};
+  const programFilter = Array.isArray(query.program) ? query.program[0] : query.program;
   if (isReservedVillageSlug(villageSlug)) notFound();
 
   const village = await getPublicVillageBySlug(villageSlug);
@@ -45,6 +49,7 @@ export default async function VillageReviewsRoute({
   return (
     <VillageReviewsIndexPage
       programs={programs}
+      reviewFilter={programFilter}
       reviews={reviews}
       village={village}
     />

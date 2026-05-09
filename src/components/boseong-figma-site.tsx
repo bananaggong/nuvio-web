@@ -51,6 +51,58 @@ const mediaCategoryLabels: Record<VillageMediaContent["category"], string> = {
   archive: "아카이브",
 };
 
+const boseongReviewFilterOptions = [
+  { key: "all", label: "전체", href: "/boseong/reviews" },
+  {
+    key: "talent-for-stay",
+    label: "숙재받",
+    href: "/boseong/reviews?program=talent-for-stay",
+    programIds: [1013],
+    terms: ["숙재받"],
+  },
+  {
+    key: "local-salon",
+    label: "로컬살롱",
+    href: "/boseong/reviews?program=local-salon",
+    programIds: [1014],
+    terms: ["로컬살롱"],
+  },
+  {
+    key: "tea-lab",
+    label: "차실험",
+    href: "/boseong/reviews?program=tea-lab",
+    programIds: [1015],
+    terms: ["차실험", "차 실험", "차실험실"],
+  },
+] as const;
+
+type BoseongReviewFilterKey = (typeof boseongReviewFilterOptions)[number]["key"];
+
+function normalizeBoseongReviewFilter(value?: string): BoseongReviewFilterKey {
+  return boseongReviewFilterOptions.some((option) => option.key === value)
+    ? (value as BoseongReviewFilterKey)
+    : "all";
+}
+
+function matchesBoseongReviewFilter(
+  review: Review,
+  filter: BoseongReviewFilterKey,
+): boolean {
+  if (filter === "all") return true;
+
+  const option = boseongReviewFilterOptions.find((item) => item.key === filter);
+  if (!option || !("programIds" in option)) return true;
+  if (
+    typeof review.programId === "number" &&
+    (option.programIds as readonly number[]).includes(review.programId)
+  ) {
+    return true;
+  }
+
+  const reviewText = [review.badge, review.title, review.author].filter(Boolean).join(" ");
+  return option.terms.some((term) => reviewText.includes(term));
+}
+
 export function BoseongFigmaHeader({
   activeHref,
   primaryProgram,
@@ -483,7 +535,7 @@ export function BoseongFigmaMediaIndexPage({
         {media.slice(0, 9).map((content) => (
           <BoseongMediaPreviewCard
             content={content}
-            figmaList
+            exact
             key={content.id}
           />
         ))}
@@ -494,13 +546,20 @@ export function BoseongFigmaMediaIndexPage({
 
 export function BoseongFigmaReviewsPage({
   programs,
+  reviewFilter,
   reviews,
   village,
 }: {
   programs: Program[];
+  reviewFilter?: string;
   reviews: Review[];
   village: Village;
 }) {
+  const activeFilter = normalizeBoseongReviewFilter(reviewFilter);
+  const visibleReviews = reviews.filter((review) =>
+    matchesBoseongReviewFilter(review, activeFilter),
+  );
+
   return (
     <BoseongFigmaListFrame
       activeHref="/boseong/reviews"
@@ -509,18 +568,25 @@ export function BoseongFigmaReviewsPage({
       title="전체차LAB 후기"
       village={village}
     >
-      <div className="mx-auto mb-[22px] flex max-w-[1328px] flex-wrap gap-4 text-sm font-bold text-[#535353]">
-        {["전체", "숙재받", "로컬살롱", "차실험"].map((label, index) => (
-          <span
-            className={index === 0 ? "border-b-2 border-[#55883f] pb-2 text-[#171717]" : "pb-2"}
-            key={label}
-          >
-            {label}
-          </span>
-        ))}
+      <div className="mx-auto mb-[22px] flex max-w-[1328px] flex-wrap gap-6 text-[#535353]">
+        {boseongReviewFilterOptions.map((option) => {
+          const isActive = option.key === activeFilter;
+
+          return (
+            <Link
+              className={`pb-2 !text-[26px] !font-semibold leading-none transition hover:text-[#171717] ${
+                isActive ? "border-b-2 border-[#55883f] text-[#171717]" : ""
+              }`}
+              href={option.href}
+              key={option.key}
+            >
+              {option.label}
+            </Link>
+          );
+        })}
       </div>
       <div className="mx-auto grid max-w-[1328px] grid-cols-2 gap-[6px] md:grid-cols-4">
-        {reviews.slice(0, 20).map((review, index) => (
+        {visibleReviews.slice(0, 20).map((review, index) => (
           <BoseongReviewTile exact index={index} key={review.id} review={review} />
         ))}
       </div>
@@ -781,39 +847,10 @@ function BoseongHomeSection({
 function BoseongMediaPreviewCard({
   content,
   exact = false,
-  figmaList = false,
 }: {
   content: VillageMediaContent;
   exact?: boolean;
-  figmaList?: boolean;
 }) {
-  if (figmaList) {
-    const isInstagram = content.provider === "instagram";
-
-    return (
-      <article className="group w-full border-b-2 border-[#b3df00] bg-white md:h-[666px] md:w-[445px]">
-        <Link
-          aria-label={content.title}
-          className="block h-[320px] bg-[#d9d9d9] md:h-[486px]"
-          href={`/boseong/media/${content.id}`}
-        />
-        <div className="relative min-h-[150px] pt-[18px] md:h-[178px]">
-          <p className="text-[12px] font-extrabold leading-[16px] text-[#55883f]">
-            {mediaCategoryLabels[content.category]}
-          </p>
-          <Link href={`/boseong/media/${content.id}`}>
-            <h3 className="mt-[7px] line-clamp-3 max-w-[330px] text-[18px] font-extrabold leading-[22px] hover:text-[#4f813f]">
-              {content.title}
-            </h3>
-          </Link>
-          <span className="absolute bottom-[17px] right-[10px] flex size-[22px] items-center justify-center rounded-full bg-[#d9d9d9] text-white">
-            {isInstagram ? <Camera size={13} /> : <Play size={12} fill="currentColor" />}
-          </span>
-        </div>
-      </article>
-    );
-  }
-
   return (
     <article
       className={`group bg-white ${
@@ -1123,13 +1160,13 @@ function AboutGrid({ content }: { content?: Record<string, unknown> }) {
   const rows = normalizeAboutRows(content?.rows, defaultRows);
 
   return (
-    <div className="mx-auto max-w-[1440px]">
+    <div className="mx-auto w-full md:w-[1440px]">
       {rows.map((row, index) => {
         const flip = index % 2 === 1;
 
         return (
           <section
-            className="relative grid min-h-[520px] bg-[#fdfdfd] md:h-[664px] md:min-h-0 md:grid-cols-[724px_716px]"
+            className="relative grid min-h-[520px] bg-[#fdfdfd] md:h-[664px] md:min-h-0 md:w-[1440px] md:grid-cols-[724px_716px]"
             key={row.title}
           >
             {flip ? <div className="bg-[#d9d9d9]" /> : null}
@@ -1148,7 +1185,7 @@ function AboutGrid({ content }: { content?: Record<string, unknown> }) {
                   className={`mt-8 whitespace-pre-line text-base font-medium leading-8 md:absolute md:left-0 md:mt-0 md:w-full md:text-[26px] md:leading-[1.38] ${
                     flip ? "text-[#000000]" : "text-[#414840]"
                   }`}
-                  style={{ top: row.bodyTop }}
+                  style={{ top: row.bodyTop - 120 }}
                 >
                   {row.body}
                 </p>

@@ -57,10 +57,12 @@ export function VillageProgramsIndexPage({
 
 export function VillageReviewsIndexPage({
   programs,
+  reviewFilter,
   reviews,
   village,
 }: {
   programs: Program[];
+  reviewFilter?: string;
   reviews: Review[];
   village: Village;
 }) {
@@ -68,6 +70,7 @@ export function VillageReviewsIndexPage({
     return (
       <BoseongFigmaReviewsPage
         programs={programs}
+        reviewFilter={reviewFilter}
         reviews={reviews}
         village={village}
       />
