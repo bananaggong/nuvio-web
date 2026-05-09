@@ -9,15 +9,17 @@ import { isVillageMicrositePath } from "@/lib/village-routing";
 export function AppShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const isVillageMicrosite = isVillageMicrositePath(pathname);
+  const isAuthPage = pathname === "/login" || pathname === "/signup";
+  const hideChrome = isVillageMicrosite || isAuthPage;
 
   return (
     <>
-      {isVillageMicrosite ? null : <SiteHeader />}
-      <main className={isVillageMicrosite ? "flex-1" : "flex-1 pb-20 md:pb-0"}>
+      {hideChrome ? null : <SiteHeader />}
+      <main className={hideChrome ? "flex-1" : "flex-1 pb-20 md:pb-0"}>
         {children}
       </main>
-      {isVillageMicrosite ? null : <Footer />}
-      {isVillageMicrosite ? null : <MobileTabBar />}
+      {hideChrome ? null : <Footer />}
+      {hideChrome ? null : <MobileTabBar />}
     </>
   );
 }

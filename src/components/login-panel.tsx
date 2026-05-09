@@ -1,25 +1,21 @@
 "use client";
 
-import { FormEvent, useEffect, useState } from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { useEffect, useState, type FormEvent } from "react";
 import {
-  AlertCircle,
-  BadgeCheck,
-  Loader2,
-  LogIn,
-  LogOut,
-  MessageCircle,
-  UserRound,
-} from "lucide-react";
+  AuthHeader,
+  GoogleIcon,
+  KakaoIcon,
+  MailIcon,
+  NaverIcon,
+  QuestionIcon,
+} from "@/components/auth-ui";
 import { socialProviders, type SocialProviderKey } from "@/lib/auth-providers";
-import { createSupabaseBrowserClient } from "@/lib/supabase/client";
 import type { AuthProfile } from "@/lib/auth-profile-db";
+import { createSupabaseBrowserClient } from "@/lib/supabase/client";
 
-type LocalProfile = {
-  name: string;
-  email: string;
-  interest: string;
-};
+type LoginMode = "choice" | "email";
 
 type SessionPayload = {
   data?: {
@@ -29,30 +25,49 @@ type SessionPayload = {
   error?: string;
 };
 
-const providerIcons: Record<SocialProviderKey, typeof UserRound> = {
-  google: UserRound,
-  kakao: MessageCircle,
-  naver: BadgeCheck,
-};
+const socialOrder: SocialProviderKey[] = ["kakao", "naver", "google"];
+
+function getSafeNextPath(value: string | null): string {
+  if (!value || !value.startsWith("/") || value.startsWith("//")) return "/me";
+  return value;
+}
+
+function getInitialAuthParams() {
+  if (typeof window === "undefined") {
+    return {
+      errorMessage: "",
+      mode: "choice" as LoginMode,
+      nextPath: "/me",
+    };
+  }
+
+  const params = new URLSearchParams(window.location.search);
+
+  return {
+    errorMessage: params.get("error")
+      ? "소셜 로그인 처리 중 문제가 발생했습니다."
+      : "",
+    mode: params.get("mode") === "email" ? ("email" as LoginMode) : "choice",
+    nextPath: getSafeNextPath(params.get("next")),
+  };
+}
 
 export function LoginPanel() {
   const router = useRouter();
-  const [localProfile, setLocalProfile] = useState<LocalProfile | null>(() => {
-    if (typeof window === "undefined") return null;
-    const rawProfile = window.localStorage.getItem("nuvio:profile");
-    return rawProfile ? (JSON.parse(rawProfile) as LocalProfile) : null;
-  });
+  const [mode, setMode] = useState<LoginMode>(() => getInitialAuthParams().mode);
+  const [nextPath] = useState(() => getInitialAuthParams().nextPath);
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
   const [authProfile, setAuthProfile] = useState<AuthProfile | null>(null);
   const [pendingProvider, setPendingProvider] = useState<SocialProviderKey | null>(
     null,
   );
-  const [isLoadingSession, setIsLoadingSession] = useState(true);
+  const [loading, setLoading] = useState(false);
+  const [logoutLoading, setLogoutLoading] = useState(false);
   const [message, setMessage] = useState("");
-  const [errorMessage, setErrorMessage] = useState(() => {
-    if (typeof window === "undefined") return "";
-    const params = new URLSearchParams(window.location.search);
-    return params.get("error") ? "소셜 로그인 처리 중 문제가 발생했습니다." : "";
-  });
+  const [errorMessage, setErrorMessage] = useState(
+    () => getInitialAuthParams().errorMessage,
+  );
 
   useEffect(() => {
     let isMounted = true;
@@ -69,28 +84,24 @@ export function LoginPanel() {
         if (isMounted) {
           setAuthProfile(payload.data?.profile ?? null);
         }
-      } catch (error) {
+      } catch {
         if (isMounted) {
-          setErrorMessage(
-            error instanceof Error ? error.message : "세션을 불러오지 못했습니다.",
-          );
-        }
-      } finally {
-        if (isMounted) {
-          setIsLoadingSession(false);
+          setAuthProfile(null);
         }
       }
     }
 
-    loadSession();
+    void loadSession();
 
     return () => {
       isMounted = false;
     };
   }, []);
 
-  async function signIn(providerKey: SocialProviderKey) {
-    const providerConfig = socialProviders.find((provider) => provider.key === providerKey);
+  async function handleSocialLogin(providerKey: SocialProviderKey) {
+    const providerConfig = socialProviders.find(
+      (provider) => provider.key === providerKey,
+    );
     if (!providerConfig) return;
 
     setPendingProvider(providerKey);
@@ -99,11 +110,12 @@ export function LoginPanel() {
 
     try {
       const supabase = createSupabaseBrowserClient();
-      const redirectTo = `${window.location.origin}/auth/callback?next=/me`;
+      const callback = new URL("/auth/callback", window.location.origin);
+      callback.searchParams.set("next", nextPath);
       const { error } = await supabase.auth.signInWithOAuth({
         provider: providerConfig.provider,
         options: {
-          redirectTo,
+          redirectTo: callback.toString(),
         },
       });
 
@@ -118,171 +130,317 @@ export function LoginPanel() {
     }
   }
 
-  async function signOut() {
-    setErrorMessage("");
-    setMessage("");
-    const response = await fetch("/api/auth/logout", { method: "POST" });
+  async function handleEmailLogin(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
 
-    if (!response.ok) {
-      setErrorMessage("로그아웃에 실패했습니다.");
+    if (!email.trim() || !password) {
+      setErrorMessage("이메일과 비밀번호를 입력해주세요.");
       return;
     }
 
-    setAuthProfile(null);
-    setMessage("로그아웃되었습니다.");
-    router.refresh();
+    setLoading(true);
+    setErrorMessage("");
+    setMessage("");
+
+    try {
+      const supabase = createSupabaseBrowserClient();
+      const { error } = await supabase.auth.signInWithPassword({
+        email: email.trim(),
+        password,
+      });
+
+      if (error) throw error;
+
+      router.push(nextPath);
+      router.refresh();
+    } catch (error) {
+      setErrorMessage(
+        error instanceof Error ? error.message : "로그인 중 오류가 생겼어요.",
+      );
+    } finally {
+      setLoading(false);
+    }
   }
 
-  function submitLocalProfile(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-    const form = new FormData(event.currentTarget);
-    const nextProfile: LocalProfile = {
-      name: String(form.get("name") ?? ""),
-      email: String(form.get("email") ?? ""),
-      interest: String(form.get("interest") ?? "여행지원금"),
-    };
-    window.localStorage.setItem("nuvio:profile", JSON.stringify(nextProfile));
-    setLocalProfile(nextProfile);
-    router.push("/me");
+  async function handleLogout() {
+    setLogoutLoading(true);
+    setErrorMessage("");
+    setMessage("");
+
+    try {
+      const response = await fetch("/api/auth/logout", { method: "POST" });
+      if (!response.ok) throw new Error("로그아웃에 실패했습니다.");
+      setAuthProfile(null);
+      setMessage("로그아웃되었습니다.");
+      router.refresh();
+    } catch (error) {
+      setErrorMessage(
+        error instanceof Error ? error.message : "로그아웃에 실패했습니다.",
+      );
+    } finally {
+      setLogoutLoading(false);
+    }
+  }
+
+  if (mode === "email") {
+    return (
+      <div className="min-h-screen bg-white">
+        <AuthHeader onBack={() => setMode("choice")} />
+        <div className="mx-auto flex h-[calc(100vh-3.5rem)] max-w-sm flex-1 flex-col px-6 py-8 lg:py-16">
+          <h2 className="text-center text-[22px] font-bold leading-snug text-[#111111]">
+            이메일로 로그인
+          </h2>
+
+          <div className="mt-8 flex flex-col gap-6">
+            <form className="space-y-4" onSubmit={handleEmailLogin}>
+              <div>
+                <label
+                  className="mb-1.5 inline-flex text-[13px] font-semibold text-[#333333]"
+                  htmlFor="login-email"
+                >
+                  이메일
+                </label>
+                <input
+                  autoComplete="email"
+                  className="h-12 w-full appearance-none rounded-xl border border-[#d5d5d5] bg-white px-3.5 py-2.5 text-[15px] text-[#111111] outline-none transition focus:border-[#378ADD] focus:ring-1 focus:ring-inset focus:ring-[#378ADD]"
+                  id="login-email"
+                  inputMode="email"
+                  onChange={(event) => setEmail(event.target.value)}
+                  type="email"
+                  value={email}
+                />
+              </div>
+              <div>
+                <label
+                  className="mb-1.5 inline-flex text-[13px] font-semibold text-[#333333]"
+                  htmlFor="login-password"
+                >
+                  비밀번호
+                </label>
+                <input
+                  autoComplete="current-password"
+                  className="h-12 w-full appearance-none rounded-xl border border-[#d5d5d5] bg-white px-3.5 py-2.5 text-[15px] text-[#111111] outline-none transition focus:border-[#378ADD] focus:ring-1 focus:ring-inset focus:ring-[#378ADD]"
+                  id="login-password"
+                  onChange={(event) => setPassword(event.target.value)}
+                  type="password"
+                  value={password}
+                />
+              </div>
+              <button
+                className="mt-2 inline-flex h-12 w-full items-center justify-center rounded-xl bg-[#378ADD] text-[16px] font-semibold text-white transition-colors hover:bg-[#2a6fb5] disabled:bg-[#d5d5d5] disabled:text-white/60"
+                disabled={loading}
+                type="submit"
+              >
+                {loading ? "로그인 중..." : "로그인"}
+              </button>
+            </form>
+
+            <div className="text-right">
+              <button
+                className="text-[13px] font-medium text-[#888] underline underline-offset-2 hover:text-[#378ADD]"
+                onClick={() => setMessage("이메일/비밀번호 찾기는 준비 중이에요.")}
+                type="button"
+              >
+                이메일/비밀번호 찾기
+              </button>
+            </div>
+
+            {errorMessage ? (
+              <p className="rounded-xl bg-red-50 px-4 py-3 text-[13px] font-semibold text-red-700">
+                {errorMessage}
+              </p>
+            ) : null}
+            {message ? (
+              <p className="rounded-xl bg-teal-50 px-4 py-3 text-[13px] font-semibold text-teal-800">
+                {message}
+              </p>
+            ) : null}
+          </div>
+
+          <div className="fixed bottom-7 left-0 right-0 text-center lg:static lg:mt-8">
+            <p className="text-[13px] font-medium text-[#888]">
+              아직 계정이 없나요?{" "}
+              <Link
+                className="font-semibold text-[#378ADD] hover:underline"
+                href="/signup"
+              >
+                회원가입
+              </Link>
+            </p>
+          </div>
+        </div>
+      </div>
+    );
   }
 
   return (
-    <div className="mx-auto max-w-md px-5 py-10 md:px-8">
-      <h1 className="text-3xl font-black text-slate-950">NUVIO 시작하기</h1>
-      <p className="mt-2 text-sm leading-6 text-slate-500">
-        Google, Kakao, Naver 계정으로 로그인하고 신청, 보관, 알림, 호스트 운영 데이터를
-        계정 단위로 이어갑니다.
-      </p>
+    <div className="min-h-screen bg-white">
+      <AuthHeader />
+      <div className="mx-auto flex w-full max-w-sm flex-col items-center px-6 py-14">
+        <h1 className="text-center text-[26px] font-bold leading-snug text-[#111111]">
+          누비오로 찾는
+          <br />
+          가벼운 로컬 여정
+        </h1>
 
-      <section className="mt-6 rounded-md border border-slate-200 bg-white p-5 shadow-sm">
-        <div className="flex items-center gap-2 text-sm font-black text-slate-950">
-          <UserRound className="text-[var(--primary)]" size={18} />
-          소셜 로그인
-        </div>
-
-        {isLoadingSession ? (
-          <div className="mt-4 flex items-center gap-2 rounded-md bg-[var(--surface-muted)] p-3 text-sm font-bold text-slate-500">
-            <Loader2 className="animate-spin" size={16} />
-            세션 확인 중
-          </div>
-        ) : authProfile ? (
-          <div className="mt-4 rounded-md bg-teal-50 p-4">
-            <p className="text-sm font-black text-teal-800">
-              {authProfile.displayName || authProfile.email}님으로 로그인되었습니다.
+        {authProfile ? (
+          <div className="mt-6 w-full rounded-xl border border-amber-200 bg-amber-50 px-4 py-3.5">
+            <p className="text-[13px] font-semibold text-amber-800">
+              {authProfile.displayName || authProfile.email}님으로 이미 로그인되어 있어요.
             </p>
-            <p className="mt-1 break-words text-xs font-bold text-teal-700">
-              {authProfile.email}
+            <p className="mt-0.5 text-[12px] text-amber-700">
+              내 누비오로 이동하거나, 다른 계정으로 로그인하려면 먼저 로그아웃하세요.
             </p>
-            <button
-              className="mt-3 inline-flex h-10 items-center justify-center gap-2 rounded-md border border-teal-200 bg-white px-3 text-sm font-black text-teal-700"
-              onClick={signOut}
-              type="button"
-            >
-              <LogOut size={16} />
-              로그아웃
-            </button>
-          </div>
-        ) : (
-          <div className="mt-4 grid gap-2">
-            {socialProviders.map((provider) => {
-              const Icon = providerIcons[provider.key];
-              const isPending = pendingProvider === provider.key;
-
-              return (
-                <button
-                  className="inline-flex h-11 items-center justify-center gap-2 rounded-md border border-slate-200 px-3 text-sm font-black text-slate-800 hover:border-[var(--primary)] hover:text-[var(--primary)] disabled:cursor-wait disabled:opacity-70"
-                  disabled={Boolean(pendingProvider)}
-                  key={provider.key}
-                  onClick={() => signIn(provider.key)}
-                  type="button"
-                >
-                  {isPending ? (
-                    <Loader2 className="animate-spin" size={17} />
-                  ) : (
-                    <Icon size={17} />
-                  )}
-                  {provider.label}로 계속
-                </button>
-              );
-            })}
-          </div>
-        )}
-
-        <p className="mt-3 text-xs leading-5 text-slate-500">
-          Naver는 Supabase Custom OAuth provider로 연결합니다. Supabase Auth Providers에서
-          `custom:naver`를 생성하고 Redirect URL을 허용해야 실제 로그인이 동작합니다.
-        </p>
-      </section>
-
-      {message ? (
-        <div className="mt-4 rounded-md bg-teal-50 p-3 text-sm font-bold text-teal-800">
-          {message}
-        </div>
-      ) : null}
-      {errorMessage ? (
-        <div className="mt-4 flex gap-2 rounded-md bg-red-50 p-3 text-sm font-bold text-red-700">
-          <AlertCircle className="mt-0.5 shrink-0" size={16} />
-          <span>{errorMessage}</span>
-        </div>
-      ) : null}
-
-      <form
-        className="mt-6 grid gap-4 rounded-md border border-slate-200 bg-white p-5 shadow-sm"
-        onSubmit={submitLocalProfile}
-      >
-        <div>
-          <p className="text-sm font-black text-slate-950">개발용 임시 프로필</p>
-          <p className="mt-1 text-xs leading-5 text-slate-500">
-            OAuth provider 설정 전에도 마이페이지 흐름을 확인할 수 있도록 남겨둔
-            브라우저 저장 방식입니다.
-          </p>
-        </div>
-        {localProfile ? (
-          <div className="rounded-md border border-teal-200 bg-teal-50 p-3 text-xs font-bold text-teal-800">
-            {localProfile.name} 프로필이 이 브라우저에 저장되어 있습니다.
+            <div className="mt-3 flex gap-2">
+              <button
+                className="flex-1 rounded-lg bg-[#378ADD] py-2 text-[12px] font-bold text-white transition hover:bg-[#2a6fb5]"
+                onClick={() => router.push("/me")}
+                type="button"
+              >
+                내 누비오
+              </button>
+              <button
+                className="flex-1 rounded-lg bg-amber-100 py-2 text-[12px] font-bold text-amber-900 transition hover:bg-amber-200 disabled:opacity-50"
+                disabled={logoutLoading}
+                onClick={() => void handleLogout()}
+                type="button"
+              >
+                {logoutLoading ? "로그아웃 중..." : "로그아웃"}
+              </button>
+            </div>
           </div>
         ) : null}
-        <label className="grid gap-2 text-sm font-black text-slate-700">
-          이름
-          <input
-            className="h-11 rounded-md border border-slate-200 px-3 font-semibold outline-none focus:ring-2 focus:ring-[var(--primary)]"
-            defaultValue={localProfile?.name}
-            name="name"
-            required
-          />
-        </label>
-        <label className="grid gap-2 text-sm font-black text-slate-700">
-          이메일
-          <input
-            className="h-11 rounded-md border border-slate-200 px-3 font-semibold outline-none focus:ring-2 focus:ring-[var(--primary)]"
-            defaultValue={localProfile?.email}
-            name="email"
-            required
-            type="email"
-          />
-        </label>
-        <label className="grid gap-2 text-sm font-black text-slate-700">
-          관심사
-          <select
-            className="h-11 rounded-md border border-slate-200 px-3 font-semibold outline-none focus:ring-2 focus:ring-[var(--primary)]"
-            defaultValue={localProfile?.interest}
-            name="interest"
+
+        <div className="mt-10 w-full space-y-3">
+          {socialOrder.map((providerKey) => (
+            <SocialButton
+              disabled={Boolean(pendingProvider)}
+              key={providerKey}
+              loading={pendingProvider === providerKey}
+              onClick={() => void handleSocialLogin(providerKey)}
+              providerKey={providerKey}
+            />
+          ))}
+
+          <button
+            className="relative h-12 w-full cursor-pointer rounded-xl bg-[#3DBFFB] shadow-[0_2px_8px_rgba(0,0,0,0.10)] transition hover:bg-[#1AAEE8] disabled:opacity-60"
+            disabled={Boolean(pendingProvider)}
+            onClick={() => setMode("email")}
+            type="button"
           >
-            <option>여행지원금</option>
-            <option>반값여행</option>
-            <option>워케이션</option>
-            <option>한달살기</option>
-            <option>귀농귀촌</option>
-          </select>
-        </label>
-        <button
-          className="inline-flex h-12 items-center justify-center gap-2 rounded-md bg-slate-950 text-sm font-black text-white hover:bg-slate-800"
-          type="submit"
-        >
-          <LogIn size={18} />
-          임시 저장하고 계속
-        </button>
-      </form>
+            <span className="flex items-center justify-center gap-3 text-[15px] font-semibold text-white">
+              <span className="flex w-5 shrink-0 items-center justify-center">
+                <MailIcon className="h-5 w-5" />
+              </span>
+              <span>이메일로 계속하기</span>
+            </span>
+          </button>
+        </div>
+
+        {errorMessage ? (
+          <p className="mt-5 w-full rounded-xl bg-red-50 px-4 py-3 text-[13px] font-semibold text-red-700">
+            {errorMessage}
+          </p>
+        ) : null}
+        {message ? (
+          <p className="mt-5 w-full rounded-xl bg-teal-50 px-4 py-3 text-[13px] font-semibold text-teal-800">
+            {message}
+          </p>
+        ) : null}
+
+        <div className="relative mt-8 w-full">
+          <div aria-hidden="true" className="absolute inset-0 flex items-center">
+            <div className="w-full border-t border-neutral-100" />
+          </div>
+          <div className="relative flex justify-center text-[13px]">
+            <span className="bg-white px-4 text-[#aaa]">또는</span>
+          </div>
+        </div>
+
+        <div className="mt-5 text-center">
+          <Link
+            className="text-[14px] font-semibold text-[#378ADD] hover:underline"
+            href="/signup"
+          >
+            이메일로 회원가입
+          </Link>
+        </div>
+
+        <div className="fixed bottom-6 left-0 right-0 w-full text-center lg:static lg:mt-8">
+          <button
+            className="inline-flex cursor-pointer items-center gap-1 text-[13px] font-medium text-[#aaa] underline underline-offset-2 hover:text-[#378ADD]"
+            onClick={() => setMessage("가입 계정 찾기는 준비 중이에요.")}
+            type="button"
+          >
+            어떤 계정으로 가입했는지 모르겠어요
+            <QuestionIcon />
+          </button>
+        </div>
+      </div>
     </div>
+  );
+}
+
+function SocialButton({
+  disabled,
+  loading,
+  onClick,
+  providerKey,
+}: {
+  disabled: boolean;
+  loading: boolean;
+  onClick: () => void;
+  providerKey: SocialProviderKey;
+}) {
+  if (providerKey === "kakao") {
+    return (
+      <button
+        className="relative h-12 w-full cursor-pointer rounded-xl bg-[#FEE500] shadow-[0_2px_8px_rgba(0,0,0,0.10)] transition hover:brightness-95 disabled:opacity-60"
+        disabled={disabled}
+        onClick={onClick}
+        type="button"
+      >
+        <span className="flex items-center justify-center gap-3 text-[15px] font-semibold text-[#191919]">
+          <span className="flex w-5 shrink-0 items-center justify-center">
+            <KakaoIcon className="h-5 w-5" />
+          </span>
+          <span>{loading ? "연결 중..." : "카카오로 계속하기"}</span>
+        </span>
+      </button>
+    );
+  }
+
+  if (providerKey === "naver") {
+    return (
+      <button
+        className="relative h-12 w-full cursor-pointer rounded-xl bg-[#03C75A] text-white shadow-[0_2px_8px_rgba(0,0,0,0.10)] transition hover:brightness-95 disabled:opacity-60"
+        disabled={disabled}
+        onClick={onClick}
+        type="button"
+      >
+        <span className="flex items-center justify-center gap-3 text-[15px] font-semibold">
+          <span className="flex w-5 shrink-0 items-center justify-center">
+            <NaverIcon className="h-5 w-5" />
+          </span>
+          <span>{loading ? "연결 중..." : "네이버로 계속하기"}</span>
+        </span>
+      </button>
+    );
+  }
+
+  return (
+    <button
+      className="relative h-12 w-full cursor-pointer rounded-xl bg-white shadow-[0_2px_8px_rgba(0,0,0,0.10)] transition hover:bg-neutral-50 disabled:opacity-60"
+      disabled={disabled}
+      onClick={onClick}
+      type="button"
+    >
+      <span className="flex items-center justify-center gap-3 text-[15px] font-semibold text-[#333333]">
+        <span className="flex w-5 shrink-0 translate-x-[2px] items-center justify-center">
+          <GoogleIcon className="h-5 w-5" />
+        </span>
+        <span>{loading ? "연결 중..." : "Google로 계속하기"}</span>
+      </span>
+    </button>
   );
 }

@@ -25,6 +25,19 @@ export type ProgramApplicationInput = {
   memo?: string;
 };
 
+export type HostApplicationStatusEvent = {
+  id: string;
+  fromStatus: HostApplicationStatus | null;
+  toStatus: HostApplicationStatus;
+  note: string | null;
+  createdAt: string;
+};
+
+export type HostApplicationDetail = HostApplication & {
+  answers: Record<string, unknown>;
+  statusEvents: HostApplicationStatusEvent[];
+};
+
 export async function createProgramApplication(
   input: ProgramApplicationInput,
 ): Promise<HostApplication> {
@@ -129,6 +142,70 @@ export async function listHostApplications(): Promise<HostApplication[]> {
     reviewSubmitted: row.reviewSubmitted,
     memo: extractMemo(row.answers),
   }));
+}
+
+export async function getHostApplicationDetail(
+  applicationId: string,
+): Promise<HostApplicationDetail | null> {
+  const [row] = await getDb()
+    .select({
+      id: programApplications.id,
+      programTitle: programsTable.title,
+      applicantName: programApplications.applicantName,
+      email: programApplications.email,
+      phone: programApplications.phone,
+      status: programApplications.status,
+      submittedAt: programApplications.submittedAt,
+      paymentAmount: programApplications.paymentAmount,
+      receiptCount: programApplications.receiptCount,
+      signatureCompleted: programApplications.signatureCompleted,
+      reviewSubmitted: programApplications.reviewSubmitted,
+      answers: programApplications.answers,
+    })
+    .from(programApplications)
+    .leftJoin(programsTable, eq(programApplications.programId, programsTable.id))
+    .where(eq(programApplications.id, applicationId))
+    .limit(1);
+
+  if (!row) {
+    return null;
+  }
+
+  const statusEvents = await getDb()
+    .select({
+      id: applicationStatusEvents.id,
+      fromStatus: applicationStatusEvents.fromStatus,
+      toStatus: applicationStatusEvents.toStatus,
+      note: applicationStatusEvents.note,
+      createdAt: applicationStatusEvents.createdAt,
+    })
+    .from(applicationStatusEvents)
+    .where(eq(applicationStatusEvents.applicationId, applicationId))
+    .orderBy(desc(applicationStatusEvents.createdAt))
+    .limit(50);
+
+  return {
+    id: row.id,
+    programTitle: row.programTitle ?? "NUVIO 프로그램",
+    applicantName: row.applicantName,
+    email: row.email,
+    phone: row.phone ?? "",
+    status: row.status,
+    submittedAt: row.submittedAt.toISOString(),
+    paymentAmount: row.paymentAmount,
+    receiptCount: row.receiptCount,
+    signatureCompleted: row.signatureCompleted,
+    reviewSubmitted: row.reviewSubmitted,
+    memo: extractMemo(row.answers),
+    answers: row.answers,
+    statusEvents: statusEvents.map((event) => ({
+      id: event.id,
+      fromStatus: event.fromStatus,
+      toStatus: event.toStatus,
+      note: event.note,
+      createdAt: event.createdAt.toISOString(),
+    })),
+  };
 }
 
 export async function updateHostApplicationStatus(

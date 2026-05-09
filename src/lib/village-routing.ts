@@ -18,6 +18,7 @@ const reservedTopLevelSegments = new Set([
   "programs",
   "reviews",
   "sitemap.xml",
+  "signup",
   "terms",
   "villages",
 ]);

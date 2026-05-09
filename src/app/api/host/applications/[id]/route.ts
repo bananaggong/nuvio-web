@@ -1,5 +1,8 @@
 import { NextResponse } from "next/server";
-import { updateHostApplicationStatus } from "@/lib/host-application-db";
+import {
+  getHostApplicationDetail,
+  updateHostApplicationStatus,
+} from "@/lib/host-application-db";
 import { applicationStatusFlow } from "@/lib/host-operations";
 import type { HostApplicationStatus } from "@/lib/host-operations";
 
@@ -9,6 +12,40 @@ const applicationStatuses: HostApplicationStatus[] = [
   ...applicationStatusFlow,
   "rejected",
 ];
+
+export async function GET(
+  _request: Request,
+  { params }: { params: Promise<{ id: string }> },
+) {
+  try {
+    const { id } = await params;
+
+    if (!isUuid(id)) {
+      return NextResponse.json({ error: "Invalid application id." }, { status: 400 });
+    }
+
+    const application = await getHostApplicationDetail(id);
+
+    if (!application) {
+      return NextResponse.json(
+        { error: "Application was not found." },
+        { status: 404 },
+      );
+    }
+
+    return NextResponse.json({ data: application });
+  } catch (error) {
+    return NextResponse.json(
+      {
+        error:
+          error instanceof Error
+            ? error.message
+            : "Failed to load host application.",
+      },
+      { status: 500 },
+    );
+  }
+}
 
 export async function PATCH(
   request: Request,

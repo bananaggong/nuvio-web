@@ -12,8 +12,7 @@ import {
   BoseongOriginalCarousel,
   type BoseongOriginalSlide,
 } from "@/components/boseong-original-carousel";
-import { StatusBadge } from "@/components/status-badge";
-import { formatDate, formatRange, getDday } from "@/lib/format";
+import { formatDate } from "@/lib/format";
 import {
   getSectionContent,
   type PublishedVillagePageSection,
@@ -78,6 +77,42 @@ const boseongReviewFilterOptions = [
 
 type BoseongReviewFilterKey = (typeof boseongReviewFilterOptions)[number]["key"];
 
+const originalProgramDisplay: Record<
+  string,
+  {
+    activityRange: string;
+    location: string;
+    status: "모집" | "마감";
+    summary: string;
+    title: string;
+  }
+> = {
+  "talent-for-stay": {
+    activityRange: "2025년 8월 7일 - 2025년 11월 21일",
+    location: "전남 보성군",
+    status: "모집",
+    summary:
+      "준비물은 당신의 재능뿐입니다.\n재능을 나누고 사람을 만나고 보성을 담아가세요.",
+    title: "숙박비는\n재능으로 받습니다.",
+  },
+  "local-salon": {
+    activityRange: "2025년 8월 7일 - 2025년 11월 21일",
+    location: "전남 보성군",
+    status: "마감",
+    summary:
+      "차를 좋아한다는 것만으로 이렇게 친해질 수 있어요.\n낯선 사람과 차 한 잔을 나누다 보면 어느새\n보성의 밤이 깊어집니다.",
+    title: "로컬살롱",
+  },
+  "tea-lab": {
+    activityRange: "2025년 8월 7일 - 2025년 11월 21일",
+    location: "전남 보성군",
+    status: "모집",
+    summary:
+      "내가 좋아하는 향, 내가 좋아하는 맛,\n내가 고른 찻잎으로 나만의 차 한 잔을 완성합니다. 차 한\n잔에 나를 담아보세요.",
+    title: "나를 담는 차실험",
+  },
+};
+
 function normalizeBoseongReviewFilter(value?: string): BoseongReviewFilterKey {
   return boseongReviewFilterOptions.some((option) => option.key === value)
     ? (value as BoseongReviewFilterKey)
@@ -120,16 +155,16 @@ export function BoseongFigmaHeader({
 
   return (
     <header className="font-boseong relative z-40 border-b border-[#9d997e] bg-white text-[#171717]">
-      <div className="flex h-11 items-center justify-center bg-[#4c8244] px-4 text-center text-sm font-extrabold text-white md:h-[63px] md:text-[34px] md:font-medium md:leading-[1.10696]">
+      <div className="flex h-8 items-center justify-center bg-[#4c8244] px-4 text-center text-xs font-extrabold text-white md:h-9 md:text-xl md:font-medium md:leading-[1.10696]">
         전남 보성군 청년마을 그린티모시레
       </div>
       <div
-        className={`mx-auto flex h-24 max-w-[1440px] items-center justify-between gap-6 px-6 md:relative md:block md:px-0 ${
-          variant === "home" ? "md:h-[210px]" : "md:h-[174px]"
+        className={`mx-auto flex h-16 max-w-[1440px] items-center justify-between gap-6 px-6 md:relative md:block md:px-0 ${
+          variant === "home" ? "md:h-[84px]" : "md:h-[76px]"
         }`}
       >
         <Link
-          className="relative block h-[62px] w-[74px] shrink-0 md:absolute md:left-[66px] md:top-[35px] md:h-[104px] md:w-[122px]"
+          className="relative block h-[42px] w-[50px] shrink-0 md:absolute md:left-[66px] md:top-[13px] md:h-[56px] md:w-[67px]"
           href="/boseong"
         >
           <Image
@@ -137,12 +172,12 @@ export function BoseongFigmaHeader({
             className="object-contain"
             fill
             priority
-            sizes="122px"
+            sizes="67px"
             src={boseongAssets.logo}
           />
         </Link>
 
-        <nav className="hidden items-end justify-end gap-[38px] text-[26px] font-semibold leading-[1.10696] tracking-normal text-[#393939] lg:absolute lg:left-[386px] lg:right-[26px] lg:top-[78px] lg:flex">
+        <nav className="hidden items-end justify-end gap-[30px] text-xl font-semibold leading-[1.10696] tracking-normal text-[#393939] lg:absolute lg:left-[270px] lg:right-[26px] lg:top-[28px] lg:flex">
           {boseongNav.map((item) => (
             <Link
               className={`text-center hover:text-[#4c8244] ${
@@ -367,7 +402,12 @@ export function BoseongFigmaHomePage({
         >
           <div className="grid gap-5 md:ml-[30px] md:grid-cols-[445px_445px_445px] md:gap-[23px]">
             {featuredMedia.map((item) => (
-              <BoseongMediaPreviewCard content={item} exact key={item.id} />
+              <BoseongMediaPreviewCard
+                content={item}
+                exact
+                key={item.id}
+                thumbnailMode="aspectVideo"
+              />
             ))}
           </div>
         </BoseongHomeSection>
@@ -500,12 +540,13 @@ export function BoseongFigmaProgramsPage({
   return (
     <BoseongFigmaListFrame
       activeHref="/boseong/programs"
+      hideTitle
       primaryProgram={programs[0]}
       subtitle="오직 전체차LAB에서만 피어나는 경험을 만나보세요."
       title="전체차LAB 오리지널"
       village={village}
     >
-      <div className="mx-auto max-w-[1110px] divide-y divide-[#b3df00] border-y border-[#b3df00]">
+      <div className="mx-auto max-w-[948px] divide-y-[4px] divide-[#b3df00] border-b-[4px] border-[#b3df00]">
         {programs.map((program) => (
           <OriginalProgramRow key={`${program.id}-${program.slug}`} program={program} village={village} />
         ))}
@@ -526,17 +567,51 @@ export function BoseongFigmaMediaIndexPage({
   return (
     <BoseongFigmaListFrame
       activeHref="/boseong/media"
+      compact
       primaryProgram={programs[0]}
       subtitle="보성을 경험하는 새로운 방식, 전체차LAB의 이야기를 만나보세요."
       title="전체차LAB 이야기"
       village={village}
     >
-      <div className="mx-auto grid max-w-[1380px] gap-y-6 md:grid-cols-[repeat(3,445px)] md:gap-x-6">
+      <div className="mx-auto grid max-w-[1380px] gap-y-12 md:grid-cols-[repeat(3,445px)] md:gap-x-6">
         {media.slice(0, 9).map((content) => (
           <BoseongMediaPreviewCard
             content={content}
             exact
             key={content.id}
+            thumbnailMode="aspectVideo"
+          />
+        ))}
+      </div>
+    </BoseongFigmaListFrame>
+  );
+}
+
+export function BoseongFigmaMediaAspectIndexPage({
+  media,
+  programs,
+  village,
+}: {
+  media: VillageMediaContent[];
+  programs: Program[];
+  village: Village;
+}) {
+  return (
+    <BoseongFigmaListFrame
+      activeHref="/boseong/media"
+      compact
+      primaryProgram={programs[0]}
+      subtitle="16:9 썸네일 비율을 우선한 미디어 카드 실험입니다."
+      title="전체차LAB 이야기"
+      village={village}
+    >
+      <div className="mx-auto grid max-w-[1380px] gap-y-12 md:grid-cols-[repeat(3,445px)] md:gap-x-6">
+        {media.slice(0, 9).map((content) => (
+          <BoseongMediaPreviewCard
+            content={content}
+            exact
+            key={content.id}
+            thumbnailMode="aspectVideo"
           />
         ))}
       </div>
@@ -700,6 +775,8 @@ export function BoseongFigmaMediaDetailPage({
 function BoseongFigmaListFrame({
   activeHref,
   children,
+  compact = true,
+  hideTitle = false,
   primaryProgram,
   subtitle,
   title,
@@ -707,6 +784,8 @@ function BoseongFigmaListFrame({
 }: {
   activeHref?: string;
   children: React.ReactNode;
+  compact?: boolean;
+  hideTitle?: boolean;
   primaryProgram?: Program;
   subtitle: string;
   title: string;
@@ -720,15 +799,33 @@ function BoseongFigmaListFrame({
         village={village}
       />
       <main>
-        <section className="mx-auto max-w-[1440px] px-6 pb-14 pt-20 text-center md:px-20 md:pb-20 md:pt-28">
-          <h1 className="text-3xl font-extrabold tracking-[-0.03em] md:text-[36px]">
-            {title}
-          </h1>
-          <p className="mt-6 text-base font-medium text-[#4f4f4f] md:text-xl">
+        <section
+          className={`mx-auto max-w-[1440px] px-6 text-center md:px-20 ${
+            hideTitle
+              ? "pb-10 pt-8 md:pb-10 md:pt-9"
+              : compact
+                ? "pb-8 pt-12 md:pb-8 md:pt-14"
+                : "pb-14 pt-20 md:pb-20 md:pt-28"
+          }`}
+        >
+          {hideTitle ? null : (
+            <h1 className="text-3xl font-extrabold tracking-[-0.03em] md:text-[36px]">
+              {title}
+            </h1>
+          )}
+          <p
+            className={`text-base font-medium text-[#4f4f4f] ${
+              hideTitle ? "md:text-[30px] md:leading-[1.2]" : "mt-6 md:text-xl"
+            }`}
+          >
             {subtitle}
           </p>
         </section>
-        <section className="px-6 pb-28 md:px-[30px] md:pt-[52px]">
+        <section
+          className={`px-6 pb-28 md:px-[30px] ${
+            compact ? "md:pt-4" : "md:pt-[52px]"
+          }`}
+        >
           {children}
         </section>
       </main>
@@ -847,25 +944,50 @@ function BoseongHomeSection({
 function BoseongMediaPreviewCard({
   content,
   exact = false,
+  thumbnailMode = "fixed",
 }: {
   content: VillageMediaContent;
   exact?: boolean;
+  thumbnailMode?: "fixed" | "aspectVideo";
 }) {
+  const shouldPreserveThumbnailRatio = content.provider === "youtube";
+  const useAspectVideoThumb = thumbnailMode === "aspectVideo";
+
   return (
     <article
       className={`group bg-white ${
-        exact ? "md:h-[671px] md:w-[445px]" : ""
+        exact ? `${useAspectVideoThumb ? "md:w-[445px]" : "md:h-[671px] md:w-[445px]"}` : ""
       }`}
     >
       <Link
-        className={`relative block overflow-hidden bg-[#d9d9d9] ${
-          exact ? "h-[320px] border-b-2 border-[#b1d014] md:h-[487px]" : "aspect-[1.16]"
+        className={`relative block overflow-hidden ${
+          shouldPreserveThumbnailRatio && !useAspectVideoThumb ? "bg-[#050505]" : "bg-[#d9d9d9]"
+        } ${
+          useAspectVideoThumb
+            ? "aspect-video border-b-2 border-[#b1d014]"
+            : exact
+              ? "h-[320px] border-b-2 border-[#b1d014] md:h-[487px]"
+              : "aspect-[1.16]"
         }`}
         href={`/boseong/media/${content.id}`}
       >
+        {shouldPreserveThumbnailRatio && !useAspectVideoThumb ? (
+          <Image
+            alt=""
+            aria-hidden="true"
+            className="z-0 scale-110 object-cover opacity-45 blur-md"
+            fill
+            sizes="(max-width: 768px) 100vw, 33vw"
+            src={content.thumbnail}
+          />
+        ) : null}
         <Image
           alt={content.title}
-          className="object-cover transition duration-500 group-hover:scale-105"
+          className={
+            shouldPreserveThumbnailRatio && !useAspectVideoThumb
+              ? "z-10 object-contain"
+              : "object-cover transition duration-500 group-hover:scale-105"
+          }
           fill
           sizes="(max-width: 768px) 100vw, 33vw"
           src={content.thumbnail}
@@ -966,38 +1088,52 @@ function OriginalProgramRow({
   program: Program;
   village: Village;
 }) {
+  const display = originalProgramDisplay[program.slug] ?? {
+    activityRange: `${formatDate(program.activityStart)} - ${formatDate(program.activityEnd)}`,
+    location: `${program.region} ${program.city}`,
+    status: program.status === "closed" || program.status === "earlyClosed" ? "마감" : "모집",
+    summary: program.summary,
+    title: program.title,
+  };
+  const isOpen = display.status === "모집";
+
   return (
-    <article className="grid gap-6 py-7 md:h-[276px] md:grid-cols-[300px_minmax(0,1fr)] md:gap-[44px] md:py-0">
-      <div className="md:pt-[46px]">
-        <StatusBadge program={program} />
-        <h2 className="mt-4 max-w-[250px] text-[24px] font-extrabold leading-[1.18] md:text-[22px] md:leading-[28px]">
-          {program.title}
+    <article className="grid gap-6 py-8 md:h-[238px] md:grid-cols-[213px_213px_minmax(0,1fr)] md:items-center md:gap-x-5 md:px-5 md:py-0">
+      <div>
+        <span
+          className={`inline-flex h-[22px] items-center justify-center rounded-[4px] border px-[9px] text-[11px] font-extrabold leading-none ${
+            isOpen
+              ? "border-[#4f813f] bg-[#4f813f] text-white"
+              : "border-[#cfd8bd] bg-[#eef3e4] text-[#5d7140]"
+          }`}
+        >
+          {display.status}
+        </span>
+        <h2 className="mt-[18px] max-w-[210px] whitespace-pre-line text-[25px] font-extrabold leading-[1.16] tracking-normal text-[#171717] md:text-[28px] md:leading-[1.16]">
+          {display.title}
         </h2>
         <Link
-          className="mt-5 inline-flex h-[31px] items-center border border-[#4f813f] px-[13px] text-[14px] font-extrabold leading-none text-[#2f6b2e] hover:bg-[#4f813f] hover:text-white"
+          className="mt-[17px] inline-flex h-[24px] items-center justify-center rounded-[3px] border border-[#4f813f] px-[13px] text-[11px] font-extrabold leading-none text-[#2f6b2e] hover:bg-[#4f813f] hover:text-white md:h-[25px]"
           href={villageProgramPath(village.slug, program.slug)}
         >
-          자세히
+          신청하기
         </Link>
       </div>
-      <div className="grid content-start gap-[13px] text-[14px] font-bold leading-[18px] text-[#3e3e3e] md:pt-[46px]">
-        <p className="max-w-[620px] text-[17px] font-extrabold leading-[22px] text-[#171717]">
-          {program.summary}
+      <div className="h-[213px] w-full bg-[#d9d9d9] md:w-[213px]" aria-hidden="true" />
+      <div className="grid content-center gap-[29px] text-[#5d7140] md:min-h-[213px]">
+        <p className="max-w-[460px] whitespace-pre-line text-[19px] font-extrabold leading-[1.48] text-[#222222] md:text-[21px] md:leading-[1.42]">
+          {display.summary}
         </p>
-        <p className="mt-[4px] flex items-center gap-2">
-          <MapPin className="text-[#4f813f]" size={14} />
-          {program.region} {program.city}
-        </p>
-        <p className="flex items-center gap-2">
-          <CalendarDays className="text-[#4f813f]" size={14} />
-          {formatRange(program.activityStart, program.activityEnd)}
-        </p>
-        <p>
-          모집 {formatDate(program.recruitStart)} - {formatDate(program.recruitEnd)}
-          <span className="ml-3 font-extrabold text-[#4f813f]">
-            {getDday(program.recruitEnd, program.status)}
-          </span>
-        </p>
+        <div className="space-y-[8px] text-[20px] font-extrabold leading-[1.25] text-[#5d7140] md:text-[22px]">
+          <p className="flex items-center gap-[14px]">
+            <MapPin className="shrink-0 fill-[#5d7140] text-[#5d7140]" size={24} strokeWidth={3} />
+            {display.location}
+          </p>
+          <p className="flex items-center gap-[14px]">
+            <CalendarDays className="shrink-0 text-[#5d7140]" size={24} strokeWidth={3} />
+            {display.activityRange}
+          </p>
+        </div>
       </div>
     </article>
   );
