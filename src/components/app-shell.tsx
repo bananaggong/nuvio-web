@@ -23,7 +23,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
 
   return (
     <>
-      {hideChrome ? null : <SiteHeader />}
+      {isAuthPage ? null : <SiteHeader />}
       <main className={hideChrome ? "flex-1" : "flex-1 pb-20 md:pb-0"}>
         {children}
       </main>
