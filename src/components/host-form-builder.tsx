@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import {
   AlignLeft,
   ArrowDown,
@@ -96,6 +97,7 @@ export function HostFormBuilder({
   programId?: string;
   projectId?: string;
 }) {
+  const router = useRouter();
   const [templates, setTemplates] = useState<ApplicationFormTemplate[]>(() =>
     readApplicationFormTemplates().map(normalizeApplicationFormTemplateShape),
   );
@@ -212,6 +214,9 @@ export function HostFormBuilder({
     setActiveBlockId(null);
     setSettingsBlockId(null);
     setInsertAfterIndex(-1);
+    if (!projectId && !programId) {
+      router.push(`/host/forms/${encodeURIComponent(nextTemplate.id)}`);
+    }
   }
 
   function duplicateTemplate(template = selectedTemplate) {
@@ -223,6 +228,9 @@ export function HostFormBuilder({
     saveTemplates([copiedTemplate, ...templates]);
     setSelectedId(copiedTemplate.id);
     setSettingsBlockId(null);
+    if (!projectId && !programId) {
+      router.push(`/host/forms/${encodeURIComponent(copiedTemplate.id)}`);
+    }
   }
 
   async function syncSelectedTemplate() {
@@ -373,14 +381,6 @@ export function HostFormBuilder({
           >
             <Copy size={16} />
             복제
-          </button>
-          <button
-            className="inline-flex h-10 items-center justify-center gap-2 rounded-md bg-slate-950 px-3 text-sm font-black text-white"
-            onClick={addTemplate}
-            type="button"
-          >
-            <Plus size={16} />
-            새 신청폼
           </button>
           <button
             className="inline-flex h-10 items-center justify-center gap-2 rounded-md bg-[var(--primary)] px-3 text-sm font-black text-white disabled:cursor-wait disabled:opacity-70"
