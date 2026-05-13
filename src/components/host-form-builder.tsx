@@ -23,11 +23,14 @@ import {
   Plus,
   Save,
   Search,
+  SlidersHorizontal,
   Trash2,
   Type,
+  X,
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
+import type { ReactNode } from "react";
 import {
   blocksToFields,
   cloneApplicationFormTemplate,
@@ -95,6 +98,7 @@ export function HostFormBuilder({
   );
   const [selectedId, setSelectedId] = useState(templates[0]?.id);
   const [activeBlockId, setActiveBlockId] = useState<string | null>(null);
+  const [settingsBlockId, setSettingsBlockId] = useState<string | null>(null);
   const [insertAfterIndex, setInsertAfterIndex] = useState<number | null>(null);
   const [showPreview, setShowPreview] = useState(false);
   const [saved, setSaved] = useState(false);
@@ -112,6 +116,12 @@ export function HostFormBuilder({
       selectedTemplate?.blocks[0] ??
       null,
     [activeBlockId, selectedTemplate],
+  );
+  const settingsBlock = useMemo(
+    () =>
+      selectedTemplate?.blocks.find((block) => block.id === settingsBlockId) ??
+      null,
+    [selectedTemplate, settingsBlockId],
   );
   const projectBasePath = projectId ? hostProjectPath(projectId) : undefined;
   const programBasePath =
@@ -197,6 +207,7 @@ export function HostFormBuilder({
     saveTemplates([nextTemplate, ...templates]);
     setSelectedId(nextTemplate.id);
     setActiveBlockId(null);
+    setSettingsBlockId(null);
     setInsertAfterIndex(-1);
   }
 
@@ -208,6 +219,7 @@ export function HostFormBuilder({
     });
     saveTemplates([copiedTemplate, ...templates]);
     setSelectedId(copiedTemplate.id);
+    setSettingsBlockId(null);
   }
 
   function importGlobalTemplate(template: ApplicationFormTemplate) {
@@ -217,6 +229,7 @@ export function HostFormBuilder({
     });
     saveTemplates([copiedTemplate, ...templates]);
     setSelectedId(copiedTemplate.id);
+    setSettingsBlockId(null);
   }
 
   async function syncSelectedTemplate() {
@@ -284,6 +297,9 @@ export function HostFormBuilder({
     setActiveBlockId(
       nextBlocks[Math.max(0, blockIndex - 1)]?.id ?? nextBlocks[0]?.id ?? null,
     );
+    if (settingsBlockId === blockId) {
+      setSettingsBlockId(null);
+    }
   }
 
   function duplicateBlock(blockId: string) {
@@ -347,11 +363,11 @@ export function HostFormBuilder({
         <div className="flex flex-col gap-2 sm:flex-row">
           <button
             className="inline-flex h-10 items-center justify-center gap-2 rounded-md border border-slate-200 bg-white px-3 text-sm font-black text-slate-700"
-            onClick={() => setShowPreview((current) => !current)}
+            onClick={() => setShowPreview(true)}
             type="button"
           >
             <Eye size={16} />
-            {showPreview ? "편집" : "미리보기"}
+            미리보기
           </button>
           <button
             className="inline-flex h-10 items-center justify-center gap-2 rounded-md border border-slate-200 bg-white px-3 text-sm font-black text-slate-700"
@@ -385,7 +401,7 @@ export function HostFormBuilder({
         </div>
       </div>
 
-      <div className="grid min-w-0 gap-6 xl:grid-cols-[260px_minmax(0,820px)_320px]">
+      <div className="grid min-w-0 gap-6 xl:grid-cols-[260px_minmax(0,920px)] xl:justify-center">
         <aside className="min-w-0 space-y-3 xl:sticky xl:top-24 xl:self-start">
           <section className="rounded-md border border-slate-200 bg-white p-3">
             <div className="flex items-center justify-between gap-2 px-1">
@@ -413,6 +429,7 @@ export function HostFormBuilder({
                   onClick={() => {
                     setSelectedId(template.id);
                     setActiveBlockId(template.blocks[0]?.id ?? null);
+                    setSettingsBlockId(null);
                     setInsertAfterIndex(null);
                     setShowPreview(false);
                   }}
@@ -532,6 +549,11 @@ export function HostFormBuilder({
                             onDuplicate={() => duplicateBlock(block.id)}
                             onMoveDown={() => moveBlock(block.id, 1)}
                             onMoveUp={() => moveBlock(block.id, -1)}
+                            onOpenSettings={() => {
+                              setActiveBlockId(block.id);
+                              setSettingsBlockId(block.id);
+                              setShowPreview(false);
+                            }}
                             onRemove={() => removeBlock(block.id)}
                             onSelect={() => {
                               setActiveBlockId(block.id);
@@ -558,20 +580,46 @@ export function HostFormBuilder({
           </section>
         </main>
 
-        <aside className="min-w-0 space-y-4 xl:sticky xl:top-24 xl:self-start">
-          {showPreview ? (
-            <PreviewPanel template={selectedTemplate} />
-          ) : (
-            <SettingsPanel
-              block={activeBlock}
-              blocks={selectedTemplate.blocks}
-              onUpdate={(patch) => {
-                if (!activeBlock) return;
-                updateBlock(activeBlock.id, patch);
-              }}
-            />
-          )}
-        </aside>
+      </div>
+      {settingsBlock ? (
+        <Modal onClose={() => setSettingsBlockId(null)}>
+          <SettingsPanel
+            block={settingsBlock}
+            blocks={selectedTemplate.blocks}
+            onClose={() => setSettingsBlockId(null)}
+            onUpdate={(patch) => updateBlock(settingsBlock.id, patch)}
+          />
+        </Modal>
+      ) : null}
+      {showPreview ? (
+        <Modal onClose={() => setShowPreview(false)}>
+          <PreviewPanel
+            onClose={() => setShowPreview(false)}
+            template={selectedTemplate}
+          />
+        </Modal>
+      ) : null}
+    </div>
+  );
+}
+
+function Modal({
+  children,
+  onClose,
+}: {
+  children: ReactNode;
+  onClose: () => void;
+}) {
+  return (
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/35 p-4"
+      onClick={onClose}
+    >
+      <div
+        className="max-h-[calc(100vh-48px)] w-[min(560px,calc(100vw-32px))] overflow-y-auto"
+        onClick={(event) => event.stopPropagation()}
+      >
+        {children}
       </div>
     </div>
   );
@@ -603,7 +651,7 @@ function EmptyCanvas({
           제목, 설명, 질문, 페이지 구분을 필요한 순서대로 쌓아 신청폼을 만듭니다.
         </span>
       </button>
-      {isOpen ? <BlockInsertMenu onAdd={onAdd} /> : null}
+      {isOpen ? <BlockInsertMenu onAdd={onAdd} onClose={onToggle} /> : null}
     </div>
   );
 }
@@ -628,15 +676,17 @@ function InsertButton({
       >
         <Plus size={16} />
       </button>
-      {isOpen ? <BlockInsertMenu onAdd={onAdd} /> : null}
+      {isOpen ? <BlockInsertMenu onAdd={onAdd} onClose={onToggle} /> : null}
     </div>
   );
 }
 
 function BlockInsertMenu({
   onAdd,
+  onClose,
 }: {
   onAdd: (type: ApplicationFormBlockType) => void;
+  onClose: () => void;
 }) {
   const [query, setQuery] = useState("");
   const normalizedQuery = query.trim().toLowerCase();
@@ -650,47 +700,68 @@ function BlockInsertMenu({
   });
 
   return (
-    <div className="absolute left-1/2 top-full z-30 mt-2 w-[min(420px,calc(100vw-48px))] -translate-x-1/2 overflow-hidden rounded-md border border-slate-200 bg-white text-left shadow-xl">
-      <label className="flex h-11 items-center gap-2 border-b border-slate-100 px-3 text-slate-400">
-        <Search size={16} />
-        <input
-          autoFocus
-          className="h-full min-w-0 flex-1 border-none bg-transparent text-sm font-bold text-slate-700 outline-none placeholder:text-slate-300"
-          onChange={(event) => setQuery(event.target.value)}
-          placeholder="질문, 입력 방식, 레이아웃 검색"
-          value={query}
-        />
-      </label>
-      <div className="max-h-[360px] overflow-y-auto p-2">
-        {filteredItems.map((item) => {
-          const Icon = item.icon;
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/35 p-4"
+      onClick={onClose}
+    >
+      <div
+        className="w-[min(520px,calc(100vw-32px))] overflow-hidden rounded-md border border-slate-200 bg-white text-left shadow-2xl"
+        onClick={(event) => event.stopPropagation()}
+      >
+        <div className="flex items-center justify-between gap-3 border-b border-slate-100 px-4 py-3">
+          <label className="flex h-10 min-w-0 flex-1 items-center gap-2 rounded-md bg-slate-50 px-3 text-slate-400">
+            <Search size={16} />
+            <input
+              autoFocus
+              className="h-full min-w-0 flex-1 border-none bg-transparent text-sm font-bold text-slate-700 outline-none placeholder:text-slate-300"
+              onChange={(event) => setQuery(event.target.value)}
+              placeholder="질문, 입력 방식, 레이아웃 검색"
+              value={query}
+            />
+          </label>
+          <button
+            aria-label="닫기"
+            className="grid size-10 place-items-center rounded-md text-slate-500 hover:bg-slate-50"
+            onClick={onClose}
+            type="button"
+          >
+            <X size={17} />
+          </button>
+        </div>
+        <div className="max-h-[460px] overflow-y-auto p-2">
+          {filteredItems.map((item) => {
+            const Icon = item.icon;
 
-          return (
-            <button
-              className="grid w-full grid-cols-[36px_minmax(0,1fr)] gap-3 rounded-md p-2.5 text-left hover:bg-slate-50"
-              key={item.type}
-              onClick={() => onAdd(item.type)}
-              type="button"
-            >
-              <span className="grid size-9 place-items-center rounded-md bg-teal-50 text-[var(--primary)]">
-                <Icon size={17} />
-              </span>
-              <span className="min-w-0">
-                <span className="block text-sm font-black text-slate-950">
-                  {blockTypeLabels[item.type]}
+            return (
+              <button
+                className="grid w-full grid-cols-[40px_minmax(0,1fr)] gap-3 rounded-md p-3 text-left hover:bg-slate-50"
+                key={item.type}
+                onClick={() => {
+                  onAdd(item.type);
+                  onClose();
+                }}
+                type="button"
+              >
+                <span className="grid size-10 place-items-center rounded-md bg-teal-50 text-[var(--primary)]">
+                  <Icon size={18} />
                 </span>
-                <span className="mt-0.5 block text-xs font-bold text-slate-500">
-                  {item.description}
+                <span className="min-w-0">
+                  <span className="block text-sm font-black text-slate-950">
+                    {blockTypeLabels[item.type]}
+                  </span>
+                  <span className="mt-0.5 block text-xs font-bold text-slate-500">
+                    {item.description}
+                  </span>
                 </span>
-              </span>
-            </button>
-          );
-        })}
-        {filteredItems.length === 0 ? (
-          <p className="p-4 text-center text-sm font-bold text-slate-400">
-            찾는 블록이 없습니다.
-          </p>
-        ) : null}
+              </button>
+            );
+          })}
+          {filteredItems.length === 0 ? (
+            <p className="p-4 text-center text-sm font-bold text-slate-400">
+              찾는 블록이 없습니다.
+            </p>
+          ) : null}
+        </div>
       </div>
     </div>
   );
@@ -704,6 +775,7 @@ function CanvasBlock({
   onDuplicate,
   onMoveDown,
   onMoveUp,
+  onOpenSettings,
   onRemove,
   onSelect,
   onUpdate,
@@ -715,6 +787,7 @@ function CanvasBlock({
   onDuplicate: () => void;
   onMoveDown: () => void;
   onMoveUp: () => void;
+  onOpenSettings: () => void;
   onRemove: () => void;
   onSelect: () => void;
   onUpdate: (patch: Partial<ApplicationFormBlock>) => void;
@@ -739,6 +812,17 @@ function CanvasBlock({
           isActive ? "opacity-100" : "opacity-0 group-hover/block:opacity-100"
         }`}
       >
+        <button
+          aria-label="블록 설정"
+          className="grid size-7 place-items-center rounded text-slate-500 hover:bg-slate-50"
+          onClick={(event) => {
+            event.stopPropagation();
+            onOpenSettings();
+          }}
+          type="button"
+        >
+          <SlidersHorizontal size={14} />
+        </button>
         <button
           aria-label="위로 이동"
           className="grid size-7 place-items-center rounded text-slate-500 hover:bg-slate-50 disabled:opacity-30"
@@ -899,10 +983,12 @@ function QuestionPreview({ block }: { block: ApplicationFormBlock }) {
 function SettingsPanel({
   block,
   blocks,
+  onClose,
   onUpdate,
 }: {
   block: ApplicationFormBlock | null;
   blocks: ApplicationFormBlock[];
+  onClose: () => void;
   onUpdate: (patch: Partial<ApplicationFormBlock>) => void;
 }) {
   if (!block) {
@@ -979,7 +1065,7 @@ function SettingsPanel({
   }
 
   return (
-    <section className="rounded-md border border-slate-200 bg-white p-5">
+    <section className="rounded-md border border-slate-200 bg-white p-5 shadow-2xl">
       <div className="flex items-start justify-between gap-3">
         <div>
           <p className="text-xs font-black uppercase tracking-[0.14em] text-slate-400">
@@ -989,9 +1075,14 @@ function SettingsPanel({
             {blockTypeLabels[block.type]}
           </h2>
         </div>
-        <span className="grid size-10 place-items-center rounded-md bg-teal-50 text-[var(--primary)]">
-          <GitBranch size={18} />
-        </span>
+        <button
+          aria-label="닫기"
+          className="grid size-10 place-items-center rounded-md bg-slate-50 text-slate-500 hover:bg-slate-100"
+          onClick={onClose}
+          type="button"
+        >
+          <X size={18} />
+        </button>
       </div>
 
       <div className="mt-5 grid gap-4">
@@ -1112,13 +1203,29 @@ function SettingsPanel({
   );
 }
 
-function PreviewPanel({ template }: { template: ApplicationFormTemplate }) {
+function PreviewPanel({
+  onClose,
+  template,
+}: {
+  onClose: () => void;
+  template: ApplicationFormTemplate;
+}) {
   return (
-    <section className="rounded-md border border-slate-200 bg-white p-5">
-      <h2 className="flex items-center gap-2 text-lg font-black text-slate-950">
-        <Eye className="text-[var(--primary)]" size={18} />
-        미리보기
-      </h2>
+    <section className="rounded-md border border-slate-200 bg-white p-5 shadow-2xl">
+      <div className="flex items-start justify-between gap-3">
+        <h2 className="flex items-center gap-2 text-lg font-black text-slate-950">
+          <Eye className="text-[var(--primary)]" size={18} />
+          미리보기
+        </h2>
+        <button
+          aria-label="닫기"
+          className="grid size-10 place-items-center rounded-md bg-slate-50 text-slate-500 hover:bg-slate-100"
+          onClick={onClose}
+          type="button"
+        >
+          <X size={18} />
+        </button>
+      </div>
       <p className="mt-1 break-words text-sm text-slate-500">
         {template.description}
       </p>
