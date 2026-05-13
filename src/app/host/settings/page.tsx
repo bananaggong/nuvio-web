@@ -5,8 +5,6 @@ import {
   Bell,
   Database,
   FolderKanban,
-  ShieldCheck,
-  SlidersHorizontal,
   UsersRound,
 } from "lucide-react";
 import { HostAccessBanner } from "@/components/host-access-banner";
@@ -53,35 +51,7 @@ export default function HostSettingsPage() {
     <>
       <HostAccessBanner />
       <div className="mx-auto max-w-7xl px-4 py-6 md:px-8">
-        <section className="rounded-md border border-slate-200 bg-white p-6">
-          <p className="inline-flex items-center gap-2 text-sm font-black text-[var(--primary)]">
-            <SlidersHorizontal size={18} />
-            Host Settings
-          </p>
-          <div className="mt-4 grid gap-5 xl:grid-cols-[minmax(0,1fr)_360px]">
-            <div>
-              <h1 className="max-w-3xl text-2xl font-black leading-tight text-slate-950 sm:text-3xl">
-                로컬홈 운영 기준을 한곳에서 정리합니다.
-              </h1>
-              <p className="mt-3 max-w-3xl text-sm leading-7 text-slate-600">
-                설정은 프로젝트 운영 화면의 기본값으로 연결됩니다. 지금은 MVP
-                단계라 주요 설정 진입점을 먼저 모아두었습니다.
-              </p>
-            </div>
-            <div className="rounded-md bg-slate-950 p-4 text-white">
-              <p className="flex items-center gap-2 text-sm font-black text-teal-200">
-                <ShieldCheck size={17} />
-                현재 권한
-              </p>
-              <p className="mt-3 text-2xl font-black">호스트 운영자</p>
-              <p className="mt-2 text-sm font-bold text-slate-300">
-                프로젝트 생성, 신청자 관리, 증빙/마감 설정 가능
-              </p>
-            </div>
-          </div>
-        </section>
-
-        <section className="mt-6 grid gap-4 md:grid-cols-2">
+        <section className="grid gap-4 md:grid-cols-2">
           {settingGroups.map((group) => {
             const Icon = group.icon;
 

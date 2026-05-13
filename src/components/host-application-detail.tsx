@@ -1,10 +1,9 @@
-"use client";
+﻿"use client";
 
 import Link from "next/link";
 import {
   ArrowLeft,
   CheckCircle2,
-  ClipboardList,
   Clock3,
   Mail,
   Phone,
@@ -53,15 +52,6 @@ const statusLabels: Record<HostApplicationStatus, string> = {
   rejected: "반려",
   checkedIn: "참여중",
   completed: "완료",
-};
-
-const statusTone: Record<HostApplicationStatus, string> = {
-  submitted: "bg-blue-50 text-blue-700 ring-blue-100",
-  screening: "bg-amber-50 text-amber-700 ring-amber-100",
-  accepted: "bg-emerald-50 text-emerald-700 ring-emerald-100",
-  rejected: "bg-rose-50 text-rose-700 ring-rose-100",
-  checkedIn: "bg-indigo-50 text-indigo-700 ring-indigo-100",
-  completed: "bg-slate-100 text-slate-700 ring-slate-200",
 };
 
 export function HostApplicationDetail({
@@ -211,32 +201,6 @@ export function HostApplicationDetail({
         </Link>
       </div>
 
-      <section className="overflow-hidden rounded-md bg-slate-950 p-6 text-white md:p-8">
-        <div className="grid gap-5 lg:grid-cols-[minmax(0,1fr)_260px]">
-          <div>
-            <p className="inline-flex items-center gap-2 text-sm font-black text-teal-200">
-              <ClipboardList size={18} />
-              신청서 상세
-            </p>
-            <h1 className="mt-4 text-2xl font-black leading-tight sm:text-3xl">
-              {application.applicantName}
-            </h1>
-            <p className="mt-2 text-sm font-bold text-slate-300">
-              {application.programTitle}
-            </p>
-          </div>
-          <div className="rounded-md bg-white/10 p-4">
-            <p className="text-xs font-black text-slate-300">현재 상태</p>
-            <span
-              className={`mt-3 inline-flex rounded-md px-3 py-2 text-sm font-black ring-1 ${
-                statusTone[application.status]
-              }`}
-            >
-              {statusLabels[application.status]}
-            </span>
-          </div>
-        </div>
-      </section>
 
       <div className="mt-6 grid gap-6 lg:grid-cols-[minmax(0,1fr)_340px]">
         <main className="space-y-6">

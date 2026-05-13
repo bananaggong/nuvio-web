@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import Image from "next/image";
 import Link from "next/link";
@@ -60,8 +60,6 @@ export function HostProgramStudio() {
     () => (selectedDraft ? buildProgramDraftChecklist(selectedDraft) : []),
     [selectedDraft],
   );
-  const readyCount = checklist.filter((item) => item.done).length;
-
   useEffect(() => {
     let isMounted = true;
 
@@ -243,31 +241,6 @@ export function HostProgramStudio() {
         </button>
       </div>
 
-      <section className="overflow-hidden rounded-md bg-slate-950 p-5 text-white sm:p-6">
-        <p className="inline-flex items-center gap-2 text-sm font-black text-teal-200">
-          <FilePlus2 size={18} />
-          프로그램 스튜디오
-        </p>
-        <div className="mt-4 grid gap-5 lg:grid-cols-[minmax(0,1fr)_320px]">
-          <div className="min-w-0">
-            <h1 className="max-w-3xl text-2xl font-black leading-tight sm:text-3xl md:text-4xl">
-              호스트가 직접 프로그램 공급 데이터를 정리합니다.
-            </h1>
-            <p className="mt-3 max-w-3xl text-sm leading-7 text-slate-300">
-              DB 연결 전에는 브라우저에 임시 저장하고, 연결 후에는 공개 프로그램
-              등록과 신청서 연결까지 이어집니다.
-            </p>
-          </div>
-          <div className="grid gap-2 sm:grid-cols-3 lg:grid-cols-1">
-            <HeroMetric label="초안" value={`${drafts.length}개`} />
-            <HeroMetric label="검수" value={`${readyCount}/${checklist.length}`} />
-            <HeroMetric
-              label="게시 상태"
-              value={selectedDraft.published ? "게시 준비" : "비공개"}
-            />
-          </div>
-        </div>
-      </section>
 
       <div className="mt-6 grid min-w-0 gap-6 lg:grid-cols-[280px_minmax(0,1fr)]">
         <aside className="min-w-0 space-y-2">
@@ -644,15 +617,6 @@ function ProgramPreview({ draft }: { draft: HostProgramDraft }) {
         </div>
       </div>
     </article>
-  );
-}
-
-function HeroMetric({ label, value }: { label: string; value: string }) {
-  return (
-    <div className="rounded-md bg-white/10 p-3">
-      <p className="text-xs font-black text-slate-300">{label}</p>
-      <p className="mt-1 text-xl font-black text-white">{value}</p>
-    </div>
   );
 }
 

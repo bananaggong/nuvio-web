@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import Link from "next/link";
 import {
@@ -111,11 +111,6 @@ export function HostMessageAutomation({
       projectApplications,
     );
   }, [projectApplications, selectedCampaign, templates]);
-  const scheduledCount = campaigns.filter(
-    (campaign) => campaign.status === "scheduled",
-  ).length;
-  const sentCount = campaigns.filter((campaign) => campaign.status === "sent").length;
-
   useEffect(() => {
     let isMounted = true;
 
@@ -327,35 +322,6 @@ export function HostMessageAutomation({
         </button>
       </div>
 
-      <section className="overflow-hidden rounded-md bg-slate-950 p-5 text-white sm:p-6">
-        <p className="inline-flex items-center gap-2 text-sm font-black text-teal-200">
-          <Sparkles size={18} />
-          {program ? "프로그램 메시지" : project ? "프로젝트 메시지" : "메시지 자동화 센터"}
-        </p>
-        <div className="mt-4 grid gap-5 lg:grid-cols-[minmax(0,1fr)_320px]">
-          <div className="min-w-0">
-            <h1 className="max-w-3xl text-2xl font-black leading-tight sm:text-3xl md:text-4xl">
-              {program
-                ? `${program.title} 신청자에게 보낼 안내 메시지를 예약합니다.`
-                : project
-                ? `${project.title} 신청자에게 보낼 안내 메시지를 예약합니다.`
-                : "신청자 상태에 맞춰 안내 메시지를 예약합니다."}
-            </h1>
-            <p className="mt-3 max-w-3xl text-sm leading-7 text-slate-300">
-              {program
-                ? "수신자 큐는 이 프로그램에 신청한 사람만 기준으로 생성됩니다."
-                : project
-                ? "수신자 큐는 이 프로젝트에 연결된 신청자만 기준으로 생성됩니다."
-                : "템플릿, 대상 상태, 발송 채널을 조합해 수신자 큐를 만들고 DB 연결 후에는 예약 발송 이력을 서버에 기록합니다."}
-            </p>
-          </div>
-          <div className="grid gap-2 sm:grid-cols-3 lg:grid-cols-1">
-            <HeroMetric label="수신 대상" value={`${recipients.length}명`} />
-            <HeroMetric label="예약 캠페인" value={`${scheduledCount}개`} />
-            <HeroMetric label="발송 완료" value={`${sentCount}개`} />
-          </div>
-        </div>
-      </section>
 
       <div className="mt-6 grid min-w-0 gap-6 lg:grid-cols-[280px_minmax(0,1fr)]">
         <aside className="min-w-0 space-y-2">
@@ -607,15 +573,6 @@ export function HostMessageAutomation({
           </section>
         </main>
       </div>
-    </div>
-  );
-}
-
-function HeroMetric({ label, value }: { label: string; value: string }) {
-  return (
-    <div className="rounded-md bg-white/10 p-3">
-      <p className="text-xs font-black text-slate-300">{label}</p>
-      <p className="mt-1 text-xl font-black text-white">{value}</p>
     </div>
   );
 }

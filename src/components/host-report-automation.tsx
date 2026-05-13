@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import Link from "next/link";
 import {
@@ -10,7 +10,6 @@ import {
   Download,
   FileJson,
   FileText,
-  FolderKanban,
   Layers3,
   ListChecks,
   Loader2,
@@ -35,7 +34,6 @@ import {
   createManualField,
   createReportProject,
   evidenceStatusLabels,
-  formatCurrency,
   getExpenseEvidenceItems,
   mergeReportProjects,
   operationFieldGroupLabels,
@@ -402,30 +400,6 @@ export function HostReportAutomation() {
         </button>
       </div>
 
-      <section className="overflow-hidden rounded-md bg-slate-950 p-5 text-white sm:p-6">
-        <p className="inline-flex items-center gap-2 text-sm font-black text-teal-200">
-          <FolderKanban size={18} />
-          Local Home Operations
-        </p>
-        <div className="mt-4 grid gap-5 xl:grid-cols-[minmax(0,1fr)_420px]">
-          <div className="min-w-0">
-            <h1 className="max-w-4xl text-2xl font-black leading-tight sm:text-3xl md:text-4xl">
-              운영 프로젝트의 지출, 증빙, 활동 기록을 마감 자료로 모읍니다.
-            </h1>
-            <p className="mt-3 max-w-3xl text-sm leading-7 text-slate-300">
-              NUVIO는 특정 지침 전용 서식 도구가 아니라 로컬홈 운영자가 반복해서
-              남겨야 하는 증빙과 보고 자료를 한 프로젝트 안에서 정리하는 운영
-              허브입니다.
-            </p>
-          </div>
-          <div className="grid gap-2 sm:grid-cols-2">
-            <HeroMetric label="마감 준비율" value={`${summary.readiness}%`} />
-            <HeroMetric label="미수집 증빙" value={`${summary.missingEvidenceCount}개`} />
-            <HeroMetric label="집행 금액" value={formatCurrency(summary.usedAmount)} />
-            <HeroMetric label="활동/참석" value={`${summary.activityCount}건 · ${summary.participantCount}명`} />
-          </div>
-        </div>
-      </section>
 
       <div className="mt-6 grid min-w-0 gap-6 xl:grid-cols-[300px_minmax(0,1fr)]">
         <aside className="min-w-0 space-y-3">
@@ -1210,15 +1184,6 @@ export function HostReportAutomation() {
           </span>
         ) : null}
       </div>
-    </div>
-  );
-}
-
-function HeroMetric({ label, value }: { label: string; value: string }) {
-  return (
-    <div className="rounded-md bg-white/10 p-3">
-      <p className="text-xs font-black text-slate-300">{label}</p>
-      <p className="mt-1 text-xl font-black text-white">{value}</p>
     </div>
   );
 }

@@ -2,21 +2,31 @@
 
 import Link from "next/link";
 import {
+  AlignLeft,
   ArrowDown,
   ArrowLeft,
   ArrowUp,
+  CalendarDays,
   Check,
+  CheckSquare,
+  CircleDot,
   Copy,
-  Database,
   Eye,
   FilePlus2,
   GitBranch,
   GripVertical,
+  ListChecks,
   Loader2,
+  Mail,
+  Minus,
+  Phone,
   Plus,
   Save,
+  Search,
   Trash2,
+  Type,
 } from "lucide-react";
+import type { LucideIcon } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import {
   blocksToFields,
@@ -52,19 +62,23 @@ const blockTypeLabels: Record<ApplicationFormBlockType, string> = {
   title: "제목",
 };
 
-const blockPalette: ApplicationFormBlockType[] = [
-  "title",
-  "description",
-  "divider",
-  "shortText",
-  "longText",
-  "singleSelect",
-  "multiSelect",
-  "checkbox",
-  "date",
-  "email",
-  "phone",
-  "pageBreak",
+const blockPaletteItems: Array<{
+  description: string;
+  icon: LucideIcon;
+  type: ApplicationFormBlockType;
+}> = [
+  { description: "큰 제목을 넣습니다.", icon: Type, type: "title" },
+  { description: "안내 문구를 적습니다.", icon: AlignLeft, type: "description" },
+  { description: "영역을 나눕니다.", icon: Minus, type: "divider" },
+  { description: "한 줄 답변을 받습니다.", icon: Type, type: "shortText" },
+  { description: "긴 서술형 답변을 받습니다.", icon: AlignLeft, type: "longText" },
+  { description: "하나의 선택지를 받습니다.", icon: CircleDot, type: "singleSelect" },
+  { description: "여러 선택지를 받습니다.", icon: ListChecks, type: "multiSelect" },
+  { description: "동의 여부를 받습니다.", icon: CheckSquare, type: "checkbox" },
+  { description: "날짜를 받습니다.", icon: CalendarDays, type: "date" },
+  { description: "이메일을 받습니다.", icon: Mail, type: "email" },
+  { description: "연락처를 받습니다.", icon: Phone, type: "phone" },
+  { description: "긴 폼을 다음 페이지로 나눕니다.", icon: FilePlus2, type: "pageBreak" },
 ];
 
 export function HostFormBuilder({
@@ -80,6 +94,9 @@ export function HostFormBuilder({
     readApplicationFormTemplates().map(normalizeApplicationFormTemplateShape),
   );
   const [selectedId, setSelectedId] = useState(templates[0]?.id);
+  const [activeBlockId, setActiveBlockId] = useState<string | null>(null);
+  const [insertAfterIndex, setInsertAfterIndex] = useState<number | null>(null);
+  const [showPreview, setShowPreview] = useState(false);
   const [saved, setSaved] = useState(false);
   const [isSyncing, setIsSyncing] = useState(false);
   const [syncMessage, setSyncMessage] = useState("");
@@ -88,6 +105,13 @@ export function HostFormBuilder({
     () =>
       templates.find((template) => template.id === selectedId) ?? templates[0],
     [selectedId, templates],
+  );
+  const activeBlock = useMemo(
+    () =>
+      selectedTemplate?.blocks.find((block) => block.id === activeBlockId) ??
+      selectedTemplate?.blocks[0] ??
+      null,
+    [activeBlockId, selectedTemplate],
   );
   const projectBasePath = projectId ? hostProjectPath(projectId) : undefined;
   const programBasePath =
@@ -121,7 +145,7 @@ export function HostFormBuilder({
         setSelectedId((currentId) => currentId ?? databaseTemplates[0]?.id);
       } catch {
         if (isMounted) {
-          setSyncError("DB 신청폼을 불러오지 못했습니다.");
+          setSyncError("신청폼을 불러오지 못했습니다.");
         }
       }
     }
@@ -172,6 +196,8 @@ export function HostFormBuilder({
     setSyncError("");
     saveTemplates([nextTemplate, ...templates]);
     setSelectedId(nextTemplate.id);
+    setActiveBlockId(null);
+    setInsertAfterIndex(-1);
   }
 
   function duplicateTemplate(template = selectedTemplate) {
@@ -212,7 +238,7 @@ export function HostFormBuilder({
       };
 
       if (!response.ok || !payload.data) {
-        throw new Error(payload.error ?? "DB 저장에 실패했습니다.");
+        throw new Error(payload.error ?? "저장에 실패했습니다.");
       }
 
       const savedTemplate = normalizeApplicationFormTemplateShape(payload.data);
@@ -227,26 +253,57 @@ export function HostFormBuilder({
 
       saveTemplates(nextTemplates);
       setSelectedId(savedTemplate.id);
-      setSyncMessage("Supabase DB에 저장되었습니다.");
+      setSyncMessage("저장되었습니다.");
     } catch (error) {
-      setSyncError(
-        error instanceof Error ? error.message : "DB 저장에 실패했습니다.",
-      );
+      setSyncError(error instanceof Error ? error.message : "저장에 실패했습니다.");
     } finally {
       setIsSyncing(false);
     }
   }
 
-  function addBlock(type: ApplicationFormBlockType) {
+  function insertBlock(type: ApplicationFormBlockType, afterIndex: number) {
     if (!selectedTemplate) return;
-    updateTemplate({ blocks: [...selectedTemplate.blocks, createEmptyBlock(type)] });
+    const nextBlock = createEmptyBlock(type);
+    const nextBlocks = [...selectedTemplate.blocks];
+    nextBlocks.splice(afterIndex + 1, 0, nextBlock);
+    updateTemplate({ blocks: nextBlocks });
+    setActiveBlockId(nextBlock.id);
+    setInsertAfterIndex(null);
+    setShowPreview(false);
   }
 
   function removeBlock(blockId: string) {
     if (!selectedTemplate) return;
-    updateTemplate({
-      blocks: selectedTemplate.blocks.filter((block) => block.id !== blockId),
-    });
+    const blockIndex = selectedTemplate.blocks.findIndex(
+      (block) => block.id === blockId,
+    );
+    const nextBlocks = selectedTemplate.blocks.filter(
+      (block) => block.id !== blockId,
+    );
+    updateTemplate({ blocks: nextBlocks });
+    setActiveBlockId(
+      nextBlocks[Math.max(0, blockIndex - 1)]?.id ?? nextBlocks[0]?.id ?? null,
+    );
+  }
+
+  function duplicateBlock(blockId: string) {
+    if (!selectedTemplate) return;
+    const blockIndex = selectedTemplate.blocks.findIndex(
+      (block) => block.id === blockId,
+    );
+    const originalBlock = selectedTemplate.blocks[blockIndex];
+    if (!originalBlock) return;
+
+    const copiedBlock: ApplicationFormBlock = {
+      ...originalBlock,
+      branches: [],
+      id: createEmptyBlock(originalBlock.type).id,
+      label: `${originalBlock.label} 복사본`,
+    };
+    const nextBlocks = [...selectedTemplate.blocks];
+    nextBlocks.splice(blockIndex + 1, 0, copiedBlock);
+    updateTemplate({ blocks: nextBlocks });
+    setActiveBlockId(copiedBlock.id);
   }
 
   function moveBlock(blockId: string, direction: -1 | 1) {
@@ -278,7 +335,7 @@ export function HostFormBuilder({
   }
 
   return (
-    <div className="mx-auto min-w-0 max-w-7xl px-4 py-8 md:px-8">
+    <div className="mx-auto min-w-0 max-w-[1500px] px-4 py-6 md:px-8">
       <div className="mb-5 flex flex-col items-stretch gap-3 sm:flex-row sm:items-center sm:justify-between">
         <Link
           className="inline-flex h-10 items-center justify-center gap-2 rounded-md border border-slate-200 bg-white px-3 text-sm font-black text-slate-700"
@@ -288,6 +345,14 @@ export function HostFormBuilder({
           {programBasePath ? "프로그램 허브" : projectBasePath ? "프로젝트 허브" : "운영 콘솔"}
         </Link>
         <div className="flex flex-col gap-2 sm:flex-row">
+          <button
+            className="inline-flex h-10 items-center justify-center gap-2 rounded-md border border-slate-200 bg-white px-3 text-sm font-black text-slate-700"
+            onClick={() => setShowPreview((current) => !current)}
+            type="button"
+          >
+            <Eye size={16} />
+            {showPreview ? "편집" : "미리보기"}
+          </button>
           <button
             className="inline-flex h-10 items-center justify-center gap-2 rounded-md border border-slate-200 bg-white px-3 text-sm font-black text-slate-700"
             onClick={() => duplicateTemplate()}
@@ -313,45 +378,44 @@ export function HostFormBuilder({
             {isSyncing ? (
               <Loader2 className="animate-spin" size={16} />
             ) : (
-              <Database size={16} />
+              <Save size={16} />
             )}
-            DB 저장
+            저장
           </button>
         </div>
       </div>
 
-      <section className="overflow-hidden rounded-md bg-slate-950 p-5 text-white sm:p-6">
-        <p className="inline-flex items-center gap-2 text-sm font-black text-teal-200">
-          <FilePlus2 size={18} />
-          {programBasePath ? "프로그램 신청폼" : projectBasePath ? "프로젝트 신청폼" : "신청폼 관리"}
-        </p>
-        <h1 className="mt-3 text-2xl font-black leading-tight sm:text-3xl">
-          {programTitle
-            ? `${programTitle}에 연결할 신청폼을 구성합니다.`
-            : "호스트가 직접 신청폼을 만들고 재사용합니다."}
-        </h1>
-        <p className="mt-2 max-w-3xl text-sm leading-6 text-slate-300">
-          제목, 설명, 질문, 페이지, 분기 블록을 조합합니다. 라이브러리 폼은
-          프로그램에 연결할 때 복제되어 독립적으로 수정됩니다.
-        </p>
-      </section>
-
-      <div className="mt-6 grid min-w-0 gap-6 xl:grid-cols-[280px_minmax(0,1fr)_360px]">
-        <aside className="min-w-0 space-y-3">
-          <div className="rounded-md border border-slate-200 bg-white p-3">
-            <p className="px-1 text-xs font-black uppercase tracking-[0.14em] text-slate-400">
-              My Forms
-            </p>
+      <div className="grid min-w-0 gap-6 xl:grid-cols-[260px_minmax(0,820px)_320px]">
+        <aside className="min-w-0 space-y-3 xl:sticky xl:top-24 xl:self-start">
+          <section className="rounded-md border border-slate-200 bg-white p-3">
+            <div className="flex items-center justify-between gap-2 px-1">
+              <p className="text-xs font-black uppercase tracking-[0.14em] text-slate-400">
+                My Forms
+              </p>
+              <button
+                aria-label="새 신청폼"
+                className="grid size-8 place-items-center rounded-md bg-slate-950 text-white"
+                onClick={addTemplate}
+                type="button"
+              >
+                <Plus size={16} />
+              </button>
+            </div>
             <div className="mt-3 grid gap-2">
               {templates.map((template) => (
                 <button
-                  className={`w-full rounded-md border p-3 text-left ${
+                  className={`w-full rounded-md border p-3 text-left transition ${
                     template.id === selectedTemplate.id
                       ? "border-[var(--primary)] bg-teal-50"
-                      : "border-slate-200 bg-white"
+                      : "border-slate-200 bg-white hover:border-slate-300"
                   }`}
                   key={template.id}
-                  onClick={() => setSelectedId(template.id)}
+                  onClick={() => {
+                    setSelectedId(template.id);
+                    setActiveBlockId(template.blocks[0]?.id ?? null);
+                    setInsertAfterIndex(null);
+                    setShowPreview(false);
+                  }}
                   type="button"
                 >
                   <p className="break-words font-black text-slate-950">
@@ -364,11 +428,11 @@ export function HostFormBuilder({
                 </button>
               ))}
             </div>
-          </div>
+          </section>
 
           {programBasePath ? (
-            <div className="rounded-md border border-slate-200 bg-white p-3">
-              <p className="text-sm font-black text-slate-950">
+            <section className="rounded-md border border-slate-200 bg-white p-3">
+              <p className="px-1 text-sm font-black text-slate-950">
                 라이브러리에서 가져오기
               </p>
               <div className="mt-3 grid gap-2">
@@ -383,166 +447,475 @@ export function HostFormBuilder({
                   </button>
                 ))}
               </div>
-            </div>
+            </section>
           ) : null}
         </aside>
 
-        <main className="min-w-0 space-y-5">
-          <section className="rounded-md border border-slate-200 bg-white p-5">
-            <div className="grid gap-4">
-              <label className="grid gap-2">
-                <span className="text-sm font-black text-slate-700">신청폼명</span>
-                <input
-                  className="h-11 w-full min-w-0 rounded-md border border-slate-200 px-3 text-sm outline-none focus:border-[var(--primary)]"
-                  onChange={(event) => updateTemplate({ name: event.target.value })}
-                  value={selectedTemplate.name}
-                />
-              </label>
-              <div className="grid gap-4 md:grid-cols-2">
-                <label className="grid gap-2">
-                  <span className="text-sm font-black text-slate-700">
-                    연결 프로그램
-                  </span>
-                  <input
-                    className="h-11 w-full min-w-0 rounded-md border border-slate-200 px-3 text-sm outline-none focus:border-[var(--primary)]"
-                    onChange={(event) =>
-                      updateTemplate({ programTitle: event.target.value })
-                    }
-                    placeholder="비워두면 라이브러리 폼"
-                    value={selectedTemplate.programTitle}
-                  />
-                </label>
-                <label className="grid gap-2">
-                  <span className="text-sm font-black text-slate-700">설명</span>
-                  <input
-                    className="h-11 w-full min-w-0 rounded-md border border-slate-200 px-3 text-sm outline-none focus:border-[var(--primary)]"
-                    onChange={(event) =>
-                      updateTemplate({ description: event.target.value })
-                    }
-                    value={selectedTemplate.description}
-                  />
-                </label>
-              </div>
-            </div>
-          </section>
+        <main className="min-w-0">
+          <section className="min-h-[720px] rounded-md border border-slate-200 bg-white px-5 py-6 shadow-sm md:px-10 md:py-9">
+            <div className="mx-auto max-w-2xl">
+              <input
+                aria-label="신청폼명"
+                className="w-full min-w-0 border-none bg-transparent text-3xl font-black leading-tight text-slate-950 outline-none placeholder:text-slate-300"
+                onChange={(event) => updateTemplate({ name: event.target.value })}
+                placeholder="신청폼 제목"
+                value={selectedTemplate.name}
+              />
+              <textarea
+                aria-label="신청폼 설명"
+                className="mt-3 min-h-12 w-full resize-none border-none bg-transparent text-sm font-bold leading-7 text-slate-500 outline-none placeholder:text-slate-300"
+                onChange={(event) =>
+                  updateTemplate({ description: event.target.value })
+                }
+                placeholder="신청자에게 보여줄 간단한 안내를 적어주세요."
+                value={selectedTemplate.description}
+              />
 
-          <section className="rounded-md border border-slate-200 bg-white p-5">
-            <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-              <div>
-                <h2 className="text-lg font-black text-slate-950">블록 캔버스</h2>
-                <p className="mt-1 text-sm font-bold text-slate-500">
-                  Tally처럼 필요한 블록을 아래에 추가합니다.
-                </p>
-              </div>
-            </div>
-            <div className="mt-4 flex flex-wrap gap-2">
-              {blockPalette.map((type) => (
-                <button
-                  className="h-9 rounded-md border border-slate-200 px-2.5 text-xs font-black text-slate-600 hover:border-[var(--primary)] hover:text-[var(--primary)]"
-                  key={type}
-                  onClick={() => addBlock(type)}
-                  type="button"
-                >
-                  + {blockTypeLabels[type]}
-                </button>
-              ))}
-            </div>
-
-            <div className="mt-5 grid gap-3">
-              {selectedTemplate.blocks.map((block, index) => (
-                <BlockEditor
-                  block={block}
-                  blocks={selectedTemplate.blocks}
-                  canMoveDown={index < selectedTemplate.blocks.length - 1}
-                  canMoveUp={index > 0}
-                  key={block.id}
-                  onMoveDown={() => moveBlock(block.id, 1)}
-                  onMoveUp={() => moveBlock(block.id, -1)}
-                  onRemove={() => removeBlock(block.id)}
-                  onUpdate={(patch) => updateBlock(block.id, patch)}
-                />
-              ))}
-            </div>
-
-            <div
-              aria-live="polite"
-              className="mt-5 flex flex-wrap items-center gap-2 text-sm font-bold text-slate-500"
-            >
-              {saved ? <Check size={16} className="text-[var(--primary)]" /> : <Save size={16} />}
-              {saved ? "저장됨" : "변경 시 자동 저장"}
-              {syncMessage ? (
-                <span className="rounded-md bg-teal-50 px-2 py-1 text-xs font-black text-teal-700">
-                  {syncMessage}
+              <div className="mt-3 flex flex-wrap items-center gap-2 text-xs font-bold text-slate-500">
+                <span className="rounded-full bg-[var(--surface-muted)] px-3 py-1">
+                  {selectedTemplate.programTitle || "라이브러리 폼"}
                 </span>
-              ) : null}
-              {syncError ? (
-                <span className="rounded-md bg-red-50 px-2 py-1 text-xs font-black text-red-700">
-                  {syncError}
+                <span className="rounded-full bg-[var(--surface-muted)] px-3 py-1">
+                  {selectedTemplate.blocks.length}개 블록
                 </span>
+                <span className="inline-flex items-center gap-1">
+                  {saved ? (
+                    <Check className="text-[var(--primary)]" size={14} />
+                  ) : (
+                    <Save size={14} />
+                  )}
+                  {saved ? "저장됨" : "자동 저장"}
+                </span>
+              </div>
+
+              {syncMessage || syncError ? (
+                <div className="mt-4 flex flex-wrap gap-2 text-xs font-black">
+                  {syncMessage ? (
+                    <span className="rounded-md bg-teal-50 px-2 py-1 text-teal-700">
+                      {syncMessage}
+                    </span>
+                  ) : null}
+                  {syncError ? (
+                    <span className="rounded-md bg-red-50 px-2 py-1 text-red-700">
+                      {syncError}
+                    </span>
+                  ) : null}
+                </div>
               ) : null}
+
+              <div className="mt-8">
+                {selectedTemplate.blocks.length === 0 ? (
+                  <EmptyCanvas
+                    isOpen={insertAfterIndex === -1}
+                    onAdd={(type) => insertBlock(type, -1)}
+                    onToggle={() =>
+                      setInsertAfterIndex(insertAfterIndex === -1 ? null : -1)
+                    }
+                  />
+                ) : (
+                  <>
+                    <InsertButton
+                      isOpen={insertAfterIndex === -1}
+                      onAdd={(type) => insertBlock(type, -1)}
+                      onToggle={() =>
+                        setInsertAfterIndex(insertAfterIndex === -1 ? null : -1)
+                      }
+                    />
+                    <div className="grid gap-1">
+                      {selectedTemplate.blocks.map((block, index) => (
+                        <div key={block.id}>
+                          <CanvasBlock
+                            block={block}
+                            canMoveDown={index < selectedTemplate.blocks.length - 1}
+                            canMoveUp={index > 0}
+                            isActive={block.id === activeBlock?.id && !showPreview}
+                            onDuplicate={() => duplicateBlock(block.id)}
+                            onMoveDown={() => moveBlock(block.id, 1)}
+                            onMoveUp={() => moveBlock(block.id, -1)}
+                            onRemove={() => removeBlock(block.id)}
+                            onSelect={() => {
+                              setActiveBlockId(block.id);
+                              setShowPreview(false);
+                            }}
+                            onUpdate={(patch) => updateBlock(block.id, patch)}
+                          />
+                          <InsertButton
+                            isOpen={insertAfterIndex === index}
+                            onAdd={(type) => insertBlock(type, index)}
+                            onToggle={() =>
+                              setInsertAfterIndex(
+                                insertAfterIndex === index ? null : index,
+                              )
+                            }
+                          />
+                        </div>
+                      ))}
+                    </div>
+                  </>
+                )}
+              </div>
             </div>
           </section>
         </main>
 
         <aside className="min-w-0 space-y-4 xl:sticky xl:top-24 xl:self-start">
-          <section className="rounded-md border border-slate-200 bg-white p-5">
-            <h2 className="flex items-center gap-2 text-lg font-black text-slate-950">
-              <Eye className="text-[var(--primary)]" size={18} />
-              미리보기
-            </h2>
-            <p className="mt-1 break-words text-sm text-slate-500">
-              {selectedTemplate.description}
-            </p>
-            <div className="mt-5 grid gap-4">
-              {selectedTemplate.blocks.map((block) => (
-                <PreviewBlock block={block} key={block.id} />
-              ))}
-            </div>
-          </section>
-          <section className="rounded-md border border-slate-200 bg-white p-5">
-            <h2 className="flex items-center gap-2 text-lg font-black text-slate-950">
-              <GitBranch className="text-[var(--primary)]" size={18} />
-              분기 요약
-            </h2>
-            <div className="mt-4 grid gap-2">
-              {selectedTemplate.blocks.flatMap((block) =>
-                (block.branches ?? []).map((branch) => (
-                  <div
-                    className="rounded-md bg-[var(--surface-muted)] p-3 text-xs font-bold text-slate-600"
-                    key={`${block.id}-${branch.id}`}
-                  >
-                    {block.label} = {branch.value} →{" "}
-                    {findBlockLabel(selectedTemplate.blocks, branch.targetBlockId)}
-                  </div>
-                )),
-              )}
-            </div>
-          </section>
+          {showPreview ? (
+            <PreviewPanel template={selectedTemplate} />
+          ) : (
+            <SettingsPanel
+              block={activeBlock}
+              blocks={selectedTemplate.blocks}
+              onUpdate={(patch) => {
+                if (!activeBlock) return;
+                updateBlock(activeBlock.id, patch);
+              }}
+            />
+          )}
         </aside>
       </div>
     </div>
   );
 }
 
-function BlockEditor({
+function EmptyCanvas({
+  isOpen,
+  onAdd,
+  onToggle,
+}: {
+  isOpen: boolean;
+  onAdd: (type: ApplicationFormBlockType) => void;
+  onToggle: () => void;
+}) {
+  return (
+    <div className="relative grid min-h-[360px] place-items-center rounded-md border border-dashed border-slate-200 bg-slate-50/70 p-8 text-center">
+      <button
+        className="grid gap-3 text-center"
+        onClick={onToggle}
+        type="button"
+      >
+        <span className="mx-auto grid size-12 place-items-center rounded-full bg-white text-[var(--primary)] shadow-sm ring-1 ring-slate-200">
+          <Plus size={22} />
+        </span>
+        <span className="text-lg font-black text-slate-950">
+          첫 질문을 추가하세요
+        </span>
+        <span className="max-w-xs text-sm font-bold leading-6 text-slate-500">
+          제목, 설명, 질문, 페이지 구분을 필요한 순서대로 쌓아 신청폼을 만듭니다.
+        </span>
+      </button>
+      {isOpen ? <BlockInsertMenu onAdd={onAdd} /> : null}
+    </div>
+  );
+}
+
+function InsertButton({
+  isOpen,
+  onAdd,
+  onToggle,
+}: {
+  isOpen: boolean;
+  onAdd: (type: ApplicationFormBlockType) => void;
+  onToggle: () => void;
+}) {
+  return (
+    <div className="group/insert relative py-2">
+      <div className="absolute left-0 right-0 top-1/2 hidden border-t border-slate-100 group-hover/insert:block" />
+      <button
+        aria-label="블록 추가"
+        className="relative z-10 mx-auto grid size-8 place-items-center rounded-full border border-slate-200 bg-white text-slate-400 opacity-70 shadow-sm transition hover:border-[var(--primary)] hover:text-[var(--primary)] group-hover/insert:opacity-100"
+        onClick={onToggle}
+        type="button"
+      >
+        <Plus size={16} />
+      </button>
+      {isOpen ? <BlockInsertMenu onAdd={onAdd} /> : null}
+    </div>
+  );
+}
+
+function BlockInsertMenu({
+  onAdd,
+}: {
+  onAdd: (type: ApplicationFormBlockType) => void;
+}) {
+  const [query, setQuery] = useState("");
+  const normalizedQuery = query.trim().toLowerCase();
+  const filteredItems = blockPaletteItems.filter((item) => {
+    const label = blockTypeLabels[item.type].toLowerCase();
+    return (
+      !normalizedQuery ||
+      label.includes(normalizedQuery) ||
+      item.description.toLowerCase().includes(normalizedQuery)
+    );
+  });
+
+  return (
+    <div className="absolute left-1/2 top-full z-30 mt-2 w-[min(420px,calc(100vw-48px))] -translate-x-1/2 overflow-hidden rounded-md border border-slate-200 bg-white text-left shadow-xl">
+      <label className="flex h-11 items-center gap-2 border-b border-slate-100 px-3 text-slate-400">
+        <Search size={16} />
+        <input
+          autoFocus
+          className="h-full min-w-0 flex-1 border-none bg-transparent text-sm font-bold text-slate-700 outline-none placeholder:text-slate-300"
+          onChange={(event) => setQuery(event.target.value)}
+          placeholder="질문, 입력 방식, 레이아웃 검색"
+          value={query}
+        />
+      </label>
+      <div className="max-h-[360px] overflow-y-auto p-2">
+        {filteredItems.map((item) => {
+          const Icon = item.icon;
+
+          return (
+            <button
+              className="grid w-full grid-cols-[36px_minmax(0,1fr)] gap-3 rounded-md p-2.5 text-left hover:bg-slate-50"
+              key={item.type}
+              onClick={() => onAdd(item.type)}
+              type="button"
+            >
+              <span className="grid size-9 place-items-center rounded-md bg-teal-50 text-[var(--primary)]">
+                <Icon size={17} />
+              </span>
+              <span className="min-w-0">
+                <span className="block text-sm font-black text-slate-950">
+                  {blockTypeLabels[item.type]}
+                </span>
+                <span className="mt-0.5 block text-xs font-bold text-slate-500">
+                  {item.description}
+                </span>
+              </span>
+            </button>
+          );
+        })}
+        {filteredItems.length === 0 ? (
+          <p className="p-4 text-center text-sm font-bold text-slate-400">
+            찾는 블록이 없습니다.
+          </p>
+        ) : null}
+      </div>
+    </div>
+  );
+}
+
+function CanvasBlock({
   block,
-  blocks,
   canMoveDown,
   canMoveUp,
+  isActive,
+  onDuplicate,
   onMoveDown,
   onMoveUp,
   onRemove,
+  onSelect,
   onUpdate,
 }: {
   block: ApplicationFormBlock;
-  blocks: ApplicationFormBlock[];
   canMoveDown: boolean;
   canMoveUp: boolean;
+  isActive: boolean;
+  onDuplicate: () => void;
   onMoveDown: () => void;
   onMoveUp: () => void;
   onRemove: () => void;
+  onSelect: () => void;
   onUpdate: (patch: Partial<ApplicationFormBlock>) => void;
 }) {
+  return (
+    <article
+      className={`group/block relative rounded-md border p-4 transition ${
+        isActive
+          ? "border-[var(--primary)] bg-teal-50/60 shadow-sm"
+          : "border-transparent bg-white hover:border-slate-200 hover:bg-slate-50"
+      }`}
+      onClick={onSelect}
+    >
+      <div className="absolute -left-10 top-3 hidden items-center gap-1 opacity-0 transition group-hover/block:flex group-hover/block:opacity-100 md:flex">
+        <span className="grid size-8 place-items-center rounded-md text-slate-300">
+          <GripVertical size={17} />
+        </span>
+      </div>
+      <BlockInlineEditor block={block} onUpdate={onUpdate} />
+      <div
+        className={`absolute right-3 top-3 flex gap-1 rounded-md border border-slate-200 bg-white p-1 shadow-sm transition ${
+          isActive ? "opacity-100" : "opacity-0 group-hover/block:opacity-100"
+        }`}
+      >
+        <button
+          aria-label="위로 이동"
+          className="grid size-7 place-items-center rounded text-slate-500 hover:bg-slate-50 disabled:opacity-30"
+          disabled={!canMoveUp}
+          onClick={(event) => {
+            event.stopPropagation();
+            onMoveUp();
+          }}
+          type="button"
+        >
+          <ArrowUp size={14} />
+        </button>
+        <button
+          aria-label="아래로 이동"
+          className="grid size-7 place-items-center rounded text-slate-500 hover:bg-slate-50 disabled:opacity-30"
+          disabled={!canMoveDown}
+          onClick={(event) => {
+            event.stopPropagation();
+            onMoveDown();
+          }}
+          type="button"
+        >
+          <ArrowDown size={14} />
+        </button>
+        <button
+          aria-label="복제"
+          className="grid size-7 place-items-center rounded text-slate-500 hover:bg-slate-50"
+          onClick={(event) => {
+            event.stopPropagation();
+            onDuplicate();
+          }}
+          type="button"
+        >
+          <Copy size={14} />
+        </button>
+        <button
+          aria-label="삭제"
+          className="grid size-7 place-items-center rounded text-slate-500 hover:bg-rose-50 hover:text-rose-600"
+          onClick={(event) => {
+            event.stopPropagation();
+            onRemove();
+          }}
+          type="button"
+        >
+          <Trash2 size={14} />
+        </button>
+      </div>
+    </article>
+  );
+}
+
+function BlockInlineEditor({
+  block,
+  onUpdate,
+}: {
+  block: ApplicationFormBlock;
+  onUpdate: (patch: Partial<ApplicationFormBlock>) => void;
+}) {
+  if (block.type === "title") {
+    return (
+      <input
+        className="w-full min-w-0 border-none bg-transparent pr-28 text-2xl font-black leading-tight text-slate-950 outline-none placeholder:text-slate-300"
+        onChange={(event) => onUpdate({ label: event.target.value })}
+        placeholder="제목을 입력하세요"
+        value={block.label}
+      />
+    );
+  }
+
+  if (block.type === "description") {
+    return (
+      <textarea
+        className="min-h-24 w-full resize-none border-none bg-transparent pr-28 text-sm font-bold leading-7 text-slate-600 outline-none placeholder:text-slate-300"
+        onChange={(event) =>
+          onUpdate({ body: event.target.value, label: event.target.value })
+        }
+        placeholder="설명 문구를 입력하세요"
+        value={block.body || block.label}
+      />
+    );
+  }
+
+  if (block.type === "divider") {
+    return (
+      <div className="flex items-center gap-3 pr-28">
+        <hr className="min-w-0 flex-1 border-slate-200" />
+        <input
+          className="w-32 border-none bg-transparent text-center text-xs font-black text-slate-400 outline-none"
+          onChange={(event) => onUpdate({ label: event.target.value })}
+          value={block.label}
+        />
+        <hr className="min-w-0 flex-1 border-slate-200" />
+      </div>
+    );
+  }
+
+  if (block.type === "pageBreak") {
+    return (
+      <div className="rounded-md bg-slate-100 p-3 pr-28">
+        <p className="text-xs font-black text-slate-500">다음 페이지</p>
+        <input
+          className="mt-1 w-full border-none bg-transparent text-sm font-black text-slate-800 outline-none"
+          onChange={(event) => onUpdate({ label: event.target.value })}
+          value={block.label}
+        />
+      </div>
+    );
+  }
+
+  return (
+    <div className="grid gap-2 pr-28">
+      <input
+        className="w-full min-w-0 border-none bg-transparent text-lg font-black text-slate-950 outline-none placeholder:text-slate-300"
+        onChange={(event) => onUpdate({ label: event.target.value })}
+        placeholder="질문을 입력하세요"
+        value={block.label}
+      />
+      <input
+        className="w-full min-w-0 border-none bg-transparent text-sm font-bold text-slate-400 outline-none placeholder:text-slate-300"
+        onChange={(event) => onUpdate({ helper: event.target.value })}
+        placeholder="설명 또는 힌트 추가"
+        value={block.helper ?? ""}
+      />
+      <QuestionPreview block={block} />
+    </div>
+  );
+}
+
+function QuestionPreview({ block }: { block: ApplicationFormBlock }) {
+  if (block.type === "longText") {
+    return <div className="mt-2 h-24 rounded-md border border-slate-200 bg-white" />;
+  }
+  if (block.type === "singleSelect" || block.type === "multiSelect") {
+    return (
+      <div className="mt-2 flex flex-wrap gap-2">
+        {(block.options ?? []).map((option) => (
+          <span
+            className="rounded-full border border-slate-200 bg-white px-3 py-1 text-xs font-bold text-slate-500"
+            key={option}
+          >
+            {option}
+          </span>
+        ))}
+      </div>
+    );
+  }
+  if (block.type === "checkbox") {
+    return (
+      <span className="mt-2 inline-flex w-fit items-center gap-2 rounded-md bg-white px-3 py-2 text-sm font-bold text-slate-500 ring-1 ring-slate-200">
+        <input type="checkbox" />
+        동의합니다
+      </span>
+    );
+  }
+  return <div className="mt-2 h-10 rounded-md border border-slate-200 bg-white" />;
+}
+
+function SettingsPanel({
+  block,
+  blocks,
+  onUpdate,
+}: {
+  block: ApplicationFormBlock | null;
+  blocks: ApplicationFormBlock[];
+  onUpdate: (patch: Partial<ApplicationFormBlock>) => void;
+}) {
+  if (!block) {
+    return (
+      <section className="rounded-md border border-slate-200 bg-white p-5">
+        <h2 className="text-lg font-black text-slate-950">블록 설정</h2>
+        <p className="mt-2 text-sm font-bold leading-6 text-slate-500">
+          캔버스에서 블록을 선택하면 필수 여부, 선택지, 분기 설정을 조정할 수 있습니다.
+        </p>
+      </section>
+    );
+  }
+
   const canBranch =
     block.type === "singleSelect" ||
     block.type === "multiSelect" ||
@@ -551,13 +924,30 @@ function BlockEditor({
   function updateOptions(value: string) {
     onUpdate({
       options: value
-        .split(",")
+        .split("\n")
         .map((option) => option.trim())
         .filter(Boolean),
     });
   }
 
+  function changeType(type: ApplicationFormBlockType) {
+    if (!block) return;
+    const defaults = createEmptyBlock(type);
+    onUpdate({
+      body: type === "description" ? block.body || defaults.body : block.body,
+      options:
+        type === "singleSelect" || type === "multiSelect"
+          ? block.options?.length
+            ? block.options
+            : defaults.options
+          : [],
+      required: isQuestionBlock({ ...block, type }) ? block.required : false,
+      type,
+    });
+  }
+
   function addBranch() {
+    if (!block) return;
     const firstOption = block.options?.[0] ?? "true";
     const targetBlock = blocks.find((item) => item.id !== block.id);
     onUpdate({
@@ -573,6 +963,7 @@ function BlockEditor({
   }
 
   function updateBranch(branchId: string, patch: Partial<ApplicationFormBranch>) {
+    if (!block) return;
     onUpdate({
       branches: (block.branches ?? []).map((branch) =>
         branch.id === branchId ? { ...branch, ...patch } : branch,
@@ -581,109 +972,111 @@ function BlockEditor({
   }
 
   function removeBranch(branchId: string) {
+    if (!block) return;
     onUpdate({
       branches: (block.branches ?? []).filter((branch) => branch.id !== branchId),
     });
   }
 
   return (
-    <article className="min-w-0 rounded-md border border-slate-200 bg-[var(--surface-muted)] p-3">
-      <div className="flex items-start gap-2 sm:gap-3">
-        <GripVertical className="mt-2 shrink-0 text-slate-400" size={18} />
-        <div className="grid min-w-0 flex-1 gap-3">
-          <div className="grid gap-3 md:grid-cols-[1fr_170px]">
+    <section className="rounded-md border border-slate-200 bg-white p-5">
+      <div className="flex items-start justify-between gap-3">
+        <div>
+          <p className="text-xs font-black uppercase tracking-[0.14em] text-slate-400">
+            Selected Block
+          </p>
+          <h2 className="mt-1 text-lg font-black text-slate-950">
+            {blockTypeLabels[block.type]}
+          </h2>
+        </div>
+        <span className="grid size-10 place-items-center rounded-md bg-teal-50 text-[var(--primary)]">
+          <GitBranch size={18} />
+        </span>
+      </div>
+
+      <div className="mt-5 grid gap-4">
+        <label className="grid gap-2">
+          <span className="text-sm font-black text-slate-700">블록 타입</span>
+          <select
+            className="h-10 rounded-md border border-slate-200 px-3 text-sm font-bold outline-none focus:border-[var(--primary)]"
+            onChange={(event) =>
+              changeType(event.target.value as ApplicationFormBlockType)
+            }
+            value={block.type}
+          >
+            {Object.entries(blockTypeLabels).map(([type, label]) => (
+              <option key={type} value={type}>
+                {label}
+              </option>
+            ))}
+          </select>
+        </label>
+
+        {isQuestionBlock(block) ? (
+          <label className="flex items-center justify-between gap-3 rounded-md bg-[var(--surface-muted)] px-3 py-2 text-sm font-black text-slate-700">
+            필수 질문
             <input
-              className="h-10 w-full min-w-0 rounded-md border border-slate-200 px-3 text-sm font-bold outline-none focus:border-[var(--primary)]"
-              onChange={(event) => onUpdate({ label: event.target.value })}
-              value={block.label}
+              checked={block.required}
+              onChange={(event) => onUpdate({ required: event.target.checked })}
+              type="checkbox"
             />
-            <select
-              className="h-10 w-full min-w-0 rounded-md border border-slate-200 px-3 text-sm font-bold outline-none focus:border-[var(--primary)]"
-              onChange={(event) =>
-                onUpdate({ type: event.target.value as ApplicationFormBlockType })
-              }
-              value={block.type}
-            >
-              {Object.entries(blockTypeLabels).map(([type, label]) => (
-                <option key={type} value={type}>
-                  {label}
-                </option>
-              ))}
-            </select>
-          </div>
+          </label>
+        ) : null}
 
-          {block.type === "description" ? (
+        {block.type === "singleSelect" || block.type === "multiSelect" ? (
+          <label className="grid gap-2">
+            <span className="text-sm font-black text-slate-700">
+              선택지
+            </span>
             <textarea
-              className="min-h-20 w-full rounded-md border border-slate-200 p-3 text-sm outline-none focus:border-[var(--primary)]"
-              onChange={(event) => onUpdate({ body: event.target.value })}
-              value={block.body ?? ""}
+              className="min-h-28 rounded-md border border-slate-200 p-3 text-sm font-bold leading-6 outline-none focus:border-[var(--primary)]"
+              onChange={(event) => updateOptions(event.target.value)}
+              placeholder={"선택지 1\n선택지 2"}
+              value={(block.options ?? []).join("\n")}
             />
-          ) : null}
+          </label>
+        ) : null}
 
-          {isQuestionBlock(block) ? (
-            <>
-              <input
-                className="h-10 w-full min-w-0 rounded-md border border-slate-200 px-3 text-sm outline-none focus:border-[var(--primary)]"
-                onChange={(event) => onUpdate({ helper: event.target.value })}
-                placeholder="도움말"
-                value={block.helper ?? ""}
-              />
-              {(block.type === "singleSelect" || block.type === "multiSelect") ? (
-                <input
-                  className="h-10 w-full min-w-0 rounded-md border border-slate-200 px-3 text-sm outline-none focus:border-[var(--primary)]"
-                  onChange={(event) => updateOptions(event.target.value)}
-                  placeholder="선택지, 쉼표로 구분"
-                  value={(block.options ?? []).join(", ")}
-                />
-              ) : null}
-              <label className="flex items-center gap-2 text-sm font-bold text-slate-600">
-                <input
-                  checked={block.required}
-                  onChange={(event) => onUpdate({ required: event.target.checked })}
-                  type="checkbox"
-                />
-                필수 질문
-              </label>
-            </>
-          ) : null}
-
-          {canBranch ? (
-            <div className="rounded-md border border-slate-200 bg-white p-3">
-              <div className="flex items-center justify-between gap-2">
-                <p className="flex items-center gap-2 text-sm font-black text-slate-800">
-                  <GitBranch size={15} />
-                  분기
-                </p>
-                <button
-                  className="h-8 rounded-md border border-slate-200 px-2 text-xs font-black text-slate-600"
-                  onClick={addBranch}
-                  type="button"
-                >
-                  추가
-                </button>
-              </div>
-              <div className="mt-3 grid gap-2">
-                {(block.branches ?? []).map((branch) => (
-                  <div className="grid gap-2 md:grid-cols-[1fr_1fr_32px]" key={branch.id}>
+        {canBranch ? (
+          <div className="rounded-md border border-slate-200 p-3">
+            <div className="flex items-center justify-between gap-2">
+              <p className="flex items-center gap-2 text-sm font-black text-slate-800">
+                <GitBranch size={15} />
+                분기
+              </p>
+              <button
+                className="h-8 rounded-md border border-slate-200 px-2 text-xs font-black text-slate-600"
+                onClick={addBranch}
+                type="button"
+              >
+                추가
+              </button>
+            </div>
+            <div className="mt-3 grid gap-2">
+              {(block.branches ?? []).map((branch) => (
+                <div className="grid gap-2" key={branch.id}>
+                  <select
+                    className="h-9 rounded-md border border-slate-200 px-2 text-xs font-bold"
+                    onChange={(event) =>
+                      updateBranch(branch.id, { value: event.target.value })
+                    }
+                    value={branch.value}
+                  >
+                    {(block.type === "checkbox" ? ["true", "false"] : block.options ?? []).map(
+                      (option) => (
+                        <option key={option} value={option}>
+                          {option}
+                        </option>
+                      ),
+                    )}
+                  </select>
+                  <div className="grid grid-cols-[1fr_34px] gap-2">
                     <select
                       className="h-9 rounded-md border border-slate-200 px-2 text-xs font-bold"
                       onChange={(event) =>
-                        updateBranch(branch.id, { value: event.target.value })
-                      }
-                      value={branch.value}
-                    >
-                      {(block.type === "checkbox" ? ["true", "false"] : block.options ?? []).map(
-                        (option) => (
-                          <option key={option} value={option}>
-                            {option}
-                          </option>
-                        ),
-                      )}
-                    </select>
-                    <select
-                      className="h-9 rounded-md border border-slate-200 px-2 text-xs font-bold"
-                      onChange={(event) =>
-                        updateBranch(branch.id, { targetBlockId: event.target.value })
+                        updateBranch(branch.id, {
+                          targetBlockId: event.target.value,
+                        })
                       }
                       value={branch.targetBlockId}
                     >
@@ -697,48 +1090,49 @@ function BlockEditor({
                     </select>
                     <button
                       aria-label="분기 삭제"
-                      className="grid size-8 place-items-center rounded-md bg-slate-50 text-slate-500 hover:text-rose-600"
+                      className="grid size-9 place-items-center rounded-md bg-slate-50 text-slate-500 hover:text-rose-600"
                       onClick={() => removeBranch(branch.id)}
                       type="button"
                     >
                       <Trash2 size={14} />
                     </button>
                   </div>
-                ))}
-              </div>
+                </div>
+              ))}
+              {(block.branches ?? []).length === 0 ? (
+                <p className="rounded-md bg-[var(--surface-muted)] p-3 text-xs font-bold leading-5 text-slate-500">
+                  선택값에 따라 뒤쪽 질문으로 이동시키고 싶을 때 추가합니다.
+                </p>
+              ) : null}
             </div>
-          ) : null}
-        </div>
-        <div className="grid gap-1">
-          <button
-            aria-label="위로 이동"
-            className="grid size-8 place-items-center rounded-md bg-white text-slate-500 disabled:opacity-30"
-            disabled={!canMoveUp}
-            onClick={onMoveUp}
-            type="button"
-          >
-            <ArrowUp size={15} />
-          </button>
-          <button
-            aria-label="아래로 이동"
-            className="grid size-8 place-items-center rounded-md bg-white text-slate-500 disabled:opacity-30"
-            disabled={!canMoveDown}
-            onClick={onMoveDown}
-            type="button"
-          >
-            <ArrowDown size={15} />
-          </button>
-          <button
-            aria-label="블록 삭제"
-            className="grid size-8 place-items-center rounded-md bg-white text-slate-500 hover:text-rose-600"
-            onClick={onRemove}
-            type="button"
-          >
-            <Trash2 size={15} />
-          </button>
-        </div>
+          </div>
+        ) : null}
       </div>
-    </article>
+    </section>
+  );
+}
+
+function PreviewPanel({ template }: { template: ApplicationFormTemplate }) {
+  return (
+    <section className="rounded-md border border-slate-200 bg-white p-5">
+      <h2 className="flex items-center gap-2 text-lg font-black text-slate-950">
+        <Eye className="text-[var(--primary)]" size={18} />
+        미리보기
+      </h2>
+      <p className="mt-1 break-words text-sm text-slate-500">
+        {template.description}
+      </p>
+      <div className="mt-5 grid gap-4">
+        {template.blocks.map((block) => (
+          <PreviewBlock block={block} key={block.id} />
+        ))}
+        {template.blocks.length === 0 ? (
+          <p className="rounded-md bg-[var(--surface-muted)] p-4 text-sm font-bold text-slate-500">
+            아직 추가된 질문이 없습니다.
+          </p>
+        ) : null}
+      </div>
+    </section>
   );
 }
 
@@ -800,8 +1194,4 @@ function PreviewBlock({ block }: { block: ApplicationFormBlock }) {
       ) : null}
     </label>
   );
-}
-
-function findBlockLabel(blocks: ApplicationFormBlock[], blockId: string): string {
-  return blocks.find((block) => block.id === blockId)?.label ?? "대상 없음";
 }

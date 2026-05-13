@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import Image from "next/image";
 import Link from "next/link";
@@ -30,7 +30,6 @@ export function HostVillageStudio() {
     () => buildVillageChecklist(village),
     [village],
   );
-  const readyCount = checklist.filter((item) => item.done).length;
 
   useEffect(() => {
     let isMounted = true;
@@ -161,30 +160,6 @@ export function HostVillageStudio() {
         </Link>
       </div>
 
-      <section className="overflow-hidden rounded-md bg-slate-950 p-5 text-white sm:p-6">
-        <p className="inline-flex items-center gap-2 text-sm font-black text-teal-200">
-          <Globe2 size={18} />
-          로컬홈 페이지
-        </p>
-        <div className="mt-4 grid gap-5 lg:grid-cols-[minmax(0,1fr)_320px]">
-          <div className="min-w-0">
-            <h1 className="max-w-3xl text-2xl font-black leading-tight sm:text-3xl md:text-4xl">
-              내 로컬홈 홈페이지를 관리하고 프로그램을 연결합니다.
-            </h1>
-            <p className="mt-3 max-w-3xl text-sm leading-7 text-slate-300">
-              보성 호스트는 전체차LAB 페이지 하나만 관리합니다. 다른 로컬홈은 어드민의 전체 관리 영역에서 다룹니다.
-            </p>
-          </div>
-          <div className="grid gap-2 sm:grid-cols-3 lg:grid-cols-1">
-            <HeroMetric label="로컬홈" value={village.name} />
-            <HeroMetric label="검수" value={`${readyCount}/${checklist.length}`} />
-            <HeroMetric
-              label="상태"
-              value={village.published ? "게시 중" : "비공개"}
-            />
-          </div>
-        </div>
-      </section>
 
       <div className="mt-6 min-w-0">
         <main className="grid min-w-0 gap-6 xl:grid-cols-[minmax(0,1fr)_360px]">
@@ -437,15 +412,6 @@ function VillagePreview({ village }: { village: Village }) {
         </div>
       </div>
     </article>
-  );
-}
-
-function HeroMetric({ label, value }: { label: string; value: string }) {
-  return (
-    <div className="rounded-md bg-white/10 p-3">
-      <p className="text-xs font-black text-slate-300">{label}</p>
-      <p className="mt-1 text-xl font-black text-white">{value}</p>
-    </div>
   );
 }
 

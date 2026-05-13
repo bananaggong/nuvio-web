@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import Link from "next/link";
 import {
@@ -38,30 +38,6 @@ import {
 import type { EvidenceItemStatus, ReportProject } from "@/lib/report-automation";
 
 export type HostProjectWorkspaceSection = "activities" | "evidence" | "closeout";
-
-const sectionCopy: Record<
-  HostProjectWorkspaceSection,
-  { eyebrow: string; title: string; description: string }
-> = {
-  activities: {
-    eyebrow: "Project Activities",
-    title: "활동과 참석 기록을 이 프로젝트 안에서 관리합니다.",
-    description:
-      "활동 내용, 장소, 참석자 수, 사진 수를 마감 자료와 공개 콘텐츠로 재사용할 수 있게 모읍니다.",
-  },
-  evidence: {
-    eyebrow: "Project Evidence",
-    title: "지출과 증빙을 이 프로젝트 기준으로 정리합니다.",
-    description:
-      "증빙 파일, 지급처, 예산 항목, 결제수단이 프로젝트 마감 준비율에 직접 연결됩니다.",
-  },
-  closeout: {
-    eyebrow: "Project Closeout",
-    title: "마감 전에 빠진 항목을 프로젝트 단위로 점검합니다.",
-    description:
-      "신청자, 활동, 지출, 증빙, 수동 입력값을 한 번에 확인하고 보완 순서를 잡습니다.",
-  },
-};
 
 const evidenceTone: Record<EvidenceItemStatus, string> = {
   approved: "bg-teal-50 text-teal-700 ring-teal-100",
@@ -163,8 +139,6 @@ export function HostProjectWorkspace({
     );
   }
 
-  const copy = sectionCopy[section];
-
   return (
     <div className="mx-auto max-w-7xl px-4 py-6 md:px-8">
       <div className="mb-5 flex flex-wrap gap-2">
@@ -183,18 +157,6 @@ export function HostProjectWorkspace({
         </Link>
       </div>
 
-      <section className="rounded-md bg-slate-950 p-5 text-white sm:p-6">
-        <p className="text-sm font-black text-teal-200">{copy.eyebrow}</p>
-        <h1 className="mt-3 max-w-4xl text-2xl font-black leading-tight sm:text-3xl">
-          {project.title}
-        </h1>
-        <p className="mt-3 max-w-3xl text-sm leading-7 text-slate-300">
-          {copy.title}
-        </p>
-        <p className="mt-2 max-w-3xl text-sm leading-7 text-slate-400">
-          {copy.description}
-        </p>
-      </section>
 
       <ProjectTabs projectPath={projectPath} section={section} />
 

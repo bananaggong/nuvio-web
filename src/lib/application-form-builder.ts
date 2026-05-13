@@ -303,12 +303,8 @@ export function createEmptyField(): ApplicationFormField {
 
 export function createEmptyTemplate(): ApplicationFormTemplate {
   return normalizeApplicationFormTemplateShape({
-    blocks: [
-      createEmptyBlock("title"),
-      createEmptyBlock("description"),
-      createEmptyBlock("shortText"),
-    ],
-    description: "호스트가 직접 구성한 신청폼입니다.",
+    blocks: [],
+    description: "",
     id: `form-${Date.now()}`,
     name: "새 신청폼",
     programTitle: "",

@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -6,7 +6,6 @@ import {
   ArrowLeft,
   ArrowRight,
   CheckCircle2,
-  FilePlus2,
   MessageSquareText,
 } from "lucide-react";
 import { useMemo, useState } from "react";
@@ -130,20 +129,6 @@ export function HostProgramCreateWizard({ projectId }: { projectId: string }) {
         </Link>
       </div>
 
-      <section className="rounded-md bg-slate-950 p-5 text-white sm:p-6">
-        <p className="inline-flex items-center gap-2 text-sm font-black text-teal-200">
-          <FilePlus2 size={18} />
-          New Program
-        </p>
-        <h1 className="mt-4 max-w-3xl text-2xl font-black leading-tight sm:text-3xl">
-          {project.title} 안에 새 프로그램을 신설합니다.
-        </h1>
-        <p className="mt-3 max-w-3xl text-sm leading-7 text-slate-300">
-          공개 모집 페이지, 신청 폼, 안내문자를 순서대로 준비합니다. 이 과정은
-          프로젝트를 새로 만드는 것이 아니라 프로젝트 하위 프로그램을 추가하는
-          흐름입니다.
-        </p>
-      </section>
 
       <div className="mt-5 flex flex-wrap gap-2">
         {steps.map((step, index) => (
