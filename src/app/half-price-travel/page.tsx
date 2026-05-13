@@ -4,12 +4,15 @@ import Link from "next/link";
 import { ArrowRight, BadgePercent, CheckCircle2, MapPinned } from "lucide-react";
 import { ProgramCard } from "@/components/program-card";
 import { programs } from "@/lib/data";
+import { createSeoMetadata } from "@/lib/seo";
 
-export const metadata: Metadata = {
+export const metadata: Metadata = createSeoMetadata({
   title: "반값여행",
   description:
     "여행경비 일부를 지역상품권 또는 페이백으로 돌려받는 반값여행형 프로그램을 모아 확인하세요.",
-};
+  path: "/half-price-travel",
+  keywords: ["반값여행", "여행 페이백", "지역상품권", "여행경비 지원"],
+});
 
 const schedule = [
   ["3월 4주", "남해, 밀양"],

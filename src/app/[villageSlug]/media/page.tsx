@@ -7,6 +7,7 @@ import {
 } from "@/lib/village-db";
 import { listPublicVillageMedia } from "@/lib/village-media-db";
 import { listPublicVillagePageSections } from "@/lib/village-page-cms";
+import { createSeoMetadata } from "@/lib/seo";
 import { isReservedVillageSlug } from "@/lib/village-routing";
 
 export const dynamic = "force-dynamic";
@@ -23,10 +24,12 @@ export async function generateMetadata({
   const village = await getPublicVillageBySlug(villageSlug);
   if (!village) return {};
 
-  return {
+  return createSeoMetadata({
     title: `미디어 | ${village.name}`,
     description: `${village.name}의 자체 컨텐츠, 방송출연, 활동 아카이브입니다.`,
-  };
+    image: village.heroImage,
+    path: `/${village.slug}/media`,
+  });
 }
 
 export default async function VillageMediaRoute({

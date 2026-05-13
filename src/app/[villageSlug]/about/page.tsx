@@ -6,6 +6,7 @@ import {
   getVillagePrograms,
 } from "@/lib/village-db";
 import { listPublicVillagePageSections } from "@/lib/village-page-cms";
+import { createSeoMetadata } from "@/lib/seo";
 import { isReservedVillageSlug } from "@/lib/village-routing";
 
 export const dynamic = "force-dynamic";
@@ -22,10 +23,12 @@ export async function generateMetadata({
   const village = await getPublicVillageBySlug(villageSlug);
   if (!village) return {};
 
-  return {
+  return createSeoMetadata({
     title: `둘러보기 | ${village.name}`,
     description: village.description,
-  };
+    image: village.heroImage,
+    path: `/${village.slug}/about`,
+  });
 }
 
 export default async function VillageAboutRoute({

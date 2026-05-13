@@ -2,10 +2,11 @@ import Image from "next/image";
 import Link from "next/link";
 import { Building2, CalendarDays, MapPin } from "lucide-react";
 import { formatDate, getDday } from "@/lib/format";
+import { programPath } from "@/lib/program-routing";
 import type { Program } from "@/lib/types";
 
 export function ProgramCard({ program }: { program: Program }) {
-  const href = `/programs/${program.id}`;
+  const href = programPath(program);
   const deadline = getDday(program.recruitEnd, program.status);
 
   return (

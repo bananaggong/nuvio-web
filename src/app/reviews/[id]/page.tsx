@@ -3,8 +3,15 @@ import Image from "next/image";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { Heart, MessageCircle, Share2 } from "lucide-react";
+import { JsonLdScript } from "@/components/json-ld";
 import { getProgramById, getReviewById, reviewCategories, reviews } from "@/lib/data";
 import { formatDateTime } from "@/lib/format";
+import { programPath } from "@/lib/program-routing";
+import {
+  breadcrumbJsonLd,
+  createSeoMetadata,
+  reviewJsonLd,
+} from "@/lib/seo";
 
 export function generateStaticParams() {
   return reviews.map((review) => ({ id: String(review.id) }));
@@ -18,10 +25,12 @@ export async function generateMetadata({
   const { id } = await params;
   const review = getReviewById(id);
   if (!review) return {};
-  return {
+  return createSeoMetadata({
     title: review.title,
     description: review.excerpt,
-  };
+    image: review.images[0],
+    path: `/reviews/${review.id}`,
+  });
 }
 
 export default async function ReviewDetailPage({
@@ -36,9 +45,20 @@ export default async function ReviewDetailPage({
   const program = review.programId ? getProgramById(review.programId) : undefined;
   const categoryLabel =
     reviewCategories.find((item) => item.key === review.category)?.label ?? "후기";
+  const canonicalPath = `/reviews/${review.id}`;
 
   return (
     <div className="mx-auto max-w-3xl px-5 py-8 md:px-8">
+      <JsonLdScript
+        data={[
+          reviewJsonLd(review, canonicalPath, program?.title ?? "NUVIO 후기"),
+          breadcrumbJsonLd([
+            { name: "홈", path: "/" },
+            { name: "지원금 후기", path: "/reviews" },
+            { name: review.title, path: canonicalPath },
+          ]),
+        ]}
+      />
       <article className="rounded-md border border-slate-200 bg-white p-5 shadow-sm">
         <p className="text-sm font-black text-[var(--primary)]">{categoryLabel}</p>
         <h1 className="mt-2 text-3xl font-black leading-tight text-slate-950">
@@ -70,7 +90,7 @@ export default async function ReviewDetailPage({
         {program ? (
           <Link
             className="mt-5 block rounded-md border border-teal-100 bg-teal-50 p-4 text-sm font-bold text-[var(--primary-strong)]"
-            href={`/programs/${program.id}`}
+            href={programPath(program)}
           >
             연결 프로그램: {program.title}
           </Link>

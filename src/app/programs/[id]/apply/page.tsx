@@ -4,6 +4,8 @@ import { ProgramApplicationForm } from "@/components/program-application-form";
 import { getApplicationFormTemplateForProgram } from "@/lib/application-form-db";
 import { programs } from "@/lib/data";
 import { getPublicProgramByIdentifier } from "@/lib/public-program-db";
+import { programPath } from "@/lib/program-routing";
+import { createSeoMetadata } from "@/lib/seo";
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
@@ -21,10 +23,12 @@ export async function generateMetadata({
   const program = await getPublicProgramByIdentifier(id);
   if (!program) return {};
 
-  return {
+  return createSeoMetadata({
     title: `${program.title} 신청`,
     description: `${program.title} 누비오 신청서`,
-  };
+    noIndex: true,
+    path: `${programPath(program)}/apply`,
+  });
 }
 
 export default async function ProgramApplyPage({

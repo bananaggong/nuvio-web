@@ -1,11 +1,17 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
+import { JsonLdScript } from "@/components/json-ld";
 import { VillageMediaDetailPage } from "@/components/village-media-pages";
 import {
   getPublicVillageBySlug,
   getVillagePrograms,
 } from "@/lib/village-db";
 import { listPublicVillageMedia } from "@/lib/village-media-db";
+import {
+  breadcrumbJsonLd,
+  createSeoMetadata,
+  mediaArticleJsonLd,
+} from "@/lib/seo";
 import { isReservedVillageSlug } from "@/lib/village-routing";
 
 export const dynamic = "force-dynamic";
@@ -26,15 +32,12 @@ export async function generateMetadata({
   const content = media.find((item) => String(item.id) === mediaId);
   if (!content) return {};
 
-  return {
+  return createSeoMetadata({
     title: `${content.title} | ${village.name}`,
     description: content.summary,
-    openGraph: {
-      title: content.title,
-      description: content.summary,
-      images: [{ url: content.thumbnail }],
-    },
-  };
+    image: content.thumbnail,
+    path: `/${village.slug}/media/${content.id}`,
+  });
 }
 
 export default async function VillageMediaDetailRoute({
@@ -53,13 +56,27 @@ export default async function VillageMediaDetailRoute({
   const content = media.find((item) => String(item.id) === mediaId);
 
   if (!content) notFound();
+  const canonicalPath = `/${village.slug}/media/${content.id}`;
 
   return (
-    <VillageMediaDetailPage
-      content={content}
-      media={media}
-      programs={programs}
-      village={village}
-    />
+    <>
+      <JsonLdScript
+        data={[
+          mediaArticleJsonLd(content, canonicalPath, village.name),
+          breadcrumbJsonLd([
+            { name: "홈", path: "/" },
+            { name: village.name, path: `/${village.slug}` },
+            { name: "미디어", path: `/${village.slug}/media` },
+            { name: content.title, path: canonicalPath },
+          ]),
+        ]}
+      />
+      <VillageMediaDetailPage
+        content={content}
+        media={media}
+        programs={programs}
+        village={village}
+      />
+    </>
   );
 }

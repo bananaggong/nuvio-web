@@ -89,6 +89,7 @@ export type ReportProject = {
   title: string;
   villageName: string;
   agencyName: string;
+  imageUrl?: string;
   programTitle: string;
   connectedProgramTitles: string[];
   periodLabel: string;
@@ -263,6 +264,7 @@ export const seedReportProjects: ReportProject[] = [
     title: "보성 로컬홈 2026 운영 프로젝트",
     villageName: "전체차LAB",
     agencyName: "보성 로컬홈 운영팀",
+    imageUrl: "/boseong/hero-illustration.png",
     programTitle: "전체 프로그램",
     connectedProgramTitles: ["로컬리듬", "숙재밭", "나무 여는 차실험"],
     periodLabel: "2026.05.01 - 2026.11.30",
@@ -425,6 +427,7 @@ export function createReportProject(): ReportProject {
     title: "새 운영 프로젝트",
     villageName: "로컬홈",
     agencyName: "운영 조직명",
+    imageUrl: "",
     programTitle: "전체 프로그램",
     connectedProgramTitles: [],
     periodLabel: "운영 기간 입력",
@@ -801,6 +804,7 @@ export function normalizeReportProjectModel(input: unknown): ReportProject {
     evidenceRules: normalizeEvidenceRules(value.evidenceRules),
     expenseEvents: normalizeExpenseEvents(value.expenseEvents),
     id: asString(value.id) || `operation-${Date.now()}`,
+    imageUrl: asString(value.imageUrl),
     manualFields: normalizeManualFields(value.manualFields),
     ownerName: asString(value.ownerName) || "담당자명",
     periodLabel: asString(value.periodLabel) || "운영 기간 입력",

@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
+import { JsonLdScript } from "@/components/json-ld";
 import { VillageHomePage } from "@/components/village-home-page";
 import {
   getPublicVillageBySlug,
@@ -9,7 +10,12 @@ import {
 } from "@/lib/village-db";
 import { listPublicVillageMedia } from "@/lib/village-media-db";
 import { listPublicVillagePageSections } from "@/lib/village-page-cms";
-import { isReservedVillageSlug } from "@/lib/village-routing";
+import {
+  breadcrumbJsonLd,
+  createSeoMetadata,
+  villageJsonLd,
+} from "@/lib/seo";
+import { canonicalVillagePath, isReservedVillageSlug } from "@/lib/village-routing";
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
@@ -30,15 +36,13 @@ export async function generateMetadata({
   const village = await getPublicVillageBySlug(villageSlug);
   if (!village) return {};
 
-  return {
-    title: `${village.name} | NUVIO`,
+  return createSeoMetadata({
+    title: village.name,
     description: village.summary,
-    openGraph: {
-      title: village.name,
-      description: village.summary,
-      images: [{ url: village.heroImage }],
-    },
-  };
+    image: village.heroImage,
+    keywords: [village.region, village.city, village.name, "로컬홈"],
+    path: canonicalVillagePath(village.slug),
+  });
 }
 
 export default async function ShortVillagePage({
@@ -62,12 +66,24 @@ export default async function ShortVillagePage({
       : undefined;
 
   return (
-    <VillageHomePage
-      media={media}
-      pageSections={pageSections}
-      programs={programs}
-      reviews={reviews}
-      village={village}
-    />
+    <>
+      <JsonLdScript
+        data={[
+          villageJsonLd(village, canonicalVillagePath(village.slug)),
+          breadcrumbJsonLd([
+            { name: "홈", path: "/" },
+            { name: "로컬홈", path: "/villages" },
+            { name: village.name, path: canonicalVillagePath(village.slug) },
+          ]),
+        ]}
+      />
+      <VillageHomePage
+        media={media}
+        pageSections={pageSections}
+        programs={programs}
+        reviews={reviews}
+        village={village}
+      />
+    </>
   );
 }

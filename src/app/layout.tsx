@@ -2,6 +2,14 @@ import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import { AppShell } from "@/components/app-shell";
+import { JsonLdScript } from "@/components/json-ld";
+import {
+  absoluteUrl,
+  organizationJsonLd,
+  siteConfig,
+  webApplicationJsonLd,
+  websiteJsonLd,
+} from "@/lib/seo";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -14,19 +22,63 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  metadataBase: new URL("https://nuvio.local"),
+  metadataBase: new URL(siteConfig.url),
+  applicationName: siteConfig.name,
   title: {
-    default: "NUVIO - 여행지원금과 로컬 체류 프로그램",
-    template: "%s | NUVIO",
+    default: siteConfig.title,
+    template: `%s | ${siteConfig.name}`,
   },
-  description:
-    "국내외 여행지원금, 워케이션, 한달살기, 반값여행, 로컬 프로젝트를 탐색하고 지원 과정을 기록하세요.",
+  description: siteConfig.description,
+  keywords: siteConfig.keywords,
+  authors: [{ name: siteConfig.name, url: siteConfig.url }],
+  creator: siteConfig.name,
+  publisher: siteConfig.name,
+  category: "travel",
+  manifest: "/manifest.webmanifest",
+  formatDetection: {
+    email: false,
+    address: false,
+    telephone: false,
+  },
+  icons: {
+    icon: [
+      { url: "/favicon.ico" },
+      { url: "/icon.svg", type: "image/svg+xml" },
+    ],
+    apple: [{ url: "/apple-icon.png" }],
+  },
   openGraph: {
-    title: "NUVIO - 여행지원금과 로컬 체류 프로그램",
-    description:
-      "여행지원금과 로컬 체류 프로그램을 검색, 비교, 기록하는 독자 플랫폼.",
+    title: siteConfig.title,
+    description: siteConfig.description,
+    url: siteConfig.url,
+    siteName: siteConfig.name,
     type: "website",
-    locale: "ko_KR",
+    locale: siteConfig.locale,
+    images: [
+      {
+        url: absoluteUrl(siteConfig.ogImagePath),
+        width: 1200,
+        height: 630,
+        alt: `${siteConfig.name} 대표 이미지`,
+      },
+    ],
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: siteConfig.title,
+    description: siteConfig.description,
+    images: [absoluteUrl(siteConfig.ogImagePath)],
+  },
+  robots: {
+    index: true,
+    follow: true,
+    googleBot: {
+      index: true,
+      follow: true,
+      "max-image-preview": "large",
+      "max-snippet": -1,
+      "max-video-preview": -1,
+    },
   },
 };
 
@@ -41,6 +93,9 @@ export default function RootLayout({
       className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
     >
       <body className="flex min-h-full flex-col">
+        <JsonLdScript
+          data={[organizationJsonLd(), websiteJsonLd(), webApplicationJsonLd()]}
+        />
         <AppShell>{children}</AppShell>
       </body>
     </html>

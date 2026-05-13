@@ -7,6 +7,7 @@ import {
   getVillageReviews,
 } from "@/lib/village-db";
 import { listPublicVillagePageSections } from "@/lib/village-page-cms";
+import { createSeoMetadata } from "@/lib/seo";
 import { isReservedVillageSlug } from "@/lib/village-routing";
 
 export const dynamic = "force-dynamic";
@@ -23,10 +24,12 @@ export async function generateMetadata({
   const village = await getPublicVillageBySlug(villageSlug);
   if (!village) return {};
 
-  return {
+  return createSeoMetadata({
     title: `참여 후기 | ${village.name}`,
     description: `${village.name} 참여 후기와 운영 기록입니다.`,
-  };
+    image: village.heroImage,
+    path: `/${village.slug}/reviews`,
+  });
 }
 
 export default async function VillageReviewsRoute({

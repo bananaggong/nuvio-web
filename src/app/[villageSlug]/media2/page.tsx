@@ -6,6 +6,7 @@ import {
   getVillagePrograms,
 } from "@/lib/village-db";
 import { listPublicVillageMedia } from "@/lib/village-media-db";
+import { createSeoMetadata } from "@/lib/seo";
 import { isReservedVillageSlug } from "@/lib/village-routing";
 
 export const dynamic = "force-dynamic";
@@ -19,10 +20,12 @@ export async function generateMetadata({
   const { villageSlug } = await params;
   if (isReservedVillageSlug(villageSlug) || villageSlug !== "boseong") return {};
 
-  return {
+  return createSeoMetadata({
     title: "미디어 16:9 카드 실험 | 전체차LAB",
     description: "전체차LAB 미디어 카드의 16:9 썸네일 비율 대안 화면입니다.",
-  };
+    noIndex: true,
+    path: "/boseong/media2",
+  });
 }
 
 export default async function VillageMediaAspectRoute({

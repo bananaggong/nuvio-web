@@ -534,6 +534,11 @@ export function HostReportAutomation() {
                     value={selectedProject.agencyName}
                   />
                   <TextInput
+                    label="대표 이미지 URL"
+                    onChange={(value) => updateProject({ imageUrl: value })}
+                    value={selectedProject.imageUrl ?? ""}
+                  />
+                  <TextInput
                     label="담당자"
                     onChange={(value) => updateProject({ ownerName: value })}
                     value={selectedProject.ownerName}

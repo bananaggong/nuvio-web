@@ -144,6 +144,7 @@ export function mapReportProjectToInsert(
       connectedProgramTitles: project.connectedProgramTitles,
       evidenceRules: project.evidenceRules,
       expenseEvents: project.expenseEvents,
+      imageUrl: project.imageUrl,
       manualFields: project.manualFields,
       ownerName: project.ownerName,
       periodLabel: project.periodLabel,

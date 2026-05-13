@@ -10,6 +10,7 @@ import type {
 import { appendHostApplication } from "@/lib/host-operations";
 import type { HostApplication } from "@/lib/host-operations";
 import { appendMyApplication } from "@/lib/my-applications";
+import { programPath } from "@/lib/program-routing";
 import type { Program } from "@/lib/types";
 
 type ProgramApplicationFormProps = {
@@ -195,7 +196,7 @@ export function ProgramApplicationForm({
             </Link>
             <Link
               className="inline-flex h-11 items-center justify-center rounded-md border border-slate-200 px-4 text-sm font-black text-slate-700"
-              href={`/programs/${program.id}`}
+              href={programPath(program)}
             >
               프로그램으로 돌아가기
             </Link>

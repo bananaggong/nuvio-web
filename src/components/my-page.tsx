@@ -17,6 +17,7 @@ import {
 } from "@/lib/host-operations";
 import type { HostApplication } from "@/lib/host-operations";
 import { readMyApplicationsFromStorage } from "@/lib/my-applications";
+import { programPath } from "@/lib/program-routing";
 import type { Program } from "@/lib/types";
 
 type LocalProfile = {
@@ -259,7 +260,7 @@ export function MyPage() {
                   section.items.map((program) => (
                     <Link
                       className="rounded-md bg-[var(--surface-muted)] p-3 text-sm font-bold text-slate-700 hover:text-[var(--primary)]"
-                      href={`/programs/${program.id}`}
+                      href={programPath(program)}
                       key={program.id}
                     >
                       {program.title}

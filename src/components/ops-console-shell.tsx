@@ -7,13 +7,17 @@ import {
   Calendar,
   ChevronDown,
   ChevronRight,
+  ClipboardList,
   FolderOpen,
+  FolderKanban,
   Home,
   Menu,
+  MessageSquareText,
   Search,
   Settings,
   UserRound,
   Users,
+  WalletCards,
   X,
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
@@ -36,50 +40,55 @@ type NavigationItem = {
 const navigationByArea: Record<ConsoleArea, NavigationItem[]> = {
   host: [
     {
-      name: "대시보드",
+      name: "운영 프로젝트",
       href: "/host",
-      icon: Home,
-      children: [],
+      icon: FolderKanban,
+      children: [
+        { name: "운영중인 프로젝트", href: "/host" },
+        { name: "새 프로젝트 준비", href: "/host/reports" },
+      ],
     },
     {
-      name: "운영 캘린더",
-      href: "/host",
-      icon: Calendar,
-      children: [],
-    },
-    {
-      name: "프로그램",
+      name: "모집/신청",
       href: "/host/programs",
-      icon: FolderOpen,
+      icon: ClipboardList,
       children: [
-        { name: "전체 프로그램", href: "/host/programs" },
+        { name: "프로그램 관리", href: "/host/programs" },
         { name: "신청서 설정", href: "/host/forms" },
-        { name: "전체차LAB 운영", href: "/host/boseong" },
-      ],
-    },
-    {
-      name: "회원",
-      href: "/host/applications",
-      icon: Users,
-      children: [
         { name: "신청자 CRM", href: "/host/applications" },
-        { name: "안내 메시지", href: "/host/messages" },
       ],
     },
     {
-      name: "운영 마감",
+      name: "커뮤니케이션",
+      href: "/host/messages",
+      icon: MessageSquareText,
+      children: [{ name: "안내 메시지", href: "/host/messages" }],
+    },
+    {
+      name: "활동/증빙",
       href: "/host/reports",
-      icon: BarChart3,
+      icon: WalletCards,
       children: [
-        { name: "운영 프로젝트", href: "/host/reports" },
+        { name: "활동/참석", href: "/host/reports" },
         { name: "지출/증빙", href: "/host/reports" },
+        { name: "마감/보고", href: "/host/reports" },
       ],
     },
     {
-      name: "마을 관리",
+      name: "로컬홈",
       href: "/host/villages",
+      icon: Home,
+      children: [
+        { name: "공개 페이지 관리", href: "/host/villages" },
+        { name: "로컬홈 정보", href: "/host/boseong" },
+        { name: "보성 페이지 편집", href: "/host/boseong/editor" },
+      ],
+    },
+    {
+      name: "설정",
+      href: "/host/settings",
       icon: Settings,
-      children: [{ name: "마을 및 페이지 관리", href: "/host/villages" }],
+      children: [],
     },
   ],
   admin: [
@@ -141,8 +150,8 @@ const navigationByArea: Record<ConsoleArea, NavigationItem[]> = {
 };
 
 const titleByArea: Record<ConsoleArea, string> = {
-  host: "마을 관리",
-  admin: "마을 관리",
+  host: "호스트 운영",
+  admin: "관리자 운영",
 };
 
 const headerTitleByArea: Record<ConsoleArea, string> = {
@@ -219,7 +228,7 @@ function Header({
             <Search className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-gray-400" />
             <input
               className="w-full rounded-full border-0 bg-white/90 py-2 pl-10 pr-4 text-sm font-semibold text-gray-800 outline-none ring-0 placeholder:text-gray-400 focus:bg-white focus:ring-2 focus:ring-white/30"
-              placeholder="프로그램, 신청자, 보고서 검색..."
+              placeholder="프로젝트, 신청자, 보고서 검색..."
               type="text"
             />
           </label>
@@ -414,6 +423,7 @@ function NavigationGroup({
 
 function isActivePath(pathname: string, href: string) {
   if (href === "/") return pathname === "/";
-  if (href === "/host" || href === "/admin") return pathname === href;
+  if (href === "/host") return pathname === href || pathname.startsWith("/host/projects");
+  if (href === "/admin") return pathname === href;
   return pathname === href || pathname.startsWith(`${href}/`);
 }

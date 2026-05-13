@@ -2,8 +2,15 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { ArrowRight, Megaphone } from "lucide-react";
+import { JsonLdScript } from "@/components/json-ld";
 import { announcements, getAnnouncementById, getProgramById } from "@/lib/data";
 import { formatDateTime } from "@/lib/format";
+import { programPath } from "@/lib/program-routing";
+import {
+  articleJsonLd,
+  breadcrumbJsonLd,
+  createSeoMetadata,
+} from "@/lib/seo";
 
 export function generateStaticParams() {
   return announcements.map((announcement) => ({ id: String(announcement.id) }));
@@ -17,10 +24,11 @@ export async function generateMetadata({
   const { id } = await params;
   const announcement = getAnnouncementById(Number(id));
   if (!announcement) return {};
-  return {
+  return createSeoMetadata({
     title: announcement.title,
     description: announcement.body,
-  };
+    path: `/announcements/${announcement.id}`,
+  });
 }
 
 export default async function AnnouncementDetailPage({
@@ -34,9 +42,26 @@ export default async function AnnouncementDetailPage({
   const program = announcement.programId
     ? getProgramById(announcement.programId)
     : undefined;
+  const canonicalPath = `/announcements/${announcement.id}`;
 
   return (
     <div className="mx-auto max-w-3xl px-5 py-8 md:px-8">
+      <JsonLdScript
+        data={[
+          articleJsonLd({
+            title: announcement.title,
+            description: announcement.body,
+            body: announcement.body,
+            datePublished: announcement.date,
+            path: canonicalPath,
+          }),
+          breadcrumbJsonLd([
+            { name: "홈", path: "/" },
+            { name: "실시간 공지", path: "/announcements" },
+            { name: announcement.title, path: canonicalPath },
+          ]),
+        ]}
+      />
       <article className="rounded-md border border-slate-200 bg-white p-5 shadow-sm">
         <p className="inline-flex items-center gap-2 text-sm font-black text-[var(--primary)]">
           <Megaphone size={18} />
@@ -54,7 +79,7 @@ export default async function AnnouncementDetailPage({
         {program ? (
           <Link
             className="mt-5 inline-flex items-center gap-2 rounded-md bg-[var(--primary)] px-4 py-3 text-sm font-black text-white"
-            href={`/programs/${program.id}`}
+            href={programPath(program)}
           >
             연결 프로그램 보기
             <ArrowRight size={18} />

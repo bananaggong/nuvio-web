@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { VillageLegalPage } from "@/components/village-legal-page";
 import { legalDocuments } from "@/lib/legal-documents";
+import { createSeoMetadata } from "@/lib/seo";
 import { getPublicVillageBySlug } from "@/lib/village-db";
 import { isReservedVillageSlug } from "@/lib/village-routing";
 
@@ -19,10 +20,12 @@ export async function generateMetadata({
   const village = await getPublicVillageBySlug(villageSlug);
   if (!village) return {};
 
-  return {
+  return createSeoMetadata({
     title: `${legalDocuments.privacyCollection.title} | ${village.name}`,
     description: legalDocuments.privacyCollection.description,
-  };
+    noIndex: true,
+    path: `/${village.slug}/privacy`,
+  });
 }
 
 export default async function VillagePrivacyPage({

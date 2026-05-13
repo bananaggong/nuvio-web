@@ -66,12 +66,17 @@ const sortOptions: Array<{ key: ProgramSort; label: string }> = [
 ];
 
 type ProgramExplorerProps = {
+  initialKeyword?: string;
   initialTheme?: ThemeKey;
   programs: Program[];
 };
 
-export function ProgramExplorer({ initialTheme, programs }: ProgramExplorerProps) {
-  const [keyword, setKeyword] = useState("");
+export function ProgramExplorer({
+  initialKeyword = "",
+  initialTheme,
+  programs,
+}: ProgramExplorerProps) {
+  const [keyword, setKeyword] = useState(initialKeyword);
   const [themes, setThemes] = useState<ThemeKey[]>(
     initialTheme ? [initialTheme] : [],
   );

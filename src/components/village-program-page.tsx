@@ -13,6 +13,7 @@ import {
 import { StatusBadge } from "@/components/status-badge";
 import { VillageSiteFooter, VillageSiteHeader } from "@/components/village-site-chrome";
 import { formatDate, formatRange, formatWon, getDday } from "@/lib/format";
+import { programPath } from "@/lib/program-routing";
 import { canonicalVillagePath } from "@/lib/village-routing";
 import type { Program } from "@/lib/types";
 import type { Village } from "@/lib/village-types";
@@ -130,7 +131,7 @@ export function VillageProgramPage({
             <div className="mt-4 grid gap-2">
               <Link
                 className="inline-flex h-12 items-center justify-center gap-2 rounded-md px-4 text-sm font-black text-white hover:opacity-90"
-                href={`/programs/${program.id}/apply`}
+                href={`${programPath(program)}/apply`}
                 style={{ backgroundColor: village.brandColor }}
               >
                 <Ticket size={18} />

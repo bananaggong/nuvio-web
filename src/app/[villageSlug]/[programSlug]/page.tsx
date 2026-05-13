@@ -1,11 +1,21 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
+import { JsonLdScript } from "@/components/json-ld";
 import { VillageProgramPage } from "@/components/village-program-page";
 import {
   getPublicVillageBySlug,
   resolveVillageProgram,
 } from "@/lib/village-db";
-import { isReservedVillageSlug } from "@/lib/village-routing";
+import {
+  breadcrumbJsonLd,
+  createSeoMetadata,
+  programJsonLd,
+} from "@/lib/seo";
+import {
+  canonicalVillagePath,
+  canonicalVillageProgramPath,
+  isReservedVillageSlug,
+} from "@/lib/village-routing";
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
@@ -24,15 +34,15 @@ export async function generateMetadata({
   const program = await resolveVillageProgram(village, programSlug);
   if (!program) return {};
 
-  return {
+  const canonicalPath = canonicalVillageProgramPath(village.slug, program.slug);
+
+  return createSeoMetadata({
     title: `${program.title} | ${village.name}`,
     description: program.summary,
-    openGraph: {
-      title: program.title,
-      description: program.summary,
-      images: [{ url: program.image }],
-    },
-  };
+    image: program.image,
+    keywords: [village.name, village.region, village.city, ...program.hashtags],
+    path: canonicalPath,
+  });
 }
 
 export default async function ShortVillageProgramRoute({
@@ -48,6 +58,22 @@ export default async function ShortVillageProgramRoute({
 
   const program = await resolveVillageProgram(village, programSlug);
   if (!program) notFound();
+  const canonicalPath = canonicalVillageProgramPath(village.slug, program.slug);
 
-  return <VillageProgramPage program={program} village={village} />;
+  return (
+    <>
+      <JsonLdScript
+        data={[
+          programJsonLd(program, canonicalPath),
+          breadcrumbJsonLd([
+            { name: "홈", path: "/" },
+            { name: "로컬홈", path: "/villages" },
+            { name: village.name, path: canonicalVillagePath(village.slug) },
+            { name: program.title, path: canonicalPath },
+          ]),
+        ]}
+      />
+      <VillageProgramPage program={program} village={village} />
+    </>
+  );
 }

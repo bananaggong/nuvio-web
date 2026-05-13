@@ -13,6 +13,7 @@ import {
   UsersRound,
   WalletCards,
 } from "lucide-react";
+import { JsonLdScript } from "@/components/json-ld";
 import { ProgramActions } from "@/components/program-actions";
 import { StatusBadge } from "@/components/status-badge";
 import { programs } from "@/lib/data";
@@ -21,6 +22,12 @@ import {
   getPublicProgramByIdentifier,
   listPublicPrograms,
 } from "@/lib/public-program-db";
+import { programPath } from "@/lib/program-routing";
+import {
+  breadcrumbJsonLd,
+  createSeoMetadata,
+  programJsonLd,
+} from "@/lib/seo";
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
@@ -38,15 +45,19 @@ export async function generateMetadata({
   const program = await getPublicProgramByIdentifier(id);
   if (!program) return {};
 
-  return {
-    title: `${program.title} | NUVIO`,
+  return createSeoMetadata({
+    title: program.title,
     description: program.summary,
-    openGraph: {
-      title: program.title,
-      description: program.summary,
-      images: [{ url: program.image }],
-    },
-  };
+    image: program.image,
+    keywords: [
+      program.region,
+      program.city,
+      program.theme,
+      ...program.hashtags,
+      ...program.badges,
+    ],
+    path: programPath(program),
+  });
 }
 
 export default async function ProgramDetailPage({
@@ -68,9 +79,20 @@ export default async function ProgramDetailPage({
     )
     .slice(0, 4);
   const isExternal = program.dataSource === "external";
+  const canonicalPath = programPath(program);
 
   return (
     <div className="bg-white">
+      <JsonLdScript
+        data={[
+          programJsonLd(program, canonicalPath),
+          breadcrumbJsonLd([
+            { name: "홈", path: "/" },
+            { name: "프로그램", path: "/" },
+            { name: program.title, path: canonicalPath },
+          ]),
+        ]}
+      />
       <section className="border-b border-[var(--line)] bg-[var(--background)]">
         <div className="mx-auto grid max-w-6xl gap-8 px-5 py-8 md:px-8 lg:grid-cols-[minmax(0,1fr)_380px]">
           <div className="min-w-0">
@@ -126,7 +148,7 @@ export default async function ProgramDetailPage({
             <div className="mt-4 grid gap-2">
               <a
                 className="inline-flex h-12 items-center justify-center gap-2 rounded-md bg-[var(--primary)] px-4 text-sm font-black text-white hover:bg-[var(--primary-strong)]"
-                href={isExternal ? program.sourceUrl : `/programs/${program.id}/apply`}
+                href={isExternal ? program.sourceUrl : `${canonicalPath}/apply`}
                 rel={isExternal ? "noreferrer" : undefined}
                 target={isExternal ? "_blank" : undefined}
               >
@@ -205,7 +227,7 @@ export default async function ProgramDetailPage({
               {relatedPrograms.map((item) => (
                 <Link
                   className="block rounded-md bg-white p-3 text-sm font-bold text-slate-800 hover:text-[var(--primary)]"
-                  href={`/programs/${item.id}`}
+                  href={programPath(item)}
                   key={item.id}
                 >
                   {item.title}

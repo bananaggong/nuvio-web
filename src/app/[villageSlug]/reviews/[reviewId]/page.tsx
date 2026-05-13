@@ -1,11 +1,17 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
+import { JsonLdScript } from "@/components/json-ld";
 import { VillageReviewDetailPage } from "@/components/village-index-pages";
 import {
   getPublicVillageBySlug,
   getVillagePrograms,
   getVillageReviews,
 } from "@/lib/village-db";
+import {
+  breadcrumbJsonLd,
+  createSeoMetadata,
+  reviewJsonLd,
+} from "@/lib/seo";
 import { isReservedVillageSlug } from "@/lib/village-routing";
 
 export const dynamic = "force-dynamic";
@@ -29,10 +35,12 @@ export async function generateMetadata({
   );
   if (!review) return {};
 
-  return {
+  return createSeoMetadata({
     title: `${review.title} | ${village.name}`,
     description: review.excerpt,
-  };
+    image: review.images[0] || village.heroImage,
+    path: `/${village.slug}/reviews/${review.id}`,
+  });
 }
 
 export default async function VillageReviewDetailRoute({
@@ -52,12 +60,26 @@ export default async function VillageReviewDetailRoute({
     (item) => String(item.id) === reviewId,
   );
   if (!review) notFound();
+  const canonicalPath = `/${village.slug}/reviews/${review.id}`;
 
   return (
-    <VillageReviewDetailPage
-      programs={programs}
-      review={review}
-      village={village}
-    />
+    <>
+      <JsonLdScript
+        data={[
+          reviewJsonLd(review, canonicalPath, village.name),
+          breadcrumbJsonLd([
+            { name: "홈", path: "/" },
+            { name: village.name, path: `/${village.slug}` },
+            { name: "후기", path: `/${village.slug}/reviews` },
+            { name: review.title, path: canonicalPath },
+          ]),
+        ]}
+      />
+      <VillageReviewDetailPage
+        programs={programs}
+        review={review}
+        village={village}
+      />
+    </>
   );
 }

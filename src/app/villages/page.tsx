@@ -2,17 +2,20 @@ import type { Metadata } from "next";
 import Image from "next/image";
 import Link from "next/link";
 import { ArrowRight, MapPin } from "lucide-react";
+import { createSeoMetadata } from "@/lib/seo";
 import { listPublicVillages } from "@/lib/village-db";
 import { villagePath } from "@/lib/village-routing";
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
 
-export const metadata: Metadata = {
-  title: "로컬 홈 | NUVIO",
+export const metadata: Metadata = createSeoMetadata({
+  title: "로컬 홈",
   description:
     "NUVIO에 등록된 청년마을, 로컬 체류지, 워케이션 마을의 공식 홈을 모아봅니다.",
-};
+  path: "/villages",
+  keywords: ["로컬홈", "청년마을", "워케이션 마을", "로컬 체류지"],
+});
 
 export default async function VillagesPage() {
   const villages = await listPublicVillages();

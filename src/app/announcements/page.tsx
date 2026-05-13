@@ -15,12 +15,15 @@ import {
 import { getProgramById } from "@/lib/data";
 import { formatDateTime } from "@/lib/format";
 import { getLiveAnnouncementFeed } from "@/lib/live-announcements";
+import { createSeoMetadata } from "@/lib/seo";
 import type { AnnouncementType } from "@/lib/types";
 
-export const metadata: Metadata = {
+export const metadata: Metadata = createSeoMetadata({
   title: "실시간 공지",
   description: "여행지원금 프로그램 변경, 조기마감, 오픈 소식을 확인하세요.",
-};
+  path: "/announcements",
+  keywords: ["여행지원금 공지", "모집 마감", "프로그램 변경"],
+});
 
 const typeMeta: Record<AnnouncementType, { label: string; icon: typeof Megaphone; className: string }> = {
   close: {
