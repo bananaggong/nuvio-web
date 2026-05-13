@@ -352,7 +352,6 @@ function buildNavigation(area: ConsoleArea, pathname: string): NavigationItem[] 
     icon: FolderKanban,
     children: [
       { name: "운영중인 프로젝트", href: "/host" },
-      { name: "새 프로젝트 만들기", href: "/host/projects/new" },
     ],
   };
   const localHomeNavigation: NavigationItem = {
