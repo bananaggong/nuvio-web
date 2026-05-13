@@ -5,12 +5,12 @@ import Link from "next/link";
 import {
   ArrowRight,
   ClipboardList,
-  FilePlus2,
   FileText,
   FolderKanban,
   Globe2,
   MessageSquareText,
   Plus,
+  Settings,
   Sparkles,
 } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
@@ -47,21 +47,9 @@ const fallbackActions = [
     icon: ClipboardList,
   },
   {
-    href: "/host/forms",
-    label: "신청서 빌더",
-    helper: "프로젝트별 질문 설계 도구",
-    icon: FilePlus2,
-  },
-  {
-    href: "/host/messages",
-    label: "메시지 자동화",
-    helper: "상태별 안내 템플릿 관리",
-    icon: MessageSquareText,
-  },
-  {
     href: "/host/reports",
-    label: "운영 마감",
-    helper: "지출, 증빙, 활동 기록 설정",
+    label: "새 프로젝트 준비",
+    helper: "예산, 증빙, 활동 구조 설정",
     icon: FileText,
   },
   {
@@ -69,6 +57,12 @@ const fallbackActions = [
     label: "로컬홈 관리",
     helper: "공개 페이지와 연락처 관리",
     icon: Globe2,
+  },
+  {
+    href: "/host/settings",
+    label: "호스트 설정",
+    helper: "권한, 기본값, 데이터 관리",
+    icon: Settings,
   },
 ] as const;
 
@@ -311,10 +305,10 @@ function ProjectCard({ project }: { project: HostProjectOverview }) {
         </div>
 
         <div className="mt-3 flex flex-wrap gap-2">
-          <SubFeatureLink href={`${href}#applications`} label="신청자" />
-          <SubFeatureLink href={`${href}#forms`} label="신청서" />
-          <SubFeatureLink href={`${href}#messages`} label="메시지" />
-          <SubFeatureLink href={`${href}#closeout`} label="마감" />
+          <SubFeatureLink href={`${href}/applications`} label="신청자" />
+          <SubFeatureLink href={`${href}/forms`} label="신청서" />
+          <SubFeatureLink href={`${href}/messages`} label="메시지" />
+          <SubFeatureLink href={`${href}/closeout`} label="마감" />
         </div>
       </div>
     </article>

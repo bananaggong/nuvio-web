@@ -20,6 +20,10 @@ import { useEffect, useMemo, useState } from "react";
 import { readHostApplicationsFromStorage } from "@/lib/host-operations";
 import type { HostApplication } from "@/lib/host-operations";
 import {
+  findHostProjectOverview,
+  hostProjectPath,
+} from "@/lib/host-projects";
+import {
   buildMessageExportCsv,
   buildMessageRecipientPreview,
   campaignStatusLabels,
@@ -38,6 +42,12 @@ import type {
   MessageChannel,
   MessageTargetStatus,
 } from "@/lib/message-automation";
+import {
+  mergeReportProjects,
+  readReportProjects,
+  writeReportProjects,
+} from "@/lib/report-automation";
+import type { ReportProject } from "@/lib/report-automation";
 
 const channelOptions: MessageChannel[] = ["email", "sms", "kakao"];
 const campaignStatusOptions: MessageCampaignStatus[] = [
@@ -46,8 +56,10 @@ const campaignStatusOptions: MessageCampaignStatus[] = [
   "sent",
 ];
 
-export function HostMessageAutomation() {
+export function HostMessageAutomation({ projectId }: { projectId?: string }) {
   const [applications, setApplications] = useState(readHostApplicationsFromStorage);
+  const [reportProjects, setReportProjects] =
+    useState<ReportProject[]>(readReportProjects);
   const [templates] = useState(readMessageTemplates);
   const [campaigns, setCampaigns] = useState<MessageCampaign[]>(
     readMessageCampaigns,
@@ -62,14 +74,20 @@ export function HostMessageAutomation() {
       campaigns.find((campaign) => campaign.id === selectedId) ?? campaigns[0],
     [campaigns, selectedId],
   );
+  const project = useMemo(() => {
+    if (!projectId) return undefined;
+    return findHostProjectOverview(projectId, applications, reportProjects);
+  }, [applications, projectId, reportProjects]);
+  const projectApplications = project ? project.applications : applications;
+  const projectBasePath = projectId ? hostProjectPath(projectId) : undefined;
   const recipients = useMemo(() => {
     if (!selectedCampaign) return [];
     return buildMessageRecipientPreview(
       selectedCampaign,
       templates,
-      applications,
+      projectApplications,
     );
-  }, [applications, selectedCampaign, templates]);
+  }, [projectApplications, selectedCampaign, templates]);
   const scheduledCount = campaigns.filter(
     (campaign) => campaign.status === "scheduled",
   ).length;
@@ -80,9 +98,10 @@ export function HostMessageAutomation() {
 
     async function loadDatabaseState() {
       try {
-        const [applicationsResponse, campaignsResponse] = await Promise.all([
+        const [applicationsResponse, campaignsResponse, reportsResponse] = await Promise.all([
           fetch("/api/host/applications", { cache: "no-store" }),
           fetch("/api/host/message-campaigns", { cache: "no-store" }),
+          fetch("/api/host/reports", { cache: "no-store" }),
         ]);
 
         if (applicationsResponse.ok) {
@@ -114,6 +133,21 @@ export function HostMessageAutomation() {
               return nextCampaigns;
             });
             setSelectedId((currentId) => currentId ?? databaseCampaigns[0]?.id);
+          }
+        }
+
+        if (reportsResponse.ok) {
+          const payload = (await reportsResponse.json()) as {
+            data?: ReportProject[];
+          };
+          const databaseProjects = Array.isArray(payload.data) ? payload.data : [];
+
+          if (isMounted && databaseProjects.length > 0) {
+            setReportProjects((currentProjects) => {
+              const nextProjects = mergeReportProjects(databaseProjects, currentProjects);
+              writeReportProjects(nextProjects);
+              return nextProjects;
+            });
           }
         }
       } catch {
@@ -209,7 +243,7 @@ export function HostMessageAutomation() {
     if (!selectedCampaign) return;
     downloadTextFile(
       "nuvio-message-queue.csv",
-      buildMessageExportCsv(selectedCampaign, templates, applications),
+      buildMessageExportCsv(selectedCampaign, templates, projectApplications),
       "text/csv",
     );
   }
@@ -234,10 +268,10 @@ export function HostMessageAutomation() {
       <div className="mb-5 grid gap-3 sm:grid-cols-[1fr_auto_auto_auto]">
         <Link
           className="inline-flex h-10 items-center justify-center gap-2 rounded-md border border-slate-200 bg-white px-3 text-sm font-black text-slate-700"
-          href="/host"
+          href={projectBasePath ?? "/host"}
         >
           <ArrowLeft size={16} />
-          운영 콘솔
+          {projectBasePath ? "프로젝트 허브" : "운영 콘솔"}
         </Link>
         <button
           className="inline-flex h-10 items-center justify-center gap-2 rounded-md border border-slate-200 bg-white px-3 text-sm font-black text-slate-700"
@@ -273,16 +307,19 @@ export function HostMessageAutomation() {
       <section className="overflow-hidden rounded-md bg-slate-950 p-5 text-white sm:p-6">
         <p className="inline-flex items-center gap-2 text-sm font-black text-teal-200">
           <Sparkles size={18} />
-          메시지 자동화 센터
+          {project ? "프로젝트 메시지" : "메시지 자동화 센터"}
         </p>
         <div className="mt-4 grid gap-5 lg:grid-cols-[minmax(0,1fr)_320px]">
           <div className="min-w-0">
             <h1 className="max-w-3xl text-2xl font-black leading-tight sm:text-3xl md:text-4xl">
-              신청자 상태에 맞춰 안내 메시지를 예약합니다.
+              {project
+                ? `${project.title} 신청자에게 보낼 안내 메시지를 예약합니다.`
+                : "신청자 상태에 맞춰 안내 메시지를 예약합니다."}
             </h1>
             <p className="mt-3 max-w-3xl text-sm leading-7 text-slate-300">
-              템플릿, 대상 상태, 발송 채널을 조합해 수신자 큐를 만들고 DB 연결
-              후에는 예약 발송 이력을 서버에 기록합니다.
+              {project
+                ? "수신자 큐는 이 프로젝트에 연결된 신청자만 기준으로 생성됩니다."
+                : "템플릿, 대상 상태, 발송 채널을 조합해 수신자 큐를 만들고 DB 연결 후에는 예약 발송 이력을 서버에 기록합니다."}
             </p>
           </div>
           <div className="grid gap-2 sm:grid-cols-3 lg:grid-cols-1">

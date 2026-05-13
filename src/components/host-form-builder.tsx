@@ -21,6 +21,7 @@ import {
   readApplicationFormTemplates,
   writeApplicationFormTemplates,
 } from "@/lib/application-form-builder";
+import { hostProjectPath } from "@/lib/host-projects";
 import type {
   ApplicationFieldType,
   ApplicationFormField,
@@ -34,7 +35,7 @@ const fieldTypeLabels: Record<ApplicationFieldType, string> = {
   checkbox: "동의 체크",
 };
 
-export function HostFormBuilder() {
+export function HostFormBuilder({ projectId }: { projectId?: string }) {
   const [templates, setTemplates] = useState<ApplicationFormTemplate[]>(
     readApplicationFormTemplates,
   );
@@ -47,6 +48,7 @@ export function HostFormBuilder() {
     () => templates.find((template) => template.id === selectedId) ?? templates[0],
     [selectedId, templates],
   );
+  const projectBasePath = projectId ? hostProjectPath(projectId) : undefined;
 
   useEffect(() => {
     let isMounted = true;
@@ -196,10 +198,10 @@ export function HostFormBuilder() {
       <div className="mb-5 flex flex-col items-stretch gap-3 sm:flex-row sm:items-center sm:justify-between">
         <Link
           className="inline-flex h-10 items-center justify-center gap-2 rounded-md border border-slate-200 bg-white px-3 text-sm font-black text-slate-700"
-          href="/host"
+          href={projectBasePath ?? "/host"}
         >
           <ArrowLeft size={16} />
-          운영 콘솔
+          {projectBasePath ? "프로젝트 허브" : "운영 콘솔"}
         </Link>
         <div className="flex flex-col gap-2 sm:flex-row">
           <button
@@ -229,15 +231,18 @@ export function HostFormBuilder() {
       <section className="overflow-hidden rounded-md bg-slate-950 p-5 text-white sm:p-6">
         <p className="inline-flex items-center gap-2 text-sm font-black text-teal-200">
           <FilePlus2 size={18} />
-          신청서 빌더
+          {projectBasePath ? "프로젝트 신청서" : "신청서 빌더"}
         </p>
         <h1 className="mt-3 text-2xl font-black leading-tight sm:text-3xl">
-          <span className="block">호스트가 질문을</span>
+          <span className="block">
+            {projectBasePath ? "이 프로젝트의 질문을" : "호스트가 질문을"}
+          </span>
           <span className="block">직접 만듭니다.</span>
         </h1>
         <p className="mt-2 max-w-3xl text-sm leading-6 text-slate-300 [overflow-wrap:anywhere]">
-          DB 연결 전에는 브라우저에 저장하고, 연결 후에는 신청서 테이블로
-          이전할 구조입니다.
+          {projectBasePath
+            ? "전역 신청서 도구가 아니라 선택한 프로젝트의 모집 흐름에 붙는 질문 세트로 다룹니다."
+            : "DB 연결 전에는 브라우저에 저장하고, 연결 후에는 신청서 테이블로 이전할 구조입니다."}
         </p>
       </section>
 

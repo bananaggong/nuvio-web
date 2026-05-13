@@ -32,6 +32,7 @@ import type {
 } from "@/lib/host-operations";
 import {
   findHostProjectOverview,
+  hostProjectPath,
   type HostProjectOverview,
 } from "@/lib/host-projects";
 import {
@@ -124,6 +125,7 @@ export function HostProjectHub({ projectId }: { projectId: string }) {
   const reportChecklist = project?.reportProject
     ? buildReportChecklist(project.reportProject, applications)
     : [];
+  const projectPath = project ? hostProjectPath(project.id) : "";
 
   function updateApplicationStatus(
     applicationId: string,
@@ -221,12 +223,12 @@ export function HostProjectHub({ projectId }: { projectId: string }) {
       </section>
 
       <section className="mt-5 grid gap-3 md:grid-cols-3 xl:grid-cols-6">
-        <FeatureJump href="#applications" icon={<Users size={17} />} label="신청자" />
-        <FeatureJump href="#forms" icon={<FilePlus2 size={17} />} label="신청서" />
-        <FeatureJump href="#messages" icon={<MessageSquareText size={17} />} label="메시지" />
-        <FeatureJump href="#activities" icon={<ClipboardList size={17} />} label="활동/참석" />
-        <FeatureJump href="#evidence" icon={<WalletCards size={17} />} label="지출/증빙" />
-        <FeatureJump href="#closeout" icon={<FileText size={17} />} label="마감/보고" />
+        <FeatureJump href={`${projectPath}/applications`} icon={<Users size={17} />} label="신청자" />
+        <FeatureJump href={`${projectPath}/forms`} icon={<FilePlus2 size={17} />} label="신청서" />
+        <FeatureJump href={`${projectPath}/messages`} icon={<MessageSquareText size={17} />} label="메시지" />
+        <FeatureJump href={`${projectPath}/activities`} icon={<ClipboardList size={17} />} label="활동/참석" />
+        <FeatureJump href={`${projectPath}/evidence`} icon={<WalletCards size={17} />} label="지출/증빙" />
+        <FeatureJump href={`${projectPath}/closeout`} icon={<FileText size={17} />} label="마감/보고" />
       </section>
 
       <section className="mt-6 grid gap-6 xl:grid-cols-[minmax(0,1fr)_360px]">
@@ -235,11 +237,13 @@ export function HostProjectHub({ projectId }: { projectId: string }) {
             applications={project.applications}
             onStatusChange={updateApplicationStatus}
             onToggleFlag={toggleApplicationFlag}
+            project={project}
           />
           <FormsSection project={project} />
           <MessagesSection
             copiedTemplateId={copiedTemplateId}
             onCopyTemplate={copyTemplate}
+            project={project}
             templates={templates}
           />
         </div>
@@ -262,6 +266,7 @@ function ApplicationsSection({
   applications,
   onStatusChange,
   onToggleFlag,
+  project,
 }: {
   applications: HostApplication[];
   onStatusChange: (applicationId: string, status: HostApplicationStatus) => void;
@@ -269,15 +274,18 @@ function ApplicationsSection({
     applicationId: string,
     key: "signatureCompleted" | "reviewSubmitted",
   ) => void;
+  project: HostProjectOverview;
 }) {
+  const projectPath = hostProjectPath(project.id);
+
   return (
     <section
       className="overflow-hidden rounded-md border border-slate-200 bg-white"
       id="applications"
     >
       <SectionHeader
-        actionHref="/host/applications"
-        actionLabel="전체 CRM"
+        actionHref={`${projectPath}/applications`}
+        actionLabel="프로젝트 CRM"
         icon={<Users size={20} />}
         title="이 프로젝트의 신청자"
       />
@@ -348,7 +356,7 @@ function ApplicationsSection({
                 <td className="px-5 py-4 text-right">
                   <Link
                     className="inline-flex h-9 items-center justify-center gap-2 rounded-md border border-slate-200 px-3 text-xs font-black text-slate-700 hover:border-[var(--primary)] hover:text-[var(--primary)]"
-                    href={`/host/applications/${application.id}`}
+                    href={`${projectPath}/applications/${encodeURIComponent(application.id)}`}
                   >
                     상세
                     <ArrowRight size={14} />
@@ -369,6 +377,8 @@ function ApplicationsSection({
 }
 
 function FormsSection({ project }: { project: HostProjectOverview }) {
+  const projectPath = hostProjectPath(project.id);
+
   return (
     <section className="rounded-md border border-slate-200 bg-white p-5" id="forms">
       <SectionHeading icon={<FilePlus2 size={20} />} title="신청서" />
@@ -388,7 +398,7 @@ function FormsSection({ project }: { project: HostProjectOverview }) {
       </div>
       <Link
         className="mt-4 inline-flex h-10 items-center gap-2 rounded-md border border-slate-200 px-3 text-sm font-black text-slate-700 hover:border-[var(--primary)] hover:text-[var(--primary)]"
-        href={`/host/forms?project=${encodeURIComponent(project.id)}`}
+        href={`${projectPath}/forms`}
       >
         신청서 설정 열기
         <ArrowRight size={15} />
@@ -400,12 +410,16 @@ function FormsSection({ project }: { project: HostProjectOverview }) {
 function MessagesSection({
   copiedTemplateId,
   onCopyTemplate,
+  project,
   templates,
 }: {
   copiedTemplateId?: string;
   onCopyTemplate: (template: MessageTemplate) => Promise<void>;
+  project: HostProjectOverview;
   templates: MessageTemplate[];
 }) {
+  const projectPath = hostProjectPath(project.id);
+
   return (
     <section className="rounded-md border border-slate-200 bg-white p-5" id="messages">
       <SectionHeading icon={<MessageSquareText size={20} />} title="메시지" />
@@ -434,6 +448,13 @@ function MessagesSection({
           </article>
         ))}
       </div>
+      <Link
+        className="mt-4 inline-flex h-10 items-center gap-2 rounded-md border border-slate-200 px-3 text-sm font-black text-slate-700 hover:border-[var(--primary)] hover:text-[var(--primary)]"
+        href={`${projectPath}/messages`}
+      >
+        메시지 설정 열기
+        <ArrowRight size={15} />
+      </Link>
     </section>
   );
 }
@@ -447,6 +468,8 @@ function CloseoutSection({
   project: HostProjectOverview;
   reportReadiness?: number;
 }) {
+  const projectPath = hostProjectPath(project.id);
+
   return (
     <section className="rounded-md border border-slate-200 bg-white p-5" id="closeout">
       <SectionHeading icon={<FileText size={20} />} title="마감/보고" />
@@ -475,9 +498,9 @@ function CloseoutSection({
       </div>
       <Link
         className="mt-4 inline-flex h-10 items-center gap-2 rounded-md bg-slate-950 px-3 text-sm font-black text-white"
-        href="/host/reports"
+        href={`${projectPath}/closeout`}
       >
-        지출/증빙 설정
+        마감/보고 열기
         <ArrowRight size={15} />
       </Link>
     </section>
@@ -485,6 +508,8 @@ function CloseoutSection({
 }
 
 function EvidenceSection({ project }: { project: HostProjectOverview }) {
+  const projectPath = hostProjectPath(project.id);
+
   return (
     <section className="rounded-md border border-slate-200 bg-white p-5" id="evidence">
       <SectionHeading icon={<WalletCards size={20} />} title="지출/증빙" />
@@ -496,11 +521,20 @@ function EvidenceSection({ project }: { project: HostProjectOverview }) {
         증빙 파일, 지출 이벤트, 예산 항목은 운영 마감 화면에서 이 프로젝트와
         연결해 관리합니다.
       </p>
+      <Link
+        className="mt-4 inline-flex h-10 items-center gap-2 rounded-md border border-slate-200 px-3 text-sm font-black text-slate-700 hover:border-[var(--primary)] hover:text-[var(--primary)]"
+        href={`${projectPath}/evidence`}
+      >
+        지출/증빙 열기
+        <ArrowRight size={15} />
+      </Link>
     </section>
   );
 }
 
 function ActivitiesSection({ project }: { project: HostProjectOverview }) {
+  const projectPath = hostProjectPath(project.id);
+
   return (
     <section className="rounded-md border border-slate-200 bg-white p-5" id="activities">
       <SectionHeading icon={<ClipboardList size={20} />} title="활동/참석" />
@@ -512,6 +546,13 @@ function ActivitiesSection({ project }: { project: HostProjectOverview }) {
         활동 내용, 참석자 수, 사진 수는 마감 자료와 공개 후기 콘텐츠로 재사용할
         수 있습니다.
       </p>
+      <Link
+        className="mt-4 inline-flex h-10 items-center gap-2 rounded-md border border-slate-200 px-3 text-sm font-black text-slate-700 hover:border-[var(--primary)] hover:text-[var(--primary)]"
+        href={`${projectPath}/activities`}
+      >
+        활동/참석 열기
+        <ArrowRight size={15} />
+      </Link>
     </section>
   );
 }

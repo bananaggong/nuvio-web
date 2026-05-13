@@ -20,6 +20,7 @@ import type {
   HostApplication,
   HostApplicationStatus,
 } from "@/lib/host-operations";
+import { hostProjectPath } from "@/lib/host-projects";
 
 type StatusEvent = {
   id: string;
@@ -59,8 +60,10 @@ const statusTone: Record<HostApplicationStatus, string> = {
 
 export function HostApplicationDetail({
   applicationId,
+  projectId,
 }: {
   applicationId: string;
+  projectId?: string;
 }) {
   const [application, setApplication] =
     useState<HostApplicationDetailData | null>(null);
@@ -130,6 +133,11 @@ export function HostApplicationDetail({
         return true;
       })
     : [];
+  const projectBasePath = projectId ? hostProjectPath(projectId) : undefined;
+  const applicationsPath = projectBasePath
+    ? `${projectBasePath}/applications`
+    : "/host/applications";
+  const hubPath = projectBasePath ?? "/host";
 
   function updateStatus(status: HostApplicationStatus) {
     if (!application) return;
@@ -162,7 +170,7 @@ export function HostApplicationDetail({
       <div className="mx-auto max-w-5xl px-4 py-8 md:px-8">
         <Link
           className="inline-flex h-10 items-center gap-2 rounded-md border border-slate-200 bg-white px-3 text-sm font-black text-slate-700"
-          href="/host/applications"
+          href={applicationsPath}
         >
           <ArrowLeft size={16} />
           신청자 목록
@@ -182,16 +190,16 @@ export function HostApplicationDetail({
       <div className="mb-5 flex flex-wrap items-center gap-2">
         <Link
           className="inline-flex h-10 items-center gap-2 rounded-md border border-slate-200 bg-white px-3 text-sm font-black text-slate-700"
-          href="/host/applications"
+          href={applicationsPath}
         >
           <ArrowLeft size={16} />
           신청자 목록
         </Link>
         <Link
           className="inline-flex h-10 items-center gap-2 rounded-md border border-slate-200 bg-white px-3 text-sm font-black text-slate-700"
-          href="/host"
+          href={hubPath}
         >
-          운영 콘솔
+          {projectBasePath ? "프로젝트 허브" : "운영 콘솔"}
         </Link>
       </div>
 

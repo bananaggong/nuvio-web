@@ -54,15 +54,15 @@ const navigationByArea: Record<ConsoleArea, NavigationItem[]> = {
       icon: ClipboardList,
       children: [
         { name: "프로그램 관리", href: "/host/programs" },
-        { name: "신청서 설정", href: "/host/forms" },
-        { name: "신청자 CRM", href: "/host/applications" },
+        { name: "신청서 설정", href: "/host" },
+        { name: "신청자 CRM", href: "/host" },
       ],
     },
     {
       name: "커뮤니케이션",
-      href: "/host/messages",
+      href: "/host",
       icon: MessageSquareText,
-      children: [{ name: "안내 메시지", href: "/host/messages" }],
+      children: [{ name: "안내 메시지", href: "/host" }],
     },
     {
       name: "활동/증빙",
@@ -284,7 +284,7 @@ function SidebarContent({
   pathname: string;
   onNavigate?: () => void;
 }) {
-  const navigation = navigationByArea[area];
+  const navigation = buildNavigation(area, pathname);
   const [expandedItems, setExpandedItems] = useState<string[]>(() =>
     navigation.map((item) => item.name),
   );
@@ -322,6 +322,73 @@ function SidebarContent({
       </nav>
     </div>
   );
+}
+
+function buildNavigation(area: ConsoleArea, pathname: string): NavigationItem[] {
+  if (area !== "host") return navigationByArea[area];
+
+  const projectBasePath = getCurrentProjectBasePath(pathname);
+  const projectHref = (path: string) =>
+    projectBasePath ? `${projectBasePath}${path}` : "/host";
+
+  return [
+    {
+      name: "운영 프로젝트",
+      href: "/host",
+      icon: FolderKanban,
+      children: [
+        { name: "운영중인 프로젝트", href: "/host" },
+        { name: "새 프로젝트 준비", href: "/host/reports" },
+      ],
+    },
+    {
+      name: "모집/신청",
+      href: projectHref("/applications"),
+      icon: ClipboardList,
+      children: [
+        { name: "프로그램 관리", href: "/host/programs" },
+        { name: "신청서 설정", href: projectHref("/forms") },
+        { name: "신청자 CRM", href: projectHref("/applications") },
+      ],
+    },
+    {
+      name: "커뮤니케이션",
+      href: projectHref("/messages"),
+      icon: MessageSquareText,
+      children: [{ name: "안내 메시지", href: projectHref("/messages") }],
+    },
+    {
+      name: "활동/증빙",
+      href: projectHref("/evidence"),
+      icon: WalletCards,
+      children: [
+        { name: "활동/참석", href: projectHref("/activities") },
+        { name: "지출/증빙", href: projectHref("/evidence") },
+        { name: "마감/보고", href: projectHref("/closeout") },
+      ],
+    },
+    {
+      name: "로컬홈",
+      href: "/host/villages",
+      icon: Home,
+      children: [
+        { name: "공개 페이지 관리", href: "/host/villages" },
+        { name: "로컬홈 정보", href: "/host/boseong" },
+        { name: "보성 페이지 편집", href: "/host/boseong/editor" },
+      ],
+    },
+    {
+      name: "설정",
+      href: "/host/settings",
+      icon: Settings,
+      children: [],
+    },
+  ];
+}
+
+function getCurrentProjectBasePath(pathname: string) {
+  const match = pathname.match(/^\/host\/projects\/[^/]+/u);
+  return match?.[0];
 }
 
 function NavigationGroup({
@@ -423,7 +490,9 @@ function NavigationGroup({
 
 function isActivePath(pathname: string, href: string) {
   if (href === "/") return pathname === "/";
-  if (href === "/host") return pathname === href || pathname.startsWith("/host/projects");
+  if (href === "/host") {
+    return pathname === href || /^\/host\/projects\/[^/]+\/?$/u.test(pathname);
+  }
   if (href === "/admin") return pathname === href;
   return pathname === href || pathname.startsWith(`${href}/`);
 }
