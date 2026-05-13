@@ -10,7 +10,6 @@ import {
   Globe2,
   Loader2,
   MapPin,
-  Plus,
   Save,
 } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
@@ -19,21 +18,17 @@ import { villagePath } from "@/lib/village-routing";
 import type { Village, VillageSection } from "@/lib/village-types";
 
 const STORAGE_KEY = "nuvio:host-villages";
+const HOST_VILLAGE_SLUG = "boseong";
 
 export function HostVillageStudio() {
-  const [villages, setVillages] = useState<Village[]>(readStoredVillages);
-  const [selectedId, setSelectedId] = useState(villages[0]?.id);
+  const [village, setVillage] = useState<Village>(readStoredHostVillage);
   const [saved, setSaved] = useState(false);
   const [isSyncing, setIsSyncing] = useState(false);
   const [syncMessage, setSyncMessage] = useState("");
   const [syncError, setSyncError] = useState("");
-  const selectedVillage = useMemo(
-    () => villages.find((village) => village.id === selectedId) ?? villages[0],
-    [villages, selectedId],
-  );
   const checklist = useMemo(
-    () => (selectedVillage ? buildVillageChecklist(selectedVillage) : []),
-    [selectedVillage],
+    () => buildVillageChecklist(village),
+    [village],
   );
   const readyCount = checklist.filter((item) => item.done).length;
 
@@ -47,17 +42,14 @@ export function HostVillageStudio() {
 
         const payload = (await response.json()) as { data?: Village[] };
         const remoteVillages = Array.isArray(payload.data) ? payload.data : [];
-        if (!isMounted || remoteVillages.length === 0) return;
+        const remoteHostVillage = remoteVillages.find(isHostVillage);
+        if (!isMounted || !remoteHostVillage) return;
 
-        setVillages((current) => {
-          const next = mergeVillages(remoteVillages, current);
-          writeStoredVillages(next);
-          return next;
-        });
-        setSelectedId((currentId) => currentId ?? remoteVillages[0]?.id);
+        setVillage(remoteHostVillage);
+        writeStoredHostVillage(remoteHostVillage);
       } catch {
         if (isMounted) {
-          setSyncError("DB 마을 데이터를 불러오지 못했습니다. 로컬 초안으로 계속 진행합니다.");
+          setSyncError("DB 로컬홈 데이터를 불러오지 못했습니다. 로컬 초안으로 계속 진행합니다.");
         }
       }
     }
@@ -69,32 +61,17 @@ export function HostVillageStudio() {
     };
   }, []);
 
-  function saveVillages(nextVillages: Village[]) {
-    setVillages(nextVillages);
-    writeStoredVillages(nextVillages);
+  function saveVillage(nextVillage: Village) {
+    setVillage(nextVillage);
+    writeStoredHostVillage(nextVillage);
     setSaved(true);
     window.setTimeout(() => setSaved(false), 1400);
   }
 
   function updateVillage(patch: Partial<Village>) {
-    if (!selectedVillage) return;
     setSyncMessage("");
     setSyncError("");
-    saveVillages(
-      villages.map((village) =>
-        village.id === selectedVillage.id
-          ? { ...village, ...patch, updatedAt: new Date().toISOString() }
-          : village,
-      ),
-    );
-  }
-
-  function addVillage() {
-    const nextVillage = createVillageDraft();
-    saveVillages([nextVillage, ...villages]);
-    setSelectedId(nextVillage.id);
-    setSyncMessage("");
-    setSyncError("");
+    saveVillage({ ...village, ...patch, updatedAt: new Date().toISOString() });
   }
 
   function updateSlug(value: string) {
@@ -111,22 +88,18 @@ export function HostVillageStudio() {
   }
 
   function updatePrimarySection(patch: Partial<VillageSection>) {
-    if (!selectedVillage) return;
-    const sections = selectedVillage.sections.length
-      ? selectedVillage.sections
-      : createDefaultSections(selectedVillage.name);
+    const sections = village.sections.length
+      ? village.sections
+      : createDefaultSections(village.name);
     const [firstSection, ...rest] = sections;
     updateVillage({ sections: [{ ...firstSection, ...patch }, ...rest] });
   }
 
   function togglePublish() {
-    if (!selectedVillage) return;
-    updateVillage({ published: !selectedVillage.published });
+    updateVillage({ published: !village.published });
   }
 
   async function syncSelectedVillage() {
-    if (!selectedVillage) return;
-
     setIsSyncing(true);
     setSyncMessage("");
     setSyncError("");
@@ -135,7 +108,7 @@ export function HostVillageStudio() {
       const response = await fetch("/api/host/villages", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(selectedVillage),
+        body: JSON.stringify(village),
       });
       const payload = (await response.json()) as {
         data?: Village;
@@ -143,49 +116,25 @@ export function HostVillageStudio() {
       };
 
       if (!response.ok || !payload.data) {
-        throw new Error(payload.error ?? "마을 저장에 실패했습니다.");
+        throw new Error(payload.error ?? "로컬홈 저장에 실패했습니다.");
       }
 
-      const nextVillages = mergeVillages(
-        [payload.data],
-        villages.filter(
-          (village) =>
-            village.id !== selectedVillage.id && village.id !== payload.data?.id,
-        ),
-      );
-
-      saveVillages(nextVillages);
-      setSelectedId(payload.data.id);
+      saveVillage(payload.data);
       setSyncMessage("Supabase DB에 저장되었습니다.");
     } catch (error) {
       setSyncError(
-        error instanceof Error ? error.message : "마을 저장에 실패했습니다.",
+        error instanceof Error ? error.message : "로컬홈 저장에 실패했습니다.",
       );
     } finally {
       setIsSyncing(false);
     }
   }
 
-  if (!selectedVillage) {
-    return (
-      <div className="mx-auto max-w-5xl px-4 py-8 md:px-8">
-        <button
-          className="inline-flex h-11 items-center gap-2 rounded-md bg-[var(--primary)] px-4 text-sm font-black text-white"
-          onClick={addVillage}
-          type="button"
-        >
-          <Plus size={17} />
-          마을 만들기
-        </button>
-      </div>
-    );
-  }
-
-  const firstSection = selectedVillage.sections[0] ?? createDefaultSections(selectedVillage.name)[0];
+  const firstSection = village.sections[0] ?? createDefaultSections(village.name)[0];
 
   return (
     <div className="mx-auto min-w-0 max-w-6xl px-4 py-8 md:px-8">
-      <div className="mb-5 grid gap-3 sm:grid-cols-[1fr_auto_auto_auto]">
+      <div className="mb-5 grid gap-3 sm:grid-cols-[1fr_auto_auto]">
         <Link
           className="inline-flex h-10 items-center justify-center gap-2 rounded-md border border-slate-200 bg-white px-3 text-sm font-black text-slate-700"
           href="/host"
@@ -193,14 +142,6 @@ export function HostVillageStudio() {
           <ArrowLeft size={16} />
           운영 콘솔
         </Link>
-        <button
-          className="inline-flex h-10 items-center justify-center gap-2 rounded-md border border-slate-200 bg-white px-3 text-sm font-black text-slate-700"
-          onClick={addVillage}
-          type="button"
-        >
-          <Plus size={16} />
-          새 마을
-        </button>
         <button
           className="inline-flex h-10 items-center justify-center gap-2 rounded-md bg-[var(--primary)] px-3 text-sm font-black text-white disabled:cursor-wait disabled:opacity-70"
           disabled={isSyncing}
@@ -212,7 +153,7 @@ export function HostVillageStudio() {
         </button>
         <Link
           className="inline-flex h-10 items-center justify-center gap-2 rounded-md bg-slate-950 px-3 text-sm font-black text-white"
-          href={villagePath(selectedVillage.slug)}
+          href={villagePath(village.slug)}
           target="_blank"
         >
           <Eye size={16} />
@@ -223,91 +164,71 @@ export function HostVillageStudio() {
       <section className="overflow-hidden rounded-md bg-slate-950 p-5 text-white sm:p-6">
         <p className="inline-flex items-center gap-2 text-sm font-black text-teal-200">
           <Globe2 size={18} />
-          마을 홈 스튜디오
+          로컬홈 페이지
         </p>
         <div className="mt-4 grid gap-5 lg:grid-cols-[minmax(0,1fr)_320px]">
           <div className="min-w-0">
             <h1 className="max-w-3xl text-2xl font-black leading-tight sm:text-3xl md:text-4xl">
-              슬래시페이지처럼 마을별 홈페이지를 만들고 프로그램을 연결합니다.
+              내 로컬홈 홈페이지를 관리하고 프로그램을 연결합니다.
             </h1>
             <p className="mt-3 max-w-3xl text-sm leading-7 text-slate-300">
-              지금은 경로형 주소만 사용합니다. 운영자는 마을 slug만 정하면 공개 주소가 자동으로 정리됩니다.
+              보성 호스트는 전체차LAB 페이지 하나만 관리합니다. 다른 로컬홈은 어드민의 전체 관리 영역에서 다룹니다.
             </p>
           </div>
           <div className="grid gap-2 sm:grid-cols-3 lg:grid-cols-1">
-            <HeroMetric label="마을" value={`${villages.length}개`} />
+            <HeroMetric label="로컬홈" value={village.name} />
             <HeroMetric label="검수" value={`${readyCount}/${checklist.length}`} />
             <HeroMetric
               label="상태"
-              value={selectedVillage.published ? "게시 중" : "비공개"}
+              value={village.published ? "게시 중" : "비공개"}
             />
           </div>
         </div>
       </section>
 
-      <div className="mt-6 grid min-w-0 gap-6 lg:grid-cols-[280px_minmax(0,1fr)]">
-        <aside className="min-w-0 space-y-2">
-          {villages.map((village) => (
-            <button
-              className={`w-full rounded-md border p-3 text-left ${
-                village.id === selectedVillage.id
-                  ? "border-[var(--primary)] bg-teal-50"
-                  : "border-slate-200 bg-white"
-              }`}
-              key={village.id}
-              onClick={() => setSelectedId(village.id)}
-              type="button"
-            >
-              <p className="break-words font-black text-slate-950">{village.name}</p>
-              <p className="mt-1 text-xs font-bold text-slate-500">
-                /{village.slug} · {village.published ? "게시" : "비공개"}
-              </p>
-            </button>
-          ))}
-        </aside>
-
+      <div className="mt-6 min-w-0">
         <main className="grid min-w-0 gap-6 xl:grid-cols-[minmax(0,1fr)_360px]">
           <section className="min-w-0 rounded-md border border-slate-200 bg-white p-5">
             <h2 className="flex items-center gap-2 text-xl font-black text-slate-950">
               <MapPin className="text-[var(--primary)]" size={20} />
-              마을 정보
+              로컬홈 정보
             </h2>
             <div className="mt-5 grid gap-4">
               <div className="grid gap-4 md:grid-cols-2">
-                <TextField label="마을 이름" value={selectedVillage.name} onChange={(value) => updateVillage({ name: value })} />
-                <TextField label="URL slug" value={selectedVillage.slug} onChange={updateSlug} />
+                <TextField label="로컬홈 이름" value={village.name} onChange={(value) => updateVillage({ name: value })} />
+                <TextField label="URL slug" value={village.slug} onChange={updateSlug} />
               </div>
               <div className="grid gap-4 md:grid-cols-2">
-                <TextField label="지역" value={selectedVillage.region} onChange={(value) => updateVillage({ region: value })} />
-                <TextField label="시군구" value={selectedVillage.city} onChange={(value) => updateVillage({ city: value })} />
+                <TextField label="지역" value={village.region} onChange={(value) => updateVillage({ region: value })} />
+                <TextField label="시군구" value={village.city} onChange={(value) => updateVillage({ city: value })} />
               </div>
-              <TextField label="한 줄 소개" value={selectedVillage.tagline} onChange={(value) => updateVillage({ tagline: value })} />
-              <TextArea label="요약" value={selectedVillage.summary} onChange={(value) => updateVillage({ summary: value })} />
-              <TextArea label="상세 소개" value={selectedVillage.description} onChange={(value) => updateVillage({ description: value })} />
-              <TextField label="대표 이미지 URL" value={selectedVillage.heroImage} onChange={(value) => updateVillage({ heroImage: value })} />
+              <TextField label="한 줄 소개" value={village.tagline} onChange={(value) => updateVillage({ tagline: value })} />
+              <TextArea label="요약" value={village.summary} onChange={(value) => updateVillage({ summary: value })} />
+              <TextArea label="상세 소개" value={village.description} onChange={(value) => updateVillage({ description: value })} />
+              <TextField label="대표 이미지 URL" value={village.heroImage} onChange={(value) => updateVillage({ heroImage: value })} />
               <div className="grid gap-4 md:grid-cols-2">
-                <ColorField label="브랜드 색상" value={selectedVillage.brandColor} onChange={(value) => updateVillage({ brandColor: value })} />
-                <ColorField label="강조 색상" value={selectedVillage.accentColor} onChange={(value) => updateVillage({ accentColor: value })} />
+                <ColorField label="브랜드 색상" value={village.brandColor} onChange={(value) => updateVillage({ brandColor: value })} />
+                <ColorField label="강조 색상" value={village.accentColor} onChange={(value) => updateVillage({ accentColor: value })} />
               </div>
               <TextField
                 label="연결 프로그램 ID/slug"
-                value={selectedVillage.programIds.join(", ")}
+                value={village.programIds.join(", ")}
                 onChange={updateProgramIds}
-                placeholder="1001, gangneung-wave-workation"
+                placeholder="1013, 1014, 1015"
               />
               <div className="rounded-md border border-slate-200 bg-[var(--surface-muted)] p-4 text-sm leading-6 text-slate-600">
                 <p className="font-black text-slate-950">공개 주소</p>
-                <p className="mt-1 font-bold">짧은 주소: /{selectedVillage.slug}</p>
-                <p className="font-bold">표준 주소: /villages/{selectedVillage.slug}</p>
+                <p className="mt-1 font-bold">짧은 주소: /{village.slug}</p>
+                <p className="font-bold">표준 주소: /villages/{village.slug}</p>
               </div>
               <div className="grid gap-4 md:grid-cols-2">
-                <TextField label="연락처" value={selectedVillage.contactPhone ?? ""} onChange={(value) => updateVillage({ contactPhone: value || undefined })} />
-                <TextField label="이메일" value={selectedVillage.contactEmail ?? ""} onChange={(value) => updateVillage({ contactEmail: value || undefined })} />
+                <TextField label="연락처" value={village.contactPhone ?? ""} onChange={(value) => updateVillage({ contactPhone: value || undefined })} />
+                <TextField label="이메일" value={village.contactEmail ?? ""} onChange={(value) => updateVillage({ contactEmail: value || undefined })} />
               </div>
-              <TextField label="주소" value={selectedVillage.address ?? ""} onChange={(value) => updateVillage({ address: value || undefined })} />
+              <TextField label="주소" value={village.address ?? ""} onChange={(value) => updateVillage({ address: value || undefined })} />
               <div className="grid gap-4 md:grid-cols-2">
-                <TextField label="인스타그램 URL" value={selectedVillage.instagramUrl ?? ""} onChange={(value) => updateVillage({ instagramUrl: value || undefined })} />
-                <TextField label="카카오 채널 URL" value={selectedVillage.kakaoUrl ?? ""} onChange={(value) => updateVillage({ kakaoUrl: value || undefined })} />
+                <TextField label="인스타그램 URL" value={village.instagramUrl ?? ""} onChange={(value) => updateVillage({ instagramUrl: value || undefined })} />
+                <TextField label="카카오 채널 URL" value={village.kakaoUrl ?? ""} onChange={(value) => updateVillage({ kakaoUrl: value || undefined })} />
               </div>
               <div className="rounded-md border border-slate-200 bg-[var(--surface-muted)] p-4">
                 <p className="font-black text-slate-950">첫 소개 블록</p>
@@ -333,7 +254,7 @@ export function HostVillageStudio() {
             <div className="mt-5 flex flex-col gap-2 sm:flex-row">
               <button
                 className={`inline-flex h-10 items-center justify-center gap-2 rounded-md px-3 text-sm font-black ${
-                  selectedVillage.published
+                  village.published
                     ? "border border-slate-200 text-slate-700"
                     : "bg-[var(--primary)] text-white"
                 }`}
@@ -341,7 +262,7 @@ export function HostVillageStudio() {
                 type="button"
               >
                 <Eye size={16} />
-                {selectedVillage.published ? "비공개 전환" : "게시 준비"}
+                {village.published ? "비공개 전환" : "게시 준비"}
               </button>
               <button
                 className="inline-flex h-10 items-center justify-center gap-2 rounded-md bg-slate-950 px-3 text-sm font-black text-white disabled:cursor-wait disabled:opacity-70"
@@ -374,7 +295,7 @@ export function HostVillageStudio() {
           </section>
 
           <aside className="min-w-0 space-y-4">
-            <VillagePreview village={selectedVillage} />
+            <VillagePreview village={village} />
             <section className="rounded-md border border-slate-200 bg-white p-5">
               <h2 className="text-lg font-black text-slate-950">게시 체크리스트</h2>
               <div className="mt-4 grid gap-2">
@@ -539,13 +460,13 @@ function buildVillageChecklist(village: Village) {
     {
       id: "summary",
       label: "소개 문구",
-      helper: "참여자가 마을 성격을 바로 이해할 수 있어야 합니다.",
+      helper: "참여자가 로컬홈 성격을 바로 이해할 수 있어야 합니다.",
       done: village.summary.length >= 20 && village.description.length >= 40,
     },
     {
       id: "image",
       label: "대표 이미지",
-      helper: "마을의 첫 인상을 만드는 실제 장소 이미지입니다.",
+      helper: "로컬홈의 첫 인상을 만드는 실제 장소 이미지입니다.",
       done: /^https?:\/\//u.test(village.heroImage),
     },
     {
@@ -557,70 +478,36 @@ function buildVillageChecklist(village: Village) {
     {
       id: "programs",
       label: "프로그램 연결",
-      helper: "공개 프로그램 id 또는 slug를 연결하면 마을 홈에 표시됩니다.",
+      helper: "공개 프로그램 id 또는 slug를 연결하면 로컬홈 페이지에 표시됩니다.",
       done: village.programIds.length > 0,
     },
   ];
 }
 
-function readStoredVillages(): Village[] {
-  if (typeof window === "undefined") return seedVillages;
+function isHostVillage(village: Village): boolean {
+  return village.slug === HOST_VILLAGE_SLUG;
+}
+
+function getDefaultHostVillage(): Village {
+  return seedVillages.find(isHostVillage) ?? seedVillages[0];
+}
+
+function readStoredHostVillage(): Village {
+  if (typeof window === "undefined") return getDefaultHostVillage();
 
   try {
     const rawValue = window.localStorage.getItem(STORAGE_KEY);
-    if (!rawValue) return seedVillages;
+    if (!rawValue) return getDefaultHostVillage();
     const parsedValue = JSON.parse(rawValue) as Village[];
-    return mergeVillages(parsedValue, seedVillages);
+    return parsedValue.find(isHostVillage) ?? getDefaultHostVillage();
   } catch {
-    return seedVillages;
+    return getDefaultHostVillage();
   }
 }
 
-function writeStoredVillages(villages: Village[]) {
+function writeStoredHostVillage(village: Village) {
   if (typeof window === "undefined") return;
-  window.localStorage.setItem(STORAGE_KEY, JSON.stringify(villages));
-}
-
-function mergeVillages(primary: Village[], fallback: Village[]) {
-  const seen = new Set<string>();
-  const merged: Village[] = [];
-
-  for (const village of [...primary, ...fallback]) {
-    const key = village.id || village.slug;
-    if (seen.has(key) || seen.has(village.slug)) continue;
-    seen.add(key);
-    seen.add(village.slug);
-    merged.push(village);
-  }
-
-  return merged;
-}
-
-function createVillageDraft(): Village {
-  const name = "새 마을";
-  const id = `village-${Date.now()}`;
-
-  return {
-    id,
-    slug: `new-village-${Date.now().toString(36)}`,
-    name,
-    region: "전국",
-    city: "로컬",
-    tagline: "새로운 마을 홈을 준비 중입니다.",
-    summary: "신청, 공지, 후기, 커뮤니티를 한곳에서 운영하는 마을 페이지입니다.",
-    description:
-      "운영자는 이 페이지를 통해 마을 소개, 프로그램 연결, 공식 문의 채널, 기수별 안내를 정리할 수 있습니다.",
-    heroImage:
-      "https://images.unsplash.com/photo-1500534314209-a25ddb2bd429?auto=format&fit=crop&w=1600&q=82",
-    logoText: "NV",
-    brandColor: "#0f766e",
-    accentColor: "#f59e0b",
-    programIds: [],
-    links: [],
-    sections: createDefaultSections(name),
-    published: false,
-    updatedAt: new Date().toISOString(),
-  };
+  window.localStorage.setItem(STORAGE_KEY, JSON.stringify([village]));
 }
 
 function createDefaultSections(villageName: string): VillageSection[] {
@@ -630,7 +517,7 @@ function createDefaultSections(villageName: string): VillageSection[] {
       type: "story",
       title: `${villageName} 소개`,
       body: `${villageName}의 프로그램, 공지, 후기 흐름을 한곳에서 관리합니다.`,
-      items: ["마을 소개", "프로그램 안내", "후기 수집"],
+      items: ["로컬홈 소개", "프로그램 안내", "후기 수집"],
     },
   ];
 }
