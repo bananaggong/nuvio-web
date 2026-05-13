@@ -15,6 +15,7 @@ import {
   FilePlus2,
   GitBranch,
   GripVertical,
+  ImagePlus,
   ListChecks,
   Loader2,
   Mail,
@@ -55,6 +56,7 @@ const blockTypeLabels: Record<ApplicationFormBlockType, string> = {
   date: "날짜",
   description: "설명",
   divider: "구분선",
+  image: "이미지",
   email: "이메일",
   longText: "긴 답변",
   multiSelect: "복수 선택",
@@ -73,6 +75,7 @@ const blockPaletteItems: Array<{
   { description: "큰 제목을 넣습니다.", icon: Type, type: "title" },
   { description: "안내 문구를 적습니다.", icon: AlignLeft, type: "description" },
   { description: "영역을 나눕니다.", icon: Minus, type: "divider" },
+  { description: "안내 이미지를 넣습니다.", icon: ImagePlus, type: "image" },
   { description: "한 줄 답변을 받습니다.", icon: Type, type: "shortText" },
   { description: "긴 서술형 답변을 받습니다.", icon: AlignLeft, type: "longText" },
   { description: "하나의 선택지를 받습니다.", icon: CircleDot, type: "singleSelect" },
@@ -85,18 +88,18 @@ const blockPaletteItems: Array<{
 ];
 
 export function HostFormBuilder({
+  formId,
   programId,
-  programTitle,
   projectId,
 }: {
+  formId?: string;
   programId?: string;
-  programTitle?: string;
   projectId?: string;
 }) {
   const [templates, setTemplates] = useState<ApplicationFormTemplate[]>(() =>
     readApplicationFormTemplates().map(normalizeApplicationFormTemplateShape),
   );
-  const [selectedId, setSelectedId] = useState(templates[0]?.id);
+  const [selectedId, setSelectedId] = useState(formId ?? templates[0]?.id);
   const [activeBlockId, setActiveBlockId] = useState<string | null>(null);
   const [settingsBlockId, setSettingsBlockId] = useState<string | null>(null);
   const [insertAfterIndex, setInsertAfterIndex] = useState<number | null>(null);
@@ -126,8 +129,6 @@ export function HostFormBuilder({
   const projectBasePath = projectId ? hostProjectPath(projectId) : undefined;
   const programBasePath =
     projectId && programId ? hostProgramPath(projectId, programId) : undefined;
-  const globalTemplates = templates.filter((template) => !template.programTitle);
-
   useEffect(() => {
     let isMounted = true;
 
@@ -152,7 +153,9 @@ export function HostFormBuilder({
           writeApplicationFormTemplates(nextTemplates);
           return nextTemplates;
         });
-        setSelectedId((currentId) => currentId ?? databaseTemplates[0]?.id);
+        setSelectedId(
+          (currentId) => currentId ?? formId ?? databaseTemplates[0]?.id,
+        );
       } catch {
         if (isMounted) {
           setSyncError("신청폼을 불러오지 못했습니다.");
@@ -165,7 +168,7 @@ export function HostFormBuilder({
     return () => {
       isMounted = false;
     };
-  }, []);
+  }, [formId]);
 
   function saveTemplates(nextTemplates: ApplicationFormTemplate[]) {
     const normalizedTemplates = nextTemplates.map(normalizeApplicationFormTemplateShape);
@@ -216,16 +219,6 @@ export function HostFormBuilder({
     const copiedTemplate = cloneApplicationFormTemplate(template, {
       name: `${template.name} 복사본`,
       programTitle: template.programTitle,
-    });
-    saveTemplates([copiedTemplate, ...templates]);
-    setSelectedId(copiedTemplate.id);
-    setSettingsBlockId(null);
-  }
-
-  function importGlobalTemplate(template: ApplicationFormTemplate) {
-    const copiedTemplate = cloneApplicationFormTemplate(template, {
-      name: `${programTitle || "프로그램"} 신청폼`,
-      programTitle: programTitle || "",
     });
     saveTemplates([copiedTemplate, ...templates]);
     setSelectedId(copiedTemplate.id);
@@ -355,10 +348,14 @@ export function HostFormBuilder({
       <div className="mb-5 flex flex-col items-stretch gap-3 sm:flex-row sm:items-center sm:justify-between">
         <Link
           className="inline-flex h-10 items-center justify-center gap-2 rounded-md border border-slate-200 bg-white px-3 text-sm font-black text-slate-700"
-          href={programBasePath ?? projectBasePath ?? "/host"}
+          href={programBasePath ?? projectBasePath ?? "/host/forms"}
         >
           <ArrowLeft size={16} />
-          {programBasePath ? "프로그램 허브" : projectBasePath ? "프로젝트 허브" : "운영 콘솔"}
+          {programBasePath
+            ? "프로그램 허브"
+            : projectBasePath
+              ? "프로젝트 허브"
+              : "신청폼 목록"}
         </Link>
         <div className="flex flex-col gap-2 sm:flex-row">
           <button
@@ -401,74 +398,8 @@ export function HostFormBuilder({
         </div>
       </div>
 
-      <div className="grid min-w-0 gap-6 xl:grid-cols-[260px_minmax(0,920px)] xl:justify-center">
-        <aside className="min-w-0 space-y-3 xl:sticky xl:top-24 xl:self-start">
-          <section className="rounded-md border border-slate-200 bg-white p-3">
-            <div className="flex items-center justify-between gap-2 px-1">
-              <p className="text-xs font-black uppercase tracking-[0.14em] text-slate-400">
-                My Forms
-              </p>
-              <button
-                aria-label="새 신청폼"
-                className="grid size-8 place-items-center rounded-md bg-slate-950 text-white"
-                onClick={addTemplate}
-                type="button"
-              >
-                <Plus size={16} />
-              </button>
-            </div>
-            <div className="mt-3 grid gap-2">
-              {templates.map((template) => (
-                <button
-                  className={`w-full rounded-md border p-3 text-left transition ${
-                    template.id === selectedTemplate.id
-                      ? "border-[var(--primary)] bg-teal-50"
-                      : "border-slate-200 bg-white hover:border-slate-300"
-                  }`}
-                  key={template.id}
-                  onClick={() => {
-                    setSelectedId(template.id);
-                    setActiveBlockId(template.blocks[0]?.id ?? null);
-                    setSettingsBlockId(null);
-                    setInsertAfterIndex(null);
-                    setShowPreview(false);
-                  }}
-                  type="button"
-                >
-                  <p className="break-words font-black text-slate-950">
-                    {template.name}
-                  </p>
-                  <p className="mt-1 text-xs font-bold text-slate-500">
-                    {template.blocks.length}개 블록 ·{" "}
-                    {template.programTitle ? template.programTitle : "라이브러리"}
-                  </p>
-                </button>
-              ))}
-            </div>
-          </section>
-
-          {programBasePath ? (
-            <section className="rounded-md border border-slate-200 bg-white p-3">
-              <p className="px-1 text-sm font-black text-slate-950">
-                라이브러리에서 가져오기
-              </p>
-              <div className="mt-3 grid gap-2">
-                {globalTemplates.map((template) => (
-                  <button
-                    className="rounded-md border border-slate-200 p-3 text-left text-sm font-bold text-slate-700 hover:border-[var(--primary)] hover:bg-teal-50"
-                    key={`import-${template.id}`}
-                    onClick={() => importGlobalTemplate(template)}
-                    type="button"
-                  >
-                    {template.name}
-                  </button>
-                ))}
-              </div>
-            </section>
-          ) : null}
-        </aside>
-
-        <main className="min-w-0">
+      <div className="grid min-w-0 justify-center">
+        <main className="w-[min(920px,calc(100vw-32px))] min-w-0">
           <section className="min-h-[720px] rounded-md border border-slate-200 bg-white px-5 py-6 shadow-sm md:px-10 md:py-9">
             <div className="mx-auto max-w-2xl">
               <input
@@ -919,6 +850,51 @@ function BlockInlineEditor({
     );
   }
 
+  if (block.type === "image") {
+    return (
+      <div className="grid gap-3 pr-28">
+        <input
+          className="w-full min-w-0 border-none bg-transparent text-lg font-black text-slate-950 outline-none placeholder:text-slate-300"
+          onChange={(event) => onUpdate({ label: event.target.value })}
+          placeholder="이미지 설명"
+          value={block.label}
+        />
+        <input
+          className="h-10 w-full min-w-0 rounded-md border border-slate-200 px-3 text-sm font-bold outline-none focus:border-[var(--primary)]"
+          onChange={(event) => onUpdate({ imageUrl: event.target.value })}
+          placeholder="이미지 URL을 붙여넣으세요"
+          value={block.imageUrl ?? ""}
+        />
+        <label className="grid gap-2 text-xs font-black text-slate-500">
+          이미지 크기 {block.imageWidth ?? 100}%
+          <input
+            max={100}
+            min={25}
+            onChange={(event) =>
+              onUpdate({ imageWidth: Number(event.target.value) })
+            }
+            step={5}
+            type="range"
+            value={block.imageWidth ?? 100}
+          />
+        </label>
+        {block.imageUrl ? (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img
+            alt={block.imageAlt || block.label}
+            className="rounded-md object-cover"
+            src={block.imageUrl}
+            style={{ width: `${block.imageWidth ?? 100}%` }}
+          />
+        ) : (
+          <div className="grid min-h-36 place-items-center rounded-md border border-dashed border-slate-200 bg-slate-50 text-sm font-bold text-slate-400">
+            이미지를 삽입할 공간
+          </div>
+        )}
+      </div>
+    );
+  }
+
   if (block.type === "pageBreak") {
     return (
       <div className="rounded-md bg-slate-100 p-3 pr-28">
@@ -1021,6 +997,10 @@ function SettingsPanel({
     const defaults = createEmptyBlock(type);
     onUpdate({
       body: type === "description" ? block.body || defaults.body : block.body,
+      imageAlt: type === "image" ? block.imageAlt || defaults.imageAlt : "",
+      imageUrl: type === "image" ? block.imageUrl || defaults.imageUrl : "",
+      imageWidth:
+        type === "image" ? block.imageWidth || defaults.imageWidth : undefined,
       options:
         type === "singleSelect" || type === "multiSelect"
           ? block.options?.length
@@ -1126,6 +1106,48 @@ function SettingsPanel({
               value={(block.options ?? []).join("\n")}
             />
           </label>
+        ) : null}
+
+        {block.type === "image" ? (
+          <div className="grid gap-4 rounded-md border border-slate-200 p-3">
+            <label className="grid gap-2">
+              <span className="text-sm font-black text-slate-700">
+                이미지 URL
+              </span>
+              <input
+                className="h-10 rounded-md border border-slate-200 px-3 text-sm font-bold outline-none focus:border-[var(--primary)]"
+                onChange={(event) => onUpdate({ imageUrl: event.target.value })}
+                placeholder="https://..."
+                value={block.imageUrl ?? ""}
+              />
+            </label>
+            <label className="grid gap-2">
+              <span className="text-sm font-black text-slate-700">
+                대체 텍스트
+              </span>
+              <input
+                className="h-10 rounded-md border border-slate-200 px-3 text-sm font-bold outline-none focus:border-[var(--primary)]"
+                onChange={(event) => onUpdate({ imageAlt: event.target.value })}
+                placeholder="이미지를 설명하는 문장"
+                value={block.imageAlt ?? ""}
+              />
+            </label>
+            <label className="grid gap-2">
+              <span className="text-sm font-black text-slate-700">
+                이미지 크기 {block.imageWidth ?? 100}%
+              </span>
+              <input
+                max={100}
+                min={25}
+                onChange={(event) =>
+                  onUpdate({ imageWidth: Number(event.target.value) })
+                }
+                step={5}
+                type="range"
+                value={block.imageWidth ?? 100}
+              />
+            </label>
+          </div>
         ) : null}
 
         {canBranch ? (
@@ -1256,6 +1278,34 @@ function PreviewBlock({ block }: { block: ApplicationFormBlock }) {
   }
   if (block.type === "divider") {
     return <hr className="border-slate-200" />;
+  }
+  if (block.type === "image") {
+    if (!block.imageUrl) {
+      return (
+        <div className="grid min-h-32 place-items-center rounded-md border border-dashed border-slate-200 bg-slate-50 text-sm font-bold text-slate-400">
+          이미지 없음
+        </div>
+      );
+    }
+
+    return (
+      <figure
+        className="mx-auto"
+        style={{ width: `${block.imageWidth ?? 100}%` }}
+      >
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img
+          alt={block.imageAlt || block.label}
+          className="w-full rounded-md object-cover"
+          src={block.imageUrl}
+        />
+        {block.label ? (
+          <figcaption className="mt-2 text-center text-xs font-bold text-slate-500">
+            {block.label}
+          </figcaption>
+        ) : null}
+      </figure>
+    );
   }
   if (block.type === "pageBreak") {
     return (

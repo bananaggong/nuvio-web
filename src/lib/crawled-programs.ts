@@ -111,7 +111,7 @@ function mapAnnouncementLeadToProgram(
     badges: ["공식 공고 수집", `점수 ${lead.score}`, sourceName],
     body: [
       announcement?.body || lead.summary || lead.title,
-      "NUVIO가 공식 RSS/공고 소스에서 자동 수집한 후보입니다. 신청 가능 여부, 마감일, 지원금, 제출 서류는 원문 링크를 기준으로 확인하세요.",
+      "누비오가 공식 RSS/공고 소스에서 자동 수집한 후보입니다. 신청 가능 여부, 마감일, 지원금, 제출 서류는 원문 링크를 기준으로 확인하세요.",
     ],
     dataSource: "external",
     sourcePublishedAt: publishedDate,

@@ -12,7 +12,7 @@ export const runtime = "nodejs";
 export const metadata: Metadata = createSeoMetadata({
   title: "로컬 홈",
   description:
-    "NUVIO에 등록된 청년마을, 로컬 체류지, 워케이션 마을의 공식 홈을 모아봅니다.",
+    "누비오에 등록된 청년마을, 로컬 체류지, 워케이션 마을의 공식 홈을 모아봅니다.",
   path: "/villages",
   keywords: ["로컬홈", "청년마을", "워케이션 마을", "로컬 체류지"],
 });

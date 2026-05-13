@@ -5,7 +5,7 @@ import { createSeoMetadata } from "@/lib/seo";
 
 export const metadata: Metadata = createSeoMetadata({
   title: "이용약관",
-  description: "NUVIO 서비스 이용약관입니다.",
+  description: "누비오 서비스 이용약관입니다.",
   path: "/terms",
 });
 

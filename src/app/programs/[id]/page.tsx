@@ -198,7 +198,7 @@ export default async function ProgramDetailPage({
                 <p key={paragraph}>{paragraph}</p>
               ))}
               <p className="text-sm font-bold text-slate-500">
-                출처: {program.sourceName}. NUVIO는 수집/정리된 정보를 제공하며,
+                출처: {program.sourceName}. 누비오는 수집/정리된 정보를 제공하며,
                 최종 조건은 공식 공고를 기준으로 확인해야 합니다.
               </p>
             </div>

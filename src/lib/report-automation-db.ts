@@ -64,7 +64,7 @@ function mapProjectToInsert(project: ReportProject): ReportProjectInsert {
   return {
     name: project.title.trim() || "Operation project",
     organizationName:
-      project.villageName.trim() || project.agencyName.trim() || "NUVIO",
+      project.villageName.trim() || project.agencyName.trim() || "누비오",
     reportType: "operation-closeout",
     status: mapReportStatusToDatabase(project.status),
     schema: {

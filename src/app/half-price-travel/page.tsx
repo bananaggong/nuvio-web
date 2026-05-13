@@ -41,7 +41,7 @@ export default function HalfPriceTravelPage() {
             </h1>
             <p className="mt-5 max-w-2xl text-lg leading-8 text-slate-600">
               지역에서 사용한 숙박, 식음, 체험 경비 일부를 환급받는 프로그램은
-              여행 전 승인과 증빙 관리가 핵심입니다. NUVIO에서 현재 열릴 예정인
+              여행 전 승인과 증빙 관리가 핵심입니다. 누비오에서 현재 열릴 예정인
               페이백형 지원사업을 한 번에 확인하세요.
             </p>
             <div className="mt-6 flex flex-wrap gap-3">

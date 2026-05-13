@@ -73,5 +73,5 @@ function romanizeKoreanLabel(value: string): string {
     보성: "Boseong",
   };
 
-  return map[cleaned] ?? "NUVIO";
+  return map[cleaned] ?? "누비오";
 }

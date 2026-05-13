@@ -5,6 +5,7 @@ import { useEffect, useMemo, useState } from "react";
 import {
   Bell,
   Bookmark,
+  Building2,
   CheckCircle2,
   ClipboardList,
   LogOut,
@@ -246,7 +247,7 @@ export function MyPage() {
             </div>
             <div>
               <h1 className="text-2xl font-black text-slate-950">
-                {profileName ? `${profileName}님의 NUVIO 노트` : "내 NUVIO 노트"}
+                {profileName ? `${profileName}님의 누비오 노트` : "내 누비오 노트"}
               </h1>
               <p className="mt-1 text-sm text-slate-500">
                 {profileEmail
@@ -261,14 +262,25 @@ export function MyPage() {
             </div>
           </div>
           {signedIn ? (
-            <button
-              className="inline-flex h-10 items-center justify-center gap-2 rounded-md border border-slate-200 px-3 text-sm font-black text-slate-700 hover:border-[var(--primary)] hover:text-[var(--primary)]"
-              onClick={logout}
-              type="button"
-            >
-              <LogOut size={16} />
-              로그아웃
-            </button>
+            <div className="flex flex-wrap gap-2">
+              {authSession.profile?.role === "user" ? (
+                <Link
+                  className="inline-flex h-10 items-center justify-center gap-2 rounded-md bg-slate-950 px-3 text-sm font-black text-white hover:bg-slate-800"
+                  href="/login?intent=host&next=/partners/apply"
+                >
+                  <Building2 size={16} />
+                  호스트 영역 추가
+                </Link>
+              ) : null}
+              <button
+                className="inline-flex h-10 items-center justify-center gap-2 rounded-md border border-slate-200 px-3 text-sm font-black text-slate-700 hover:border-[var(--primary)] hover:text-[var(--primary)]"
+                onClick={logout}
+                type="button"
+              >
+                <LogOut size={16} />
+                로그아웃
+              </button>
+            </div>
           ) : (
             <Link
               className="inline-flex h-10 items-center justify-center rounded-md bg-[var(--primary)] px-4 text-sm font-black text-white"

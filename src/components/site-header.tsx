@@ -16,7 +16,7 @@ const accountItems = [
 ];
 
 const registerItem = {
-  href: "/partners/apply",
+  href: "/login?intent=host&next=/partners/apply",
   label: "프로그램 등록하기",
   match: ["/partners/apply"],
 };
@@ -29,13 +29,13 @@ export function SiteHeader() {
     <header className="sticky top-0 z-50 border-b border-[var(--line)] bg-white/95 backdrop-blur">
       <div className="mx-auto flex h-16 max-w-6xl items-center justify-between gap-5 px-4 md:px-8">
         <Link
-          aria-label="NUVIO 홈"
+          aria-label="누비오 홈"
           className="flex min-w-fit items-center"
           href="/"
           onClick={() => setOpen(false)}
         >
           <Image
-            alt="NUVIO"
+            alt="누비오"
             className="h-8 w-auto"
             height={40}
             priority

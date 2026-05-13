@@ -227,7 +227,7 @@ export function BoseongFigmaFooter({
 
         <div className="text-lg font-extrabold leading-8 md:text-xl">
           <p>문의·신청·제안</p>
-          <p>{village.contactEmail ?? "hello@nuvio.kr"}</p>
+          <p>{village.contactEmail ?? "문의 준비 중"}</p>
           <p>{village.contactPhone ?? "061-000-2026"}</p>
         </div>
 

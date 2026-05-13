@@ -250,7 +250,7 @@ function toLiveAnnouncement(announcement: Announcement): LiveAnnouncement {
     id: `internal-${announcement.id}`,
     internalId: announcement.id,
     sourceId: "nuvio",
-    sourceName: "NUVIO 운영 공지",
+    sourceName: "누비오 운영 공지",
     sourceUrl: `/announcements/${announcement.id}`,
     isExternal: false,
     relevance: 99,

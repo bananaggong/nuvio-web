@@ -47,7 +47,7 @@ export function PartnerForm() {
 
       {submitted ? (
         <div className="mt-5 rounded-md border border-teal-200 bg-teal-50 p-4 text-sm font-bold text-teal-800">
-          빌리지 가입 신청이 접수되었습니다. NUVIO 운영자가 확인한 뒤 로컬홈과
+          빌리지 가입 신청이 접수되었습니다. 누비오 운영자가 확인한 뒤 로컬홈과
           호스트 권한 안내를 드립니다.
         </div>
       ) : null}
@@ -82,7 +82,7 @@ export function PartnerForm() {
         <Field label="공식 홈페이지/인스타그램" name="url" placeholder="https://" />
         <label className="flex items-start gap-2 text-sm font-bold text-slate-600">
           <input className="mt-1 accent-[var(--primary)]" required type="checkbox" />
-          제출한 자료를 NUVIO 빌리지 가입 검토와 로컬홈 생성 안내 목적으로 활용하는 데 동의합니다.
+          제출한 자료를 누비오 빌리지 가입 검토와 로컬홈 생성 안내 목적으로 활용하는 데 동의합니다.
         </label>
         <button
           className="inline-flex h-12 items-center justify-center gap-2 rounded-md bg-[var(--primary)] text-sm font-black text-white"

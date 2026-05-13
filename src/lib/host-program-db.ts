@@ -105,9 +105,9 @@ function mapHostDraftToProgramInsert(draft: HostProgramDraft): ProgramInsert {
   const hashtags = normalizeTags(draft.hashtags);
 
   return {
-    title: draft.title.trim() || "NUVIO program draft",
+    title: draft.title.trim() || "누비오 program draft",
     slug: draft.slug ?? createProgramSlug(draft.title, draft.id),
-    region: draft.region.trim() || "NUVIO",
+    region: draft.region.trim() || "누비오",
     city: draft.city.trim() || "Local",
     isGlobal: false,
     summary: draft.summary.trim() || draft.title.trim(),
@@ -128,7 +128,7 @@ function mapHostDraftToProgramInsert(draft: HostProgramDraft): ProgramInsert {
     fee: draft.fee.trim() || "TBD",
     applicants: 0,
     status: draft.status || defaultStatus,
-    sourceName: draft.sourceName.trim() || "NUVIO Host",
+    sourceName: draft.sourceName.trim() || "누비오 Host",
     sourceUrl: draft.sourceUrl.trim() || "https://www.nuvio.kr",
     applyUrl: draft.applyUrl.trim() || "https://www.nuvio.kr/apply",
     phone: draft.phone.trim() || "000-0000-0000",

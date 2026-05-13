@@ -9,14 +9,14 @@ export function Footer() {
         <div className="flex flex-col justify-between gap-6 md:flex-row">
           <div>
             <Image
-              alt="NUVIO"
+              alt="누비오"
               className="h-9 w-auto"
               height={40}
               src="/brand/nuvio-wordmark.svg"
               width={120}
             />
             <p className="mt-3 max-w-xl text-sm leading-6 text-slate-600">
-              NUVIO는 지역 체류 프로그램의 탐색, 신청, 선정 안내, 운영 관리,
+              누비오는 지역 체류 프로그램의 탐색, 신청, 선정 안내, 운영 관리,
               후기와 보고서 준비를 한 흐름으로 묶는 로컬 체류 운영 플랫폼입니다.
             </p>
           </div>
@@ -30,7 +30,10 @@ export function Footer() {
             <Link className="hover:text-[var(--primary)]" href="/privacy/third-party">
               개인정보 제3자 제공 동의
             </Link>
-            <Link className="hover:text-[var(--primary)]" href="/partners/apply">
+            <Link
+              className="hover:text-[var(--primary)]"
+              href="/login?intent=host&next=/partners/apply"
+            >
               빌리지 가입
             </Link>
             <Link className="hover:text-[var(--primary)]" href="/admin">
@@ -42,13 +45,13 @@ export function Footer() {
           <div className="space-y-2 text-xs leading-5 text-slate-500">
             <p>
               각 프로그램의 최종 조건, 선정, 지원금 지급 책임은 운영기관에
-              있습니다. NUVIO는 공고와 운영 데이터를 더 쉽게 확인하도록 돕습니다.
+              있습니다. 누비오는 공고와 운영 데이터를 더 쉽게 확인하도록 돕습니다.
             </p>
             <p>
               외부 공고, 빌리지 가입 요청, 사용자 후기 콘텐츠는 출처와 이용 권한을
               확인한 범위에서 게시합니다.
             </p>
-            <p>회사명: 누비오 | 문의: hello@nuvio.local | 2026 NUVIO</p>
+            <p>회사명: 누비오 | 문의: 이메일 준비 중 | 2026 누비오</p>
           </div>
           <div className="flex gap-2 text-slate-500">
             <a
@@ -70,7 +73,7 @@ export function Footer() {
             <Link
               aria-label="빌리지 가입"
               className="rounded-md border border-slate-200 p-2 hover:border-[var(--primary)] hover:text-[var(--primary)]"
-              href="/partners/apply"
+              href="/login?intent=host&next=/partners/apply"
             >
               <Send size={18} />
             </Link>

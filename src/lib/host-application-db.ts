@@ -132,7 +132,7 @@ export async function listHostApplications(): Promise<HostApplication[]> {
 
   return rows.map((row) => ({
     id: row.id,
-    programTitle: row.programTitle ?? "NUVIO 프로그램",
+    programTitle: row.programTitle ?? "누비오 프로그램",
     applicantName: row.applicantName,
     email: row.email,
     phone: row.phone ?? "",
@@ -188,7 +188,7 @@ export async function getHostApplicationDetail(
 
   return {
     id: row.id,
-    programTitle: row.programTitle ?? "NUVIO 프로그램",
+    programTitle: row.programTitle ?? "누비오 프로그램",
     applicantName: row.applicantName,
     email: row.email,
     phone: row.phone ?? "",
@@ -237,14 +237,14 @@ export async function updateHostApplicationStatus(
     applicationId,
     fromStatus: current.status,
     toStatus: status,
-    note: "Updated from NUVIO host console",
+    note: "Updated from 누비오 host console",
   });
 
   void queueApplicationStatusNotification({
     applicationId,
     email: current.email,
     fromStatus: current.status,
-    programTitle: current.programTitle ?? "NUVIO 프로그램",
+    programTitle: current.programTitle ?? "누비오 프로그램",
     status,
   }).catch(() => undefined);
 
@@ -255,7 +255,7 @@ export async function updateHostApplicationStatus(
     entityType: "program_application",
     metadata: {
       fromStatus: current.status,
-      programTitle: current.programTitle ?? "NUVIO 프로그램",
+      programTitle: current.programTitle ?? "누비오 프로그램",
       status,
     },
   });

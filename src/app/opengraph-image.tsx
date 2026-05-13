@@ -1,7 +1,7 @@
 import { ImageResponse } from "next/og";
 import { siteConfig } from "@/lib/seo";
 
-export const alt = "NUVIO - travel grants and local stay programs";
+export const alt = "누비오 - travel grants and local stay programs";
 export const contentType = "image/png";
 export const size = {
   width: 1200,
@@ -52,7 +52,7 @@ export default function Image() {
                 letterSpacing: 0,
               }}
             >
-              NUVIO
+              누비오
             </div>
             <div
               style={{

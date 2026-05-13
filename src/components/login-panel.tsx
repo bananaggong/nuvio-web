@@ -16,6 +16,7 @@ import type { AuthProfile } from "@/lib/auth-profile-db";
 import { createSupabaseBrowserClient } from "@/lib/supabase/client";
 
 type LoginMode = "choice" | "email";
+type LoginIntent = "participant" | "host";
 
 type ProfileRole = AuthProfile["role"];
 
@@ -40,6 +41,7 @@ function getInitialAuthParams() {
       errorMessage: "",
       mode: "choice" as LoginMode,
       nextPath: null,
+      intent: null,
     };
   }
 
@@ -51,7 +53,12 @@ function getInitialAuthParams() {
       : "",
     mode: params.get("mode") === "email" ? ("email" as LoginMode) : "choice",
     nextPath: getSafeNextPath(params.get("next")),
+    intent: getSafeLoginIntent(params.get("intent")),
   };
+}
+
+function getSafeLoginIntent(value: string | null): LoginIntent | null {
+  return value === "participant" || value === "host" ? value : null;
 }
 
 function getRoleLandingPath(role?: ProfileRole): string {
@@ -60,7 +67,26 @@ function getRoleLandingPath(role?: ProfileRole): string {
   return "/me";
 }
 
-function getPostLoginPath(profile: AuthProfile | null, nextPath: string | null): string {
+function getPostLoginPath(
+  profile: AuthProfile | null,
+  nextPath: string | null,
+  intent: LoginIntent | null,
+): string {
+  if (profile?.role === "admin" || profile?.role === "partner") {
+    return nextPath === "/partners/apply"
+      ? getRoleLandingPath(profile.role)
+      : nextPath ?? getRoleLandingPath(profile.role);
+  }
+
+  if (!profile?.onboardingCompletedAt || intent) {
+    if (nextPath?.startsWith("/onboarding")) return nextPath;
+    const params = new URLSearchParams();
+    if (intent) params.set("intent", intent);
+    if (nextPath) params.set("next", nextPath);
+    const query = params.toString();
+    return query ? `/onboarding?${query}` : "/onboarding";
+  }
+
   return nextPath ?? getRoleLandingPath(profile?.role);
 }
 
@@ -68,6 +94,7 @@ export function LoginPanel() {
   const router = useRouter();
   const [mode, setMode] = useState<LoginMode>(() => getInitialAuthParams().mode);
   const [nextPath] = useState(() => getInitialAuthParams().nextPath);
+  const [intent] = useState(() => getInitialAuthParams().intent);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [authProfile, setAuthProfile] = useState<AuthProfile | null>(null);
@@ -124,6 +151,7 @@ export function LoginPanel() {
       const supabase = createSupabaseBrowserClient();
       const callback = new URL("/auth/callback", window.location.origin);
       if (nextPath) callback.searchParams.set("next", nextPath);
+      if (intent) callback.searchParams.set("intent", intent);
       const { error } = await supabase.auth.signInWithOAuth({
         provider: providerConfig.provider,
         options: {
@@ -170,7 +198,7 @@ export function LoginPanel() {
         throw new Error(payload.error ?? "세션을 불러오지 못했습니다.");
       }
 
-      router.push(getPostLoginPath(payload.data?.profile ?? null, nextPath));
+      router.push(getPostLoginPath(payload.data?.profile ?? null, nextPath, intent));
       router.refresh();
     } catch (error) {
       setErrorMessage(
@@ -290,7 +318,7 @@ export function LoginPanel() {
               프로그램을 운영하나요?{" "}
               <Link
                 className="font-semibold text-[#378ADD] hover:underline"
-                href="/partners/apply"
+                href="/login?intent=host&next=/partners/apply"
               >
                 빌리지로 가입하기
               </Link>
@@ -306,9 +334,19 @@ export function LoginPanel() {
       <AuthHeader />
       <div className="mx-auto flex w-full max-w-sm flex-col items-center px-6 py-14">
         <h1 className="text-center text-[26px] font-bold leading-snug text-[#111111]">
-          누비오로 찾는
-          <br />
-          가벼운 로컬 여정
+          {intent === "host" ? (
+            <>
+              로컬홈 운영을
+              <br />
+              누비오에서 시작하세요
+            </>
+          ) : (
+            <>
+              누비오로 찾는
+              <br />
+              가벼운 로컬 여정
+            </>
+          )}
         </h1>
 
         {authProfile ? (
@@ -322,7 +360,9 @@ export function LoginPanel() {
             <div className="mt-3 flex gap-2">
               <button
                 className="flex-1 rounded-lg bg-[#378ADD] py-2 text-[12px] font-bold text-white transition hover:bg-[#2a6fb5]"
-                onClick={() => router.push(getRoleLandingPath(authProfile.role))}
+                onClick={() =>
+                  router.push(getPostLoginPath(authProfile, nextPath, intent))
+                }
                 type="button"
               >
                 계속하기
@@ -399,7 +439,7 @@ export function LoginPanel() {
             프로그램을 운영하나요?{" "}
             <Link
               className="font-semibold text-[#378ADD] hover:underline"
-              href="/partners/apply"
+              href="/login?intent=host&next=/partners/apply"
             >
               빌리지로 가입하기
             </Link>

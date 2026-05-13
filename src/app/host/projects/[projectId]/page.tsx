@@ -3,7 +3,7 @@ import { HostAccessBanner } from "@/components/host-access-banner";
 import { HostProjectHub } from "@/components/host-project-hub";
 
 export const metadata: Metadata = {
-  title: "프로젝트 운영 허브 | NUVIO",
+  title: "프로젝트 운영 허브 | 누비오",
   description:
     "프로젝트별 신청자, 신청서, 메시지, 활동, 증빙, 마감 업무를 한곳에서 관리하는 호스트 운영 화면입니다.",
 };

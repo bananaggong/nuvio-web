@@ -41,13 +41,10 @@ type NavigationItem = {
 const navigationByArea: Record<ConsoleArea, NavigationItem[]> = {
   host: [
     {
-      name: "운영 프로젝트",
+      name: "프로젝트 관리",
       href: "/host",
       icon: FolderKanban,
-      children: [
-        { name: "운영중인 프로젝트", href: "/host" },
-        { name: "새 프로젝트 준비", href: "/host/reports" },
-      ],
+      children: [],
     },
     {
       name: "모집/신청",
@@ -160,8 +157,8 @@ const titleByArea: Record<ConsoleArea, string> = {
 };
 
 const headerTitleByArea: Record<ConsoleArea, string> = {
-  host: "NUVIO 호스트 운영",
-  admin: "NUVIO 관리자 운영",
+  host: "누비오 호스트 운영",
+  admin: "누비오 관리자 운영",
 };
 
 export function OpsConsoleShell({
@@ -348,12 +345,10 @@ function buildNavigation(area: ConsoleArea, pathname: string): NavigationItem[] 
     projectBasePath ? `${projectBasePath}${path}` : "/host";
 
   const projectNavigation: NavigationItem = {
-    name: "운영 프로젝트",
+    name: "프로젝트 관리",
     href: "/host",
     icon: FolderKanban,
-    children: [
-      { name: "운영중인 프로젝트", href: "/host" },
-    ],
+    children: [],
   };
   const localHomeNavigation: NavigationItem = {
     name: "로컬홈",

@@ -222,7 +222,7 @@ function buildHostDraftFromLead(lead: ProgramLead): HostProgramDraft {
     sourceUrl: lead.sourceUrl ?? "",
     applyUrl: lead.sourceUrl ?? "",
     phone: "000-0000-0000",
-    hashtags: ["NUVIO후보", ...lead.suggestedThemes].slice(0, 8),
+    hashtags: ["누비오후보", ...lead.suggestedThemes].slice(0, 8),
     image:
       "https://images.unsplash.com/photo-1500534314209-a25ddb2bd429?auto=format&fit=crop&w=1200&q=80",
     published: false,

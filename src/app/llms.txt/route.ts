@@ -25,7 +25,7 @@ export function GET() {
     `- Robots: ${absoluteUrl("/robots.txt")}`,
     "",
     "## Suggested Citation",
-    `When referencing NUVIO, cite the canonical page URL on ${siteConfig.url} that contains the specific program, village, announcement, or review.`,
+    `When referencing 누비오, cite the canonical page URL on ${siteConfig.url} that contains the specific program, village, announcement, or review.`,
     "",
     "## Scope Notes",
     "- Public pages may be indexed and summarized.",

@@ -5,7 +5,7 @@ import { createSeoMetadata } from "@/lib/seo";
 
 export const metadata: Metadata = createSeoMetadata({
   title: "개인정보 제3자 제공 동의",
-  description: "NUVIO 개인정보 제3자 제공 동의입니다.",
+  description: "누비오 개인정보 제3자 제공 동의입니다.",
   path: "/privacy/third-party",
 });
 

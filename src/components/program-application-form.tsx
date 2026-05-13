@@ -84,7 +84,7 @@ export function ProgramApplicationForm({
 
     return typeof firstTextAnswer === "string"
       ? firstTextAnswer.slice(0, 72)
-      : "NUVIO 신청서 접수";
+      : "누비오 신청서 접수";
   }
 
   function buildAnswers(): Record<string, unknown> {
@@ -233,7 +233,7 @@ export function ProgramApplicationForm({
       >
         <p className="inline-flex items-center gap-2 text-sm font-black text-[var(--primary)]">
           <FileText size={17} />
-          NUVIO 신청서
+          누비오 신청서
         </p>
         <h1 className="mt-3 text-2xl font-black text-slate-950 md:text-3xl">
           {program.title}
@@ -423,6 +423,29 @@ function DynamicBlock({
 
   if (block.type === "divider") {
     return <hr className="border-slate-200" />;
+  }
+
+  if (block.type === "image") {
+    if (!block.imageUrl) return null;
+
+    return (
+      <figure
+        className="mx-auto"
+        style={{ width: `${block.imageWidth ?? 100}%` }}
+      >
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img
+          alt={block.imageAlt || block.label}
+          className="w-full rounded-md object-cover"
+          src={block.imageUrl}
+        />
+        {block.label ? (
+          <figcaption className="mt-2 text-center text-xs font-bold text-slate-500">
+            {block.label}
+          </figcaption>
+        ) : null}
+      </figure>
+    );
   }
 
   if (block.type === "pageBreak") {

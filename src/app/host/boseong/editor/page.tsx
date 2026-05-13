@@ -14,7 +14,7 @@ export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
 
 export const metadata: Metadata = {
-  title: "보성 공개 페이지 편집 | NUVIO",
+  title: "보성 공개 페이지 편집 | 누비오",
   description: "보성 로컬홈 공개 홈페이지를 실제 화면 위에서 편집합니다.",
 };
 

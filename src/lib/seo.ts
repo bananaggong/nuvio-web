@@ -6,9 +6,9 @@ import type { Village } from "@/lib/village-types";
 const defaultSiteUrl = "https://nuvio.kr";
 
 export const siteConfig = {
-  name: "NUVIO",
+  name: "누비오",
   alternateName: "누비오",
-  title: "NUVIO - 여행지원금과 로컬 체류 프로그램",
+  title: "누비오 - 여행지원금과 로컬 체류 프로그램",
   description:
     "국내외 여행지원금, 워케이션, 한달살기, 반값여행, 로컬 프로젝트를 탐색하고 신청 과정을 기록하세요.",
   url: normalizeSiteUrl(
@@ -22,7 +22,6 @@ export const siteConfig = {
   ogImagePath: "/opengraph-image",
   logoPath: "/brand/nuvio-logo-combined.svg",
   keywords: [
-    "NUVIO",
     "누비오",
     "여행지원금",
     "국내 여행지원금",
@@ -180,7 +179,7 @@ export function homePageJsonLd(programs: Program[]) {
 export function programItemListJsonLd(
   programs: Program[],
   path = "/",
-  name = "NUVIO 여행지원금 프로그램 목록",
+  name = "누비오 여행지원금 프로그램 목록",
 ) {
   return {
     "@context": "https://schema.org",

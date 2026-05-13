@@ -53,9 +53,12 @@ export function AuthHeader({
           )}
         </div>
       ) : null}
-      <Link aria-label="NUVIO 홈" href="/">
+      <Link
+        aria-label="누비오 홈"
+        href="/"
+      >
         <Image
-          alt="NUVIO"
+          alt="누비오"
           className="h-8 w-auto"
           height={32}
           priority

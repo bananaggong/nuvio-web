@@ -9,7 +9,8 @@ import { isVillageMicrositePath } from "@/lib/village-routing";
 export function AppShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const isVillageMicrosite = isVillageMicrositePath(pathname);
-  const isAuthPage = pathname === "/login" || pathname === "/signup";
+  const isAuthPage =
+    pathname === "/login" || pathname === "/signup" || pathname === "/onboarding";
   const isOpsConsole =
     pathname === "/host" ||
     pathname.startsWith("/host/") ||

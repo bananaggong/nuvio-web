@@ -159,6 +159,12 @@ export const profiles = pgTable(
     email: text("email").notNull(),
     displayName: text("display_name"),
     role: userRoleEnum("role").default("user").notNull(),
+    onboardingIntent: text("onboarding_intent").$type<
+      "participant" | "host" | null
+    >(),
+    onboardingCompletedAt: timestamp("onboarding_completed_at", {
+      withTimezone: true,
+    }),
     avatarUrl: text("avatar_url"),
     phone: text("phone"),
     createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
@@ -319,7 +325,7 @@ export const announcements = pgTable(
       onDelete: "set null",
     }),
     sourceId: text("source_id"),
-    sourceName: text("source_name").default("NUVIO").notNull(),
+    sourceName: text("source_name").default("누비오").notNull(),
     sourceUrl: text("source_url"),
     isExternal: boolean("is_external").default(false).notNull(),
     relevance: integer("relevance").default(0).notNull(),

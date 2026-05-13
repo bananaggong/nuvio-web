@@ -216,7 +216,7 @@ export function createVillageSlug(value: string): string {
 function mapVillageToInsert(village: Village): VillageInsert {
   return {
     slug: createVillageSlug(village.slug),
-    name: village.name.trim() || "NUVIO village",
+    name: village.name.trim() || "누비오 village",
     region: village.region.trim() || "전국",
     city: village.city.trim() || "로컬",
     tagline: village.tagline.trim() || `${village.name} 공식 홈`,

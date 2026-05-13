@@ -51,7 +51,7 @@ export default async function ReviewDetailPage({
     <div className="mx-auto max-w-3xl px-5 py-8 md:px-8">
       <JsonLdScript
         data={[
-          reviewJsonLd(review, canonicalPath, program?.title ?? "NUVIO 후기"),
+          reviewJsonLd(review, canonicalPath, program?.title ?? "누비오 후기"),
           breadcrumbJsonLd([
             { name: "홈", path: "/" },
             { name: "지원금 후기", path: "/reviews" },

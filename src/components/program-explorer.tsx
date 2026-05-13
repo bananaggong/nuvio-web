@@ -274,7 +274,7 @@ export function ProgramExplorer({
               프로그램 {filteredPrograms.length.toLocaleString("ko-KR")}개
             </h2>
             <p className="mt-1 text-sm leading-6 text-slate-500">
-              로컬홈 운영자가 등록했거나 NUVIO가 검수한 프로그램만 보여줍니다.
+              로컬홈 운영자가 등록했거나 누비오가 검수한 프로그램만 보여줍니다.
             </p>
           </div>
         </div>

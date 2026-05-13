@@ -8,8 +8,8 @@ import {
 } from "@/lib/implementation-status";
 
 export const metadata: Metadata = {
-  title: "NUVIO 구현 현황",
-  description: "NUVIO에 구현된 기능과 확인 경로를 한눈에 보는 내부 점검 화면입니다.",
+  title: "누비오 구현 현황",
+  description: "누비오에 구현된 기능과 확인 경로를 한눈에 보는 내부 점검 화면입니다.",
 };
 
 const stateLabels: Record<ImplementationState, string> = {
@@ -32,7 +32,7 @@ export default function ImplementationStatusPage() {
       <section className="rounded-md bg-slate-950 p-5 text-white">
         <p className="inline-flex items-center gap-2 text-sm font-black text-teal-200">
           <ListChecks size={18} />
-          NUVIO implementation map
+          누비오 implementation map
         </p>
         <h1 className="mt-3 text-3xl font-black tracking-tight">
           구현된 기능과 확인 경로

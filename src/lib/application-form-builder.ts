@@ -4,6 +4,7 @@ export type ApplicationFormBlockType =
   | "title"
   | "description"
   | "divider"
+  | "image"
   | "shortText"
   | "longText"
   | "singleSelect"
@@ -28,6 +29,9 @@ export type ApplicationFormBlock = {
   body?: string;
   branches?: ApplicationFormBranch[];
   helper?: string;
+  imageAlt?: string;
+  imageUrl?: string;
+  imageWidth?: number;
   options?: string[];
 };
 
@@ -75,6 +79,7 @@ const blockTypeValues: ApplicationFormBlockType[] = [
   "title",
   "description",
   "divider",
+  "image",
   "shortText",
   "longText",
   "singleSelect",
@@ -220,6 +225,9 @@ export function normalizeApplicationFormBlocks(
         body: asString(block.body),
         branches: normalizeBranches(block.branches),
         helper: asString(block.helper),
+        imageAlt: asString(block.imageAlt),
+        imageUrl: asString(block.imageUrl),
+        imageWidth: clampNumber(block.imageWidth, 20, 100, 100),
         id: asString(block.id) || `block-${index}-${Date.now()}`,
         label: asString(block.label) || defaultBlockLabel(type),
         options: asStringArray(block.options),
@@ -271,6 +279,9 @@ export function fieldsToBlocks(
   return fields.map((field) => ({
     branches: [],
     helper: field.helper ?? "",
+    imageAlt: "",
+    imageUrl: "",
+    imageWidth: 100,
     id: field.id,
     label: field.label,
     options: field.options ?? [],
@@ -286,6 +297,9 @@ export function createEmptyBlock(
     body: type === "description" ? "설명을 입력하세요." : "",
     branches: [],
     helper: "",
+    imageAlt: "",
+    imageUrl: "",
+    imageWidth: 100,
     id: `block-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
     label: defaultBlockLabel(type),
     options:
@@ -396,6 +410,7 @@ function defaultBlockLabel(type: ApplicationFormBlockType): string {
     date: "날짜",
     description: "설명",
     divider: "구분선",
+    image: "이미지",
     email: "이메일",
     longText: "긴 답변",
     multiSelect: "복수 선택",
@@ -416,4 +431,15 @@ function asString(value: unknown): string {
 function asStringArray(value: unknown): string[] {
   if (!Array.isArray(value)) return [];
   return value.map((item) => String(item).trim()).filter(Boolean);
+}
+
+function clampNumber(
+  value: unknown,
+  min: number,
+  max: number,
+  fallback: number,
+): number {
+  const numberValue = typeof value === "number" ? value : Number(value);
+  if (!Number.isFinite(numberValue)) return fallback;
+  return Math.min(max, Math.max(min, numberValue));
 }

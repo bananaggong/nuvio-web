@@ -10,7 +10,11 @@ export type AuthProfile = {
   avatarUrl: string;
   phone: string;
   role: "user" | "partner" | "admin";
+  onboardingIntent: OnboardingIntent | null;
+  onboardingCompletedAt: string | null;
 };
+
+export type OnboardingIntent = "participant" | "host";
 
 export async function ensureUserProfile(user: User): Promise<AuthProfile> {
   const profile = buildProfileFromUser(user);
@@ -39,6 +43,23 @@ export async function ensureUserProfile(user: User): Promise<AuthProfile> {
     .returning();
 
   return mapProfileRow(row);
+}
+
+export async function completeUserOnboarding(
+  userId: string,
+  intent: OnboardingIntent,
+): Promise<AuthProfile | undefined> {
+  const [row] = await getDb()
+    .update(profiles)
+    .set({
+      onboardingIntent: intent,
+      onboardingCompletedAt: new Date(),
+      updatedAt: new Date(),
+    })
+    .where(eq(profiles.id, userId))
+    .returning();
+
+  return row ? mapProfileRow(row) : undefined;
 }
 
 export async function getUserProfile(
@@ -78,7 +99,7 @@ function buildProfileFromUser(user: User): AuthProfile {
     stringMetadata(metadata.name) ||
     stringMetadata(metadata.nickname) ||
     user.email?.split("@")[0] ||
-    "NUVIO user";
+    "누비오 사용자";
 
   return {
     id: user.id,
@@ -90,6 +111,8 @@ function buildProfileFromUser(user: User): AuthProfile {
       "",
     phone: stringMetadata(metadata.phone),
     role: "user",
+    onboardingIntent: null,
+    onboardingCompletedAt: null,
   };
 }
 
@@ -101,6 +124,13 @@ function mapProfileRow(row: typeof profiles.$inferSelect): AuthProfile {
     avatarUrl: row.avatarUrl ?? "",
     phone: row.phone ?? "",
     role: row.role,
+    onboardingIntent:
+      row.onboardingIntent === "participant" || row.onboardingIntent === "host"
+        ? row.onboardingIntent
+        : null,
+    onboardingCompletedAt: row.onboardingCompletedAt
+      ? row.onboardingCompletedAt.toISOString()
+      : null,
   };
 }
 
