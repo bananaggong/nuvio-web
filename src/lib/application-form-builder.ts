@@ -1,5 +1,36 @@
 export type ApplicationFieldType = "text" | "textarea" | "select" | "checkbox";
 
+export type ApplicationFormBlockType =
+  | "title"
+  | "description"
+  | "divider"
+  | "shortText"
+  | "longText"
+  | "singleSelect"
+  | "multiSelect"
+  | "checkbox"
+  | "date"
+  | "email"
+  | "phone"
+  | "pageBreak";
+
+export type ApplicationFormBranch = {
+  id: string;
+  targetBlockId: string;
+  value: string;
+};
+
+export type ApplicationFormBlock = {
+  id: string;
+  type: ApplicationFormBlockType;
+  label: string;
+  required: boolean;
+  body?: string;
+  branches?: ApplicationFormBranch[];
+  helper?: string;
+  options?: string[];
+};
+
 export type ApplicationFormField = {
   id: string;
   label: string;
@@ -14,6 +45,7 @@ export type ApplicationFormTemplate = {
   name: string;
   description: string;
   programTitle: string;
+  blocks: ApplicationFormBlock[];
   fields: ApplicationFormField[];
   updatedAt: string;
 };
@@ -21,36 +53,89 @@ export type ApplicationFormTemplate = {
 export const APPLICATION_FORM_TEMPLATE_STORAGE_KEY =
   "nuvio:application-form-templates";
 
+export const questionBlockTypes: ApplicationFormBlockType[] = [
+  "shortText",
+  "longText",
+  "singleSelect",
+  "multiSelect",
+  "checkbox",
+  "date",
+  "email",
+  "phone",
+];
+
+const fieldTypeValues: ApplicationFieldType[] = [
+  "text",
+  "textarea",
+  "select",
+  "checkbox",
+];
+
+const blockTypeValues: ApplicationFormBlockType[] = [
+  "title",
+  "description",
+  "divider",
+  "shortText",
+  "longText",
+  "singleSelect",
+  "multiSelect",
+  "checkbox",
+  "date",
+  "email",
+  "phone",
+  "pageBreak",
+];
+
 export const seedApplicationFormTemplates: ApplicationFormTemplate[] = [
-  {
-    id: "form-workation-basic",
-    name: "워케이션 기본 신청서",
-    description: "원격근무 가능 여부와 체류 중 운영 지원을 확인합니다.",
-    programTitle: "강릉 파도 워케이션 6월",
+  normalizeApplicationFormTemplateShape({
+    id: "form-boseong-tea-basic",
+    name: "전체차LAB 기본 신청폼",
+    description: "참여 동기, 가능 일정, 개인정보 동의를 확인합니다.",
+    programTitle: "",
     updatedAt: "2026-05-04T00:00:00+09:00",
-    fields: [
+    blocks: [
       {
-        id: "field-motivation",
-        label: "참여 동기",
-        type: "textarea",
-        required: true,
-        helper: "프로그램에 참여하려는 이유를 확인합니다.",
+        id: "block-title",
+        label: "전체차LAB 프로그램 신청",
+        required: false,
+        type: "title",
       },
       {
-        id: "field-work-style",
-        label: "근무 형태",
-        type: "select",
+        id: "block-intro",
+        body: "프로그램 운영자가 확인해야 하는 기본 정보를 작성해 주세요.",
+        label: "안내",
+        required: false,
+        type: "description",
+      },
+      {
+        id: "field-motivation",
+        helper: "프로그램에 참여하려는 이유를 확인합니다.",
+        label: "참여 동기",
         required: true,
-        options: ["재택근무", "프리랜서", "휴가 활용", "기타"],
+        type: "longText",
+      },
+      {
+        branches: [
+          {
+            id: "branch-experienced",
+            targetBlockId: "field-receipt",
+            value: "있음",
+          },
+        ],
+        id: "field-tea-experience",
+        label: "차 문화 경험이 있나요?",
+        options: ["있음", "없음"],
+        required: true,
+        type: "singleSelect",
       },
       {
         id: "field-receipt",
         label: "영수증 제출 가능 여부",
-        type: "checkbox",
         required: true,
+        type: "checkbox",
       },
     ],
-  },
+  }),
 ];
 
 export function readApplicationFormTemplates(): ApplicationFormTemplate[] {
@@ -61,7 +146,8 @@ export function readApplicationFormTemplates(): ApplicationFormTemplate[] {
       APPLICATION_FORM_TEMPLATE_STORAGE_KEY,
     );
     if (!rawValue) return seedApplicationFormTemplates;
-    return JSON.parse(rawValue) as ApplicationFormTemplate[];
+    const templates = JSON.parse(rawValue) as unknown[];
+    return templates.map(normalizeApplicationFormTemplateShape);
   } catch {
     return seedApplicationFormTemplates;
   }
@@ -72,7 +158,7 @@ export function writeApplicationFormTemplates(
 ) {
   window.localStorage.setItem(
     APPLICATION_FORM_TEMPLATE_STORAGE_KEY,
-    JSON.stringify(templates),
+    JSON.stringify(templates.map(normalizeApplicationFormTemplateShape)),
   );
 }
 
@@ -84,34 +170,254 @@ export function mergeApplicationFormTemplates(
   const mergedTemplates: ApplicationFormTemplate[] = [];
 
   for (const template of [...primaryTemplates, ...secondaryTemplates]) {
-    const key = template.id || template.name;
+    const normalizedTemplate = normalizeApplicationFormTemplateShape(template);
+    const key = normalizedTemplate.id || normalizedTemplate.name;
     if (seen.has(key)) continue;
 
     seen.add(key);
-    mergedTemplates.push(template);
+    mergedTemplates.push(normalizedTemplate);
   }
 
   return mergedTemplates;
 }
 
-export function createEmptyField(): ApplicationFormField {
+export function normalizeApplicationFormTemplateShape(
+  input: unknown,
+): ApplicationFormTemplate {
+  const value =
+    input && typeof input === "object" && !Array.isArray(input)
+      ? (input as Record<string, unknown>)
+      : {};
+  const blocks = normalizeApplicationFormBlocks(value.blocks);
+  const fields = normalizeApplicationFormFields(value.fields);
+  const normalizedBlocks = blocks.length > 0 ? blocks : fieldsToBlocks(fields);
+  const normalizedFields =
+    fields.length > 0 ? fields : blocksToFields(normalizedBlocks);
+
   return {
-    id: `field-${Date.now()}`,
-    label: "새 질문",
-    type: "text",
-    required: false,
-    helper: "",
-    options: [],
+    blocks: normalizedBlocks,
+    description: asString(value.description),
+    fields: normalizedFields,
+    id: asString(value.id) || `form-${Date.now()}`,
+    name: asString(value.name) || "신청폼",
+    programTitle: asString(value.programTitle),
+    updatedAt: asString(value.updatedAt) || new Date().toISOString(),
   };
 }
 
-export function createEmptyTemplate(): ApplicationFormTemplate {
+export function normalizeApplicationFormBlocks(
+  value: unknown,
+): ApplicationFormBlock[] {
+  if (!Array.isArray(value)) return [];
+
+  return value
+    .filter((item) => item && typeof item === "object" && !Array.isArray(item))
+    .map((item, index) => {
+      const block = item as Record<string, unknown>;
+      const type = asBlockType(block.type);
+
+      return {
+        body: asString(block.body),
+        branches: normalizeBranches(block.branches),
+        helper: asString(block.helper),
+        id: asString(block.id) || `block-${index}-${Date.now()}`,
+        label: asString(block.label) || defaultBlockLabel(type),
+        options: asStringArray(block.options),
+        required: Boolean(block.required),
+        type,
+      };
+    });
+}
+
+export function normalizeApplicationFormFields(
+  value: unknown,
+): ApplicationFormField[] {
+  if (!Array.isArray(value)) return [];
+
+  return value
+    .filter((item) => item && typeof item === "object" && !Array.isArray(item))
+    .map((item, index) => {
+      const field = item as Record<string, unknown>;
+
+      return {
+        helper: asString(field.helper),
+        id: asString(field.id) || `field-${index}-${Date.now()}`,
+        label: asString(field.label) || "질문",
+        options: asStringArray(field.options),
+        required: Boolean(field.required),
+        type: asFieldType(field.type),
+      };
+    });
+}
+
+export function blocksToFields(
+  blocks: ApplicationFormBlock[],
+): ApplicationFormField[] {
+  return blocks
+    .filter((block) => questionBlockTypes.includes(block.type))
+    .map((block) => ({
+      helper: block.helper ?? "",
+      id: block.id,
+      label: block.label,
+      options: block.options ?? [],
+      required: block.required,
+      type: blockTypeToLegacyFieldType(block.type),
+    }));
+}
+
+export function fieldsToBlocks(
+  fields: ApplicationFormField[],
+): ApplicationFormBlock[] {
+  return fields.map((field) => ({
+    branches: [],
+    helper: field.helper ?? "",
+    id: field.id,
+    label: field.label,
+    options: field.options ?? [],
+    required: field.required,
+    type: legacyFieldTypeToBlockType(field.type),
+  }));
+}
+
+export function createEmptyBlock(
+  type: ApplicationFormBlockType = "shortText",
+): ApplicationFormBlock {
   return {
-    id: `form-${Date.now()}`,
-    name: "새 신청서",
-    description: "호스트가 직접 구성한 신청서입니다.",
-    programTitle: "프로그램명",
-    fields: [createEmptyField()],
-    updatedAt: new Date().toISOString(),
+    body: type === "description" ? "설명을 입력하세요." : "",
+    branches: [],
+    helper: "",
+    id: `block-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
+    label: defaultBlockLabel(type),
+    options:
+      type === "singleSelect" || type === "multiSelect"
+        ? ["선택지 1", "선택지 2"]
+        : [],
+    required: false,
+    type,
   };
+}
+
+export function createEmptyField(): ApplicationFormField {
+  return blocksToFields([createEmptyBlock("shortText")])[0];
+}
+
+export function createEmptyTemplate(): ApplicationFormTemplate {
+  return normalizeApplicationFormTemplateShape({
+    blocks: [
+      createEmptyBlock("title"),
+      createEmptyBlock("description"),
+      createEmptyBlock("shortText"),
+    ],
+    description: "호스트가 직접 구성한 신청폼입니다.",
+    id: `form-${Date.now()}`,
+    name: "새 신청폼",
+    programTitle: "",
+    updatedAt: new Date().toISOString(),
+  });
+}
+
+export function cloneApplicationFormTemplate(
+  template: ApplicationFormTemplate,
+  overrides: Partial<Pick<ApplicationFormTemplate, "description" | "name" | "programTitle">> = {},
+): ApplicationFormTemplate {
+  const now = Date.now();
+  const normalizedTemplate = normalizeApplicationFormTemplateShape(template);
+  const blocks = normalizedTemplate.blocks.map((block) => ({
+    ...block,
+    branches: (block.branches ?? []).map((branch) => ({
+      ...branch,
+      id: `branch-${now}-${Math.random().toString(36).slice(2, 7)}`,
+    })),
+    id: `${block.id}-copy-${now}`,
+  }));
+
+  return normalizeApplicationFormTemplateShape({
+    ...normalizedTemplate,
+    ...overrides,
+    blocks,
+    fields: blocksToFields(blocks),
+    id: `form-${now}`,
+    name: overrides.name ?? `${normalizedTemplate.name} 복사본`,
+    updatedAt: new Date().toISOString(),
+  });
+}
+
+export function isQuestionBlock(block: ApplicationFormBlock): boolean {
+  return questionBlockTypes.includes(block.type);
+}
+
+function normalizeBranches(value: unknown): ApplicationFormBranch[] {
+  if (!Array.isArray(value)) return [];
+  return value
+    .filter((item) => item && typeof item === "object" && !Array.isArray(item))
+    .map((item, index) => {
+      const branch = item as Record<string, unknown>;
+      return {
+        id: asString(branch.id) || `branch-${index}-${Date.now()}`,
+        targetBlockId: asString(branch.targetBlockId),
+        value: asString(branch.value),
+      };
+    })
+    .filter((branch) => branch.value && branch.targetBlockId);
+}
+
+function asBlockType(value: unknown): ApplicationFormBlockType {
+  const text = asString(value);
+  if (blockTypeValues.includes(text as ApplicationFormBlockType)) {
+    return text as ApplicationFormBlockType;
+  }
+  return legacyFieldTypeToBlockType(asFieldType(text));
+}
+
+function asFieldType(value: unknown): ApplicationFieldType {
+  const text = asString(value);
+  return fieldTypeValues.includes(text as ApplicationFieldType)
+    ? (text as ApplicationFieldType)
+    : "text";
+}
+
+function legacyFieldTypeToBlockType(
+  type: ApplicationFieldType,
+): ApplicationFormBlockType {
+  if (type === "textarea") return "longText";
+  if (type === "select") return "singleSelect";
+  if (type === "checkbox") return "checkbox";
+  return "shortText";
+}
+
+function blockTypeToLegacyFieldType(
+  type: ApplicationFormBlockType,
+): ApplicationFieldType {
+  if (type === "longText") return "textarea";
+  if (type === "singleSelect" || type === "multiSelect") return "select";
+  if (type === "checkbox") return "checkbox";
+  return "text";
+}
+
+function defaultBlockLabel(type: ApplicationFormBlockType): string {
+  const labels: Record<ApplicationFormBlockType, string> = {
+    checkbox: "동의 항목",
+    date: "날짜",
+    description: "설명",
+    divider: "구분선",
+    email: "이메일",
+    longText: "긴 답변",
+    multiSelect: "복수 선택",
+    pageBreak: "페이지",
+    phone: "연락처",
+    shortText: "짧은 답변",
+    singleSelect: "단일 선택",
+    title: "제목",
+  };
+
+  return labels[type];
+}
+
+function asString(value: unknown): string {
+  return typeof value === "string" ? value.trim() : "";
+}
+
+function asStringArray(value: unknown): string[] {
+  if (!Array.isArray(value)) return [];
+  return value.map((item) => String(item).trim()).filter(Boolean);
 }

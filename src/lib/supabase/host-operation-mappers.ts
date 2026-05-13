@@ -7,6 +7,7 @@ import type {
   scheduledMessages,
 } from "@/db/schema";
 import type { ApplicationFormTemplate } from "@/lib/application-form-builder";
+import { normalizeApplicationFormTemplateShape } from "@/lib/application-form-builder";
 import type { HostApplication } from "@/lib/host-operations";
 import type { HostProgramDraft } from "@/lib/host-program-studio";
 import {
@@ -65,17 +66,21 @@ export function mapApplicationFormTemplateToInsert(
   template: ApplicationFormTemplate,
   programId?: string,
 ): ProgramApplicationFormInsert {
+  const normalizedTemplate = normalizeApplicationFormTemplateShape(template);
+
   return {
     programId,
-    title: template.name,
-    description: template.description,
-    fields: template.fields.map((field) => ({
-      id: field.id,
-      label: field.label,
-      type: field.type,
-      required: field.required,
-      helper: field.helper,
-      options: field.options ?? [],
+    title: normalizedTemplate.name,
+    description: normalizedTemplate.description,
+    fields: normalizedTemplate.blocks.map((block) => ({
+      body: block.body ?? "",
+      branches: block.branches ?? [],
+      helper: block.helper,
+      id: block.id,
+      label: block.label,
+      options: block.options ?? [],
+      required: block.required,
+      type: block.type,
     })),
   };
 }

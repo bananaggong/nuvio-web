@@ -11,6 +11,11 @@ import {
 } from "lucide-react";
 import { useMemo, useState } from "react";
 import {
+  cloneApplicationFormTemplate,
+  readApplicationFormTemplates,
+  writeApplicationFormTemplates,
+} from "@/lib/application-form-builder";
+import {
   findHostProjectOverview,
   hostProgramId,
   hostProgramPath,
@@ -36,9 +41,14 @@ export function HostProgramCreateWizard({ projectId }: { projectId: string }) {
   const [capacity, setCapacity] = useState("");
   const [period, setPeriod] = useState("");
   const [formName, setFormName] = useState("");
+  const [selectedFormId, setSelectedFormId] = useState("");
   const [messageName, setMessageName] = useState("");
   const applications = readHostApplicationsFromStorage();
   const reportProjects = readReportProjects();
+  const formTemplates = readApplicationFormTemplates();
+  const reusableFormTemplates = formTemplates.filter(
+    (template) => !template.programTitle,
+  );
   const project = findHostProjectOverview(projectId, applications, reportProjects);
   const projectPath = hostProjectPath(projectId);
   const canFinish = Boolean(title.trim());
@@ -58,6 +68,9 @@ export function HostProgramCreateWizard({ projectId }: { projectId: string }) {
     if (!canFinish) return;
 
     const programTitle = title.trim();
+    const selectedFormTemplate = formTemplates.find(
+      (template) => template.id === selectedFormId,
+    );
     const nextProjects = reportProjects.map((item) => {
       if (item.id !== projectId) return item;
       const connectedProgramTitles = Array.from(
@@ -74,6 +87,15 @@ export function HostProgramCreateWizard({ projectId }: { projectId: string }) {
     writeReportProjects(
       mergeReportProjects(nextProjects, reportProjects.length ? [] : []),
     );
+
+    if (selectedFormTemplate) {
+      const programFormTemplate = cloneApplicationFormTemplate(selectedFormTemplate, {
+        name: formName.trim() || `${programTitle} 신청폼`,
+        programTitle,
+      });
+      writeApplicationFormTemplates([programFormTemplate, ...formTemplates]);
+    }
+
     router.push(hostProgramPath(projectId, hostProgramId(programTitle)));
   }
 
@@ -189,14 +211,40 @@ export function HostProgramCreateWizard({ projectId }: { projectId: string }) {
         {stepIndex === 2 ? (
           <div className="grid gap-4">
             <TextInput
-              label="신청 폼 이름"
+              label="신청폼 이름"
               onChange={setFormName}
-              placeholder={`${title || "프로그램"} 기본 신청서`}
+              placeholder={`${title || "프로그램"} 신청폼`}
               value={formName}
             />
+            <label className="grid gap-2">
+              <span className="text-sm font-black text-slate-700">
+                라이브러리 신청폼
+              </span>
+              <select
+                className="h-11 rounded-md border border-slate-200 px-3 text-sm font-bold outline-none focus:border-[var(--primary)]"
+                onChange={(event) => {
+                  const nextFormId = event.target.value;
+                  const nextTemplate = formTemplates.find(
+                    (template) => template.id === nextFormId,
+                  );
+                  setSelectedFormId(nextFormId);
+                  if (nextTemplate && !formName.trim()) {
+                    setFormName(`${title || "프로그램"} 신청폼`);
+                  }
+                }}
+                value={selectedFormId}
+              >
+                <option value="">새 기본 신청폼으로 시작</option>
+                {reusableFormTemplates.map((template) => (
+                  <option key={template.id} value={template.id}>
+                    {template.name}
+                  </option>
+                ))}
+              </select>
+            </label>
             <ProgramStep
-              body="기본 신청자 정보, 추가 질문, 동의 항목, 심사용 내부 필드를 이어서 구성합니다."
-              title="신청 폼 제작"
+              body="미리 만든 신청폼을 선택하면 완료 시 이 프로그램 전용 복사본이 생성됩니다. 이후 프로그램 내부 신청폼 화면에서 독립적으로 수정할 수 있습니다."
+              title="신청폼 연결"
             />
           </div>
         ) : null}

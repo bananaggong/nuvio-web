@@ -8,6 +8,7 @@ import {
   ChevronDown,
   ChevronRight,
   ClipboardList,
+  FilePlus2,
   FolderOpen,
   FolderKanban,
   Home,
@@ -370,13 +371,20 @@ function buildNavigation(area: ConsoleArea, pathname: string): NavigationItem[] 
     icon: Settings,
     children: [],
   };
+  const formNavigation: NavigationItem = {
+    name: "신청폼 관리",
+    href: "/host/forms",
+    icon: FilePlus2,
+    children: [],
+  };
 
   if (!isProjectWorkspace) {
-    return [projectNavigation, localHomeNavigation, settingsNavigation];
+    return [projectNavigation, formNavigation, localHomeNavigation, settingsNavigation];
   }
 
   return [
     projectNavigation,
+    formNavigation,
     {
       name: "모집/신청",
       href: programHref("/applications"),

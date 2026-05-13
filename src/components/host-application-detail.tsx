@@ -35,6 +35,12 @@ type HostApplicationDetailData = HostApplication & {
   statusEvents?: StatusEvent[];
 };
 
+type AnswerEntry = {
+  key: string;
+  label: string;
+  value: unknown;
+};
+
 const allStatuses: HostApplicationStatus[] = [
   ...applicationStatusFlow,
   "rejected",
@@ -129,11 +135,7 @@ export function HostApplicationDetail({
   }, [applicationId]);
 
   const answerEntries = application?.answers
-    ? Object.entries(application.answers).filter(([, value]) => {
-        if (value === null || value === undefined) return false;
-        if (typeof value === "string" && value.trim() === "") return false;
-        return true;
-      })
+    ? buildAnswerEntries(application.answers)
     : [];
   const projectBasePath = projectId ? hostProjectPath(projectId) : undefined;
   const programBasePath =
@@ -265,16 +267,16 @@ export function HostApplicationDetail({
 
             <div className="mt-5 grid gap-3">
               {answerEntries.length > 0 ? (
-                answerEntries.map(([key, value]) => (
+                answerEntries.map((entry) => (
                   <div
                     className="rounded-md bg-[var(--surface-muted)] p-4"
-                    key={key}
+                    key={entry.key}
                   >
                     <p className="text-xs font-black uppercase tracking-wide text-slate-500">
-                      {humanizeKey(key)}
+                      {entry.label}
                     </p>
                     <p className="mt-2 whitespace-pre-wrap break-words text-sm leading-7 text-slate-800">
-                      {formatAnswer(value)}
+                      {formatAnswer(entry.value)}
                     </p>
                   </div>
                 ))
@@ -403,6 +405,51 @@ function formatAnswer(value: unknown): string {
     return JSON.stringify(value, null, 2);
   }
   return String(value);
+}
+
+function buildAnswerEntries(answers: Record<string, unknown>): AnswerEntry[] {
+  const blockAnswers = asAnswerArray(answers.blockAnswers);
+  if (blockAnswers.length > 0) {
+    return blockAnswers.map((answer, index) => ({
+      key: asString(answer.id) || `block-answer-${index}`,
+      label: asString(answer.label) || `질문 ${index + 1}`,
+      value: answer.value,
+    }));
+  }
+
+  const templateAnswers = asAnswerArray(answers.templateAnswers);
+  if (templateAnswers.length > 0) {
+    return templateAnswers.map((answer, index) => ({
+      key: asString(answer.id) || `template-answer-${index}`,
+      label: asString(answer.label) || `질문 ${index + 1}`,
+      value: answer.value,
+    }));
+  }
+
+  return Object.entries(answers)
+    .filter(([key, value]) => {
+      if (["blockAnswers", "templateAnswers"].includes(key)) return false;
+      if (value === null || value === undefined) return false;
+      if (typeof value === "string" && value.trim() === "") return false;
+      return true;
+    })
+    .map(([key, value]) => ({
+      key,
+      label: humanizeKey(key),
+      value,
+    }));
+}
+
+function asAnswerArray(value: unknown): Array<Record<string, unknown>> {
+  if (!Array.isArray(value)) return [];
+  return value.filter(
+    (item): item is Record<string, unknown> =>
+      Boolean(item) && typeof item === "object" && !Array.isArray(item),
+  );
+}
+
+function asString(value: unknown): string {
+  return typeof value === "string" ? value.trim() : "";
 }
 
 function humanizeKey(key: string): string {

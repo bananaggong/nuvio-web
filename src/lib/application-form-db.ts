@@ -3,9 +3,13 @@ import { getDb } from "@/db/client";
 import { programApplicationForms } from "@/db/schema";
 import { getProgramRecordByIdentifier } from "@/lib/program-db";
 import type {
-  ApplicationFieldType,
-  ApplicationFormField,
   ApplicationFormTemplate,
+} from "@/lib/application-form-builder";
+import {
+  blocksToFields,
+  normalizeApplicationFormBlocks,
+  normalizeApplicationFormFields,
+  normalizeApplicationFormTemplateShape,
 } from "@/lib/application-form-builder";
 import type { Program } from "@/lib/types";
 
@@ -86,76 +90,54 @@ export function normalizeApplicationFormTemplate(
 
   const value = input as Record<string, unknown>;
 
-  return {
+  return normalizeApplicationFormTemplateShape({
     id: asString(value.id) || `form-${Date.now()}`,
     name: asString(value.name) || "신청서",
     description: asString(value.description),
     programTitle: asString(value.programTitle),
-    fields: normalizeFields(value.fields),
+    blocks: normalizeApplicationFormBlocks(value.blocks ?? value.fields),
+    fields: normalizeApplicationFormFields(value.fields),
     updatedAt: asString(value.updatedAt) || new Date().toISOString(),
-  };
+  });
 }
 
 function mapTemplateToInsert(template: ApplicationFormTemplate): FormInsert {
+  const normalizedTemplate = normalizeApplicationFormTemplateShape(template);
+
   return {
-    title: template.name.trim() || "Application form",
-    description: template.description.trim() || null,
-    programTitle: template.programTitle.trim() || null,
-    fields: template.fields.map((field) => ({
-      id: field.id,
-      label: field.label,
-      type: field.type,
-      required: field.required,
-      helper: field.helper ?? "",
-      options: field.options ?? [],
+    title: normalizedTemplate.name.trim() || "Application form",
+    description: normalizedTemplate.description.trim() || null,
+    programTitle: normalizedTemplate.programTitle.trim() || null,
+    fields: normalizedTemplate.blocks.map((block) => ({
+      body: block.body ?? "",
+      branches: block.branches ?? [],
+      helper: block.helper ?? "",
+      id: block.id,
+      label: block.label,
+      options: block.options ?? [],
+      required: block.required,
+      type: block.type,
     })),
   };
 }
 
 function mapFormRowToTemplate(row: FormRow): ApplicationFormTemplate {
-  return {
+  const blocks = normalizeApplicationFormBlocks(row.fields);
+  const fields = normalizeApplicationFormFields(row.fields);
+
+  return normalizeApplicationFormTemplateShape({
+    blocks,
     id: row.id,
     name: row.title,
     description: row.description ?? "",
     programTitle: row.programTitle ?? "",
-    fields: normalizeFields(row.fields),
+    fields: blocks.length > 0 ? blocksToFields(blocks) : fields,
     updatedAt: row.updatedAt.toISOString(),
-  };
-}
-
-function normalizeFields(value: unknown): ApplicationFormField[] {
-  if (!Array.isArray(value)) return [];
-
-  return value
-    .filter((item) => item && typeof item === "object" && !Array.isArray(item))
-    .map((item, index) => {
-      const field = item as Record<string, unknown>;
-
-      return {
-        id: asString(field.id) || `field-${index}-${Date.now()}`,
-        label: asString(field.label) || "질문",
-        type: asFieldType(field.type),
-        required: Boolean(field.required),
-        helper: asString(field.helper),
-        options: asStringArray(field.options),
-      };
-    });
-}
-
-function asFieldType(value: unknown): ApplicationFieldType {
-  const text = asString(value);
-  return fieldTypeValues.includes(text as ApplicationFieldType)
-    ? (text as ApplicationFieldType)
-    : "text";
+  });
 }
 
 function asString(value: unknown): string {
   return typeof value === "string" ? value.trim() : "";
-}
-
-function asStringArray(value: unknown): string[] {
-  if (!Array.isArray(value)) return [];
-  return value.map((item) => String(item).trim()).filter(Boolean);
 }
 
 function normalizeText(value: string): string {
@@ -167,10 +149,3 @@ function isUuid(value: string): boolean {
     value,
   );
 }
-
-const fieldTypeValues: ApplicationFieldType[] = [
-  "text",
-  "textarea",
-  "select",
-  "checkbox",
-];
