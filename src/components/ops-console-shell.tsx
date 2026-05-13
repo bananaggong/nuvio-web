@@ -332,6 +332,13 @@ function buildNavigation(area: ConsoleArea, pathname: string): NavigationItem[] 
   if (area !== "host") return navigationByArea[area];
 
   const projectBasePath = getCurrentProjectBasePath(pathname);
+  const programBasePath = getCurrentProgramBasePath(pathname);
+  const programHref = (path: string) =>
+    programBasePath
+      ? `${programBasePath}${path}`
+      : projectBasePath
+        ? projectBasePath
+        : "/host";
   const projectHref = (path: string) =>
     projectBasePath ? `${projectBasePath}${path}` : "/host";
 
@@ -342,24 +349,28 @@ function buildNavigation(area: ConsoleArea, pathname: string): NavigationItem[] 
       icon: FolderKanban,
       children: [
         { name: "운영중인 프로젝트", href: "/host" },
-        { name: "새 프로젝트 준비", href: "/host/reports" },
+        { name: "새 프로젝트 만들기", href: "/host/projects/new" },
       ],
     },
     {
       name: "모집/신청",
-      href: projectHref("/applications"),
+      href: programHref("/applications"),
       icon: ClipboardList,
       children: [
-        { name: "프로그램 관리", href: "/host/programs" },
-        { name: "신청서 설정", href: projectHref("/forms") },
-        { name: "신청자 CRM", href: projectHref("/applications") },
+        { name: "프로그램 선택", href: projectBasePath ?? "/host" },
+        {
+          name: "새 프로그램 신설",
+          href: projectBasePath ? `${projectBasePath}/programs/new` : "/host",
+        },
+        { name: "신청서 설정", href: programHref("/forms") },
+        { name: "신청자 CRM", href: programHref("/applications") },
       ],
     },
     {
       name: "커뮤니케이션",
-      href: projectHref("/messages"),
+      href: programHref("/messages"),
       icon: MessageSquareText,
-      children: [{ name: "안내 메시지", href: projectHref("/messages") }],
+      children: [{ name: "안내 메시지", href: programHref("/messages") }],
     },
     {
       name: "활동/증빙",
@@ -393,6 +404,12 @@ function buildNavigation(area: ConsoleArea, pathname: string): NavigationItem[] 
 function getCurrentProjectBasePath(pathname: string) {
   const match = pathname.match(/^\/host\/projects\/[^/]+/u);
   return match?.[0];
+}
+
+function getCurrentProgramBasePath(pathname: string) {
+  const match = pathname.match(/^\/host\/projects\/[^/]+\/programs\/[^/]+/u);
+  if (!match || match[0].endsWith("/programs/new")) return undefined;
+  return match[0];
 }
 
 function NavigationGroup({

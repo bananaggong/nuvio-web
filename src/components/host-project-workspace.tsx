@@ -6,10 +6,9 @@ import {
   ArrowRight,
   CheckCircle2,
   ClipboardList,
-  FilePlus2,
   FileText,
-  MessageSquareText,
-  Users,
+  FolderKanban,
+  Plus,
   WalletCards,
 } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
@@ -218,16 +217,15 @@ function ProjectTabs({
   section: HostProjectWorkspaceSection;
 }) {
   const items = [
-    { href: `${projectPath}/applications`, label: "신청자", icon: Users },
-    { href: `${projectPath}/forms`, label: "신청서", icon: FilePlus2 },
-    { href: `${projectPath}/messages`, label: "메시지", icon: MessageSquareText },
+    { href: projectPath, label: "프로그램 선택", icon: FolderKanban },
+    { href: `${projectPath}/programs/new`, label: "새 프로그램", icon: Plus },
     { href: `${projectPath}/activities`, label: "활동/참석", icon: ClipboardList, id: "activities" },
     { href: `${projectPath}/evidence`, label: "지출/증빙", icon: WalletCards, id: "evidence" },
     { href: `${projectPath}/closeout`, label: "마감/보고", icon: FileText, id: "closeout" },
   ];
 
   return (
-    <nav className="mt-5 grid gap-3 md:grid-cols-3 xl:grid-cols-6">
+    <nav className="mt-5 grid gap-3 md:grid-cols-3 xl:grid-cols-5">
       {items.map((item) => {
         const Icon = item.icon;
         const active = item.id === section;

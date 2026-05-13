@@ -266,7 +266,7 @@ export const seedReportProjects: ReportProject[] = [
     agencyName: "보성 로컬홈 운영팀",
     imageUrl: "/boseong/hero-illustration.png",
     programTitle: "전체 프로그램",
-    connectedProgramTitles: ["로컬리듬", "숙재밭", "나무 여는 차실험"],
+    connectedProgramTitles: ["나를 담는 차 실험실", "로컬살롱"],
     periodLabel: "2026.05.01 - 2026.11.30",
     ownerName: "운영 담당자",
     status: "review",
@@ -790,20 +790,32 @@ export function normalizeReportProjectModel(input: unknown): ReportProject {
   const value = input as Record<string, unknown>;
   const connectedProgramTitles = normalizeStringArray(value.connectedProgramTitles);
   const legacyProgramTitle = asString(value.programTitle);
+  const id = asString(value.id) || `operation-${Date.now()}`;
+  const normalizedConnectedProgramTitles =
+    connectedProgramTitles.length > 0
+      ? connectedProgramTitles
+      : legacyProgramTitle && legacyProgramTitle !== "전체 프로그램"
+        ? [legacyProgramTitle]
+        : [];
+  const migratedConnectedProgramTitles =
+    id === "operation-boseong-2026"
+      ? Array.from(
+          new Set([
+            ...normalizedConnectedProgramTitles,
+            "나를 담는 차 실험실",
+            "로컬살롱",
+          ]),
+        )
+      : normalizedConnectedProgramTitles;
 
   return {
     activityEvents: normalizeActivityEvents(value.activityEvents),
     agencyName: asString(value.agencyName) || "운영 조직명",
     budgetCategories: normalizeBudgetCategories(value.budgetCategories),
-    connectedProgramTitles:
-      connectedProgramTitles.length > 0
-        ? connectedProgramTitles
-        : legacyProgramTitle && legacyProgramTitle !== "전체 프로그램"
-          ? [legacyProgramTitle]
-          : [],
+    connectedProgramTitles: migratedConnectedProgramTitles,
     evidenceRules: normalizeEvidenceRules(value.evidenceRules),
     expenseEvents: normalizeExpenseEvents(value.expenseEvents),
-    id: asString(value.id) || `operation-${Date.now()}`,
+    id,
     imageUrl: asString(value.imageUrl),
     manualFields: normalizeManualFields(value.manualFields),
     ownerName: asString(value.ownerName) || "담당자명",

@@ -37,6 +37,19 @@ export type HostProjectOverview = {
   villageName: string;
 };
 
+export type HostProgramOverview = {
+  activeCount: number;
+  applicationCount: number;
+  applications: HostApplication[];
+  id: string;
+  imageUrl: string;
+  missingEvidenceCount: number;
+  pendingCount: number;
+  readiness: number;
+  title: string;
+  updatedAt: string;
+};
+
 export function buildHostProjectOverviews(
   applications: HostApplication[],
   reportProjects: ReportProject[],
@@ -44,9 +57,8 @@ export function buildHostProjectOverviews(
   const operationProjects = reportProjects.map((project) =>
     buildOperationProjectOverview(project, applications),
   );
-  const programProjects = buildProgramProjectOverviews(applications);
 
-  return [...operationProjects, ...programProjects].sort(
+  return operationProjects.sort(
     (a, b) => Date.parse(b.updatedAt) - Date.parse(a.updatedAt),
   );
 }
@@ -63,6 +75,74 @@ export function findHostProjectOverview(
 
 export function hostProjectPath(projectId: string): string {
   return `/host/projects/${encodeURIComponent(projectId)}`;
+}
+
+export function buildHostProgramOverviews(
+  project: HostProjectOverview,
+  applications: HostApplication[],
+): HostProgramOverview[] {
+  const titles = resolveProjectProgramTitles(project, applications);
+
+  return titles.map((title) => {
+    const programApplications = applications.filter(
+      (application) => application.programTitle === title,
+    );
+    const applicationSummary = summarizeApplications(programApplications);
+    const pendingCount = programApplications.filter((application) =>
+      ["submitted", "screening"].includes(application.status),
+    ).length;
+    const latestSubmittedAt =
+      programApplications[0]?.submittedAt ?? project.updatedAt;
+
+    return {
+      activeCount:
+        applicationSummary.accepted +
+        applicationSummary.checkedIn +
+        applicationSummary.completed,
+      applicationCount: programApplications.length,
+      applications: programApplications,
+      id: hostProgramId(title),
+      imageUrl: resolveProgramImage(title),
+      missingEvidenceCount: programApplications.reduce(
+        (sum, application) =>
+          sum + (application.receiptCount > 0 || application.status === "rejected" ? 0 : 1),
+        0,
+      ),
+      pendingCount,
+      readiness: applicationSummary.reportReadiness,
+      title,
+      updatedAt: latestSubmittedAt,
+    } satisfies HostProgramOverview;
+  });
+}
+
+export function findHostProgramOverview(
+  projectId: string,
+  programId: string,
+  applications: HostApplication[],
+  reportProjects: ReportProject[],
+): HostProgramOverview | undefined {
+  const project = findHostProjectOverview(projectId, applications, reportProjects);
+  if (!project) return undefined;
+
+  return buildHostProgramOverviews(project, applications).find(
+    (program) => program.id === programId,
+  );
+}
+
+export function hostProgramId(programTitle: string): string {
+  const slug = programTitle
+    .normalize("NFKC")
+    .toLowerCase()
+    .replace(/[^\p{L}\p{N}]+/gu, "-")
+    .replace(/^-+|-+$/gu, "")
+    .slice(0, 72);
+
+  return `program-${slug || stableHash(programTitle)}`;
+}
+
+export function hostProgramPath(projectId: string, programId: string): string {
+  return `${hostProjectPath(projectId)}/programs/${encodeURIComponent(programId)}`;
 }
 
 function buildOperationProjectOverview(
@@ -108,62 +188,6 @@ function buildOperationProjectOverview(
     usedAmount: reportSummary.usedAmount,
     villageName: project.villageName,
   };
-}
-
-function buildProgramProjectOverviews(
-  applications: HostApplication[],
-): HostProjectOverview[] {
-  const applicationsByProgram = new Map<string, HostApplication[]>();
-
-  for (const application of applications) {
-    const current = applicationsByProgram.get(application.programTitle) ?? [];
-    applicationsByProgram.set(application.programTitle, [...current, application]);
-  }
-
-  return [...applicationsByProgram.entries()].map(([programTitle, programApplications]) => {
-    const applicationSummary = summarizeApplications(programApplications);
-    const pendingCount = programApplications.filter((application) =>
-      ["submitted", "screening"].includes(application.status),
-    ).length;
-    const latestSubmittedAt =
-      programApplications[0]?.submittedAt ?? new Date().toISOString();
-
-    return {
-      activeCount:
-        applicationSummary.accepted +
-        applicationSummary.checkedIn +
-        applicationSummary.completed,
-      activityCount: 0,
-      applicationCount: programApplications.length,
-      applications: programApplications,
-      completedCount: applicationSummary.completed,
-      connectedProgramTitles: [programTitle],
-      id: createProgramProjectId(programTitle),
-      imageUrl: resolveProgramImage(programTitle),
-      kind: "program",
-      missingEvidenceCount: programApplications.reduce(
-        (sum, application) =>
-          sum + (application.receiptCount > 0 || application.status === "rejected" ? 0 : 1),
-        0,
-      ),
-      ownerName: "프로그램 운영자",
-      pendingCount,
-      periodLabel: "프로그램 단위 운영",
-      readiness: applicationSummary.reportReadiness,
-      reviewMissingCount: programApplications.filter(
-        (application) => !application.reviewSubmitted,
-      ).length,
-      signatureMissingCount: programApplications.filter(
-        (application) => !application.signatureCompleted,
-      ).length,
-      statusLabel: pendingCount > 0 ? "모집/검토" : "운영 중",
-      title: programTitle,
-      totalBudget: 0,
-      updatedAt: latestSubmittedAt,
-      usedAmount: applicationSummary.paidAmount,
-      villageName: inferVillageName(programTitle),
-    } satisfies HostProjectOverview;
-  });
 }
 
 function resolveProjectImage(project: ReportProject): string {
@@ -215,17 +239,6 @@ function normalizeTitle(value: string): string {
   return value.replace(/\s+/gu, "").trim().toLowerCase();
 }
 
-function createProgramProjectId(programTitle: string): string {
-  const slug = programTitle
-    .normalize("NFKC")
-    .toLowerCase()
-    .replace(/[^\p{L}\p{N}]+/gu, "-")
-    .replace(/^-+|-+$/gu, "")
-    .slice(0, 72);
-
-  return `program-${slug || stableHash(programTitle)}`;
-}
-
 function stableHash(value: string): string {
   let hash = 0;
   for (const character of value) {
@@ -234,13 +247,23 @@ function stableHash(value: string): string {
   return hash.toString(36);
 }
 
-function inferVillageName(programTitle: string): string {
-  if (programTitle.includes("보성") || programTitle.includes("로컬살롱") || programTitle.includes("차")) {
-    return "전체차LAB";
-  }
-  if (programTitle.includes("강릉")) return "강릉 로컬워크";
-  if (programTitle.includes("남해")) return "남해 체류관광";
-  if (programTitle.includes("제천")) return "제천 관광지원센터";
-  if (programTitle.includes("고흥")) return "고흥 별빛마을";
-  return "로컬홈";
+function resolveProjectProgramTitles(
+  project: HostProjectOverview,
+  applications: HostApplication[],
+): string[] {
+  const explicitTitles = project.connectedProgramTitles.filter(
+    (title) => title && title !== "전체 프로그램",
+  );
+  const scopedApplicationTitles = project.applications.map(
+    (application) => application.programTitle,
+  );
+  const fallbackTitles = applications.map((application) => application.programTitle);
+  const titles =
+    explicitTitles.length > 0
+      ? explicitTitles
+      : scopedApplicationTitles.length > 0
+        ? scopedApplicationTitles
+        : fallbackTitles;
+
+  return Array.from(new Set(titles));
 }

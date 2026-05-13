@@ -23,7 +23,9 @@ import type {
   HostApplicationStatus,
 } from "@/lib/host-operations";
 import {
+  findHostProgramOverview,
   findHostProjectOverview,
+  hostProgramPath,
   hostProjectPath,
 } from "@/lib/host-projects";
 import {
@@ -58,7 +60,13 @@ const statusTone: Record<HostApplicationStatus, string> = {
 
 type StatusFilter = HostApplicationStatus | "all";
 
-export function HostApplicationsCrm({ projectId }: { projectId?: string }) {
+export function HostApplicationsCrm({
+  programId,
+  projectId,
+}: {
+  programId?: string;
+  projectId?: string;
+}) {
   const [applications, setApplications] = useState<HostApplication[]>(
     readHostApplicationsFromStorage,
   );
@@ -122,8 +130,23 @@ export function HostApplicationsCrm({ projectId }: { projectId?: string }) {
     if (!projectId) return undefined;
     return findHostProjectOverview(projectId, applications, reportProjects);
   }, [applications, projectId, reportProjects]);
+  const program = useMemo(() => {
+    if (!projectId || !programId) return undefined;
+    return findHostProgramOverview(
+      projectId,
+      programId,
+      applications,
+      reportProjects,
+    );
+  }, [applications, programId, projectId, reportProjects]);
   const projectBasePath = projectId ? hostProjectPath(projectId) : undefined;
-  const scopedApplications = project ? project.applications : applications;
+  const programBasePath =
+    projectId && program ? hostProgramPath(projectId, program.id) : undefined;
+  const scopedApplications = program
+    ? program.applications
+    : project
+      ? project.applications
+      : applications;
 
   const programOptions = useMemo(() => {
     return Array.from(
@@ -206,9 +229,9 @@ export function HostApplicationsCrm({ projectId }: { projectId?: string }) {
       {projectBasePath ? (
         <Link
           className="mb-5 inline-flex h-10 items-center justify-center gap-2 rounded-md border border-slate-200 bg-white px-3 text-sm font-black text-slate-700"
-          href={projectBasePath}
+          href={programBasePath ?? projectBasePath}
         >
-          프로젝트 허브
+          {programBasePath ? "프로그램 허브" : "프로젝트 허브"}
           <ArrowRight size={16} />
         </Link>
       ) : null}
@@ -217,15 +240,19 @@ export function HostApplicationsCrm({ projectId }: { projectId?: string }) {
           <div>
             <p className="inline-flex items-center gap-2 text-sm font-black text-teal-200">
               <Users size={18} />
-              {project ? "프로젝트 CRM" : "신청자 CRM"}
+              {program ? "프로그램 CRM" : project ? "프로젝트 CRM" : "신청자 CRM"}
             </p>
             <h1 className="mt-4 max-w-3xl text-2xl font-black leading-tight sm:text-3xl md:text-4xl">
-              {project
+              {program
+                ? `${program.title} 신청자를 검토하고 상태를 바꿉니다.`
+                : project
                 ? `${project.title} 신청자를 검토하고 상태를 바꿉니다.`
                 : "프로그램 신청자를 한 화면에서 검토하고 상태를 바꿉니다."}
             </h1>
             <p className="mt-3 max-w-3xl text-sm leading-7 text-slate-300">
-              {project
+              {program
+                ? "이 화면은 선택한 프로그램의 신청자만 다룹니다. 신청자 관리는 프로젝트보다 한 단계 아래인 프로그램 맥락에서 진행됩니다."
+                : project
                 ? "이 화면은 선택한 프로젝트에 연결된 신청자만 다룹니다. 검색, 상태 변경, 상세 응답 확인도 프로젝트 맥락 안에서 이어집니다."
                 : "수동 입금 체크는 이번 범위에서 제외했습니다. 지금은 신청자 검색, 프로그램별 필터, 상태 변경, 상세 응답 확인에 집중합니다."}
             </p>
@@ -233,9 +260,9 @@ export function HostApplicationsCrm({ projectId }: { projectId?: string }) {
           <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-1">
             <Link
               className="inline-flex h-11 items-center justify-center gap-2 rounded-md bg-white px-4 text-sm font-black text-slate-950 hover:bg-slate-100"
-              href={projectBasePath ?? "/host"}
+              href={programBasePath ?? projectBasePath ?? "/host"}
             >
-              {project ? "프로젝트 허브" : "운영 콘솔"}
+              {program ? "프로그램 허브" : project ? "프로젝트 허브" : "운영 콘솔"}
               <ArrowRight size={16} />
             </Link>
             <Link
@@ -412,7 +439,9 @@ export function HostApplicationsCrm({ projectId }: { projectId?: string }) {
                       <Link
                         className="inline-flex h-9 items-center justify-center gap-2 rounded-md border border-slate-200 px-3 text-xs font-black text-slate-700 hover:border-[var(--primary)] hover:text-[var(--primary)]"
                         href={
-                          projectBasePath
+                          programBasePath
+                            ? `${programBasePath}/applications/${encodeURIComponent(application.id)}`
+                            : projectBasePath
                             ? `${projectBasePath}/applications/${encodeURIComponent(application.id)}`
                             : `/host/applications/${application.id}`
                         }

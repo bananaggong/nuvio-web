@@ -20,7 +20,9 @@ import { useEffect, useMemo, useState } from "react";
 import { readHostApplicationsFromStorage } from "@/lib/host-operations";
 import type { HostApplication } from "@/lib/host-operations";
 import {
+  findHostProgramOverview,
   findHostProjectOverview,
+  hostProgramPath,
   hostProjectPath,
 } from "@/lib/host-projects";
 import {
@@ -56,7 +58,13 @@ const campaignStatusOptions: MessageCampaignStatus[] = [
   "sent",
 ];
 
-export function HostMessageAutomation({ projectId }: { projectId?: string }) {
+export function HostMessageAutomation({
+  programId,
+  projectId,
+}: {
+  programId?: string;
+  projectId?: string;
+}) {
   const [applications, setApplications] = useState(readHostApplicationsFromStorage);
   const [reportProjects, setReportProjects] =
     useState<ReportProject[]>(readReportProjects);
@@ -78,8 +86,23 @@ export function HostMessageAutomation({ projectId }: { projectId?: string }) {
     if (!projectId) return undefined;
     return findHostProjectOverview(projectId, applications, reportProjects);
   }, [applications, projectId, reportProjects]);
-  const projectApplications = project ? project.applications : applications;
+  const program = useMemo(() => {
+    if (!projectId || !programId) return undefined;
+    return findHostProgramOverview(
+      projectId,
+      programId,
+      applications,
+      reportProjects,
+    );
+  }, [applications, programId, projectId, reportProjects]);
+  const projectApplications = program
+    ? program.applications
+    : project
+      ? project.applications
+      : applications;
   const projectBasePath = projectId ? hostProjectPath(projectId) : undefined;
+  const programBasePath =
+    projectId && program ? hostProgramPath(projectId, program.id) : undefined;
   const recipients = useMemo(() => {
     if (!selectedCampaign) return [];
     return buildMessageRecipientPreview(
@@ -268,10 +291,10 @@ export function HostMessageAutomation({ projectId }: { projectId?: string }) {
       <div className="mb-5 grid gap-3 sm:grid-cols-[1fr_auto_auto_auto]">
         <Link
           className="inline-flex h-10 items-center justify-center gap-2 rounded-md border border-slate-200 bg-white px-3 text-sm font-black text-slate-700"
-          href={projectBasePath ?? "/host"}
+          href={programBasePath ?? projectBasePath ?? "/host"}
         >
           <ArrowLeft size={16} />
-          {projectBasePath ? "프로젝트 허브" : "운영 콘솔"}
+          {programBasePath ? "프로그램 허브" : projectBasePath ? "프로젝트 허브" : "운영 콘솔"}
         </Link>
         <button
           className="inline-flex h-10 items-center justify-center gap-2 rounded-md border border-slate-200 bg-white px-3 text-sm font-black text-slate-700"
@@ -307,17 +330,21 @@ export function HostMessageAutomation({ projectId }: { projectId?: string }) {
       <section className="overflow-hidden rounded-md bg-slate-950 p-5 text-white sm:p-6">
         <p className="inline-flex items-center gap-2 text-sm font-black text-teal-200">
           <Sparkles size={18} />
-          {project ? "프로젝트 메시지" : "메시지 자동화 센터"}
+          {program ? "프로그램 메시지" : project ? "프로젝트 메시지" : "메시지 자동화 센터"}
         </p>
         <div className="mt-4 grid gap-5 lg:grid-cols-[minmax(0,1fr)_320px]">
           <div className="min-w-0">
             <h1 className="max-w-3xl text-2xl font-black leading-tight sm:text-3xl md:text-4xl">
-              {project
+              {program
+                ? `${program.title} 신청자에게 보낼 안내 메시지를 예약합니다.`
+                : project
                 ? `${project.title} 신청자에게 보낼 안내 메시지를 예약합니다.`
                 : "신청자 상태에 맞춰 안내 메시지를 예약합니다."}
             </h1>
             <p className="mt-3 max-w-3xl text-sm leading-7 text-slate-300">
-              {project
+              {program
+                ? "수신자 큐는 이 프로그램에 신청한 사람만 기준으로 생성됩니다."
+                : project
                 ? "수신자 큐는 이 프로젝트에 연결된 신청자만 기준으로 생성됩니다."
                 : "템플릿, 대상 상태, 발송 채널을 조합해 수신자 큐를 만들고 DB 연결 후에는 예약 발송 이력을 서버에 기록합니다."}
             </p>

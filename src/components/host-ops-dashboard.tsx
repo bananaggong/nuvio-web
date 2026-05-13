@@ -48,8 +48,8 @@ const fallbackActions = [
   },
   {
     href: "/host/reports",
-    label: "새 프로젝트 준비",
-    helper: "예산, 증빙, 활동 구조 설정",
+    label: "운영 프로젝트 관리",
+    helper: "예산, 증빙, 활동 구조 편집",
     icon: FileText,
   },
   {
@@ -133,17 +133,10 @@ export function HostOpsDashboard() {
     () => buildHostProjectOverviews(applications, reportProjects),
     [applications, reportProjects],
   );
-  const operatingProjects = projects.filter(
-    (project) =>
-      project.kind === "operation" ||
-      project.pendingCount > 0 ||
-      project.activeCount > 0,
-  );
-  const visibleProjects = operatingProjects.length > 0 ? operatingProjects : projects;
-  const averageReadiness = visibleProjects.length
+  const averageReadiness = projects.length
     ? Math.round(
-        visibleProjects.reduce((sum, project) => sum + project.readiness, 0) /
-          visibleProjects.length,
+        projects.reduce((sum, project) => sum + project.readiness, 0) /
+          projects.length,
       )
     : 0;
 
@@ -160,13 +153,13 @@ export function HostOpsDashboard() {
               운영중인 프로젝트
             </h1>
             <p className="mt-2 max-w-3xl text-sm leading-6 text-slate-600">
-              프로젝트를 먼저 선택하면 신청자, 신청서, 메시지, 활동, 지출/증빙,
-              마감/보고가 그 프로젝트 하위 작업으로 이어집니다.
+              프로젝트는 예산, 증빙, 활동, 보고를 묶는 상위 운영 단위입니다.
+              프로젝트 안에서 공개 모집 프로그램을 만들고 관리합니다.
             </p>
           </div>
           <Link
             className="inline-flex h-10 items-center justify-center gap-2 rounded-md bg-slate-950 px-3 text-sm font-black text-white"
-            href="/host/reports"
+            href="/host/projects/new"
           >
             <Plus size={16} />
             새 프로젝트
@@ -178,7 +171,7 @@ export function HostOpsDashboard() {
             최근 항목
           </span>
           <span className="rounded-md border border-slate-200 px-3 py-1.5 text-xs font-black text-slate-600">
-            운영중 {visibleProjects.length}개
+            운영중 {projects.length}개
           </span>
           <span className="rounded-md border border-slate-200 px-3 py-1.5 text-xs font-black text-slate-600">
             평균 준비율 {averageReadiness}%
@@ -187,7 +180,7 @@ export function HostOpsDashboard() {
       </section>
 
       <section className="mt-5 grid gap-6 sm:grid-cols-2 xl:grid-cols-3">
-        {visibleProjects.map((project) => (
+        {projects.map((project) => (
           <ProjectCard project={project} key={project.id} />
         ))}
       </section>

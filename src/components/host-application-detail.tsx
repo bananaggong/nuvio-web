@@ -20,7 +20,7 @@ import type {
   HostApplication,
   HostApplicationStatus,
 } from "@/lib/host-operations";
-import { hostProjectPath } from "@/lib/host-projects";
+import { hostProgramPath, hostProjectPath } from "@/lib/host-projects";
 
 type StatusEvent = {
   id: string;
@@ -60,9 +60,11 @@ const statusTone: Record<HostApplicationStatus, string> = {
 
 export function HostApplicationDetail({
   applicationId,
+  programId,
   projectId,
 }: {
   applicationId: string;
+  programId?: string;
   projectId?: string;
 }) {
   const [application, setApplication] =
@@ -134,10 +136,14 @@ export function HostApplicationDetail({
       })
     : [];
   const projectBasePath = projectId ? hostProjectPath(projectId) : undefined;
+  const programBasePath =
+    projectId && programId ? hostProgramPath(projectId, programId) : undefined;
   const applicationsPath = projectBasePath
-    ? `${projectBasePath}/applications`
+    ? programBasePath
+      ? `${programBasePath}/applications`
+      : `${projectBasePath}/applications`
     : "/host/applications";
-  const hubPath = projectBasePath ?? "/host";
+  const hubPath = programBasePath ?? projectBasePath ?? "/host";
 
   function updateStatus(status: HostApplicationStatus) {
     if (!application) return;
@@ -199,7 +205,7 @@ export function HostApplicationDetail({
           className="inline-flex h-10 items-center gap-2 rounded-md border border-slate-200 bg-white px-3 text-sm font-black text-slate-700"
           href={hubPath}
         >
-          {projectBasePath ? "프로젝트 허브" : "운영 콘솔"}
+          {programBasePath ? "프로그램 허브" : projectBasePath ? "프로젝트 허브" : "운영 콘솔"}
         </Link>
       </div>
 

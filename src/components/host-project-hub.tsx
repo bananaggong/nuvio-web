@@ -1,42 +1,33 @@
 "use client";
 
+import Image from "next/image";
 import Link from "next/link";
 import {
   ArrowLeft,
   ArrowRight,
-  Check,
   ClipboardList,
-  FilePlus2,
   FileText,
   FolderKanban,
-  MessageSquareText,
-  Send,
-  Users,
+  Plus,
   WalletCards,
 } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import type { ReactNode } from "react";
 import {
-  applicationStatusFlow,
-  applicationStatusLabels,
   mergeHostApplications,
   readHostApplicationsFromStorage,
   seedHostApplications,
-  seedMessageTemplates,
   writeHostApplicationsToStorage,
 } from "@/lib/host-operations";
-import type {
-  HostApplication,
-  HostApplicationStatus,
-  MessageTemplate,
-} from "@/lib/host-operations";
+import type { HostApplication } from "@/lib/host-operations";
 import {
+  buildHostProgramOverviews,
   findHostProjectOverview,
+  hostProgramPath,
   hostProjectPath,
-  type HostProjectOverview,
+  type HostProgramOverview,
 } from "@/lib/host-projects";
 import {
-  buildReportChecklist,
   formatCurrency,
   mergeReportProjects,
   readReportProjects,
@@ -45,21 +36,12 @@ import {
 } from "@/lib/report-automation";
 import type { ReportProject } from "@/lib/report-automation";
 
-const TEMPLATE_STORAGE_KEY = "nuvio:message-templates";
-const applicationStatusOptions: HostApplicationStatus[] = [
-  ...applicationStatusFlow,
-  "rejected",
-];
-
 export function HostProjectHub({ projectId }: { projectId: string }) {
   const [applications, setApplications] = useState<HostApplication[]>(
     seedHostApplications,
   );
   const [reportProjects, setReportProjects] =
     useState<ReportProject[]>(readReportProjects);
-  const [templates, setTemplates] =
-    useState<MessageTemplate[]>(seedMessageTemplates);
-  const [copiedTemplateId, setCopiedTemplateId] = useState<string>();
 
   useEffect(() => {
     let cancelled = false;
@@ -67,7 +49,6 @@ export function HostProjectHub({ projectId }: { projectId: string }) {
       if (cancelled) return;
       setApplications(readHostApplicationsFromStorage());
       setReportProjects(readReportProjects());
-      setTemplates(readStoredTemplates());
     }, 0);
 
     async function loadRemoteState() {
@@ -119,44 +100,13 @@ export function HostProjectHub({ projectId }: { projectId: string }) {
     () => findHostProjectOverview(projectId, applications, reportProjects),
     [applications, projectId, reportProjects],
   );
+  const programs = useMemo(
+    () => (project ? buildHostProgramOverviews(project, applications) : []),
+    [applications, project],
+  );
   const reportSummary = project?.reportProject
     ? summarizeReportProject(project.reportProject, applications)
     : undefined;
-  const reportChecklist = project?.reportProject
-    ? buildReportChecklist(project.reportProject, applications)
-    : [];
-  const projectPath = project ? hostProjectPath(project.id) : "";
-
-  function updateApplicationStatus(
-    applicationId: string,
-    status: HostApplicationStatus,
-  ) {
-    const next = applications.map((application) =>
-      application.id === applicationId ? { ...application, status } : application,
-    );
-    setApplications(next);
-    writeHostApplicationsToStorage(next);
-    void persistApplicationStatus(applicationId, status);
-  }
-
-  function toggleApplicationFlag(
-    applicationId: string,
-    key: "signatureCompleted" | "reviewSubmitted",
-  ) {
-    const next = applications.map((application) =>
-      application.id === applicationId
-        ? { ...application, [key]: !application[key] }
-        : application,
-    );
-    setApplications(next);
-    writeHostApplicationsToStorage(next);
-  }
-
-  async function copyTemplate(template: MessageTemplate) {
-    await navigator.clipboard.writeText(template.body);
-    setCopiedTemplateId(template.id);
-    window.setTimeout(() => setCopiedTemplateId(undefined), 1600);
-  }
 
   if (!project) {
     return (
@@ -173,12 +123,14 @@ export function HostProjectHub({ projectId }: { projectId: string }) {
             프로젝트를 찾을 수 없습니다.
           </h1>
           <p className="mt-2 text-sm leading-6 text-slate-500">
-            프로젝트 목록에서 다시 선택하거나 운영 프로젝트를 새로 설정해 주세요.
+            프로젝트 목록에서 다시 선택하거나 새 운영 프로젝트를 만들어 주세요.
           </p>
         </div>
       </div>
     );
   }
+
+  const projectPath = hostProjectPath(project.id);
 
   return (
     <div className="mx-auto max-w-7xl px-4 py-6 md:px-8">
@@ -197,12 +149,18 @@ export function HostProjectHub({ projectId }: { projectId: string }) {
           운영 프로젝트 설정
           <ArrowRight size={16} />
         </Link>
+        <Link
+          className="inline-flex h-10 items-center gap-2 rounded-md bg-slate-950 px-3 text-sm font-black text-white"
+          href={`${projectPath}/programs/new`}
+        >
+          <Plus size={16} />새 프로그램
+        </Link>
       </div>
 
       <section className="rounded-md bg-slate-950 p-5 text-white sm:p-6">
         <p className="inline-flex items-center gap-2 text-sm font-black text-teal-200">
           <FolderKanban size={18} />
-          Project Operations
+          Operation Project
         </p>
         <div className="mt-4 grid gap-5 xl:grid-cols-[minmax(0,1fr)_420px]">
           <div>
@@ -212,408 +170,205 @@ export function HostProjectHub({ projectId }: { projectId: string }) {
             <p className="mt-3 max-w-3xl text-sm leading-7 text-slate-300">
               {project.villageName} · {project.periodLabel} · {project.statusLabel}
             </p>
+            <p className="mt-2 max-w-3xl text-sm leading-7 text-slate-400">
+              이 프로젝트 안에서 공개 모집 프로그램을 만들고, 프로그램별 신청자,
+              신청서, 안내 메시지를 관리합니다.
+            </p>
           </div>
           <div className="grid gap-2 sm:grid-cols-2">
+            <HeroMetric label="프로그램" value={`${programs.length}개`} />
             <HeroMetric label="신청자" value={`${project.applicationCount}명`} />
-            <HeroMetric label="검토 대기" value={`${project.pendingCount}명`} />
             <HeroMetric label="증빙 누락" value={`${project.missingEvidenceCount}개`} />
             <HeroMetric label="마감 준비율" value={`${project.readiness}%`} />
           </div>
         </div>
       </section>
 
-      <section className="mt-5 grid gap-3 md:grid-cols-3 xl:grid-cols-6">
-        <FeatureJump href={`${projectPath}/applications`} icon={<Users size={17} />} label="신청자" />
-        <FeatureJump href={`${projectPath}/forms`} icon={<FilePlus2 size={17} />} label="신청서" />
-        <FeatureJump href={`${projectPath}/messages`} icon={<MessageSquareText size={17} />} label="메시지" />
-        <FeatureJump href={`${projectPath}/activities`} icon={<ClipboardList size={17} />} label="활동/참석" />
-        <FeatureJump href={`${projectPath}/evidence`} icon={<WalletCards size={17} />} label="지출/증빙" />
-        <FeatureJump href={`${projectPath}/closeout`} icon={<FileText size={17} />} label="마감/보고" />
+      <section className="mt-6 rounded-md border border-slate-200 bg-white p-5">
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
+          <div>
+            <p className="inline-flex items-center gap-2 text-sm font-black text-[var(--primary)]">
+              <ClipboardList size={18} />
+              이 프로젝트의 프로그램
+            </p>
+            <h2 className="mt-2 text-2xl font-black text-slate-950">
+              먼저 프로그램을 선택하세요
+            </h2>
+            <p className="mt-2 text-sm leading-6 text-slate-500">
+              신청자 CRM, 신청서, 메시지는 프로젝트 전체가 아니라 각 프로그램의
+              모집 흐름 안에서 이어집니다.
+            </p>
+          </div>
+          <Link
+            className="inline-flex h-10 items-center justify-center gap-2 rounded-md bg-slate-950 px-3 text-sm font-black text-white"
+            href={`${projectPath}/programs/new`}
+          >
+            <Plus size={16} />
+            프로그램 신설
+          </Link>
+        </div>
       </section>
 
-      <section className="mt-6 grid gap-6 xl:grid-cols-[minmax(0,1fr)_360px]">
-        <div className="grid gap-6">
-          <ApplicationsSection
-            applications={project.applications}
-            onStatusChange={updateApplicationStatus}
-            onToggleFlag={toggleApplicationFlag}
-            project={project}
-          />
-          <FormsSection project={project} />
-          <MessagesSection
-            copiedTemplateId={copiedTemplateId}
-            onCopyTemplate={copyTemplate}
-            project={project}
-            templates={templates}
-          />
+      {programs.length > 0 ? (
+        <section className="mt-5 grid gap-6 sm:grid-cols-2 xl:grid-cols-3">
+          {programs.map((program) => (
+            <ProgramCard
+              key={program.id}
+              program={program}
+              projectId={project.id}
+              villageName={project.villageName}
+            />
+          ))}
+        </section>
+      ) : (
+        <section className="mt-5 rounded-md border border-dashed border-slate-300 bg-white p-8 text-center">
+          <ClipboardList className="mx-auto text-slate-300" size={42} />
+          <h2 className="mt-4 text-xl font-black text-slate-950">
+            아직 연결된 프로그램이 없습니다.
+          </h2>
+          <p className="mt-2 text-sm font-bold text-slate-500">
+            프로그램을 신설하면 이 프로젝트의 하위 모집 단위로 표시됩니다.
+          </p>
+          <Link
+            className="mt-5 inline-flex h-10 items-center justify-center gap-2 rounded-md bg-slate-950 px-3 text-sm font-black text-white"
+            href={`${projectPath}/programs/new`}
+          >
+            <Plus size={16} />
+            프로그램 신설
+          </Link>
+        </section>
+      )}
+
+      <section className="mt-8 grid gap-6 lg:grid-cols-2">
+        <ProjectToolCard
+          description="예산, 지출, 증빙 파일은 프로젝트 상위 단위에서 모아 마감 자료로 정리합니다."
+          href={`${projectPath}/evidence`}
+          icon={<WalletCards size={20} />}
+          metrics={[
+            ["집행 금액", formatCurrency(reportSummary?.usedAmount ?? project.usedAmount)],
+            ["예산", project.totalBudget ? formatCurrency(project.totalBudget) : "-"],
+          ]}
+          title="프로젝트 지출/증빙"
+        />
+        <ProjectToolCard
+          description="프로그램별 모집 결과와 활동 기록을 프로젝트 마감/보고 자료로 묶습니다."
+          href={`${projectPath}/closeout`}
+          icon={<FileText size={20} />}
+          metrics={[
+            ["준비율", `${reportSummary?.readiness ?? project.readiness}%`],
+            ["활동", `${reportSummary?.activityCount ?? project.activityCount}건`],
+          ]}
+          title="프로젝트 마감/보고"
+        />
+      </section>
+    </div>
+  );
+}
+
+function ProgramCard({
+  program,
+  projectId,
+  villageName,
+}: {
+  program: HostProgramOverview;
+  projectId: string;
+  villageName: string;
+}) {
+  const programPath = hostProgramPath(projectId, program.id);
+
+  return (
+    <article className="group min-w-0">
+      <Link
+        aria-label={`${program.title} 운영 화면 열기`}
+        className="relative block aspect-[4/3] overflow-hidden rounded-md bg-slate-100 shadow-sm ring-1 ring-slate-200 transition group-hover:shadow-md group-hover:ring-slate-300"
+        href={programPath}
+      >
+        <Image
+          alt={program.title}
+          className="object-cover transition duration-300 group-hover:scale-105"
+          fill
+          sizes="(max-width: 640px) 100vw, (max-width: 1280px) 50vw, 33vw"
+          src={program.imageUrl}
+        />
+        <div className="absolute inset-x-0 bottom-0 bg-black/70 p-3 text-white">
+          <p className="line-clamp-1 text-sm font-black">{villageName}</p>
+          <p className="mt-1 text-xs font-bold text-white/75">
+            모집/검토 · 준비율 {program.readiness}%
+          </p>
+        </div>
+      </Link>
+
+      <div className="pt-3">
+        <div className="flex min-w-0 items-start justify-between gap-3">
+          <Link className="min-w-0" href={programPath}>
+            <h3 className="line-clamp-2 text-base font-black leading-6 text-slate-950 group-hover:text-[var(--primary)]">
+              {program.title}
+            </h3>
+          </Link>
+          <span className="shrink-0 pt-0.5 text-base font-black text-slate-950">
+            {program.pendingCount > 0 ? `검토 ${program.pendingCount}` : `${program.readiness}%`}
+          </span>
         </div>
 
-        <aside className="grid gap-6">
-          <CloseoutSection
-            checklist={reportChecklist}
-            project={project}
-            reportReadiness={reportSummary?.readiness}
-          />
-          <EvidenceSection project={project} />
-          <ActivitiesSection project={project} />
-        </aside>
-      </section>
-    </div>
-  );
-}
-
-function ApplicationsSection({
-  applications,
-  onStatusChange,
-  onToggleFlag,
-  project,
-}: {
-  applications: HostApplication[];
-  onStatusChange: (applicationId: string, status: HostApplicationStatus) => void;
-  onToggleFlag: (
-    applicationId: string,
-    key: "signatureCompleted" | "reviewSubmitted",
-  ) => void;
-  project: HostProjectOverview;
-}) {
-  const projectPath = hostProjectPath(project.id);
-
-  return (
-    <section
-      className="overflow-hidden rounded-md border border-slate-200 bg-white"
-      id="applications"
-    >
-      <SectionHeader
-        actionHref={`${projectPath}/applications`}
-        actionLabel="프로젝트 CRM"
-        icon={<Users size={20} />}
-        title="이 프로젝트의 신청자"
-      />
-      <div className="overflow-x-auto">
-        <table className="w-full min-w-[860px] text-left text-sm">
-          <thead>
-            <tr className="border-b border-slate-200 text-xs font-black text-slate-500">
-              <th className="px-5 py-3">신청자</th>
-              <th className="px-5 py-3">상태</th>
-              <th className="px-5 py-3">참여 자료</th>
-              <th className="px-5 py-3">운영 메모</th>
-              <th className="px-5 py-3 text-right">상세</th>
-            </tr>
-          </thead>
-          <tbody>
-            {applications.map((application) => (
-              <tr
-                className="border-b border-slate-100 align-top last:border-0"
-                key={application.id}
-              >
-                <td className="px-5 py-4">
-                  <p className="font-black text-slate-950">
-                    {application.applicantName}
-                  </p>
-                  <p className="mt-1 text-xs font-bold text-slate-500">
-                    {application.phone || application.email}
-                  </p>
-                </td>
-                <td className="px-5 py-4">
-                  <select
-                    className="h-9 rounded-md border border-slate-200 bg-white px-2 text-xs font-black text-slate-700"
-                    onChange={(event) =>
-                      onStatusChange(
-                        application.id,
-                        event.target.value as HostApplicationStatus,
-                      )
-                    }
-                    value={application.status}
-                  >
-                    {applicationStatusOptions.map((status) => (
-                      <option key={status} value={status}>
-                        {applicationStatusLabels[status]}
-                      </option>
-                    ))}
-                  </select>
-                </td>
-                <td className="px-5 py-4">
-                  <div className="flex flex-wrap gap-2">
-                    <FlagButton
-                      active={application.signatureCompleted}
-                      label="서명"
-                      onClick={() =>
-                        onToggleFlag(application.id, "signatureCompleted")
-                      }
-                    />
-                    <FlagButton
-                      active={application.reviewSubmitted}
-                      label="리뷰"
-                      onClick={() =>
-                        onToggleFlag(application.id, "reviewSubmitted")
-                      }
-                    />
-                  </div>
-                </td>
-                <td className="max-w-[280px] px-5 py-4 text-xs leading-5 text-slate-500">
-                  {application.memo || "메모 없음"}
-                </td>
-                <td className="px-5 py-4 text-right">
-                  <Link
-                    className="inline-flex h-9 items-center justify-center gap-2 rounded-md border border-slate-200 px-3 text-xs font-black text-slate-700 hover:border-[var(--primary)] hover:text-[var(--primary)]"
-                    href={`${projectPath}/applications/${encodeURIComponent(application.id)}`}
-                  >
-                    상세
-                    <ArrowRight size={14} />
-                  </Link>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
-      {applications.length === 0 ? (
-        <p className="p-5 text-sm font-bold text-slate-500">
-          아직 이 프로젝트에 연결된 신청자가 없습니다.
+        <p className="mt-1 text-sm font-bold text-slate-500">
+          프로그램 단위 운영
         </p>
-      ) : null}
-    </section>
-  );
-}
 
-function FormsSection({ project }: { project: HostProjectOverview }) {
-  const projectPath = hostProjectPath(project.id);
+        <div className="mt-3 flex flex-wrap gap-2 text-xs font-black">
+          <ProgramSignal label="신청" value={`${program.applicationCount}명`} />
+          <ProgramSignal label="증빙" value={`${program.missingEvidenceCount}개`} />
+          <ProgramSignal label="참여" value={`${program.activeCount}명`} />
+        </div>
 
-  return (
-    <section className="rounded-md border border-slate-200 bg-white p-5" id="forms">
-      <SectionHeading icon={<FilePlus2 size={20} />} title="신청서" />
-      <p className="mt-2 text-sm leading-6 text-slate-500">
-        신청서 필드는 전역 도구가 아니라 이 프로젝트 모집 흐름에 연결되는
-        질문 세트로 다룹니다.
-      </p>
-      <div className="mt-4 flex flex-wrap gap-2">
-        {project.connectedProgramTitles.map((title) => (
-          <span
-            className="rounded-md bg-[var(--surface-muted)] px-2 py-1 text-xs font-black text-slate-600"
-            key={title}
-          >
-            {title}
-          </span>
-        ))}
+        <div className="mt-3 flex flex-wrap gap-2">
+          <SubFeatureLink href={`${programPath}/applications`} label="신청자" />
+          <SubFeatureLink href={`${programPath}/forms`} label="신청서" />
+          <SubFeatureLink href={`${programPath}/messages`} label="메시지" />
+          <SubFeatureLink href={programPath} label="운영" />
+        </div>
       </div>
-      <Link
-        className="mt-4 inline-flex h-10 items-center gap-2 rounded-md border border-slate-200 px-3 text-sm font-black text-slate-700 hover:border-[var(--primary)] hover:text-[var(--primary)]"
-        href={`${projectPath}/forms`}
-      >
-        신청서 설정 열기
-        <ArrowRight size={15} />
-      </Link>
-    </section>
+    </article>
   );
 }
 
-function MessagesSection({
-  copiedTemplateId,
-  onCopyTemplate,
-  project,
-  templates,
-}: {
-  copiedTemplateId?: string;
-  onCopyTemplate: (template: MessageTemplate) => Promise<void>;
-  project: HostProjectOverview;
-  templates: MessageTemplate[];
-}) {
-  const projectPath = hostProjectPath(project.id);
-
-  return (
-    <section className="rounded-md border border-slate-200 bg-white p-5" id="messages">
-      <SectionHeading icon={<MessageSquareText size={20} />} title="메시지" />
-      <p className="mt-2 text-sm leading-6 text-slate-500">
-        합격, 참여 전, 종료 이후 안내를 이 프로젝트 신청자에게 보낼 수 있는
-        템플릿입니다.
-      </p>
-      <div className="mt-4 grid gap-3 md:grid-cols-3">
-        {templates.slice(0, 3).map((template) => (
-          <article className="rounded-md bg-slate-50 p-3" key={template.id}>
-            <p className="text-xs font-black text-[var(--primary)]">
-              {template.trigger}
-            </p>
-            <p className="mt-1 font-black text-slate-950">{template.name}</p>
-            <p className="mt-1 line-clamp-2 text-xs leading-5 text-slate-500">
-              {template.body}
-            </p>
-            <button
-              className="mt-3 inline-flex h-9 items-center justify-center gap-2 rounded-md bg-white px-3 text-xs font-black text-slate-700 ring-1 ring-slate-200 hover:text-[var(--primary)]"
-              onClick={() => void onCopyTemplate(template)}
-              type="button"
-            >
-              {copiedTemplateId === template.id ? <Check size={15} /> : <Send size={15} />}
-              {copiedTemplateId === template.id ? "복사됨" : "복사"}
-            </button>
-          </article>
-        ))}
-      </div>
-      <Link
-        className="mt-4 inline-flex h-10 items-center gap-2 rounded-md border border-slate-200 px-3 text-sm font-black text-slate-700 hover:border-[var(--primary)] hover:text-[var(--primary)]"
-        href={`${projectPath}/messages`}
-      >
-        메시지 설정 열기
-        <ArrowRight size={15} />
-      </Link>
-    </section>
-  );
-}
-
-function CloseoutSection({
-  checklist,
-  project,
-  reportReadiness,
-}: {
-  checklist: ReturnType<typeof buildReportChecklist>;
-  project: HostProjectOverview;
-  reportReadiness?: number;
-}) {
-  const projectPath = hostProjectPath(project.id);
-
-  return (
-    <section className="rounded-md border border-slate-200 bg-white p-5" id="closeout">
-      <SectionHeading icon={<FileText size={20} />} title="마감/보고" />
-      <div className="mt-4 grid grid-cols-2 gap-2">
-        <SmallMetric label="준비율" value={`${reportReadiness ?? project.readiness}%`} />
-        <SmallMetric label="누락 증빙" value={`${project.missingEvidenceCount}개`} />
-      </div>
-      <div className="mt-4 grid gap-2">
-        {checklist.length > 0 ? (
-          checklist.slice(0, 5).map((item) => (
-            <p
-              className="flex items-start gap-2 rounded-md bg-slate-50 p-3 text-xs font-bold text-slate-600"
-              key={item.id}
-            >
-              <span className={item.done ? "text-[var(--primary)]" : "text-amber-700"}>
-                {item.done ? "완료" : "필요"}
-              </span>
-              <span>{item.label}</span>
-            </p>
-          ))
-        ) : (
-          <p className="rounded-md bg-slate-50 p-3 text-sm font-bold text-slate-500">
-            이 프로그램 프로젝트는 아직 운영 마감 프로젝트와 연결되지 않았습니다.
-          </p>
-        )}
-      </div>
-      <Link
-        className="mt-4 inline-flex h-10 items-center gap-2 rounded-md bg-slate-950 px-3 text-sm font-black text-white"
-        href={`${projectPath}/closeout`}
-      >
-        마감/보고 열기
-        <ArrowRight size={15} />
-      </Link>
-    </section>
-  );
-}
-
-function EvidenceSection({ project }: { project: HostProjectOverview }) {
-  const projectPath = hostProjectPath(project.id);
-
-  return (
-    <section className="rounded-md border border-slate-200 bg-white p-5" id="evidence">
-      <SectionHeading icon={<WalletCards size={20} />} title="지출/증빙" />
-      <div className="mt-4 grid grid-cols-2 gap-2">
-        <SmallMetric label="집행 금액" value={formatCurrency(project.usedAmount)} />
-        <SmallMetric label="예산" value={project.totalBudget ? formatCurrency(project.totalBudget) : "-"} />
-      </div>
-      <p className="mt-3 text-sm leading-6 text-slate-500">
-        증빙 파일, 지출 이벤트, 예산 항목은 운영 마감 화면에서 이 프로젝트와
-        연결해 관리합니다.
-      </p>
-      <Link
-        className="mt-4 inline-flex h-10 items-center gap-2 rounded-md border border-slate-200 px-3 text-sm font-black text-slate-700 hover:border-[var(--primary)] hover:text-[var(--primary)]"
-        href={`${projectPath}/evidence`}
-      >
-        지출/증빙 열기
-        <ArrowRight size={15} />
-      </Link>
-    </section>
-  );
-}
-
-function ActivitiesSection({ project }: { project: HostProjectOverview }) {
-  const projectPath = hostProjectPath(project.id);
-
-  return (
-    <section className="rounded-md border border-slate-200 bg-white p-5" id="activities">
-      <SectionHeading icon={<ClipboardList size={20} />} title="활동/참석" />
-      <div className="mt-4 grid grid-cols-2 gap-2">
-        <SmallMetric label="활동 기록" value={`${project.activityCount}건`} />
-        <SmallMetric label="참여자" value={`${project.activeCount}명`} />
-      </div>
-      <p className="mt-3 text-sm leading-6 text-slate-500">
-        활동 내용, 참석자 수, 사진 수는 마감 자료와 공개 후기 콘텐츠로 재사용할
-        수 있습니다.
-      </p>
-      <Link
-        className="mt-4 inline-flex h-10 items-center gap-2 rounded-md border border-slate-200 px-3 text-sm font-black text-slate-700 hover:border-[var(--primary)] hover:text-[var(--primary)]"
-        href={`${projectPath}/activities`}
-      >
-        활동/참석 열기
-        <ArrowRight size={15} />
-      </Link>
-    </section>
-  );
-}
-
-function SectionHeader({
-  actionHref,
-  actionLabel,
-  icon,
-  title,
-}: {
-  actionHref: string;
-  actionLabel: string;
-  icon: ReactNode;
-  title: string;
-}) {
-  return (
-    <div className="flex flex-col gap-3 border-b border-slate-200 px-5 py-4 sm:flex-row sm:items-center sm:justify-between">
-      <SectionHeading icon={icon} title={title} />
-      <Link
-        className="inline-flex h-9 items-center gap-2 rounded-md border border-slate-200 px-3 text-xs font-black text-slate-700 hover:border-[var(--primary)] hover:text-[var(--primary)]"
-        href={actionHref}
-      >
-        {actionLabel}
-        <ArrowRight size={14} />
-      </Link>
-    </div>
-  );
-}
-
-function SectionHeading({
-  icon,
-  title,
-}: {
-  icon: ReactNode;
-  title: string;
-}) {
-  return (
-    <h2 className="flex items-center gap-2 text-lg font-black text-slate-950">
-      <span className="text-[var(--primary)]">{icon}</span>
-      {title}
-    </h2>
-  );
-}
-
-function FeatureJump({
+function ProjectToolCard({
+  description,
   href,
   icon,
-  label,
+  metrics,
+  title,
 }: {
+  description: string;
   href: string;
   icon: ReactNode;
-  label: string;
+  metrics: Array<[string, string]>;
+  title: string;
 }) {
   return (
-    <a
-      className="inline-flex h-11 items-center justify-center gap-2 rounded-md border border-slate-200 bg-white px-3 text-sm font-black text-slate-700 hover:border-[var(--primary)] hover:text-[var(--primary)]"
-      href={href}
-    >
-      {icon}
-      {label}
-    </a>
+    <section className="rounded-md border border-slate-200 bg-white p-5">
+      <h2 className="flex items-center gap-2 text-lg font-black text-slate-950">
+        <span className="text-[var(--primary)]">{icon}</span>
+        {title}
+      </h2>
+      <p className="mt-2 text-sm leading-6 text-slate-500">{description}</p>
+      <div className="mt-4 grid grid-cols-2 gap-2">
+        {metrics.map(([label, value]) => (
+          <div className="rounded-md bg-slate-50 p-3" key={label}>
+            <p className="text-xs font-black text-slate-500">{label}</p>
+            <p className="mt-1 font-mono text-lg font-black text-slate-950">
+              {value}
+            </p>
+          </div>
+        ))}
+      </div>
+      <Link
+        className="mt-4 inline-flex h-10 items-center gap-2 rounded-md border border-slate-200 px-3 text-sm font-black text-slate-700 hover:border-[var(--primary)] hover:text-[var(--primary)]"
+        href={href}
+      >
+        열기
+        <ArrowRight size={15} />
+      </Link>
+    </section>
   );
 }
 
@@ -626,66 +381,21 @@ function HeroMetric({ label, value }: { label: string; value: string }) {
   );
 }
 
-function SmallMetric({ label, value }: { label: string; value: string }) {
+function ProgramSignal({ label, value }: { label: string; value: string }) {
   return (
-    <div className="rounded-md bg-slate-50 p-3">
-      <p className="text-xs font-black text-slate-500">{label}</p>
-      <p className="mt-1 font-mono text-lg font-black text-slate-950">{value}</p>
-    </div>
+    <span className="rounded-md bg-[var(--surface-muted)] px-2 py-1 text-slate-600">
+      {label} {value}
+    </span>
   );
 }
 
-function FlagButton({
-  active,
-  label,
-  onClick,
-}: {
-  active: boolean;
-  label: string;
-  onClick: () => void;
-}) {
+function SubFeatureLink({ href, label }: { href: string; label: string }) {
   return (
-    <button
-      className={`inline-flex h-8 items-center justify-center rounded-md px-2.5 text-xs font-black ${
-        active
-          ? "bg-teal-50 text-teal-700 ring-1 ring-teal-200"
-          : "bg-white text-slate-600 ring-1 ring-slate-200"
-      }`}
-      onClick={onClick}
-      type="button"
+    <Link
+      className="inline-flex h-8 items-center rounded-md border border-slate-200 px-2.5 text-xs font-black text-slate-600 hover:border-[var(--primary)] hover:text-[var(--primary)]"
+      href={href}
     >
-      {label} {active ? "완료" : "대기"}
-    </button>
-  );
-}
-
-function readStoredTemplates(): MessageTemplate[] {
-  if (typeof window === "undefined") return seedMessageTemplates;
-
-  try {
-    const rawValue = window.localStorage.getItem(TEMPLATE_STORAGE_KEY);
-    if (!rawValue) return seedMessageTemplates;
-    return JSON.parse(rawValue) as MessageTemplate[];
-  } catch {
-    return seedMessageTemplates;
-  }
-}
-
-async function persistApplicationStatus(
-  applicationId: string,
-  status: HostApplicationStatus,
-) {
-  if (!isUuid(applicationId)) return;
-
-  await fetch(`/api/host/applications/${applicationId}`, {
-    body: JSON.stringify({ status }),
-    headers: { "Content-Type": "application/json" },
-    method: "PATCH",
-  }).catch(() => undefined);
-}
-
-function isUuid(value: string): boolean {
-  return /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/iu.test(
-    value,
+      {label}
+    </Link>
   );
 }
