@@ -48,6 +48,18 @@ const adminQuickLinks = [
     icon: ListChecks,
   },
   {
+    href: "/admin/logs",
+    label: "감사 로그",
+    helper: "운영자 액션과 변경 이력",
+    icon: Shield,
+  },
+  {
+    href: "/admin/health",
+    label: "시스템 상태",
+    helper: "환경변수, DB, 알림 큐 점검",
+    icon: BarChart3,
+  },
+  {
     href: "/host/programs",
     label: "프로그램 검수",
     helper: "초안 등록, 발행, 공개 노출",

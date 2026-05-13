@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { isApiAuthError, requireHostRole } from "@/lib/api-security";
 import {
   getHostSocialConnection,
   markHostSocialConnectionSynced,
@@ -15,6 +16,8 @@ export const runtime = "nodejs";
 
 export async function POST(request: Request) {
   let connectionId: string | undefined;
+  const auth = await requireHostRole();
+  if (isApiAuthError(auth)) return auth.response;
 
   try {
     const body = (await request.json().catch(() => ({}))) as {

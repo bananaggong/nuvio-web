@@ -144,7 +144,11 @@ const navigationByArea: Record<ConsoleArea, NavigationItem[]> = {
       name: "관리자 전용",
       href: "/admin/implementation",
       icon: Settings,
-      children: [{ name: "PRD 구현 현황", href: "/admin/implementation" }],
+      children: [
+        { name: "PRD 구현 현황", href: "/admin/implementation" },
+        { name: "감사 로그", href: "/admin/logs" },
+        { name: "시스템 상태", href: "/admin/health" },
+      ],
     },
   ],
 };

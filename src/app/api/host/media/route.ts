@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { isApiAuthError, requireHostRole } from "@/lib/api-security";
 import {
   listHostVillageMediaFromDb,
   normalizeHostVillageMediaDraft,
@@ -8,6 +9,9 @@ import {
 export const runtime = "nodejs";
 
 export async function GET(request: Request) {
+  const auth = await requireHostRole();
+  if (isApiAuthError(auth)) return auth.response;
+
   try {
     const { searchParams } = new URL(request.url);
     const villageSlug = searchParams.get("villageSlug") ?? "boseong";
@@ -26,6 +30,9 @@ export async function GET(request: Request) {
 }
 
 export async function POST(request: Request) {
+  const auth = await requireHostRole();
+  if (isApiAuthError(auth)) return auth.response;
+
   try {
     const body = await request.json();
     const draft = normalizeHostVillageMediaDraft(body);

@@ -1,6 +1,7 @@
 import { randomUUID } from "crypto";
 import { cookies } from "next/headers";
 import { NextResponse } from "next/server";
+import { isApiAuthError, requireHostRole } from "@/lib/api-security";
 import {
   buildFacebookOAuthUrl,
   getFacebookOAuthConfig,
@@ -12,6 +13,8 @@ const STATE_COOKIE = "nuvio_facebook_oauth_state";
 
 export async function GET(request: Request) {
   const requestUrl = new URL(request.url);
+  const auth = await requireHostRole();
+  if (isApiAuthError(auth)) return auth.response;
 
   try {
     const villageSlug = requestUrl.searchParams.get("villageSlug") ?? "boseong";

@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { isApiAuthError, requireAdminRole } from "@/lib/api-security";
 import { getAnnouncementRefreshSeconds } from "@/lib/live-announcements";
 import {
   createDraftFromProgramLead,
@@ -10,6 +11,9 @@ import { getProgramLeadFeed } from "@/lib/program-leads";
 export const runtime = "nodejs";
 
 export async function GET() {
+  const auth = await requireAdminRole();
+  if (isApiAuthError(auth)) return auth.response;
+
   const feed = await getProgramLeadFeed();
   const refreshSeconds = getAnnouncementRefreshSeconds();
 
@@ -24,6 +28,9 @@ export async function GET() {
 }
 
 export async function POST(request: Request) {
+  const auth = await requireAdminRole();
+  if (isApiAuthError(auth)) return auth.response;
+
   try {
     const body = await request.json();
     const lead = normalizeProgramLeadPayload(body.lead);

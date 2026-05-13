@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { isApiAuthError, requireHostRole } from "@/lib/api-security";
 import {
   listHostReviewDraftsFromDb,
   normalizeHostReviewDraft,
@@ -8,6 +9,9 @@ import {
 export const runtime = "nodejs";
 
 export async function GET() {
+  const auth = await requireHostRole();
+  if (isApiAuthError(auth)) return auth.response;
+
   try {
     const drafts = await listHostReviewDraftsFromDb();
     return NextResponse.json({ data: drafts });
@@ -25,6 +29,9 @@ export async function GET() {
 }
 
 export async function POST(request: Request) {
+  const auth = await requireHostRole();
+  if (isApiAuthError(auth)) return auth.response;
+
   try {
     const body = await request.json();
     const draft = normalizeHostReviewDraft(body);

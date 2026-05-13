@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { isApiAuthError, requireHostRole } from "@/lib/api-security";
 import {
   getHostApplicationDetail,
   updateHostApplicationStatus,
@@ -17,6 +18,9 @@ export async function GET(
   _request: Request,
   { params }: { params: Promise<{ id: string }> },
 ) {
+  const auth = await requireHostRole();
+  if (isApiAuthError(auth)) return auth.response;
+
   try {
     const { id } = await params;
 
@@ -51,6 +55,9 @@ export async function PATCH(
   request: Request,
   { params }: { params: Promise<{ id: string }> },
 ) {
+  const auth = await requireHostRole();
+  if (isApiAuthError(auth)) return auth.response;
+
   try {
     const { id } = await params;
     const body = await request.json();
@@ -64,7 +71,7 @@ export async function PATCH(
       return NextResponse.json({ error: "Invalid status." }, { status: 400 });
     }
 
-    await updateHostApplicationStatus(id, status);
+    await updateHostApplicationStatus(id, status, auth.user.id);
 
     return NextResponse.json({ ok: true });
   } catch (error) {

@@ -103,6 +103,18 @@ export const applicationStatusEnum = pgEnum("application_status", [
   "completed",
 ]);
 export const messageChannelEnum = pgEnum("message_channel", ["sms", "email", "kakao"]);
+export const notificationChannelEnum = pgEnum("notification_channel", [
+  "inApp",
+  "email",
+  "sms",
+  "kakao",
+]);
+export const notificationEventStatusEnum = pgEnum("notification_event_status", [
+  "pending",
+  "sent",
+  "failed",
+  "skipped",
+]);
 export const messageDeliveryStatusEnum = pgEnum("message_delivery_status", [
   "draft",
   "scheduled",
@@ -800,5 +812,86 @@ export const adminAuditLogs = pgTable(
   (table) => [
     index("admin_audit_logs_actor_id_idx").on(table.actorId),
     index("admin_audit_logs_entity_idx").on(table.entityType, table.entityId),
+  ],
+);
+
+export const notificationPreferences = pgTable("notification_preferences", {
+  userId: uuid("user_id")
+    .references(() => profiles.id, { onDelete: "cascade" })
+    .primaryKey(),
+  inAppEnabled: boolean("in_app_enabled").default(true).notNull(),
+  emailEnabled: boolean("email_enabled").default(false).notNull(),
+  smsEnabled: boolean("sms_enabled").default(false).notNull(),
+  kakaoEnabled: boolean("kakao_enabled").default(false).notNull(),
+  programDeadlineEnabled: boolean("program_deadline_enabled").default(true).notNull(),
+  applicationStatusEnabled: boolean("application_status_enabled")
+    .default(true)
+    .notNull(),
+  announcementEnabled: boolean("announcement_enabled").default(true).notNull(),
+  marketingEnabled: boolean("marketing_enabled").default(false).notNull(),
+  quietHoursStart: text("quiet_hours_start"),
+  quietHoursEnd: text("quiet_hours_end"),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
+});
+
+export const userNotifications = pgTable(
+  "user_notifications",
+  {
+    id: uuid("id").defaultRandom().primaryKey(),
+    userId: uuid("user_id")
+      .references(() => profiles.id, { onDelete: "cascade" })
+      .notNull(),
+    type: text("type").notNull(),
+    title: text("title").notNull(),
+    body: text("body").notNull(),
+    href: text("href"),
+    metadata: jsonb("metadata")
+      .$type<Record<string, unknown>>()
+      .default(emptyObject)
+      .notNull(),
+    readAt: timestamp("read_at", { withTimezone: true }),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .defaultNow()
+      .notNull(),
+  },
+  (table) => [
+    index("user_notifications_user_created_idx").on(table.userId, table.createdAt),
+    index("user_notifications_user_read_idx").on(table.userId, table.readAt),
+  ],
+);
+
+export const notificationEvents = pgTable(
+  "notification_events",
+  {
+    id: uuid("id").defaultRandom().primaryKey(),
+    eventType: text("event_type").notNull(),
+    channel: notificationChannelEnum("channel").default("inApp").notNull(),
+    status: notificationEventStatusEnum("status").default("pending").notNull(),
+    recipientUserId: uuid("recipient_user_id").references(() => profiles.id, {
+      onDelete: "set null",
+    }),
+    recipient: text("recipient"),
+    title: text("title").notNull(),
+    body: text("body").notNull(),
+    href: text("href"),
+    metadata: jsonb("metadata")
+      .$type<Record<string, unknown>>()
+      .default(emptyObject)
+      .notNull(),
+    scheduledFor: timestamp("scheduled_for", { withTimezone: true }),
+    deliveredAt: timestamp("delivered_at", { withTimezone: true }),
+    error: text("error"),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .defaultNow()
+      .notNull(),
+    updatedAt: timestamp("updated_at", { withTimezone: true })
+      .defaultNow()
+      .notNull(),
+  },
+  (table) => [
+    index("notification_events_status_idx").on(table.status, table.scheduledFor),
+    index("notification_events_recipient_user_idx").on(table.recipientUserId),
+    index("notification_events_event_type_idx").on(table.eventType),
   ],
 );

@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { isApiAuthError, requireHostRole } from "@/lib/api-security";
 import {
   getHostSocialConnection,
   redactHostSocialConnection,
@@ -8,6 +9,9 @@ import { hasFacebookOAuthConfig } from "@/lib/meta-graph";
 export const runtime = "nodejs";
 
 export async function GET(request: Request) {
+  const auth = await requireHostRole();
+  if (isApiAuthError(auth)) return auth.response;
+
   const { searchParams } = new URL(request.url);
   const villageSlug = searchParams.get("villageSlug") ?? "boseong";
   const configured = hasFacebookOAuthConfig();

@@ -46,6 +46,25 @@ type AuthSessionPayload = {
 
 type StateMap = Record<string, boolean>;
 
+type UserNotification = {
+  body: string;
+  createdAt: string;
+  href: string;
+  id: string;
+  readAt: string;
+  title: string;
+  type: string;
+};
+
+type NotificationPreference = {
+  applicationStatusEnabled: boolean;
+  emailEnabled: boolean;
+  inAppEnabled: boolean;
+  kakaoEnabled: boolean;
+  programDeadlineEnabled: boolean;
+  smsEnabled: boolean;
+};
+
 function readMap(key: string): StateMap {
   if (typeof window === "undefined") return {};
   try {
@@ -71,6 +90,9 @@ export function MyPage() {
   const [applications, setApplications] = useState<HostApplication[]>(
     readMyApplicationsFromStorage,
   );
+  const [notifications, setNotifications] = useState<UserNotification[]>([]);
+  const [notificationPreference, setNotificationPreference] =
+    useState<NotificationPreference | null>(null);
   const [publicPrograms, setPublicPrograms] = useState<Program[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -89,17 +111,12 @@ export function MyPage() {
 
     async function loadAccountData() {
       try {
-        const [sessionResponse, applicationsResponse, programsResponse] =
-          await Promise.all([
-            fetch("/api/auth/session", { cache: "no-store" }),
-            fetch("/api/host/applications", { cache: "no-store" }),
-            fetch("/api/programs", { cache: "no-store" }),
-          ]);
+        const [sessionResponse, programsResponse] = await Promise.all([
+          fetch("/api/auth/session", { cache: "no-store" }),
+          fetch("/api/programs", { cache: "no-store" }),
+        ]);
         const sessionPayload =
           (await sessionResponse.json()) as AuthSessionPayload;
-        const applicationPayload = (await applicationsResponse.json()) as {
-          data?: HostApplication[];
-        };
         const programPayload = (await programsResponse.json()) as {
           data?: Program[];
         };
@@ -109,15 +126,45 @@ export function MyPage() {
         setAuthSession(sessionPayload);
         setPublicPrograms(programPayload.data ?? []);
 
+        if (sessionPayload.user) {
+          const [notificationsResponse, preferenceResponse] = await Promise.all([
+            fetch("/api/me/notifications", { cache: "no-store" }),
+            fetch("/api/me/notification-preferences", { cache: "no-store" }),
+          ]);
+          const notificationsPayload = (await notificationsResponse.json()) as {
+            data?: UserNotification[];
+          };
+          const preferencePayload = (await preferenceResponse.json()) as {
+            data?: NotificationPreference;
+          };
+
+          if (!active) return;
+          setNotifications(notificationsPayload.data ?? []);
+          setNotificationPreference(preferencePayload.data ?? null);
+        }
+
         const email =
           sessionPayload.profile?.email ??
           sessionPayload.user?.email ??
           localProfile?.email;
-        const dbApplications = (applicationPayload.data ?? []).filter(
-          (application) =>
-            email &&
-            application.email.trim().toLowerCase() === email.trim().toLowerCase(),
-        );
+        let dbApplications: HostApplication[] = [];
+
+        if (
+          sessionPayload.profile?.role === "partner" ||
+          sessionPayload.profile?.role === "admin"
+        ) {
+          const applicationsResponse = await fetch("/api/host/applications", {
+            cache: "no-store",
+          });
+          const applicationPayload = (await applicationsResponse.json()) as {
+            data?: HostApplication[];
+          };
+          dbApplications = (applicationPayload.data ?? []).filter(
+            (application) =>
+              email &&
+              application.email.trim().toLowerCase() === email.trim().toLowerCase(),
+          );
+        }
 
         setApplications((current) =>
           mergeHostApplications(dbApplications, current),
@@ -159,6 +206,35 @@ export function MyPage() {
     await fetch("/api/auth/logout", { method: "POST" });
     window.location.reload();
   }
+
+  async function markNotificationsRead() {
+    await fetch("/api/me/notifications", {
+      body: JSON.stringify({ markAllRead: true }),
+      headers: { "Content-Type": "application/json" },
+      method: "PATCH",
+    });
+    setNotifications((current) =>
+      current.map((item) => ({
+        ...item,
+        readAt: item.readAt || new Date().toISOString(),
+      })),
+    );
+  }
+
+  async function updateNotificationPreference(
+    key: keyof NotificationPreference,
+    value: boolean,
+  ) {
+    const response = await fetch("/api/me/notification-preferences", {
+      body: JSON.stringify({ [key]: value }),
+      headers: { "Content-Type": "application/json" },
+      method: "PATCH",
+    });
+    const payload = (await response.json()) as { data?: NotificationPreference };
+    if (payload.data) setNotificationPreference(payload.data);
+  }
+
+  const unreadNotificationCount = notifications.filter((item) => !item.readAt).length;
 
   return (
     <div className="mx-auto max-w-5xl px-5 py-8 md:px-8">
@@ -243,6 +319,83 @@ export function MyPage() {
         </div>
       </section>
 
+      {signedIn ? (
+        <section className="mt-6 rounded-md border border-slate-200 bg-white p-4">
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+            <h2 className="flex items-center gap-2 text-base font-black text-slate-950">
+              <Bell className="text-[var(--primary)]" size={18} />
+              알림함
+              {unreadNotificationCount > 0 ? (
+                <span className="rounded-md bg-[var(--primary)] px-2 py-0.5 text-xs text-white">
+                  {unreadNotificationCount}
+                </span>
+              ) : null}
+            </h2>
+            {unreadNotificationCount > 0 ? (
+              <button
+                className="h-9 rounded-md border border-slate-200 px-3 text-xs font-black text-slate-600 hover:border-[var(--primary)] hover:text-[var(--primary)]"
+                onClick={markNotificationsRead}
+                type="button"
+              >
+                모두 읽음
+              </button>
+            ) : null}
+          </div>
+
+          <div className="mt-4 grid gap-3 lg:grid-cols-[minmax(0,1fr)_260px]">
+            <div className="grid gap-2">
+              {notifications.length > 0 ? (
+                notifications.slice(0, 5).map((notification) => (
+                  <Link
+                    className={`rounded-md border p-3 text-sm ${
+                      notification.readAt
+                        ? "border-slate-100 bg-white text-slate-500"
+                        : "border-teal-100 bg-teal-50 text-slate-800"
+                    }`}
+                    href={notification.href || "/me"}
+                    key={notification.id}
+                  >
+                    <span className="block font-black">{notification.title}</span>
+                    <span className="mt-1 block leading-6">{notification.body}</span>
+                    <span className="mt-2 block text-xs font-bold text-slate-400">
+                      {new Date(notification.createdAt).toLocaleString("ko-KR")}
+                    </span>
+                  </Link>
+                ))
+              ) : (
+                <p className="rounded-md border border-dashed border-slate-300 p-3 text-sm text-slate-500">
+                  아직 받은 알림이 없습니다.
+                </p>
+              )}
+            </div>
+
+            {notificationPreference ? (
+              <div className="rounded-md bg-[var(--surface-muted)] p-3">
+                <p className="text-sm font-black text-slate-950">알림 설정</p>
+                <div className="mt-3 grid gap-2">
+                  {notificationPreferenceOptions.map((option) => (
+                    <label
+                      className="flex items-center justify-between gap-3 text-sm font-bold text-slate-600"
+                      key={option.key}
+                    >
+                      {option.label}
+                      <input
+                        checked={Boolean(notificationPreference[option.key])}
+                        className="size-4 accent-[var(--primary)]"
+                        onChange={(event) =>
+                          updateNotificationPreference(option.key, event.target.checked)
+                        }
+                        type="checkbox"
+                      />
+                    </label>
+                  ))}
+                </div>
+              </div>
+            ) : null}
+          </div>
+        </section>
+      ) : null}
+
       <div className="mt-6 grid gap-4 lg:grid-cols-3">
         {sections.map((section) => {
           const Icon = section.icon;
@@ -279,6 +432,18 @@ export function MyPage() {
     </div>
   );
 }
+
+const notificationPreferenceOptions: Array<{
+  key: keyof NotificationPreference;
+  label: string;
+}> = [
+  { key: "inAppEnabled", label: "인앱 알림" },
+  { key: "emailEnabled", label: "이메일" },
+  { key: "kakaoEnabled", label: "카카오" },
+  { key: "smsEnabled", label: "문자" },
+  { key: "applicationStatusEnabled", label: "신청 상태" },
+  { key: "programDeadlineEnabled", label: "마감 임박" },
+];
 
 function resolvePrograms(state: StateMap, publicPrograms: Program[]): Program[] {
   return Object.keys(state)

@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { isApiAuthError, requireHostRole } from "@/lib/api-security";
 import {
   listHostVillagesFromDb,
   normalizeHostVillage,
@@ -8,6 +9,9 @@ import {
 export const runtime = "nodejs";
 
 export async function GET() {
+  const auth = await requireHostRole();
+  if (isApiAuthError(auth)) return auth.response;
+
   try {
     const villages = await listHostVillagesFromDb();
     return NextResponse.json({ data: villages });
@@ -23,6 +27,9 @@ export async function GET() {
 }
 
 export async function POST(request: Request) {
+  const auth = await requireHostRole();
+  if (isApiAuthError(auth)) return auth.response;
+
   try {
     const body = await request.json();
     const village = normalizeHostVillage(body);

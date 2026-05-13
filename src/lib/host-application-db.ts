@@ -6,10 +6,12 @@ import {
   programs as programsTable,
 } from "@/db/schema";
 import { programs } from "@/lib/data";
+import { safeCreateAuditLog } from "@/lib/audit-log-db";
 import type {
   HostApplication,
   HostApplicationStatus,
 } from "@/lib/host-operations";
+import { queueApplicationStatusNotification } from "@/lib/notification-db";
 import {
   ensureProgramRecord,
   getProgramRecordByIdentifier,
@@ -211,10 +213,16 @@ export async function getHostApplicationDetail(
 export async function updateHostApplicationStatus(
   applicationId: string,
   status: HostApplicationStatus,
+  actorId?: string,
 ) {
   const [current] = await getDb()
-    .select({ status: programApplications.status })
+    .select({
+      email: programApplications.email,
+      programTitle: programsTable.title,
+      status: programApplications.status,
+    })
     .from(programApplications)
+    .leftJoin(programsTable, eq(programApplications.programId, programsTable.id))
     .where(eq(programApplications.id, applicationId))
     .limit(1);
 
@@ -230,6 +238,26 @@ export async function updateHostApplicationStatus(
     fromStatus: current.status,
     toStatus: status,
     note: "Updated from NUVIO host console",
+  });
+
+  void queueApplicationStatusNotification({
+    applicationId,
+    email: current.email,
+    fromStatus: current.status,
+    programTitle: current.programTitle ?? "NUVIO 프로그램",
+    status,
+  }).catch(() => undefined);
+
+  void safeCreateAuditLog({
+    action: "application.status.update",
+    actorId,
+    entityId: applicationId,
+    entityType: "program_application",
+    metadata: {
+      fromStatus: current.status,
+      programTitle: current.programTitle ?? "NUVIO 프로그램",
+      status,
+    },
   });
 }
 

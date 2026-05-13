@@ -1,4 +1,9 @@
 import { NextResponse } from "next/server";
+import {
+  enforceContentLength,
+  isApiAuthError,
+  requireHostRole,
+} from "@/lib/api-security";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 import {
   createVillageAsset,
@@ -8,8 +13,18 @@ import {
 export const runtime = "nodejs";
 
 const bucketName = "village-assets";
+const maxUploadBytes = 5 * 1024 * 1024;
+const allowedUploadTypes = new Set([
+  "image/gif",
+  "image/jpeg",
+  "image/png",
+  "image/webp",
+]);
 
 export async function GET(request: Request) {
+  const auth = await requireHostRole();
+  if (isApiAuthError(auth)) return auth.response;
+
   try {
     const { searchParams } = new URL(request.url);
     const villageSlug = searchParams.get("villageSlug") ?? "boseong";
@@ -28,6 +43,12 @@ export async function GET(request: Request) {
 }
 
 export async function POST(request: Request) {
+  const auth = await requireHostRole();
+  if (isApiAuthError(auth)) return auth.response;
+
+  const payloadTooLarge = enforceContentLength(request, 8 * 1024 * 1024);
+  if (payloadTooLarge) return payloadTooLarge;
+
   try {
     const contentType = request.headers.get("content-type") ?? "";
 
@@ -42,11 +63,13 @@ export async function POST(request: Request) {
       throw new Error("Asset URL is required.");
     }
 
+    const safeUrl = validateAssetUrl(url);
+
     const asset = await createVillageAsset({
       altText: asString(body.altText),
-      fileName: asString(body.fileName) || filenameFromUrl(url),
+      fileName: asString(body.fileName) || filenameFromUrl(safeUrl),
       metadata: { source: "url" },
-      url,
+      url: safeUrl,
       usage: asString(body.usage) || "page",
       villageSlug: asString(body.villageSlug) || "boseong",
     });
@@ -71,6 +94,8 @@ async function handleFileUpload(request: Request) {
     throw new Error("File is required.");
   }
 
+  validateUploadFile(file);
+
   const villageSlug = asString(formData.get("villageSlug")) || "boseong";
   const usage = asString(formData.get("usage")) || "page";
   const altText = asString(formData.get("altText"));
@@ -84,8 +109,8 @@ async function handleFileUpload(request: Request) {
   if (!bucketExists) {
     await admin.storage.createBucket(bucketName, {
       public: true,
-      fileSizeLimit: "10MB",
-      allowedMimeTypes: ["image/jpeg", "image/png", "image/webp", "image/gif", "image/svg+xml"],
+      fileSizeLimit: "5MB",
+      allowedMimeTypes: ["image/jpeg", "image/png", "image/webp", "image/gif"],
     });
   }
 
@@ -127,6 +152,28 @@ function sanitizeFileName(value: string): string {
       .replace(/^-+|-+$/gu, "")
       .slice(0, 120) || "asset"
   );
+}
+
+function validateUploadFile(file: File) {
+  if (file.size > maxUploadBytes) {
+    throw new Error("File size must be 5MB or less.");
+  }
+
+  if (!allowedUploadTypes.has(file.type)) {
+    throw new Error("Only JPG, PNG, WebP, and GIF images can be uploaded.");
+  }
+}
+
+function validateAssetUrl(value: string): string {
+  try {
+    const url = new URL(value);
+    if (url.protocol !== "https:" && url.protocol !== "http:") {
+      throw new Error("Only HTTP(S) asset URLs are allowed.");
+    }
+    return url.toString();
+  } catch {
+    throw new Error("A valid asset URL is required.");
+  }
 }
 
 function filenameFromUrl(value: string): string {

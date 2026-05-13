@@ -1,4 +1,6 @@
 import { NextResponse } from "next/server";
+import { isApiAuthError, requireAdminRole } from "@/lib/api-security";
+import { safeCreateAuditLog } from "@/lib/audit-log-db";
 import { getConfiguredAnnouncementSources } from "@/lib/announcement-sources";
 import {
   listAnnouncementSourceStatuses,
@@ -9,6 +11,9 @@ import {
 export const runtime = "nodejs";
 
 export async function GET() {
+  const auth = await requireAdminRole();
+  if (isApiAuthError(auth)) return auth.response;
+
   try {
     const sources = await listAnnouncementSourceStatuses();
     return NextResponse.json({ data: sources });
@@ -27,6 +32,9 @@ export async function GET() {
 }
 
 export async function POST(request: Request) {
+  const auth = await requireAdminRole();
+  if (isApiAuthError(auth)) return auth.response;
+
   try {
     const body = await request.json();
     const source = await upsertAnnouncementSource({
@@ -38,6 +46,19 @@ export async function POST(request: Request) {
       keywords: normalizeStringArray(body.keywords),
       minimumKeywordMatches: normalizeInteger(body.minimumKeywordMatches),
       notes: typeof body.notes === "string" ? body.notes : undefined,
+    });
+
+    void safeCreateAuditLog({
+      action: "announcementSource.upsert",
+      actorId: auth.user.id,
+      entityId: source.id,
+      entityType: "announcement_source",
+      metadata: {
+        enabled: source.enabled,
+        name: source.name,
+        type: source.type,
+        url: source.url,
+      },
     });
 
     return NextResponse.json({ data: source }, { status: 201 });
@@ -55,6 +76,9 @@ export async function POST(request: Request) {
 }
 
 export async function PATCH(request: Request) {
+  const auth = await requireAdminRole();
+  if (isApiAuthError(auth)) return auth.response;
+
   try {
     const body = await request.json();
     const sourceId = String(body.id ?? "").trim();
@@ -78,6 +102,19 @@ export async function PATCH(request: Request) {
     if (!source) {
       return NextResponse.json({ error: "Source was not found." }, { status: 404 });
     }
+
+    void safeCreateAuditLog({
+      action: "announcementSource.update",
+      actorId: auth.user.id,
+      entityId: source.id,
+      entityType: "announcement_source",
+      metadata: {
+        enabled: source.enabled,
+        name: source.name,
+        type: source.type,
+        url: source.url,
+      },
+    });
 
     return NextResponse.json({ data: source });
   } catch (error) {

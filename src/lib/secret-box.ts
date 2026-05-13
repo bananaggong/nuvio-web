@@ -8,7 +8,12 @@ export function protectSecret(value: string): string {
   if (!secret) return secret;
 
   const key = getEncryptionKey();
-  if (!key) return `${PLAIN_PREFIX}${secret}`;
+  if (!key) {
+    if (process.env.NODE_ENV === "production") {
+      throw new Error("SOCIAL_TOKEN_ENCRYPTION_KEY is required in production.");
+    }
+    return `${PLAIN_PREFIX}${secret}`;
+  }
 
   const iv = randomBytes(12);
   const cipher = createCipheriv("aes-256-gcm", key, iv);
@@ -27,6 +32,9 @@ export function revealSecret(value: string | null | undefined): string {
   if (!value) return "";
 
   if (value.startsWith(PLAIN_PREFIX)) {
+    if (process.env.NODE_ENV === "production") {
+      throw new Error("Plain social tokens are not allowed in production.");
+    }
     return value.slice(PLAIN_PREFIX.length);
   }
 
