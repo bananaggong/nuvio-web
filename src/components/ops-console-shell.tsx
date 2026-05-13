@@ -333,6 +333,7 @@ function buildNavigation(area: ConsoleArea, pathname: string): NavigationItem[] 
 
   const projectBasePath = getCurrentProjectBasePath(pathname);
   const programBasePath = getCurrentProgramBasePath(pathname);
+  const isProjectWorkspace = Boolean(projectBasePath);
   const programSelectionHref = projectBasePath
     ? `${projectBasePath}#programs`
     : "/host";
@@ -345,16 +346,38 @@ function buildNavigation(area: ConsoleArea, pathname: string): NavigationItem[] 
   const projectHref = (path: string) =>
     projectBasePath ? `${projectBasePath}${path}` : "/host";
 
+  const projectNavigation: NavigationItem = {
+    name: "운영 프로젝트",
+    href: "/host",
+    icon: FolderKanban,
+    children: [
+      { name: "운영중인 프로젝트", href: "/host" },
+      { name: "새 프로젝트 만들기", href: "/host/projects/new" },
+    ],
+  };
+  const localHomeNavigation: NavigationItem = {
+    name: "로컬홈",
+    href: "/host/villages",
+    icon: Home,
+    children: [
+      { name: "공개 페이지 관리", href: "/host/villages" },
+      { name: "로컬홈 정보", href: "/host/boseong" },
+      { name: "보성 페이지 편집", href: "/host/boseong/editor" },
+    ],
+  };
+  const settingsNavigation: NavigationItem = {
+    name: "설정",
+    href: "/host/settings",
+    icon: Settings,
+    children: [],
+  };
+
+  if (!isProjectWorkspace) {
+    return [projectNavigation, localHomeNavigation, settingsNavigation];
+  }
+
   return [
-    {
-      name: "운영 프로젝트",
-      href: "/host",
-      icon: FolderKanban,
-      children: [
-        { name: "운영중인 프로젝트", href: "/host" },
-        { name: "새 프로젝트 만들기", href: "/host/projects/new" },
-      ],
-    },
+    projectNavigation,
     {
       name: "모집/신청",
       href: programHref("/applications"),
@@ -385,22 +408,8 @@ function buildNavigation(area: ConsoleArea, pathname: string): NavigationItem[] 
         { name: "마감/보고", href: projectHref("/closeout") },
       ],
     },
-    {
-      name: "로컬홈",
-      href: "/host/villages",
-      icon: Home,
-      children: [
-        { name: "공개 페이지 관리", href: "/host/villages" },
-        { name: "로컬홈 정보", href: "/host/boseong" },
-        { name: "보성 페이지 편집", href: "/host/boseong/editor" },
-      ],
-    },
-    {
-      name: "설정",
-      href: "/host/settings",
-      icon: Settings,
-      children: [],
-    },
+    localHomeNavigation,
+    settingsNavigation,
   ];
 }
 
