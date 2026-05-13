@@ -333,11 +333,14 @@ function buildNavigation(area: ConsoleArea, pathname: string): NavigationItem[] 
 
   const projectBasePath = getCurrentProjectBasePath(pathname);
   const programBasePath = getCurrentProgramBasePath(pathname);
+  const programSelectionHref = projectBasePath
+    ? `${projectBasePath}#programs`
+    : "/host";
   const programHref = (path: string) =>
     programBasePath
       ? `${programBasePath}${path}`
       : projectBasePath
-        ? projectBasePath
+        ? programSelectionHref
         : "/host";
   const projectHref = (path: string) =>
     projectBasePath ? `${projectBasePath}${path}` : "/host";
@@ -357,7 +360,7 @@ function buildNavigation(area: ConsoleArea, pathname: string): NavigationItem[] 
       href: programHref("/applications"),
       icon: ClipboardList,
       children: [
-        { name: "프로그램 선택", href: projectBasePath ?? "/host" },
+        { name: "프로그램 선택", href: programSelectionHref },
         {
           name: "새 프로그램 신설",
           href: projectBasePath ? `${projectBasePath}/programs/new` : "/host",

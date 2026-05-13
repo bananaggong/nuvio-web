@@ -5,261 +5,137 @@ import { useRouter } from "next/navigation";
 import {
   ArrowLeft,
   ArrowRight,
-  CheckCircle2,
+  ClipboardList,
   FolderKanban,
   Plus,
 } from "lucide-react";
-import { useMemo, useState } from "react";
+import { useState } from "react";
+import type { ReactNode } from "react";
 import {
   createReportProject,
   readReportProjects,
-  reportStatusLabels,
   writeReportProjects,
+  type ReportProject,
 } from "@/lib/report-automation";
-import type { ReportProject, ReportProjectStatus } from "@/lib/report-automation";
 import { hostProjectPath } from "@/lib/host-projects";
-
-const steps = ["개요", "운영 기준", "확인"] as const;
 
 export function HostProjectCreateWizard() {
   const router = useRouter();
-  const [stepIndex, setStepIndex] = useState(0);
-  const [draft, setDraft] = useState<ReportProject>(() => ({
-    ...createReportProject(),
-    title: "",
-    villageName: "",
-    agencyName: "",
-    ownerName: "",
-    periodLabel: "",
-  }));
-  const canFinish = Boolean(
-    draft.title.trim() &&
-      draft.villageName.trim() &&
-      draft.agencyName.trim() &&
-      draft.periodLabel.trim(),
-  );
-  const nextLabel = stepIndex === steps.length - 1 ? "프로젝트 만들기" : "다음";
-  const previewItems = useMemo(
-    () => [
-      ["프로젝트명", draft.title || "미입력"],
-      ["로컬홈", draft.villageName || "미입력"],
-      ["운영 조직", draft.agencyName || "미입력"],
-      ["운영 기간", draft.periodLabel || "미입력"],
-      ["상태", reportStatusLabels[draft.status]],
-    ],
-    [draft],
-  );
+  const [projectName, setProjectName] = useState("");
+  const trimmedName = projectName.trim();
+  const canCreate = Boolean(trimmedName);
 
-  function updateDraft(patch: Partial<ReportProject>) {
-    setDraft((current) => ({ ...current, ...patch }));
-  }
+  function createProject() {
+    if (!canCreate) return;
 
-  function next() {
-    if (stepIndex < steps.length - 1) {
-      setStepIndex((current) => current + 1);
-      return;
-    }
-
-    if (!canFinish) return;
     const now = new Date().toISOString();
     const nextProject: ReportProject = {
-      ...draft,
-      title: draft.title.trim(),
-      villageName: draft.villageName.trim(),
-      agencyName: draft.agencyName.trim(),
-      ownerName: draft.ownerName.trim() || "운영 담당자",
-      periodLabel: draft.periodLabel.trim(),
+      ...createReportProject(),
+      agencyName: "운영 조직명",
+      connectedProgramTitles: [],
+      ownerName: "운영 담당자",
+      periodLabel: "운영 기간 미정",
+      title: trimmedName,
       updatedAt: now,
+      villageName: "로컬홈",
     };
+
     writeReportProjects([nextProject, ...readReportProjects()]);
     router.push(hostProjectPath(nextProject.id));
   }
 
   return (
-    <div className="mx-auto max-w-5xl px-4 py-6 md:px-8">
+    <div className="mx-auto max-w-4xl px-4 py-6 md:px-8">
       <div className="mb-5 flex flex-wrap gap-2">
         <Link
           className="inline-flex h-10 items-center gap-2 rounded-md border border-slate-200 bg-white px-3 text-sm font-black text-slate-700"
           href="/host"
         >
           <ArrowLeft size={16} />
-          운영 콘솔
+          모든 프로젝트
         </Link>
       </div>
 
-      <section className="rounded-md bg-slate-950 p-5 text-white sm:p-6">
-        <p className="inline-flex items-center gap-2 text-sm font-black text-teal-200">
+      <section className="rounded-md border border-slate-200 bg-white p-5 sm:p-6">
+        <p className="inline-flex items-center gap-2 text-sm font-black text-[var(--primary)]">
           <FolderKanban size={18} />
-          New Operation Project
+          새 프로젝트
         </p>
-        <h1 className="mt-4 max-w-3xl text-2xl font-black leading-tight sm:text-3xl">
-          운영 프로젝트를 먼저 만들고, 그 안에 프로그램을 신설합니다.
+        <h1 className="mt-4 max-w-2xl text-2xl font-black leading-tight text-slate-950 sm:text-3xl">
+          프로젝트는 프로그램을 담는 상위 폴더처럼 만듭니다.
         </h1>
-        <p className="mt-3 max-w-3xl text-sm leading-7 text-slate-300">
-          프로젝트는 예산, 증빙, 활동, 보고를 묶는 상위 단위입니다. 공개 모집
-          프로그램은 다음 단계에서 이 프로젝트 하위로 추가합니다.
+        <p className="mt-3 max-w-2xl text-sm leading-7 text-slate-500">
+          지금은 이름만 정하면 됩니다. 모집 상세, 신청서, 안내문자 같은 여러
+          필드는 프로젝트 안에서 프로그램을 신설할 때 입력합니다.
         </p>
-      </section>
 
-      <div className="mt-5 flex flex-wrap gap-2">
-        {steps.map((step, index) => (
-          <button
-            className={`h-10 rounded-md border px-4 text-sm font-black ${
-              stepIndex === index
-                ? "border-[var(--primary)] bg-[var(--primary)] text-white"
-                : "border-slate-200 bg-white text-slate-600"
-            }`}
-            key={step}
-            onClick={() => setStepIndex(index)}
-            type="button"
-          >
-            {index + 1}. {step}
-          </button>
-        ))}
-      </div>
-
-      <section className="mt-5 rounded-md border border-slate-200 bg-white p-5">
-        {stepIndex === 0 ? (
-          <div className="grid gap-4 md:grid-cols-2">
-            <TextInput
-              label="프로젝트명"
-              onChange={(value) => updateDraft({ title: value })}
+        <div className="mt-6 grid gap-3">
+          <label className="grid gap-2">
+            <span className="text-sm font-black text-slate-700">
+              프로젝트 이름
+            </span>
+            <input
+              autoFocus
+              className="h-12 rounded-md border border-slate-200 px-3 text-base font-bold outline-none focus:border-[var(--primary)]"
+              onChange={(event) => setProjectName(event.target.value)}
+              onKeyDown={(event) => {
+                if (event.key === "Enter") createProject();
+              }}
               placeholder="예: 보성 로컬홈 2026 운영 프로젝트"
-              value={draft.title}
+              value={projectName}
             />
-            <TextInput
-              label="로컬홈명"
-              onChange={(value) => updateDraft({ villageName: value })}
-              placeholder="예: 전체차LAB"
-              value={draft.villageName}
-            />
-            <TextInput
-              label="운영 조직"
-              onChange={(value) => updateDraft({ agencyName: value })}
-              placeholder="예: 보성 로컬홈 운영팀"
-              value={draft.agencyName}
-            />
-            <TextInput
-              label="담당자"
-              onChange={(value) => updateDraft({ ownerName: value })}
-              placeholder="예: 운영 담당자"
-              value={draft.ownerName}
-            />
-            <TextInput
-              label="운영 기간"
-              onChange={(value) => updateDraft({ periodLabel: value })}
-              placeholder="예: 2026.05.01 - 2026.11.30"
-              value={draft.periodLabel}
-            />
-            <TextInput
-              label="대표 이미지 URL"
-              onChange={(value) => updateDraft({ imageUrl: value })}
-              placeholder="/boseong/hero-illustration.png"
-              value={draft.imageUrl ?? ""}
-            />
-          </div>
-        ) : null}
+          </label>
 
-        {stepIndex === 1 ? (
-          <div className="grid gap-4 md:grid-cols-2">
-            <label className="grid gap-2">
-              <span className="text-sm font-black text-slate-700">진행 상태</span>
-              <select
-                className="h-11 rounded-md border border-slate-200 px-3 text-sm font-bold outline-none focus:border-[var(--primary)]"
-                onChange={(event) =>
-                  updateDraft({
-                    status: event.target.value as ReportProjectStatus,
-                  })
-                }
-                value={draft.status}
-              >
-                {Object.entries(reportStatusLabels).map(([status, label]) => (
-                  <option key={status} value={status}>
-                    {label}
-                  </option>
-                ))}
-              </select>
-            </label>
-            <TextInput
-              label="초기 연결 프로그램"
-              onChange={(value) =>
-                updateDraft({
-                  connectedProgramTitles: value
-                    .split(",")
-                    .map((item) => item.trim())
-                    .filter(Boolean),
-                })
-              }
-              placeholder="쉼표로 구분, 비워두면 이후에 추가"
-              value={draft.connectedProgramTitles.join(", ")}
-            />
-          </div>
-        ) : null}
-
-        {stepIndex === 2 ? (
-          <div>
-            <h2 className="flex items-center gap-2 text-xl font-black text-slate-950">
-              <CheckCircle2 className="text-[var(--primary)]" size={22} />
-              생성 전 확인
-            </h2>
-            <div className="mt-5 grid gap-3 md:grid-cols-2">
-              {previewItems.map(([label, value]) => (
-                <div className="rounded-md bg-[var(--surface-muted)] p-4" key={label}>
-                  <p className="text-xs font-black text-slate-500">{label}</p>
-                  <p className="mt-1 break-words text-sm font-black text-slate-950">
-                    {value}
-                  </p>
-                </div>
-              ))}
-            </div>
-          </div>
-        ) : null}
-
-        <div className="mt-6 flex flex-col gap-2 sm:flex-row sm:justify-between">
           <button
-            className="inline-flex h-10 items-center justify-center gap-2 rounded-md border border-slate-200 px-3 text-sm font-black text-slate-700 disabled:opacity-40"
-            disabled={stepIndex === 0}
-            onClick={() => setStepIndex((current) => Math.max(current - 1, 0))}
+            className="inline-flex h-11 w-full items-center justify-center gap-2 rounded-md bg-slate-950 px-4 text-sm font-black text-white disabled:cursor-not-allowed disabled:opacity-40 sm:w-fit"
+            disabled={!canCreate}
+            onClick={createProject}
             type="button"
           >
-            이전
-          </button>
-          <button
-            className="inline-flex h-10 items-center justify-center gap-2 rounded-md bg-slate-950 px-3 text-sm font-black text-white disabled:opacity-40"
-            disabled={stepIndex === steps.length - 1 && !canFinish}
-            onClick={next}
-            type="button"
-          >
-            {stepIndex === steps.length - 1 ? <Plus size={16} /> : null}
-            {nextLabel}
+            <Plus size={16} />
+            만들고 들어가기
             <ArrowRight size={16} />
           </button>
         </div>
       </section>
+
+      <div className="mt-5 grid gap-3 md:grid-cols-3">
+        <FlowCard
+          body="연간 사업, 시즌, 지원사업, 계약처럼 큰 운영 단위를 먼저 엽니다."
+          icon={<FolderKanban size={18} />}
+          title="1. 프로젝트 생성"
+        />
+        <FlowCard
+          body="프로젝트 안에서 공개 모집 프로그램을 만들고 상세 필드를 입력합니다."
+          icon={<ClipboardList size={18} />}
+          title="2. 프로그램 신설"
+        />
+        <FlowCard
+          body="프로그램별 신청자, 신청서, 메시지를 관리하고 프로젝트 단위로 마감합니다."
+          icon={<ArrowRight size={18} />}
+          title="3. 운영 관리"
+        />
+      </div>
     </div>
   );
 }
 
-function TextInput({
-  label,
-  onChange,
-  placeholder,
-  value,
+function FlowCard({
+  body,
+  icon,
+  title,
 }: {
-  label: string;
-  onChange: (value: string) => void;
-  placeholder?: string;
-  value: string;
+  body: string;
+  icon: ReactNode;
+  title: string;
 }) {
   return (
-    <label className="grid gap-2">
-      <span className="text-sm font-black text-slate-700">{label}</span>
-      <input
-        className="h-11 rounded-md border border-slate-200 px-3 text-sm outline-none focus:border-[var(--primary)]"
-        onChange={(event) => onChange(event.target.value)}
-        placeholder={placeholder}
-        value={value}
-      />
-    </label>
+    <div className="rounded-md border border-slate-200 bg-white p-4">
+      <span className="grid size-9 place-items-center rounded-md bg-teal-50 text-[var(--primary)]">
+        {icon}
+      </span>
+      <h2 className="mt-4 text-base font-black text-slate-950">{title}</h2>
+      <p className="mt-2 text-sm leading-6 text-slate-500">{body}</p>
+    </div>
   );
 }
