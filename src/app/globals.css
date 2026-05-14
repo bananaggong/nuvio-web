@@ -59,3 +59,12 @@ a {
     system-ui,
     sans-serif;
 }
+
+.font-pretendard {
+  font-family:
+    Pretendard,
+    "Pretendard Variable",
+    ui-sans-serif,
+    system-ui,
+    sans-serif;
+}

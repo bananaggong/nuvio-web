@@ -8,7 +8,6 @@ import {
   programItemListJsonLd,
   siteConfig,
 } from "@/lib/seo";
-import type { ThemeKey } from "@/lib/types";
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
@@ -19,16 +18,7 @@ export const metadata: Metadata = createSeoMetadata({
   path: "/",
 });
 
-type HomeProps = {
-  searchParams?: Promise<{ q?: string; theme?: string }>;
-};
-
-export default async function Home({ searchParams }: HomeProps) {
-  const resolvedSearchParams = searchParams ? await searchParams : {};
-  const initialKeyword = resolvedSearchParams.q?.trim() || undefined;
-  const initialTheme = themeKeys.includes(resolvedSearchParams.theme as ThemeKey)
-    ? (resolvedSearchParams.theme as ThemeKey)
-    : undefined;
+export default async function Home() {
   const publicPrograms = await listPublicPrograms();
 
   return (
@@ -39,27 +29,7 @@ export default async function Home({ searchParams }: HomeProps) {
           programItemListJsonLd(publicPrograms, "/"),
         ]}
       />
-      <ProgramExplorer
-        initialKeyword={initialKeyword}
-        initialTheme={initialTheme}
-        programs={publicPrograms}
-      />
+      <ProgramExplorer />
     </>
   );
 }
-
-const themeKeys: ThemeKey[] = [
-  "short",
-  "month",
-  "workation",
-  "local",
-  "returnFarm",
-  "event",
-  "pet",
-  "half",
-  "daily",
-  "family",
-  "easy",
-  "benefit",
-  "exclusive",
-];
