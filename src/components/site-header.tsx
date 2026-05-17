@@ -7,7 +7,7 @@ import { Menu, Search, X } from "lucide-react";
 import { useState } from "react";
 
 const navItems = [
-  { href: "/reviews", label: "매거진", match: ["/reviews"] },
+  { href: "/magazine", label: "매거진", match: ["/magazine"] },
   { href: "/villages", label: "채널", match: ["/villages"] },
 ];
 
@@ -16,8 +16,8 @@ export function SiteHeader() {
   const [open, setOpen] = useState(false);
 
   return (
-    <header className="font-pretendard sticky top-0 z-50 h-[70px] border-b border-[#f1e7df] bg-white">
-      <div className="mx-auto flex h-full w-full max-w-[1440px] items-center px-5 md:px-[30px]">
+    <header className="font-pretendard sticky top-0 z-50 h-[4.861vw] min-h-[56px] border-b border-[#f1e7df] bg-white">
+      <div className="mx-auto flex h-full w-full items-center px-[2.083vw] min-[1440px]:px-[2.083vw]">
         <Link
           aria-label="누비오 홈"
           className="flex min-w-fit items-center"
@@ -26,7 +26,7 @@ export function SiteHeader() {
         >
           <Image
             alt="누비오"
-            className="h-[27px] w-[80.55px]"
+            className="h-[1.875vw] min-h-[22px] w-[5.594vw] min-w-[66px]"
             height={27}
             priority
             src="/brand/nuvio-wordmark.svg"
@@ -34,20 +34,20 @@ export function SiteHeader() {
           />
         </Link>
 
-        <div className="ml-auto hidden items-center gap-[21px] md:flex">
+        <div className="ml-auto hidden items-center gap-[1.458vw] md:flex">
           <Link
-            className="inline-flex h-[33px] w-[232px] items-center gap-[7px] rounded-full border border-[#FF9A3D] bg-white px-[10px] text-[12px] font-semibold leading-none text-[#6D7A8A] transition-colors hover:bg-[#fff8f1]"
+            className="inline-flex h-[2.292vw] min-h-[29px] w-[16.111vw] min-w-[196px] items-center gap-[0.486vw] rounded-full border border-[#FF9A3D] bg-white px-[0.694vw] text-[0.833vw] font-semibold leading-none text-[#6D7A8A] transition-colors hover:bg-[#fff8f1]"
             href="/"
           >
             <Search
               aria-hidden="true"
-              className="size-[13px] text-[#FF9A3D]"
+              className="size-[0.903vw] min-h-[11px] min-w-[11px] text-[#FF9A3D]"
               strokeWidth={2}
             />
             어디로 떠날까요?
           </Link>
 
-          <nav className="flex items-center gap-[17px]">
+          <nav className="flex items-center gap-[1.181vw]">
             {navItems.map((item) => (
               <HeaderLink item={item} key={item.href} pathname={pathname} />
             ))}
@@ -55,13 +55,13 @@ export function SiteHeader() {
 
           <Link
             aria-label="로그인"
-            className="inline-flex h-[36px] w-[31px] items-center justify-center"
+            className="inline-flex h-[2.5vw] min-h-[30px] w-[2.153vw] min-w-[26px] items-center justify-center"
             href="/login"
           >
             <Image
               alt=""
               aria-hidden="true"
-              className="h-[36px] w-[31px]"
+              className="h-full w-full"
               height={36}
               src="/icons/header-action-frame.png"
               width={31}
@@ -137,7 +137,7 @@ function HeaderLink({
   return (
     <Link
       aria-current={active ? "page" : undefined}
-      className={`text-[16px] font-semibold leading-none transition-colors hover:text-[#FF9A3D] ${
+      className={`text-[1.111vw] font-semibold leading-none transition-colors hover:text-[#FF9A3D] ${
         active ? "text-[#FF9A3D]" : "text-[#5B3A29]"
       }`}
       href={item.href}

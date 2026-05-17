@@ -68,3 +68,102 @@ a {
     system-ui,
     sans-serif;
 }
+
+.magazine-page {
+  background: #ffffff;
+  font-family:
+    Pretendard,
+    "Pretendard Variable",
+    ui-sans-serif,
+    system-ui,
+    sans-serif;
+}
+
+.magazine-stage {
+  align-items: center;
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+  padding: 4.514vw 2.083vw 6.25vw;
+  width: 100%;
+}
+
+.magazine-title {
+  color: #5b3a29;
+  font-size: 1.042vw;
+  font-weight: 500;
+  line-height: 1;
+}
+
+.magazine-grid {
+  column-gap: 1.389vw;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  margin-top: 2.778vw;
+  row-gap: 3.472vw;
+  width: 52.778vw;
+}
+
+.magazine-card {
+  align-items: center;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  text-align: center;
+}
+
+.magazine-card-image {
+  aspect-ratio: 368 / 259;
+  background: #d9d9d9;
+  border-radius: 0.694vw;
+  width: 100%;
+}
+
+.magazine-card-title {
+  color: #2b1e17;
+  font-size: 0.694vw;
+  font-weight: 600;
+  line-height: 1;
+  margin-top: 1.25vw;
+}
+
+.magazine-card-description {
+  color: #2b1e17;
+  font-size: 0.625vw;
+  font-weight: 500;
+  line-height: 1;
+  margin-top: 0.764vw;
+}
+
+.magazine-card-author {
+  color: #2b1e17;
+  font-size: 0.625vw;
+  font-weight: 600;
+  line-height: 1;
+  margin-top: 1.875vw;
+}
+
+@media (max-width: 767px) {
+  .magazine-stage {
+    padding-top: 40px;
+  }
+
+  .magazine-title {
+    font-size: 14px;
+  }
+
+  .magazine-grid {
+    column-gap: 12px;
+    row-gap: 32px;
+    width: 88vw;
+  }
+
+  .magazine-card-title {
+    font-size: 10px;
+  }
+
+  .magazine-card-description,
+  .magazine-card-author {
+    font-size: 9px;
+  }
+}
