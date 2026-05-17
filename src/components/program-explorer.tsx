@@ -15,10 +15,10 @@ export function ProgramExplorer() {
   return (
     <div className="font-pretendard bg-white">
       <section className="mx-auto w-full px-[2.083vw] pb-[5.833vw] pt-[3.472vw]">
-        <div className="mx-auto flex aspect-[1074/420] w-[74.583vw] items-center justify-between rounded-[1.25vw] bg-[#778696] px-[2.361vw] text-black">
+        <div className="group mx-auto flex aspect-[1074/420] w-[74.583vw] items-center justify-between rounded-[1.25vw] bg-[#778696] px-[2.361vw] text-black">
           <button
             aria-label="이전 배너"
-            className="inline-flex size-[3.333vw] items-center justify-center text-[#FFB25F] transition-colors hover:text-[#FF9A3D]"
+            className="pointer-events-none inline-flex size-[3.333vw] items-center justify-center text-[#FFB25F] opacity-0 transition-[color,opacity] hover:text-[#FF9A3D] group-hover:pointer-events-auto group-hover:opacity-100 group-focus-within:pointer-events-auto group-focus-within:opacity-100"
             type="button"
           >
             <ChevronLeft aria-hidden="true" className="size-[3.75vw]" strokeWidth={1.7} />
@@ -49,7 +49,7 @@ export function ProgramExplorer() {
 
           <button
             aria-label="다음 배너"
-            className="inline-flex size-[3.333vw] items-center justify-center text-[#FFB25F] transition-colors hover:text-[#FF9A3D]"
+            className="pointer-events-none inline-flex size-[3.333vw] items-center justify-center text-[#FFB25F] opacity-0 transition-[color,opacity] hover:text-[#FF9A3D] group-hover:pointer-events-auto group-hover:opacity-100 group-focus-within:pointer-events-auto group-focus-within:opacity-100"
             type="button"
           >
             <ChevronRight aria-hidden="true" className="size-[3.75vw]" strokeWidth={1.7} />
