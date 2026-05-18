@@ -199,7 +199,7 @@ export default async function ProgramDetailPage({
 
           <nav
             aria-label="프로그램 상세 메뉴"
-            className="flex h-[33px] w-full items-center gap-[21px] overflow-x-auto border-y-[0.5px] border-[#F5E1D3] pt-1.5 max-md:gap-4"
+            className="flex h-[33px] w-full items-center gap-[21px] overflow-x-auto border-y-[0.5px] border-[#F5E1D3] pt-1.5 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden max-md:gap-4"
           >
             {detailTabs.map((tab, index) => (
               <a
@@ -253,7 +253,7 @@ export default async function ProgramDetailPage({
 
             <div
               aria-label="리뷰 이미지 모음"
-              className="flex h-[108px] w-full items-center gap-[7px] overflow-x-auto border-b border-[#F5E1D3] pb-2 pl-1"
+              className="flex h-[108px] w-full items-center gap-[5px] overflow-hidden overflow-y-hidden border-b border-[#F5E1D3] pl-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden max-md:overflow-x-auto"
             >
               {Array.from({ length: 6 }, (_, index) => (
                 <div
@@ -263,11 +263,13 @@ export default async function ProgramDetailPage({
                 />
               ))}
               <button
-                className="flex w-[42px] shrink-0 flex-col items-center gap-1.5 border-0 bg-transparent p-0 text-xs font-normal leading-[1.6] text-[#5B3A29]"
+                className="flex w-[52px] shrink-0 flex-col items-center gap-1 border-0 bg-transparent p-0 text-xs font-normal leading-[1.6] text-[#5B3A29]"
                 type="button"
               >
-                <ChevronRight aria-hidden="true" className="size-[20.5px] text-[#FE701E]" />
-                전체보기
+                <span className="flex size-[20.5px] items-center justify-center rounded-full border border-[#F5E1D3] text-[#FE701E]">
+                  <ChevronRight aria-hidden="true" className="size-[14px]" />
+                </span>
+                <span className="whitespace-nowrap">전체보기</span>
               </button>
             </div>
 
@@ -501,7 +503,7 @@ function ReviewCard({
         <ChevronDown aria-hidden="true" className="size-[9px]" />
       </button>
       {imageCount > 0 ? (
-        <div className="group/gallery relative flex items-center gap-1.5 max-md:w-full max-md:overflow-x-auto">
+        <div className="group/gallery relative flex items-center gap-1.5 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden max-md:w-full max-md:overflow-x-auto">
           {Array.from({ length: imageCount }, (_, index) => (
             <span
               aria-hidden="true"

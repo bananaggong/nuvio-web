@@ -37,7 +37,7 @@ export function SiteHeader() {
         <div className="ml-auto hidden items-center gap-[1.458vw] md:flex">
           <Link
             className="inline-flex h-[2.292vw] min-h-[29px] w-[16.111vw] min-w-[196px] items-center gap-[0.486vw] rounded-full border border-[#FF9A3D] bg-white px-[0.694vw] text-[0.833vw] font-semibold leading-none text-[#6D7A8A] transition-colors hover:bg-[#fff8f1]"
-            href="/"
+            href="/search"
           >
             <Search
               aria-hidden="true"
@@ -85,7 +85,7 @@ export function SiteHeader() {
           <div className="mx-auto flex max-w-[1440px] flex-col gap-2">
             <Link
               className="mb-2 inline-flex min-h-11 items-center gap-2 rounded-full border border-[#FF9A3D] px-3 text-[12px] font-semibold text-[#6D7A8A]"
-              href="/"
+              href="/search"
               onClick={() => setOpen(false)}
             >
               <Search
