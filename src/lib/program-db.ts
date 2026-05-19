@@ -8,7 +8,7 @@ type ProgramRow = typeof programsTable.$inferSelect;
 
 export type ProgramRecordSummary = Pick<
   ProgramRow,
-  "id" | "legacyId" | "slug" | "title" | "publishedAt"
+  "id" | "legacyId" | "slug" | "title" | "publishedAt" | "villageId"
 >;
 
 export async function ensureProgramRecord(program: Program): Promise<string> {
@@ -55,6 +55,7 @@ export async function getProgramRecordByIdentifier(
       slug: programsTable.slug,
       title: programsTable.title,
       publishedAt: programsTable.publishedAt,
+      villageId: programsTable.villageId,
     })
     .from(programsTable)
     .limit(500);

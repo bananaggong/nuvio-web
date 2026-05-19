@@ -50,6 +50,7 @@ export type ApplicationFormTemplate = {
   id: string;
   name: string;
   description: string;
+  programId?: string;
   programTitle: string;
   blocks: ApplicationFormBlock[];
   fields: ApplicationFormField[];
@@ -184,6 +185,7 @@ export function normalizeApplicationFormTemplateShape(
     fields: normalizedFields,
     id: asString(value.id) || `form-${Date.now()}`,
     name: asString(value.name) || "신청폼",
+    programId: asString(value.programId),
     programTitle: asString(value.programTitle),
     updatedAt: asString(value.updatedAt) || new Date().toISOString(),
   };
@@ -300,6 +302,7 @@ export function createEmptyTemplate(): ApplicationFormTemplate {
     description: "",
     id: `form-${Date.now()}`,
     name: "새 신청폼",
+    programId: "",
     programTitle: "",
     updatedAt: new Date().toISOString(),
   });
@@ -307,7 +310,9 @@ export function createEmptyTemplate(): ApplicationFormTemplate {
 
 export function cloneApplicationFormTemplate(
   template: ApplicationFormTemplate,
-  overrides: Partial<Pick<ApplicationFormTemplate, "description" | "name" | "programTitle">> = {},
+  overrides: Partial<
+    Pick<ApplicationFormTemplate, "description" | "name" | "programId" | "programTitle">
+  > = {},
 ): ApplicationFormTemplate {
   const now = Date.now();
   const normalizedTemplate = normalizeApplicationFormTemplateShape(template);

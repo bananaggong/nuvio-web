@@ -43,7 +43,11 @@ import {
   normalizeApplicationFormTemplateShape,
   readApplicationFormTemplates,
 } from "@/lib/application-form-builder";
-import { hostProgramPath, hostProjectPath } from "@/lib/host-projects";
+import {
+  hostProgramId,
+  hostProgramPath,
+  hostProjectPath,
+} from "@/lib/host-projects";
 import type {
   ApplicationFormBlock,
   ApplicationFormBlockType,
@@ -87,6 +91,12 @@ const blockPaletteItems: Array<{
   { description: "긴 폼을 다음 페이지로 나눕니다.", icon: FilePlus2, type: "pageBreak" },
 ];
 
+type HostProgramOption = {
+  id: string;
+  slug?: string;
+  title: string;
+};
+
 export function HostFormBuilder({
   formId,
   programId,
@@ -109,10 +119,32 @@ export function HostFormBuilder({
   const [isSyncing, setIsSyncing] = useState(false);
   const [syncMessage, setSyncMessage] = useState("");
   const [syncError, setSyncError] = useState("");
+  const [hostPrograms, setHostPrograms] = useState<HostProgramOption[]>([]);
+  const routeProgram = useMemo(() => {
+    if (!programId) return undefined;
+
+    return hostPrograms.find((program) => {
+      const identifiers = [
+        program.id,
+        program.slug ?? "",
+        hostProgramId(program.title),
+      ];
+      return identifiers.includes(programId);
+    });
+  }, [hostPrograms, programId]);
   const selectedTemplate = useMemo(
     () =>
-      templates.find((template) => template.id === selectedId) ?? templates[0],
-    [selectedId, templates],
+      templates.find((template) => template.id === selectedId) ??
+      (!formId && routeProgram
+        ? templates.find(
+            (template) =>
+              template.programId === routeProgram.id ||
+              normalizeText(template.programTitle) ===
+                normalizeText(routeProgram.title),
+          )
+        : undefined) ??
+      templates[0],
+    [formId, routeProgram, selectedId, templates],
   );
   const activeBlock = useMemo(
     () =>
@@ -130,6 +162,21 @@ export function HostFormBuilder({
   const projectBasePath = projectId ? hostProjectPath(projectId) : undefined;
   const programBasePath =
     projectId && programId ? hostProgramPath(projectId, programId) : undefined;
+  const selectedProgram = useMemo(() => {
+    if (!selectedTemplate) return undefined;
+
+    return (
+      hostPrograms.find(
+        (program) => program.id === (selectedTemplate.programId ?? ""),
+      ) ??
+      hostPrograms.find(
+        (program) =>
+          normalizeText(program.title) ===
+          normalizeText(selectedTemplate.programTitle),
+      )
+    );
+  }, [hostPrograms, selectedTemplate]);
+
   useEffect(() => {
     let isMounted = true;
 
@@ -154,7 +201,8 @@ export function HostFormBuilder({
           return nextTemplates;
         });
         setSelectedId(
-          (currentId) => currentId ?? formId ?? databaseTemplates[0]?.id,
+          (currentId) =>
+            currentId ?? formId ?? (programId ? undefined : databaseTemplates[0]?.id),
         );
       } catch {
         if (isMounted) {
@@ -168,7 +216,43 @@ export function HostFormBuilder({
     return () => {
       isMounted = false;
     };
-  }, [formId]);
+  }, [formId, programId]);
+
+  useEffect(() => {
+    let isMounted = true;
+
+    async function loadHostPrograms() {
+      try {
+        const response = await fetch("/api/host/programs", { cache: "no-store" });
+        if (!response.ok) return;
+
+        const payload = (await response.json()) as {
+          data?: Array<Partial<HostProgramOption>>;
+        };
+        const programs = Array.isArray(payload.data)
+          ? payload.data
+              .map((item) => ({
+                id: String(item.id ?? "").trim(),
+                slug: item.slug?.trim() || undefined,
+                title: String(item.title ?? "").trim(),
+              }))
+              .filter((item) => item.id && item.title)
+          : [];
+
+        if (isMounted) setHostPrograms(programs);
+      } catch {
+        if (isMounted) {
+          setSyncError("연결할 프로그램 목록을 불러오지 못했습니다.");
+        }
+      }
+    }
+
+    void loadHostPrograms();
+
+    return () => {
+      isMounted = false;
+    };
+  }, []);
 
   function saveTemplates(nextTemplates: ApplicationFormTemplate[]) {
     const normalizedTemplates = nextTemplates.map(normalizeApplicationFormTemplateShape);
@@ -203,7 +287,14 @@ export function HostFormBuilder({
   }
 
   function addTemplate() {
-    const nextTemplate = createEmptyTemplate();
+    const nextTemplate = routeProgram
+      ? normalizeApplicationFormTemplateShape({
+          ...createEmptyTemplate(),
+          name: `${routeProgram.title} 신청폼`,
+          programId: routeProgram.id,
+          programTitle: routeProgram.title,
+        })
+      : createEmptyTemplate();
     setSyncMessage("");
     setSyncError("");
     saveTemplates([nextTemplate, ...templates]);
@@ -220,6 +311,7 @@ export function HostFormBuilder({
     if (!template) return;
     const copiedTemplate = cloneApplicationFormTemplate(template, {
       name: `${template.name} 복사본`,
+      programId: template.programId,
       programTitle: template.programTitle,
     });
     saveTemplates([copiedTemplate, ...templates]);
@@ -418,7 +510,9 @@ export function HostFormBuilder({
 
               <div className="mt-3 flex flex-wrap items-center gap-2 text-xs font-bold text-slate-500">
                 <span className="rounded-full bg-[var(--surface-muted)] px-3 py-1">
-                  {selectedTemplate.programTitle || "라이브러리 폼"}
+                  {selectedProgram?.title ||
+                    selectedTemplate.programTitle ||
+                    "라이브러리 폼"}
                 </span>
                 <span className="rounded-full bg-[var(--surface-muted)] px-3 py-1">
                   {selectedTemplate.blocks.length}개 블록
@@ -432,6 +526,37 @@ export function HostFormBuilder({
                   {saved ? "저장됨" : "자동 저장"}
                 </span>
               </div>
+
+              {hostPrograms.length > 0 ? (
+                <label className="mt-4 grid gap-2 rounded-md border border-slate-200 bg-[var(--surface-muted)] p-3">
+                  <span className="text-sm font-black text-slate-700">
+                    연결 프로그램
+                  </span>
+                  <select
+                    className="h-10 rounded-md border border-slate-200 bg-white px-3 text-sm font-bold text-slate-800 outline-none focus:border-[var(--primary)]"
+                    onChange={(event) => {
+                      const nextProgram = hostPrograms.find(
+                        (program) => program.id === event.target.value,
+                      );
+                      updateTemplate({
+                        programId: nextProgram?.id ?? "",
+                        programTitle: nextProgram?.title ?? "",
+                      });
+                    }}
+                    value={selectedTemplate.programId || selectedProgram?.id || ""}
+                  >
+                    <option value="">라이브러리 폼으로 두기</option>
+                    {hostPrograms.map((program) => (
+                      <option key={program.id} value={program.id}>
+                        {program.title}
+                      </option>
+                    ))}
+                  </select>
+                  <span className="text-xs font-bold leading-5 text-slate-500">
+                    선택 후 DB 저장을 누르면 해당 프로그램 신청 페이지에 이 폼이 표시됩니다.
+                  </span>
+                </label>
+              ) : null}
 
               {syncMessage || syncError ? (
                 <div className="mt-4 flex flex-wrap gap-2 text-xs font-black">
@@ -529,6 +654,10 @@ export function HostFormBuilder({
       ) : null}
     </div>
   );
+}
+
+function normalizeText(value: string): string {
+  return value.trim().toLowerCase().replace(/\s+/gu, " ");
 }
 
 function Modal({

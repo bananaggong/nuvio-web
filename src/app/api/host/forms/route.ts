@@ -1,10 +1,17 @@
 import { NextResponse } from "next/server";
-import { isApiAuthError, requireHostRole } from "@/lib/api-security";
+import {
+  isApiAuthError,
+  requireHostRole,
+  type ApiAuthContext,
+} from "@/lib/api-security";
+import type { ApplicationFormTemplate } from "@/lib/application-form-builder";
 import {
   listApplicationFormTemplatesFromDb,
   normalizeApplicationFormTemplate,
   upsertApplicationFormTemplate,
 } from "@/lib/application-form-db";
+import { listHostVillageWorkspaces } from "@/lib/host-village-access";
+import { getProgramRecordByIdentifier } from "@/lib/program-db";
 
 export const runtime = "nodejs";
 
@@ -37,7 +44,8 @@ export async function POST(request: Request) {
   try {
     const body = await request.json();
     const template = normalizeApplicationFormTemplate(body);
-    const savedTemplate = await upsertApplicationFormTemplate(template, {
+    const scopedTemplate = await scopeTemplateToProgram(template, auth);
+    const savedTemplate = await upsertApplicationFormTemplate(scopedTemplate, {
       ownerId: auth.user.id,
       restrictToOwner: auth.profile.role !== "admin",
     });
@@ -54,4 +62,35 @@ export async function POST(request: Request) {
       { status: 400 },
     );
   }
+}
+
+async function scopeTemplateToProgram(
+  template: ApplicationFormTemplate,
+  auth: ApiAuthContext,
+): Promise<ApplicationFormTemplate> {
+  const programId = template.programId?.trim();
+  if (!programId) return template;
+
+  const program = await getProgramRecordByIdentifier(programId);
+  if (!program) {
+    throw new Error("Connected program was not found.");
+  }
+
+  if (auth.profile.role !== "admin") {
+    const allowedVillageIds = (await listHostVillageWorkspaces(auth)).map(
+      (workspace) => workspace.villageId,
+    );
+
+    if (!program.villageId || !allowedVillageIds.includes(program.villageId)) {
+      throw new Error(
+        "This account can only connect forms to its local home programs.",
+      );
+    }
+  }
+
+  return {
+    ...template,
+    programId: program.id,
+    programTitle: program.title,
+  };
 }

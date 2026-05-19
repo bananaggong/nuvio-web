@@ -44,10 +44,13 @@ export async function getApplicationFormTemplateForProgram(
       .limit(200);
     const programRecord = await getProgramRecordByIdentifier(program.id);
     const normalizedTitle = normalizeText(program.title);
-    const row = rows.find((item) => {
-      if (programRecord?.id && item.programId === programRecord.id) return true;
-      return normalizeText(item.programTitle ?? "") === normalizedTitle;
-    });
+    const row =
+      rows.find((item) =>
+        Boolean(programRecord?.id && item.programId === programRecord.id),
+      ) ??
+      rows.find(
+        (item) => normalizeText(item.programTitle ?? "") === normalizedTitle,
+      );
 
     return row ? mapFormRowToTemplate(row) : undefined;
   } catch {
@@ -107,6 +110,7 @@ export function normalizeApplicationFormTemplate(
     id: asString(value.id) || `form-${Date.now()}`,
     name: asString(value.name) || "신청서",
     description: asString(value.description),
+    programId: asString(value.programId),
     programTitle: asString(value.programTitle),
     blocks: normalizeApplicationFormBlocks(value.blocks ?? value.fields),
     fields: normalizeApplicationFormFields(value.fields),
@@ -124,6 +128,9 @@ function mapTemplateToInsert(
     createdBy: ownerId,
     title: normalizedTemplate.name.trim() || "Application form",
     description: normalizedTemplate.description.trim() || null,
+    programId: isUuid(normalizedTemplate.programId ?? "")
+      ? normalizedTemplate.programId
+      : null,
     programTitle: normalizedTemplate.programTitle.trim() || null,
     fields: normalizedTemplate.blocks.map((block) => ({
       body: block.body ?? "",
@@ -147,6 +154,7 @@ function mapFormRowToTemplate(row: FormRow): ApplicationFormTemplate {
     id: row.id,
     name: row.title,
     description: row.description ?? "",
+    programId: row.programId ?? "",
     programTitle: row.programTitle ?? "",
     fields: blocks.length > 0 ? blocksToFields(blocks) : fields,
     updatedAt: row.updatedAt.toISOString(),

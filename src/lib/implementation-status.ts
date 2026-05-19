@@ -93,13 +93,13 @@ export const implementationStatus: {
             { label: "Apply example", href: "/programs/1001/apply" },
           ],
           verification:
-            "Create a form for a program title, then open that program's apply page and submit a test application.",
+            "Attach a form to a program in /host/forms, then open that program's apply page and submit a test application.",
         },
         {
           title: "Supabase application persistence",
           state: "implemented",
           summary:
-            "Applications are persisted to program_applications and mirrored to local storage as a fallback.",
+            "Applications are persisted to program_applications with form_id when a program form is attached.",
           routes: [
             { label: "Host applications", href: "/host" },
             { label: "Applications API", href: "/api/host/applications" },
