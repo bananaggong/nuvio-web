@@ -81,7 +81,9 @@ function mapProjectToInsert(project: ReportProject): ReportProjectInsert {
       programTitle: project.programTitle,
       sections: project.sections,
       title: project.title,
+      villageId: project.villageId,
       villageName: project.villageName,
+      villageSlug: project.villageSlug,
     },
   };
 }

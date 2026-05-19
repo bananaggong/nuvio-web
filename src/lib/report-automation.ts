@@ -87,7 +87,9 @@ export type ReportManualField = {
 export type ReportProject = {
   id: string;
   title: string;
+  villageId?: string;
   villageName: string;
+  villageSlug?: string;
   agencyName: string;
   imageUrl?: string;
   programTitle: string;
@@ -262,7 +264,9 @@ export const seedReportProjects: ReportProject[] = [
   {
     id: "operation-boseong-2026",
     title: "보성 로컬홈 2026 운영 프로젝트",
+    villageId: "33333333-4444-4555-8666-777777777777",
     villageName: "전체차LAB",
+    villageSlug: "boseong",
     agencyName: "보성 로컬홈 운영팀",
     imageUrl: "/boseong/hero-illustration.png",
     programTitle: "전체 프로그램",
@@ -425,7 +429,9 @@ export function createReportProject(): ReportProject {
   return {
     id: `operation-${Date.now()}`,
     title: "새 운영 프로젝트",
+    villageId: "",
     villageName: "로컬홈",
+    villageSlug: "",
     agencyName: "운영 조직명",
     imageUrl: "",
     programTitle: "전체 프로그램",
@@ -825,10 +831,12 @@ export function normalizeReportProjectModel(input: unknown): ReportProject {
     status: asReportStatus(value.status),
     title: asString(value.title) || asString(value.name) || "운영 프로젝트",
     updatedAt: asString(value.updatedAt) || new Date().toISOString(),
+    villageId: asString(value.villageId),
     villageName:
       asString(value.villageName) ||
       asString(value.organizationName) ||
       "로컬홈",
+    villageSlug: asString(value.villageSlug),
   };
 }
 
