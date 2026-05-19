@@ -29,7 +29,7 @@ export default async function Home() {
           programItemListJsonLd(publicPrograms, "/"),
         ]}
       />
-      <ProgramExplorer />
+      <ProgramExplorer programs={publicPrograms} />
     </>
   );
 }
