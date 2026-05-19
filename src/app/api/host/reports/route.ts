@@ -18,9 +18,7 @@ export async function GET() {
   if (isApiAuthError(auth)) return auth.response;
 
   try {
-    const projects = await listReportProjectsFromDb(
-      auth.profile.role === "admin" ? {} : { ownerId: auth.user.id },
-    );
+    const projects = await listReportProjectsFromDb();
     if (auth.profile.role === "admin") {
       return NextResponse.json({ data: projects });
     }
@@ -51,13 +49,12 @@ export async function POST(request: Request) {
   try {
     const body = await request.json();
     const project = normalizeReportProject(body);
+    const workspaces =
+      auth.profile.role === "admin" ? [] : await listHostVillageWorkspaces(auth);
     const scopedProject =
       auth.profile.role === "admin"
         ? project
-        : scopeProjectToHostWorkspace(
-            project,
-            await listHostVillageWorkspaces(auth),
-          );
+        : scopeProjectToHostWorkspace(project, workspaces);
 
     if (!scopedProject) {
       return NextResponse.json(
@@ -66,9 +63,19 @@ export async function POST(request: Request) {
       );
     }
 
+    if (
+      auth.profile.role !== "admin" &&
+      !(await isProjectUpdateAllowed(scopedProject, workspaces))
+    ) {
+      return NextResponse.json(
+        { error: "This account can only update operation projects in its connected local home." },
+        { status: 403 },
+      );
+    }
+
     const savedProject = await upsertReportProject(scopedProject, {
       ownerId: auth.user.id,
-      restrictToOwner: auth.profile.role !== "admin",
+      restrictToOwner: false,
     });
 
     return NextResponse.json({ data: savedProject }, { status: 201 });
@@ -83,6 +90,18 @@ export async function POST(request: Request) {
       { status: 400 },
     );
   }
+}
+
+async function isProjectUpdateAllowed(
+  project: ReportProject,
+  workspaces: HostVillageWorkspace[],
+): Promise<boolean> {
+  const existingProject = (await listReportProjectsFromDb()).find(
+    (item) => item.id === project.id,
+  );
+  if (!existingProject) return true;
+
+  return Boolean(findProjectWorkspace(existingProject, workspaces));
 }
 
 function scopeProjectToHostWorkspace(

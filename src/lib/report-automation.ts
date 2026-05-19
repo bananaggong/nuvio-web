@@ -93,7 +93,9 @@ export type ReportProject = {
   villageSlug?: string;
   agencyName: string;
   imageUrl?: string;
+  programId?: string;
   programTitle: string;
+  connectedProgramIds: string[];
   connectedProgramTitles: string[];
   periodLabel: string;
   ownerName: string;
@@ -267,7 +269,9 @@ export const seedReportProjects: ReportProject[] = [
     villageSlug: "boseong",
     agencyName: "보성 로컬홈 운영팀",
     imageUrl: "/boseong/hero-illustration.png",
+    programId: "",
     programTitle: "전체 프로그램",
+    connectedProgramIds: [],
     connectedProgramTitles: ["나를 담는 차 실험실", "로컬살롱"],
     periodLabel: "2026.05.01 - 2026.11.30",
     ownerName: "운영 담당자",
@@ -411,7 +415,9 @@ export function createReportProject(): ReportProject {
     villageSlug: "",
     agencyName: "운영 조직명",
     imageUrl: "",
+    programId: "",
     programTitle: "전체 프로그램",
+    connectedProgramIds: [],
     connectedProgramTitles: [],
     periodLabel: "운영 기간 입력",
     ownerName: "담당자명",
@@ -500,6 +506,15 @@ export function getReportApplications(
   project: ReportProject,
   applications = readHostApplicationsFromStorage(),
 ): HostApplication[] {
+  const connectedIds = project.connectedProgramIds.filter(Boolean);
+  if (connectedIds.length > 0) {
+    return applications.filter(
+      (application) =>
+        typeof application.programId === "string" &&
+        connectedIds.includes(application.programId),
+    );
+  }
+
   const connectedTitles = project.connectedProgramTitles.filter(Boolean);
   if (connectedTitles.length === 0 || connectedTitles.includes("전체 프로그램")) {
     return applications;
@@ -580,7 +595,10 @@ export function summarizeReportProject(
       totalBudget > 0 ? Math.round((usedAmount / totalBudget) * 100) : 0,
     completedEvidenceCount,
     expenseCount: project.expenseEvents.length,
-    linkedProgramCount: project.connectedProgramTitles.length,
+    linkedProgramCount: Math.max(
+      project.connectedProgramIds.length,
+      project.connectedProgramTitles.length,
+    ),
     manualMissingCount,
     missingEvidenceCount,
     overBudgetAmount: Math.max(usedAmount - totalBudget, 0),
@@ -771,6 +789,8 @@ export function normalizeReportProjectModel(input: unknown): ReportProject {
   }
 
   const value = input as Record<string, unknown>;
+  const programId = asString(value.programId);
+  const connectedProgramIds = normalizeStringArray(value.connectedProgramIds);
   const connectedProgramTitles = normalizeStringArray(value.connectedProgramTitles);
   const legacyProgramTitle = asString(value.programTitle);
   const id = asString(value.id) || `operation-${Date.now()}`;
@@ -790,11 +810,15 @@ export function normalizeReportProjectModel(input: unknown): ReportProject {
           ]),
         )
       : normalizedConnectedProgramTitles;
+  const normalizedConnectedProgramIds = Array.from(
+    new Set([programId, ...connectedProgramIds].filter(Boolean)),
+  );
 
   return {
     activityEvents: normalizeActivityEvents(value.activityEvents),
     agencyName: asString(value.agencyName) || "운영 조직명",
     budgetCategories: normalizeBudgetCategories(value.budgetCategories),
+    connectedProgramIds: normalizedConnectedProgramIds,
     connectedProgramTitles: migratedConnectedProgramTitles,
     evidenceRules: normalizeEvidenceRules(value.evidenceRules),
     expenseEvents: normalizeExpenseEvents(value.expenseEvents),
@@ -804,6 +828,7 @@ export function normalizeReportProjectModel(input: unknown): ReportProject {
     ownerName: asString(value.ownerName) || "담당자명",
     periodLabel: asString(value.periodLabel) || "운영 기간 입력",
     programTitle: legacyProgramTitle || "전체 프로그램",
+    programId,
     sections: normalizeSections(value.sections),
     status: asReportStatus(value.status),
     title: asString(value.title) || asString(value.name) || "운영 프로젝트",

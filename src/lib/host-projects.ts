@@ -2,6 +2,7 @@ import {
   summarizeApplications,
   type HostApplication,
 } from "@/lib/host-operations";
+import type { HostProgramDraft } from "@/lib/host-program-studio";
 import { programs } from "@/lib/data";
 import {
   getReportApplications,
@@ -17,6 +18,7 @@ export type HostProjectOverview = {
   applicationCount: number;
   applications: HostApplication[];
   completedCount: number;
+  connectedProgramIds: string[];
   connectedProgramTitles: string[];
   id: string;
   imageUrl: string;
@@ -25,6 +27,7 @@ export type HostProjectOverview = {
   ownerName: string;
   pendingCount: number;
   periodLabel: string;
+  programDrafts: HostProgramDraft[];
   readiness: number;
   reportProject?: ReportProject;
   reviewMissingCount: number;
@@ -46,16 +49,19 @@ export type HostProgramOverview = {
   missingEvidenceCount: number;
   pendingCount: number;
   readiness: number;
+  slug?: string;
   title: string;
   updatedAt: string;
+  villageId?: string;
 };
 
 export function buildHostProjectOverviews(
   applications: HostApplication[],
   reportProjects: ReportProject[],
+  programDrafts: HostProgramDraft[] = [],
 ): HostProjectOverview[] {
   const operationProjects = reportProjects.map((project) =>
-    buildOperationProjectOverview(project, applications),
+    buildOperationProjectOverview(project, applications, programDrafts),
   );
 
   return operationProjects.sort(
@@ -67,8 +73,9 @@ export function findHostProjectOverview(
   projectId: string,
   applications: HostApplication[],
   reportProjects: ReportProject[],
+  programDrafts: HostProgramDraft[] = [],
 ): HostProjectOverview | undefined {
-  return buildHostProjectOverviews(applications, reportProjects).find(
+  return buildHostProjectOverviews(applications, reportProjects, programDrafts).find(
     (project) => project.id === projectId,
   );
 }
@@ -81,39 +88,19 @@ export function buildHostProgramOverviews(
   project: HostProjectOverview,
   applications: HostApplication[],
 ): HostProgramOverview[] {
-  const titles = resolveProjectProgramTitles(project, applications);
+  const draftPrograms = project.programDrafts.map((program) =>
+    buildProgramOverviewFromDraft(project, program, applications),
+  );
+  const draftTitles = new Set(
+    draftPrograms.map((program) => normalizeTitle(program.title)),
+  );
+  const legacyPrograms = resolveProjectProgramTitles(project, applications)
+    .filter((title) => !draftTitles.has(normalizeTitle(title)))
+    .map((title) => buildProgramOverviewFromTitle(project, title, applications));
 
-  return titles.map((title) => {
-    const programApplications = applications.filter(
-      (application) => application.programTitle === title,
-    );
-    const applicationSummary = summarizeApplications(programApplications);
-    const pendingCount = programApplications.filter((application) =>
-      ["submitted", "screening"].includes(application.status),
-    ).length;
-    const latestSubmittedAt =
-      programApplications[0]?.submittedAt ?? project.updatedAt;
-
-    return {
-      activeCount:
-        applicationSummary.accepted +
-        applicationSummary.checkedIn +
-        applicationSummary.completed,
-      applicationCount: programApplications.length,
-      applications: programApplications,
-      id: hostProgramId(title),
-      imageUrl: resolveProgramImage(title),
-      missingEvidenceCount: programApplications.reduce(
-        (sum, application) =>
-          sum + (application.receiptCount > 0 || application.status === "rejected" ? 0 : 1),
-        0,
-      ),
-      pendingCount,
-      readiness: applicationSummary.reportReadiness,
-      title,
-      updatedAt: latestSubmittedAt,
-    } satisfies HostProgramOverview;
-  });
+  return [...draftPrograms, ...legacyPrograms].sort(
+    (a, b) => Date.parse(b.updatedAt) - Date.parse(a.updatedAt),
+  );
 }
 
 export function findHostProgramOverview(
@@ -121,12 +108,21 @@ export function findHostProgramOverview(
   programId: string,
   applications: HostApplication[],
   reportProjects: ReportProject[],
+  programDrafts: HostProgramDraft[] = [],
 ): HostProgramOverview | undefined {
-  const project = findHostProjectOverview(projectId, applications, reportProjects);
+  const project = findHostProjectOverview(
+    projectId,
+    applications,
+    reportProjects,
+    programDrafts,
+  );
   if (!project) return undefined;
 
   return buildHostProgramOverviews(project, applications).find(
-    (program) => program.id === programId,
+    (program) =>
+      program.id === programId ||
+      program.slug === programId ||
+      hostProgramId(program.title) === programId,
   );
 }
 
@@ -148,8 +144,10 @@ export function hostProgramPath(projectId: string, programId: string): string {
 function buildOperationProjectOverview(
   project: ReportProject,
   applications: HostApplication[],
+  programDrafts: HostProgramDraft[],
 ): HostProjectOverview {
   const scopedApplications = getReportApplications(project, applications);
+  const scopedProgramDrafts = resolveProjectProgramDrafts(project, programDrafts);
   const applicationSummary = summarizeApplications(scopedApplications);
   const reportSummary = summarizeReportProject(project, applications);
   const pendingCount = scopedApplications.filter((application) =>
@@ -165,14 +163,16 @@ function buildOperationProjectOverview(
     applicationCount: scopedApplications.length,
     applications: scopedApplications,
     completedCount: applicationSummary.completed,
+    connectedProgramIds: project.connectedProgramIds,
     connectedProgramTitles: project.connectedProgramTitles,
     id: project.id,
-    imageUrl: resolveProjectImage(project),
+    imageUrl: resolveProjectImage(project, scopedProgramDrafts),
     kind: "operation",
     missingEvidenceCount: reportSummary.missingEvidenceCount,
     ownerName: project.ownerName,
     pendingCount,
     periodLabel: project.periodLabel,
+    programDrafts: scopedProgramDrafts,
     readiness: reportSummary.readiness,
     reportProject: project,
     reviewMissingCount: scopedApplications.filter(
@@ -181,7 +181,12 @@ function buildOperationProjectOverview(
     signatureMissingCount: scopedApplications.filter(
       (application) => !application.signatureCompleted,
     ).length,
-    statusLabel: project.status === "ready" ? "마감 준비" : project.status === "review" ? "수집 중" : "설계 중",
+    statusLabel:
+      project.status === "ready"
+        ? "마감 준비"
+        : project.status === "review"
+          ? "수집 중"
+          : "설계 중",
     title: project.title,
     totalBudget: reportSummary.totalBudget,
     updatedAt: project.updatedAt,
@@ -190,8 +195,86 @@ function buildOperationProjectOverview(
   };
 }
 
-function resolveProjectImage(project: ReportProject): string {
+function buildProgramOverviewFromDraft(
+  project: HostProjectOverview,
+  program: HostProgramDraft,
+  applications: HostApplication[],
+): HostProgramOverview {
+  const programApplications = applications.filter(
+    (application) =>
+      application.programId === program.id ||
+      application.programTitle === program.title,
+  );
+  const applicationSummary = summarizeApplications(programApplications);
+  const pendingCount = programApplications.filter((application) =>
+    ["submitted", "screening"].includes(application.status),
+  ).length;
+
+  return {
+    activeCount:
+      applicationSummary.accepted +
+      applicationSummary.checkedIn +
+      applicationSummary.completed,
+    applicationCount: programApplications.length,
+    applications: programApplications,
+    id: program.id,
+    imageUrl: program.image || resolveProgramImage(program.title),
+    missingEvidenceCount: countMissingEvidence(programApplications),
+    pendingCount,
+    readiness: applicationSummary.reportReadiness,
+    slug: program.slug,
+    title: program.title,
+    updatedAt: programApplications[0]?.submittedAt ?? program.updatedAt ?? project.updatedAt,
+    villageId: program.villageId,
+  };
+}
+
+function buildProgramOverviewFromTitle(
+  project: HostProjectOverview,
+  title: string,
+  applications: HostApplication[],
+): HostProgramOverview {
+  const programApplications = applications.filter(
+    (application) => application.programTitle === title,
+  );
+  const applicationSummary = summarizeApplications(programApplications);
+  const pendingCount = programApplications.filter((application) =>
+    ["submitted", "screening"].includes(application.status),
+  ).length;
+
+  return {
+    activeCount:
+      applicationSummary.accepted +
+      applicationSummary.checkedIn +
+      applicationSummary.completed,
+    applicationCount: programApplications.length,
+    applications: programApplications,
+    id: hostProgramId(title),
+    imageUrl: resolveProgramImage(title),
+    missingEvidenceCount: countMissingEvidence(programApplications),
+    pendingCount,
+    readiness: applicationSummary.reportReadiness,
+    title,
+    updatedAt: programApplications[0]?.submittedAt ?? project.updatedAt,
+  };
+}
+
+function countMissingEvidence(applications: HostApplication[]): number {
+  return applications.reduce(
+    (sum, application) =>
+      sum + (application.receiptCount > 0 || application.status === "rejected" ? 0 : 1),
+    0,
+  );
+}
+
+function resolveProjectImage(
+  project: ReportProject,
+  programDrafts: HostProgramDraft[],
+): string {
   if (project.imageUrl) return project.imageUrl;
+
+  const programImage = programDrafts.find((program) => program.image)?.image;
+  if (programImage) return programImage;
 
   const candidates = [
     project.programTitle,
@@ -233,6 +316,40 @@ function resolveProgramImage(programTitle: string, useFallback = true): string {
     return "/boseong/home-tea-time.png";
   }
   return programs[0]?.image ?? "/brand/nuvio-logo-combined.svg";
+}
+
+function resolveProjectProgramDrafts(
+  project: ReportProject,
+  programDrafts: HostProgramDraft[],
+): HostProgramDraft[] {
+  const connectedIds = new Set(
+    [project.programId, ...project.connectedProgramIds].filter(Boolean),
+  );
+  const connectedTitles = new Set(
+    project.connectedProgramTitles.map((title) => normalizeTitle(title)),
+  );
+  const matchedPrograms = programDrafts.filter((program) => {
+    if (connectedIds.has(program.id)) return true;
+    if (connectedTitles.has(normalizeTitle(program.title))) return true;
+    return false;
+  });
+
+  if (matchedPrograms.length > 0) return uniquePrograms(matchedPrograms);
+  if (!project.villageId) return [];
+
+  return uniquePrograms(
+    programDrafts.filter((program) => program.villageId === project.villageId),
+  );
+}
+
+function uniquePrograms(programDrafts: HostProgramDraft[]): HostProgramDraft[] {
+  const seen = new Set<string>();
+  return programDrafts.filter((program) => {
+    const key = program.id || program.slug || program.title;
+    if (seen.has(key)) return false;
+    seen.add(key);
+    return true;
+  });
 }
 
 function normalizeTitle(value: string): string {

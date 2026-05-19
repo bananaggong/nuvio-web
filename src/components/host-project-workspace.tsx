@@ -44,11 +44,11 @@ export function HostProjectWorkspace({
   projectId: string;
   section: HostProjectWorkspaceSection;
 }) {
-  const { applications, reportProjects } = useHostOperationsData();
+  const { applications, programs: hostPrograms, reportProjects } = useHostOperationsData();
 
   const project = useMemo(
-    () => findHostProjectOverview(projectId, applications, reportProjects),
-    [applications, projectId, reportProjects],
+    () => findHostProjectOverview(projectId, applications, reportProjects, hostPrograms),
+    [applications, hostPrograms, projectId, reportProjects],
   );
   const projectPath = hostProjectPath(projectId);
 
@@ -157,7 +157,7 @@ function ActivitiesView({ project }: { project: HostProjectOverview }) {
         <SmallMetric label="참여자" value={`${project.activeCount}명`} />
         <SmallMetric
           label="연결 프로그램"
-          value={`${project.connectedProgramTitles.length}개`}
+          value={`${Math.max(project.programDrafts.length, project.connectedProgramTitles.length)}개`}
         />
       </div>
       <div className="mt-5 grid gap-3">

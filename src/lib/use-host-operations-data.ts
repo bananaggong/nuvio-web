@@ -6,17 +6,24 @@ import {
   mergeReportProjects,
   type ReportProject,
 } from "@/lib/report-automation";
+import {
+  mergeHostProgramDrafts,
+  type HostProgramDraft,
+} from "@/lib/host-program-studio";
 
 type HostOperationsData = {
   applications: HostApplication[];
   isLoading: boolean;
+  programs: HostProgramDraft[];
   reportProjects: ReportProject[];
   setApplications: Dispatch<SetStateAction<HostApplication[]>>;
+  setPrograms: Dispatch<SetStateAction<HostProgramDraft[]>>;
   setReportProjects: Dispatch<SetStateAction<ReportProject[]>>;
 };
 
 export function useHostOperationsData(): HostOperationsData {
   const [applications, setApplications] = useState<HostApplication[]>([]);
+  const [programs, setPrograms] = useState<HostProgramDraft[]>([]);
   const [reportProjects, setReportProjects] = useState<ReportProject[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
@@ -25,9 +32,10 @@ export function useHostOperationsData(): HostOperationsData {
 
     async function loadRemoteState() {
       try {
-        const [applicationsResponse, reportsResponse] = await Promise.all([
+        const [applicationsResponse, reportsResponse, programsResponse] = await Promise.all([
           fetch("/api/host/applications", { cache: "no-store" }),
           fetch("/api/host/reports", { cache: "no-store" }),
+          fetch("/api/host/programs", { cache: "no-store" }),
         ]);
 
         if (applicationsResponse.ok) {
@@ -51,6 +59,17 @@ export function useHostOperationsData(): HostOperationsData {
             );
           }
         }
+
+        if (programsResponse.ok) {
+          const payload = (await programsResponse.json()) as {
+            data?: HostProgramDraft[];
+          };
+          if (payload.data && !cancelled) {
+            setPrograms((current) =>
+              mergeHostProgramDrafts(payload.data ?? [], current),
+            );
+          }
+        }
       } finally {
         if (!cancelled) setIsLoading(false);
       }
@@ -66,8 +85,10 @@ export function useHostOperationsData(): HostOperationsData {
   return {
     applications,
     isLoading,
+    programs,
     reportProjects,
     setApplications,
+    setPrograms,
     setReportProjects,
   };
 }

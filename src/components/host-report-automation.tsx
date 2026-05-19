@@ -81,6 +81,7 @@ const paymentMethods = Object.keys(paymentMethodLabels) as ExpenseEvent["payment
 export function HostReportAutomation() {
   const {
     applications,
+    programs: hostPrograms,
     reportProjects: projects,
     setReportProjects: setProjects,
   } = useHostOperationsData();
@@ -95,9 +96,12 @@ export function HostReportAutomation() {
     [projects, selectedId],
   );
   const programOptions = useMemo(() => {
-    const titles = applications.map((application) => application.programTitle);
+    const titles = [
+      ...hostPrograms.map((program) => program.title),
+      ...applications.map((application) => application.programTitle),
+    ];
     return ["전체 프로그램", ...Array.from(new Set(titles))];
-  }, [applications]);
+  }, [applications, hostPrograms]);
   const summary = useMemo(
     () =>
       selectedProject
@@ -283,15 +287,24 @@ export function HostReportAutomation() {
   function toggleProgram(programTitle: string) {
     if (!selectedProject) return;
     if (programTitle === "전체 프로그램") {
-      updateProject({ connectedProgramTitles: [] });
+      updateProject({ connectedProgramIds: [], connectedProgramTitles: [] });
       return;
     }
 
+    const matchedProgram = hostPrograms.find(
+      (program) => program.title === programTitle,
+    );
     const currentTitles = selectedProject.connectedProgramTitles;
+    const currentIds = selectedProject.connectedProgramIds;
     const nextTitles = currentTitles.includes(programTitle)
       ? currentTitles.filter((title) => title !== programTitle)
       : [...currentTitles, programTitle];
-    updateProject({ connectedProgramTitles: nextTitles });
+    const nextIds = matchedProgram
+      ? currentIds.includes(matchedProgram.id)
+        ? currentIds.filter((id) => id !== matchedProgram.id)
+        : [...currentIds, matchedProgram.id]
+      : currentIds;
+    updateProject({ connectedProgramIds: nextIds, connectedProgramTitles: nextTitles });
   }
 
   function toggleSection(sectionId: ReportSectionId) {
@@ -496,10 +509,17 @@ export function HostReportAutomation() {
                 />
                 <div className="mt-4 flex flex-wrap gap-2">
                   {programOptions.map((programTitle) => {
+                    const matchedProgram = hostPrograms.find(
+                      (program) => program.title === programTitle,
+                    );
                     const checked =
                       programTitle === "전체 프로그램"
-                        ? selectedProject.connectedProgramTitles.length === 0
-                        : selectedProject.connectedProgramTitles.includes(programTitle);
+                        ? selectedProject.connectedProgramIds.length === 0 &&
+                          selectedProject.connectedProgramTitles.length === 0
+                        : matchedProgram
+                          ? selectedProject.connectedProgramIds.includes(matchedProgram.id) ||
+                            selectedProject.connectedProgramTitles.includes(programTitle)
+                          : selectedProject.connectedProgramTitles.includes(programTitle);
 
                     return (
                       <button

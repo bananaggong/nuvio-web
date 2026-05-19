@@ -10,6 +10,7 @@ export type HostApplicationStatus =
 
 export type HostApplication = {
   id: string;
+  programId?: string;
   programTitle: string;
   applicantName: string;
   email: string;

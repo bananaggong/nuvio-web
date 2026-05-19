@@ -34,11 +34,11 @@ import {
 import { useHostOperationsData } from "@/lib/use-host-operations-data";
 
 export function HostProjectHub({ projectId }: { projectId: string }) {
-  const { applications, reportProjects } = useHostOperationsData();
+  const { applications, programs: hostPrograms, reportProjects } = useHostOperationsData();
 
   const project = useMemo(
-    () => findHostProjectOverview(projectId, applications, reportProjects),
-    [applications, projectId, reportProjects],
+    () => findHostProjectOverview(projectId, applications, reportProjects, hostPrograms),
+    [applications, hostPrograms, projectId, reportProjects],
   );
   const programs = useMemo(
     () => (project ? buildHostProgramOverviews(project, applications) : []),

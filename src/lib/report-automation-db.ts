@@ -81,6 +81,9 @@ function mapProjectToInsert(
 ): ReportProjectInsert {
   return {
     createdBy: ownerId,
+    programId: isUuid(project.programId ?? "")
+      ? project.programId
+      : project.connectedProgramIds.find(isUuid) ?? null,
     name: project.title.trim() || "Operation project",
     organizationName:
       project.villageName.trim() || project.agencyName.trim() || "누비오",
@@ -90,6 +93,7 @@ function mapProjectToInsert(
       activityEvents: project.activityEvents,
       agencyName: project.agencyName,
       budgetCategories: project.budgetCategories,
+      connectedProgramIds: project.connectedProgramIds,
       connectedProgramTitles: project.connectedProgramTitles,
       evidenceRules: project.evidenceRules,
       expenseEvents: project.expenseEvents,
@@ -97,6 +101,7 @@ function mapProjectToInsert(
       manualFields: project.manualFields,
       ownerName: project.ownerName,
       periodLabel: project.periodLabel,
+      programId: project.programId,
       programTitle: project.programTitle,
       sections: project.sections,
       title: project.title,
@@ -114,6 +119,7 @@ function mapReportRowToProject(row: ReportProjectRow): ReportProject {
     ...payload,
     agencyName: asString(payload.agencyName) || row.organizationName,
     id: row.id,
+    programId: row.programId ?? asString(payload.programId),
     status: mapDatabaseStatusToReport(row.status),
     title: asString(payload.title) || row.name,
     updatedAt: row.updatedAt.toISOString(),

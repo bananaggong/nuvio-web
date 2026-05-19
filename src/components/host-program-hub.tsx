@@ -27,16 +27,16 @@ export function HostProgramHub({
   programId: string;
   projectId: string;
 }) {
-  const { applications, reportProjects } = useHostOperationsData();
+  const { applications, programs: hostPrograms, reportProjects } = useHostOperationsData();
 
   const project = useMemo(
-    () => findHostProjectOverview(projectId, applications, reportProjects),
-    [applications, projectId, reportProjects],
+    () => findHostProjectOverview(projectId, applications, reportProjects, hostPrograms),
+    [applications, hostPrograms, projectId, reportProjects],
   );
   const program = useMemo(
     () =>
-      findHostProgramOverview(projectId, programId, applications, reportProjects),
-    [applications, programId, projectId, reportProjects],
+      findHostProgramOverview(projectId, programId, applications, reportProjects, hostPrograms),
+    [applications, hostPrograms, programId, projectId, reportProjects],
   );
   const projectPath = hostProjectPath(projectId);
   const programPath = hostProgramPath(projectId, programId);

@@ -58,7 +58,7 @@ export function HostApplicationsCrm({
   programId?: string;
   projectId?: string;
 }) {
-  const { applications, isLoading, reportProjects, setApplications } =
+  const { applications, isLoading, programs: hostPrograms, reportProjects, setApplications } =
     useHostOperationsData();
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState<StatusFilter>("all");
@@ -66,8 +66,8 @@ export function HostApplicationsCrm({
 
   const project = useMemo(() => {
     if (!projectId) return undefined;
-    return findHostProjectOverview(projectId, applications, reportProjects);
-  }, [applications, projectId, reportProjects]);
+    return findHostProjectOverview(projectId, applications, reportProjects, hostPrograms);
+  }, [applications, hostPrograms, projectId, reportProjects]);
   const program = useMemo(() => {
     if (!projectId || !programId) return undefined;
     return findHostProgramOverview(
@@ -75,8 +75,9 @@ export function HostApplicationsCrm({
       programId,
       applications,
       reportProjects,
+      hostPrograms,
     );
-  }, [applications, programId, projectId, reportProjects]);
+  }, [applications, hostPrograms, programId, projectId, reportProjects]);
   const projectBasePath = projectId ? hostProjectPath(projectId) : undefined;
   const programBasePath =
     projectId && program ? hostProgramPath(projectId, program.id) : undefined;

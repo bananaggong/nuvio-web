@@ -11,16 +11,21 @@ import {
 import { useEffect, useMemo, useState } from "react";
 import {
   cloneApplicationFormTemplate,
+  createEmptyTemplate,
   normalizeApplicationFormTemplateShape,
   readApplicationFormTemplates,
 } from "@/lib/application-form-builder";
 import type { ApplicationFormTemplate } from "@/lib/application-form-builder";
 import {
   findHostProjectOverview,
-  hostProgramId,
   hostProgramPath,
   hostProjectPath,
 } from "@/lib/host-projects";
+import {
+  createHostProgramDraft,
+  mergeHostProgramDrafts,
+} from "@/lib/host-program-studio";
+import type { HostProgramDraft } from "@/lib/host-program-studio";
 import {
   mergeReportProjects,
 } from "@/lib/report-automation";
@@ -45,12 +50,12 @@ export function HostProgramCreateWizard({ projectId }: { projectId: string }) {
   const [formTemplates, setFormTemplates] = useState<ApplicationFormTemplate[]>(
     readApplicationFormTemplates,
   );
-  const { applications, reportProjects, setReportProjects } =
+  const { applications, programs: hostPrograms, reportProjects, setPrograms, setReportProjects } =
     useHostOperationsData();
   const reusableFormTemplates = formTemplates.filter(
     (template) => !template.programTitle,
   );
-  const project = findHostProjectOverview(projectId, applications, reportProjects);
+  const project = findHostProjectOverview(projectId, applications, reportProjects, hostPrograms);
   const projectPath = hostProjectPath(projectId);
   const canFinish = Boolean(title.trim());
   useEffect(() => {
@@ -101,22 +106,50 @@ export function HostProgramCreateWizard({ projectId }: { projectId: string }) {
     const selectedFormTemplate = formTemplates.find(
       (template) => template.id === selectedFormId,
     );
-    const nextProject = {
-      ...sourceProject,
-      connectedProgramTitles: Array.from(
-        new Set([...sourceProject.connectedProgramTitles, programTitle]),
-      ),
-      updatedAt: new Date().toISOString(),
-    } satisfies ReportProject;
-    const nextProjects = reportProjects.map((item) => {
-      if (item.id !== projectId) return item;
-      return nextProject;
-    });
 
     setIsSaving(true);
     setErrorMessage("");
 
     try {
+      const programDraft = buildProgramDraftForProject({
+        capacity,
+        period,
+        programTitle,
+        project: sourceProject,
+        summary,
+        thumbnailUrl,
+      });
+      const programResponse = await fetch("/api/host/programs", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(programDraft),
+      });
+      const programPayload = (await programResponse.json()) as {
+        data?: HostProgramDraft;
+        error?: string;
+      };
+
+      if (!programResponse.ok || !programPayload.data) {
+        throw new Error(programPayload.error ?? "프로그램 생성에 실패했습니다.");
+      }
+
+      const savedProgram = programPayload.data;
+      const nextProject = {
+        ...sourceProject,
+        programId: sourceProject.programId || savedProgram.id,
+        connectedProgramIds: Array.from(
+          new Set([...sourceProject.connectedProgramIds, savedProgram.id]),
+        ),
+        connectedProgramTitles: Array.from(
+          new Set([...sourceProject.connectedProgramTitles, savedProgram.title]),
+        ),
+        updatedAt: new Date().toISOString(),
+      } satisfies ReportProject;
+      const nextProjects = reportProjects.map((item) => {
+        if (item.id !== projectId) return item;
+        return nextProject;
+      });
+
       const response = await fetch("/api/host/reports", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -132,13 +165,17 @@ export function HostProgramCreateWizard({ projectId }: { projectId: string }) {
       }
 
       setReportProjects(mergeReportProjects([payload.data], nextProjects));
+      setPrograms((current) =>
+        mergeHostProgramDrafts([savedProgram], current),
+      );
 
-      if (selectedFormTemplate) {
+      {
         const programFormTemplate = cloneApplicationFormTemplate(
-          selectedFormTemplate,
+          selectedFormTemplate ?? createDefaultProgramFormTemplate(savedProgram.title),
           {
-            name: formName.trim() || `${programTitle} 신청폼`,
-            programTitle,
+            name: formName.trim() || `${savedProgram.title} 신청폼`,
+            programId: savedProgram.id,
+            programTitle: savedProgram.title,
           },
         );
         const formResponse = await fetch("/api/host/forms", {
@@ -157,7 +194,7 @@ export function HostProgramCreateWizard({ projectId }: { projectId: string }) {
         setFormTemplates((current) => [programFormTemplate, ...current]);
       }
 
-      router.push(hostProgramPath(projectId, hostProgramId(programTitle)));
+      router.push(hostProgramPath(projectId, savedProgram.id));
     } catch (error) {
       setErrorMessage(
         error instanceof Error ? error.message : "프로그램 연결에 실패했습니다.",
@@ -368,6 +405,80 @@ export function HostProgramCreateWizard({ projectId }: { projectId: string }) {
       </section>
     </div>
   );
+}
+
+function createDefaultProgramFormTemplate(programTitle: string): ApplicationFormTemplate {
+  return normalizeApplicationFormTemplateShape({
+    ...createEmptyTemplate(),
+    name: `${programTitle} 기본 신청폼`,
+    blocks: [
+      {
+        id: "motivation",
+        type: "longText",
+        label: "참여 동기",
+        required: true,
+        helper: "이 프로그램에 신청하는 이유를 적어주세요.",
+      },
+      {
+        id: "availability",
+        type: "shortText",
+        label: "참여 가능 일정",
+        required: true,
+        helper: "참여 가능한 날짜나 시간대를 적어주세요.",
+      },
+      {
+        id: "expectation",
+        type: "longText",
+        label: "기대하는 경험",
+        required: false,
+        helper: "프로그램에서 기대하는 경험이나 필요한 지원을 적어주세요.",
+      },
+    ],
+  });
+}
+
+function buildProgramDraftForProject({
+  capacity,
+  period,
+  programTitle,
+  project,
+  summary,
+  thumbnailUrl,
+}: {
+  capacity: string;
+  period: string;
+  programTitle: string;
+  project: ReportProject;
+  summary: string;
+  thumbnailUrl: string;
+}): HostProgramDraft {
+  const baseDraft = createHostProgramDraft();
+  const trimmedSummary = summary.trim();
+  const periodNote = period.trim();
+  const description = [trimmedSummary || programTitle, periodNote && `운영 기간: ${periodNote}`]
+    .filter(Boolean)
+    .join("\n\n");
+  const villageName = project.villageName.trim();
+
+  return {
+    ...baseDraft,
+    id: `draft-${Date.now()}`,
+    villageId: project.villageId ?? "",
+    title: programTitle,
+    region: villageName || baseDraft.region,
+    city: villageName || baseDraft.city,
+    summary: trimmedSummary || programTitle,
+    description,
+    capacity: capacity.trim() || baseDraft.capacity,
+    sourceName: project.agencyName.trim() || villageName || baseDraft.sourceName,
+    sourceUrl: project.villageSlug
+      ? `https://nuvio.kr/${project.villageSlug}`
+      : baseDraft.sourceUrl,
+    applyUrl: "https://nuvio.kr/apply",
+    image: thumbnailUrl.trim() || project.imageUrl || baseDraft.image,
+    published: false,
+    updatedAt: new Date().toISOString(),
+  };
 }
 
 function ProgramStep({ body, title }: { body: string; title: string }) {

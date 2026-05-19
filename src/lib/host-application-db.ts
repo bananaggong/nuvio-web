@@ -81,6 +81,7 @@ export async function createProgramApplication(
 
   return {
     id: row.id,
+    programId: program.id,
     programTitle: program.title,
     applicantName: input.applicantName,
     email: input.email,
@@ -138,6 +139,7 @@ export async function listHostApplications(
   let query = getDb()
     .select({
       id: programApplications.id,
+      programId: programApplications.programId,
       programTitle: programsTable.title,
       applicantName: programApplications.applicantName,
       email: programApplications.email,
@@ -166,6 +168,7 @@ export async function listHostApplications(
 
   return rows.map((row) => ({
     id: row.id,
+    programId: row.programId,
     programTitle: row.programTitle ?? "누비오 프로그램",
     applicantName: row.applicantName,
     email: row.email,
@@ -201,6 +204,7 @@ export async function getHostApplicationDetail(
   const [row] = await getDb()
     .select({
       id: programApplications.id,
+      programId: programApplications.programId,
       programTitle: programsTable.title,
       applicantName: programApplications.applicantName,
       email: programApplications.email,
@@ -241,6 +245,7 @@ export async function getHostApplicationDetail(
 
   return {
     id: row.id,
+    programId: row.programId,
     programTitle: row.programTitle ?? "누비오 프로그램",
     applicantName: row.applicantName,
     email: row.email,

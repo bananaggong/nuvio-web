@@ -15,11 +15,11 @@ import {
 import { useHostOperationsData } from "@/lib/use-host-operations-data";
 
 export function HostOpsDashboard() {
-  const { applications, reportProjects } = useHostOperationsData();
+  const { applications, programs, reportProjects } = useHostOperationsData();
 
   const projects = useMemo(
-    () => buildHostProjectOverviews(applications, reportProjects),
-    [applications, reportProjects],
+    () => buildHostProjectOverviews(applications, reportProjects, programs),
+    [applications, programs, reportProjects],
   );
 
   return (

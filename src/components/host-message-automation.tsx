@@ -57,7 +57,7 @@ export function HostMessageAutomation({
   programId?: string;
   projectId?: string;
 }) {
-  const { applications, reportProjects } = useHostOperationsData();
+  const { applications, programs: hostPrograms, reportProjects } = useHostOperationsData();
   const [templates] = useState(readMessageTemplates);
   const [campaigns, setCampaigns] = useState<MessageCampaign[]>(
     readMessageCampaigns,
@@ -74,8 +74,8 @@ export function HostMessageAutomation({
   );
   const project = useMemo(() => {
     if (!projectId) return undefined;
-    return findHostProjectOverview(projectId, applications, reportProjects);
-  }, [applications, projectId, reportProjects]);
+    return findHostProjectOverview(projectId, applications, reportProjects, hostPrograms);
+  }, [applications, hostPrograms, projectId, reportProjects]);
   const program = useMemo(() => {
     if (!projectId || !programId) return undefined;
     return findHostProgramOverview(
@@ -83,8 +83,9 @@ export function HostMessageAutomation({
       programId,
       applications,
       reportProjects,
+      hostPrograms,
     );
-  }, [applications, programId, projectId, reportProjects]);
+  }, [applications, hostPrograms, programId, projectId, reportProjects]);
   const projectApplications = program
     ? program.applications
     : project
