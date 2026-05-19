@@ -273,6 +273,26 @@ export const programs = pgTable(
   ],
 );
 
+export const homepageHeroSlides = pgTable(
+  "homepage_hero_slides",
+  {
+    id: text("id").primaryKey(),
+    eyebrow: text("eyebrow").default("").notNull(),
+    title: text("title").notNull(),
+    subtitle: text("subtitle").notNull(),
+    imageUrl: text("image_url").notNull(),
+    href: text("href").notNull(),
+    sortOrder: integer("sort_order").default(0).notNull(),
+    published: boolean("published").default(true).notNull(),
+    createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+    updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
+  },
+  (table) => [
+    index("homepage_hero_slides_published_idx").on(table.published),
+    index("homepage_hero_slides_sort_order_idx").on(table.sortOrder),
+  ],
+);
+
 export const externalAnnouncementSources = pgTable("external_announcement_sources", {
   id: text("id").primaryKey(),
   name: text("name").notNull(),

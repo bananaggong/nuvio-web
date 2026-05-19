@@ -22,6 +22,7 @@ import {
   summarizeImplementationStatus,
 } from "@/lib/implementation-status";
 import type { Program, ProgramLead, ProgramStatus } from "@/lib/types";
+import { AdminHomeHeroPanel } from "./admin-home-hero-panel";
 import { AnnouncementSourceMonitor } from "./announcement-source-monitor";
 import { ProgramLeadQueue } from "./program-lead-queue";
 
@@ -261,6 +262,10 @@ export function AdminDashboard() {
       <section className="mt-6 grid gap-6 xl:grid-cols-[minmax(0,1fr)_360px]">
         <ProgramDraftForm onSubmit={createDraft} />
         <AdminLinks />
+      </section>
+
+      <section className="mt-6">
+        <AdminHomeHeroPanel />
       </section>
 
       <section className="mt-6 grid gap-6 xl:grid-cols-2">

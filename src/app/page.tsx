@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { JsonLdScript } from "@/components/json-ld";
 import { ProgramExplorer } from "@/components/program-explorer";
+import { listPublishedHomeHeroSlides } from "@/lib/home-hero-db";
 import { listPublicPrograms } from "@/lib/public-program-db";
 import {
   createSeoMetadata,
@@ -19,7 +20,10 @@ export const metadata: Metadata = createSeoMetadata({
 });
 
 export default async function Home() {
-  const publicPrograms = await listPublicPrograms();
+  const [publicPrograms, heroSlides] = await Promise.all([
+    listPublicPrograms(),
+    listPublishedHomeHeroSlides(),
+  ]);
 
   return (
     <>
@@ -29,7 +33,7 @@ export default async function Home() {
           programItemListJsonLd(publicPrograms, "/"),
         ]}
       />
-      <ProgramExplorer programs={publicPrograms} />
+      <ProgramExplorer heroSlides={heroSlides} programs={publicPrograms} />
     </>
   );
 }
