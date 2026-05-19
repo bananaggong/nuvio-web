@@ -137,7 +137,7 @@ function buildProfileFromUser(user: User): AuthProfile {
 
   return {
     id: user.id,
-    email: user.email ?? `${user.id}@nuvio.local`,
+    email: user.email ?? `${user.id}@users.nuvio.kr`,
     displayName,
     avatarUrl:
       stringMetadata(metadata.avatar_url) ||

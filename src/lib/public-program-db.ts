@@ -3,6 +3,7 @@ import { getDb } from "@/db/client";
 import { programs as programsTable } from "@/db/schema";
 import { getCrawledProgramByIdentifier } from "@/lib/crawled-programs";
 import { getProgramById, programs as seedPrograms } from "@/lib/data";
+import { isDemoModeEnabled } from "@/lib/demo-mode";
 import type { Program } from "@/lib/types";
 
 type ProgramRow = typeof programsTable.$inferSelect;
@@ -23,10 +24,11 @@ export async function listPublicPrograms(): Promise<Program[]> {
     databasePrograms = [];
   }
 
-  return mergePrograms(
-    databasePrograms,
-    seedPrograms.map((program) => ({ ...program, dataSource: "seed" as const })),
-  );
+  const demoPrograms = isDemoModeEnabled()
+    ? seedPrograms.map((program) => ({ ...program, dataSource: "seed" as const }))
+    : [];
+
+  return mergePrograms(databasePrograms, demoPrograms);
 }
 
 export async function getPublicProgramByIdentifier(
@@ -50,15 +52,17 @@ export async function getPublicProgramByIdentifier(
 
     if (row) return mapProgramRowToProgram(row);
   } catch {
-    // Continue to crawled and seed fallback.
+    // Continue to crawled and optional demo fallback.
   }
 
   try {
     const crawledProgram = await getCrawledProgramByIdentifier(key);
     if (crawledProgram) return crawledProgram;
   } catch {
-    // Continue to seed fallback.
+    // Continue to optional demo fallback.
   }
+
+  if (!isDemoModeEnabled()) return undefined;
 
   const staticProgram = getStaticProgram(key);
   return staticProgram ? { ...staticProgram, dataSource: "seed" } : undefined;

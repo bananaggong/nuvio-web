@@ -6,6 +6,11 @@ import {
   normalizeHostProgramDraft,
   upsertHostProgramDraft,
 } from "@/lib/host-program-db";
+import {
+  listHostVillageWorkspaces,
+  type HostVillageWorkspace,
+} from "@/lib/host-village-access";
+import type { HostProgramDraft } from "@/lib/host-program-studio";
 
 export const runtime = "nodejs";
 
@@ -14,7 +19,14 @@ export async function GET() {
   if (isApiAuthError(auth)) return auth.response;
 
   try {
-    const drafts = await listHostProgramDraftsFromDb();
+    const drafts =
+      auth.profile.role === "admin"
+        ? await listHostProgramDraftsFromDb()
+        : await listHostProgramDraftsFromDb({
+            villageIds: (await listHostVillageWorkspaces(auth)).map(
+              (workspace) => workspace.villageId,
+            ),
+          });
     return NextResponse.json({ data: drafts });
   } catch (error) {
     return NextResponse.json(
@@ -36,7 +48,29 @@ export async function POST(request: Request) {
   try {
     const body = await request.json();
     const draft = normalizeHostProgramDraft(body);
-    const savedDraft = await upsertHostProgramDraft(draft);
+    const workspaces =
+      auth.profile.role === "admin" ? [] : await listHostVillageWorkspaces(auth);
+    const scopedDraft =
+      auth.profile.role === "admin"
+        ? draft
+        : scopeProgramDraftToHostWorkspace(draft, workspaces);
+
+    if (!scopedDraft) {
+      return NextResponse.json(
+        {
+          error:
+            "이 계정에 연결된 로컬홈 프로그램만 저장할 수 있습니다.",
+        },
+        { status: 403 },
+      );
+    }
+
+    const savedDraft = await upsertHostProgramDraft(
+      scopedDraft,
+      auth.profile.role === "admin"
+        ? {}
+        : { allowedVillageIds: workspaces.map((workspace) => workspace.villageId) },
+    );
 
     void safeCreateAuditLog({
       action: "program.upsert",
@@ -62,4 +96,64 @@ export async function POST(request: Request) {
       { status: 400 },
     );
   }
+}
+
+function scopeProgramDraftToHostWorkspace(
+  draft: HostProgramDraft,
+  workspaces: HostVillageWorkspace[],
+): HostProgramDraft | null {
+  const matchedWorkspace = findProgramWorkspace(draft, workspaces);
+  if (matchedWorkspace) return attachWorkspaceToProgramDraft(draft, matchedWorkspace);
+
+  if (workspaces.length === 1 && isNewGenericProgramDraft(draft)) {
+    return attachWorkspaceToProgramDraft(draft, workspaces[0]);
+  }
+
+  return null;
+}
+
+function attachWorkspaceToProgramDraft(
+  draft: HostProgramDraft,
+  workspace: HostVillageWorkspace,
+): HostProgramDraft {
+  return {
+    ...draft,
+    city: draft.city.trim() || workspace.city,
+    image: draft.image.trim() || workspace.heroImage,
+    region: draft.region.trim() || workspace.region,
+    sourceName: draft.sourceName.trim() || `${workspace.title} 운영팀`,
+    sourceUrl: draft.sourceUrl.trim() || `https://nuvio.kr/${workspace.slug}`,
+    villageId: workspace.villageId,
+  };
+}
+
+function findProgramWorkspace(
+  draft: HostProgramDraft,
+  workspaces: HostVillageWorkspace[],
+): HostVillageWorkspace | undefined {
+  const villageId = normalizeIdentifier(draft.villageId);
+  const sourceUrl = normalizeIdentifier(draft.sourceUrl);
+
+  return workspaces.find((workspace) => {
+    const workspaceId = normalizeIdentifier(workspace.villageId);
+    const workspaceSlug = normalizeIdentifier(workspace.slug);
+    return (
+      Boolean(villageId && villageId === workspaceId) ||
+      Boolean(sourceUrl && sourceUrl.includes(`/${workspaceSlug}`))
+    );
+  });
+}
+
+function isNewGenericProgramDraft(draft: HostProgramDraft): boolean {
+  return !isUuid(draft.id) && !normalizeIdentifier(draft.villageId);
+}
+
+function normalizeIdentifier(value: string | undefined): string {
+  return (value ?? "").trim().toLowerCase();
+}
+
+function isUuid(value: string): boolean {
+  return /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/iu.test(
+    value,
+  );
 }

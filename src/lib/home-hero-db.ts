@@ -1,6 +1,7 @@
 import { asc, eq } from "drizzle-orm";
 import { getDb } from "@/db/client";
 import { homepageHeroSlides as homepageHeroSlidesTable } from "@/db/schema";
+import { isDemoModeEnabled } from "@/lib/demo-mode";
 
 export type HomeHeroSlide = {
   id: string;
@@ -90,10 +91,10 @@ export async function listAdminHomeHeroSlides(): Promise<HomeHeroSlide[]> {
       .from(homepageHeroSlidesTable)
       .orderBy(asc(homepageHeroSlidesTable.sortOrder));
 
-    if (rows.length === 0) return defaultHomeHeroSlides;
+    if (rows.length === 0) return isDemoModeEnabled() ? defaultHomeHeroSlides : [];
     return rows.map(mapHomeHeroSlideRow);
   } catch {
-    return defaultHomeHeroSlides;
+    return isDemoModeEnabled() ? defaultHomeHeroSlides : [];
   }
 }
 

@@ -1,4 +1,4 @@
-import { desc, eq } from "drizzle-orm";
+import { and, desc, eq, inArray } from "drizzle-orm";
 import { getDb } from "@/db/client";
 import { programs as programsTable } from "@/db/schema";
 import type { HostProgramDraft } from "@/lib/host-program-studio";
@@ -7,25 +7,48 @@ import type { PeriodKey, ProgramStatus, ThemeKey } from "@/lib/types";
 type ProgramInsert = typeof programsTable.$inferInsert;
 type ProgramRow = typeof programsTable.$inferSelect;
 
+type UpsertHostProgramDraftOptions = {
+  allowedVillageIds?: string[];
+};
+
 const defaultTheme: ThemeKey = "workation";
 const defaultPeriod: PeriodKey = "week";
 const defaultStatus: ProgramStatus = "upcoming";
 
-export async function listHostProgramDraftsFromDb(): Promise<HostProgramDraft[]> {
-  const rows = await getDb()
+export async function listHostProgramDraftsFromDb(options: {
+  villageIds?: string[];
+} = {}): Promise<HostProgramDraft[]> {
+  if (options.villageIds && options.villageIds.length === 0) return [];
+
+  let query = getDb()
     .select()
     .from(programsTable)
-    .orderBy(desc(programsTable.updatedAt))
-    .limit(200);
+    .$dynamic();
+
+  if (options.villageIds) {
+    query = query.where(inArray(programsTable.villageId, options.villageIds));
+  }
+
+  const rows = await query.orderBy(desc(programsTable.updatedAt)).limit(200);
 
   return rows.map(mapProgramRowToHostDraft);
 }
 
 export async function upsertHostProgramDraft(
   draft: HostProgramDraft,
+  options: UpsertHostProgramDraftOptions = {},
 ): Promise<HostProgramDraft> {
   const insertValue = mapHostDraftToProgramInsert(draft);
   const now = new Date();
+
+  if (options.allowedVillageIds) {
+    return upsertScopedHostProgramDraft(
+      draft,
+      insertValue,
+      options.allowedVillageIds,
+      now,
+    );
+  }
 
   if (isUuid(draft.id)) {
     const [updatedRow] = await getDb()
@@ -60,6 +83,47 @@ export async function upsertHostProgramDraft(
   return mapProgramRowToHostDraft(row);
 }
 
+async function upsertScopedHostProgramDraft(
+  draft: HostProgramDraft,
+  insertValue: ProgramInsert,
+  allowedVillageIds: string[],
+  now: Date,
+): Promise<HostProgramDraft> {
+  const villageId = insertValue.villageId;
+  if (!villageId || !allowedVillageIds.includes(villageId)) {
+    throw new Error("This account can only save programs for its connected local home.");
+  }
+
+  if (isUuid(draft.id)) {
+    const [updatedRow] = await getDb()
+      .update(programsTable)
+      .set({ ...insertValue, updatedAt: now })
+      .where(
+        and(
+          eq(programsTable.id, draft.id),
+          inArray(programsTable.villageId, allowedVillageIds),
+        ),
+      )
+      .returning();
+
+    if (updatedRow) return mapProgramRowToHostDraft(updatedRow);
+
+    const [createdRow] = await getDb()
+      .insert(programsTable)
+      .values({ ...insertValue, id: draft.id })
+      .returning();
+
+    return mapProgramRowToHostDraft(createdRow);
+  }
+
+  const [row] = await getDb()
+    .insert(programsTable)
+    .values(insertValue)
+    .returning();
+
+  return mapProgramRowToHostDraft(row);
+}
+
 export function normalizeHostProgramDraft(input: unknown): HostProgramDraft {
   if (!input || typeof input !== "object" || Array.isArray(input)) {
     throw new Error("Program draft payload is required.");
@@ -71,6 +135,7 @@ export function normalizeHostProgramDraft(input: unknown): HostProgramDraft {
 
   return {
     id,
+    villageId: asString(value.villageId),
     slug: asString(value.slug) || undefined,
     title: asString(value.title),
     region: asString(value.region),
@@ -136,6 +201,7 @@ function mapHostDraftToProgramInsert(draft: HostProgramDraft): ProgramInsert {
     gallery: [image],
     badges: hashtags.slice(0, 4),
     body: [draft.description.trim() || draft.summary.trim()].filter(Boolean),
+    villageId: isUuid(draft.villageId ?? "") ? draft.villageId : null,
     publishedAt: draft.published ? new Date() : null,
   };
 }
@@ -143,6 +209,7 @@ function mapHostDraftToProgramInsert(draft: HostProgramDraft): ProgramInsert {
 function mapProgramRowToHostDraft(row: ProgramRow): HostProgramDraft {
   return {
     id: row.id,
+    villageId: row.villageId ?? "",
     slug: row.slug,
     title: row.title,
     region: row.region,

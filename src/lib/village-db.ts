@@ -3,7 +3,9 @@ import { getDb } from "@/db/client";
 import { villages as villagesTable } from "@/db/schema";
 import { getPublicProgramByIdentifier, listPublicPrograms } from "@/lib/public-program-db";
 import { listPublicReviewsFromDb } from "@/lib/review-db";
+import { boseongImportedReviews } from "@/lib/boseong-review-seeds";
 import { reviews } from "@/lib/data";
+import { isDemoModeEnabled } from "@/lib/demo-mode";
 import { seedVillages } from "@/lib/village-seeds";
 import type { Program, Review } from "@/lib/types";
 import type { Village, VillageLink, VillageSection } from "@/lib/village-types";
@@ -20,9 +22,12 @@ export async function listPublicVillages(): Promise<Village[]> {
       .orderBy(desc(villagesTable.updatedAt))
       .limit(200);
 
-    return mergeVillages(rows.map(mapVillageRowToVillage), seedVillages);
+    return mergeVillages(
+      rows.map(mapVillageRowToVillage),
+      isDemoModeEnabled() ? seedVillages : [],
+    );
   } catch {
-    return seedVillages;
+    return isDemoModeEnabled() ? seedVillages : [];
   }
 }
 
@@ -34,9 +39,12 @@ export async function listHostVillagesFromDb(): Promise<Village[]> {
       .orderBy(desc(villagesTable.updatedAt))
       .limit(200);
 
-    return mergeVillages(rows.map(mapVillageRowToVillage), seedVillages);
+    return mergeVillages(
+      rows.map(mapVillageRowToVillage),
+      isDemoModeEnabled() ? seedVillages : [],
+    );
   } catch {
-    return seedVillages;
+    return isDemoModeEnabled() ? seedVillages : [];
   }
 }
 
@@ -56,9 +64,12 @@ export async function getPublicVillageBySlug(
 
     if (row?.publishedAt) return mapVillageRowToVillage(row);
   } catch {
+    if (!isDemoModeEnabled()) return undefined;
     const seed = seedVillages.find((village) => village.slug === key);
     if (seed?.published) return seed;
   }
+
+  if (!isDemoModeEnabled()) return undefined;
 
   return seedVillages.find(
     (village) => village.slug === key && village.published,
@@ -102,7 +113,8 @@ export async function getVillageReviews(
     databaseReviews = [];
   }
 
-  const matchedReviews = [...databaseReviews, ...reviews]
+  const fallbackReviews = isDemoModeEnabled() ? reviews : boseongImportedReviews;
+  const matchedReviews = [...databaseReviews, ...fallbackReviews]
     .filter(
       (review) =>
         review.villageSlug === village.slug ||

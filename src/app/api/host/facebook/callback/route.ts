@@ -1,6 +1,7 @@
 import { cookies } from "next/headers";
 import { NextResponse } from "next/server";
 import { upsertHostSocialConnection } from "@/lib/host-social-connections-db";
+import { siteConfig } from "@/lib/seo";
 import {
   exchangeFacebookCode,
   fetchFacebookPages,
@@ -137,7 +138,7 @@ function redirectWithStatus(
   key: string,
   message: string,
   cookieName: string,
-  origin = "https://nuvio.local",
+  origin = siteConfig.url,
 ): NextResponse {
   const url = new URL(path, origin);
   url.searchParams.set(key, message);

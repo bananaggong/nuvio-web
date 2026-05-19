@@ -19,6 +19,7 @@ import {
 import { JsonLdScript } from "@/components/json-ld";
 import { ProgramScheduleCards } from "@/components/program-schedule-popover";
 import { programs } from "@/lib/data";
+import { isDemoModeEnabled } from "@/lib/demo-mode";
 import { getPublicProgramByIdentifier } from "@/lib/public-program-db";
 import { programPath } from "@/lib/program-routing";
 import {
@@ -101,6 +102,8 @@ const reviewText =
   "숙소에 대한 후기를 작성해주세요 숙소에 대한 후기를 작성해주세요 숙소에 대한 후기를 작성해주세요 숙소에 대한 후기를 작성해주세요 숙소에 대한 후기를 작성해주세요 숙소에 대한 후기를 작성해주세요 숙소에 대한 후기를 작성해주세요 숙소에 대한 후기를 작성해주세요 숙소에 대한 후기를 작성해주세요 숙소에 대한 후기를 작성해주세요.";
 
 export function generateStaticParams() {
+  if (!isDemoModeEnabled()) return [];
+
   const seedParams = programs.flatMap((program) => {
     const params = [{ id: String(program.id) }];
     if (program.slug) params.push({ id: program.slug });
@@ -616,7 +619,10 @@ function BenefitRow({
 }
 
 async function getProgramForDetail(id: string): Promise<Program | null> {
-  if (id === dummyProgramSlug || id === String(dummyProgram.id)) {
+  if (
+    isDemoModeEnabled() &&
+    (id === dummyProgramSlug || id === String(dummyProgram.id))
+  ) {
     return dummyProgram;
   }
 

@@ -7,6 +7,7 @@ import type {
 export type HostProgramDraft = {
   id: string;
   slug?: string;
+  villageId?: string;
   title: string;
   region: string;
   city: string;
@@ -66,7 +67,7 @@ export const seedHostProgramDrafts: HostProgramDraft[] = [
     status: "open",
     sourceName: "강릉 로컬워크 운영팀",
     sourceUrl: "https://example.com/notices/gangneung-workation",
-    applyUrl: "https://nuvio.local/programs/draft-gangneung-wave/apply",
+    applyUrl: "https://nuvio.kr/programs/draft-gangneung-wave/apply",
     phone: "033-000-1201",
     hashtags: ["워케이션", "강원", "공유오피스"],
     image:
@@ -116,6 +117,7 @@ export function mergeHostProgramDrafts(
 export function createHostProgramDraft(): HostProgramDraft {
   return {
     id: `draft-${Date.now()}`,
+    villageId: "",
     title: "새 로컬 체류 프로그램",
     region: "강원",
     city: "도시명",
@@ -135,7 +137,7 @@ export function createHostProgramDraft(): HostProgramDraft {
     status: "upcoming",
     sourceName: "운영 기관명",
     sourceUrl: "https://example.com",
-    applyUrl: "https://nuvio.local/apply",
+    applyUrl: "https://nuvio.kr/apply",
     phone: "000-0000-0000",
     hashtags: ["지역체류", "지원사업"],
     image:

@@ -11,7 +11,6 @@ import {
   isQuestionBlock,
   normalizeApplicationFormTemplateShape,
 } from "@/lib/application-form-builder";
-import type { HostApplication } from "@/lib/host-operations";
 import { appendMyApplication } from "@/lib/my-applications";
 import { programPath } from "@/lib/program-routing";
 import type { Program } from "@/lib/types";
@@ -135,21 +134,7 @@ export function ProgramApplicationForm({
     setIsSubmitting(true);
     setSubmitError(undefined);
 
-    const id = createApplicationLocalId(program.id);
-    const fallbackApplication: HostApplication = {
-      id,
-      programTitle: program.title,
-      applicantName: form.applicantName,
-      email: form.email,
-      phone: form.phone,
-      status: "submitted",
-      submittedAt: new Date().toISOString(),
-      paymentAmount: 0,
-      receiptCount: 0,
-      signatureCompleted: false,
-      reviewSubmitted: false,
-      memo: buildMemo(),
-    };
+    const memo = buildMemo();
 
     try {
       const response = await fetch("/api/program-applications", {
@@ -159,7 +144,7 @@ export function ProgramApplicationForm({
           applicantName: form.applicantName,
           email: form.email,
           phone: form.phone,
-          memo: fallbackApplication.memo,
+          memo,
           answers: buildAnswers(),
         }),
         headers: { "Content-Type": "application/json" },
@@ -167,19 +152,28 @@ export function ProgramApplicationForm({
       });
 
       if (!response.ok) {
-        throw new Error("Failed to persist application.");
+        const payload = (await response.json().catch(() => ({}))) as {
+          error?: string;
+        };
+        throw new Error(payload.error ?? "신청서를 저장하지 못했습니다.");
       }
 
-      const payload = (await response.json()) as { data?: HostApplication };
-      const application = payload.data ?? fallbackApplication;
+      const payload = (await response.json()) as {
+        data?: Parameters<typeof appendMyApplication>[0];
+      };
+      if (!payload.data) {
+        throw new Error("신청서 저장 결과를 확인하지 못했습니다.");
+      }
+
+      const application = payload.data;
       appendMyApplication(application);
       setSubmittedId(application.id);
-    } catch {
-      appendMyApplication(fallbackApplication);
+    } catch (error) {
       setSubmitError(
-        "DB 저장에 실패해 내 신청 내역에만 임시 저장했습니다. 다시 시도해 주세요.",
+        error instanceof Error
+          ? error.message
+          : "신청서 저장에 실패했습니다. 잠시 후 다시 시도해 주세요.",
       );
-      setSubmittedId(id);
     } finally {
       setIsSubmitting(false);
     }
@@ -594,8 +588,4 @@ function Field({
       {children}
     </label>
   );
-}
-
-function createApplicationLocalId(programId: number | string): string {
-  return `app-${programId}-${Date.now()}`;
 }

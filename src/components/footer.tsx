@@ -51,7 +51,7 @@ export function Footer() {
               외부 공고, 운영 문의, 사용자 후기 콘텐츠는 출처와 이용 권한을
               확인한 범위에서 게시합니다.
             </p>
-            <p>회사명: 누비오 | 문의: 이메일 준비 중 | 2026 누비오</p>
+            <p>회사명: 누비오 | 문의: hello@nuvio.kr | 2026 누비오</p>
           </div>
           <div className="flex gap-2 text-slate-500">
             <a
@@ -66,7 +66,7 @@ export function Footer() {
             <a
               aria-label="이메일 문의"
               className="rounded-md border border-slate-200 p-2 hover:border-[var(--primary)] hover:text-[var(--primary)]"
-              href="mailto:hello@nuvio.local"
+              href="mailto:hello@nuvio.kr"
             >
               <Mail size={18} />
             </a>
@@ -80,7 +80,7 @@ export function Footer() {
             <a
               aria-label="문의 채널"
               className="rounded-md border border-slate-200 p-2 hover:border-[var(--primary)] hover:text-[var(--primary)]"
-              href="mailto:support@nuvio.local"
+              href="mailto:support@nuvio.kr"
             >
               <MessageCircle size={18} />
             </a>

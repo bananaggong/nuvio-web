@@ -383,12 +383,13 @@ function canonicalizeUrlForDedupe(value: string | undefined): string {
   if (!value) return "";
 
   try {
-    const url = new URL(value, "https://nuvio.local");
+    const fallbackOrigin = "https://nuvio.kr";
+    const url = new URL(value, fallbackOrigin);
     ["menuNo", "utm_source", "utm_medium", "utm_campaign", "utm_term", "utm_content"].forEach(
       (parameter) => url.searchParams.delete(parameter),
     );
     url.hash = "";
-    return url.origin === "https://nuvio.local"
+    return url.origin === fallbackOrigin
       ? `${url.pathname}${url.search}`
       : url.toString();
   } catch {
