@@ -11,7 +11,6 @@ import {
   isQuestionBlock,
   normalizeApplicationFormTemplateShape,
 } from "@/lib/application-form-builder";
-import { appendHostApplication } from "@/lib/host-operations";
 import type { HostApplication } from "@/lib/host-operations";
 import { appendMyApplication } from "@/lib/my-applications";
 import { programPath } from "@/lib/program-routing";
@@ -173,14 +172,12 @@ export function ProgramApplicationForm({
 
       const payload = (await response.json()) as { data?: HostApplication };
       const application = payload.data ?? fallbackApplication;
-      appendHostApplication(application);
       appendMyApplication(application);
       setSubmittedId(application.id);
     } catch {
-      appendHostApplication(fallbackApplication);
       appendMyApplication(fallbackApplication);
       setSubmitError(
-        "DB 저장에 실패해 브라우저에 임시 저장했습니다. 운영자가 다시 동기화할 수 있습니다.",
+        "DB 저장에 실패해 내 신청 내역에만 임시 저장했습니다. 다시 시도해 주세요.",
       );
       setSubmittedId(id);
     } finally {

@@ -17,15 +17,8 @@ import {
   Users,
   WalletCards,
 } from "lucide-react";
-import { useEffect, useMemo, useState } from "react";
+import { useMemo } from "react";
 import type { ReactNode } from "react";
-import {
-  mergeHostApplications,
-  readHostApplicationsFromStorage,
-  seedHostApplications,
-  writeHostApplicationsToStorage,
-} from "@/lib/host-operations";
-import type { HostApplication } from "@/lib/host-operations";
 import {
   buildHostProgramOverviews,
   findHostProjectOverview,
@@ -36,72 +29,12 @@ import {
 } from "@/lib/host-projects";
 import {
   formatCurrency,
-  mergeReportProjects,
-  readReportProjects,
   summarizeReportProject,
-  writeReportProjects,
 } from "@/lib/report-automation";
-import type { ReportProject } from "@/lib/report-automation";
+import { useHostOperationsData } from "@/lib/use-host-operations-data";
 
 export function HostProjectHub({ projectId }: { projectId: string }) {
-  const [applications, setApplications] = useState<HostApplication[]>(
-    seedHostApplications,
-  );
-  const [reportProjects, setReportProjects] =
-    useState<ReportProject[]>(readReportProjects);
-
-  useEffect(() => {
-    let cancelled = false;
-    const storageTimeoutId = window.setTimeout(() => {
-      if (cancelled) return;
-      setApplications(readHostApplicationsFromStorage());
-      setReportProjects(readReportProjects());
-    }, 0);
-
-    async function loadRemoteState() {
-      try {
-        const [applicationsResponse, reportsResponse] = await Promise.all([
-          fetch("/api/host/applications", { cache: "no-store" }),
-          fetch("/api/host/reports", { cache: "no-store" }),
-        ]);
-
-        if (applicationsResponse.ok) {
-          const payload = (await applicationsResponse.json()) as {
-            data?: HostApplication[];
-          };
-          if (payload.data && !cancelled) {
-            setApplications((current) => {
-              const next = mergeHostApplications(current, payload.data ?? []);
-              writeHostApplicationsToStorage(next);
-              return next;
-            });
-          }
-        }
-
-        if (reportsResponse.ok) {
-          const payload = (await reportsResponse.json()) as {
-            data?: ReportProject[];
-          };
-          if (payload.data && !cancelled) {
-            setReportProjects((current) => {
-              const next = mergeReportProjects(payload.data ?? [], current);
-              writeReportProjects(next);
-              return next;
-            });
-          }
-        }
-      } catch {
-        // Keep local fallback data visible.
-      }
-    }
-
-    void loadRemoteState();
-
-    return () => {
-      cancelled = true;
-      window.clearTimeout(storageTimeoutId);
-    };
-  }, []);
+  const { applications, reportProjects } = useHostOperationsData();
 
   const project = useMemo(
     () => findHostProjectOverview(projectId, applications, reportProjects),

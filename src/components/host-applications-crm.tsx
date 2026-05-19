@@ -11,15 +11,11 @@ import {
   UserRound,
   Users,
 } from "lucide-react";
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import {
   applicationStatusFlow,
-  mergeHostApplications,
-  readHostApplicationsFromStorage,
-  writeHostApplicationsToStorage,
 } from "@/lib/host-operations";
 import type {
-  HostApplication,
   HostApplicationStatus,
 } from "@/lib/host-operations";
 import {
@@ -28,12 +24,7 @@ import {
   hostProgramPath,
   hostProjectPath,
 } from "@/lib/host-projects";
-import {
-  mergeReportProjects,
-  readReportProjects,
-  writeReportProjects,
-} from "@/lib/report-automation";
-import type { ReportProject } from "@/lib/report-automation";
+import { useHostOperationsData } from "@/lib/use-host-operations-data";
 
 const allStatuses: HostApplicationStatus[] = [
   ...applicationStatusFlow,
@@ -67,64 +58,11 @@ export function HostApplicationsCrm({
   programId?: string;
   projectId?: string;
 }) {
-  const [applications, setApplications] = useState<HostApplication[]>(
-    readHostApplicationsFromStorage,
-  );
-  const [reportProjects, setReportProjects] =
-    useState<ReportProject[]>(readReportProjects);
+  const { applications, isLoading, reportProjects, setApplications } =
+    useHostOperationsData();
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState<StatusFilter>("all");
   const [programFilter, setProgramFilter] = useState("all");
-  const [isLoading, setIsLoading] = useState(true);
-
-  useEffect(() => {
-    let cancelled = false;
-
-    async function loadApplications() {
-      try {
-        const [applicationsResponse, reportsResponse] = await Promise.all([
-          fetch("/api/host/applications", { cache: "no-store" }),
-          fetch("/api/host/reports", { cache: "no-store" }),
-        ]);
-
-        if (applicationsResponse.ok) {
-          const payload = (await applicationsResponse.json()) as {
-            data?: HostApplication[];
-          };
-          if (payload.data && !cancelled) {
-            setApplications((current) => {
-              const next = mergeHostApplications(current, payload.data ?? []);
-              writeHostApplicationsToStorage(next);
-              return next;
-            });
-          }
-        }
-
-        if (reportsResponse.ok) {
-          const payload = (await reportsResponse.json()) as {
-            data?: ReportProject[];
-          };
-          if (payload.data && !cancelled) {
-            setReportProjects((current) => {
-              const next = mergeReportProjects(payload.data ?? [], current);
-              writeReportProjects(next);
-              return next;
-            });
-          }
-        }
-      } catch {
-        // Keep local fallback applications available while the DB is unavailable.
-      } finally {
-        if (!cancelled) setIsLoading(false);
-      }
-    }
-
-    void loadApplications();
-
-    return () => {
-      cancelled = true;
-    };
-  }, []);
 
   const project = useMemo(() => {
     if (!projectId) return undefined;
@@ -220,7 +158,6 @@ export function HostApplicationsCrm({
     );
 
     setApplications(next);
-    writeHostApplicationsToStorage(next);
     void persistApplicationStatus(applicationId, status);
   }
 

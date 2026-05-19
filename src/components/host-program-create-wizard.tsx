@@ -21,13 +21,10 @@ import {
   hostProjectPath,
 } from "@/lib/host-projects";
 import {
-  readHostApplicationsFromStorage,
-} from "@/lib/host-operations";
-import {
   mergeReportProjects,
-  readReportProjects,
-  writeReportProjects,
 } from "@/lib/report-automation";
+import type { ReportProject } from "@/lib/report-automation";
+import { useHostOperationsData } from "@/lib/use-host-operations-data";
 
 const steps = ["프로그램 개요", "상세 페이지", "신청 폼", "안내문자"] as const;
 
@@ -42,8 +39,10 @@ export function HostProgramCreateWizard({ projectId }: { projectId: string }) {
   const [formName, setFormName] = useState("");
   const [selectedFormId, setSelectedFormId] = useState("");
   const [messageName, setMessageName] = useState("");
-  const applications = readHostApplicationsFromStorage();
-  const reportProjects = readReportProjects();
+  const [isSaving, setIsSaving] = useState(false);
+  const [errorMessage, setErrorMessage] = useState("");
+  const { applications, reportProjects, setReportProjects } =
+    useHostOperationsData();
   const formTemplates = readApplicationFormTemplates();
   const reusableFormTemplates = formTemplates.filter(
     (template) => !template.programTitle,
@@ -63,39 +62,67 @@ export function HostProgramCreateWizard({ projectId }: { projectId: string }) {
     [capacity, formName, messageName, period, thumbnailUrl, title],
   );
 
-  function finish() {
-    if (!canFinish) return;
+  async function finish() {
+    if (!canFinish || !project) return;
 
     const programTitle = title.trim();
+    const sourceProject =
+      project.reportProject ?? reportProjects.find((item) => item.id === projectId);
+    if (!sourceProject) return;
     const selectedFormTemplate = formTemplates.find(
       (template) => template.id === selectedFormId,
     );
+    const nextProject = {
+      ...sourceProject,
+      connectedProgramTitles: Array.from(
+        new Set([...sourceProject.connectedProgramTitles, programTitle]),
+      ),
+      updatedAt: new Date().toISOString(),
+    } satisfies ReportProject;
     const nextProjects = reportProjects.map((item) => {
       if (item.id !== projectId) return item;
-      const connectedProgramTitles = Array.from(
-        new Set([...item.connectedProgramTitles, programTitle]),
-      );
-
-      return {
-        ...item,
-        connectedProgramTitles,
-        updatedAt: new Date().toISOString(),
-      };
+      return nextProject;
     });
 
-    writeReportProjects(
-      mergeReportProjects(nextProjects, reportProjects.length ? [] : []),
-    );
+    setIsSaving(true);
+    setErrorMessage("");
 
-    if (selectedFormTemplate) {
-      const programFormTemplate = cloneApplicationFormTemplate(selectedFormTemplate, {
-        name: formName.trim() || `${programTitle} 신청폼`,
-        programTitle,
+    try {
+      const response = await fetch("/api/host/reports", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(nextProject),
       });
-      writeApplicationFormTemplates([programFormTemplate, ...formTemplates]);
-    }
+      const payload = (await response.json()) as {
+        data?: ReportProject;
+        error?: string;
+      };
 
-    router.push(hostProgramPath(projectId, hostProgramId(programTitle)));
+      if (!response.ok || !payload.data) {
+        throw new Error(payload.error ?? "프로그램 연결에 실패했습니다.");
+      }
+
+      setReportProjects(mergeReportProjects([payload.data], nextProjects));
+
+      if (selectedFormTemplate) {
+        const programFormTemplate = cloneApplicationFormTemplate(
+          selectedFormTemplate,
+          {
+            name: formName.trim() || `${programTitle} 신청폼`,
+            programTitle,
+          },
+        );
+        writeApplicationFormTemplates([programFormTemplate, ...formTemplates]);
+      }
+
+      router.push(hostProgramPath(projectId, hostProgramId(programTitle)));
+    } catch (error) {
+      setErrorMessage(
+        error instanceof Error ? error.message : "프로그램 연결에 실패했습니다.",
+      );
+    } finally {
+      setIsSaving(false);
+    }
   }
 
   if (!project) {
@@ -272,10 +299,10 @@ export function HostProgramCreateWizard({ projectId }: { projectId: string }) {
           </button>
           <button
             className="inline-flex h-10 items-center justify-center gap-2 rounded-md bg-slate-950 px-3 text-sm font-black text-white disabled:opacity-40"
-            disabled={stepIndex === steps.length - 1 && !canFinish}
+            disabled={isSaving || (stepIndex === steps.length - 1 && !canFinish)}
             onClick={() =>
               stepIndex === steps.length - 1
-                ? finish()
+                ? void finish()
                 : setStepIndex((current) => current + 1)
             }
             type="button"
@@ -283,7 +310,7 @@ export function HostProgramCreateWizard({ projectId }: { projectId: string }) {
             {stepIndex === steps.length - 1 ? (
               <>
                 <CheckCircle2 size={16} />
-                완료
+                {isSaving ? "저장 중" : "완료"}
               </>
             ) : (
               <>
@@ -293,6 +320,9 @@ export function HostProgramCreateWizard({ projectId }: { projectId: string }) {
             )}
           </button>
         </div>
+        {errorMessage ? (
+          <p className="mt-3 text-sm font-bold text-rose-600">{errorMessage}</p>
+        ) : null}
       </section>
     </div>
   );

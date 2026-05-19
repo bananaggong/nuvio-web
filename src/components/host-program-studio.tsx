@@ -25,8 +25,6 @@ import {
   buildProgramDraftChecklist,
   createHostProgramDraft,
   mergeHostProgramDrafts,
-  readHostProgramDrafts,
-  writeHostProgramDrafts,
 } from "@/lib/host-program-studio";
 import type { HostProgramDraft } from "@/lib/host-program-studio";
 import type { PeriodKey, ProgramStatus, ThemeKey } from "@/lib/types";
@@ -46,8 +44,8 @@ const programStatusOptions: ProgramStatus[] = [
 ];
 
 export function HostProgramStudio() {
-  const [drafts, setDrafts] = useState<HostProgramDraft[]>(readHostProgramDrafts);
-  const [selectedId, setSelectedId] = useState(drafts[0]?.id);
+  const [drafts, setDrafts] = useState<HostProgramDraft[]>([]);
+  const [selectedId, setSelectedId] = useState<string | undefined>();
   const [saved, setSaved] = useState(false);
   const [isSyncing, setIsSyncing] = useState(false);
   const [syncMessage, setSyncMessage] = useState("");
@@ -74,7 +72,6 @@ export function HostProgramStudio() {
 
         setDrafts((currentDrafts) => {
           const nextDrafts = mergeHostProgramDrafts(databaseDrafts, currentDrafts);
-          writeHostProgramDrafts(nextDrafts);
           return nextDrafts;
         });
         setSelectedId((currentId) => currentId ?? databaseDrafts[0]?.id);
@@ -94,7 +91,6 @@ export function HostProgramStudio() {
 
   function saveDrafts(nextDrafts: HostProgramDraft[]) {
     setDrafts(nextDrafts);
-    writeHostProgramDrafts(nextDrafts);
     setSaved(true);
     window.setTimeout(() => setSaved(false), 1400);
   }

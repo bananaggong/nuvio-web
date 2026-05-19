@@ -18,10 +18,8 @@ import {
   Sparkles,
   Trash2,
 } from "lucide-react";
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import type { ReactNode } from "react";
-import { readHostApplicationsFromStorage } from "@/lib/host-operations";
-import type { HostApplication } from "@/lib/host-operations";
 import {
   buildGeneratedReportSections,
   buildReportChecklist,
@@ -39,12 +37,10 @@ import {
   operationFieldGroupLabels,
   operationFieldTypeLabels,
   paymentMethodLabels,
-  readReportProjects,
   reportSectionLabels,
   reportSectionOrder,
   reportStatusLabels,
   summarizeReportProject,
-  writeReportProjects,
 } from "@/lib/report-automation";
 import type {
   ActivityEvent,
@@ -60,6 +56,7 @@ import type {
   ReportProjectStatus,
   ReportSectionId,
 } from "@/lib/report-automation";
+import { useHostOperationsData } from "@/lib/use-host-operations-data";
 
 const reportStatusOptions: ReportProjectStatus[] = ["draft", "review", "ready"];
 const activePanels = ["overview", "expenses", "activities", "fields", "export"] as const;
@@ -82,9 +79,12 @@ const operationFieldTypes = Object.keys(
 const paymentMethods = Object.keys(paymentMethodLabels) as ExpenseEvent["paymentMethod"][];
 
 export function HostReportAutomation() {
-  const [applications, setApplications] = useState(readHostApplicationsFromStorage);
-  const [projects, setProjects] = useState<ReportProject[]>(readReportProjects);
-  const [selectedId, setSelectedId] = useState(projects[0]?.id);
+  const {
+    applications,
+    reportProjects: projects,
+    setReportProjects: setProjects,
+  } = useHostOperationsData();
+  const [selectedId, setSelectedId] = useState<string | undefined>();
   const [activePanel, setActivePanel] = useState<ActivePanel>("overview");
   const [saved, setSaved] = useState(false);
   const [isSyncing, setIsSyncing] = useState(false);
@@ -118,64 +118,8 @@ export function HostReportAutomation() {
     [applications, selectedProject],
   );
 
-  useEffect(() => {
-    let isMounted = true;
-
-    async function loadDatabaseState() {
-      try {
-        const [applicationsResponse, reportsResponse] = await Promise.all([
-          fetch("/api/host/applications", { cache: "no-store" }),
-          fetch("/api/host/reports", { cache: "no-store" }),
-        ]);
-
-        if (applicationsResponse.ok) {
-          const payload = (await applicationsResponse.json()) as {
-            data?: HostApplication[];
-          };
-          const databaseApplications = Array.isArray(payload.data)
-            ? payload.data
-            : [];
-
-          if (isMounted && databaseApplications.length > 0) {
-            setApplications(databaseApplications);
-          }
-        }
-
-        if (reportsResponse.ok) {
-          const payload = (await reportsResponse.json()) as {
-            data?: ReportProject[];
-          };
-          const databaseProjects = Array.isArray(payload.data) ? payload.data : [];
-
-          if (isMounted && databaseProjects.length > 0) {
-            setProjects((currentProjects) => {
-              const nextProjects = mergeReportProjects(
-                databaseProjects,
-                currentProjects,
-              );
-              writeReportProjects(nextProjects);
-              return nextProjects;
-            });
-            setSelectedId((currentId) => currentId ?? databaseProjects[0]?.id);
-          }
-        }
-      } catch {
-        if (isMounted) {
-          setSyncError("DB 운영 프로젝트를 불러오지 못했습니다.");
-        }
-      }
-    }
-
-    loadDatabaseState();
-
-    return () => {
-      isMounted = false;
-    };
-  }, []);
-
   function saveProjects(nextProjects: ReportProject[]) {
     setProjects(nextProjects);
-    writeReportProjects(nextProjects);
     setSaved(true);
     window.setTimeout(() => setSaved(false), 1400);
   }

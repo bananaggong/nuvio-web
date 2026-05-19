@@ -13,8 +13,6 @@ import { useState } from "react";
 import type { ReactNode } from "react";
 import {
   createReportProject,
-  readReportProjects,
-  writeReportProjects,
   type ReportProject,
 } from "@/lib/report-automation";
 import { hostProjectPath } from "@/lib/host-projects";
@@ -22,10 +20,12 @@ import { hostProjectPath } from "@/lib/host-projects";
 export function HostProjectCreateWizard() {
   const router = useRouter();
   const [projectName, setProjectName] = useState("");
+  const [isCreating, setIsCreating] = useState(false);
+  const [errorMessage, setErrorMessage] = useState("");
   const trimmedName = projectName.trim();
-  const canCreate = Boolean(trimmedName);
+  const canCreate = Boolean(trimmedName) && !isCreating;
 
-  function createProject() {
+  async function createProject() {
     if (!canCreate) return;
 
     const now = new Date().toISOString();
@@ -40,8 +40,32 @@ export function HostProjectCreateWizard() {
       villageName: "로컬홈",
     };
 
-    writeReportProjects([nextProject, ...readReportProjects()]);
-    router.push(hostProjectPath(nextProject.id));
+    setIsCreating(true);
+    setErrorMessage("");
+
+    try {
+      const response = await fetch("/api/host/reports", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(nextProject),
+      });
+      const payload = (await response.json()) as {
+        data?: ReportProject;
+        error?: string;
+      };
+
+      if (!response.ok || !payload.data) {
+        throw new Error(payload.error ?? "프로젝트 저장에 실패했습니다.");
+      }
+
+      router.push(hostProjectPath(payload.data.id));
+    } catch (error) {
+      setErrorMessage(
+        error instanceof Error ? error.message : "프로젝트 저장에 실패했습니다.",
+      );
+    } finally {
+      setIsCreating(false);
+    }
   }
 
   return (
@@ -79,7 +103,7 @@ export function HostProjectCreateWizard() {
               className="h-12 rounded-md border border-slate-200 px-3 text-base font-bold outline-none focus:border-[var(--primary)]"
               onChange={(event) => setProjectName(event.target.value)}
               onKeyDown={(event) => {
-                if (event.key === "Enter") createProject();
+                if (event.key === "Enter") void createProject();
               }}
               placeholder="예: 보성 로컬홈 2026 운영 프로젝트"
               value={projectName}
@@ -89,13 +113,16 @@ export function HostProjectCreateWizard() {
           <button
             className="inline-flex h-11 w-full items-center justify-center gap-2 rounded-md bg-slate-950 px-4 text-sm font-black text-white disabled:cursor-not-allowed disabled:opacity-40 sm:w-fit"
             disabled={!canCreate}
-            onClick={createProject}
+            onClick={() => void createProject()}
             type="button"
           >
             <Plus size={16} />
-            만들고 들어가기
+            {isCreating ? "저장 중" : "만들고 들어가기"}
             <ArrowRight size={16} />
           </button>
+          {errorMessage ? (
+            <p className="text-sm font-bold text-rose-600">{errorMessage}</p>
+          ) : null}
         </div>
       </section>
 

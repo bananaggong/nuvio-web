@@ -17,11 +17,10 @@ import { seedVillages } from "@/lib/village-seeds";
 import { villagePath } from "@/lib/village-routing";
 import type { Village, VillageSection } from "@/lib/village-types";
 
-const STORAGE_KEY = "nuvio:host-villages";
-const HOST_VILLAGE_SLUG = "boseong";
+const HOST_VILLAGE_SLUG = "daon-local-lab";
 
 export function HostVillageStudio() {
-  const [village, setVillage] = useState<Village>(readStoredHostVillage);
+  const [village, setVillage] = useState<Village>(getDefaultHostVillage);
   const [saved, setSaved] = useState(false);
   const [isSyncing, setIsSyncing] = useState(false);
   const [syncMessage, setSyncMessage] = useState("");
@@ -45,10 +44,9 @@ export function HostVillageStudio() {
         if (!isMounted || !remoteHostVillage) return;
 
         setVillage(remoteHostVillage);
-        writeStoredHostVillage(remoteHostVillage);
       } catch {
         if (isMounted) {
-          setSyncError("DB 로컬홈 데이터를 불러오지 못했습니다. 로컬 초안으로 계속 진행합니다.");
+          setSyncError("DB 로컬홈 데이터를 불러오지 못했습니다. 기본 데모 채널을 표시합니다.");
         }
       }
     }
@@ -62,7 +60,6 @@ export function HostVillageStudio() {
 
   function saveVillage(nextVillage: Village) {
     setVillage(nextVillage);
-    writeStoredHostVillage(nextVillage);
     setSaved(true);
     window.setTimeout(() => setSaved(false), 1400);
   }
@@ -255,7 +252,7 @@ export function HostVillageStudio() {
               className="mt-5 flex flex-wrap items-center gap-2 text-sm font-bold text-slate-500"
             >
               {saved ? <Check size={16} className="text-[var(--primary)]" /> : <Save size={16} />}
-              {saved ? "저장됨" : "변경사항 자동 저장"}
+              {saved ? "화면 초안 반영됨" : "DB 저장 전 화면 초안"}
               {syncMessage ? (
                 <span className="rounded-md bg-teal-50 px-2 py-1 text-xs font-black text-teal-700">
                   {syncMessage}
@@ -450,30 +447,71 @@ function buildVillageChecklist(village: Village) {
   ];
 }
 
+const demoHostVillage: Village = {
+  id: "11111111-2222-4333-8444-555555555555",
+  slug: HOST_VILLAGE_SLUG,
+  name: "다온 로컬랩",
+  region: "전라남도",
+  city: "남해군",
+  tagline: "남해 바다 앞에서 일하고 쉬는 7일",
+  summary:
+    "다온 로컬랩은 남해의 빈집과 공유 작업공간을 연결해 워케이션 프로그램을 운영하는 로컬 채널입니다.",
+  description:
+    "가상의 호스트 박다온이 누비오에 가입한 뒤 만든 첫 운영 채널입니다. 참여자는 숙소, 작업 공간, 로컬 클래스가 결합된 워케이션 프로그램을 신청할 수 있습니다.",
+  heroImage:
+    "https://images.unsplash.com/photo-1507525428034-b723cf961d3e?auto=format&fit=crop&w=1600&q=82",
+  logoText: "DAON",
+  brandColor: "#0f766e",
+  accentColor: "#2563eb",
+  instagramUrl: "https://www.instagram.com/daon.local.lab",
+  kakaoUrl: "https://pf.kakao.com/_daonlocal",
+  contactEmail: "demo.host@nuvio.local",
+  contactPhone: "010-2405-2026",
+  address: "전라남도 남해군 남해읍",
+  programIds: [
+    "22222222-3333-4444-8555-666666666666",
+    "namhae-blue-workation-2026",
+  ],
+  links: [
+    {
+      id: "instagram",
+      label: "인스타그램",
+      type: "instagram",
+      url: "https://www.instagram.com/daon.local.lab",
+    },
+    {
+      id: "notice",
+      label: "운영 문의",
+      type: "notice",
+      url: "/partners/apply",
+    },
+  ],
+  sections: [
+    {
+      id: "story",
+      type: "story",
+      title: "다온 로컬랩 소개",
+      body: "남해의 바다, 빈집, 로컬 커뮤니티를 연결해 짧은 체류형 워케이션을 운영합니다.",
+      items: ["공유 작업공간 운영", "로컬 클래스 연결", "체류자 신청/안내 관리"],
+    },
+    {
+      id: "programs",
+      type: "programs",
+      title: "대표 프로그램",
+      body: "첫 번째 프로그램은 남해 바다 워케이션 7일입니다.",
+      items: ["6박 7일 체류", "공유 오피스 이용", "로컬 클래스 2회"],
+    },
+  ],
+  published: true,
+  updatedAt: "2026-05-19T09:10:00+09:00",
+};
+
 function isHostVillage(village: Village): boolean {
   return village.slug === HOST_VILLAGE_SLUG;
 }
 
 function getDefaultHostVillage(): Village {
-  return seedVillages.find(isHostVillage) ?? seedVillages[0];
-}
-
-function readStoredHostVillage(): Village {
-  if (typeof window === "undefined") return getDefaultHostVillage();
-
-  try {
-    const rawValue = window.localStorage.getItem(STORAGE_KEY);
-    if (!rawValue) return getDefaultHostVillage();
-    const parsedValue = JSON.parse(rawValue) as Village[];
-    return parsedValue.find(isHostVillage) ?? getDefaultHostVillage();
-  } catch {
-    return getDefaultHostVillage();
-  }
-}
-
-function writeStoredHostVillage(village: Village) {
-  if (typeof window === "undefined") return;
-  window.localStorage.setItem(STORAGE_KEY, JSON.stringify([village]));
+  return seedVillages.find(isHostVillage) ?? demoHostVillage;
 }
 
 function createDefaultSections(villageName: string): VillageSection[] {

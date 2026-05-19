@@ -12,8 +12,6 @@ import {
 import { useEffect, useState } from "react";
 import {
   applicationStatusFlow,
-  readHostApplicationsFromStorage,
-  writeHostApplicationsToStorage,
 } from "@/lib/host-operations";
 import type {
   HostApplication,
@@ -88,29 +86,12 @@ export function HostApplicationDetail({
           }
         }
 
-        const fallback = readHostApplicationsFromStorage().find(
-          (item) => item.id === applicationId,
-        );
         if (!cancelled) {
-          setApplication(
-            fallback
-              ? {
-                  ...fallback,
-                  answers: {
-                    memo: fallback.memo,
-                    submittedAt: fallback.submittedAt,
-                  },
-                  statusEvents: [],
-                }
-              : null,
-          );
+          setApplication(null);
         }
       } catch {
-        const fallback = readHostApplicationsFromStorage().find(
-          (item) => item.id === applicationId,
-        );
         if (!cancelled) {
-          setApplication(fallback ? { ...fallback, statusEvents: [] } : null);
+          setApplication(null);
         }
       } finally {
         if (!cancelled) setIsLoading(false);
@@ -143,10 +124,6 @@ export function HostApplicationDetail({
     const nextApplication = { ...application, status };
     setApplication(nextApplication);
 
-    const nextApplications = readHostApplicationsFromStorage().map((item) =>
-      item.id === application.id ? { ...item, status } : item,
-    );
-    writeHostApplicationsToStorage(nextApplications);
     void persistApplicationStatus(application.id, status);
   }
 

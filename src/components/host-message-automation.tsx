@@ -17,8 +17,6 @@ import {
   Users,
 } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
-import { readHostApplicationsFromStorage } from "@/lib/host-operations";
-import type { HostApplication } from "@/lib/host-operations";
 import {
   findHostProgramOverview,
   findHostProjectOverview,
@@ -44,12 +42,7 @@ import type {
   MessageChannel,
   MessageTargetStatus,
 } from "@/lib/message-automation";
-import {
-  mergeReportProjects,
-  readReportProjects,
-  writeReportProjects,
-} from "@/lib/report-automation";
-import type { ReportProject } from "@/lib/report-automation";
+import { useHostOperationsData } from "@/lib/use-host-operations-data";
 
 const channelOptions: MessageChannel[] = ["email", "sms", "kakao"];
 const campaignStatusOptions: MessageCampaignStatus[] = [
@@ -65,9 +58,7 @@ export function HostMessageAutomation({
   programId?: string;
   projectId?: string;
 }) {
-  const [applications, setApplications] = useState(readHostApplicationsFromStorage);
-  const [reportProjects, setReportProjects] =
-    useState<ReportProject[]>(readReportProjects);
+  const { applications, reportProjects } = useHostOperationsData();
   const [templates] = useState(readMessageTemplates);
   const [campaigns, setCampaigns] = useState<MessageCampaign[]>(
     readMessageCampaigns,
@@ -116,24 +107,9 @@ export function HostMessageAutomation({
 
     async function loadDatabaseState() {
       try {
-        const [applicationsResponse, campaignsResponse, reportsResponse] = await Promise.all([
-          fetch("/api/host/applications", { cache: "no-store" }),
+        const [campaignsResponse] = await Promise.all([
           fetch("/api/host/message-campaigns", { cache: "no-store" }),
-          fetch("/api/host/reports", { cache: "no-store" }),
         ]);
-
-        if (applicationsResponse.ok) {
-          const payload = (await applicationsResponse.json()) as {
-            data?: HostApplication[];
-          };
-          const databaseApplications = Array.isArray(payload.data)
-            ? payload.data
-            : [];
-
-          if (isMounted && databaseApplications.length > 0) {
-            setApplications(databaseApplications);
-          }
-        }
 
         if (campaignsResponse.ok) {
           const payload = (await campaignsResponse.json()) as {
@@ -151,21 +127,6 @@ export function HostMessageAutomation({
               return nextCampaigns;
             });
             setSelectedId((currentId) => currentId ?? databaseCampaigns[0]?.id);
-          }
-        }
-
-        if (reportsResponse.ok) {
-          const payload = (await reportsResponse.json()) as {
-            data?: ReportProject[];
-          };
-          const databaseProjects = Array.isArray(payload.data) ? payload.data : [];
-
-          if (isMounted && databaseProjects.length > 0) {
-            setReportProjects((currentProjects) => {
-              const nextProjects = mergeReportProjects(databaseProjects, currentProjects);
-              writeReportProjects(nextProjects);
-              return nextProjects;
-            });
           }
         }
       } catch {
