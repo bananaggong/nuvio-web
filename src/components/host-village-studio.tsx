@@ -13,20 +13,18 @@ import {
   Save,
 } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
-import { seedVillages } from "@/lib/village-seeds";
 import { villagePath } from "@/lib/village-routing";
 import type { Village, VillageSection } from "@/lib/village-types";
 
-const HOST_VILLAGE_SLUG = "daon-local-lab";
-
 export function HostVillageStudio() {
-  const [village, setVillage] = useState<Village>(getDefaultHostVillage);
+  const [village, setVillage] = useState<Village | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
   const [saved, setSaved] = useState(false);
   const [isSyncing, setIsSyncing] = useState(false);
   const [syncMessage, setSyncMessage] = useState("");
   const [syncError, setSyncError] = useState("");
   const checklist = useMemo(
-    () => buildVillageChecklist(village),
+    () => (village ? buildVillageChecklist(village) : []),
     [village],
   );
 
@@ -36,18 +34,30 @@ export function HostVillageStudio() {
     async function loadVillages() {
       try {
         const response = await fetch("/api/host/villages", { cache: "no-store" });
-        if (!response.ok) return;
+        const payload = (await response.json().catch(() => ({}))) as {
+          data?: Village[];
+          error?: string;
+        };
 
-        const payload = (await response.json()) as { data?: Village[] };
+        if (!response.ok) {
+          throw new Error(
+            payload.error ?? "로그인 후 연결된 로컬홈을 불러올 수 있습니다.",
+          );
+        }
+
         const remoteVillages = Array.isArray(payload.data) ? payload.data : [];
-        const remoteHostVillage = remoteVillages.find(isHostVillage);
-        if (!isMounted || !remoteHostVillage) return;
+        if (!isMounted) return;
 
-        setVillage(remoteHostVillage);
+        setVillage(remoteVillages[0] ?? null);
+        if (remoteVillages.length === 0) {
+          setSyncError("이 계정에 연결된 로컬홈이 아직 없습니다.");
+        }
       } catch {
         if (isMounted) {
-          setSyncError("DB 로컬홈 데이터를 불러오지 못했습니다. 기본 데모 채널을 표시합니다.");
+          setSyncError("연결된 로컬홈 데이터를 불러오지 못했습니다.");
         }
+      } finally {
+        if (isMounted) setIsLoading(false);
       }
     }
 
@@ -65,6 +75,7 @@ export function HostVillageStudio() {
   }
 
   function updateVillage(patch: Partial<Village>) {
+    if (!village) return;
     setSyncMessage("");
     setSyncError("");
     saveVillage({ ...village, ...patch, updatedAt: new Date().toISOString() });
@@ -84,6 +95,8 @@ export function HostVillageStudio() {
   }
 
   function updatePrimarySection(patch: Partial<VillageSection>) {
+    if (!village) return;
+
     const sections = village.sections.length
       ? village.sections
       : createDefaultSections(village.name);
@@ -92,10 +105,14 @@ export function HostVillageStudio() {
   }
 
   function togglePublish() {
+    if (!village) return;
+
     updateVillage({ published: !village.published });
   }
 
   async function syncSelectedVillage() {
+    if (!village) return;
+
     setIsSyncing(true);
     setSyncMessage("");
     setSyncError("");
@@ -124,6 +141,58 @@ export function HostVillageStudio() {
     } finally {
       setIsSyncing(false);
     }
+  }
+
+  if (isLoading) {
+    return (
+      <div className="mx-auto max-w-6xl px-4 py-8 md:px-8">
+        <section className="flex min-h-64 items-center justify-center rounded-md border border-slate-200 bg-white p-6">
+          <p className="inline-flex items-center gap-2 text-sm font-black text-slate-600">
+            <Loader2 className="animate-spin text-[var(--primary)]" size={18} />
+            연결된 로컬홈을 불러오는 중입니다.
+          </p>
+        </section>
+      </div>
+    );
+  }
+
+  if (!village) {
+    return (
+      <div className="mx-auto max-w-6xl px-4 py-8 md:px-8">
+        <section className="rounded-md border border-slate-200 bg-white p-6">
+          <p className="inline-flex items-center gap-2 text-sm font-black text-[var(--primary)]">
+            <MapPin size={18} />
+            로컬홈 정보
+          </p>
+          <h1 className="mt-3 text-2xl font-black text-slate-950">
+            이 계정에 연결된 로컬홈이 없습니다.
+          </h1>
+          <p className="mt-2 max-w-2xl text-sm leading-6 text-slate-600">
+            전체차LAB처럼 특정 운영자가 있는 로컬홈은 관리자에게 권한을 연결한 뒤
+            이 화면에 표시됩니다. 로그인 상태와 연결 이메일을 확인해 주세요.
+          </p>
+          {syncError ? (
+            <p className="mt-4 rounded-md bg-amber-50 px-3 py-2 text-sm font-bold text-amber-800">
+              {syncError}
+            </p>
+          ) : null}
+          <div className="mt-5 flex flex-wrap gap-2">
+            <Link
+              className="inline-flex h-10 items-center justify-center rounded-md bg-slate-950 px-3 text-sm font-black text-white"
+              href="/login?intent=host&next=/host/villages"
+            >
+              로그인 확인
+            </Link>
+            <Link
+              className="inline-flex h-10 items-center justify-center rounded-md border border-slate-200 px-3 text-sm font-black text-slate-700"
+              href="/host"
+            >
+              호스트센터
+            </Link>
+          </div>
+        </section>
+      </div>
+    );
   }
 
   const firstSection = village.sections[0] ?? createDefaultSections(village.name)[0];
@@ -445,73 +514,6 @@ function buildVillageChecklist(village: Village) {
       done: village.programIds.length > 0,
     },
   ];
-}
-
-const demoHostVillage: Village = {
-  id: "11111111-2222-4333-8444-555555555555",
-  slug: HOST_VILLAGE_SLUG,
-  name: "다온 로컬랩",
-  region: "전라남도",
-  city: "남해군",
-  tagline: "남해 바다 앞에서 일하고 쉬는 7일",
-  summary:
-    "다온 로컬랩은 남해의 빈집과 공유 작업공간을 연결해 워케이션 프로그램을 운영하는 로컬 채널입니다.",
-  description:
-    "가상의 호스트 박다온이 누비오에 가입한 뒤 만든 첫 운영 채널입니다. 참여자는 숙소, 작업 공간, 로컬 클래스가 결합된 워케이션 프로그램을 신청할 수 있습니다.",
-  heroImage:
-    "https://images.unsplash.com/photo-1507525428034-b723cf961d3e?auto=format&fit=crop&w=1600&q=82",
-  logoText: "DAON",
-  brandColor: "#0f766e",
-  accentColor: "#2563eb",
-  instagramUrl: "https://www.instagram.com/daon.local.lab",
-  kakaoUrl: "https://pf.kakao.com/_daonlocal",
-  contactEmail: "demo.host@nuvio.local",
-  contactPhone: "010-2405-2026",
-  address: "전라남도 남해군 남해읍",
-  programIds: [
-    "22222222-3333-4444-8555-666666666666",
-    "namhae-blue-workation-2026",
-  ],
-  links: [
-    {
-      id: "instagram",
-      label: "인스타그램",
-      type: "instagram",
-      url: "https://www.instagram.com/daon.local.lab",
-    },
-    {
-      id: "notice",
-      label: "운영 문의",
-      type: "notice",
-      url: "/partners/apply",
-    },
-  ],
-  sections: [
-    {
-      id: "story",
-      type: "story",
-      title: "다온 로컬랩 소개",
-      body: "남해의 바다, 빈집, 로컬 커뮤니티를 연결해 짧은 체류형 워케이션을 운영합니다.",
-      items: ["공유 작업공간 운영", "로컬 클래스 연결", "체류자 신청/안내 관리"],
-    },
-    {
-      id: "programs",
-      type: "programs",
-      title: "대표 프로그램",
-      body: "첫 번째 프로그램은 남해 바다 워케이션 7일입니다.",
-      items: ["6박 7일 체류", "공유 오피스 이용", "로컬 클래스 2회"],
-    },
-  ],
-  published: true,
-  updatedAt: "2026-05-19T09:10:00+09:00",
-};
-
-function isHostVillage(village: Village): boolean {
-  return village.slug === HOST_VILLAGE_SLUG;
-}
-
-function getDefaultHostVillage(): Village {
-  return seedVillages.find(isHostVillage) ?? demoHostVillage;
 }
 
 function createDefaultSections(villageName: string): VillageSection[] {

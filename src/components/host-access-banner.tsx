@@ -6,7 +6,7 @@ import { useEffect, useState } from "react";
 
 type HostRole = "user" | "partner" | "admin";
 
-type SessionPayload = {
+type SessionData = {
   user: { email?: string } | null;
   profile: {
     email: string;
@@ -15,8 +15,13 @@ type SessionPayload = {
   } | null;
 };
 
+type SessionPayload = {
+  data?: SessionData;
+  error?: string;
+};
+
 export function HostAccessBanner() {
-  const [session, setSession] = useState<SessionPayload | null>(null);
+  const [session, setSession] = useState<SessionData | null>(null);
 
   useEffect(() => {
     let active = true;
@@ -24,7 +29,9 @@ export function HostAccessBanner() {
     async function loadSession() {
       const response = await fetch("/api/auth/session", { cache: "no-store" });
       const payload = (await response.json()) as SessionPayload;
-      if (active) setSession(payload);
+      if (active) {
+        setSession(payload.data ?? { profile: null, user: null });
+      }
     }
 
     void loadSession();
