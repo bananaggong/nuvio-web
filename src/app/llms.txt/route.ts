@@ -18,7 +18,7 @@ export function GET() {
     `- Public announcements: ${absoluteUrl("/announcements")}`,
     `- Reviews: ${absoluteUrl("/reviews")}`,
     `- Half-price travel collection: ${absoluteUrl("/half-price-travel")}`,
-    `- Partner application: ${absoluteUrl("/partners/apply")}`,
+    `- Operations inquiry: ${absoluteUrl("/partners/apply")}`,
     "",
     "## Machine-Readable Discovery",
     `- Sitemap: ${absoluteUrl("/sitemap.xml")}`,

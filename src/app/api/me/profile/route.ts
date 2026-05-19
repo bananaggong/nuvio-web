@@ -40,6 +40,8 @@ export async function PATCH(request: Request) {
     const profile = await updateUserProfile(user.id, {
       displayName: normalizeText(body.displayName),
       phone: normalizeText(body.phone),
+      contactEmail: normalizeText(body.contactEmail),
+      address: normalizeText(body.address),
       avatarUrl: normalizeText(body.avatarUrl),
     });
 

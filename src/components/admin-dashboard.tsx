@@ -265,9 +265,9 @@ export function AdminDashboard() {
 
       <section className="mt-6 grid gap-6 xl:grid-cols-2">
         <AdminList
-          empty="아직 빌리지 가입 요청이 없습니다."
+          empty="아직 운영 문의가 없습니다."
           items={submissions}
-          title="빌리지 가입 요청"
+          title="운영 문의"
         />
         <AdminList
           empty="아직 저장한 초안이 없습니다."
@@ -314,10 +314,10 @@ function AdminQueue({
       icon: CalendarDays,
     },
     {
-          href: "/partners/apply",
-      label: "빌리지 가입 요청",
+      href: "/partners/apply",
+      label: "운영 문의",
       value: `${partnerSubmissionCount}건`,
-      helper: "새 로컬홈 신청이 들어오면 권한과 홈 생성을 검토합니다.",
+      helper: "로컬홈 구성이나 운영 협업 문의를 검토합니다.",
       icon: Users,
     },
     {
@@ -622,7 +622,7 @@ function AdminLinks() {
     ["/", "공개 프로그램 목록"],
     ["/reviews", "후기 게시판"],
     ["/announcements", "실시간 공고"],
-    ["/partners/apply", "빌리지 가입 신청"],
+    ["/partners/apply", "운영 문의"],
     ["/host", "호스트 운영 콘솔"],
   ];
 

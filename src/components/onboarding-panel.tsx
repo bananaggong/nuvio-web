@@ -149,7 +149,7 @@ export function OnboardingPanel() {
         </h1>
         <p className="mt-4 text-base font-semibold leading-7 text-slate-500">
           프로그램을 신청하거나, 로컬홈 운영자로 프로그램을 등록하고 관리할 수
-          있어요. 먼저 어떤 용도로 사용할지 알려주세요.
+          있어요. 먼저 어떤 화면부터 시작할지 알려주세요.
         </p>
 
         <label className="mt-10 grid gap-2 text-sm font-bold text-slate-800">
@@ -214,8 +214,8 @@ export function OnboardingPanel() {
         </fieldset>
 
         <p className="mt-4 rounded-md bg-blue-50 px-4 py-3 text-sm font-semibold leading-6 text-blue-800">
-          선택한 용도는 나중에 계정 설정에서 추가할 수 있습니다. 호스트 권한은
-          로컬홈 가입 또는 관리자 승인 후 활성화됩니다.
+          선택한 용도는 시작 화면을 정하는 데만 사용됩니다. 같은 계정으로 참여와
+          운영 기능을 모두 사용할 수 있습니다.
         </p>
 
         {errorMessage ? (
@@ -236,7 +236,7 @@ export function OnboardingPanel() {
               저장 중
             </>
           ) : selectedIntent === "host" ? (
-            "로컬홈 가입으로 계속"
+            "호스트센터로 계속"
           ) : (
             "프로그램 탐색으로 계속"
           )}
@@ -257,9 +257,9 @@ function getSafeNextPath(value: string | null): string | null {
 
 function getDestinationPath(intent: OnboardingIntent, nextPath: string | null) {
   if (intent === "host") {
-    return nextPath?.startsWith("/partners/apply") ? nextPath : "/partners/apply";
+    return nextPath?.startsWith("/host") ? nextPath : "/host";
   }
-  return nextPath?.startsWith("/partners/apply") ? "/programs" : nextPath ?? "/programs";
+  return nextPath?.startsWith("/host") ? "/programs" : nextPath ?? "/programs";
 }
 
 function getMetadataText(

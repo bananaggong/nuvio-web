@@ -36,36 +36,33 @@ export function HostAccessBanner() {
 
   if (!session) return null;
 
-  const role = session.profile?.role;
-  const allowed = role === "partner" || role === "admin";
+  const signedIn = Boolean(session.user);
 
   return (
     <section className="mx-auto max-w-7xl px-4 pt-4 md:px-8">
       <div
         className={`flex flex-col gap-3 rounded-md border px-4 py-3 sm:flex-row sm:items-center sm:justify-between ${
-          allowed
+          signedIn
             ? "border-teal-100 bg-white text-teal-900"
             : "border-amber-200 bg-white text-amber-950"
         }`}
       >
         <div className="flex gap-3">
-          {allowed ? (
+          {signedIn ? (
             <ShieldCheck className="mt-0.5 shrink-0" size={20} />
           ) : (
             <TriangleAlert className="mt-0.5 shrink-0" size={20} />
           )}
           <div>
             <p className="text-sm font-black">
-              {allowed
-                ? "호스트 권한으로 접속 중입니다"
-                : "호스트 권한 확인이 필요합니다"}
+              {signedIn
+                ? "운영 기능을 사용할 수 있습니다"
+                : "로그인하면 운영 기능을 사용할 수 있습니다"}
             </p>
             <p className="mt-0.5 text-xs leading-5">
               {session.user
-                ? `${session.profile?.email ?? session.user.email ?? "계정"} · role: ${
-                    role ?? "user"
-                  }`
-                : "로그인하지 않아 데모/로컬 모드로 표시됩니다."}
+                ? `${session.profile?.email ?? session.user.email ?? "계정"} 계정으로 접속 중입니다.`
+                : "프로그램 등록, 신청자 관리, 운영 프로젝트는 계정 기준으로 저장됩니다."}
             </p>
           </div>
         </div>

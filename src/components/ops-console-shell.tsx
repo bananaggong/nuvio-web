@@ -42,7 +42,7 @@ const navigationByArea: Record<ConsoleArea, NavigationItem[]> = {
   host: [
     {
       name: "프로젝트 관리",
-      href: "/host",
+      href: "/host/projects",
       icon: FolderKanban,
       children: [],
     },
@@ -52,15 +52,15 @@ const navigationByArea: Record<ConsoleArea, NavigationItem[]> = {
       icon: ClipboardList,
       children: [
         { name: "프로그램 관리", href: "/host/programs" },
-        { name: "신청서 설정", href: "/host" },
-        { name: "신청자 CRM", href: "/host" },
+        { name: "신청서 설정", href: "/host/forms" },
+        { name: "신청자 CRM", href: "/host/applications" },
       ],
     },
     {
       name: "커뮤니케이션",
-      href: "/host",
+      href: "/host/messages",
       icon: MessageSquareText,
-      children: [{ name: "안내 메시지", href: "/host" }],
+      children: [{ name: "안내 메시지", href: "/host/messages" }],
     },
     {
       name: "활동/증빙",
@@ -117,7 +117,7 @@ const navigationByArea: Record<ConsoleArea, NavigationItem[]> = {
       icon: Users,
       children: [
         { name: "신청자 CRM", href: "/host/applications" },
-        { name: "빌리지 가입 신청", href: "/partners/apply" },
+        { name: "운영 문의", href: "/partners/apply" },
       ],
     },
     {
@@ -334,19 +334,19 @@ function buildNavigation(area: ConsoleArea, pathname: string): NavigationItem[] 
   const isProjectWorkspace = Boolean(projectBasePath);
   const programSelectionHref = projectBasePath
     ? `${projectBasePath}#programs`
-    : "/host";
+    : "/host/projects";
   const programHref = (path: string) =>
     programBasePath
       ? `${programBasePath}${path}`
       : projectBasePath
         ? programSelectionHref
-        : "/host";
+        : "/host/projects";
   const projectHref = (path: string) =>
-    projectBasePath ? `${projectBasePath}${path}` : "/host";
+    projectBasePath ? `${projectBasePath}${path}` : "/host/projects";
 
   const projectNavigation: NavigationItem = {
     name: "프로젝트 관리",
-    href: "/host",
+    href: "/host/projects",
     icon: FolderKanban,
     children: [],
   };
@@ -388,7 +388,7 @@ function buildNavigation(area: ConsoleArea, pathname: string): NavigationItem[] 
         { name: "프로그램 선택", href: programSelectionHref },
         {
           name: "새 프로그램 신설",
-          href: projectBasePath ? `${projectBasePath}/programs/new` : "/host",
+          href: projectBasePath ? `${projectBasePath}/programs/new` : "/host/projects",
         },
         { name: "신청서 설정", href: programHref("/forms") },
         { name: "신청자 CRM", href: programHref("/applications") },
@@ -526,7 +526,7 @@ function NavigationGroup({
 function isActivePath(pathname: string, href: string) {
   if (href === "/") return pathname === "/";
   if (href === "/host") {
-    return pathname === href || /^\/host\/projects\/[^/]+\/?$/u.test(pathname);
+    return pathname === href;
   }
   if (href === "/admin") return pathname === href;
   return pathname === href || pathname.startsWith(`${href}/`);

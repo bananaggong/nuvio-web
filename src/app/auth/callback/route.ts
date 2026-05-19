@@ -59,12 +59,10 @@ function getPostAuthRedirectPath(
   intent: OnboardingIntent | null,
 ): string {
   if (profile?.role === "admin" || profile?.role === "partner") {
-    return next === "/partners/apply"
-      ? getRoleLandingPath(profile.role)
-      : next ?? getRoleLandingPath(profile.role);
+    return next ?? getRoleLandingPath(profile.role);
   }
 
-  if (!profile?.onboardingCompletedAt || intent) {
+  if (!profile?.onboardingCompletedAt) {
     if (next?.startsWith("/onboarding")) return next;
     const onboardingUrl = new URLSearchParams();
     if (intent) onboardingUrl.set("intent", intent);

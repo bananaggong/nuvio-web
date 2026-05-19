@@ -15,8 +15,8 @@ import { socialProviders, type SocialProviderKey } from "@/lib/auth-providers";
 import type { AuthProfile } from "@/lib/auth-profile-db";
 import { createSupabaseBrowserClient } from "@/lib/supabase/client";
 
-type LoginMode = "choice" | "email";
-type LoginIntent = "participant" | "host";
+export type LoginMode = "choice" | "email";
+export type LoginIntent = "participant" | "host";
 
 type ProfileRole = AuthProfile["role"];
 
@@ -27,39 +27,14 @@ type SessionPayload = {
   };
   error?: string;
 };
+export type LoginPanelInitialParams = {
+  errorMessage: string;
+  intent: LoginIntent | null;
+  mode: LoginMode;
+  nextPath: string | null;
+};
 
 const socialOrder: SocialProviderKey[] = ["kakao", "naver", "google"];
-
-function getSafeNextPath(value: string | null): string | null {
-  if (!value || !value.startsWith("/") || value.startsWith("//")) return null;
-  return value;
-}
-
-function getInitialAuthParams() {
-  if (typeof window === "undefined") {
-    return {
-      errorMessage: "",
-      mode: "choice" as LoginMode,
-      nextPath: null,
-      intent: null,
-    };
-  }
-
-  const params = new URLSearchParams(window.location.search);
-
-  return {
-    errorMessage: params.get("error")
-      ? "소셜 로그인 처리 중 문제가 발생했습니다."
-      : "",
-    mode: params.get("mode") === "email" ? ("email" as LoginMode) : "choice",
-    nextPath: getSafeNextPath(params.get("next")),
-    intent: getSafeLoginIntent(params.get("intent")),
-  };
-}
-
-function getSafeLoginIntent(value: string | null): LoginIntent | null {
-  return value === "participant" || value === "host" ? value : null;
-}
 
 function getRoleLandingPath(role?: ProfileRole): string {
   if (role === "admin") return "/admin";
@@ -73,12 +48,10 @@ function getPostLoginPath(
   intent: LoginIntent | null,
 ): string {
   if (profile?.role === "admin" || profile?.role === "partner") {
-    return nextPath === "/partners/apply"
-      ? getRoleLandingPath(profile.role)
-      : nextPath ?? getRoleLandingPath(profile.role);
+    return nextPath ?? getRoleLandingPath(profile.role);
   }
 
-  if (!profile?.onboardingCompletedAt || intent) {
+  if (!profile?.onboardingCompletedAt) {
     if (nextPath?.startsWith("/onboarding")) return nextPath;
     const params = new URLSearchParams();
     if (intent) params.set("intent", intent);
@@ -90,11 +63,30 @@ function getPostLoginPath(
   return nextPath ?? getRoleLandingPath(profile?.role);
 }
 
-export function LoginPanel() {
+function getSignupPath(nextPath: string | null, intent: LoginIntent | null) {
+  const params = new URLSearchParams();
+  if (intent) params.set("intent", intent);
+  if (nextPath) params.set("next", nextPath);
+  const query = params.toString();
+  return query ? `/signup?${query}` : "/signup";
+}
+
+export function LoginPanel({
+  initialParams,
+}: {
+  initialParams?: LoginPanelInitialParams;
+}) {
   const router = useRouter();
-  const [mode, setMode] = useState<LoginMode>(() => getInitialAuthParams().mode);
-  const [nextPath] = useState(() => getInitialAuthParams().nextPath);
-  const [intent] = useState(() => getInitialAuthParams().intent);
+  const authParams =
+    initialParams ?? {
+      errorMessage: "",
+      intent: null,
+      mode: "choice" as LoginMode,
+      nextPath: null,
+    };
+  const [mode, setMode] = useState<LoginMode>(authParams.mode);
+  const nextPath = authParams.nextPath;
+  const intent = authParams.intent;
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [authProfile, setAuthProfile] = useState<AuthProfile | null>(null);
@@ -104,9 +96,8 @@ export function LoginPanel() {
   const [loading, setLoading] = useState(false);
   const [logoutLoading, setLogoutLoading] = useState(false);
   const [message, setMessage] = useState("");
-  const [errorMessage, setErrorMessage] = useState(
-    () => getInitialAuthParams().errorMessage,
-  );
+  const [errorMessage, setErrorMessage] = useState(authParams.errorMessage);
+  const signupPath = getSignupPath(nextPath, intent);
 
   useEffect(() => {
     let isMounted = true;
@@ -309,18 +300,18 @@ export function LoginPanel() {
               아직 계정이 없나요?{" "}
               <Link
                 className="font-semibold text-[#378ADD] hover:underline"
-                href="/signup"
+                href={signupPath}
               >
-                일반 회원가입
+                회원가입
               </Link>
             </p>
             <p className="mt-2 text-[13px] font-medium text-[#888]">
               프로그램을 운영하나요?{" "}
               <Link
                 className="font-semibold text-[#378ADD] hover:underline"
-                href="/login?intent=host&next=/partners/apply"
+                href="/login?intent=host&next=/host"
               >
-                빌리지로 가입하기
+                호스트센터로 시작하기
               </Link>
             </p>
           </div>
@@ -355,7 +346,7 @@ export function LoginPanel() {
               {authProfile.displayName || authProfile.email}님으로 이미 로그인되어 있어요.
             </p>
             <p className="mt-0.5 text-[12px] text-amber-700">
-              계정 권한에 맞는 화면으로 이동하거나, 다른 계정으로 로그인하려면 먼저 로그아웃하세요.
+              이어서 사용하거나, 다른 계정으로 로그인하려면 먼저 로그아웃하세요.
             </p>
             <div className="mt-3 flex gap-2">
               <button
@@ -430,18 +421,18 @@ export function LoginPanel() {
             처음인가요?{" "}
             <Link
               className="font-semibold text-[#378ADD] hover:underline"
-              href="/signup"
+              href={signupPath}
             >
-              일반 회원가입
+              회원가입
             </Link>
           </p>
           <p className="mt-2 text-[13px] font-medium text-[#888]">
             프로그램을 운영하나요?{" "}
             <Link
               className="font-semibold text-[#378ADD] hover:underline"
-              href="/login?intent=host&next=/partners/apply"
+              href="/login?intent=host&next=/host"
             >
-              빌리지로 가입하기
+              호스트센터로 시작하기
             </Link>
           </p>
         </div>

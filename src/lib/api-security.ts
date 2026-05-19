@@ -34,7 +34,7 @@ export async function requireAuthenticatedUser(): Promise<ApiAuthResult> {
 }
 
 export async function requireHostRole(): Promise<ApiAuthResult> {
-  return requireApiRole(["partner", "admin"]);
+  return requireAuthenticatedUser();
 }
 
 export async function requireAdminRole(): Promise<ApiAuthResult> {

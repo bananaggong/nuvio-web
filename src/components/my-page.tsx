@@ -24,7 +24,6 @@ import type { Program } from "@/lib/types";
 type LocalProfile = {
   name: string;
   email: string;
-  interest: string;
 };
 
 type AuthProfile = {
@@ -34,6 +33,8 @@ type AuthProfile = {
   role: "user" | "partner" | "admin";
   avatarUrl: string | null;
   phone: string | null;
+  contactEmail: string | null;
+  address: string | null;
 };
 
 type AuthSessionPayload = {
@@ -103,8 +104,10 @@ export function MyPage() {
     getMetadataText(authSession.user?.userMetadata, "name") ??
     localProfile?.name;
   const profileEmail =
-    authSession.profile?.email ?? authSession.user?.email ?? localProfile?.email;
-  const profileInterest = localProfile?.interest;
+    authSession.profile?.contactEmail ??
+    authSession.profile?.email ??
+    authSession.user?.email ??
+    localProfile?.email;
   const signedIn = Boolean(authSession.user);
 
   useEffect(() => {
@@ -150,10 +153,7 @@ export function MyPage() {
           localProfile?.email;
         let dbApplications: HostApplication[] = [];
 
-        if (
-          sessionPayload.profile?.role === "partner" ||
-          sessionPayload.profile?.role === "admin"
-        ) {
+        if (sessionPayload.user) {
           const applicationsResponse = await fetch("/api/host/applications", {
             cache: "no-store",
           });
@@ -250,28 +250,25 @@ export function MyPage() {
                 {profileName ? `${profileName}님의 누비오 노트` : "내 누비오 노트"}
               </h1>
               <p className="mt-1 text-sm text-slate-500">
-                {profileEmail
-                  ? `${profileEmail}${profileInterest ? ` · 관심사 ${profileInterest}` : ""}`
-                  : "로그인하면 관심 프로그램과 신청 기록을 계정 기준으로 확인할 수 있습니다."}
+                {profileEmail ??
+                  "로그인하면 관심 프로그램과 신청 기록을 계정 기준으로 확인할 수 있습니다."}
               </p>
-              {authSession.profile?.role ? (
+              {authSession.profile?.role === "admin" ? (
                 <span className="mt-2 inline-flex rounded-md bg-teal-50 px-2 py-1 text-xs font-black text-[var(--primary)] ring-1 ring-teal-200">
-                  {authSession.profile.role}
+                  admin
                 </span>
               ) : null}
             </div>
           </div>
           {signedIn ? (
             <div className="flex flex-wrap gap-2">
-              {authSession.profile?.role === "user" ? (
-                <Link
-                  className="inline-flex h-10 items-center justify-center gap-2 rounded-md bg-slate-950 px-3 text-sm font-black text-white hover:bg-slate-800"
-                  href="/login?intent=host&next=/partners/apply"
-                >
-                  <Building2 size={16} />
-                  호스트 영역 추가
-                </Link>
-              ) : null}
+              <Link
+                className="inline-flex h-10 items-center justify-center gap-2 rounded-md bg-slate-950 px-3 text-sm font-black text-white hover:bg-slate-800"
+                href="/host"
+              >
+                <Building2 size={16} />
+                호스트센터
+              </Link>
               <button
                 className="inline-flex h-10 items-center justify-center gap-2 rounded-md border border-slate-200 px-3 text-sm font-black text-slate-700 hover:border-[var(--primary)] hover:text-[var(--primary)]"
                 onClick={logout}

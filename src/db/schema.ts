@@ -167,6 +167,8 @@ export const profiles = pgTable(
     }),
     avatarUrl: text("avatar_url"),
     phone: text("phone"),
+    contactEmail: text("contact_email"),
+    address: text("address"),
     createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
     updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
   },

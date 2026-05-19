@@ -493,7 +493,7 @@ async function listHostNotificationRecipients(): Promise<
       id: profiles.id,
     })
     .from(profiles)
-    .where(inArray(profiles.role, ["partner", "admin"]))
+    .where(or(eq(profiles.onboardingIntent, "host"), inArray(profiles.role, ["partner", "admin"])))
     .limit(100);
 }
 

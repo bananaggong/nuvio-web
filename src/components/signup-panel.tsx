@@ -7,17 +7,60 @@ import { AuthHeader, ChevronRightIcon } from "@/components/auth-ui";
 import { createSupabaseBrowserClient } from "@/lib/supabase/client";
 
 type AgreementKey = "terms" | "privacy" | "age" | "event";
+type SignupIntent = "participant" | "host";
 
-const interests = ["여행지원금", "반값여행", "워케이션", "한달살기", "귀농귀촌"];
+function getSafeNextPath(value: string | null): string | null {
+  if (!value || !value.startsWith("/") || value.startsWith("//")) return null;
+  return value;
+}
+
+function getSafeSignupIntent(value: string | null): SignupIntent | null {
+  return value === "participant" || value === "host" ? value : null;
+}
+
+function getInitialSignupParams() {
+  if (typeof window === "undefined") {
+    return {
+      intent: null,
+      nextPath: null,
+    };
+  }
+
+  const params = new URLSearchParams(window.location.search);
+
+  return {
+    intent: getSafeSignupIntent(params.get("intent")),
+    nextPath: getSafeNextPath(params.get("next")),
+  };
+}
+
+function getLoginPath(nextPath: string | null, intent: SignupIntent | null) {
+  const params = new URLSearchParams();
+  if (intent) params.set("intent", intent);
+  if (nextPath) params.set("next", nextPath);
+  const query = params.toString();
+  return query ? `/login?${query}` : "/login";
+}
+
+function getPostSignupPath(nextPath: string | null, intent: SignupIntent | null) {
+  const params = new URLSearchParams();
+  if (intent) params.set("intent", intent);
+  if (nextPath) params.set("next", nextPath);
+  const query = params.toString();
+  return query ? `/onboarding?${query}` : "/onboarding";
+}
 
 export function SignupPanel() {
   const router = useRouter();
+  const [initialParams] = useState(getInitialSignupParams);
+  const loginPath = getLoginPath(initialParams.nextPath, initialParams.intent);
   const [agreementsAccepted, setAgreementsAccepted] = useState(false);
   const [authDone, setAuthDone] = useState(false);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [displayName, setDisplayName] = useState("");
-  const [interest, setInterest] = useState(interests[0]);
+  const [phone, setPhone] = useState("");
+  const [address, setAddress] = useState("");
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState("");
   const [errorMessage, setErrorMessage] = useState("");
@@ -42,19 +85,31 @@ export function SignupPanel() {
 
   async function handleSignup(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    setLoading(true);
     setMessage("");
     setErrorMessage("");
 
+    if (!displayName.trim() || !phone.trim() || !address.trim()) {
+      setErrorMessage("이름, 전화번호, 주소를 모두 입력해 주세요.");
+      return;
+    }
+
+    setLoading(true);
+
     try {
       const supabase = createSupabaseBrowserClient();
+      const callback = new URL("/auth/callback", window.location.origin);
+      if (initialParams.nextPath) callback.searchParams.set("next", initialParams.nextPath);
+      if (initialParams.intent) callback.searchParams.set("intent", initialParams.intent);
       const { data, error } = await supabase.auth.signUp({
         email: email.trim(),
         password,
         options: {
+          emailRedirectTo: callback.toString(),
           data: {
             full_name: displayName.trim(),
-            nuvio_interest: interest,
+            phone: phone.trim(),
+            contact_email: email.trim(),
+            address: address.trim(),
           },
         },
       });
@@ -62,12 +117,12 @@ export function SignupPanel() {
       if (error) throw error;
 
       if (data.session) {
-        router.push("/me");
+        router.push(getPostSignupPath(initialParams.nextPath, initialParams.intent));
         router.refresh();
         return;
       }
 
-      setMessage("회원가입 요청이 접수되었습니다. 이메일 확인이 필요한 설정이면 메일함을 확인해주세요.");
+      setMessage("회원가입 요청이 접수되었습니다. 이메일 확인 후 같은 계정으로 참여와 운영 기능을 사용할 수 있어요.");
     } catch (error) {
       setErrorMessage(
         error instanceof Error ? error.message : "회원가입을 완료하지 못했어요.",
@@ -78,13 +133,18 @@ export function SignupPanel() {
   }
 
   if (!agreementsAccepted) {
-    return <SignupAgreementScreen onStart={() => setAgreementsAccepted(true)} />;
+    return (
+      <SignupAgreementScreen
+        backHref={loginPath}
+        onStart={() => setAgreementsAccepted(true)}
+      />
+    );
   }
 
   if (!authDone) {
     return (
       <div className="min-h-screen bg-white">
-        <AuthHeader backHref="/login" />
+        <AuthHeader backHref={loginPath} />
         <div className="mx-auto flex h-[calc(100vh-3.5rem)] max-w-sm flex-1 flex-col px-6 py-8 lg:py-16">
           <h2 className="text-center text-[22px] font-bold leading-snug text-[#111111]">
             이메일로 회원가입
@@ -97,7 +157,7 @@ export function SignupPanel() {
                   className="mb-1.5 inline-flex text-[13px] font-semibold text-[#333333]"
                   htmlFor="signup-email"
                 >
-                  이메일
+                  연락 가능한 이메일
                 </label>
                 <input
                   autoComplete="email"
@@ -145,7 +205,7 @@ export function SignupPanel() {
               이미 계정이 있나요?{" "}
               <Link
                 className="font-semibold text-[#378ADD] hover:underline"
-                href="/login"
+                href={loginPath}
               >
                 로그인
               </Link>
@@ -163,10 +223,10 @@ export function SignupPanel() {
         <StepDots current={1} total={1} />
         <div>
           <h2 className="text-2xl font-bold tracking-tight text-neutral-900">
-            누비오 프로필을 완성해요
+            가입 정보를 확인해요
           </h2>
           <p className="mt-1 text-sm leading-6 text-neutral-500">
-            관심 있는 로컬 프로그램을 더 잘 이어볼 수 있게 기본 정보를 확인합니다.
+            참여와 운영에 필요한 기본 정보만 입력하면 돼요.
           </p>
         </div>
 
@@ -192,31 +252,49 @@ export function SignupPanel() {
           <div>
             <label
               className="mb-1.5 block text-sm font-medium text-neutral-700"
-              htmlFor="signup-interest"
+              htmlFor="signup-phone"
             >
-              관심 분야
+              전화번호
             </label>
-            <select
-              className="h-12 w-full appearance-none rounded-xl border border-[#d5d5d5] bg-white px-3.5 py-2.5 text-[15px] font-semibold text-[#111111] outline-none transition focus:border-[#378ADD] focus:ring-1 focus:ring-inset focus:ring-[#378ADD]"
-              id="signup-interest"
-              onChange={(event) => setInterest(event.target.value)}
-              value={interest}
-            >
-              {interests.map((item) => (
-                <option key={item}>{item}</option>
-              ))}
-            </select>
+            <input
+              autoComplete="tel"
+              className="h-12 w-full appearance-none rounded-xl border border-[#d5d5d5] bg-white px-3.5 py-2.5 text-[15px] text-[#111111] outline-none transition focus:border-[#378ADD] focus:ring-1 focus:ring-inset focus:ring-[#378ADD]"
+              id="signup-phone"
+              inputMode="tel"
+              onChange={(event) => setPhone(event.target.value)}
+              placeholder="예: 010-1234-5678"
+              required
+              value={phone}
+            />
           </div>
 
           <div>
             <label className="mb-1.5 block text-sm font-medium text-neutral-700">
-              이메일
+              연락 가능한 이메일
             </label>
             <input
               className="h-12 w-full appearance-none rounded-xl border border-[#d5d5d5] bg-neutral-50 px-3.5 py-2.5 text-[15px] text-neutral-500 outline-none"
               disabled
               readOnly
               value={email}
+            />
+          </div>
+
+          <div>
+            <label
+              className="mb-1.5 block text-sm font-medium text-neutral-700"
+              htmlFor="signup-address"
+            >
+              주소
+            </label>
+            <input
+              autoComplete="street-address"
+              className="h-12 w-full appearance-none rounded-xl border border-[#d5d5d5] bg-white px-3.5 py-2.5 text-[15px] text-[#111111] outline-none transition focus:border-[#378ADD] focus:ring-1 focus:ring-inset focus:ring-[#378ADD]"
+              id="signup-address"
+              onChange={(event) => setAddress(event.target.value)}
+              placeholder="예: 서울시 마포구"
+              required
+              value={address}
             />
           </div>
 
@@ -244,7 +322,13 @@ export function SignupPanel() {
   );
 }
 
-function SignupAgreementScreen({ onStart }: { onStart: () => void }) {
+function SignupAgreementScreen({
+  backHref,
+  onStart,
+}: {
+  backHref: string;
+  onStart: () => void;
+}) {
   const [agreements, setAgreements] = useState<Record<AgreementKey, boolean>>({
     terms: false,
     privacy: false,
@@ -270,7 +354,7 @@ function SignupAgreementScreen({ onStart }: { onStart: () => void }) {
 
   return (
     <div className="min-h-screen bg-white">
-      <AuthHeader backHref="/login" />
+      <AuthHeader backHref={backHref} />
       <div className="mx-auto flex h-[calc(100vh-3.5rem)] max-w-sm flex-1 flex-col px-6 py-8 lg:py-16">
         <div className="mx-auto w-full max-w-[353px] lg:w-[353px]">
           <h2 className="text-center text-[24px] font-semibold leading-[1.35] text-[#111111]">

@@ -140,16 +140,16 @@ export const implementationStatus: {
       title: "Host and Admin Operations",
       items: [
         {
-          title: "Host role visibility",
+          title: "Unified host access",
           state: "ready_for_verification",
           summary:
-            "Host screens show the current account role from the Supabase profile so partner/admin access can be verified.",
+            "Host screens are available to any authenticated account, while admin routes remain restricted.",
           routes: [
             { label: "Host console", href: "/host" },
             { label: "Program studio", href: "/host/programs" },
           ],
           verification:
-            "Promote the profile role to partner or admin in Supabase and refresh host screens.",
+            "Sign in with a regular user account and confirm host screens and APIs load.",
         },
         {
           title: "Host village homepage studio",

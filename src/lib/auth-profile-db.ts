@@ -9,6 +9,8 @@ export type AuthProfile = {
   displayName: string;
   avatarUrl: string;
   phone: string;
+  contactEmail: string;
+  address: string;
   role: "user" | "partner" | "admin";
   onboardingIntent: OnboardingIntent | null;
   onboardingCompletedAt: string | null;
@@ -28,6 +30,8 @@ export async function ensureUserProfile(user: User): Promise<AuthProfile> {
       displayName: profile.displayName,
       avatarUrl: profile.avatarUrl,
       phone: profile.phone,
+      contactEmail: profile.contactEmail,
+      address: profile.address,
       role: profile.role,
     })
     .onConflictDoUpdate({
@@ -37,6 +41,8 @@ export async function ensureUserProfile(user: User): Promise<AuthProfile> {
         displayName: profile.displayName,
         avatarUrl: profile.avatarUrl,
         phone: profile.phone,
+        contactEmail: profile.contactEmail,
+        address: profile.address,
         updatedAt: now,
       },
     })
@@ -76,7 +82,9 @@ export async function getUserProfile(
 
 export async function updateUserProfile(
   userId: string,
-  patch: Partial<Pick<AuthProfile, "displayName" | "phone" | "avatarUrl">>,
+  patch: Partial<
+    Pick<AuthProfile, "displayName" | "phone" | "avatarUrl" | "contactEmail" | "address">
+  >,
 ): Promise<AuthProfile | undefined> {
   const [row] = await getDb()
     .update(profiles)
@@ -84,6 +92,8 @@ export async function updateUserProfile(
       displayName: patch.displayName,
       phone: patch.phone,
       avatarUrl: patch.avatarUrl,
+      contactEmail: patch.contactEmail,
+      address: patch.address,
       updatedAt: new Date(),
     })
     .where(eq(profiles.id, userId))
@@ -110,6 +120,8 @@ function buildProfileFromUser(user: User): AuthProfile {
       stringMetadata(metadata.picture) ||
       "",
     phone: stringMetadata(metadata.phone),
+    contactEmail: stringMetadata(metadata.contact_email) || user.email || "",
+    address: stringMetadata(metadata.address),
     role: "user",
     onboardingIntent: null,
     onboardingCompletedAt: null,
@@ -123,6 +135,8 @@ function mapProfileRow(row: typeof profiles.$inferSelect): AuthProfile {
     displayName: row.displayName ?? "",
     avatarUrl: row.avatarUrl ?? "",
     phone: row.phone ?? "",
+    contactEmail: row.contactEmail ?? row.email,
+    address: row.address ?? "",
     role: row.role,
     onboardingIntent:
       row.onboardingIntent === "participant" || row.onboardingIntent === "host"
