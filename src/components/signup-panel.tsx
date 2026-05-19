@@ -55,17 +55,13 @@ export function SignupPanel() {
   const [initialParams] = useState(getInitialSignupParams);
   const loginPath = getLoginPath(initialParams.nextPath, initialParams.intent);
   const [agreementsAccepted, setAgreementsAccepted] = useState(false);
-  const [authDone, setAuthDone] = useState(false);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [displayName, setDisplayName] = useState("");
-  const [phone, setPhone] = useState("");
-  const [address, setAddress] = useState("");
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState("");
   const [errorMessage, setErrorMessage] = useState("");
 
-  function handleEmailStep(event: FormEvent<HTMLFormElement>) {
+  async function handleSignup(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setMessage("");
     setErrorMessage("");
@@ -80,36 +76,24 @@ export function SignupPanel() {
       return;
     }
 
-    setAuthDone(true);
-  }
-
-  async function handleSignup(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-    setMessage("");
-    setErrorMessage("");
-
-    if (!displayName.trim() || !phone.trim() || !address.trim()) {
-      setErrorMessage("이름, 전화번호, 주소를 모두 입력해 주세요.");
-      return;
-    }
-
     setLoading(true);
 
     try {
       const supabase = createSupabaseBrowserClient();
       const callback = new URL("/auth/callback", window.location.origin);
-      if (initialParams.nextPath) callback.searchParams.set("next", initialParams.nextPath);
-      if (initialParams.intent) callback.searchParams.set("intent", initialParams.intent);
+      if (initialParams.nextPath) {
+        callback.searchParams.set("next", initialParams.nextPath);
+      }
+      if (initialParams.intent) {
+        callback.searchParams.set("intent", initialParams.intent);
+      }
       const { data, error } = await supabase.auth.signUp({
         email: email.trim(),
         password,
         options: {
           emailRedirectTo: callback.toString(),
           data: {
-            full_name: displayName.trim(),
-            phone: phone.trim(),
             contact_email: email.trim(),
-            address: address.trim(),
           },
         },
       });
@@ -122,7 +106,9 @@ export function SignupPanel() {
         return;
       }
 
-      setMessage("회원가입 요청이 접수되었습니다. 이메일 확인 후 같은 계정으로 참여와 운영 기능을 사용할 수 있어요.");
+      setMessage(
+        "회원가입 요청이 접수되었습니다. 이메일 확인 후 같은 계정으로 참여와 운영 기능을 사용할 수 있어요.",
+      );
     } catch (error) {
       setErrorMessage(
         error instanceof Error ? error.message : "회원가입을 완료하지 못했어요.",
@@ -141,182 +127,86 @@ export function SignupPanel() {
     );
   }
 
-  if (!authDone) {
-    return (
-      <div className="min-h-screen bg-white">
-        <AuthHeader backHref={loginPath} />
-        <div className="mx-auto flex h-[calc(100vh-3.5rem)] max-w-sm flex-1 flex-col px-6 py-8 lg:py-16">
-          <h2 className="text-center text-[22px] font-bold leading-snug text-[#111111]">
-            이메일로 회원가입
-          </h2>
+  return (
+    <div className="min-h-screen bg-white">
+      <AuthHeader backHref={loginPath} />
+      <div className="mx-auto flex h-[calc(100vh-3.5rem)] max-w-sm flex-1 flex-col px-6 py-8 lg:py-16">
+        <h2 className="text-center text-[22px] font-bold leading-snug text-[#111111]">
+          이메일로 회원가입
+        </h2>
 
-          <div className="mt-8 flex flex-col gap-6">
-            <form className="space-y-4" onSubmit={handleEmailStep}>
-              <div>
-                <label
-                  className="mb-1.5 inline-flex text-[13px] font-semibold text-[#333333]"
-                  htmlFor="signup-email"
-                >
-                  연락 가능한 이메일
-                </label>
-                <input
-                  autoComplete="email"
-                  className="h-12 w-full appearance-none rounded-xl border border-[#d5d5d5] bg-white px-3.5 py-2.5 text-[15px] text-[#111111] outline-none transition focus:border-[#378ADD] focus:ring-1 focus:ring-inset focus:ring-[#378ADD]"
-                  id="signup-email"
-                  inputMode="email"
-                  onChange={(event) => setEmail(event.target.value)}
-                  type="email"
-                  value={email}
-                />
-              </div>
-              <div>
-                <label
-                  className="mb-1.5 inline-flex text-[13px] font-semibold text-[#333333]"
-                  htmlFor="signup-password"
-                >
-                  비밀번호
-                </label>
-                <input
-                  autoComplete="new-password"
-                  className="h-12 w-full appearance-none rounded-xl border border-[#d5d5d5] bg-white px-3.5 py-2.5 text-[15px] text-[#111111] outline-none transition focus:border-[#378ADD] focus:ring-1 focus:ring-inset focus:ring-[#378ADD]"
-                  id="signup-password"
-                  onChange={(event) => setPassword(event.target.value)}
-                  type="password"
-                  value={password}
-                />
-              </div>
-              <button
-                className="mt-2 inline-flex h-12 w-full items-center justify-center rounded-xl bg-[#378ADD] text-[16px] font-semibold text-white transition-colors hover:bg-[#2a6fb5] disabled:bg-[#d5d5d5] disabled:text-white/60"
-                type="submit"
+        <div className="mt-8 flex flex-col gap-6">
+          <form className="space-y-4" onSubmit={handleSignup}>
+            <div>
+              <label
+                className="mb-1.5 inline-flex text-[13px] font-semibold text-[#333333]"
+                htmlFor="signup-email"
               >
-                다음
-              </button>
-            </form>
+                연락 가능한 이메일
+              </label>
+              <input
+                autoComplete="email"
+                className="h-12 w-full appearance-none rounded-xl border border-[#d5d5d5] bg-white px-3.5 py-2.5 text-[15px] text-[#111111] outline-none transition focus:border-[#378ADD] focus:ring-1 focus:ring-inset focus:ring-[#378ADD]"
+                id="signup-email"
+                inputMode="email"
+                onChange={(event) => setEmail(event.target.value)}
+                type="email"
+                value={email}
+              />
+            </div>
+            <div>
+              <label
+                className="mb-1.5 inline-flex text-[13px] font-semibold text-[#333333]"
+                htmlFor="signup-password"
+              >
+                비밀번호
+              </label>
+              <input
+                autoComplete="new-password"
+                className="h-12 w-full appearance-none rounded-xl border border-[#d5d5d5] bg-white px-3.5 py-2.5 text-[15px] text-[#111111] outline-none transition focus:border-[#378ADD] focus:ring-1 focus:ring-inset focus:ring-[#378ADD]"
+                id="signup-password"
+                onChange={(event) => setPassword(event.target.value)}
+                type="password"
+                value={password}
+              />
+            </div>
 
             {errorMessage ? (
               <p className="rounded-xl bg-red-50 px-4 py-3 text-[13px] font-semibold text-red-700">
                 {errorMessage}
               </p>
             ) : null}
-          </div>
+            {message ? (
+              <p className="rounded-xl bg-teal-50 px-4 py-3 text-[13px] font-semibold text-teal-800">
+                {message}
+              </p>
+            ) : null}
 
-          <div className="fixed bottom-7 left-0 right-0 text-center lg:static lg:mt-8">
-            <p className="text-[13px] font-medium text-[#888]">
-              이미 계정이 있나요?{" "}
-              <Link
-                className="font-semibold text-[#378ADD] hover:underline"
-                href={loginPath}
-              >
-                로그인
-              </Link>
-            </p>
-          </div>
-        </div>
-      </div>
-    );
-  }
+            <button
+              className="mt-2 inline-flex h-12 w-full items-center justify-center rounded-xl bg-[#378ADD] text-[16px] font-semibold text-white transition-colors hover:bg-[#2a6fb5] disabled:bg-[#d5d5d5] disabled:text-white/60"
+              disabled={loading}
+              type="submit"
+            >
+              {loading ? "가입 중..." : "회원가입 계속"}
+            </button>
+          </form>
 
-  return (
-    <div className="min-h-screen bg-white">
-      <AuthHeader onBack={() => setAuthDone(false)} />
-      <div className="mx-auto flex min-h-[calc(100vh-3.5rem)] max-w-sm flex-col px-6 py-8 lg:py-16">
-        <StepDots current={1} total={1} />
-        <div>
-          <h2 className="text-2xl font-bold tracking-tight text-neutral-900">
-            가입 정보를 확인해요
-          </h2>
-          <p className="mt-1 text-sm leading-6 text-neutral-500">
-            참여와 운영에 필요한 기본 정보만 입력하면 돼요.
+          <p className="text-center text-[13px] font-medium leading-6 text-[#888]">
+            다음 단계에서 이름, 전화번호, 주소를 입력하면 가입이 완료됩니다.
           </p>
         </div>
 
-        <form className="mt-8 space-y-5" onSubmit={handleSignup}>
-          <div>
-            <label
-              className="mb-1.5 block text-sm font-medium text-neutral-700"
-              htmlFor="signup-display-name"
+        <div className="fixed bottom-7 left-0 right-0 text-center lg:static lg:mt-8">
+          <p className="text-[13px] font-medium text-[#888]">
+            이미 계정이 있나요?{" "}
+            <Link
+              className="font-semibold text-[#378ADD] hover:underline"
+              href={loginPath}
             >
-              이름
-            </label>
-            <input
-              autoComplete="name"
-              className="h-12 w-full appearance-none rounded-xl border border-[#d5d5d5] bg-white px-3.5 py-2.5 text-[15px] text-[#111111] outline-none transition focus:border-[#378ADD] focus:ring-1 focus:ring-inset focus:ring-[#378ADD]"
-              id="signup-display-name"
-              onChange={(event) => setDisplayName(event.target.value)}
-              placeholder="예: 김누비"
-              required
-              value={displayName}
-            />
-          </div>
-
-          <div>
-            <label
-              className="mb-1.5 block text-sm font-medium text-neutral-700"
-              htmlFor="signup-phone"
-            >
-              전화번호
-            </label>
-            <input
-              autoComplete="tel"
-              className="h-12 w-full appearance-none rounded-xl border border-[#d5d5d5] bg-white px-3.5 py-2.5 text-[15px] text-[#111111] outline-none transition focus:border-[#378ADD] focus:ring-1 focus:ring-inset focus:ring-[#378ADD]"
-              id="signup-phone"
-              inputMode="tel"
-              onChange={(event) => setPhone(event.target.value)}
-              placeholder="예: 010-1234-5678"
-              required
-              value={phone}
-            />
-          </div>
-
-          <div>
-            <label className="mb-1.5 block text-sm font-medium text-neutral-700">
-              연락 가능한 이메일
-            </label>
-            <input
-              className="h-12 w-full appearance-none rounded-xl border border-[#d5d5d5] bg-neutral-50 px-3.5 py-2.5 text-[15px] text-neutral-500 outline-none"
-              disabled
-              readOnly
-              value={email}
-            />
-          </div>
-
-          <div>
-            <label
-              className="mb-1.5 block text-sm font-medium text-neutral-700"
-              htmlFor="signup-address"
-            >
-              주소
-            </label>
-            <input
-              autoComplete="street-address"
-              className="h-12 w-full appearance-none rounded-xl border border-[#d5d5d5] bg-white px-3.5 py-2.5 text-[15px] text-[#111111] outline-none transition focus:border-[#378ADD] focus:ring-1 focus:ring-inset focus:ring-[#378ADD]"
-              id="signup-address"
-              onChange={(event) => setAddress(event.target.value)}
-              placeholder="예: 서울시 마포구"
-              required
-              value={address}
-            />
-          </div>
-
-          {errorMessage ? (
-            <p className="rounded-xl bg-red-50 px-4 py-3 text-[13px] font-semibold text-red-700">
-              {errorMessage}
-            </p>
-          ) : null}
-          {message ? (
-            <p className="rounded-xl bg-teal-50 px-4 py-3 text-[13px] font-semibold text-teal-800">
-              {message}
-            </p>
-          ) : null}
-
-          <button
-            className="inline-flex h-12 w-full items-center justify-center rounded-xl bg-[#378ADD] px-3 text-[16px] font-semibold text-white transition-colors hover:bg-[#2a6fb5] disabled:bg-[#d5d5d5] disabled:text-white/60"
-            disabled={loading}
-            type="submit"
-          >
-            {loading ? "가입 중..." : "가입 완료"}
-          </button>
-        </form>
+              로그인
+            </Link>
+          </p>
+        </div>
       </div>
     </div>
   );
@@ -462,21 +352,6 @@ function AgreementRow({
           <ChevronRightIcon />
         </Link>
       ) : null}
-    </div>
-  );
-}
-
-function StepDots({ current, total }: { current: number; total: number }) {
-  return (
-    <div className="mb-6 flex items-center justify-center gap-1.5">
-      {Array.from({ length: total }, (_, index) => index + 1).map((step) => (
-        <span
-          className={`inline-block rounded-full transition-all duration-200 ${
-            step === current ? "h-2 w-6 bg-[#378ADD]" : "h-2 w-2 bg-neutral-200"
-          }`}
-          key={step}
-        />
-      ))}
     </div>
   );
 }

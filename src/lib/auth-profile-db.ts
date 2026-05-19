@@ -1,4 +1,4 @@
-import { eq } from "drizzle-orm";
+import { eq, sql } from "drizzle-orm";
 import type { User } from "@supabase/supabase-js";
 import { getDb } from "@/db/client";
 import { profiles } from "@/db/schema";
@@ -17,6 +17,14 @@ export type AuthProfile = {
 };
 
 export type OnboardingIntent = "participant" | "host";
+
+export type CompleteOnboardingInput = {
+  address: string;
+  contactEmail: string;
+  displayName: string;
+  intent: OnboardingIntent;
+  phone: string;
+};
 
 export async function ensureUserProfile(user: User): Promise<AuthProfile> {
   const profile = buildProfileFromUser(user);
@@ -38,11 +46,11 @@ export async function ensureUserProfile(user: User): Promise<AuthProfile> {
       target: profiles.id,
       set: {
         email: profile.email,
-        displayName: profile.displayName,
-        avatarUrl: profile.avatarUrl,
-        phone: profile.phone,
-        contactEmail: profile.contactEmail,
-        address: profile.address,
+        displayName: sql`coalesce(nullif(${profiles.displayName}, ''), ${profile.displayName})`,
+        avatarUrl: sql`coalesce(nullif(${profiles.avatarUrl}, ''), ${profile.avatarUrl})`,
+        phone: sql`coalesce(nullif(${profiles.phone}, ''), ${profile.phone})`,
+        contactEmail: sql`coalesce(nullif(${profiles.contactEmail}, ''), ${profile.contactEmail})`,
+        address: sql`coalesce(nullif(${profiles.address}, ''), ${profile.address})`,
         updatedAt: now,
       },
     })
@@ -53,12 +61,16 @@ export async function ensureUserProfile(user: User): Promise<AuthProfile> {
 
 export async function completeUserOnboarding(
   userId: string,
-  intent: OnboardingIntent,
+  input: CompleteOnboardingInput,
 ): Promise<AuthProfile | undefined> {
   const [row] = await getDb()
     .update(profiles)
     .set({
-      onboardingIntent: intent,
+      displayName: input.displayName,
+      phone: input.phone,
+      contactEmail: input.contactEmail,
+      address: input.address,
+      onboardingIntent: input.intent,
       onboardingCompletedAt: new Date(),
       updatedAt: new Date(),
     })
@@ -66,6 +78,18 @@ export async function completeUserOnboarding(
     .returning();
 
   return row ? mapProfileRow(row) : undefined;
+}
+
+export function isProfileOnboardingComplete(
+  profile: AuthProfile | null | undefined,
+): boolean {
+  return Boolean(
+    profile?.onboardingCompletedAt &&
+      profile.displayName.trim() &&
+      profile.phone.trim() &&
+      profile.contactEmail.trim() &&
+      profile.address.trim(),
+  );
 }
 
 export async function getUserProfile(

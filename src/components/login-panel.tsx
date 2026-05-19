@@ -42,6 +42,16 @@ function getRoleLandingPath(role?: ProfileRole): string {
   return "/me";
 }
 
+function isProfileOnboardingComplete(profile: AuthProfile | null): boolean {
+  return Boolean(
+    profile?.onboardingCompletedAt &&
+      profile.displayName.trim() &&
+      profile.phone.trim() &&
+      profile.contactEmail.trim() &&
+      profile.address.trim(),
+  );
+}
+
 function getPostLoginPath(
   profile: AuthProfile | null,
   nextPath: string | null,
@@ -51,7 +61,7 @@ function getPostLoginPath(
     return nextPath ?? getRoleLandingPath(profile.role);
   }
 
-  if (!profile?.onboardingCompletedAt) {
+  if (!isProfileOnboardingComplete(profile)) {
     if (nextPath?.startsWith("/onboarding")) return nextPath;
     const params = new URLSearchParams();
     if (intent) params.set("intent", intent);

@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import {
   ensureUserProfile,
+  isProfileOnboardingComplete,
   type AuthProfile,
   type OnboardingIntent,
 } from "@/lib/auth-profile-db";
@@ -62,7 +63,7 @@ function getPostAuthRedirectPath(
     return next ?? getRoleLandingPath(profile.role);
   }
 
-  if (!profile?.onboardingCompletedAt) {
+  if (!isProfileOnboardingComplete(profile)) {
     if (next?.startsWith("/onboarding")) return next;
     const onboardingUrl = new URLSearchParams();
     if (intent) onboardingUrl.set("intent", intent);

@@ -1,7 +1,7 @@
 "use client";
 
 import { useRouter, useSearchParams } from "next/navigation";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, type FormEvent } from "react";
 import { Building2, CheckCircle2, Loader2, Sparkles, UserRound } from "lucide-react";
 import { AuthHeader } from "@/components/auth-ui";
 
@@ -15,8 +15,12 @@ type SessionPayload = {
       userMetadata?: Record<string, unknown>;
     } | null;
     profile: {
+      address?: string | null;
+      contactEmail?: string | null;
       displayName?: string | null;
       email?: string | null;
+      onboardingIntent?: OnboardingIntent | null;
+      phone?: string | null;
       role?: "user" | "partner" | "admin";
     } | null;
   };
@@ -51,7 +55,10 @@ export function OnboardingPanel() {
     initialIntent ?? "participant",
   );
   const [referral, setReferral] = useState("");
-  const [displayName, setDisplayName] = useState("누비오 멤버");
+  const [displayName, setDisplayName] = useState("");
+  const [phone, setPhone] = useState("");
+  const [contactEmail, setContactEmail] = useState("");
+  const [address, setAddress] = useState("");
   const [loadingSession, setLoadingSession] = useState(true);
   const [saving, setSaving] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
@@ -85,10 +92,30 @@ export function OnboardingPanel() {
           payload.data.profile?.displayName ||
           getMetadataText(payload.data.user.userMetadata, "full_name") ||
           getMetadataText(payload.data.user.userMetadata, "name") ||
-          payload.data.profile?.email ||
-          payload.data.user.email ||
-          "누비오 멤버";
+          "";
         setDisplayName(name);
+        setPhone(
+          payload.data.profile?.phone ||
+            getMetadataText(payload.data.user.userMetadata, "phone") ||
+            "",
+        );
+        setContactEmail(
+          payload.data.profile?.contactEmail ||
+            payload.data.profile?.email ||
+            payload.data.user.email ||
+            "",
+        );
+        setAddress(
+          payload.data.profile?.address ||
+            getMetadataText(payload.data.user.userMetadata, "address") ||
+            "",
+        );
+        if (!initialIntent) {
+          const profileIntent = normalizeIntent(
+            payload.data.profile?.onboardingIntent ?? null,
+          );
+          if (profileIntent) setSelectedIntent(profileIntent);
+        }
       } catch {
         if (active) setErrorMessage("계정 정보를 불러오지 못했습니다.");
       } finally {
@@ -101,15 +128,41 @@ export function OnboardingPanel() {
     return () => {
       active = false;
     };
-  }, [router]);
+  }, [initialIntent, router]);
 
-  async function completeOnboarding() {
+  async function completeOnboarding(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
     setSaving(true);
     setErrorMessage("");
+
+    const nextProfile = {
+      address: address.trim(),
+      contactEmail: contactEmail.trim(),
+      displayName: displayName.trim(),
+      phone: phone.trim(),
+    };
+
+    if (
+      !nextProfile.displayName ||
+      !nextProfile.phone ||
+      !nextProfile.contactEmail ||
+      !nextProfile.address
+    ) {
+      setErrorMessage("이름, 전화번호, 연락 가능한 이메일, 주소를 모두 입력해 주세요.");
+      setSaving(false);
+      return;
+    }
+
+    if (!/.+@.+\..+/.test(nextProfile.contactEmail)) {
+      setErrorMessage("연락 가능한 이메일 형식을 확인해 주세요.");
+      setSaving(false);
+      return;
+    }
 
     try {
       const response = await fetch("/api/me/onboarding", {
         body: JSON.stringify({
+          ...nextProfile,
           intent: selectedIntent,
           referral: referral.trim() || undefined,
         }),
@@ -133,6 +186,8 @@ export function OnboardingPanel() {
     }
   }
 
+  const welcomeName = displayName.trim() || "누비오 멤버";
+
   return (
     <div className="min-h-screen bg-white">
       <AuthHeader />
@@ -143,104 +198,158 @@ export function OnboardingPanel() {
 
         <p className="text-sm font-semibold text-slate-500">1 / 1 단계</p>
         <h1 className="mt-4 text-[28px] font-black leading-tight tracking-tight text-slate-950">
-          {displayName}님,
+          {welcomeName}님,
           <br />
           누비오에 오신 것을 환영합니다.
         </h1>
         <p className="mt-4 text-base font-semibold leading-7 text-slate-500">
-          프로그램을 신청하거나, 로컬홈 운영자로 프로그램을 등록하고 관리할 수
-          있어요. 먼저 어떤 화면부터 시작할지 알려주세요.
+          프로그램 신청과 운영 안내에 사용할 기본 연락 정보를 확인해 주세요.
+          입력한 정보는 같은 계정의 참여와 운영 기능에서 함께 사용됩니다.
         </p>
 
-        <label className="mt-10 grid gap-2 text-sm font-bold text-slate-800">
-          누비오를 알게 된 경로가 궁금해요
-          <select
-            className="h-12 rounded-md border border-slate-200 bg-white px-3 text-sm font-semibold text-slate-700 outline-none focus:border-[var(--primary)] focus:ring-2 focus:ring-teal-100"
-            onChange={(event) => setReferral(event.target.value)}
-            value={referral}
-          >
-            <option value="">선택</option>
-            <option value="search">검색</option>
-            <option value="social">SNS</option>
-            <option value="program">프로그램 공고</option>
-            <option value="recommendation">지인 추천</option>
-            <option value="local-home">로컬홈/운영기관 안내</option>
-          </select>
-        </label>
+        <form className="mt-10 grid gap-7" onSubmit={completeOnboarding}>
+          <fieldset className="grid gap-4">
+            <legend className="mb-1 text-sm font-bold text-slate-800">
+              기본 정보
+            </legend>
+            <label className="grid gap-2 text-sm font-bold text-slate-800">
+              이름
+              <input
+                autoComplete="name"
+                className="h-12 rounded-md border border-slate-200 bg-white px-3 text-sm font-semibold text-slate-800 outline-none focus:border-[var(--primary)] focus:ring-2 focus:ring-teal-100"
+                onChange={(event) => setDisplayName(event.target.value)}
+                placeholder="예: 김누비"
+                required
+                value={displayName}
+              />
+            </label>
+            <label className="grid gap-2 text-sm font-bold text-slate-800">
+              전화번호
+              <input
+                autoComplete="tel"
+                className="h-12 rounded-md border border-slate-200 bg-white px-3 text-sm font-semibold text-slate-800 outline-none focus:border-[var(--primary)] focus:ring-2 focus:ring-teal-100"
+                inputMode="tel"
+                onChange={(event) => setPhone(event.target.value)}
+                placeholder="예: 010-1234-5678"
+                required
+                value={phone}
+              />
+            </label>
+            <label className="grid gap-2 text-sm font-bold text-slate-800">
+              연락 가능한 이메일
+              <input
+                autoComplete="email"
+                className="h-12 rounded-md border border-slate-200 bg-white px-3 text-sm font-semibold text-slate-800 outline-none focus:border-[var(--primary)] focus:ring-2 focus:ring-teal-100"
+                inputMode="email"
+                onChange={(event) => setContactEmail(event.target.value)}
+                placeholder="hello@nuvio.kr"
+                required
+                type="email"
+                value={contactEmail}
+              />
+            </label>
+            <label className="grid gap-2 text-sm font-bold text-slate-800">
+              주소
+              <input
+                autoComplete="street-address"
+                className="h-12 rounded-md border border-slate-200 bg-white px-3 text-sm font-semibold text-slate-800 outline-none focus:border-[var(--primary)] focus:ring-2 focus:ring-teal-100"
+                onChange={(event) => setAddress(event.target.value)}
+                placeholder="예: 서울시 마포구"
+                required
+                value={address}
+              />
+            </label>
+          </fieldset>
 
-        <fieldset className="mt-7 grid gap-3">
-          <legend className="mb-1 text-sm font-bold text-slate-800">
-            어떤 기능을 먼저 사용하고 싶나요?
-          </legend>
-          {intentOptions.map((option) => {
-            const Icon = option.icon;
-            const active = selectedIntent === option.id;
+          <label className="grid gap-2 text-sm font-bold text-slate-800">
+            누비오를 알게 된 경로가 궁금해요
+            <select
+              className="h-12 rounded-md border border-slate-200 bg-white px-3 text-sm font-semibold text-slate-700 outline-none focus:border-[var(--primary)] focus:ring-2 focus:ring-teal-100"
+              onChange={(event) => setReferral(event.target.value)}
+              value={referral}
+            >
+              <option value="">선택</option>
+              <option value="search">검색</option>
+              <option value="social">SNS</option>
+              <option value="program">프로그램 공고</option>
+              <option value="recommendation">지인 추천</option>
+              <option value="local-home">로컬홈/운영기관 안내</option>
+            </select>
+          </label>
 
-            return (
-              <button
-                className={`flex min-h-[76px] items-center gap-4 rounded-xl border px-4 text-left transition ${
-                  active
-                    ? "border-[var(--primary)] bg-teal-50 shadow-sm ring-1 ring-[var(--primary)]"
-                    : "border-slate-200 bg-white hover:border-slate-300 hover:bg-slate-50"
-                }`}
-                key={option.id}
-                onClick={() => setSelectedIntent(option.id)}
-                type="button"
-              >
-                <span
-                  className={`grid size-8 shrink-0 place-items-center rounded-full ${
+          <fieldset className="grid gap-3">
+            <legend className="mb-1 text-sm font-bold text-slate-800">
+              어떤 기능을 먼저 사용하고 싶나요?
+            </legend>
+            {intentOptions.map((option) => {
+              const Icon = option.icon;
+              const active = selectedIntent === option.id;
+
+              return (
+                <button
+                  className={`flex min-h-[76px] items-center gap-4 rounded-xl border px-4 text-left transition ${
                     active
-                      ? "bg-[var(--primary)] text-white"
-                      : "bg-slate-100 text-slate-500"
+                      ? "border-[var(--primary)] bg-teal-50 shadow-sm ring-1 ring-[var(--primary)]"
+                      : "border-slate-200 bg-white hover:border-slate-300 hover:bg-slate-50"
                   }`}
+                  key={option.id}
+                  onClick={() => setSelectedIntent(option.id)}
+                  type="button"
                 >
-                  {active ? <CheckCircle2 size={18} /> : <Icon size={18} />}
-                </span>
-                <span>
                   <span
-                    className={`block text-base font-black ${
-                      active ? "text-[var(--primary)]" : "text-slate-950"
+                    className={`grid size-8 shrink-0 place-items-center rounded-full ${
+                      active
+                        ? "bg-[var(--primary)] text-white"
+                        : "bg-slate-100 text-slate-500"
                     }`}
                   >
-                    {option.title}
+                    {active ? <CheckCircle2 size={18} /> : <Icon size={18} />}
                   </span>
-                  <span className="mt-1 block text-sm font-semibold leading-6 text-slate-500">
-                    {option.description}
+                  <span>
+                    <span
+                      className={`block text-base font-black ${
+                        active ? "text-[var(--primary)]" : "text-slate-950"
+                      }`}
+                    >
+                      {option.title}
+                    </span>
+                    <span className="mt-1 block text-sm font-semibold leading-6 text-slate-500">
+                      {option.description}
+                    </span>
                   </span>
-                </span>
-              </button>
-            );
-          })}
-        </fieldset>
+                </button>
+              );
+            })}
+          </fieldset>
 
-        <p className="mt-4 rounded-md bg-blue-50 px-4 py-3 text-sm font-semibold leading-6 text-blue-800">
-          선택한 용도는 시작 화면을 정하는 데만 사용됩니다. 같은 계정으로 참여와
-          운영 기능을 모두 사용할 수 있습니다.
-        </p>
-
-        {errorMessage ? (
-          <p className="mt-4 rounded-md bg-red-50 px-4 py-3 text-sm font-bold text-red-700">
-            {errorMessage}
+          <p className="rounded-md bg-blue-50 px-4 py-3 text-sm font-semibold leading-6 text-blue-800">
+            선택한 용도는 시작 화면을 정하는 데만 사용됩니다. 같은 계정으로 참여와
+            운영 기능을 모두 사용할 수 있습니다.
           </p>
-        ) : null}
 
-        <button
-          className="mt-8 inline-flex h-12 items-center justify-center rounded-xl bg-slate-950 px-5 text-sm font-black text-white transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:bg-slate-300"
-          disabled={loadingSession || saving}
-          onClick={() => void completeOnboarding()}
-          type="button"
-        >
-          {saving ? (
-            <>
-              <Loader2 className="mr-2 size-4 animate-spin" />
-              저장 중
-            </>
-          ) : selectedIntent === "host" ? (
-            "호스트센터로 계속"
-          ) : (
-            "프로그램 탐색으로 계속"
-          )}
-        </button>
+          {errorMessage ? (
+            <p className="rounded-md bg-red-50 px-4 py-3 text-sm font-bold text-red-700">
+              {errorMessage}
+            </p>
+          ) : null}
+
+          <button
+            className="inline-flex h-12 items-center justify-center rounded-xl bg-slate-950 px-5 text-sm font-black text-white transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:bg-slate-300"
+            disabled={loadingSession || saving}
+            type="submit"
+          >
+            {saving ? (
+              <>
+                <Loader2 className="mr-2 size-4 animate-spin" />
+                저장 중
+              </>
+            ) : selectedIntent === "host" ? (
+              "호스트센터로 계속"
+            ) : (
+              "프로그램 탐색으로 계속"
+            )}
+          </button>
+        </form>
       </main>
     </div>
   );

@@ -28,8 +28,33 @@ export async function POST(request: Request) {
       );
     }
 
+    const displayName = normalizeRequiredText(body.displayName);
+    const phone = normalizeRequiredText(body.phone);
+    const contactEmail = normalizeRequiredText(body.contactEmail);
+    const address = normalizeRequiredText(body.address);
+
+    if (!displayName || !phone || !contactEmail || !address) {
+      return NextResponse.json(
+        { error: "이름, 전화번호, 연락 가능한 이메일, 주소를 모두 입력해 주세요." },
+        { status: 400 },
+      );
+    }
+
+    if (!isValidEmail(contactEmail)) {
+      return NextResponse.json(
+        { error: "연락 가능한 이메일 형식을 확인해 주세요." },
+        { status: 400 },
+      );
+    }
+
     await ensureUserProfile(user);
-    const profile = await completeUserOnboarding(user.id, intent);
+    const profile = await completeUserOnboarding(user.id, {
+      address,
+      contactEmail,
+      displayName,
+      intent,
+      phone,
+    });
 
     return NextResponse.json({ data: profile });
   } catch (error) {
@@ -47,4 +72,12 @@ export async function POST(request: Request) {
 
 function normalizeIntent(value: unknown): OnboardingIntent | null {
   return value === "participant" || value === "host" ? value : null;
+}
+
+function normalizeRequiredText(value: unknown): string {
+  return typeof value === "string" ? value.trim() : "";
+}
+
+function isValidEmail(value: string): boolean {
+  return /.+@.+\..+/.test(value);
 }
