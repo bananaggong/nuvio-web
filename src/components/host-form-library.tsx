@@ -18,6 +18,7 @@ export function HostFormLibrary() {
   const [templates, setTemplates] = useState<ApplicationFormTemplate[]>(() =>
     readApplicationFormTemplates().map(normalizeApplicationFormTemplateShape),
   );
+  const [isCreating, setIsCreating] = useState(false);
 
   useEffect(() => {
     let isMounted = true;
@@ -55,12 +56,34 @@ export function HostFormLibrary() {
     };
   }, []);
 
-  function createForm() {
+  async function createForm() {
     const nextTemplate = createEmptyTemplate();
-    const nextTemplates = [nextTemplate, ...templates];
-    setTemplates(nextTemplates);
-    writeApplicationFormTemplates(nextTemplates);
-    router.push(`/host/forms/${encodeURIComponent(nextTemplate.id)}`);
+    setIsCreating(true);
+
+    try {
+      const response = await fetch("/api/host/forms", {
+        body: JSON.stringify(nextTemplate),
+        headers: { "Content-Type": "application/json" },
+        method: "POST",
+      });
+      const payload = (await response.json()) as {
+        data?: ApplicationFormTemplate;
+        error?: string;
+      };
+      if (!response.ok || !payload.data) {
+        throw new Error(payload.error ?? "신청폼을 만들지 못했습니다.");
+      }
+
+      const savedTemplate = normalizeApplicationFormTemplateShape(payload.data);
+      const nextTemplates = [savedTemplate, ...templates];
+      setTemplates(nextTemplates);
+      writeApplicationFormTemplates(nextTemplates);
+      router.push(`/host/forms/${encodeURIComponent(savedTemplate.id)}`);
+    } catch {
+      // Keep the current library visible; the save button/API surfaces failures elsewhere.
+    } finally {
+      setIsCreating(false);
+    }
   }
 
   return (
@@ -79,8 +102,9 @@ export function HostFormLibrary() {
           </p>
         </div>
         <button
-          className="inline-flex h-10 w-fit items-center justify-center gap-2 rounded-md bg-slate-950 px-3 text-sm font-black text-white"
-          onClick={createForm}
+          className="inline-flex h-10 w-fit items-center justify-center gap-2 rounded-md bg-slate-950 px-3 text-sm font-black text-white disabled:cursor-wait disabled:opacity-70"
+          disabled={isCreating}
+          onClick={() => void createForm()}
           type="button"
         >
           <Plus size={16} />새 신청폼

@@ -4,6 +4,7 @@ import {
   readHostApplicationsFromStorage,
   seedMessageTemplates,
 } from "@/lib/host-operations";
+import { isDemoModeEnabled } from "@/lib/demo-mode";
 import type {
   HostApplication,
   HostApplicationStatus,
@@ -84,6 +85,7 @@ export const seedMessageCampaigns: MessageCampaign[] = [
 ];
 
 export function readMessageTemplates(): MessageTemplate[] {
+  if (!isDemoModeEnabled()) return seedMessageTemplates;
   if (typeof window === "undefined") return seedMessageTemplates;
 
   try {
@@ -96,6 +98,7 @@ export function readMessageTemplates(): MessageTemplate[] {
 }
 
 export function readMessageCampaigns(): MessageCampaign[] {
+  if (!isDemoModeEnabled()) return [];
   if (typeof window === "undefined") return seedMessageCampaigns;
 
   try {
@@ -108,6 +111,8 @@ export function readMessageCampaigns(): MessageCampaign[] {
 }
 
 export function writeMessageCampaigns(campaigns: MessageCampaign[]) {
+  if (!isDemoModeEnabled()) return;
+
   window.localStorage.setItem(
     MESSAGE_CAMPAIGN_STORAGE_KEY,
     JSON.stringify(campaigns),

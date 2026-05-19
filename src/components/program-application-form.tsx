@@ -11,7 +11,6 @@ import {
   isQuestionBlock,
   normalizeApplicationFormTemplateShape,
 } from "@/lib/application-form-builder";
-import { appendMyApplication } from "@/lib/my-applications";
 import { programPath } from "@/lib/program-routing";
 import type { Program } from "@/lib/types";
 
@@ -159,15 +158,13 @@ export function ProgramApplicationForm({
       }
 
       const payload = (await response.json()) as {
-        data?: Parameters<typeof appendMyApplication>[0];
+        data?: { id: string };
       };
       if (!payload.data) {
         throw new Error("신청서 저장 결과를 확인하지 못했습니다.");
       }
 
-      const application = payload.data;
-      appendMyApplication(application);
-      setSubmittedId(application.id);
+      setSubmittedId(payload.data.id);
     } catch (error) {
       setSubmitError(
         error instanceof Error

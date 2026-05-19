@@ -1,66 +1,123 @@
 "use client";
 
 import Link from "next/link";
-import { Send } from "lucide-react";
+import { Loader2, Send } from "lucide-react";
 import { FormEvent, useState } from "react";
 
 export function ReviewWriter() {
   const [submitted, setSubmitted] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [errorMessage, setErrorMessage] = useState("");
 
-  function submit(event: FormEvent<HTMLFormElement>) {
+  async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    const form = new FormData(event.currentTarget);
+    const formElement = event.currentTarget;
+    const form = new FormData(formElement);
     const payload = Object.fromEntries(form.entries());
-    const current = JSON.parse(
-      window.localStorage.getItem("nuvio:draft-reviews") ?? "[]",
-    ) as unknown[];
-    window.localStorage.setItem(
-      "nuvio:draft-reviews",
-      JSON.stringify([{ ...payload, createdAt: new Date().toISOString() }, ...current]),
-    );
-    setSubmitted(true);
-    event.currentTarget.reset();
+
+    setSubmitted(false);
+    setErrorMessage("");
+    setIsSubmitting(true);
+
+    try {
+      const response = await fetch("/api/reviews", {
+        body: JSON.stringify(payload),
+        headers: { "Content-Type": "application/json" },
+        method: "POST",
+      });
+      const result = (await response.json()) as { error?: string };
+
+      if (!response.ok) {
+        throw new Error(result.error ?? "후기를 저장하지 못했습니다.");
+      }
+
+      setSubmitted(true);
+      formElement.reset();
+    } catch (error) {
+      setErrorMessage(
+        error instanceof Error
+          ? error.message
+          : "후기 저장에 실패했습니다. 잠시 후 다시 시도해 주세요.",
+      );
+    } finally {
+      setIsSubmitting(false);
+    }
   }
 
   return (
     <div className="mx-auto max-w-2xl px-5 py-8 md:px-8">
       <h1 className="text-3xl font-black text-slate-950">후기 작성</h1>
       <p className="mt-2 text-sm text-slate-500">
-        이 MVP에서는 작성 내용이 브라우저 저장소에 임시 저장됩니다.
+        작성한 후기는 운영 DB에 검토 대기 상태로 저장됩니다. 운영자가 확인한
+        뒤 공개할 수 있습니다.
       </p>
 
       {submitted ? (
         <div className="mt-5 rounded-md border border-teal-200 bg-teal-50 p-4 text-sm font-bold text-teal-800">
-          후기가 임시 저장되었습니다. 운영자 검수 후 공개되는 흐름으로 확장됩니다.
+          후기가 접수되었습니다. 검토 후 공개 여부가 결정됩니다.
+        </div>
+      ) : null}
+      {errorMessage ? (
+        <div className="mt-5 rounded-md border border-rose-200 bg-rose-50 p-4 text-sm font-bold text-rose-700">
+          {errorMessage}
         </div>
       ) : null}
 
-      <form className="mt-6 grid gap-4 rounded-md border border-slate-200 bg-white p-5" onSubmit={submit}>
+      <form
+        className="mt-6 grid gap-4 rounded-md border border-slate-200 bg-white p-5"
+        onSubmit={submit}
+      >
         <label className="grid gap-2 text-sm font-black text-slate-700">
           카테고리
-          <select className="h-11 rounded-md border border-slate-200 px-3 font-semibold" name="category">
-            <option>프로그램 후기/팁</option>
-            <option>선정됐어요</option>
-            <option>탈락했어요</option>
-            <option>여행후기</option>
-            <option>자유수다</option>
-            <option>질문답변</option>
+          <select
+            className="h-11 rounded-md border border-slate-200 px-3 font-semibold"
+            name="category"
+          >
+            <option value="trip">참여 후기</option>
+            <option value="programTip">프로그램 팁</option>
+            <option value="selected">선정 후기</option>
+            <option value="rejected">미선정 후기</option>
+            <option value="free">자유 후기</option>
+            <option value="question">질문</option>
           </select>
         </label>
         <label className="grid gap-2 text-sm font-black text-slate-700">
+          작성자명
+          <input
+            className="h-11 rounded-md border border-slate-200 px-3 font-semibold"
+            name="author"
+            placeholder="미입력 시 익명"
+          />
+        </label>
+        <label className="grid gap-2 text-sm font-black text-slate-700">
           제목
-          <input className="h-11 rounded-md border border-slate-200 px-3 font-semibold" name="title" required />
+          <input
+            className="h-11 rounded-md border border-slate-200 px-3 font-semibold"
+            name="title"
+            required
+          />
         </label>
         <label className="grid gap-2 text-sm font-black text-slate-700">
           내용
-          <textarea className="min-h-44 rounded-md border border-slate-200 p-3 font-semibold leading-6" name="body" required />
+          <textarea
+            className="min-h-44 rounded-md border border-slate-200 p-3 font-semibold leading-6"
+            name="body"
+            required
+          />
         </label>
-        <button className="inline-flex h-12 items-center justify-center gap-2 rounded-md bg-[var(--primary)] text-sm font-black text-white" type="submit">
-          <Send size={18} />
-          임시 저장
+        <button
+          className="inline-flex h-12 items-center justify-center gap-2 rounded-md bg-[var(--primary)] text-sm font-black text-white disabled:cursor-wait disabled:opacity-70"
+          disabled={isSubmitting}
+          type="submit"
+        >
+          {isSubmitting ? <Loader2 className="animate-spin" size={18} /> : <Send size={18} />}
+          후기 접수
         </button>
       </form>
-      <Link className="mt-4 inline-block text-sm font-bold text-slate-500 hover:text-[var(--primary)]" href="/reviews">
+      <Link
+        className="mt-4 inline-block text-sm font-bold text-slate-500 hover:text-[var(--primary)]"
+        href="/reviews"
+      >
         후기 목록으로 돌아가기
       </Link>
     </div>

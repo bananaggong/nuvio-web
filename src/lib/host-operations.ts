@@ -1,3 +1,5 @@
+import { isDemoModeEnabled } from "@/lib/demo-mode";
+
 export type HostApplicationStatus =
   | "submitted"
   | "screening"
@@ -256,6 +258,7 @@ export function buildHostReportCsv(applications: HostApplication[]): string {
 }
 
 export function readHostApplicationsFromStorage(): HostApplication[] {
+  if (!isDemoModeEnabled()) return [];
   if (typeof window === "undefined") return seedHostApplications;
 
   try {
@@ -270,6 +273,8 @@ export function readHostApplicationsFromStorage(): HostApplication[] {
 }
 
 export function writeHostApplicationsToStorage(applications: HostApplication[]) {
+  if (!isDemoModeEnabled()) return;
+
   window.localStorage.setItem(
     HOST_APPLICATION_STORAGE_KEY,
     JSON.stringify(applications),

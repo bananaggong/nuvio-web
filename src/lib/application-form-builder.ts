@@ -1,3 +1,5 @@
+import { isDemoModeEnabled } from "@/lib/demo-mode";
+
 export type ApplicationFieldType = "text" | "textarea" | "select" | "checkbox";
 
 export type ApplicationFormBlockType =
@@ -144,6 +146,7 @@ export const seedApplicationFormTemplates: ApplicationFormTemplate[] = [
 ];
 
 export function readApplicationFormTemplates(): ApplicationFormTemplate[] {
+  if (!isDemoModeEnabled()) return [];
   if (typeof window === "undefined") return seedApplicationFormTemplates;
 
   try {
@@ -161,6 +164,8 @@ export function readApplicationFormTemplates(): ApplicationFormTemplate[] {
 export function writeApplicationFormTemplates(
   templates: ApplicationFormTemplate[],
 ) {
+  if (!isDemoModeEnabled()) return;
+
   window.localStorage.setItem(
     APPLICATION_FORM_TEMPLATE_STORAGE_KEY,
     JSON.stringify(templates.map(normalizeApplicationFormTemplateShape)),

@@ -1,4 +1,4 @@
-import { desc, eq } from "drizzle-orm";
+import { and, desc, eq, inArray, type SQL } from "drizzle-orm";
 import { getDb } from "@/db/client";
 import {
   applicationStatusEvents,
@@ -38,6 +38,16 @@ export type HostApplicationStatusEvent = {
 export type HostApplicationDetail = HostApplication & {
   answers: Record<string, unknown>;
   statusEvents: HostApplicationStatusEvent[];
+};
+
+export type ListHostApplicationsOptions = {
+  emails?: string[];
+  limit?: number;
+  villageIds?: string[];
+};
+
+export type HostApplicationAccessOptions = {
+  villageIds?: string[];
 };
 
 export async function createProgramApplication(
@@ -109,8 +119,23 @@ async function resolveApplicationProgram(
   throw new Error(`Program ${key} was not found.`);
 }
 
-export async function listHostApplications(): Promise<HostApplication[]> {
-  const rows = await getDb()
+export async function listHostApplications(
+  options: ListHostApplicationsOptions = {},
+): Promise<HostApplication[]> {
+  if (options.villageIds && options.villageIds.length === 0) return [];
+
+  const emails = normalizeEmailList(options.emails);
+  if (options.emails && emails.length === 0) return [];
+
+  const conditions: SQL[] = [];
+  if (options.villageIds) {
+    conditions.push(inArray(programsTable.villageId, options.villageIds));
+  }
+  if (options.emails) {
+    conditions.push(inArray(programApplications.email, emails));
+  }
+
+  let query = getDb()
     .select({
       id: programApplications.id,
       programTitle: programsTable.title,
@@ -127,8 +152,17 @@ export async function listHostApplications(): Promise<HostApplication[]> {
     })
     .from(programApplications)
     .leftJoin(programsTable, eq(programApplications.programId, programsTable.id))
+    .$dynamic();
+
+  if (conditions.length === 1) {
+    query = query.where(conditions[0]);
+  } else if (conditions.length > 1) {
+    query = query.where(and(...conditions));
+  }
+
+  const rows = await query
     .orderBy(desc(programApplications.submittedAt))
-    .limit(200);
+    .limit(options.limit ?? 200);
 
   return rows.map((row) => ({
     id: row.id,
@@ -146,9 +180,24 @@ export async function listHostApplications(): Promise<HostApplication[]> {
   }));
 }
 
+function normalizeEmailList(emails: string[] | undefined): string[] {
+  if (!emails) return [];
+
+  return Array.from(
+    new Set(
+      emails
+        .map((email) => email.trim().toLowerCase())
+        .filter((email) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/u.test(email)),
+    ),
+  );
+}
+
 export async function getHostApplicationDetail(
   applicationId: string,
+  options: HostApplicationAccessOptions = {},
 ): Promise<HostApplicationDetail | null> {
+  if (options.villageIds && options.villageIds.length === 0) return null;
+
   const [row] = await getDb()
     .select({
       id: programApplications.id,
@@ -163,6 +212,7 @@ export async function getHostApplicationDetail(
       signatureCompleted: programApplications.signatureCompleted,
       reviewSubmitted: programApplications.reviewSubmitted,
       answers: programApplications.answers,
+      villageId: programsTable.villageId,
     })
     .from(programApplications)
     .leftJoin(programsTable, eq(programApplications.programId, programsTable.id))
@@ -170,6 +220,9 @@ export async function getHostApplicationDetail(
     .limit(1);
 
   if (!row) {
+    return null;
+  }
+  if (options.villageIds && !options.villageIds.includes(row.villageId ?? "")) {
     return null;
   }
 
@@ -214,19 +267,29 @@ export async function updateHostApplicationStatus(
   applicationId: string,
   status: HostApplicationStatus,
   actorId?: string,
-) {
+  options: HostApplicationAccessOptions = {},
+): Promise<boolean> {
+  if (options.villageIds && options.villageIds.length === 0) return false;
+
   const [current] = await getDb()
     .select({
       email: programApplications.email,
       programTitle: programsTable.title,
       status: programApplications.status,
+      villageId: programsTable.villageId,
     })
     .from(programApplications)
     .leftJoin(programsTable, eq(programApplications.programId, programsTable.id))
     .where(eq(programApplications.id, applicationId))
     .limit(1);
 
-  if (!current) return;
+  if (!current) return false;
+  if (
+    options.villageIds &&
+    !options.villageIds.includes(current.villageId ?? "")
+  ) {
+    return false;
+  }
 
   await getDb()
     .update(programApplications)
@@ -259,6 +322,8 @@ export async function updateHostApplicationStatus(
       status,
     },
   });
+
+  return true;
 }
 
 function extractMemo(answers: Record<string, unknown>): string {

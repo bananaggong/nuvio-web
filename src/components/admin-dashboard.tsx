@@ -77,14 +77,30 @@ const adminQuickLinks = [
 export function AdminDashboard() {
   const [submissions, setSubmissions] = useState<Submission[]>([]);
   const [drafts, setDrafts] = useState<Submission[]>([]);
+  const [draftError, setDraftError] = useState("");
 
   useEffect(() => {
-    const storageTimeoutId = window.setTimeout(() => {
-      setSubmissions(readStorageArray("nuvio:partner-submissions"));
-      setDrafts(readStorageArray("nuvio:admin-program-drafts"));
-    }, 0);
+    let active = true;
 
-    return () => window.clearTimeout(storageTimeoutId);
+    async function loadPartnerSubmissions() {
+      try {
+        const response = await fetch("/api/partner-submissions", {
+          cache: "no-store",
+        });
+        if (!response.ok) return;
+
+        const payload = (await response.json()) as { data?: Submission[] };
+        if (active) setSubmissions(payload.data ?? []);
+      } catch {
+        if (active) setSubmissions([]);
+      }
+    }
+
+    void loadPartnerSubmissions();
+
+    return () => {
+      active = false;
+    };
   }, []);
 
   const implementationSummary = useMemo(
@@ -132,14 +148,48 @@ export function AdminDashboard() {
     },
   ];
 
-  function createDraft(event: FormEvent<HTMLFormElement>) {
+  async function createDraft(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    const form = new FormData(event.currentTarget);
+    const formElement = event.currentTarget;
+    const form = new FormData(formElement);
     const draft = Object.fromEntries(form.entries()) as Submission;
-    const next = [{ ...draft, createdAt: new Date().toISOString() }, ...drafts];
-    setDrafts(next);
-    window.localStorage.setItem("nuvio:admin-program-drafts", JSON.stringify(next));
-    event.currentTarget.reset();
+    const programDraft = {
+      id: `admin-draft-${Date.now()}`,
+      title: draft.title ?? "",
+      region: draft.region ?? "",
+      city: draft.region ?? "",
+      summary: draft.summary ?? "",
+      description: draft.summary ?? "",
+      subsidyLabel: draft.subsidy ?? "",
+      published: false,
+      updatedAt: new Date().toISOString(),
+    };
+
+    setDraftError("");
+
+    try {
+      const response = await fetch("/api/host/programs", {
+        body: JSON.stringify(programDraft),
+        headers: { "Content-Type": "application/json" },
+        method: "POST",
+      });
+      const payload = (await response.json()) as {
+        data?: Submission;
+        error?: string;
+      };
+      if (!response.ok || !payload.data) {
+        throw new Error(payload.error ?? "프로그램 초안을 저장하지 못했습니다.");
+      }
+
+      setDrafts((current) => [payload.data as Submission, ...current]);
+      formElement.reset();
+    } catch (error) {
+      setDraftError(
+        error instanceof Error
+          ? error.message
+          : "프로그램 초안을 저장하지 못했습니다.",
+      );
+    }
   }
 
   function createDraftFromLead(lead: ProgramLead) {
@@ -154,9 +204,7 @@ export function AdminDashboard() {
       sourceUrl: lead.sourceUrl ?? "",
       createdAt: new Date().toISOString(),
     };
-    const next = [draft, ...drafts];
-    setDrafts(next);
-    window.localStorage.setItem("nuvio:admin-program-drafts", JSON.stringify(next));
+    setDrafts((current) => [draft, ...current]);
   }
 
   return (
@@ -260,7 +308,7 @@ export function AdminDashboard() {
       </section>
 
       <section className="mt-6 grid gap-6 xl:grid-cols-[minmax(0,1fr)_360px]">
-        <ProgramDraftForm onSubmit={createDraft} />
+        <ProgramDraftForm errorMessage={draftError} onSubmit={createDraft} />
         <AdminLinks />
       </section>
 
@@ -571,9 +619,11 @@ function AdminMiniCalendar({ programs }: { programs: Program[] }) {
 }
 
 function ProgramDraftForm({
+  errorMessage,
   onSubmit,
 }: {
-  onSubmit: (event: FormEvent<HTMLFormElement>) => void;
+  errorMessage: string;
+  onSubmit: (event: FormEvent<HTMLFormElement>) => void | Promise<void>;
 }) {
   return (
     <section className="rounded-md border border-slate-200 bg-white p-5">
@@ -617,6 +667,11 @@ function ProgramDraftForm({
         >
           초안 저장
         </button>
+        {errorMessage ? (
+          <p className="rounded-md bg-rose-50 px-3 py-2 text-sm font-bold text-rose-700">
+            {errorMessage}
+          </p>
+        ) : null}
       </form>
     </section>
   );
@@ -688,14 +743,4 @@ function AdminList({
       </div>
     </section>
   );
-}
-
-function readStorageArray(key: string): Submission[] {
-  if (typeof window === "undefined") return [];
-
-  try {
-    return JSON.parse(window.localStorage.getItem(key) ?? "[]") as Submission[];
-  } catch {
-    return [];
-  }
 }

@@ -34,7 +34,6 @@ const confidenceLabel: Record<ProgramLead["confidence"], string> = {
 };
 
 const themeLabelByKey = new Map(themeOptions.map((theme) => [theme.key, theme.label]));
-const LEAD_DECISION_STORAGE_KEY = "nuvio:program-lead-decisions";
 
 export function ProgramLeadQueue({ onCreateDraft }: ProgramLeadQueueProps) {
   const [leads, setLeads] = useState<ProgramLead[]>([]);
@@ -42,9 +41,7 @@ export function ProgramLeadQueue({ onCreateDraft }: ProgramLeadQueueProps) {
   const [loading, setLoading] = useState(true);
   const [pendingLeadIds, setPendingLeadIds] = useState<Set<string>>(new Set());
   const [leadErrors, setLeadErrors] = useState<Record<string, string>>({});
-  const [leadDecisions, setLeadDecisions] = useState<LeadDecisionMap>(
-    readStoredLeadDecisions,
-  );
+  const [leadDecisions, setLeadDecisions] = useState<LeadDecisionMap>({});
 
   useEffect(() => {
     let active = true;
@@ -130,7 +127,6 @@ export function ProgramLeadQueue({ onCreateDraft }: ProgramLeadQueueProps) {
 function saveDecision(leadId: string, decision: LeadDecision) {
     const next = { ...leadDecisions, [leadId]: decision };
     setLeadDecisions(next);
-    window.localStorage.setItem(LEAD_DECISION_STORAGE_KEY, JSON.stringify(next));
   }
 
   return (
@@ -176,18 +172,6 @@ function saveDecision(leadId: string, decision: LeadDecision) {
       </div>
     </section>
   );
-}
-
-function readStoredLeadDecisions(): LeadDecisionMap {
-  if (typeof window === "undefined") return {};
-
-  try {
-    return JSON.parse(
-      window.localStorage.getItem(LEAD_DECISION_STORAGE_KEY) ?? "{}",
-    ) as LeadDecisionMap;
-  } catch {
-    return {};
-  }
 }
 
 function LeadCard({

@@ -14,17 +14,10 @@ import {
 import { getProgramById } from "@/lib/data";
 import {
   applicationStatusLabels,
-  mergeHostApplications,
 } from "@/lib/host-operations";
 import type { HostApplication } from "@/lib/host-operations";
-import { readMyApplicationsFromStorage } from "@/lib/my-applications";
 import { programPath } from "@/lib/program-routing";
 import type { Program } from "@/lib/types";
-
-type LocalProfile = {
-  name: string;
-  email: string;
-};
 
 type AuthProfile = {
   id: string;
@@ -77,11 +70,6 @@ function readMap(key: string): StateMap {
 }
 
 export function MyPage() {
-  const [localProfile] = useState<LocalProfile | null>(() => {
-    if (typeof window === "undefined") return null;
-    const rawProfile = window.localStorage.getItem("nuvio:profile");
-    return rawProfile ? (JSON.parse(rawProfile) as LocalProfile) : null;
-  });
   const [authSession, setAuthSession] = useState<AuthSessionPayload>({
     user: null,
     profile: null,
@@ -89,9 +77,7 @@ export function MyPage() {
   const [bookmarks] = useState<StateMap>(() => readMap("nuvio:bookmarks"));
   const [alerts] = useState<StateMap>(() => readMap("nuvio:alerts"));
   const [tracks] = useState<StateMap>(() => readMap("nuvio:tracks"));
-  const [applications, setApplications] = useState<HostApplication[]>(
-    readMyApplicationsFromStorage,
-  );
+  const [applications, setApplications] = useState<HostApplication[]>([]);
   const [notifications, setNotifications] = useState<UserNotification[]>([]);
   const [notificationPreference, setNotificationPreference] =
     useState<NotificationPreference | null>(null);
@@ -101,13 +87,11 @@ export function MyPage() {
   const profileName =
     authSession.profile?.displayName ??
     getMetadataText(authSession.user?.userMetadata, "full_name") ??
-    getMetadataText(authSession.user?.userMetadata, "name") ??
-    localProfile?.name;
+    getMetadataText(authSession.user?.userMetadata, "name");
   const profileEmail =
     authSession.profile?.contactEmail ??
     authSession.profile?.email ??
-    authSession.user?.email ??
-    localProfile?.email;
+    authSession.user?.email;
   const signedIn = Boolean(authSession.user);
 
   useEffect(() => {
@@ -147,29 +131,18 @@ export function MyPage() {
           setNotificationPreference(preferencePayload.data ?? null);
         }
 
-        const email =
-          sessionPayload.profile?.email ??
-          sessionPayload.user?.email ??
-          localProfile?.email;
-        let dbApplications: HostApplication[] = [];
-
         if (sessionPayload.user) {
-          const applicationsResponse = await fetch("/api/host/applications", {
+          const applicationsResponse = await fetch("/api/me/applications", {
             cache: "no-store",
           });
           const applicationPayload = (await applicationsResponse.json()) as {
             data?: HostApplication[];
           };
-          dbApplications = (applicationPayload.data ?? []).filter(
-            (application) =>
-              email &&
-              application.email.trim().toLowerCase() === email.trim().toLowerCase(),
-          );
+          if (!active) return;
+          setApplications(applicationPayload.data ?? []);
+        } else {
+          setApplications([]);
         }
-
-        setApplications((current) =>
-          mergeHostApplications(dbApplications, current),
-        );
       } finally {
         if (active) setLoading(false);
       }
@@ -180,7 +153,7 @@ export function MyPage() {
     return () => {
       active = false;
     };
-  }, [localProfile?.email]);
+  }, []);
 
   const sections = useMemo(
     () => [

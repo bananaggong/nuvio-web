@@ -2,6 +2,7 @@ import {
   readHostApplicationsFromStorage,
   summarizeApplications,
 } from "@/lib/host-operations";
+import { isDemoModeEnabled } from "@/lib/demo-mode";
 import type { HostApplication } from "@/lib/host-operations";
 
 export type ReportProjectStatus = "draft" | "review" | "ready";
@@ -382,6 +383,7 @@ export const seedReportProjects: ReportProject[] = [
 ];
 
 export function readReportProjects(): ReportProject[] {
+  if (!isDemoModeEnabled()) return [];
   if (typeof window === "undefined") return seedReportProjects;
 
   try {
@@ -400,6 +402,8 @@ export function readReportProjects(): ReportProject[] {
 }
 
 export function writeReportProjects(projects: ReportProject[]) {
+  if (!isDemoModeEnabled()) return;
+
   window.localStorage.setItem(
     REPORT_PROJECT_STORAGE_KEY,
     JSON.stringify(projects),

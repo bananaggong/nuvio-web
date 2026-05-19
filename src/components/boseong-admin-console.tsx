@@ -60,9 +60,6 @@ type HostVillageMediaDraft = {
   updatedAt: string;
 };
 
-const REVIEW_STORAGE_KEY = "nuvio:boseong-review-uploads";
-const MEDIA_STORAGE_KEY = "nuvio:boseong-media-uploads";
-
 const boseongPrograms = [
   { id: 1013, slug: "talent-for-stay", label: "숙재받" },
   { id: 1014, slug: "local-salon", label: "로컬살롱" },
@@ -109,12 +106,8 @@ export function BoseongAdminConsole() {
   const [mediaDraft, setMediaDraft] = useState<HostVillageMediaDraft>(
     createBoseongMediaDraft,
   );
-  const [localReviews, setLocalReviews] = useState<HostReviewDraft[]>(
-    readLocalReviewDrafts,
-  );
-  const [localMedia, setLocalMedia] = useState<HostVillageMediaDraft[]>(
-    readLocalMediaDrafts,
-  );
+  const [, setLocalReviews] = useState<HostReviewDraft[]>([]);
+  const [localMedia, setLocalMedia] = useState<HostVillageMediaDraft[]>([]);
   const [keyword, setKeyword] = useState("");
   const [programFilter, setProgramFilter] = useState<"all" | string>("all");
   const [programSaving, setProgramSaving] = useState(false);
@@ -194,10 +187,6 @@ export function BoseongAdminConsole() {
       updatedAt: new Date().toISOString(),
     };
 
-    const nextLocalReviews = [nextReview, ...localReviews];
-    setLocalReviews(nextLocalReviews);
-    writeLocalReviewDrafts(nextLocalReviews);
-
     try {
       const response = await fetch("/api/host/reviews", {
         body: JSON.stringify(nextReview),
@@ -211,7 +200,9 @@ export function BoseongAdminConsole() {
       if (!response.ok || !payload.data) {
         throw new Error(payload.error ?? "후기 DB 저장에 실패했습니다.");
       }
+      const savedReview = payload.data;
       setReviewMessage("후기를 DB에 저장했습니다. 작성자명은 마스킹되어 저장됩니다.");
+      setLocalReviews((current) => [savedReview, ...current]);
       setReviewDraft(createBoseongReviewDraft());
     } catch (error) {
       setReviewMessage(
@@ -238,10 +229,6 @@ export function BoseongAdminConsole() {
       updatedAt: new Date().toISOString(),
     };
 
-    const nextLocalMedia = [nextMedia, ...localMedia];
-    setLocalMedia(nextLocalMedia);
-    writeLocalMediaDrafts(nextLocalMedia);
-
     try {
       const response = await fetch("/api/host/media", {
         body: JSON.stringify(nextMedia),
@@ -255,7 +242,9 @@ export function BoseongAdminConsole() {
       if (!response.ok || !payload.data) {
         throw new Error(payload.error ?? "미디어 DB 저장에 실패했습니다.");
       }
+      const savedMedia = payload.data;
       setMediaMessage("미디어를 DB에 저장했습니다.");
+      setLocalMedia((current) => [savedMedia, ...current]);
       setMediaDraft(createBoseongMediaDraft());
     } catch (error) {
       setMediaMessage(
@@ -771,38 +760,6 @@ function maskNamesInText(value: string): string {
       );
     return nameLike ? maskKoreanName(token) : token;
   });
-}
-
-function readLocalReviewDrafts(): HostReviewDraft[] {
-  if (typeof window === "undefined") return [];
-
-  try {
-    const rawValue = window.localStorage.getItem(REVIEW_STORAGE_KEY);
-    if (!rawValue) return [];
-    return JSON.parse(rawValue) as HostReviewDraft[];
-  } catch {
-    return [];
-  }
-}
-
-function writeLocalReviewDrafts(reviews: HostReviewDraft[]) {
-  window.localStorage.setItem(REVIEW_STORAGE_KEY, JSON.stringify(reviews));
-}
-
-function readLocalMediaDrafts(): HostVillageMediaDraft[] {
-  if (typeof window === "undefined") return [];
-
-  try {
-    const rawValue = window.localStorage.getItem(MEDIA_STORAGE_KEY);
-    if (!rawValue) return [];
-    return JSON.parse(rawValue) as HostVillageMediaDraft[];
-  } catch {
-    return [];
-  }
-}
-
-function writeLocalMediaDrafts(media: HostVillageMediaDraft[]) {
-  window.localStorage.setItem(MEDIA_STORAGE_KEY, JSON.stringify(media));
 }
 
 function splitParagraphs(value: string): string[] {

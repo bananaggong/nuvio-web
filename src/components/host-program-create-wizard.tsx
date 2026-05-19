@@ -8,12 +8,14 @@ import {
   CheckCircle2,
   MessageSquareText,
 } from "lucide-react";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import {
   cloneApplicationFormTemplate,
+  normalizeApplicationFormTemplateShape,
   readApplicationFormTemplates,
   writeApplicationFormTemplates,
 } from "@/lib/application-form-builder";
+import type { ApplicationFormTemplate } from "@/lib/application-form-builder";
 import {
   findHostProjectOverview,
   hostProgramId,
@@ -41,15 +43,43 @@ export function HostProgramCreateWizard({ projectId }: { projectId: string }) {
   const [messageName, setMessageName] = useState("");
   const [isSaving, setIsSaving] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
+  const [formTemplates, setFormTemplates] = useState<ApplicationFormTemplate[]>(
+    readApplicationFormTemplates,
+  );
   const { applications, reportProjects, setReportProjects } =
     useHostOperationsData();
-  const formTemplates = readApplicationFormTemplates();
   const reusableFormTemplates = formTemplates.filter(
     (template) => !template.programTitle,
   );
   const project = findHostProjectOverview(projectId, applications, reportProjects);
   const projectPath = hostProjectPath(projectId);
   const canFinish = Boolean(title.trim());
+  useEffect(() => {
+    let active = true;
+
+    async function loadForms() {
+      try {
+        const response = await fetch("/api/host/forms", { cache: "no-store" });
+        if (!response.ok) return;
+        const payload = (await response.json()) as {
+          data?: ApplicationFormTemplate[];
+        };
+        if (active) {
+          setFormTemplates(
+            (payload.data ?? []).map(normalizeApplicationFormTemplateShape),
+          );
+        }
+      } catch {
+        // Form selection is optional in this wizard.
+      }
+    }
+
+    void loadForms();
+
+    return () => {
+      active = false;
+    };
+  }, []);
   const previewItems = useMemo(
     () => [
       ["프로그램명", title || "미입력"],
@@ -112,6 +142,19 @@ export function HostProgramCreateWizard({ projectId }: { projectId: string }) {
             programTitle,
           },
         );
+        const formResponse = await fetch("/api/host/forms", {
+          body: JSON.stringify(programFormTemplate),
+          headers: { "Content-Type": "application/json" },
+          method: "POST",
+        });
+        const formPayload = (await formResponse.json()) as {
+          data?: unknown;
+          error?: string;
+        };
+        if (!formResponse.ok || !formPayload.data) {
+          throw new Error(formPayload.error ?? "신청폼 연결에 실패했습니다.");
+        }
+
         writeApplicationFormTemplates([programFormTemplate, ...formTemplates]);
       }
 

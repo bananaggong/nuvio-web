@@ -3,6 +3,7 @@ import type {
   ProgramStatus,
   ThemeKey,
 } from "@/lib/types";
+import { isDemoModeEnabled } from "@/lib/demo-mode";
 
 export type HostProgramDraft = {
   id: string;
@@ -78,6 +79,7 @@ export const seedHostProgramDrafts: HostProgramDraft[] = [
 ];
 
 export function readHostProgramDrafts(): HostProgramDraft[] {
+  if (!isDemoModeEnabled()) return [];
   if (typeof window === "undefined") return seedHostProgramDrafts;
 
   try {
@@ -90,6 +92,8 @@ export function readHostProgramDrafts(): HostProgramDraft[] {
 }
 
 export function writeHostProgramDrafts(drafts: HostProgramDraft[]) {
+  if (!isDemoModeEnabled()) return;
+
   window.localStorage.setItem(
     HOST_PROGRAM_DRAFT_STORAGE_KEY,
     JSON.stringify(drafts),

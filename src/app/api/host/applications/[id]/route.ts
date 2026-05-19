@@ -4,6 +4,7 @@ import {
   getHostApplicationDetail,
   updateHostApplicationStatus,
 } from "@/lib/host-application-db";
+import { listHostVillageWorkspaces } from "@/lib/host-village-access";
 import { applicationStatusFlow } from "@/lib/host-operations";
 import type { HostApplicationStatus } from "@/lib/host-operations";
 
@@ -28,7 +29,13 @@ export async function GET(
       return NextResponse.json({ error: "Invalid application id." }, { status: 400 });
     }
 
-    const application = await getHostApplicationDetail(id);
+    const villageIds =
+      auth.profile.role === "admin"
+        ? undefined
+        : (await listHostVillageWorkspaces(auth)).map(
+            (workspace) => workspace.villageId,
+          );
+    const application = await getHostApplicationDetail(id, { villageIds });
 
     if (!application) {
       return NextResponse.json(
@@ -71,7 +78,21 @@ export async function PATCH(
       return NextResponse.json({ error: "Invalid status." }, { status: 400 });
     }
 
-    await updateHostApplicationStatus(id, status, auth.user.id);
+    const villageIds =
+      auth.profile.role === "admin"
+        ? undefined
+        : (await listHostVillageWorkspaces(auth)).map(
+            (workspace) => workspace.villageId,
+          );
+    const updated = await updateHostApplicationStatus(id, status, auth.user.id, {
+      villageIds,
+    });
+    if (!updated) {
+      return NextResponse.json(
+        { error: "Application was not found." },
+        { status: 404 },
+      );
+    }
 
     return NextResponse.json({ ok: true });
   } catch (error) {
