@@ -1,5 +1,10 @@
 import { NextResponse } from "next/server";
-import { isApiAuthError, requireHostRole } from "@/lib/api-security";
+import { apiError, isApiAuthError, requireHostRole } from "@/lib/api-security";
+import {
+  canManageHostVillage,
+  ensureOwnerMembershipForVillage,
+  listHostVillageWorkspaces,
+} from "@/lib/host-village-access";
 import {
   listHostVillagesFromDb,
   normalizeHostVillage,
@@ -14,7 +19,14 @@ export async function GET() {
 
   try {
     const villages = await listHostVillagesFromDb();
-    return NextResponse.json({ data: villages });
+    if (auth.profile.role === "admin") return NextResponse.json({ data: villages });
+
+    const workspaces = await listHostVillageWorkspaces(auth);
+    const allowedSlugs = new Set(workspaces.map((workspace) => workspace.slug));
+
+    return NextResponse.json({
+      data: villages.filter((village) => allowedSlugs.has(village.slug)),
+    });
   } catch (error) {
     return NextResponse.json(
       {
@@ -33,7 +45,21 @@ export async function POST(request: Request) {
   try {
     const body = await request.json();
     const village = normalizeHostVillage(body);
+    const existingVillages = await listHostVillagesFromDb();
+    const existingVillage = existingVillages.find(
+      (item) => item.slug === village.slug,
+    );
+
+    if (
+      existingVillage &&
+      auth.profile.role !== "admin" &&
+      !(await canManageHostVillage(auth, village.slug))
+    ) {
+      return apiError("You do not have permission to manage this village.", 403);
+    }
+
     const savedVillage = await upsertHostVillage(village);
+    await ensureOwnerMembershipForVillage(savedVillage.id, auth);
 
     return NextResponse.json({ data: savedVillage }, { status: 201 });
   } catch (error) {

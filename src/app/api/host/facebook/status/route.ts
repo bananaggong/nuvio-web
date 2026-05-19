@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
-import { isApiAuthError, requireHostRole } from "@/lib/api-security";
+import { apiError, isApiAuthError, requireHostRole } from "@/lib/api-security";
+import { canManageHostVillage } from "@/lib/host-village-access";
 import {
   getHostSocialConnection,
   redactHostSocialConnection,
@@ -14,6 +15,10 @@ export async function GET(request: Request) {
 
   const { searchParams } = new URL(request.url);
   const villageSlug = searchParams.get("villageSlug") ?? "boseong";
+  if (!(await canManageHostVillage(auth, villageSlug))) {
+    return apiError("You do not have permission to manage this village.", 403);
+  }
+
   const configured = hasFacebookOAuthConfig();
 
   try {
@@ -26,7 +31,7 @@ export async function GET(request: Request) {
         connection: redactHostSocialConnection(connection),
         connectUrl: `/api/host/facebook/connect?villageSlug=${encodeURIComponent(
           villageSlug,
-        )}&returnTo=${encodeURIComponent(`/host/${villageSlug}`)}`,
+        )}&returnTo=${encodeURIComponent(`/host/villages/${villageSlug}`)}`,
       },
     });
   } catch (error) {
@@ -39,7 +44,7 @@ export async function GET(request: Request) {
         connection: null,
         connectUrl: `/api/host/facebook/connect?villageSlug=${encodeURIComponent(
           villageSlug,
-        )}&returnTo=${encodeURIComponent(`/host/${villageSlug}`)}`,
+        )}&returnTo=${encodeURIComponent(`/host/villages/${villageSlug}`)}`,
       },
       error:
         "Facebook 연결 상태 저장소를 아직 사용할 수 없습니다. DB migration 적용 후 다시 확인하세요.",

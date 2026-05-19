@@ -148,6 +148,17 @@ export const villagePageSectionStatusEnum = pgEnum(
   "village_page_section_status",
   ["draft", "published", "archived"],
 );
+export const hostVillageRoleEnum = pgEnum("host_village_role", [
+  "owner",
+  "manager",
+  "editor",
+  "viewer",
+]);
+export const hostVillageGrantStatusEnum = pgEnum("host_village_grant_status", [
+  "pending",
+  "active",
+  "revoked",
+]);
 
 const emptyArray = sql`'[]'::jsonb`;
 const emptyObject = sql`'{}'::jsonb`;
@@ -216,6 +227,37 @@ export const villages = pgTable(
     uniqueIndex("villages_slug_idx").on(table.slug),
     index("villages_region_idx").on(table.region),
     index("villages_published_at_idx").on(table.publishedAt),
+  ],
+);
+
+export const hostVillageMemberships = pgTable(
+  "host_village_memberships",
+  {
+    id: uuid("id").defaultRandom().primaryKey(),
+    villageId: uuid("village_id")
+      .notNull()
+      .references(() => villages.id, { onDelete: "cascade" }),
+    userId: uuid("user_id").references(() => profiles.id, { onDelete: "cascade" }),
+    accountEmail: text("account_email").notNull(),
+    role: hostVillageRoleEnum("role").default("owner").notNull(),
+    status: hostVillageGrantStatusEnum("status").default("pending").notNull(),
+    grantedBy: uuid("granted_by").references(() => profiles.id, {
+      onDelete: "set null",
+    }),
+    invitedAt: timestamp("invited_at", { withTimezone: true }).defaultNow().notNull(),
+    activatedAt: timestamp("activated_at", { withTimezone: true }),
+    revokedAt: timestamp("revoked_at", { withTimezone: true }),
+    createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+    updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
+  },
+  (table) => [
+    uniqueIndex("host_village_memberships_village_account_email_idx").on(
+      table.villageId,
+      table.accountEmail,
+    ),
+    index("host_village_memberships_village_id_idx").on(table.villageId),
+    index("host_village_memberships_user_id_idx").on(table.userId),
+    index("host_village_memberships_status_idx").on(table.status),
   ],
 );
 

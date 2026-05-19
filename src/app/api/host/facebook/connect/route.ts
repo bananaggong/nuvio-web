@@ -1,7 +1,8 @@
 import { randomUUID } from "crypto";
 import { cookies } from "next/headers";
 import { NextResponse } from "next/server";
-import { isApiAuthError, requireHostRole } from "@/lib/api-security";
+import { apiError, isApiAuthError, requireHostRole } from "@/lib/api-security";
+import { canManageHostVillage } from "@/lib/host-village-access";
 import {
   buildFacebookOAuthUrl,
   getFacebookOAuthConfig,
@@ -18,8 +19,12 @@ export async function GET(request: Request) {
 
   try {
     const villageSlug = requestUrl.searchParams.get("villageSlug") ?? "boseong";
+    if (!(await canManageHostVillage(auth, villageSlug))) {
+      return apiError("You do not have permission to manage this village.", 403);
+    }
+
     const returnTo = normalizeReturnTo(
-      requestUrl.searchParams.get("returnTo") ?? `/host/${villageSlug}`,
+      requestUrl.searchParams.get("returnTo") ?? `/host/villages/${villageSlug}`,
     );
     const nonce = randomUUID();
     const state = Buffer.from(
@@ -40,7 +45,7 @@ export async function GET(request: Request) {
     return NextResponse.redirect(buildFacebookOAuthUrl(config, state));
   } catch (error) {
     return redirectWithStatus(
-      "/host/boseong",
+      "/host/villages/boseong",
       "facebook_error",
       error instanceof Error ? error.message : "Facebook connection failed.",
       requestUrl.origin,
@@ -49,7 +54,9 @@ export async function GET(request: Request) {
 }
 
 function normalizeReturnTo(value: string): string {
-  return value.startsWith("/") && !value.startsWith("//") ? value : "/host/boseong";
+  return value.startsWith("/") && !value.startsWith("//")
+    ? value
+    : "/host/villages/boseong";
 }
 
 function redirectWithStatus(

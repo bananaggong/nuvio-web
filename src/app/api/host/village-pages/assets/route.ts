@@ -1,9 +1,11 @@
 import { NextResponse } from "next/server";
 import {
+  apiError,
   enforceContentLength,
   isApiAuthError,
   requireHostRole,
 } from "@/lib/api-security";
+import { canManageHostVillage } from "@/lib/host-village-access";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 import {
   createVillageAsset,
@@ -28,6 +30,10 @@ export async function GET(request: Request) {
   try {
     const { searchParams } = new URL(request.url);
     const villageSlug = searchParams.get("villageSlug") ?? "boseong";
+    if (!(await canManageHostVillage(auth, villageSlug))) {
+      return apiError("You do not have permission to manage this village.", 403);
+    }
+
     const assets = await listVillageAssets(villageSlug);
 
     return NextResponse.json({ data: assets });
@@ -64,6 +70,10 @@ export async function POST(request: Request) {
     }
 
     const safeUrl = validateAssetUrl(url);
+    const villageSlug = asString(body.villageSlug) || "boseong";
+    if (!(await canManageHostVillage(auth, villageSlug))) {
+      return apiError("You do not have permission to manage this village.", 403);
+    }
 
     const asset = await createVillageAsset({
       altText: asString(body.altText),
@@ -71,7 +81,7 @@ export async function POST(request: Request) {
       metadata: { source: "url" },
       url: safeUrl,
       usage: asString(body.usage) || "page",
-      villageSlug: asString(body.villageSlug) || "boseong",
+      villageSlug,
     });
 
     return NextResponse.json({ data: asset }, { status: 201 });
@@ -97,6 +107,12 @@ async function handleFileUpload(request: Request) {
   validateUploadFile(file);
 
   const villageSlug = asString(formData.get("villageSlug")) || "boseong";
+  const auth = await requireHostRole();
+  if (isApiAuthError(auth)) return auth.response;
+  if (!(await canManageHostVillage(auth, villageSlug))) {
+    return apiError("You do not have permission to manage this village.", 403);
+  }
+
   const usage = asString(formData.get("usage")) || "page";
   const altText = asString(formData.get("altText"));
   const safeName = sanitizeFileName(file.name || "asset");

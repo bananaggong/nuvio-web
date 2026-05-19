@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
-import { isApiAuthError, requireHostRole } from "@/lib/api-security";
+import { apiError, isApiAuthError, requireHostRole } from "@/lib/api-security";
+import { canManageHostVillage } from "@/lib/host-village-access";
 import {
   normalizeVillagePageSectionDraft,
   publishHostVillagePageSection,
@@ -14,6 +15,10 @@ export async function POST(request: Request) {
   try {
     const body = await request.json();
     const draft = normalizeVillagePageSectionDraft(body);
+    if (!(await canManageHostVillage(auth, draft.villageSlug))) {
+      return apiError("You do not have permission to manage this village.", 403);
+    }
+
     const publishedDraft = await publishHostVillagePageSection(draft);
 
     return NextResponse.json({ data: publishedDraft }, { status: 201 });

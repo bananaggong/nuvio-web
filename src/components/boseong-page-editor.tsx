@@ -63,7 +63,6 @@ type AboutRow = {
   title: string;
 };
 
-const villageSlug = "boseong";
 const previewCanvasWidth = 1440;
 
 const editablePages: Array<{
@@ -135,6 +134,7 @@ export function BoseongPageEditor({
   const [message, setMessage] = useState(
     "수정할 공개 페이지와 섹션을 선택하세요.",
   );
+  const villageSlug = village.slug;
 
   const activeSections = useMemo(
     () => sortSections(sectionsByPage[activePageKey] ?? []),
@@ -164,7 +164,7 @@ export function BoseongPageEditor({
       window.history.replaceState(
         null,
         "",
-        `/host/boseong/editor?page=${pageKey}`,
+        `/host/villages/${village.slug}/editor?page=${pageKey}`,
       );
     }
   }
@@ -409,7 +409,7 @@ export function BoseongPageEditor({
           <div className="flex min-w-0 items-center gap-3">
             <Link
               className="inline-flex size-10 shrink-0 items-center justify-center rounded-md border border-white/15 text-white hover:bg-white/10"
-              href="/host/boseong"
+              href={`/host/villages/${village.slug}`}
             >
               <ArrowLeft size={18} />
             </Link>
@@ -426,7 +426,7 @@ export function BoseongPageEditor({
           <div className="flex flex-wrap items-center gap-2">
             <Link
               className="inline-flex h-10 items-center gap-2 rounded-md border border-white/15 px-3 text-sm font-black text-white hover:bg-white/10"
-              href={activePage.publicHref}
+              href={toVillagePublicHref(activePage.publicHref, village.slug)}
               target="_blank"
             >
               <Eye size={16} />
@@ -1280,6 +1280,10 @@ function hasSubtitleField(sectionKey: string) {
 function cleanLabel(label: string, sectionKey: string) {
   const fallback = sectionLabels[sectionKey] ?? sectionKey;
   return label && !/[\uFFFD\u00C2\u00BF]/.test(label) ? label : fallback;
+}
+
+function toVillagePublicHref(publicHref: string, slug: string) {
+  return publicHref.replace(/^\/boseong/u, `/${slug}`);
 }
 
 function asString(value: unknown): string {

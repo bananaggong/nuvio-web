@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
-import { isApiAuthError, requireHostRole } from "@/lib/api-security";
+import { apiError, isApiAuthError, requireHostRole } from "@/lib/api-security";
+import { canManageHostVillage } from "@/lib/host-village-access";
 import {
   getHostSocialConnection,
   markHostSocialConnectionSynced,
@@ -26,6 +27,10 @@ export async function POST(request: Request) {
     };
     const villageSlug =
       typeof body.villageSlug === "string" ? body.villageSlug : "boseong";
+    if (!(await canManageHostVillage(auth, villageSlug))) {
+      return apiError("You do not have permission to manage this village.", 403);
+    }
+
     const limit = typeof body.limit === "number" ? body.limit : 24;
     const connection = await getHostSocialConnection(villageSlug, "facebook");
     connectionId = connection?.id;

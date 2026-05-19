@@ -22,7 +22,7 @@ type OAuthState = {
 
 export async function GET(request: Request) {
   const requestUrl = new URL(request.url);
-  const fallbackReturnTo = "/host/boseong";
+  const fallbackReturnTo = "/host/villages/boseong";
   let returnTo = fallbackReturnTo;
 
   try {
@@ -117,14 +117,19 @@ function parseState(value: string | null): OAuthState {
 
   return {
     nonce: parsed.nonce,
-    returnTo: typeof parsed.returnTo === "string" ? parsed.returnTo : "/host/boseong",
+    returnTo:
+      typeof parsed.returnTo === "string"
+        ? parsed.returnTo
+        : "/host/villages/boseong",
     villageSlug:
       typeof parsed.villageSlug === "string" ? parsed.villageSlug : "boseong",
   };
 }
 
 function normalizeReturnTo(value: string): string {
-  return value.startsWith("/") && !value.startsWith("//") ? value : "/host/boseong";
+  return value.startsWith("/") && !value.startsWith("//")
+    ? value
+    : "/host/villages/boseong";
 }
 
 function redirectWithStatus(

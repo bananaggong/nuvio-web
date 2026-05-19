@@ -78,8 +78,8 @@ const navigationByArea: Record<ConsoleArea, NavigationItem[]> = {
       icon: Home,
       children: [
         { name: "로컬홈 페이지", href: "/host/villages" },
-        { name: "로컬홈 정보", href: "/host/boseong" },
-        { name: "보성 페이지 편집", href: "/host/boseong/editor" },
+        { name: "전체차LAB 운영", href: "/host/villages/boseong" },
+        { name: "전체차LAB 페이지 편집", href: "/host/villages/boseong/editor" },
       ],
     },
     {
@@ -356,8 +356,8 @@ function buildNavigation(area: ConsoleArea, pathname: string): NavigationItem[] 
     icon: Home,
     children: [
       { name: "로컬홈 페이지", href: "/host/villages" },
-      { name: "로컬홈 정보", href: "/host/boseong" },
-      { name: "보성 페이지 편집", href: "/host/boseong/editor" },
+      { name: "전체차LAB 운영", href: "/host/villages/boseong" },
+      { name: "전체차LAB 페이지 편집", href: "/host/villages/boseong/editor" },
     ],
   };
   const settingsNavigation: NavigationItem = {
