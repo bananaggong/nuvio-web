@@ -36,8 +36,6 @@ export type ReportMetric = {
   helper: string;
 };
 
-export const HOST_APPLICATION_STORAGE_KEY = "nuvio:host-applications";
-
 export const applicationStatusFlow: HostApplicationStatus[] = [
   "submitted",
   "screening",
@@ -258,34 +256,7 @@ export function buildHostReportCsv(applications: HostApplication[]): string {
 }
 
 export function readHostApplicationsFromStorage(): HostApplication[] {
-  if (!isDemoModeEnabled()) return [];
-  if (typeof window === "undefined") return seedHostApplications;
-
-  try {
-    const rawValue = window.localStorage.getItem(HOST_APPLICATION_STORAGE_KEY);
-    if (!rawValue) return seedHostApplications;
-
-    const storedApplications = JSON.parse(rawValue) as HostApplication[];
-    return mergeHostApplications(seedHostApplications, storedApplications);
-  } catch {
-    return seedHostApplications;
-  }
-}
-
-export function writeHostApplicationsToStorage(applications: HostApplication[]) {
-  if (!isDemoModeEnabled()) return;
-
-  window.localStorage.setItem(
-    HOST_APPLICATION_STORAGE_KEY,
-    JSON.stringify(applications),
-  );
-}
-
-export function appendHostApplication(application: HostApplication): HostApplication[] {
-  const applications = readHostApplicationsFromStorage();
-  const next = mergeHostApplications(applications, [application]);
-  writeHostApplicationsToStorage(next);
-  return next;
+  return isDemoModeEnabled() ? seedHostApplications : [];
 }
 
 function calculateReportReadiness(applications: HostApplication[]): number {

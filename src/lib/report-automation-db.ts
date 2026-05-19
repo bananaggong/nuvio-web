@@ -1,4 +1,4 @@
-import { desc, eq } from "drizzle-orm";
+import { and, desc, eq } from "drizzle-orm";
 import { getDb } from "@/db/client";
 import { reportProjects } from "@/db/schema";
 import {
@@ -11,27 +11,42 @@ type ReportProjectInsert = typeof reportProjects.$inferInsert;
 type ReportProjectRow = typeof reportProjects.$inferSelect;
 type DatabaseReportStatus = ReportProjectRow["status"];
 
-export async function listReportProjectsFromDb(): Promise<ReportProject[]> {
-  const rows = await getDb()
+export async function listReportProjectsFromDb(options: {
+  ownerId?: string;
+} = {}): Promise<ReportProject[]> {
+  let query = getDb()
     .select()
     .from(reportProjects)
-    .orderBy(desc(reportProjects.updatedAt))
-    .limit(200);
+    .$dynamic();
+
+  if (options.ownerId) {
+    query = query.where(eq(reportProjects.createdBy, options.ownerId));
+  }
+
+  const rows = await query.orderBy(desc(reportProjects.updatedAt)).limit(200);
 
   return rows.map(mapReportRowToProject);
 }
 
 export async function upsertReportProject(
   project: ReportProject,
+  options: { ownerId?: string; restrictToOwner?: boolean } = {},
 ): Promise<ReportProject> {
-  const insertValue = mapProjectToInsert(project);
+  const insertValue = mapProjectToInsert(project, options.ownerId);
   const now = new Date();
 
   if (isUuid(project.id)) {
     const [updatedRow] = await getDb()
       .update(reportProjects)
       .set({ ...insertValue, updatedAt: now })
-      .where(eq(reportProjects.id, project.id))
+      .where(
+        options.ownerId && options.restrictToOwner
+          ? and(
+              eq(reportProjects.id, project.id),
+              eq(reportProjects.createdBy, options.ownerId),
+            )
+          : eq(reportProjects.id, project.id),
+      )
       .returning();
 
     if (updatedRow) return mapReportRowToProject(updatedRow);
@@ -60,8 +75,12 @@ export function normalizeReportProject(input: unknown): ReportProject {
   return normalizeReportProjectModel(input);
 }
 
-function mapProjectToInsert(project: ReportProject): ReportProjectInsert {
+function mapProjectToInsert(
+  project: ReportProject,
+  ownerId?: string,
+): ReportProjectInsert {
   return {
+    createdBy: ownerId,
     name: project.title.trim() || "Operation project",
     organizationName:
       project.villageName.trim() || project.agencyName.trim() || "누비오",

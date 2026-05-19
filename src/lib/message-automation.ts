@@ -35,9 +35,6 @@ export type MessageRecipientPreview = {
   body: string;
 };
 
-export const MESSAGE_TEMPLATE_STORAGE_KEY = "nuvio:message-templates";
-export const MESSAGE_CAMPAIGN_STORAGE_KEY = "nuvio:message-campaigns";
-
 export const channelLabels: Record<MessageChannel, string> = {
   email: "이메일",
   sms: "문자",
@@ -85,38 +82,11 @@ export const seedMessageCampaigns: MessageCampaign[] = [
 ];
 
 export function readMessageTemplates(): MessageTemplate[] {
-  if (!isDemoModeEnabled()) return seedMessageTemplates;
-  if (typeof window === "undefined") return seedMessageTemplates;
-
-  try {
-    const rawValue = window.localStorage.getItem(MESSAGE_TEMPLATE_STORAGE_KEY);
-    if (!rawValue) return seedMessageTemplates;
-    return JSON.parse(rawValue) as MessageTemplate[];
-  } catch {
-    return seedMessageTemplates;
-  }
+  return seedMessageTemplates;
 }
 
 export function readMessageCampaigns(): MessageCampaign[] {
-  if (!isDemoModeEnabled()) return [];
-  if (typeof window === "undefined") return seedMessageCampaigns;
-
-  try {
-    const rawValue = window.localStorage.getItem(MESSAGE_CAMPAIGN_STORAGE_KEY);
-    if (!rawValue) return seedMessageCampaigns;
-    return JSON.parse(rawValue) as MessageCampaign[];
-  } catch {
-    return seedMessageCampaigns;
-  }
-}
-
-export function writeMessageCampaigns(campaigns: MessageCampaign[]) {
-  if (!isDemoModeEnabled()) return;
-
-  window.localStorage.setItem(
-    MESSAGE_CAMPAIGN_STORAGE_KEY,
-    JSON.stringify(campaigns),
-  );
+  return isDemoModeEnabled() ? seedMessageCampaigns : [];
 }
 
 export function mergeMessageCampaigns(

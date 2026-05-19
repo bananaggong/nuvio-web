@@ -1,4 +1,4 @@
-import { desc, eq } from "drizzle-orm";
+import { and, desc, eq } from "drizzle-orm";
 import { getDb } from "@/db/client";
 import { messageCampaigns } from "@/db/schema";
 import {
@@ -12,27 +12,42 @@ import {
 type CampaignInsert = typeof messageCampaigns.$inferInsert;
 type CampaignRow = typeof messageCampaigns.$inferSelect;
 
-export async function listMessageCampaignsFromDb(): Promise<MessageCampaign[]> {
-  const rows = await getDb()
+export async function listMessageCampaignsFromDb(options: {
+  ownerId?: string;
+} = {}): Promise<MessageCampaign[]> {
+  let query = getDb()
     .select()
     .from(messageCampaigns)
-    .orderBy(desc(messageCampaigns.updatedAt))
-    .limit(200);
+    .$dynamic();
+
+  if (options.ownerId) {
+    query = query.where(eq(messageCampaigns.createdBy, options.ownerId));
+  }
+
+  const rows = await query.orderBy(desc(messageCampaigns.updatedAt)).limit(200);
 
   return rows.map(mapCampaignRowToMessageCampaign);
 }
 
 export async function upsertMessageCampaign(
   campaign: MessageCampaign,
+  options: { ownerId?: string; restrictToOwner?: boolean } = {},
 ): Promise<MessageCampaign> {
-  const insertValue = mapMessageCampaignToInsert(campaign);
+  const insertValue = mapMessageCampaignToInsert(campaign, options.ownerId);
   const now = new Date();
 
   if (isUuid(campaign.id)) {
     const [updatedRow] = await getDb()
       .update(messageCampaigns)
       .set({ ...insertValue, updatedAt: now })
-      .where(eq(messageCampaigns.id, campaign.id))
+      .where(
+        options.ownerId && options.restrictToOwner
+          ? and(
+              eq(messageCampaigns.id, campaign.id),
+              eq(messageCampaigns.createdBy, options.ownerId),
+            )
+          : eq(messageCampaigns.id, campaign.id),
+      )
       .returning();
 
     if (updatedRow) return mapCampaignRowToMessageCampaign(updatedRow);
@@ -72,8 +87,12 @@ export function normalizeMessageCampaign(input: unknown): MessageCampaign {
   };
 }
 
-function mapMessageCampaignToInsert(campaign: MessageCampaign): CampaignInsert {
+function mapMessageCampaignToInsert(
+  campaign: MessageCampaign,
+  ownerId?: string,
+): CampaignInsert {
   return {
+    createdBy: ownerId,
     name: campaign.name.trim() || "Message campaign",
     templateKey: campaign.templateId,
     channel: campaign.channel,

@@ -1,4 +1,4 @@
-import { desc, eq } from "drizzle-orm";
+import { and, desc, eq } from "drizzle-orm";
 import { getDb } from "@/db/client";
 import { programApplicationForms } from "@/db/schema";
 import { getProgramRecordByIdentifier } from "@/lib/program-db";
@@ -16,14 +16,19 @@ import type { Program } from "@/lib/types";
 type FormInsert = typeof programApplicationForms.$inferInsert;
 type FormRow = typeof programApplicationForms.$inferSelect;
 
-export async function listApplicationFormTemplatesFromDb(): Promise<
-  ApplicationFormTemplate[]
-> {
-  const rows = await getDb()
+export async function listApplicationFormTemplatesFromDb(options: {
+  ownerId?: string;
+} = {}): Promise<ApplicationFormTemplate[]> {
+  let query = getDb()
     .select()
     .from(programApplicationForms)
-    .orderBy(desc(programApplicationForms.updatedAt))
-    .limit(200);
+    .$dynamic();
+
+  if (options.ownerId) {
+    query = query.where(eq(programApplicationForms.createdBy, options.ownerId));
+  }
+
+  const rows = await query.orderBy(desc(programApplicationForms.updatedAt)).limit(200);
 
   return rows.map(mapFormRowToTemplate);
 }
@@ -52,15 +57,23 @@ export async function getApplicationFormTemplateForProgram(
 
 export async function upsertApplicationFormTemplate(
   template: ApplicationFormTemplate,
+  options: { ownerId?: string; restrictToOwner?: boolean } = {},
 ): Promise<ApplicationFormTemplate> {
-  const insertValue = mapTemplateToInsert(template);
+  const insertValue = mapTemplateToInsert(template, options.ownerId);
   const now = new Date();
 
   if (isUuid(template.id)) {
     const [updatedRow] = await getDb()
       .update(programApplicationForms)
       .set({ ...insertValue, updatedAt: now })
-      .where(eq(programApplicationForms.id, template.id))
+      .where(
+        options.ownerId && options.restrictToOwner
+          ? and(
+              eq(programApplicationForms.id, template.id),
+              eq(programApplicationForms.createdBy, options.ownerId),
+            )
+          : eq(programApplicationForms.id, template.id),
+      )
       .returning();
 
     if (updatedRow) return mapFormRowToTemplate(updatedRow);
@@ -101,10 +114,14 @@ export function normalizeApplicationFormTemplate(
   });
 }
 
-function mapTemplateToInsert(template: ApplicationFormTemplate): FormInsert {
+function mapTemplateToInsert(
+  template: ApplicationFormTemplate,
+  ownerId?: string,
+): FormInsert {
   const normalizedTemplate = normalizeApplicationFormTemplateShape(template);
 
   return {
+    createdBy: ownerId,
     title: normalizedTemplate.name.trim() || "Application form",
     description: normalizedTemplate.description.trim() || null,
     programTitle: normalizedTemplate.programTitle.trim() || null,

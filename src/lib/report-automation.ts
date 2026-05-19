@@ -136,9 +136,6 @@ export type ReportProjectSummary = {
   usedAmount: number;
 };
 
-export const REPORT_PROJECT_STORAGE_KEY = "nuvio:operation-projects";
-const LEGACY_REPORT_PROJECT_STORAGE_KEY = "nuvio:report-projects";
-
 export const operationFieldGroupLabels: Record<OperationFieldGroup, string> = {
   organization_profile: "로컬홈 프로필",
   operation_project: "운영 프로젝트",
@@ -383,31 +380,7 @@ export const seedReportProjects: ReportProject[] = [
 ];
 
 export function readReportProjects(): ReportProject[] {
-  if (!isDemoModeEnabled()) return [];
-  if (typeof window === "undefined") return seedReportProjects;
-
-  try {
-    const rawValue =
-      window.localStorage.getItem(REPORT_PROJECT_STORAGE_KEY) ??
-      window.localStorage.getItem(LEGACY_REPORT_PROJECT_STORAGE_KEY);
-    if (!rawValue) return seedReportProjects;
-
-    const parsed = JSON.parse(rawValue);
-    if (!Array.isArray(parsed)) return seedReportProjects;
-
-    return parsed.map(normalizeReportProjectModel);
-  } catch {
-    return seedReportProjects;
-  }
-}
-
-export function writeReportProjects(projects: ReportProject[]) {
-  if (!isDemoModeEnabled()) return;
-
-  window.localStorage.setItem(
-    REPORT_PROJECT_STORAGE_KEY,
-    JSON.stringify(projects),
-  );
+  return isDemoModeEnabled() ? seedReportProjects : [];
 }
 
 export function mergeReportProjects(

@@ -13,7 +13,9 @@ export async function GET() {
   if (isApiAuthError(auth)) return auth.response;
 
   try {
-    const templates = await listApplicationFormTemplatesFromDb();
+    const templates = await listApplicationFormTemplatesFromDb(
+      auth.profile.role === "admin" ? {} : { ownerId: auth.user.id },
+    );
     return NextResponse.json({ data: templates });
   } catch (error) {
     return NextResponse.json(
@@ -35,7 +37,10 @@ export async function POST(request: Request) {
   try {
     const body = await request.json();
     const template = normalizeApplicationFormTemplate(body);
-    const savedTemplate = await upsertApplicationFormTemplate(template);
+    const savedTemplate = await upsertApplicationFormTemplate(template, {
+      ownerId: auth.user.id,
+      restrictToOwner: auth.profile.role !== "admin",
+    });
 
     return NextResponse.json({ data: savedTemplate }, { status: 201 });
   } catch (error) {

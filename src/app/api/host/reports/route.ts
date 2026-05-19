@@ -18,7 +18,9 @@ export async function GET() {
   if (isApiAuthError(auth)) return auth.response;
 
   try {
-    const projects = await listReportProjectsFromDb();
+    const projects = await listReportProjectsFromDb(
+      auth.profile.role === "admin" ? {} : { ownerId: auth.user.id },
+    );
     if (auth.profile.role === "admin") {
       return NextResponse.json({ data: projects });
     }
@@ -64,7 +66,10 @@ export async function POST(request: Request) {
       );
     }
 
-    const savedProject = await upsertReportProject(scopedProject);
+    const savedProject = await upsertReportProject(scopedProject, {
+      ownerId: auth.user.id,
+      restrictToOwner: auth.profile.role !== "admin",
+    });
 
     return NextResponse.json({ data: savedProject }, { status: 201 });
   } catch (error) {

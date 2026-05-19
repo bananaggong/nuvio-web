@@ -636,11 +636,16 @@ export const savedPrograms = pgTable(
     programId: uuid("program_id")
       .references(() => programs.id, { onDelete: "cascade" })
       .notNull(),
+    bookmarked: boolean("bookmarked").default(true).notNull(),
+    alertEnabled: boolean("alert_enabled").default(false).notNull(),
+    trackingEnabled: boolean("tracking_enabled").default(false).notNull(),
     createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+    updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
   },
   (table) => [
     primaryKey({ columns: [table.userId, table.programId] }),
     index("saved_programs_program_id_idx").on(table.programId),
+    index("saved_programs_user_updated_idx").on(table.userId, table.updatedAt),
   ],
 );
 
@@ -681,7 +686,10 @@ export const programApplicationForms = pgTable(
     createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
     updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
   },
-  (table) => [index("program_application_forms_program_id_idx").on(table.programId)],
+  (table) => [
+    index("program_application_forms_created_by_idx").on(table.createdBy),
+    index("program_application_forms_program_id_idx").on(table.programId),
+  ],
 );
 
 export const programApplications = pgTable(
@@ -761,10 +769,12 @@ export const messageCampaigns = pgTable(
     targetStatus: text("target_status").default("all").notNull(),
     scheduledAt: timestamp("scheduled_at", { withTimezone: true }),
     status: messageDeliveryStatusEnum("status").default("draft").notNull(),
+    createdBy: uuid("created_by"),
     createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
     updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
   },
   (table) => [
+    index("message_campaigns_created_by_idx").on(table.createdBy),
     index("message_campaigns_status_idx").on(table.status),
     index("message_campaigns_scheduled_at_idx").on(table.scheduledAt),
   ],
@@ -834,10 +844,12 @@ export const reportProjects = pgTable(
     status: reportProjectStatusEnum("status").default("draft").notNull(),
     schema: jsonb("schema").$type<Record<string, unknown>>().default(emptyObject).notNull(),
     dueDate: date("due_date"),
+    createdBy: uuid("created_by"),
     createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
     updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
   },
   (table) => [
+    index("report_projects_created_by_idx").on(table.createdBy),
     index("report_projects_program_id_idx").on(table.programId),
     index("report_projects_status_idx").on(table.status),
   ],

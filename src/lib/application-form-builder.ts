@@ -56,9 +56,6 @@ export type ApplicationFormTemplate = {
   updatedAt: string;
 };
 
-export const APPLICATION_FORM_TEMPLATE_STORAGE_KEY =
-  "nuvio:application-form-templates";
-
 export const questionBlockTypes: ApplicationFormBlockType[] = [
   "shortText",
   "longText",
@@ -146,30 +143,7 @@ export const seedApplicationFormTemplates: ApplicationFormTemplate[] = [
 ];
 
 export function readApplicationFormTemplates(): ApplicationFormTemplate[] {
-  if (!isDemoModeEnabled()) return [];
-  if (typeof window === "undefined") return seedApplicationFormTemplates;
-
-  try {
-    const rawValue = window.localStorage.getItem(
-      APPLICATION_FORM_TEMPLATE_STORAGE_KEY,
-    );
-    if (!rawValue) return seedApplicationFormTemplates;
-    const templates = JSON.parse(rawValue) as unknown[];
-    return templates.map(normalizeApplicationFormTemplateShape);
-  } catch {
-    return seedApplicationFormTemplates;
-  }
-}
-
-export function writeApplicationFormTemplates(
-  templates: ApplicationFormTemplate[],
-) {
-  if (!isDemoModeEnabled()) return;
-
-  window.localStorage.setItem(
-    APPLICATION_FORM_TEMPLATE_STORAGE_KEY,
-    JSON.stringify(templates.map(normalizeApplicationFormTemplateShape)),
-  );
+  return isDemoModeEnabled() ? seedApplicationFormTemplates : [];
 }
 
 export function mergeApplicationFormTemplates(

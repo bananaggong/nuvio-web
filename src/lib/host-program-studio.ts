@@ -43,8 +43,6 @@ export type ProgramDraftChecklistItem = {
   helper: string;
 };
 
-export const HOST_PROGRAM_DRAFT_STORAGE_KEY = "nuvio:host-program-drafts";
-
 export const seedHostProgramDrafts: HostProgramDraft[] = [
   {
     id: "draft-gangneung-wave",
@@ -79,25 +77,7 @@ export const seedHostProgramDrafts: HostProgramDraft[] = [
 ];
 
 export function readHostProgramDrafts(): HostProgramDraft[] {
-  if (!isDemoModeEnabled()) return [];
-  if (typeof window === "undefined") return seedHostProgramDrafts;
-
-  try {
-    const rawValue = window.localStorage.getItem(HOST_PROGRAM_DRAFT_STORAGE_KEY);
-    if (!rawValue) return seedHostProgramDrafts;
-    return JSON.parse(rawValue) as HostProgramDraft[];
-  } catch {
-    return seedHostProgramDrafts;
-  }
-}
-
-export function writeHostProgramDrafts(drafts: HostProgramDraft[]) {
-  if (!isDemoModeEnabled()) return;
-
-  window.localStorage.setItem(
-    HOST_PROGRAM_DRAFT_STORAGE_KEY,
-    JSON.stringify(drafts),
-  );
+  return isDemoModeEnabled() ? seedHostProgramDrafts : [];
 }
 
 export function mergeHostProgramDrafts(

@@ -41,6 +41,12 @@ type AuthSessionPayload = {
 
 type StateMap = Record<string, boolean>;
 
+type ProgramStateMaps = {
+  alerts: StateMap;
+  bookmarks: StateMap;
+  tracks: StateMap;
+};
+
 type UserNotification = {
   body: string;
   createdAt: string;
@@ -60,23 +66,16 @@ type NotificationPreference = {
   smsEnabled: boolean;
 };
 
-function readMap(key: string): StateMap {
-  if (typeof window === "undefined") return {};
-  try {
-    return JSON.parse(window.localStorage.getItem(key) ?? "{}") as StateMap;
-  } catch {
-    return {};
-  }
-}
-
 export function MyPage() {
   const [authSession, setAuthSession] = useState<AuthSessionPayload>({
     user: null,
     profile: null,
   });
-  const [bookmarks] = useState<StateMap>(() => readMap("nuvio:bookmarks"));
-  const [alerts] = useState<StateMap>(() => readMap("nuvio:alerts"));
-  const [tracks] = useState<StateMap>(() => readMap("nuvio:tracks"));
+  const [programState, setProgramState] = useState<ProgramStateMaps>({
+    alerts: {},
+    bookmarks: {},
+    tracks: {},
+  });
   const [applications, setApplications] = useState<HostApplication[]>([]);
   const [notifications, setNotifications] = useState<UserNotification[]>([]);
   const [notificationPreference, setNotificationPreference] =
@@ -115,9 +114,14 @@ export function MyPage() {
         setPublicPrograms(programPayload.data ?? []);
 
         if (sessionPayload.user) {
-          const [notificationsResponse, preferenceResponse] = await Promise.all([
+          const [
+            notificationsResponse,
+            preferenceResponse,
+            programStateResponse,
+          ] = await Promise.all([
             fetch("/api/me/notifications", { cache: "no-store" }),
             fetch("/api/me/notification-preferences", { cache: "no-store" }),
+            fetch("/api/me/program-state", { cache: "no-store" }),
           ]);
           const notificationsPayload = (await notificationsResponse.json()) as {
             data?: UserNotification[];
@@ -125,10 +129,16 @@ export function MyPage() {
           const preferencePayload = (await preferenceResponse.json()) as {
             data?: NotificationPreference;
           };
+          const programStatePayload = (await programStateResponse.json()) as {
+            data?: ProgramStateMaps;
+          };
 
           if (!active) return;
           setNotifications(notificationsPayload.data ?? []);
           setNotificationPreference(preferencePayload.data ?? null);
+          setProgramState(
+            programStatePayload.data ?? { alerts: {}, bookmarks: {}, tracks: {} },
+          );
         }
 
         if (sessionPayload.user) {
@@ -160,20 +170,20 @@ export function MyPage() {
       {
         title: "보관한 프로그램",
         icon: Bookmark,
-        items: resolvePrograms(bookmarks, publicPrograms),
+        items: resolvePrograms(programState.bookmarks, publicPrograms),
       },
       {
         title: "알림 받는 프로그램",
         icon: Bell,
-        items: resolvePrograms(alerts, publicPrograms),
+        items: resolvePrograms(programState.alerts, publicPrograms),
       },
       {
         title: "지원 기록",
         icon: CheckCircle2,
-        items: resolvePrograms(tracks, publicPrograms),
+        items: resolvePrograms(programState.tracks, publicPrograms),
       },
     ],
-    [alerts, bookmarks, publicPrograms, tracks],
+    [programState, publicPrograms],
   );
 
   async function logout() {

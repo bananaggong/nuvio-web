@@ -13,7 +13,9 @@ export async function GET() {
   if (isApiAuthError(auth)) return auth.response;
 
   try {
-    const campaigns = await listMessageCampaignsFromDb();
+    const campaigns = await listMessageCampaignsFromDb(
+      auth.profile.role === "admin" ? {} : { ownerId: auth.user.id },
+    );
     return NextResponse.json({ data: campaigns });
   } catch (error) {
     return NextResponse.json(
@@ -35,7 +37,10 @@ export async function POST(request: Request) {
   try {
     const body = await request.json();
     const campaign = normalizeMessageCampaign(body);
-    const savedCampaign = await upsertMessageCampaign(campaign);
+    const savedCampaign = await upsertMessageCampaign(campaign, {
+      ownerId: auth.user.id,
+      restrictToOwner: auth.profile.role !== "admin",
+    });
 
     return NextResponse.json({ data: savedCampaign }, { status: 201 });
   } catch (error) {

@@ -9,7 +9,6 @@ import {
   mergeApplicationFormTemplates,
   normalizeApplicationFormTemplateShape,
   readApplicationFormTemplates,
-  writeApplicationFormTemplates,
 } from "@/lib/application-form-builder";
 import type { ApplicationFormTemplate } from "@/lib/application-form-builder";
 
@@ -41,7 +40,6 @@ export function HostFormLibrary() {
             databaseTemplates,
             currentTemplates,
           );
-          writeApplicationFormTemplates(nextTemplates);
           return nextTemplates;
         });
       } catch {
@@ -77,7 +75,6 @@ export function HostFormLibrary() {
       const savedTemplate = normalizeApplicationFormTemplateShape(payload.data);
       const nextTemplates = [savedTemplate, ...templates];
       setTemplates(nextTemplates);
-      writeApplicationFormTemplates(nextTemplates);
       router.push(`/host/forms/${encodeURIComponent(savedTemplate.id)}`);
     } catch {
       // Keep the current library visible; the save button/API surfaces failures elsewhere.

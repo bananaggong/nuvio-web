@@ -13,7 +13,6 @@ import {
   cloneApplicationFormTemplate,
   normalizeApplicationFormTemplateShape,
   readApplicationFormTemplates,
-  writeApplicationFormTemplates,
 } from "@/lib/application-form-builder";
 import type { ApplicationFormTemplate } from "@/lib/application-form-builder";
 import {
@@ -155,7 +154,7 @@ export function HostProgramCreateWizard({ projectId }: { projectId: string }) {
           throw new Error(formPayload.error ?? "신청폼 연결에 실패했습니다.");
         }
 
-        writeApplicationFormTemplates([programFormTemplate, ...formTemplates]);
+        setFormTemplates((current) => [programFormTemplate, ...current]);
       }
 
       router.push(hostProgramPath(projectId, hostProgramId(programTitle)));

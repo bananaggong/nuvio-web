@@ -34,7 +34,6 @@ import {
   readMessageTemplates,
   targetStatusLabels,
   targetStatusOptions,
-  writeMessageCampaigns,
 } from "@/lib/message-automation";
 import type {
   MessageCampaign,
@@ -123,7 +122,6 @@ export function HostMessageAutomation({
                 databaseCampaigns,
                 currentCampaigns,
               );
-              writeMessageCampaigns(nextCampaigns);
               return nextCampaigns;
             });
             setSelectedId((currentId) => currentId ?? databaseCampaigns[0]?.id);
@@ -145,7 +143,6 @@ export function HostMessageAutomation({
 
   function saveCampaigns(nextCampaigns: MessageCampaign[]) {
     setCampaigns(nextCampaigns);
-    writeMessageCampaigns(nextCampaigns);
     setSaved(true);
     window.setTimeout(() => setSaved(false), 1400);
   }

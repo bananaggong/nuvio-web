@@ -1,22 +1,23 @@
 "use client";
 
 import { Bell, Bookmark, CheckCircle2, Share2 } from "lucide-react";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
 type StateMap = Record<string, boolean>;
 
-function readState(key: string): StateMap {
-  if (typeof window === "undefined") return {};
-  try {
-    return JSON.parse(window.localStorage.getItem(key) ?? "{}") as StateMap;
-  } catch {
-    return {};
-  }
-}
+type ProgramStateMaps = {
+  alerts: StateMap;
+  bookmarks: StateMap;
+  tracks: StateMap;
+};
 
-function writeState(key: string, value: StateMap) {
-  window.localStorage.setItem(key, JSON.stringify(value));
-}
+type ProgramStateKind = "bookmarked" | "alertEnabled" | "trackingEnabled";
+
+const emptyState: ProgramStateMaps = {
+  alerts: {},
+  bookmarks: {},
+  tracks: {},
+};
 
 export function ProgramActions({
   programId,
@@ -26,18 +27,76 @@ export function ProgramActions({
   title: string;
 }) {
   const id = String(programId);
-  const [bookmarks, setBookmarks] = useState<StateMap>(() =>
-    readState("nuvio:bookmarks"),
-  );
-  const [alerts, setAlerts] = useState<StateMap>(() => readState("nuvio:alerts"));
-  const [tracks, setTracks] = useState<StateMap>(() => readState("nuvio:tracks"));
+  const [state, setState] = useState<ProgramStateMaps>(emptyState);
   const [copied, setCopied] = useState(false);
+  const [pendingKind, setPendingKind] = useState<ProgramStateKind | null>(null);
 
-  function toggle(key: string, setter: (value: StateMap) => void, state: StateMap) {
-    const next = { ...state, [id]: !state[id] };
-    if (!next[id]) delete next[id];
-    setter(next);
-    writeState(key, next);
+  useEffect(() => {
+    let active = true;
+
+    async function loadProgramState() {
+      try {
+        const response = await fetch("/api/me/program-state", {
+          cache: "no-store",
+        });
+        if (!response.ok) return;
+
+        const payload = (await response.json()) as {
+          data?: ProgramStateMaps;
+        };
+        if (active && payload.data) setState(payload.data);
+      } catch {
+        // Signed-out users can still browse and share programs.
+      }
+    }
+
+    void loadProgramState();
+
+    return () => {
+      active = false;
+    };
+  }, []);
+
+  async function toggle(kind: ProgramStateKind) {
+    const mapKey = getMapKey(kind);
+    const enabled = !state[mapKey][id];
+    const optimisticState = {
+      ...state,
+      [mapKey]: toggleMapValue(state[mapKey], id, enabled),
+    };
+
+    setState(optimisticState);
+    setPendingKind(kind);
+
+    try {
+      const response = await fetch("/api/me/program-state", {
+        body: JSON.stringify({ enabled, kind, programId: id }),
+        headers: { "Content-Type": "application/json" },
+        method: "PATCH",
+      });
+
+      if (response.status === 401) {
+        window.location.href = `/login?next=${encodeURIComponent(
+          window.location.pathname,
+        )}`;
+        return;
+      }
+
+      const payload = (await response.json()) as {
+        data?: ProgramStateMaps;
+        error?: string;
+      };
+
+      if (!response.ok || !payload.data) {
+        throw new Error(payload.error ?? "저장에 실패했습니다.");
+      }
+
+      setState(payload.data);
+    } catch {
+      setState(state);
+    } finally {
+      setPendingKind(null);
+    }
   }
 
   async function share() {
@@ -54,40 +113,43 @@ export function ProgramActions({
   return (
     <div className="grid gap-2 sm:grid-cols-4">
       <button
-        className={`inline-flex h-11 items-center justify-center gap-2 rounded-md border px-3 text-sm font-black ${
-          bookmarks[id]
+        className={`inline-flex h-11 items-center justify-center gap-2 rounded-md border px-3 text-sm font-black disabled:cursor-wait disabled:opacity-70 ${
+          state.bookmarks[id]
             ? "border-[var(--primary)] bg-teal-50 text-[var(--primary)]"
             : "border-slate-200 bg-white text-slate-700"
         }`}
-        onClick={() => toggle("nuvio:bookmarks", setBookmarks, bookmarks)}
+        disabled={pendingKind === "bookmarked"}
+        onClick={() => void toggle("bookmarked")}
         type="button"
       >
         <Bookmark size={17} />
         저장
       </button>
       <button
-        className={`inline-flex h-11 items-center justify-center gap-2 rounded-md border px-3 text-sm font-black ${
-          alerts[id]
+        className={`inline-flex h-11 items-center justify-center gap-2 rounded-md border px-3 text-sm font-black disabled:cursor-wait disabled:opacity-70 ${
+          state.alerts[id]
             ? "border-[var(--warning)] bg-amber-50 text-amber-800"
             : "border-slate-200 bg-white text-slate-700"
         }`}
-        onClick={() => toggle("nuvio:alerts", setAlerts, alerts)}
+        disabled={pendingKind === "alertEnabled"}
+        onClick={() => void toggle("alertEnabled")}
         type="button"
       >
         <Bell size={17} />
         알림
       </button>
       <button
-        className={`inline-flex h-11 items-center justify-center gap-2 rounded-md border px-3 text-sm font-black ${
-          tracks[id]
+        className={`inline-flex h-11 items-center justify-center gap-2 rounded-md border px-3 text-sm font-black disabled:cursor-wait disabled:opacity-70 ${
+          state.tracks[id]
             ? "border-[var(--accent)] bg-orange-50 text-orange-700"
             : "border-slate-200 bg-white text-slate-700"
         }`}
-        onClick={() => toggle("nuvio:tracks", setTracks, tracks)}
+        disabled={pendingKind === "trackingEnabled"}
+        onClick={() => void toggle("trackingEnabled")}
         type="button"
       >
         <CheckCircle2 size={17} />
-        신청 표시
+        관심 표시
       </button>
       <button
         className="inline-flex h-11 items-center justify-center gap-2 rounded-md border border-slate-200 bg-white px-3 text-sm font-black text-slate-700"
@@ -99,4 +161,21 @@ export function ProgramActions({
       </button>
     </div>
   );
+}
+
+function getMapKey(kind: ProgramStateKind): keyof ProgramStateMaps {
+  if (kind === "alertEnabled") return "alerts";
+  if (kind === "trackingEnabled") return "tracks";
+  return "bookmarks";
+}
+
+function toggleMapValue(
+  current: StateMap,
+  id: string,
+  enabled: boolean,
+): StateMap {
+  const next = { ...current };
+  if (enabled) next[id] = true;
+  else delete next[id];
+  return next;
 }

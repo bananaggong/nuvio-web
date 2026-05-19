@@ -42,7 +42,6 @@ import {
   mergeApplicationFormTemplates,
   normalizeApplicationFormTemplateShape,
   readApplicationFormTemplates,
-  writeApplicationFormTemplates,
 } from "@/lib/application-form-builder";
 import { hostProgramPath, hostProjectPath } from "@/lib/host-projects";
 import type {
@@ -152,7 +151,6 @@ export function HostFormBuilder({
             databaseTemplates,
             currentTemplates,
           );
-          writeApplicationFormTemplates(nextTemplates);
           return nextTemplates;
         });
         setSelectedId(
@@ -175,7 +173,6 @@ export function HostFormBuilder({
   function saveTemplates(nextTemplates: ApplicationFormTemplate[]) {
     const normalizedTemplates = nextTemplates.map(normalizeApplicationFormTemplateShape);
     setTemplates(normalizedTemplates);
-    writeApplicationFormTemplates(normalizedTemplates);
     setSaved(true);
     window.setTimeout(() => setSaved(false), 1400);
   }
