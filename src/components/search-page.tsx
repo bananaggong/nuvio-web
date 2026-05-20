@@ -135,7 +135,7 @@ export function SearchPage() {
   }
 
   return (
-    <div className="font-pretendard flex min-h-[calc(100vh-4.861vw)] justify-center bg-[#F3F3F3] px-4 pb-14">
+    <div className="font-pretendard flex justify-center bg-[#F3F3F3] px-4 pb-10">
       <section className="relative w-[min(636px,100%)] bg-white px-[13px] py-[9px]">
         <div className="mx-auto flex w-full max-w-[592px] flex-col items-center pb-[10px] pt-4">
           <div className="flex w-full justify-end pr-3">
