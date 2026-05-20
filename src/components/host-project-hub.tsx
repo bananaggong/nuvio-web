@@ -4,28 +4,19 @@ import Image from "next/image";
 import Link from "next/link";
 import {
   ArrowLeft,
-  ArrowRight,
-  BarChart3,
   ClipboardList,
-  FileText,
   FolderKanban,
-  LayoutGrid,
   ListChecks,
-  MessageSquareText,
   Plus,
   Settings,
-  Users,
-  WalletCards,
 } from "lucide-react";
 import { useMemo } from "react";
-import type { ReactNode } from "react";
 import {
   buildHostProgramOverviews,
   findHostProjectOverview,
   hostProgramPath,
   hostProjectPath,
   type HostProgramOverview,
-  type HostProjectOverview,
 } from "@/lib/host-projects";
 import {
   formatCurrency,
@@ -56,7 +47,7 @@ export function HostProjectHub({ projectId }: { projectId: string }) {
           href="/host"
         >
           <ArrowLeft size={16} />
-          프로젝트 목록
+          프로그램 목록
         </Link>
         <div className="mt-5 rounded-md border border-slate-200 bg-white p-6">
           <h1 className="text-2xl font-black text-slate-950">
@@ -71,7 +62,6 @@ export function HostProjectHub({ projectId }: { projectId: string }) {
   }
 
   const projectPath = hostProjectPath(project.id);
-  const featureTiles = buildFeatureTiles(project, projectPath, programs.length);
 
   return (
     <div className="mx-auto max-w-7xl px-4 py-6 md:px-8">
@@ -81,7 +71,7 @@ export function HostProjectHub({ projectId }: { projectId: string }) {
           href="/host"
         >
           <ArrowLeft size={16} />
-          모든 프로젝트
+          프로그램 목록
         </Link>
         <div className="flex flex-wrap gap-2">
           <Link
@@ -133,26 +123,6 @@ export function HostProjectHub({ projectId }: { projectId: string }) {
 
       <div className="mt-6 grid gap-6 xl:grid-cols-[260px_minmax(0,1fr)]">
         <aside className="space-y-4">
-          <section className="rounded-md border border-slate-200 bg-white p-3">
-            <p className="px-1 text-xs font-black uppercase tracking-[0.14em] text-slate-400">
-              Project Menu
-            </p>
-            <div className="mt-3 grid gap-1">
-              {featureTiles.map((tile) => (
-                <Link
-                  className="grid grid-cols-[32px_minmax(0,1fr)] items-center gap-3 rounded-md px-2 py-2 text-sm font-black text-slate-700 hover:bg-teal-50 hover:text-[var(--primary)]"
-                  href={tile.href}
-                  key={tile.title}
-                >
-                  <span className="grid size-8 place-items-center rounded-md bg-slate-100 text-[var(--primary)]">
-                    {tile.icon}
-                  </span>
-                  <span className="min-w-0 truncate">{tile.title}</span>
-                </Link>
-              ))}
-            </div>
-          </section>
-
           <section className="rounded-md border border-slate-200 bg-white p-4">
             <h2 className="flex items-center gap-2 text-sm font-black text-slate-950">
               <ListChecks className="text-[var(--primary)]" size={17} />
@@ -174,34 +144,7 @@ export function HostProjectHub({ projectId }: { projectId: string }) {
         </aside>
 
         <main className="min-w-0">
-          <section className="rounded-md border border-slate-200 bg-white p-5">
-            <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
-              <div>
-                <p className="inline-flex items-center gap-2 text-sm font-black text-[var(--primary)]">
-                  <LayoutGrid size={18} />
-                  기능 보드
-                </p>
-                <h2 className="mt-2 text-2xl font-black text-slate-950">
-                  이 프로젝트에서 할 일
-                </h2>
-              </div>
-              <Link
-                className="inline-flex h-10 items-center justify-center gap-2 rounded-md bg-slate-950 px-3 text-sm font-black text-white"
-                href={`${projectPath}/programs/new`}
-              >
-                <Plus size={16} />
-                프로그램 신설
-              </Link>
-            </div>
-
-            <div className="mt-5 grid gap-3 md:grid-cols-2 xl:grid-cols-3">
-              {featureTiles.map((tile) => (
-                <FeatureTile key={tile.title} tile={tile} />
-              ))}
-            </div>
-          </section>
-
-          <section className="mt-6 rounded-md border border-slate-200 bg-white p-5" id="programs">
+          <section className="rounded-md border border-slate-200 bg-white p-5" id="programs">
             <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
               <div>
                 <p className="inline-flex items-center gap-2 text-sm font-black text-[var(--primary)]">
@@ -251,93 +194,6 @@ export function HostProjectHub({ projectId }: { projectId: string }) {
         </main>
       </div>
     </div>
-  );
-}
-
-type FeatureTileModel = {
-  description: string;
-  href: string;
-  icon: ReactNode;
-  metric: string;
-  title: string;
-};
-
-function buildFeatureTiles(
-  project: HostProjectOverview,
-  projectPath: string,
-  programCount: number,
-): FeatureTileModel[] {
-  return [
-    {
-      description: "프로젝트 안에 공개 모집 프로그램을 만들고 선택합니다.",
-      href: "#programs",
-      icon: <ClipboardList size={18} />,
-      metric: `${programCount}개`,
-      title: "프로그램",
-    },
-    {
-      description: "프로그램을 선택한 뒤 해당 프로그램 신청자만 검토합니다.",
-      href: "#programs",
-      icon: <Users size={18} />,
-      metric: `${project.applicationCount}명`,
-      title: "신청자 CRM",
-    },
-    {
-      description: "프로그램별 모집 질문과 동의 항목을 구성합니다.",
-      href: "#programs",
-      icon: <MessageSquareText size={18} />,
-      metric: "프로그램별",
-      title: "신청서/메시지",
-    },
-    {
-      description: "활동, 장소, 참석자, 사진 기록을 프로젝트 단위로 모읍니다.",
-      href: `${projectPath}/activities`,
-      icon: <BarChart3 size={18} />,
-      metric: `${project.activityCount}건`,
-      title: "활동/참석",
-    },
-    {
-      description: "지출 이벤트와 필요한 증빙 체크리스트를 관리합니다.",
-      href: `${projectPath}/evidence`,
-      icon: <WalletCards size={18} />,
-      metric: `${project.missingEvidenceCount}개 누락`,
-      title: "지출/증빙",
-    },
-    {
-      description: "제출 전 준비율과 보완 항목을 확인합니다.",
-      href: `${projectPath}/closeout`,
-      icon: <FileText size={18} />,
-      metric: `${project.readiness}%`,
-      title: "마감/보고",
-    },
-  ];
-}
-
-function FeatureTile({ tile }: { tile: FeatureTileModel }) {
-  return (
-    <Link
-      className="group flex min-h-44 flex-col justify-between rounded-md border border-slate-200 bg-white p-4 hover:border-[var(--primary)] hover:bg-teal-50"
-      href={tile.href}
-    >
-      <div>
-        <div className="flex items-start justify-between gap-3">
-          <span className="grid size-10 place-items-center rounded-md bg-slate-100 text-[var(--primary)]">
-            {tile.icon}
-          </span>
-          <span className="rounded-md bg-slate-50 px-2 py-1 text-xs font-black text-slate-600">
-            {tile.metric}
-          </span>
-        </div>
-        <h3 className="mt-4 text-lg font-black text-slate-950">{tile.title}</h3>
-        <p className="mt-2 text-sm leading-6 text-slate-500">
-          {tile.description}
-        </p>
-      </div>
-      <span className="mt-4 inline-flex items-center gap-2 text-sm font-black text-[var(--primary)]">
-        열기
-        <ArrowRight size={15} />
-      </span>
-    </Link>
   );
 }
 
