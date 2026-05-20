@@ -13,7 +13,9 @@ import {
   Users,
   WalletCards,
 } from "lucide-react";
+import { HostCenterHome } from "@/components/host-center-home";
 import { HostAccessBanner } from "@/components/host-access-banner";
+import { HostLocalHomeCreate } from "@/components/host-local-home-create";
 import {
   getHostConsoleOverview,
   type HostVillageWorkspace,
@@ -69,6 +71,14 @@ const operations = [
 
 export default async function HostPage() {
   const overview = await getHostConsoleOverview();
+
+  if (overview.signedIn && overview.workspaces.length === 0) {
+    return <HostLocalHomeCreate />;
+  }
+
+  if (overview.signedIn && overview.workspaces[0]) {
+    return <HostCenterHome workspace={overview.workspaces[0]} />;
+  }
 
   return (
     <>
