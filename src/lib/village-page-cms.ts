@@ -4,6 +4,7 @@ import {
   villagePageRevisions,
   villagePageSections,
 } from "@/db/schema";
+import { isDemoModeEnabled } from "@/lib/demo-mode";
 import type {
   PublishedVillagePageSection,
   VillagePageKey,
@@ -50,9 +51,9 @@ export async function listPublicVillagePageSections(
 
     return publishedRows.length > 0
       ? publishedRows
-      : getDefaultPublishedVillagePageSections(slug, pageKey);
+      : getPublicPageSectionFallback(slug, pageKey);
   } catch {
-    return getDefaultPublishedVillagePageSections(slug, pageKey);
+    return getPublicPageSectionFallback(slug, pageKey);
   }
 }
 
@@ -76,9 +77,9 @@ export async function listHostVillagePageSections(
 
     return rows.length > 0
       ? rows.map(mapSectionRowToDraft)
-      : getDefaultHostVillagePageSections(slug, pageKey);
+      : getHostPageSectionFallback(slug, pageKey);
   } catch {
-    return getDefaultHostVillagePageSections(slug, pageKey);
+    return getHostPageSectionFallback(slug, pageKey);
   }
 }
 
@@ -195,6 +196,24 @@ export function getDefaultHostVillagePageSections(
     publishedAt: section.publishedAt,
     updatedAt: section.publishedAt ?? defaultDate,
   }));
+}
+
+function getPublicPageSectionFallback(
+  villageSlug: string,
+  pageKey: VillagePageKey,
+): PublishedVillagePageSection[] {
+  return isDemoModeEnabled()
+    ? getDefaultPublishedVillagePageSections(villageSlug, pageKey)
+    : [];
+}
+
+function getHostPageSectionFallback(
+  villageSlug: string,
+  pageKey: VillagePageKey,
+): VillagePageSectionDraft[] {
+  return isDemoModeEnabled()
+    ? getDefaultHostVillagePageSections(villageSlug, pageKey)
+    : [];
 }
 
 export function getDefaultPublishedVillagePageSections(

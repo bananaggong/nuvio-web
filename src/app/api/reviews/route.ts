@@ -4,6 +4,7 @@ import {
   enforceContentLength,
 } from "@/lib/api-security";
 import { reviews } from "@/lib/data";
+import { isDemoModeEnabled } from "@/lib/demo-mode";
 import {
   listPublicReviewsFromDb,
   normalizeHostReviewDraft,
@@ -13,11 +14,13 @@ import {
 export const runtime = "nodejs";
 
 export async function GET() {
+  const fallbackReviews = isDemoModeEnabled() ? reviews : [];
+
   try {
     const databaseReviews = await listPublicReviewsFromDb();
-    return NextResponse.json({ data: [...databaseReviews, ...reviews] });
+    return NextResponse.json({ data: [...databaseReviews, ...fallbackReviews] });
   } catch {
-    return NextResponse.json({ data: reviews });
+    return NextResponse.json({ data: fallbackReviews });
   }
 }
 

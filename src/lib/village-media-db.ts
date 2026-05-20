@@ -1,6 +1,7 @@
 import { and, desc, eq, isNotNull } from "drizzle-orm";
 import { getDb } from "@/db/client";
 import { villageMediaContents as mediaTable } from "@/db/schema";
+import { isDemoModeEnabled } from "@/lib/demo-mode";
 import { boseongMediaSeeds } from "@/lib/village-media-seeds";
 import type {
   VillageMediaCategory,
@@ -47,7 +48,7 @@ export async function listPublicVillageMedia(
   options: { limit?: number } = {},
 ): Promise<VillageMediaContent[]> {
   const slug = villageSlug.trim().toLowerCase();
-  const seeds = listSeedMedia(slug);
+  const seeds = isDemoModeEnabled() ? listSeedMedia(slug) : [];
 
   try {
     const rows = await getDb()
@@ -57,7 +58,11 @@ export async function listPublicVillageMedia(
       .orderBy(desc(mediaTable.publishedAt), desc(mediaTable.updatedAt))
       .limit(200);
 
-    return applyLimit(mergeMedia(rows.map(mapMediaRowToContent), seeds), options.limit);
+    const databaseMedia = rows.map(mapMediaRowToContent);
+    return applyLimit(
+      databaseMedia.length > 0 ? mergeMedia(databaseMedia, seeds) : seeds,
+      options.limit,
+    );
   } catch {
     return applyLimit(seeds, options.limit);
   }
@@ -76,9 +81,10 @@ export async function listHostVillageMediaFromDb(
       .orderBy(desc(mediaTable.updatedAt))
       .limit(300);
 
-    return rows.map(mapMediaRowToHostDraft);
+    if (rows.length > 0) return rows.map(mapMediaRowToHostDraft);
+    return isDemoModeEnabled() ? listSeedMedia(slug).map(mapContentToHostDraft) : [];
   } catch {
-    return listSeedMedia(slug).map(mapContentToHostDraft);
+    return isDemoModeEnabled() ? listSeedMedia(slug).map(mapContentToHostDraft) : [];
   }
 }
 

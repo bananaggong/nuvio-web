@@ -3,7 +3,6 @@ import { getDb } from "@/db/client";
 import { villages as villagesTable } from "@/db/schema";
 import { getPublicProgramByIdentifier, listPublicPrograms } from "@/lib/public-program-db";
 import { listPublicReviewsFromDb } from "@/lib/review-db";
-import { boseongImportedReviews } from "@/lib/boseong-review-seeds";
 import { reviews } from "@/lib/data";
 import { isDemoModeEnabled } from "@/lib/demo-mode";
 import { seedVillages } from "@/lib/village-seeds";
@@ -113,7 +112,7 @@ export async function getVillageReviews(
     databaseReviews = [];
   }
 
-  const fallbackReviews = isDemoModeEnabled() ? reviews : boseongImportedReviews;
+  const fallbackReviews = isDemoModeEnabled() ? reviews : [];
   const matchedReviews = [...databaseReviews, ...fallbackReviews]
     .filter(
       (review) =>
