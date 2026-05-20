@@ -85,9 +85,8 @@ function AccessDenied({ villageSlug }: { villageSlug: string }) {
           이 로컬홈을 운영할 수 있는 계정이 아닙니다.
         </h1>
         <p className="mt-2 text-sm leading-6 text-slate-600">
-          /{villageSlug} 운영 권한은 로컬홈별로 연결됩니다. 전체차LAB처럼 실제
-          운영자가 있는 로컬홈은 지정된 계정으로 가입하거나, 관리자에게 권한 이전을
-          요청해야 합니다.
+          /{villageSlug} 운영 권한은 로컬홈별로 연결됩니다. 기존 로컬홈은 권한이
+          연결된 계정으로 접속하거나, 관리자에게 권한 이전을 요청해야 합니다.
         </p>
         <div className="mt-5 flex flex-wrap gap-2">
           <HostLink href="/host" label="호스트센터로 이동" />

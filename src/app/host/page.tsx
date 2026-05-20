@@ -86,8 +86,8 @@ export default async function HostPage() {
               </h1>
               <p className="mt-3 max-w-3xl text-sm leading-7 text-slate-600">
                 누비오의 호스트 권한은 계정 전체 권한이 아니라 로컬홈 단위로 연결됩니다.
-                전체차LAB처럼 실제 운영자가 있는 로컬홈은 지정된 계정이 가입하면 해당
-                로컬홈 운영 화면이 열리도록 준비했습니다.
+                새 운영자는 로컬홈을 직접 만들고, 기존 로컬홈은 권한이 연결된 계정에서
+                운영 화면이 열리도록 준비했습니다.
               </p>
               <div className="mt-5 flex flex-wrap gap-2">
                 <PrimaryLink href="/host/projects" label="프로젝트 보기" />
@@ -238,12 +238,12 @@ function EmptyWorkspace({ signedIn }: { signedIn: boolean }) {
       </p>
       <p className="mt-2 max-w-2xl text-sm leading-6 text-slate-500">
         {signedIn
-          ? "운영 권한은 로컬홈별로 연결됩니다. 전체차LAB 운영자는 지정된 이메일로 가입하면 권한이 활성화됩니다."
+          ? "아직 이 계정에 연결된 로컬홈이 없습니다. 새 로컬홈을 만들거나 기존 로컬홈 권한을 연결해 주세요."
           : "로그인하면 이 계정에 연결된 로컬홈 운영 공간이 표시됩니다."}
       </p>
       <div className="mt-5 flex flex-wrap gap-2">
         <PrimaryLink
-          href={signedIn ? "/host/villages" : "/login?intent=host&next=/host"}
+          href={signedIn ? "/host/villages?new=1" : "/login?intent=host&next=/host"}
           label={signedIn ? "로컬홈 만들기" : "로그인"}
         />
         <SecondaryLink href="/partners/apply" label="운영 문의" />

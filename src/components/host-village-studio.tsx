@@ -50,7 +50,12 @@ export function HostVillageStudio() {
 
         setVillage(remoteVillages[0] ?? null);
         if (remoteVillages.length === 0) {
-          setSyncError("이 계정에 연결된 로컬홈이 아직 없습니다.");
+          if (shouldOpenNewVillageDraft()) {
+            setVillage(createNewVillageDraft());
+            setSyncError("");
+          } else {
+            setSyncError("이 계정에 연결된 로컬홈이 아직 없습니다.");
+          }
         }
       } catch {
         if (isMounted) {
@@ -72,6 +77,12 @@ export function HostVillageStudio() {
     setVillage(nextVillage);
     setSaved(true);
     window.setTimeout(() => setSaved(false), 1400);
+  }
+
+  function startNewVillage() {
+    setSyncMessage("");
+    setSyncError("");
+    saveVillage(createNewVillageDraft());
   }
 
   function updateVillage(patch: Partial<Village>) {
@@ -168,8 +179,8 @@ export function HostVillageStudio() {
             이 계정에 연결된 로컬홈이 없습니다.
           </h1>
           <p className="mt-2 max-w-2xl text-sm leading-6 text-slate-600">
-            전체차LAB처럼 특정 운영자가 있는 로컬홈은 관리자에게 권한을 연결한 뒤
-            이 화면에 표시됩니다. 로그인 상태와 연결 이메일을 확인해 주세요.
+            새 로컬홈을 만들어 운영을 시작하거나, 기존 로컬홈은 관리자에게 권한
+            연결을 요청해 주세요.
           </p>
           {syncError ? (
             <p className="mt-4 rounded-md bg-amber-50 px-3 py-2 text-sm font-bold text-amber-800">
@@ -177,6 +188,13 @@ export function HostVillageStudio() {
             </p>
           ) : null}
           <div className="mt-5 flex flex-wrap gap-2">
+            <button
+              className="inline-flex h-10 items-center justify-center rounded-md bg-[var(--primary)] px-3 text-sm font-black text-white"
+              onClick={startNewVillage}
+              type="button"
+            >
+              새 로컬홈 만들기
+            </button>
             <Link
               className="inline-flex h-10 items-center justify-center rounded-md bg-slate-950 px-3 text-sm font-black text-white"
               href="/login?intent=host&next=/host/villages"
@@ -528,6 +546,34 @@ function createDefaultSections(villageName: string): VillageSection[] {
   ];
 }
 
+function createNewVillageDraft(): Village {
+  const now = new Date().toISOString();
+  const suffix = Date.now().toString(36);
+  const name = "새 로컬홈";
+
+  return {
+    id: `village-${suffix}`,
+    slug: `local-home-${suffix}`,
+    name,
+    region: "전국",
+    city: "로컬",
+    tagline: "우리 로컬홈의 프로그램과 소식을 소개합니다.",
+    summary: "로컬홈 소개, 프로그램 안내, 참여 후기와 공지를 한곳에서 관리합니다.",
+    description:
+      "운영자가 직접 로컬홈 소개, 프로그램, 문의 채널, 활동 기록을 구성할 수 있는 공개 페이지입니다.",
+    heroImage:
+      "https://images.unsplash.com/photo-1500534314209-a25ddb2bd429?auto=format&fit=crop&w=1600&q=82",
+    logoText: "LH",
+    brandColor: "#0f766e",
+    accentColor: "#f59e0b",
+    programIds: [],
+    links: [],
+    sections: createDefaultSections(name),
+    published: false,
+    updatedAt: now,
+  };
+}
+
 function createClientSlug(value: string): string {
   const slug = value
     .normalize("NFKC")
@@ -537,4 +583,9 @@ function createClientSlug(value: string): string {
     .slice(0, 72);
 
   return slug || `village-${Date.now().toString(36)}`;
+}
+
+function shouldOpenNewVillageDraft(): boolean {
+  if (typeof window === "undefined") return false;
+  return new URLSearchParams(window.location.search).get("new") === "1";
 }

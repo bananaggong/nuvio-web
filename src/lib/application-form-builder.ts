@@ -93,15 +93,15 @@ const blockTypeValues: ApplicationFormBlockType[] = [
 
 export const seedApplicationFormTemplates: ApplicationFormTemplate[] = [
   normalizeApplicationFormTemplateShape({
-    id: "form-boseong-tea-basic",
-    name: "전체차LAB 기본 신청폼",
+    id: "form-basic-program-application",
+    name: "기본 프로그램 신청폼",
     description: "참여 동기, 가능 일정, 개인정보 동의를 확인합니다.",
     programTitle: "",
     updatedAt: "2026-05-04T00:00:00+09:00",
     blocks: [
       {
         id: "block-title",
-        label: "전체차LAB 프로그램 신청",
+        label: "프로그램 신청",
         required: false,
         type: "title",
       },
@@ -127,8 +127,8 @@ export const seedApplicationFormTemplates: ApplicationFormTemplate[] = [
             value: "있음",
           },
         ],
-        id: "field-tea-experience",
-        label: "차 문화 경험이 있나요?",
+        id: "field-related-experience",
+        label: "관련 경험이 있나요?",
         options: ["있음", "없음"],
         required: true,
         type: "singleSelect",
