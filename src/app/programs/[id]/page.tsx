@@ -1,4 +1,6 @@
 import type { Metadata } from "next";
+import Image from "next/image";
+import Link from "next/link";
 import { notFound } from "next/navigation";
 import {
   Bookmark,
@@ -22,12 +24,13 @@ import { programs } from "@/lib/data";
 import { isDemoModeEnabled } from "@/lib/demo-mode";
 import { getPublicProgramByIdentifier } from "@/lib/public-program-db";
 import { programPath } from "@/lib/program-routing";
+import { listPublicProgramReviewsFromDb } from "@/lib/review-db";
 import {
   breadcrumbJsonLd,
   createSeoMetadata,
   programJsonLd,
 } from "@/lib/seo";
-import type { Program } from "@/lib/types";
+import type { Program, Review } from "@/lib/types";
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
@@ -98,8 +101,14 @@ const floatingSchedule = [
   "일정 마무리",
 ];
 
-const reviewText =
-  "숙소에 대한 후기를 작성해주세요 숙소에 대한 후기를 작성해주세요 숙소에 대한 후기를 작성해주세요 숙소에 대한 후기를 작성해주세요 숙소에 대한 후기를 작성해주세요 숙소에 대한 후기를 작성해주세요 숙소에 대한 후기를 작성해주세요 숙소에 대한 후기를 작성해주세요 숙소에 대한 후기를 작성해주세요 숙소에 대한 후기를 작성해주세요.";
+const boseongProgramReviewHrefs: Record<string, string> = {
+  "1013": "/boseong/reviews?program=talent-for-stay",
+  "1014": "/boseong/reviews?program=local-salon",
+  "1015": "/boseong/reviews?program=tea-lab",
+  "talent-for-stay": "/boseong/reviews?program=talent-for-stay",
+  "local-salon": "/boseong/reviews?program=local-salon",
+  "tea-lab": "/boseong/reviews?program=tea-lab",
+};
 
 export function generateStaticParams() {
   if (!isDemoModeEnabled()) return [];
@@ -150,6 +159,8 @@ export default async function ProgramDetailPage({
   const canonicalPath = programPath(program);
   const locationLabel = `${program.region}, ${program.city}`;
   const applyHref = program.applyUrl || `${canonicalPath}/apply`;
+  const programReviews = await getProgramReviewsForDetail(program);
+  const reviewListHref = getProgramReviewListHref(program);
 
   return (
     <div className="font-pretendard bg-white text-[#2B1E17]">
@@ -238,57 +249,10 @@ export default async function ProgramDetailPage({
             <ProgramScheduleCards items={scheduleItems} popupItems={floatingSchedule} />
           </section>
 
-          <section
-            className="flex min-h-[1076px] w-full flex-col items-center gap-4 pb-10"
-            id="detail-section-2"
-          >
-            <SectionTitle title="참여자 리뷰" />
-
-            <div className="flex h-6 w-full items-center gap-2">
-              <Star aria-hidden="true" className="size-6 fill-[#FE701E] text-[#FE701E]" />
-              <strong className="text-base font-semibold leading-[1.253] text-[#5B3A29]">
-                0.00
-              </strong>
-              <span className="text-sm font-medium leading-[1.253] text-[#CAC4BC]">
-                (00)
-              </span>
-            </div>
-
-            <div
-              aria-label="리뷰 이미지 모음"
-              className="flex h-[108px] w-full items-center gap-[5px] overflow-hidden overflow-y-hidden border-b border-[#F5E1D3] pl-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden max-md:overflow-x-auto"
-            >
-              {Array.from({ length: 6 }, (_, index) => (
-                <div
-                  aria-hidden="true"
-                  className="h-[100px] w-[100px] shrink-0 rounded-md bg-[#D9D9D9]"
-                  key={index}
-                />
-              ))}
-              <button
-                className="flex w-[52px] shrink-0 flex-col items-center gap-1 border-0 bg-transparent p-0 text-xs font-normal leading-[1.6] text-[#5B3A29]"
-                type="button"
-              >
-                <span className="flex size-[20.5px] items-center justify-center rounded-full border border-[#F5E1D3] text-[#FE701E]">
-                  <ChevronRight aria-hidden="true" className="size-[14px]" />
-                </span>
-                <span className="whitespace-nowrap">전체보기</span>
-              </button>
-            </div>
-
-            <div className="flex w-[688px] flex-col max-md:w-full">
-              <ReviewCard imageCount={5} />
-              <ReviewCard textOnly />
-              <ReviewCard imageCount={5} />
-            </div>
-
-            <button
-              className="h-[29px] w-full rounded bg-[#FFF6EC] p-0 text-xs font-medium leading-[1.253] text-[#FF9A3D]"
-              type="button"
-            >
-              참여자 리뷰 전체보기
-            </button>
-          </section>
+          <ParticipantReviewSection
+            reviewListHref={reviewListHref}
+            reviews={programReviews}
+          />
 
           <section
             className="flex min-h-[932px] w-[694.53px] flex-col items-center gap-7 pb-10 max-md:w-full"
@@ -459,60 +423,166 @@ function SectionTitle({ title }: { title: string }) {
   );
 }
 
-function ReviewCard({
-  imageCount = 0,
-  textOnly = false,
+function ParticipantReviewSection({
+  reviewListHref,
+  reviews,
 }: {
-  imageCount?: number;
-  textOnly?: boolean;
+  reviewListHref: string;
+  reviews: Review[];
 }) {
+  const rankedReviews = rankProgramReviews(reviews);
+  const reviewImages = rankedReviews
+    .flatMap((review) => review.images)
+    .filter(isRenderableImage)
+    .slice(0, 6);
+  const visibleReviews = rankedReviews.slice(0, 3);
+  const ratingText = reviews.length > 0 ? "5.0" : "0.00";
+  const countText = String(reviews.length).padStart(2, "0");
+
+  return (
+    <section
+      className="flex min-h-[1076px] w-full flex-col items-center gap-4 pb-10"
+      id="detail-section-2"
+    >
+      <SectionTitle title="참여자 리뷰" />
+
+      <div className="flex h-6 w-full items-center gap-2">
+        <Star aria-hidden="true" className="size-6 fill-[#FE701E] text-[#FE701E]" />
+        <strong className="text-base font-semibold leading-[1.253] text-[#5B3A29]">
+          {ratingText}
+        </strong>
+        <span className="text-sm font-medium leading-[1.253] text-[#CAC4BC]">
+          ({countText})
+        </span>
+      </div>
+
+      <div
+        aria-label="리뷰 이미지 모음"
+        className="flex h-[108px] w-full items-center gap-[5px] overflow-hidden overflow-y-hidden border-b border-[#F5E1D3] pl-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden max-md:overflow-x-auto"
+      >
+        {reviewImages.length > 0
+          ? reviewImages.map((imageUrl, index) => (
+              <div
+                className="relative h-[100px] w-[100px] shrink-0 overflow-hidden rounded-md bg-[#D9D9D9]"
+                key={`${imageUrl}-${index}`}
+              >
+                <Image
+                  alt=""
+                  className="object-cover"
+                  fill
+                  sizes="100px"
+                  src={imageUrl}
+                />
+              </div>
+            ))
+          : Array.from({ length: 6 }, (_, index) => (
+              <div
+                aria-hidden="true"
+                className="h-[100px] w-[100px] shrink-0 rounded-md bg-[#D9D9D9]"
+                key={index}
+              />
+            ))}
+        <Link
+          className="flex w-[52px] shrink-0 flex-col items-center gap-1 border-0 bg-transparent p-0 text-xs font-normal leading-[1.6] text-[#5B3A29]"
+          href={reviewListHref}
+        >
+          <span className="flex size-[20.5px] items-center justify-center rounded-full border border-[#F5E1D3] text-[#FE701E]">
+            <ChevronRight aria-hidden="true" className="size-[14px]" />
+          </span>
+          <span className="whitespace-nowrap">전체보기</span>
+        </Link>
+      </div>
+
+      <div className="flex w-[688px] flex-col max-md:w-full">
+        {visibleReviews.length > 0 ? (
+          visibleReviews.map((review) => (
+            <ReviewCard
+              key={review.id}
+              review={review}
+              reviewListHref={reviewListHref}
+            />
+          ))
+        ) : (
+          <div className="flex min-h-[173px] w-[688px] items-center justify-center border-b border-[#F5E1D3] px-8 py-4 text-sm text-[#6D7A8A] max-md:w-full max-md:px-4">
+            아직 등록된 참가자 리뷰가 없습니다.
+          </div>
+        )}
+      </div>
+
+      <Link
+        className="flex h-[29px] w-full items-center justify-center rounded bg-[#FFF6EC] p-0 text-xs font-medium leading-[1.253] text-[#FF9A3D]"
+        href={reviewListHref}
+      >
+        참여자 리뷰 전체보기
+      </Link>
+    </section>
+  );
+}
+
+function ReviewCard({
+  review,
+  reviewListHref,
+}: {
+  review: Review;
+  reviewListHref: string;
+}) {
+  const images = review.images.filter(isRenderableImage).slice(0, 5);
+  const detailHref = getReviewDetailHref(review, reviewListHref);
+  const reviewBody = getReviewBody(review);
+
   return (
     <section
       className={`flex w-[688px] flex-col items-start border-b border-[#F5E1D3] px-8 py-4 max-md:w-full max-md:px-4 ${
-        textOnly ? "min-h-[173px]" : "min-h-[293px]"
+        images.length === 0 ? "min-h-[173px]" : "min-h-[293px]"
       }`}
     >
       <div className="grid w-full grid-cols-[20px_minmax(0,1fr)_22px] items-start gap-[5px] pb-1.5 pr-1.5">
         <span aria-hidden="true" className="size-5 rounded-full bg-[#D9D9D9]" />
         <strong className="flex min-h-5 items-center text-sm font-semibold leading-[1.253] text-[#2B1E17]">
-          닉네임
+          {review.author}
         </strong>
-        <button
-          aria-label="리뷰 더보기"
+        <span
+          aria-hidden="true"
           className="flex size-[22px] items-center justify-center border-0 bg-transparent p-0 text-[#CAC4BC]"
-          type="button"
         >
           <MoreHorizontal aria-hidden="true" className="size-[22px]" />
-        </button>
+        </span>
       </div>
       <div className="flex w-full items-center px-[3px]">
         <Star aria-hidden="true" className="mr-0.5 size-[9px] fill-[#FE701E] text-[#FE701E]" />
         <strong className="text-xs font-normal leading-[1.6] text-[#FE701E]">5.0</strong>
         <time
           className="ml-auto text-xs font-normal leading-[1.6] text-[#D9D9D9]"
-          dateTime="2026-05-12"
+          dateTime={review.date}
         >
-          2026년 5월 12일
+          {formatReviewDate(review.date)}
         </time>
       </div>
       <p className="mt-2 line-clamp-3 max-h-[58px] w-[624px] overflow-hidden px-2 text-xs font-normal leading-[1.6] text-[#2B1E17] max-md:w-full">
-        {reviewText}
+        {reviewBody}
       </p>
-      <button
+      <Link
         className="mt-2 inline-flex self-end border-0 bg-transparent p-0 pb-3 text-xs font-normal leading-[1.6] text-[#6D7A8A]"
-        type="button"
+        href={detailHref}
       >
         펼치기
         <ChevronDown aria-hidden="true" className="size-[9px]" />
-      </button>
-      {imageCount > 0 ? (
+      </Link>
+      {images.length > 0 ? (
         <div className="group/gallery relative flex items-center gap-1.5 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden max-md:w-full max-md:overflow-x-auto">
-          {Array.from({ length: imageCount }, (_, index) => (
-            <span
-              aria-hidden="true"
-              className="size-[120px] shrink-0 rounded-md bg-[#D9D9D9]"
-              key={index}
-            />
+          {images.map((imageUrl, index) => (
+            <div
+              className="relative size-[120px] shrink-0 overflow-hidden rounded-md bg-[#D9D9D9]"
+              key={`${imageUrl}-${index}`}
+            >
+              <Image
+                alt=""
+                className="object-cover"
+                fill
+                sizes="120px"
+                src={imageUrl}
+              />
+            </div>
           ))}
           <div
             aria-hidden="true"
@@ -616,6 +686,60 @@ function BenefitRow({
       </button>
     </div>
   );
+}
+
+async function getProgramReviewsForDetail(program: Program): Promise<Review[]> {
+  try {
+    return await listPublicProgramReviewsFromDb(program.id, 120);
+  } catch {
+    return [];
+  }
+}
+
+function getProgramReviewListHref(program: Program): string {
+  return (
+    boseongProgramReviewHrefs[String(program.id)] ??
+    boseongProgramReviewHrefs[program.slug] ??
+    "/reviews"
+  );
+}
+
+function rankProgramReviews(reviews: Review[]): Review[] {
+  return [...reviews].sort((left, right) => {
+    const scoreDiff = getReviewDisplayScore(right) - getReviewDisplayScore(left);
+    if (scoreDiff !== 0) return scoreDiff;
+    return new Date(right.date).getTime() - new Date(left.date).getTime();
+  });
+}
+
+function getReviewDisplayScore(review: Review): number {
+  const imageScore = Math.min(review.images.filter(isRenderableImage).length, 3) * 40;
+  const textScore = Math.min(getReviewBody(review).length, 200);
+  const participantScore = review.programId ? 80 : 0;
+
+  return participantScore + imageScore + textScore;
+}
+
+function getReviewBody(review: Review): string {
+  return (review.body || review.excerpt || "").trim();
+}
+
+function getReviewDetailHref(review: Review, fallbackHref: string): string {
+  return review.villageSlug
+    ? `/${review.villageSlug}/reviews/${review.id}`
+    : fallbackHref;
+}
+
+function formatReviewDate(value: string): string {
+  return new Intl.DateTimeFormat("ko-KR", {
+    year: "numeric",
+    month: "long",
+    day: "numeric",
+  }).format(new Date(value));
+}
+
+function isRenderableImage(value: string): boolean {
+  return value.startsWith("http://") || value.startsWith("https://") || value.startsWith("/");
 }
 
 async function getProgramForDetail(id: string): Promise<Program | null> {

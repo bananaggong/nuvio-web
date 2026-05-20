@@ -1,4 +1,4 @@
-import { desc, eq } from "drizzle-orm";
+import { and, desc, eq } from "drizzle-orm";
 import { getDb } from "@/db/client";
 import { programs as programsTable, reviews as reviewsTable } from "@/db/schema";
 import type { Review, ReviewCategory } from "@/lib/types";
@@ -40,6 +40,32 @@ export async function listPublicReviewsFromDb(): Promise<Review[]> {
     .where(eq(reviewsTable.status, "published"))
     .orderBy(desc(reviewsTable.createdAt))
     .limit(300);
+
+  return rows.map(({ review, programLegacyId }) =>
+    mapReviewRowToReview(review, programLegacyId ?? undefined),
+  );
+}
+
+export async function listPublicProgramReviewsFromDb(
+  programIdentifier: number | string,
+  limit = 80,
+): Promise<Review[]> {
+  const key = String(programIdentifier).trim();
+  const numericId = Number(key);
+  const programPredicate = Number.isInteger(numericId)
+    ? eq(programsTable.legacyId, numericId)
+    : eq(programsTable.slug, key);
+
+  const rows = await getDb()
+    .select({
+      review: reviewsTable,
+      programLegacyId: programsTable.legacyId,
+    })
+    .from(reviewsTable)
+    .leftJoin(programsTable, eq(reviewsTable.programId, programsTable.id))
+    .where(and(eq(reviewsTable.status, "published"), programPredicate))
+    .orderBy(desc(reviewsTable.createdAt))
+    .limit(limit);
 
   return rows.map(({ review, programLegacyId }) =>
     mapReviewRowToReview(review, programLegacyId ?? undefined),
