@@ -53,13 +53,13 @@ export function HostOpsDashboard() {
         <div>
           <p className="inline-flex items-center gap-2 text-sm font-black text-[var(--primary)]">
             <FolderKanban size={18} />
-            프로젝트 운영
+            폴더 운영
           </p>
           <h1 className="mt-2 text-2xl font-black leading-tight text-slate-950 sm:text-3xl">
             운영중인 프로그램
           </h1>
           <p className="mt-1 text-sm font-bold text-slate-500">
-            {programItems.length}개 프로그램 · {projects.length}개 프로젝트
+            {programItems.length}개 프로그램 · {projects.length}개 폴더
           </p>
         </div>
         <Link
@@ -87,13 +87,13 @@ export function HostOpsDashboard() {
             아직 운영중인 프로그램이 없습니다.
           </h2>
           <p className="mt-2 text-sm font-bold text-slate-500">
-            프로젝트를 만든 뒤 프로그램을 신설하면 이곳에 모여 보입니다.
+            폴더를 만든 뒤 프로그램을 신설하면 이곳에 모여 보입니다.
           </p>
           <Link
             className="mt-5 inline-flex h-10 items-center justify-center gap-2 rounded-md bg-slate-950 px-3 text-sm font-black text-white"
             href="/host/projects/new"
           >
-            <Plus size={16} />새 프로젝트
+            <Plus size={16} />새 폴더
           </Link>
         </section>
       )}

@@ -78,5 +78,5 @@ function getPostAuthRedirectPath(
 function getRoleLandingPath(role?: "user" | "partner" | "admin"): string {
   if (role === "admin") return "/admin";
   if (role === "partner") return "/host";
-  return "/me";
+  return "/mypage";
 }

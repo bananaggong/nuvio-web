@@ -60,11 +60,11 @@ export default async function HostVillageConsolePage({
           </h1>
           <p className="mt-2 max-w-2xl text-sm leading-6 text-slate-600">
             이 로컬홈의 전용 운영 화면은 아직 구성 전입니다. 현재는 공통 로컬홈 정보와
-            프로젝트 운영 도구를 먼저 사용할 수 있습니다.
+            폴더 운영 도구를 먼저 사용할 수 있습니다.
           </p>
           <div className="mt-5 flex flex-wrap gap-2">
             <HostLink href="/host/villages" label="로컬홈 정보 수정" />
-            <HostLink href="/host/projects" label="운영 프로젝트" />
+            <HostLink href="/host/projects" label="폴더" />
             <HostLink href={`/${villageSlug}`} label="공개 페이지 보기" />
           </div>
         </section>
@@ -90,7 +90,7 @@ function AccessDenied({ villageSlug }: { villageSlug: string }) {
         </p>
         <div className="mt-5 flex flex-wrap gap-2">
           <HostLink href="/host" label="호스트센터로 이동" />
-          <HostLink href="/me" label="내 계정 확인" />
+          <HostLink href="/mypage" label="내 계정 확인" />
         </div>
       </section>
     </main>

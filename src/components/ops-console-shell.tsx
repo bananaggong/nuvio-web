@@ -41,7 +41,7 @@ type NavigationItem = {
 const navigationByArea: Record<ConsoleArea, NavigationItem[]> = {
   host: [
     {
-      name: "프로젝트 관리",
+      name: "폴더 관리",
       href: "/host/projects",
       icon: FolderKanban,
       children: [],
@@ -230,7 +230,7 @@ function Header({
             <Search className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-gray-400" />
             <input
               className="w-full rounded-full border-0 bg-white/90 py-2 pl-10 pr-4 text-sm font-semibold text-gray-800 outline-none ring-0 placeholder:text-gray-400 focus:bg-white focus:ring-2 focus:ring-white/30"
-              placeholder="프로젝트, 신청자, 보고서 검색..."
+              placeholder="폴더, 신청자, 보고서 검색..."
               type="text"
             />
           </label>
@@ -245,7 +245,7 @@ function Header({
           </Link>
           <Link
             className="inline-flex items-center gap-2 rounded-full px-3 py-2 text-sm font-semibold text-white hover:bg-white/20"
-            href="/me"
+            href="/mypage"
           >
             <span className="grid size-8 place-items-center rounded-full bg-white text-blue-700">
               <UserRound size={17} />
@@ -345,7 +345,7 @@ function buildNavigation(area: ConsoleArea, pathname: string): NavigationItem[] 
     projectBasePath ? `${projectBasePath}${path}` : "/host/projects";
 
   const projectNavigation: NavigationItem = {
-    name: "프로젝트 관리",
+    name: "폴더 관리",
     href: "/host/projects",
     icon: FolderKanban,
     children: [],

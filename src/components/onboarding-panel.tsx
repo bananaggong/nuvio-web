@@ -41,7 +41,7 @@ const intentOptions: Array<{
   {
     id: "host",
     title: "로컬홈 / 브랜드 운영자",
-    description: "프로그램을 등록하고 신청폼, 신청자, 운영 프로젝트를 관리합니다.",
+    description: "프로그램을 등록하고 신청폼, 신청자, 폴더를 관리합니다.",
     icon: Building2,
   },
 ];
@@ -365,10 +365,8 @@ function getSafeNextPath(value: string | null): string | null {
 }
 
 function getDestinationPath(intent: OnboardingIntent, nextPath: string | null) {
-  if (intent === "host") {
-    return nextPath?.startsWith("/host") ? nextPath : "/host";
-  }
-  return nextPath?.startsWith("/host") ? "/programs" : nextPath ?? "/programs";
+  if (nextPath) return nextPath;
+  return intent === "host" ? "/host" : "/programs";
 }
 
 function getMetadataText(

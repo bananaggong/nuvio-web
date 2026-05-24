@@ -13,6 +13,7 @@ export default function robots(): MetadataRoute.Robots {
         "/host/",
         "/login",
         "/me",
+        "/mypage",
         "/programs/*/apply",
         "/reviews/new",
         "/signup",

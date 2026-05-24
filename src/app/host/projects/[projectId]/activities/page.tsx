@@ -3,9 +3,9 @@ import { HostAccessBanner } from "@/components/host-access-banner";
 import { HostProjectWorkspace } from "@/components/host-project-workspace";
 
 export const metadata: Metadata = {
-  title: "프로젝트 활동/참석 | 누비오",
+  title: "폴더 활동/참석 | 누비오",
   description:
-    "선택한 운영 프로젝트의 활동, 참석자, 사진 기록을 확인하는 화면입니다.",
+    "선택한 폴더의 활동, 참석자, 사진 기록을 확인하는 화면입니다.",
 };
 
 export default async function HostProjectActivitiesPage({

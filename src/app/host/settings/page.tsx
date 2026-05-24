@@ -12,7 +12,7 @@ import { HostAccessBanner } from "@/components/host-access-banner";
 export const metadata: Metadata = {
   title: "호스트 설정 | 누비오",
   description:
-    "로컬홈 운영자가 팀 권한, 프로젝트 기본값, 알림, 데이터 설정을 관리하는 화면입니다.",
+    "로컬홈 운영자가 팀 권한, 폴더 기본값, 알림, 데이터 설정을 관리하는 화면입니다.",
 };
 
 const settingGroups = [
@@ -21,11 +21,11 @@ const settingGroups = [
     helper: "운영자 초대, 역할, 접근 범위를 관리합니다.",
     icon: UsersRound,
     items: ["운영자 계정", "역할 권한", "초대 링크"],
-    href: "/me",
+    href: "/mypage",
   },
   {
-    title: "프로젝트 기본값",
-    helper: "새 운영 프로젝트에 적용할 기본 항목을 정합니다.",
+    title: "폴더 기본값",
+    helper: "새 폴더에 적용할 기본 항목을 정합니다.",
     icon: FolderKanban,
     items: ["기본 예산 구조", "증빙 체크리스트", "보고 섹션"],
     href: "/host/reports",
@@ -39,7 +39,7 @@ const settingGroups = [
   },
   {
     title: "데이터",
-    helper: "프로젝트 운영 데이터를 백업하고 내보냅니다.",
+    helper: "폴더 운영 데이터를 백업하고 내보냅니다.",
     icon: Database,
     items: ["CSV 내보내기", "증빙 보관", "데이터 보존"],
     href: "/host/reports",

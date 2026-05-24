@@ -67,7 +67,7 @@ const activePanelLabels: Record<ActivePanel, string> = {
   export: "마감",
   expenses: "지출/증빙",
   fields: "필드",
-  overview: "프로젝트",
+  overview: "폴더",
 };
 
 const operationFieldGroups = Object.keys(
@@ -218,7 +218,7 @@ export function HostReportAutomation() {
           type="button"
         >
           <Plus size={17} />
-          운영 프로젝트 만들기
+          폴더 만들기
         </button>
       </div>
     );
@@ -332,7 +332,7 @@ export function HostReportAutomation() {
           type="button"
         >
           <Plus size={16} />
-          새 프로젝트
+          새 폴더
         </button>
         <button
           className="inline-flex h-10 items-center justify-center gap-2 rounded-md bg-[var(--primary)] px-3 text-sm font-black text-white disabled:cursor-wait disabled:opacity-70"
@@ -362,7 +362,7 @@ export function HostReportAutomation() {
         <aside className="min-w-0 space-y-3">
           <section className="rounded-md border border-slate-200 bg-white p-3">
             <p className="px-1 text-xs font-black uppercase tracking-[0.14em] text-slate-400">
-              운영 프로젝트
+              폴더
             </p>
             <div className="mt-3 grid gap-2">
               {projects.map((project) => {
@@ -446,11 +446,11 @@ export function HostReportAutomation() {
               <section className="rounded-md border border-slate-200 bg-white p-5">
                 <SectionTitle
                   icon={<Layers3 size={20} />}
-                  title="운영 프로젝트 설정"
+                  title="폴더 설정"
                 />
                 <div className="mt-5 grid gap-4 md:grid-cols-2">
                   <TextInput
-                    label="프로젝트명"
+                    label="폴더명"
                     onChange={(value) => updateProject({ title: value })}
                     value={selectedProject.title}
                   />

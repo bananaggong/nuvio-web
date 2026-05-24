@@ -168,7 +168,9 @@ export const profiles = pgTable(
   {
     id: uuid("id").primaryKey(),
     email: text("email").notNull(),
+    fullName: text("full_name"),
     displayName: text("display_name"),
+    loginId: text("login_id"),
     role: userRoleEnum("role").default("user").notNull(),
     onboardingIntent: text("onboarding_intent").$type<
       "participant" | "host" | null
@@ -180,6 +182,12 @@ export const profiles = pgTable(
     phone: text("phone"),
     contactEmail: text("contact_email"),
     address: text("address"),
+    addressDetail: text("address_detail"),
+    gender: text("gender"),
+    birthDate: date("birth_date"),
+    paymentMethod: text("payment_method"),
+    refundBank: text("refund_bank"),
+    refundAccount: text("refund_account"),
     createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
     updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
   },

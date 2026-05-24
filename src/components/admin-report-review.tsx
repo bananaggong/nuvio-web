@@ -39,7 +39,7 @@ export function AdminReportReview() {
           setProjects(databaseProjects);
         }
       } catch {
-        if (isMounted) setLoadError("DB 운영 프로젝트를 불러오지 못했습니다.");
+        if (isMounted) setLoadError("DB 운영 폴더를 불러오지 못했습니다.");
       } finally {
         if (isMounted) setLoading(false);
       }
@@ -85,7 +85,7 @@ export function AdminReportReview() {
         <div className="mt-4 grid gap-5 xl:grid-cols-[minmax(0,1fr)_360px]">
           <div>
             <h1 className="max-w-4xl text-2xl font-black leading-tight text-slate-950 sm:text-3xl">
-              로컬홈별 운영 프로젝트의 마감 준비와 증빙 리스크를 검토합니다.
+              로컬홈별 운영 폴더의 마감 준비와 증빙 리스크를 검토합니다.
             </h1>
             <p className="mt-3 max-w-3xl text-sm leading-7 text-slate-600">
               관리자는 템플릿을 강제하기보다 각 로컬홈이 직접 구성한 예산,
@@ -94,7 +94,7 @@ export function AdminReportReview() {
           </div>
           <div className="grid gap-2 sm:grid-cols-2 xl:grid-cols-1">
             <Metric label="평균 준비율" value={`${averageReadiness}%`} />
-            <Metric label="마감권 프로젝트" value={`${readyCount}/${rows.length}`} />
+            <Metric label="마감권 폴더" value={`${readyCount}/${rows.length}`} />
           </div>
         </div>
       </section>
@@ -108,7 +108,7 @@ export function AdminReportReview() {
           value={`${missingEvidenceCount}개`}
         />
         <RiskCard
-          helper="계획 예산을 넘긴 프로젝트"
+          helper="계획 예산을 넘긴 폴더"
           icon={<AlertTriangle size={20} />}
           label="예산 리스크"
           tone={overBudgetCount > 0 ? "danger" : "ok"}
@@ -127,7 +127,7 @@ export function AdminReportReview() {
         <div className="flex items-center justify-between gap-3 border-b border-slate-200 p-5">
           <div>
             <h2 className="text-lg font-black text-slate-950">
-              운영 프로젝트 검토
+              운영 폴더 검토
             </h2>
             <p className="mt-1 text-sm font-bold text-slate-500">
               준비율, 증빙 누락, 예산 초과, 활동 기록을 한 줄로 확인합니다.
@@ -140,7 +140,7 @@ export function AdminReportReview() {
           <table className="w-full min-w-[920px] text-left text-sm">
             <thead className="bg-slate-50 text-xs font-black uppercase tracking-[0.08em] text-slate-500">
               <tr>
-                <th className="px-5 py-3">로컬홈 / 프로젝트</th>
+                <th className="px-5 py-3">로컬홈 / 폴더</th>
                 <th className="px-5 py-3">상태</th>
                 <th className="px-5 py-3">준비율</th>
                 <th className="px-5 py-3">증빙</th>
@@ -206,7 +206,7 @@ export function AdminReportReview() {
 
         {rows.length === 0 ? (
           <div className="p-8 text-center text-sm font-bold text-slate-500">
-            아직 검토할 운영 프로젝트가 없습니다.
+            아직 검토할 운영 폴더가 없습니다.
           </div>
         ) : null}
       </section>

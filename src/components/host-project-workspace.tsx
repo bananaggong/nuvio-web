@@ -60,14 +60,14 @@ export function HostProjectWorkspace({
           href="/host"
         >
           <ArrowLeft size={16} />
-          프로젝트 목록
+          폴더 목록
         </Link>
         <div className="mt-5 rounded-md border border-slate-200 bg-white p-6">
           <h1 className="text-2xl font-black text-slate-950">
-            프로젝트를 찾을 수 없습니다.
+            폴더를 찾을 수 없습니다.
           </h1>
           <p className="mt-2 text-sm leading-6 text-slate-500">
-            프로젝트 목록에서 다시 선택해 주세요.
+            폴더 목록에서 다시 선택해 주세요.
           </p>
         </div>
       </div>
@@ -82,13 +82,13 @@ export function HostProjectWorkspace({
           href={projectPath}
         >
           <ArrowLeft size={16} />
-          프로젝트 허브
+          폴더
         </Link>
         <Link
           className="inline-flex h-10 items-center gap-2 rounded-md border border-slate-200 bg-white px-3 text-sm font-black text-slate-700"
           href="/host"
         >
-          프로젝트 목록
+          폴더 목록
         </Link>
       </div>
 
@@ -185,7 +185,7 @@ function ActivitiesView({ project }: { project: HostProjectOverview }) {
           ))
         ) : (
           <EmptyState>
-            아직 이 프로젝트에 연결된 활동 기록이 없습니다. 운영 프로젝트 설정에서
+            아직 이 폴더에 연결된 활동 기록이 없습니다. 폴더 설정에서
             활동 이벤트를 추가하면 마감 자료로 재사용됩니다.
           </EmptyState>
         )}
@@ -243,8 +243,8 @@ function EvidenceView({ project }: { project: HostProjectOverview }) {
           ))
         ) : (
           <EmptyState>
-            아직 이 프로젝트에 연결된 지출 이벤트가 없습니다. 지출을 등록하면
-            필요한 증빙 체크리스트가 프로젝트 기준으로 쌓입니다.
+            아직 이 폴더에 연결된 지출 이벤트가 없습니다. 지출을 등록하면
+            필요한 증빙 체크리스트가 폴더 기준으로 쌓입니다.
           </EmptyState>
         )}
       </div>
@@ -252,7 +252,7 @@ function EvidenceView({ project }: { project: HostProjectOverview }) {
         className="mt-5 inline-flex h-10 items-center gap-2 rounded-md bg-slate-950 px-3 text-sm font-black text-white"
         href="/host/reports"
       >
-        운영 프로젝트 설정
+        폴더 설정
         <ArrowRight size={15} />
       </Link>
     </section>
@@ -303,8 +303,8 @@ function CloseoutView({
           ))
         ) : (
           <EmptyState>
-            이 프로그램 프로젝트는 아직 운영 마감 프로젝트와 연결되지 않았습니다.
-            운영 프로젝트로 연결하면 마감 체크리스트가 생성됩니다.
+            이 프로그램은 아직 마감 폴더와 연결되지 않았습니다.
+            폴더로 연결하면 마감 체크리스트가 생성됩니다.
           </EmptyState>
         )}
       </div>

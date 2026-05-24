@@ -451,7 +451,7 @@ export function HostFormBuilder({
           {programBasePath
             ? "프로그램 허브"
             : projectBasePath
-              ? "프로젝트 허브"
+              ? "폴더"
               : "신청폼 목록"}
         </Link>
         <div className="flex flex-col gap-2 sm:flex-row">

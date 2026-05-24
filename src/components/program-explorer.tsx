@@ -89,7 +89,7 @@ export function ProgramExplorer({
 
   return (
     <div className="font-pretendard bg-white">
-      <section className="mx-auto w-full px-[2.083vw] pb-[5.833vw] pt-[3.472vw]">
+      <section className="mx-auto w-full px-[2.083vw] pb-[5.833vw] pt-[1.736vw]">
         <div
           className="group relative mx-auto flex aspect-[1074/420] w-[74.583vw] min-h-[280px] items-center justify-between overflow-hidden rounded-[1.25vw] bg-[#778696] px-[2.361vw] text-white max-md:aspect-[4/5] max-md:w-full max-md:px-5"
           onTouchEnd={handleTouchEnd}

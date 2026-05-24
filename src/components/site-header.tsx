@@ -3,17 +3,102 @@
 import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Menu, Search, X } from "lucide-react";
-import { useState } from "react";
+import {
+  Bookmark,
+  CalendarDays,
+  Menu,
+  MessageCircle,
+  Search,
+  Settings,
+  X,
+} from "lucide-react";
+import { useEffect, useRef, useState, type RefObject } from "react";
 
 const navItems = [
   { href: "/magazine", label: "매거진", match: ["/magazine"] },
   { href: "/villages", label: "채널", match: ["/villages"] },
 ];
 
+type HeaderSession =
+  | {
+      profile: {
+        displayName?: string | null;
+        email?: string | null;
+      } | null;
+      user: {
+        email?: string | null;
+        id: string;
+      } | null;
+    }
+  | "loading";
+
+type SessionPayload = {
+  data?: Exclude<HeaderSession, "loading">;
+  error?: string;
+};
+
 export function SiteHeader() {
   const pathname = usePathname();
   const [open, setOpen] = useState(false);
+  const [session, setSession] = useState<HeaderSession>("loading");
+  const [profileMenuOpen, setProfileMenuOpen] = useState(false);
+  const profileMenuRef = useRef<HTMLDivElement>(null);
+  const signedIn = session !== "loading" && Boolean(session.user);
+  const isMypageRoute = pathname === "/mypage" || pathname.startsWith("/mypage/");
+  const showAccountActions = signedIn || isMypageRoute;
+  const profileName =
+    session !== "loading"
+      ? session.profile?.displayName?.trim() ||
+        session.user?.email?.split("@")[0] ||
+        "닉네임"
+      : "닉네임";
+
+  useEffect(() => {
+    let active = true;
+
+    async function loadSession() {
+      try {
+        const response = await fetch("/api/auth/session", { cache: "no-store" });
+        const payload = (await response.json()) as SessionPayload;
+
+        if (active) {
+          setSession(payload.data ?? { profile: null, user: null });
+        }
+      } catch {
+        if (active) setSession({ profile: null, user: null });
+      }
+    }
+
+    void loadSession();
+
+    return () => {
+      active = false;
+    };
+  }, [pathname]);
+
+  useEffect(() => {
+    if (!profileMenuOpen) return;
+
+    function closeOnOutsidePointer(event: PointerEvent) {
+      if (
+        event.target instanceof Node &&
+        !profileMenuRef.current?.contains(event.target)
+      ) {
+        setProfileMenuOpen(false);
+      }
+    }
+
+    document.addEventListener("pointerdown", closeOnOutsidePointer);
+
+    return () => {
+      document.removeEventListener("pointerdown", closeOnOutsidePointer);
+    };
+  }, [profileMenuOpen]);
+
+  async function logoutFromHeader() {
+    await fetch("/api/auth/logout", { method: "POST" });
+    window.location.href = "/";
+  }
 
   return (
     <header className="font-pretendard sticky top-0 z-50 h-[4.861vw] min-h-[56px] border-b border-[#f1e7df] bg-white">
@@ -53,20 +138,16 @@ export function SiteHeader() {
             ))}
           </nav>
 
-          <Link
-            aria-label="로그인"
-            className="inline-flex h-[2.5vw] min-h-[30px] w-[2.153vw] min-w-[26px] items-center justify-center"
-            href="/login"
-          >
-            <Image
-              alt=""
-              aria-hidden="true"
-              className="h-full w-full"
-              height={36}
-              src="/icons/header-action-frame.png"
-              width={31}
-            />
-          </Link>
+          <DesktopAuthAction
+            loading={session === "loading"}
+            menuOpen={profileMenuOpen}
+            menuRef={profileMenuRef}
+            onLogout={logoutFromHeader}
+            onToggleMenu={() => setProfileMenuOpen((value) => !value)}
+            profileName={profileName}
+            showAccountActions={showAccountActions}
+            signedIn={signedIn}
+          />
         </div>
 
         <button
@@ -103,25 +184,196 @@ export function SiteHeader() {
                 pathname={pathname}
               />
             ))}
-            <Link
-              className="inline-flex min-h-12 items-center justify-between rounded-[8px] px-3 text-sm font-semibold text-[#5B3A29] hover:bg-[#fff8f1]"
-              href="/login"
-              onClick={() => setOpen(false)}
-            >
-              로그인
-              <Image
-                alt=""
-                aria-hidden="true"
-                className="h-[36px] w-[31px]"
-                height={36}
-                src="/icons/header-action-frame.png"
-                width={31}
-              />
-            </Link>
+            <MobileAuthAction
+              loading={session === "loading"}
+              onSelect={() => setOpen(false)}
+              showAccountActions={showAccountActions}
+            />
           </div>
         </div>
       ) : null}
     </header>
+  );
+}
+
+function DesktopAuthAction({
+  loading,
+  menuOpen,
+  menuRef,
+  onLogout,
+  onToggleMenu,
+  profileName,
+  showAccountActions,
+  signedIn,
+}: {
+  loading: boolean;
+  menuOpen: boolean;
+  menuRef: RefObject<HTMLDivElement | null>;
+  onLogout: () => void;
+  onToggleMenu: () => void;
+  profileName: string;
+  showAccountActions: boolean;
+  signedIn: boolean;
+}) {
+  if (loading && !showAccountActions) {
+    return (
+      <span
+        aria-hidden="true"
+        className="inline-flex h-[2.5vw] min-h-[30px] w-[2.153vw] min-w-[26px]"
+      />
+    );
+  }
+
+  if (showAccountActions) {
+    return (
+      <div
+        className="relative flex h-[2.5vw] min-h-[30px] items-center gap-[1.111vw]"
+        ref={menuRef}
+      >
+        <span
+          aria-hidden="true"
+          className="h-[1.736vw] min-h-[25px] w-px bg-[#F7B267]"
+        />
+        <Link
+          aria-label="알림"
+          className="inline-flex size-[2.153vw] min-h-[26px] min-w-[26px] items-center justify-center transition-opacity hover:opacity-75"
+          href="/mypage"
+        >
+          <Image
+            alt=""
+            aria-hidden="true"
+            className="size-[1.389vw] min-h-[20px] min-w-[20px]"
+            height={21}
+            src="/icons/header-bell.png"
+            width={20}
+          />
+        </Link>
+        <button
+          aria-expanded={menuOpen}
+          aria-label="프로필 메뉴"
+          className="inline-flex size-[2.153vw] min-h-[26px] min-w-[26px] items-center justify-center transition-opacity hover:opacity-75"
+          onClick={onToggleMenu}
+          type="button"
+        >
+          <Image
+            alt=""
+            aria-hidden="true"
+            className="size-[1.458vw] min-h-[21px] min-w-[21px]"
+            height={21}
+            src="/icons/header-profile.png"
+            width={21}
+          />
+        </button>
+        {menuOpen ? (
+          <ProfileMenu
+            onLogout={onLogout}
+            profileName={profileName}
+            signedIn={signedIn}
+          />
+        ) : null}
+      </div>
+    );
+  }
+
+  return (
+    <Link
+      aria-label="로그인"
+      className="inline-flex h-[2.5vw] min-h-[30px] w-[2.153vw] min-w-[26px] items-center justify-center"
+      href="/login"
+    >
+      <Image
+        alt=""
+        aria-hidden="true"
+        className="h-full w-full"
+        height={36}
+        src="/icons/header-action-frame.png"
+        width={31}
+      />
+    </Link>
+  );
+}
+
+function ProfileMenu({
+  onLogout,
+  profileName,
+  signedIn,
+}: {
+  onLogout: () => void;
+  profileName: string;
+  signedIn: boolean;
+}) {
+  return (
+    <div className="absolute right-0 top-[calc(100%+0.833vw)] z-[70] w-[14.722vw] min-w-[212px] rounded-[0.417vw] bg-[#F3F3F3] px-[1.319vw] py-[0.833vw] shadow-[0_18px_42px_rgba(91,58,41,0.12)] ring-1 ring-[#F5E1D3]">
+      <div className="flex items-center justify-between gap-[0.833vw]">
+        <div className="flex min-w-0 flex-col items-center gap-[0.278vw]">
+          <span
+            aria-hidden="true"
+            className="size-[1.944vw] min-h-[28px] min-w-[28px] rounded-full bg-[#D9D9D9]"
+          />
+          <span className="max-w-[4.861vw] truncate text-[0.694vw] font-normal leading-[1.253] text-[#6D7A8A] max-[1100px]:text-[10px]">
+            {profileName}
+          </span>
+        </div>
+        <Link
+          className="inline-flex h-[1.736vw] min-h-[25px] items-center justify-center rounded-[0.278vw] border border-[#D9D9D9] bg-[#F9F9F9] px-[0.833vw] text-[0.694vw] font-medium leading-[1.253] text-[#6D7A8A] transition-colors hover:border-[#FF9A3D] hover:text-[#FF9A3D] max-[1100px]:text-[10px]"
+          href={signedIn ? "/mypage" : "/login?next=/mypage"}
+        >
+          프로필 이동
+        </Link>
+      </div>
+
+      <div className="mt-[1.111vw] grid grid-cols-3 gap-[0.972vw]">
+        <ProfileMenuMetric icon={CalendarDays} label="예약 일정" />
+        <ProfileMenuMetric icon={Bookmark} label="북마크" />
+        <ProfileMenuMetric icon={MessageCircle} label="메세지" />
+      </div>
+
+      <div className="mt-[1.111vw] flex items-center justify-between text-[0.833vw] leading-[1.253] max-[1100px]:text-xs">
+        <span className="font-medium text-[#7A8B52]">포인트</span>
+        <span className="font-semibold text-[#FF9A3D]">0 P</span>
+        <span className="h-[1.563vw] min-h-[22px] w-px bg-[#7A8B52]" />
+        <span className="font-medium text-[#7A8B52]">쿠폰</span>
+        <span className="font-semibold text-[#FF9A3D]">0 개</span>
+      </div>
+
+      <div className="mt-[1.111vw] flex items-center justify-between">
+        <button
+          className="text-[0.833vw] font-normal leading-[1.6] text-[#CAC4BC] transition-colors hover:text-[#FF9A3D] max-[1100px]:text-xs"
+          onClick={onLogout}
+          type="button"
+        >
+          로그아웃
+        </button>
+        <Link
+          aria-label="설정"
+          className="inline-flex size-[1.458vw] min-h-[21px] min-w-[21px] items-center justify-center text-[#CAC4BC] transition-colors hover:text-[#FF9A3D]"
+          href="/mypage"
+        >
+          <Settings aria-hidden="true" size={17} strokeWidth={1.8} />
+        </Link>
+      </div>
+    </div>
+  );
+}
+
+function ProfileMenuMetric({
+  icon: Icon,
+  label,
+}: {
+  icon: typeof CalendarDays;
+  label: string;
+}) {
+  return (
+    <div className="flex min-w-0 flex-col items-center justify-center gap-[0.278vw] text-center">
+      <Icon
+        aria-hidden="true"
+        className="size-[1.181vw] min-h-[16px] min-w-[16px] text-[#7A8B52]"
+        strokeWidth={1.8}
+      />
+      <span className="whitespace-nowrap text-[0.596vw] font-medium leading-[1.253] text-[#7A8B52] max-[1100px]:text-[8.5px]">
+        {label}
+      </span>
+    </div>
   );
 }
 
@@ -143,6 +395,65 @@ function HeaderLink({
       href={item.href}
     >
       {item.label}
+    </Link>
+  );
+}
+
+function MobileAuthAction({
+  loading,
+  onSelect,
+  showAccountActions,
+}: {
+  loading: boolean;
+  onSelect: () => void;
+  showAccountActions: boolean;
+}) {
+  if (loading && !showAccountActions) {
+    return (
+      <span
+        aria-hidden="true"
+        className="inline-flex min-h-12 rounded-[8px] px-3"
+      />
+    );
+  }
+
+  if (showAccountActions) {
+    return (
+      <Link
+        className="inline-flex min-h-12 items-center justify-between rounded-[8px] px-3 text-sm font-semibold text-[#5B3A29] hover:bg-[#fff8f1]"
+        href="/mypage"
+        onClick={onSelect}
+      >
+        내 프로필
+        <span className="grid size-9 place-items-center rounded-full border border-[#FF9A3D] text-[#FF9A3D]">
+          <Image
+            alt=""
+            aria-hidden="true"
+            className="size-[21px]"
+            height={21}
+            src="/icons/header-profile.png"
+            width={21}
+          />
+        </span>
+      </Link>
+    );
+  }
+
+  return (
+    <Link
+      className="inline-flex min-h-12 items-center justify-between rounded-[8px] px-3 text-sm font-semibold text-[#5B3A29] hover:bg-[#fff8f1]"
+      href="/login"
+      onClick={onSelect}
+    >
+      로그인
+      <Image
+        alt=""
+        aria-hidden="true"
+        className="h-[36px] w-[31px]"
+        height={36}
+        src="/icons/header-action-frame.png"
+        width={31}
+      />
     </Link>
   );
 }

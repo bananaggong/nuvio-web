@@ -49,7 +49,7 @@ export function HostProgramHub({
           href={projectPath}
         >
           <ArrowLeft size={16} />
-          프로젝트 허브
+          폴더
         </Link>
         <div className="mt-5 rounded-md border border-slate-200 bg-white p-6">
           <h1 className="text-2xl font-black text-slate-950">
@@ -68,7 +68,7 @@ export function HostProgramHub({
           href={projectPath}
         >
           <ArrowLeft size={16} />
-          프로젝트 허브
+          폴더
         </Link>
       </div>
 
@@ -91,7 +91,7 @@ export function HostProgramHub({
             {program.title}
           </h1>
           <p className="mt-3 text-sm leading-7 text-slate-500">
-            {project.title} 하위 프로그램입니다. 신청자, 신청서, 안내 메시지는
+            {project.title} 폴더 안의 프로그램입니다. 신청자, 신청서, 안내 메시지는
             이 프로그램 모집 흐름 안에서 관리합니다.
           </p>
           <div className="mt-5 grid gap-2 sm:grid-cols-3">

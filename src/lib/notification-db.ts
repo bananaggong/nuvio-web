@@ -284,7 +284,7 @@ export async function queueApplicationSubmittedNotification(input: {
   };
   const applicantMessage: NotificationMessage = {
     body: `${input.programTitle} 신청서가 접수되었습니다. 운영자가 검토를 시작하면 상태가 업데이트됩니다.`,
-    href: "/me",
+    href: "/mypage",
     metadata,
     title: "신청서가 접수되었습니다",
     type: "application.submitted",
@@ -326,7 +326,7 @@ export async function queueApplicationStatusNotification(input: {
   };
   const applicantMessage: NotificationMessage = {
     body: `${input.programTitle} 신청 상태가 ${statusLabels[input.status]}로 변경되었습니다.`,
-    href: "/me",
+    href: "/mypage",
     metadata,
     title: "신청 상태가 변경되었습니다",
     type: "application.statusChanged",

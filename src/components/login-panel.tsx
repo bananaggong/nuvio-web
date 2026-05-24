@@ -39,7 +39,7 @@ const socialOrder: SocialProviderKey[] = ["kakao", "naver", "google"];
 function getRoleLandingPath(role?: ProfileRole): string {
   if (role === "admin") return "/admin";
   if (role === "partner") return "/host";
-  return "/me";
+  return "/mypage";
 }
 
 function isProfileOnboardingComplete(profile: AuthProfile | null): boolean {

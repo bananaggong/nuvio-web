@@ -69,13 +69,13 @@ export function HostAccessBanner() {
             <p className="mt-0.5 text-xs leading-5">
               {session.user
                 ? `${session.profile?.email ?? session.user.email ?? "계정"} 계정으로 접속 중입니다.`
-                : "프로그램 등록, 신청자 관리, 운영 프로젝트는 계정 기준으로 저장됩니다."}
+                : "프로그램 등록, 신청자 관리, 폴더는 계정 기준으로 저장됩니다."}
             </p>
           </div>
         </div>
         <Link
           className="inline-flex h-9 items-center justify-center rounded-md bg-white px-3 text-xs font-black text-slate-800 ring-1 ring-slate-200"
-          href={session.user ? "/me" : "/login"}
+          href={session.user ? "/mypage" : "/login"}
         >
           {session.user ? "계정 확인" : "로그인"}
         </Link>

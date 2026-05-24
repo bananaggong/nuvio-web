@@ -51,10 +51,10 @@ export function HostProjectHub({ projectId }: { projectId: string }) {
         </Link>
         <div className="mt-5 rounded-md border border-slate-200 bg-white p-6">
           <h1 className="text-2xl font-black text-slate-950">
-            프로젝트를 찾을 수 없습니다.
+            폴더를 찾을 수 없습니다.
           </h1>
           <p className="mt-2 text-sm leading-6 text-slate-500">
-            프로젝트 목록에서 다시 선택하거나 새 프로젝트를 만들어 주세요.
+            폴더 목록에서 다시 선택하거나 새 폴더를 만들어 주세요.
           </p>
         </div>
       </div>
@@ -79,7 +79,7 @@ export function HostProjectHub({ projectId }: { projectId: string }) {
             href="/host/reports"
           >
             <Settings size={16} />
-            프로젝트 설정
+            폴더 설정
           </Link>
           <Link
             className="inline-flex h-10 items-center gap-2 rounded-md bg-slate-950 px-3 text-sm font-black text-white"
@@ -100,15 +100,15 @@ export function HostProjectHub({ projectId }: { projectId: string }) {
             <div className="min-w-0">
               <p className="inline-flex items-center gap-2 text-sm font-black text-[var(--primary)]">
                 <FolderKanban size={18} />
-                프로젝트 작업공간
+                폴더 작업공간
               </p>
               <h1 className="mt-2 break-words text-2xl font-black leading-tight text-slate-950 sm:text-3xl">
                 {project.title}
               </h1>
               <p className="mt-2 text-sm leading-6 text-slate-500">
-                프로젝트는 폴더처럼 프로그램을 담는 상위 공간입니다. 신청자,
+                폴더는 프로그램을 담는 상위 공간입니다. 신청자,
                 신청서, 안내 메시지는 프로그램 안에서 관리하고, 지출/증빙과
-                마감은 프로젝트 기준으로 모읍니다.
+                마감은 폴더 기준으로 모읍니다.
               </p>
             </div>
           </div>
@@ -126,7 +126,7 @@ export function HostProjectHub({ projectId }: { projectId: string }) {
           <section className="rounded-md border border-slate-200 bg-white p-4">
             <h2 className="flex items-center gap-2 text-sm font-black text-slate-950">
               <ListChecks className="text-[var(--primary)]" size={17} />
-              프로젝트 상태
+              폴더 상태
             </h2>
             <div className="mt-3 grid gap-2">
               <StatusLine label="상태" value={project.statusLabel} />
@@ -152,7 +152,7 @@ export function HostProjectHub({ projectId }: { projectId: string }) {
                   프로그램
                 </p>
                 <h2 className="mt-2 text-2xl font-black text-slate-950">
-                  프로젝트 안의 프로그램
+                  폴더 안의 프로그램
                 </h2>
                 <p className="mt-2 text-sm leading-6 text-slate-500">
                   프로그램을 선택하면 그 안에서 신청자 CRM, 신청서, 안내 메시지를
@@ -179,7 +179,7 @@ export function HostProjectHub({ projectId }: { projectId: string }) {
                   아직 프로그램이 없습니다.
                 </h3>
                 <p className="mt-2 text-sm font-bold text-slate-500">
-                  프로그램을 신설하면 이 프로젝트 안에 파일처럼 쌓입니다.
+                  프로그램을 신설하면 이 폴더 안에 파일처럼 쌓입니다.
                 </p>
                 <Link
                   className="mt-5 inline-flex h-10 items-center justify-center gap-2 rounded-md bg-slate-950 px-3 text-sm font-black text-white"

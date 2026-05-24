@@ -248,7 +248,7 @@ export function HostMessageAutomation({
           href={programBasePath ?? projectBasePath ?? "/host"}
         >
           <ArrowLeft size={16} />
-          {programBasePath ? "프로그램 허브" : projectBasePath ? "프로젝트 허브" : "운영 콘솔"}
+          {programBasePath ? "프로그램 허브" : projectBasePath ? "폴더" : "운영 콘솔"}
         </Link>
         <button
           className="inline-flex h-10 items-center justify-center gap-2 rounded-md border border-slate-200 bg-white px-3 text-sm font-black text-slate-700"

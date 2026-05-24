@@ -38,7 +38,7 @@ const programStatusTone: Record<ProgramStatus, string> = {
 const adminQuickLinks = [
   {
     href: "/admin/reports",
-    label: "운영 프로젝트 검토",
+    label: "운영 폴더 검토",
     helper: "증빙 누락, 예산 리스크, 마감 준비율",
     icon: BarChart3,
   },

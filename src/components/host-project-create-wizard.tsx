@@ -55,13 +55,13 @@ export function HostProjectCreateWizard() {
       };
 
       if (!response.ok || !payload.data) {
-        throw new Error(payload.error ?? "프로젝트 저장에 실패했습니다.");
+        throw new Error(payload.error ?? "폴더 저장에 실패했습니다.");
       }
 
       router.push(hostProjectPath(payload.data.id));
     } catch (error) {
       setErrorMessage(
-        error instanceof Error ? error.message : "프로젝트 저장에 실패했습니다.",
+        error instanceof Error ? error.message : "폴더 저장에 실패했습니다.",
       );
     } finally {
       setIsCreating(false);
@@ -76,27 +76,27 @@ export function HostProjectCreateWizard() {
           href="/host"
         >
           <ArrowLeft size={16} />
-          모든 프로젝트
+          모든 폴더
         </Link>
       </div>
 
       <section className="rounded-md border border-slate-200 bg-white p-5 sm:p-6">
         <p className="inline-flex items-center gap-2 text-sm font-black text-[var(--primary)]">
           <FolderKanban size={18} />
-          새 프로젝트
+          새 폴더
         </p>
         <h1 className="mt-4 max-w-2xl text-2xl font-black leading-tight text-slate-950 sm:text-3xl">
-          프로젝트는 프로그램을 담는 상위 폴더처럼 만듭니다.
+          폴더는 프로그램을 담는 상위 공간입니다.
         </h1>
         <p className="mt-3 max-w-2xl text-sm leading-7 text-slate-500">
           지금은 이름만 정하면 됩니다. 모집 상세, 신청서, 안내문자 같은 여러
-          필드는 프로젝트 안에서 프로그램을 신설할 때 입력합니다.
+          필드는 폴더 안에서 프로그램을 신설할 때 입력합니다.
         </p>
 
         <div className="mt-6 grid gap-3">
           <label className="grid gap-2">
             <span className="text-sm font-black text-slate-700">
-              프로젝트 이름
+              폴더 이름
             </span>
             <input
               autoFocus
@@ -105,7 +105,7 @@ export function HostProjectCreateWizard() {
               onKeyDown={(event) => {
                 if (event.key === "Enter") void createProject();
               }}
-              placeholder="예: 보성 로컬홈 2026 운영 프로젝트"
+              placeholder="예: 보성 로컬홈 2026 운영"
               value={projectName}
             />
           </label>
@@ -130,15 +130,15 @@ export function HostProjectCreateWizard() {
         <FlowCard
           body="연간 사업, 시즌, 지원사업, 계약처럼 큰 운영 단위를 먼저 엽니다."
           icon={<FolderKanban size={18} />}
-          title="1. 프로젝트 생성"
+          title="1. 폴더 생성"
         />
         <FlowCard
-          body="프로젝트 안에서 공개 모집 프로그램을 만들고 상세 필드를 입력합니다."
+          body="폴더 안에서 공개 모집 프로그램을 만들고 상세 필드를 입력합니다."
           icon={<ClipboardList size={18} />}
           title="2. 프로그램 신설"
         />
         <FlowCard
-          body="프로그램별 신청자, 신청서, 메시지를 관리하고 프로젝트 단위로 마감합니다."
+          body="프로그램별 신청자, 신청서, 메시지를 관리하고 폴더 단위로 마감합니다."
           icon={<ArrowRight size={18} />}
           title="3. 운영 관리"
         />

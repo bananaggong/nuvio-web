@@ -197,7 +197,7 @@ export function ProgramApplicationForm({
           <div className="mt-6 grid gap-2 sm:grid-cols-2">
             <Link
               className="inline-flex h-11 items-center justify-center rounded-md bg-[var(--primary)] px-4 text-sm font-black text-white"
-              href="/me"
+              href="/mypage"
             >
               내 신청 내역 보기
             </Link>

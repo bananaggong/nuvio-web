@@ -232,7 +232,7 @@ export function HostLocalHomeCreate() {
             </button>
             <Link
               className="inline-flex h-11 items-center justify-center rounded-md border border-slate-200 px-4 text-sm font-black text-slate-700 hover:border-[var(--primary)] hover:text-[var(--primary)]"
-              href="/me"
+              href="/mypage"
             >
               내 대시보드
             </Link>

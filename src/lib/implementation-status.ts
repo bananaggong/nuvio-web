@@ -123,16 +123,16 @@ export const implementationStatus: {
             { label: "Session API", href: "/api/auth/session" },
           ],
           verification:
-            "After Supabase provider setup, click each social login and confirm redirect back to /me.",
+            "After Supabase provider setup, click each social login and confirm redirect back to /mypage.",
         },
         {
           title: "My page session and DB applications",
           state: "implemented",
           summary:
             "My Page reads the Supabase session/profile and combines DB applications for the signed-in email.",
-          routes: [{ label: "My Page", href: "/me" }],
+          routes: [{ label: "Mypage", href: "/mypage" }],
           verification:
-            "Sign in, submit an application with the same email, then check /me.",
+            "Sign in, submit an application with the same email, then check /mypage.",
         },
       ],
     },

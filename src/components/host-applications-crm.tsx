@@ -169,7 +169,7 @@ export function HostApplicationsCrm({
           className="mb-5 inline-flex h-10 items-center justify-center gap-2 rounded-md border border-slate-200 bg-white px-3 text-sm font-black text-slate-700"
           href={programBasePath ?? projectBasePath}
         >
-          {programBasePath ? "프로그램 허브" : "프로젝트 허브"}
+          {programBasePath ? "프로그램 허브" : "폴더"}
           <ArrowRight size={16} />
         </Link>
       ) : null}

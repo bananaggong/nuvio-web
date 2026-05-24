@@ -5,7 +5,7 @@ import { HostProgramHub } from "@/components/host-program-hub";
 export const metadata: Metadata = {
   title: "프로그램 운영 허브 | 누비오",
   description:
-    "운영 프로젝트 안의 특정 프로그램을 선택해 신청자, 신청서, 안내 메시지를 관리하는 화면입니다.",
+    "폴더 안의 특정 프로그램을 선택해 신청자, 신청서, 안내 메시지를 관리하는 화면입니다.",
 };
 
 export default async function HostProgramPage({

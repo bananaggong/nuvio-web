@@ -212,11 +212,11 @@ export function HostProgramCreateWizard({ projectId }: { projectId: string }) {
           href="/host"
         >
           <ArrowLeft size={16} />
-          프로젝트 목록
+          폴더 목록
         </Link>
         <div className="mt-5 rounded-md border border-slate-200 bg-white p-6">
           <h1 className="text-2xl font-black text-slate-950">
-            프로젝트를 찾을 수 없습니다.
+            폴더를 찾을 수 없습니다.
           </h1>
         </div>
       </div>
@@ -231,7 +231,7 @@ export function HostProgramCreateWizard({ projectId }: { projectId: string }) {
           href={projectPath}
         >
           <ArrowLeft size={16} />
-          프로젝트 허브
+          폴더
         </Link>
       </div>
 

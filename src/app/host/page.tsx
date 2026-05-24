@@ -33,8 +33,8 @@ export const metadata: Metadata = {
 const operations = [
   {
     href: "/host/projects",
-    title: "운영 프로젝트",
-    helper: "프로그램별 신청, 활동, 증빙, 보고 흐름을 한 곳에서 봅니다.",
+    title: "폴더",
+    helper: "프로그램별 신청, 활동, 증빙, 보고 흐름을 폴더 단위로 봅니다.",
     icon: FolderKanban,
   },
   {
@@ -100,7 +100,7 @@ export default async function HostPage() {
                 운영 화면이 열리도록 준비했습니다.
               </p>
               <div className="mt-5 flex flex-wrap gap-2">
-                <PrimaryLink href="/host/projects" label="프로젝트 보기" />
+                <PrimaryLink href="/host/projects" label="폴더 보기" />
                 <SecondaryLink href="/host/villages" label="로컬홈 정보 관리" />
               </div>
             </div>
