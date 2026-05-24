@@ -71,7 +71,7 @@ export async function ensureUserProfile(user: User): Promise<AuthProfile> {
       contactEmail: profile.contactEmail,
       address: profile.address,
       addressDetail: profile.addressDetail,
-      gender: profile.gender,
+      gender: nullableGender(profile.gender),
       birthDate: profile.birthDate,
       paymentMethod: profile.paymentMethod,
       refundBank: profile.refundBank,
@@ -90,7 +90,7 @@ export async function ensureUserProfile(user: User): Promise<AuthProfile> {
         contactEmail: sql`coalesce(nullif(${profiles.contactEmail}, ''), ${profile.contactEmail})`,
         address: sql`coalesce(nullif(${profiles.address}, ''), ${profile.address})`,
         addressDetail: sql`coalesce(nullif(${profiles.addressDetail}, ''), ${profile.addressDetail})`,
-        gender: sql`coalesce(nullif(${profiles.gender}, ''), ${profile.gender})`,
+        gender: sql`coalesce(${profiles.gender}, ${nullableGender(profile.gender)})`,
         birthDate: sql`coalesce(${profiles.birthDate}, ${profile.birthDate})`,
         paymentMethod: sql`coalesce(nullif(${profiles.paymentMethod}, ''), ${profile.paymentMethod})`,
         refundBank: sql`coalesce(nullif(${profiles.refundBank}, ''), ${profile.refundBank})`,
@@ -163,7 +163,8 @@ export async function updateUserProfile(
       contactEmail: patch.contactEmail,
       address: patch.address,
       addressDetail: patch.addressDetail,
-      gender: patch.gender,
+      gender:
+        patch.gender === undefined ? undefined : nullableGender(patch.gender),
       birthDate: patch.birthDate,
       paymentMethod: patch.paymentMethod,
       refundBank: patch.refundBank,
@@ -243,6 +244,10 @@ function stringMetadata(value: unknown): string {
 
 function genderMetadata(value: unknown): ProfileGender | "" {
   return value === "female" || value === "male" || value === "neutral" ? value : "";
+}
+
+function nullableGender(value: ProfileGender | ""): ProfileGender | null {
+  return value || null;
 }
 
 function dateMetadata(value: unknown): string | null {
