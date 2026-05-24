@@ -54,6 +54,7 @@ type AuthSessionPayload = {
   user: {
     id: string;
     email?: string;
+    appMetadata?: Record<string, unknown>;
     userMetadata?: Record<string, unknown>;
   } | null;
   profile: AuthProfile | null;
@@ -696,6 +697,11 @@ function MemberInformationForm({
   initialSelectedAddress: string;
 }) {
   const profile = context.authSession.profile;
+  const authProvider = getPrimaryAuthProvider(context.authSession.user?.appMetadata);
+  const isPasswordManagedAccount = isPasswordAuthProvider(
+    context.authSession.user?.appMetadata,
+  );
+  const socialProviderLabel = getAuthProviderLabel(authProvider);
   const accountEmail = context.authSession.user?.email ?? profile?.email ?? "";
   const initialEmail = profile?.contactEmail || accountEmail || DEFAULT_MEMBER_EMAIL;
   const initialEmailParts = splitEmailAddress(initialEmail);
@@ -731,6 +737,7 @@ function MemberInformationForm({
   );
   const [addressSearchError, setAddressSearchError] = useState("");
   const [addressSearchQuery, setAddressSearchQuery] = useState("");
+  const [addressSearchLayerTick, setAddressSearchLayerTick] = useState(0);
   const [postcodeEmbedded, setPostcodeEmbedded] = useState(false);
   const addressSearchLayerRef = useRef<HTMLDivElement>(null);
   const detailAddressInputRef = useRef<HTMLInputElement>(null);
@@ -745,9 +752,17 @@ function MemberInformationForm({
   useEffect(() => {
     if (!addressSearchOpen) return;
 
-    let active = true;
     const layer = addressSearchLayerRef.current;
-    if (!layer) return;
+    if (!layer) {
+      const retryFrame = window.requestAnimationFrame(() => {
+        setAddressSearchLayerTick((current) => current + 1);
+      });
+
+      return () => window.cancelAnimationFrame(retryFrame);
+    }
+    const postcodeLayer = layer;
+
+    let active = true;
 
     async function embedAddressSearch() {
       setStatus("주소 검색을 불러오는 중입니다.");
@@ -755,14 +770,14 @@ function MemberInformationForm({
       setPostcodeEmbedded(false);
       try {
         await loadKakaoPostcodeScript();
-        if (!active || !layer) return;
+        if (!active) return;
 
         const Postcode = getKakaoPostcodeConstructor();
         if (!Postcode) {
           throw new Error("주소 검색 서비스를 사용할 수 없습니다.");
         }
 
-        layer.innerHTML = "";
+        postcodeLayer.innerHTML = "";
         new Postcode({
           height: "100%",
           maxSuggestItems: 5,
@@ -780,7 +795,7 @@ function MemberInformationForm({
             window.setTimeout(() => detailAddressInputRef.current?.focus(), 0);
           },
           width: "100%",
-        }).embed(layer);
+        }).embed(postcodeLayer);
         setPostcodeEmbedded(true);
         setStatus("");
       } catch (error) {
@@ -797,12 +812,13 @@ function MemberInformationForm({
 
     return () => {
       active = false;
-      layer.innerHTML = "";
+      postcodeLayer.innerHTML = "";
     };
-  }, [addressSearchOpen]);
+  }, [addressSearchLayerTick, addressSearchOpen]);
 
   function openAddressSearch() {
     setAddressSearchError("");
+    setPostcodeEmbedded(false);
     setAddressSearchOpen(true);
   }
 
@@ -836,7 +852,7 @@ function MemberInformationForm({
           displayName: form.nickname || form.name,
           fullName: form.name,
           gender: form.gender,
-          loginId: form.loginId,
+          ...(isPasswordManagedAccount ? { loginId: form.loginId } : {}),
           paymentMethod: form.paymentMethod,
           phone: form.phone,
           refundAccount: form.refundAccount,
@@ -959,26 +975,34 @@ function MemberInformationForm({
 
           <div className="grid gap-x-6 gap-y-4 md:grid-cols-[58px_minmax(220px,1fr)_76px_minmax(180px,1.2fr)] md:items-center xl:grid-cols-[64px_minmax(260px,1fr)_86px_minmax(220px,1.2fr)]">
             <MemberLabel>아이디</MemberLabel>
-            <div className="flex min-w-0 items-center gap-3">
-              <MemberLineInput
-                onChange={(value) =>
-                  setForm((current) => ({ ...current, loginId: value }))
-                }
-                placeholder="아이디를 입력하세요"
-                value={form.loginId}
-              />
-              <MemberSmallButton onClick={() => setStatus("사용 가능한 아이디입니다.")}>
-                중복확인
-              </MemberSmallButton>
-            </div>
+            {isPasswordManagedAccount ? (
+              <div className="flex min-w-0 items-center gap-3">
+                <MemberLineInput
+                  onChange={(value) =>
+                    setForm((current) => ({ ...current, loginId: value }))
+                  }
+                  placeholder="아이디를 입력하세요"
+                  value={form.loginId}
+                />
+                <MemberSmallButton onClick={() => setStatus("사용 가능한 아이디입니다.")}>
+                  중복확인
+                </MemberSmallButton>
+              </div>
+            ) : (
+              <MemberLineDisplay>{socialProviderLabel} 로그인 계정</MemberLineDisplay>
+            )}
             <MemberLabel>비밀번호</MemberLabel>
-            <button
-              className="w-fit text-left text-[14px] font-medium text-[#76838f] underline underline-offset-2 transition hover:text-[#f7983a]"
-              onClick={() => setStatus("비밀번호 변경은 인증 화면과 함께 연결할게요.")}
-              type="button"
-            >
-              변경하기
-            </button>
+            {isPasswordManagedAccount ? (
+              <button
+                className="w-fit text-left text-[14px] font-medium text-[#76838f] underline underline-offset-2 transition hover:text-[#f7983a]"
+                onClick={() => setStatus("비밀번호 변경은 인증 화면과 함께 연결할게요.")}
+                type="button"
+              >
+                변경하기
+              </button>
+            ) : (
+              <MemberLineDisplay>소셜 계정에서 관리</MemberLineDisplay>
+            )}
           </div>
 
           <div className="grid gap-x-6 gap-y-4 md:grid-cols-[58px_minmax(360px,1.35fr)_76px_minmax(220px,0.8fr)] md:items-center xl:grid-cols-[64px_minmax(440px,1.35fr)_86px_minmax(260px,0.8fr)]">
@@ -1040,33 +1064,31 @@ function MemberInformationForm({
             </div>
           </div>
 
-          <div className="grid gap-x-6 gap-y-4 md:grid-cols-[58px_minmax(240px,1fr)_96px_minmax(220px,1fr)] md:items-center xl:grid-cols-[64px_minmax(280px,1fr)_108px_minmax(280px,1fr)]">
+          <div className="grid gap-x-3 gap-y-4 md:grid-cols-[58px_minmax(260px,320px)_86px_minmax(220px,300px)] md:items-center xl:grid-cols-[64px_minmax(300px,360px)_94px_minmax(240px,320px)]">
             <MemberLabel>주소</MemberLabel>
-            <div className="flex min-w-0 items-center gap-3">
-              <MemberLineInput
-                onChange={(value) =>
-                  setForm((current) => ({ ...current, address: value }))
-                }
-                placeholder="주소를 검색하세요"
-                value={form.address}
-              />
-              <MemberSmallLink
-                href="/mypage/member-information?addressSearch=1"
-                onClick={(event) => {
-                  event.preventDefault();
-                  openAddressSearch();
-                }}
-              >
-                주소검색
-              </MemberSmallLink>
-            </div>
+            <MemberLineInput
+              onChange={(value) =>
+                setForm((current) => ({ ...current, address: value }))
+              }
+              placeholder="주소를 검색하세요"
+              value={form.address}
+            />
+            <MemberSmallLink
+              href="/mypage/member-information?addressSearch=1"
+              onClick={(event) => {
+                event.preventDefault();
+                openAddressSearch();
+              }}
+            >
+              주소검색
+            </MemberSmallLink>
             <span className="sr-only">상세주소</span>
             <MemberLineInput
               inputRef={detailAddressInputRef}
               onChange={(value) =>
                 setForm((current) => ({ ...current, detailAddress: value }))
               }
-              placeholder="상세주소를 입력하세요"
+              placeholder="상세주소 입력"
               value={form.detailAddress}
             />
           </div>
@@ -1126,18 +1148,18 @@ function MemberInformationForm({
             </div>
           </div>
 
-          <div className="mt-[18px] grid gap-x-6 gap-y-4 md:grid-cols-[58px_minmax(420px,1fr)] md:items-center xl:grid-cols-[64px_minmax(520px,1fr)]">
+          <div className="mt-[18px] grid gap-x-6 gap-y-4 md:grid-cols-[58px_minmax(260px,340px)] md:items-center xl:grid-cols-[64px_minmax(300px,380px)]">
             <MemberLabel>결제정보</MemberLabel>
             <MemberLineInput
               onChange={(value) =>
                 setForm((current) => ({ ...current, paymentMethod: value }))
               }
-              placeholder="기본 결제수단을 등록하세요"
+              placeholder="결제수단"
               value={form.paymentMethod}
             />
           </div>
 
-          <div className="grid gap-x-6 gap-y-4 md:grid-cols-[58px_minmax(180px,0.7fr)_minmax(360px,1fr)] md:items-center xl:grid-cols-[64px_minmax(220px,0.7fr)_minmax(460px,1fr)]">
+          <div className="grid gap-x-4 gap-y-4 md:grid-cols-[58px_minmax(150px,180px)_minmax(240px,320px)] md:items-center xl:grid-cols-[64px_minmax(170px,200px)_minmax(280px,360px)]">
             <MemberLabel>환불계좌</MemberLabel>
             <MemberLineInput
               onChange={(value) =>
@@ -1173,10 +1195,12 @@ function MemberInformationForm({
           ) : (
             <MemberInformationReadOnly
               form={form}
+              isPasswordManagedAccount={isPasswordManagedAccount}
               onEdit={() => {
                 setStatus("");
                 setEditMode(true);
               }}
+              socialProviderLabel={socialProviderLabel}
               status={status}
             />
           )}
@@ -1269,11 +1293,15 @@ function MemberInformationForm({
 
 function MemberInformationReadOnly({
   form,
+  isPasswordManagedAccount,
   onEdit,
+  socialProviderLabel,
   status,
 }: {
   form: MemberInformationFormState;
+  isPasswordManagedAccount: boolean;
   onEdit: () => void;
+  socialProviderLabel: string;
   status: string;
 }) {
   const email = composeEmailAddress(form.emailId, form.emailDomain);
@@ -1297,9 +1325,15 @@ function MemberInformationReadOnly({
 
         <div className="grid gap-x-6 gap-y-4 md:grid-cols-[64px_minmax(260px,1fr)_86px_minmax(220px,1.2fr)] md:items-center">
           <MemberLabel>아이디</MemberLabel>
-          <MemberTextValue>{form.loginId || "-"}</MemberTextValue>
+          <MemberTextValue>
+            {isPasswordManagedAccount
+              ? form.loginId || "-"
+              : `${socialProviderLabel} 로그인 계정`}
+          </MemberTextValue>
           <MemberLabel>비밀번호</MemberLabel>
-          <MemberTextValue>변경하기</MemberTextValue>
+          <MemberTextValue>
+            {isPasswordManagedAccount ? "변경하기" : "소셜 계정에서 관리"}
+          </MemberTextValue>
         </div>
 
         <div className="grid gap-x-6 gap-y-4 md:grid-cols-[64px_minmax(440px,1.35fr)_86px_minmax(260px,0.8fr)] md:items-center">
@@ -1935,6 +1969,14 @@ function MemberTextValue({ children }: { children: ReactNode }) {
   );
 }
 
+function MemberLineDisplay({ children }: { children: ReactNode }) {
+  return (
+    <span className="flex h-[36px] min-w-0 items-center border-b border-transparent px-1 !text-[15px] font-medium text-[#76838f]">
+      {children}
+    </span>
+  );
+}
+
 function MemberLineInput({
   inputRef,
   onChange,
@@ -1948,7 +1990,7 @@ function MemberLineInput({
 }) {
   return (
     <input
-      className="h-[36px] min-w-0 border-0 border-b border-[#cfc7c0] bg-transparent px-1 !text-[15px] font-medium text-[#4B3328] outline-none transition placeholder:text-[#8B98A6] focus:border-[#f7983a]"
+      className="h-[36px] w-full min-w-0 border-0 border-b border-[#cfc7c0] bg-transparent px-1 !text-[15px] font-medium text-[#4B3328] outline-none transition placeholder:text-[#8B98A6] focus:border-[#f7983a]"
       onChange={(event) => onChange(event.target.value)}
       placeholder={placeholder}
       ref={inputRef}
@@ -1971,7 +2013,7 @@ function MemberLineSelect({
   return (
     <select
       aria-label={ariaLabel}
-      className="h-[36px] min-w-0 border-0 border-b border-[#cfc7c0] bg-transparent px-1 !text-[15px] font-medium text-[#4B3328] outline-none transition focus:border-[#f7983a]"
+      className="h-[36px] w-full min-w-0 border-0 border-b border-[#cfc7c0] bg-transparent px-1 !text-[15px] font-medium text-[#4B3328] outline-none transition focus:border-[#f7983a]"
       onChange={(event) => onChange(event.target.value)}
       value={value}
     >
@@ -2220,6 +2262,41 @@ function getMetadataText(
   return typeof value === "string" && value.trim() ? value.trim() : undefined;
 }
 
+function getMetadataTextArray(
+  metadata: Record<string, unknown> | undefined,
+  key: string,
+): string[] {
+  const value = metadata?.[key];
+  return Array.isArray(value)
+    ? value.filter((item): item is string => typeof item === "string")
+    : [];
+}
+
+function getPrimaryAuthProvider(
+  metadata: Record<string, unknown> | undefined,
+): string {
+  return (
+    getMetadataText(metadata, "provider") ??
+    getMetadataTextArray(metadata, "providers")[0] ??
+    "email"
+  );
+}
+
+function isPasswordAuthProvider(
+  metadata: Record<string, unknown> | undefined,
+): boolean {
+  const providers = getMetadataTextArray(metadata, "providers");
+  const provider = getPrimaryAuthProvider(metadata);
+  return provider === "email" || providers.includes("email");
+}
+
+function getAuthProviderLabel(provider: string): string {
+  if (provider === "google") return "Google";
+  if (provider === "kakao") return "Kakao";
+  if (provider === "naver") return "Naver";
+  return "이메일";
+}
+
 function getInitial(name: string) {
   return name.trim().slice(0, 1) || "누";
 }
@@ -2293,11 +2370,15 @@ function loadKakaoPostcodeScript() {
 
       if (existingScript) {
         if (existingScript.dataset.loaded === "true") {
-          resolve();
+          waitForKakaoPostcodeConstructor().then(resolve).catch(reject);
           return;
         }
 
-        existingScript.addEventListener("load", () => resolve(), { once: true });
+        existingScript.addEventListener(
+          "load",
+          () => waitForKakaoPostcodeConstructor().then(resolve).catch(reject),
+          { once: true },
+        );
         existingScript.addEventListener(
           "error",
           () => {
@@ -2329,7 +2410,10 @@ function loadKakaoPostcodeScript() {
         script.onload = () => {
           window.clearTimeout(timer);
           script.dataset.loaded = "true";
-          resolve();
+          waitForKakaoPostcodeConstructor().then(resolve).catch(() => {
+            script.remove();
+            tryLoad(sources, index + 1);
+          });
         };
         script.onerror = () => {
           window.clearTimeout(timer);
@@ -2348,6 +2432,28 @@ function loadKakaoPostcodeScript() {
 
 function getKakaoPostcodeConstructor() {
   return window.kakao?.Postcode ?? window.daum?.Postcode;
+}
+
+function waitForKakaoPostcodeConstructor(timeoutMs = 3000) {
+  return new Promise<void>((resolve, reject) => {
+    const startedAt = Date.now();
+
+    const checkReady = () => {
+      if (getKakaoPostcodeConstructor()) {
+        resolve();
+        return;
+      }
+
+      if (Date.now() - startedAt >= timeoutMs) {
+        reject(new Error("주소 검색 서비스를 불러오지 못했습니다."));
+        return;
+      }
+
+      window.setTimeout(checkReady, 50);
+    };
+
+    checkReady();
+  });
 }
 
 function getSelectedKakaoAddress(data: KakaoPostcodeData) {

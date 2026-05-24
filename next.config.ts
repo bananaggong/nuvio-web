@@ -4,12 +4,12 @@ const isProduction = process.env.NODE_ENV === "production";
 
 const contentSecurityPolicy = [
   "default-src 'self'",
-  `script-src 'self' 'unsafe-inline'${isProduction ? "" : " 'unsafe-eval'"} https://connect.facebook.net https://www.instagram.com`,
+  `script-src 'self' 'unsafe-inline'${isProduction ? "" : " 'unsafe-eval'"} https://connect.facebook.net https://www.instagram.com https://t1.kakaocdn.net https://t1.daumcdn.net`,
   "style-src 'self' 'unsafe-inline'",
-  "img-src 'self' data: blob: https://images.unsplash.com https://upload.wikimedia.org https://cdn.imweb.me https://*.cdninstagram.com https://*.fbcdn.net https://*.supabase.co",
+  "img-src 'self' data: blob: https://images.unsplash.com https://upload.wikimedia.org https://cdn.imweb.me https://*.cdninstagram.com https://*.fbcdn.net https://*.supabase.co https://t1.kakaocdn.net https://postcode.map.kakao.com",
   "font-src 'self' data:",
-  "connect-src 'self' https://*.supabase.co https://graph.facebook.com https://www.instagram.com",
-  "frame-src 'self' https://www.youtube.com https://www.instagram.com https://web.facebook.com https://www.facebook.com",
+  "connect-src 'self' https://*.supabase.co https://graph.facebook.com https://www.instagram.com https://postcode.map.kakao.com https://postcode.map.daum.net",
+  "frame-src 'self' https://www.youtube.com https://www.instagram.com https://web.facebook.com https://www.facebook.com https://postcode.map.kakao.com https://postcode.map.daum.net",
   "media-src 'self' https://*.cdninstagram.com https://*.fbcdn.net https://*.supabase.co",
   "object-src 'none'",
   "base-uri 'self'",
@@ -43,6 +43,7 @@ const securityHeaders = [
 ];
 
 const nextConfig: NextConfig = {
+  allowedDevOrigins: ["127.0.0.1"],
   async headers() {
     return [
       {
