@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { Suspense } from "react";
 import { OpsConsoleShell } from "@/components/ops-console-shell";
 import { createSeoMetadata } from "@/lib/seo";
 
@@ -12,5 +13,9 @@ export default function AdminLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
-  return <OpsConsoleShell area="admin">{children}</OpsConsoleShell>;
+  return (
+    <Suspense fallback={<div className="min-h-screen bg-gray-50" />}>
+      <OpsConsoleShell area="admin">{children}</OpsConsoleShell>
+    </Suspense>
+  );
 }
