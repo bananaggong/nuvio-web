@@ -1,5 +1,4 @@
 import type { Metadata } from "next";
-import { HostAccessBanner } from "@/components/host-access-banner";
 import { HostApplicationDetail } from "@/components/host-application-detail";
 
 type HostApplicationDetailPageProps = {
@@ -18,7 +17,6 @@ export default async function HostApplicationDetailPage({
 
   return (
     <>
-      <HostAccessBanner />
       <HostApplicationDetail applicationId={id} />
     </>
   );

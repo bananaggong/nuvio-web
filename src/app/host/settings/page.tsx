@@ -7,7 +7,6 @@ import {
   FolderKanban,
   UsersRound,
 } from "lucide-react";
-import { HostAccessBanner } from "@/components/host-access-banner";
 
 export const metadata: Metadata = {
   title: "호스트 설정 | 누비오",
@@ -49,7 +48,6 @@ const settingGroups = [
 export default function HostSettingsPage() {
   return (
     <>
-      <HostAccessBanner />
       <div className="mx-auto max-w-7xl px-4 py-6 md:px-8">
         <section className="grid gap-4 md:grid-cols-2">
           {settingGroups.map((group) => {

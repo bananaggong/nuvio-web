@@ -1,5 +1,4 @@
 import type { Metadata } from "next";
-import { HostAccessBanner } from "@/components/host-access-banner";
 import { HostFormLibrary } from "@/components/host-form-library";
 
 export const metadata: Metadata = {
@@ -11,7 +10,6 @@ export const metadata: Metadata = {
 export default function HostFormsPage() {
   return (
     <>
-      <HostAccessBanner />
       <HostFormLibrary />
     </>
   );

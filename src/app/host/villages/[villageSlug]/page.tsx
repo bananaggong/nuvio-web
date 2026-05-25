@@ -3,7 +3,6 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { ArrowRight, LockKeyhole, MapPin } from "lucide-react";
 import { BoseongAdminConsole } from "@/components/boseong-admin-console";
-import { HostAccessBanner } from "@/components/host-access-banner";
 import { getHostVillageAccess } from "@/lib/host-village-access";
 
 export const dynamic = "force-dynamic";
@@ -31,7 +30,6 @@ export default async function HostVillageConsolePage({
   if (!access.allowed) {
     return (
       <>
-        <HostAccessBanner />
         <AccessDenied villageSlug={villageSlug} />
       </>
     );
@@ -40,7 +38,6 @@ export default async function HostVillageConsolePage({
   if (villageSlug === "boseong") {
     return (
       <>
-        <HostAccessBanner />
         <BoseongAdminConsole />
       </>
     );
@@ -48,7 +45,6 @@ export default async function HostVillageConsolePage({
 
   return (
     <>
-      <HostAccessBanner />
       <main className="mx-auto max-w-7xl px-4 py-8 md:px-8">
         <section className="rounded-md border border-slate-200 bg-white p-6">
           <p className="inline-flex items-center gap-2 text-sm font-black text-[var(--primary)]">

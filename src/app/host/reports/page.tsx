@@ -1,5 +1,4 @@
 import type { Metadata } from "next";
-import { HostAccessBanner } from "@/components/host-access-banner";
 import { HostReportAutomation } from "@/components/host-report-automation";
 
 export const metadata: Metadata = {
@@ -11,7 +10,6 @@ export const metadata: Metadata = {
 export default function HostReportsPage() {
   return (
     <>
-      <HostAccessBanner />
       <HostReportAutomation />
     </>
   );

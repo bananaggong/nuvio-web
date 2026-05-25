@@ -1,5 +1,4 @@
 import type { Metadata } from "next";
-import { HostAccessBanner } from "@/components/host-access-banner";
 import { HostProgramHome } from "@/components/host-program-home";
 
 export const metadata: Metadata = {
@@ -9,10 +8,5 @@ export const metadata: Metadata = {
 };
 
 export default function HostProgramsPage() {
-  return (
-    <>
-      <HostAccessBanner />
-      <HostProgramHome />
-    </>
-  );
+  return <HostProgramHome />;
 }

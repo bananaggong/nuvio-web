@@ -1,5 +1,4 @@
 import type { Metadata } from "next";
-import { HostAccessBanner } from "@/components/host-access-banner";
 import { HostProgramCreateWizard } from "@/components/host-program-create-wizard";
 
 export const metadata: Metadata = {
@@ -17,7 +16,6 @@ export default async function HostProgramNewPage({
 
   return (
     <>
-      <HostAccessBanner />
       <HostProgramCreateWizard projectId={decodeURIComponent(projectId)} />
     </>
   );

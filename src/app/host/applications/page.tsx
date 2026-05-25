@@ -1,5 +1,4 @@
 import type { Metadata } from "next";
-import { HostAccessBanner } from "@/components/host-access-banner";
 import { HostApplicationsCrm } from "@/components/host-applications-crm";
 
 export const metadata: Metadata = {
@@ -11,7 +10,6 @@ export const metadata: Metadata = {
 export default function HostApplicationsPage() {
   return (
     <>
-      <HostAccessBanner />
       <HostApplicationsCrm />
     </>
   );

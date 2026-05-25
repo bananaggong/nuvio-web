@@ -1,5 +1,4 @@
 import type { Metadata } from "next";
-import { HostAccessBanner } from "@/components/host-access-banner";
 import { HostFormBuilder } from "@/components/host-form-builder";
 
 export const metadata: Metadata = {
@@ -17,7 +16,6 @@ export default async function HostProgramFormsPage({
 
   return (
     <>
-      <HostAccessBanner />
       <HostFormBuilder
         programId={decodeURIComponent(programId)}
         projectId={decodeURIComponent(projectId)}

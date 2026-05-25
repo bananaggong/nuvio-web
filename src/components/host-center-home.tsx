@@ -1,11 +1,10 @@
 "use client";
 
+import Image from "next/image";
 import Link from "next/link";
 import {
   ArrowUpDown,
   ChevronDown,
-  FileText,
-  Grid2X2,
   ListFilter,
   Loader2,
   MessageSquare,
@@ -31,8 +30,8 @@ type ProgramListItem = HostProgramOverview & {
 
 type ProgramGroup = {
   id: "open" | "upcoming" | "closed";
-  label: string;
   items: ProgramListItem[];
+  label: string;
   tone: string;
 };
 
@@ -64,31 +63,31 @@ export function HostCenterHome({
   );
 
   const createProgramHref =
-    folders[0] ? `${hostProjectPath(folders[0].id)}/programs/new` : "/host/projects";
+    folders[0] ? `${hostProjectPath(folders[0].id)}/programs/new` : "/host/programs";
   const groups = buildProgramGroups(programItems);
 
   return (
     <main className="mx-auto w-full max-w-[1600px] px-4 py-6 md:px-8">
-      <div className="min-h-[calc(100vh-8rem)] border-l border-slate-200 pl-4 md:pl-6">
+      <div className="min-h-[calc(100vh-7rem)] border-l border-[#F3E2D5] pl-4 md:pl-6">
         <header className="flex items-center justify-between gap-4">
           <div>
-            <span className="inline-flex max-w-full items-center gap-2 rounded-full bg-slate-100 px-3 py-2 text-sm font-black text-slate-700">
-              <Grid2X2 size={15} />
-              <span className="truncate">{workspace.title} 프로그램만</span>
-            </span>
+            <h1 className="text-2xl font-black text-[#0D0D0C]">호스트 홈</h1>
+            <p className="mt-2 text-sm font-bold text-[#8B7A6E]">
+              {workspace.title}에서 운영 중인 프로그램을 바로 확인합니다.
+            </p>
           </div>
-          <div className="flex items-center gap-1 text-slate-400">
+          <div className="flex items-center gap-1 text-[#A59A92]">
             {isLoading ? <Loader2 className="animate-spin" size={16} /> : null}
             <button
               aria-label="프로그램 필터"
-              className="grid size-8 place-items-center rounded-md hover:bg-slate-100 hover:text-slate-700"
+              className="grid size-8 place-items-center rounded-md hover:bg-[#FFF6EC] hover:text-[#FE701E]"
               type="button"
             >
               <ListFilter size={15} />
             </button>
             <button
               aria-label="프로그램 정렬"
-              className="grid size-8 place-items-center rounded-md hover:bg-slate-100 hover:text-slate-700"
+              className="grid size-8 place-items-center rounded-md hover:bg-[#FFF6EC] hover:text-[#FE701E]"
               type="button"
             >
               <ArrowUpDown size={15} />
@@ -96,7 +95,7 @@ export function HostCenterHome({
           </div>
         </header>
 
-        <div className="mt-5 space-y-8">
+        <div className="mt-6 space-y-9">
           {groups.map((group) => (
             <ProgramStatusGroup
               createProgramHref={createProgramHref}
@@ -105,10 +104,6 @@ export function HostCenterHome({
             />
           ))}
         </div>
-
-        <p className="mt-8 text-sm font-bold text-slate-500">
-          홈에서는 프로그램만 바로 나타나요.
-        </p>
       </div>
     </main>
   );
@@ -124,12 +119,12 @@ function ProgramStatusGroup({
   return (
     <section>
       <div className="flex items-center gap-2">
-        <ChevronDown size={15} className="text-slate-700" />
+        <ChevronDown size={15} className="text-[#5B3A29]" />
         <span className={`rounded px-2 py-0.5 text-xs font-black ${group.tone}`}>
           {group.label}
         </span>
       </div>
-      <div className="mt-3 grid gap-3 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4">
+      <div className="mt-3 grid gap-x-6 gap-y-8 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4">
         {group.items.map((program) => (
           <ProgramCard key={`${program.projectId}-${program.id}`} program={program} />
         ))}
@@ -142,58 +137,70 @@ function ProgramStatusGroup({
 function ProgramCard({ program }: { program: ProgramListItem }) {
   const status = normalizeProgramStatus(program);
   const href = hostProgramPath(program.projectId, program.id);
-  const noteLabel =
+  const statusLabel =
     status === "open"
-      ? "(b2c보여지는 화면)"
+      ? "공개 모집 화면"
       : status === "upcoming"
-        ? "(b2b 제작 화면 / 크게 볼 것)"
-        : "(마감된 화면)";
+        ? "모집 준비 화면"
+        : "마감 프로그램";
 
   return (
-    <Link
-      className="group block overflow-hidden rounded-md border border-slate-200 bg-white shadow-sm transition hover:border-slate-300 hover:shadow-md"
-      href={href}
-    >
-      <div className="h-36 bg-slate-50 p-3">
-        <div
-          className={`w-full truncate rounded px-2 py-1 text-xs font-bold ${
-            status === "open"
-              ? "bg-orange-50 text-orange-800"
-              : status === "upcoming"
-                ? "bg-sky-50 text-sky-800"
-                : "bg-slate-100 text-slate-600"
-          }`}
-        >
-          {noteLabel}
+    <article className="group min-w-0">
+      <Link
+        className="relative block aspect-[4/3] overflow-hidden rounded-md bg-[#FFF6EC] shadow-sm ring-1 ring-[#F3E2D5] transition hover:shadow-md hover:ring-[#FE701E]/40"
+        href={href}
+      >
+        <Image
+          alt={program.title}
+          className="object-cover transition duration-300 group-hover:scale-105"
+          fill
+          sizes="(max-width: 640px) 100vw, (max-width: 1280px) 50vw, 25vw"
+          src={program.imageUrl}
+        />
+        <div className="absolute left-3 top-3 rounded bg-white/90 px-2 py-1 text-xs font-black text-[#FE701E] shadow-sm">
+          {statusLabel}
         </div>
-      </div>
-      <div className="flex min-h-16 items-center justify-between gap-3 border-t border-slate-200 px-3 py-3">
-        <div className="flex min-w-0 items-center gap-2">
-          <FileText className="shrink-0 text-slate-400" size={17} />
-          <span className="truncate text-sm font-black text-slate-800 group-hover:text-slate-950">
+        <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/75 to-transparent p-3 pt-10 text-white">
+          <p className="line-clamp-1 text-sm font-black">{program.villageName}</p>
+          <p className="mt-1 text-xs font-bold text-white/75">
+            신청 {program.applicationCount}명 · 준비율 {program.readiness}%
+          </p>
+        </div>
+      </Link>
+
+      <div className="pt-3">
+        <Link className="block min-w-0" href={href}>
+          <h3 className="line-clamp-2 text-base font-black leading-6 text-[#0D0D0C] group-hover:text-[#FE701E]">
             {program.title}
-          </span>
-        </div>
-        {program.pendingCount > 0 ? (
-          <span className="inline-flex shrink-0 items-center gap-1 text-xs font-bold text-slate-500">
-            <MessageSquare size={13} />
-            {program.pendingCount}
-          </span>
-        ) : null}
+          </h3>
+        </Link>
+        <p className="mt-1 line-clamp-1 text-sm font-bold text-[#8B7A6E]">
+          {program.projectTitle}
+        </p>
+        <p className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1 text-sm font-bold text-[#8B7A6E]">
+          <span>검토 {program.pendingCount}명</span>
+          <span>참여 {program.activeCount}명</span>
+          {program.pendingCount > 0 ? (
+            <span className="inline-flex items-center gap-1 text-[#FE701E]">
+              <MessageSquare size={13} />
+              확인 필요
+            </span>
+          ) : null}
+        </p>
       </div>
-    </Link>
+    </article>
   );
 }
 
 function NewProgramCard({ href }: { href: string }) {
   return (
     <Link
-      className="grid min-h-48 place-items-center rounded-md border border-slate-200 bg-white text-sm font-bold text-slate-400 transition hover:border-slate-300 hover:bg-slate-50 hover:text-slate-700"
+      className="grid min-h-48 place-items-center rounded-md border border-dashed border-[#F3C3A5] bg-white text-sm font-black text-[#FE701E] transition hover:border-[#FE701E] hover:bg-[#FFF6EC]"
       href={href}
     >
       <span className="inline-flex items-center gap-2">
         <Plus size={15} />
-        New page
+        새 프로그램 만들기
       </span>
     </Link>
   );
@@ -215,13 +222,13 @@ function buildProgramGroups(programs: ProgramListItem[]): ProgramGroup[] {
       id: "open",
       label: "모집중",
       items: openPrograms,
-      tone: "bg-orange-100 text-orange-800",
+      tone: "bg-[#FFF6EC] text-[#FE701E]",
     },
     {
       id: "upcoming",
       label: "모집예정",
       items: upcomingPrograms,
-      tone: "bg-sky-100 text-sky-800",
+      tone: "bg-[#F1F5F9] text-[#5B3A29]",
     },
     ...(closedPrograms.length > 0
       ? [

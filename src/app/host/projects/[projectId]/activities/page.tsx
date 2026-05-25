@@ -1,5 +1,4 @@
 import type { Metadata } from "next";
-import { HostAccessBanner } from "@/components/host-access-banner";
 import { HostProjectWorkspace } from "@/components/host-project-workspace";
 
 export const metadata: Metadata = {
@@ -17,7 +16,6 @@ export default async function HostProjectActivitiesPage({
 
   return (
     <>
-      <HostAccessBanner />
       <HostProjectWorkspace
         projectId={decodeURIComponent(projectId)}
         section="activities"

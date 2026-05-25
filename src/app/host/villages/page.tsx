@@ -1,5 +1,4 @@
 import type { Metadata } from "next";
-import { HostAccessBanner } from "@/components/host-access-banner";
 import { HostVillageStudio } from "@/components/host-village-studio";
 
 export const metadata: Metadata = {
@@ -11,7 +10,6 @@ export const metadata: Metadata = {
 export default function HostVillagesPage() {
   return (
     <>
-      <HostAccessBanner />
       <HostVillageStudio />
     </>
   );

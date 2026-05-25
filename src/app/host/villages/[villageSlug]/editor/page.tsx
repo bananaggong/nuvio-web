@@ -3,7 +3,6 @@ import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import { ArrowRight, LockKeyhole } from "lucide-react";
 import { BoseongPageEditor } from "@/components/boseong-page-editor";
-import { HostAccessBanner } from "@/components/host-access-banner";
 import { getHostVillageAccess } from "@/lib/host-village-access";
 import {
   getPublicVillageBySlug,
@@ -43,7 +42,6 @@ export default async function HostVillageEditorPage({
   if (!access.allowed) {
     return (
       <>
-        <HostAccessBanner />
         <AccessDenied villageSlug={villageSlug} />
       </>
     );

@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import Link from "next/link";
 import { usePathname, useSearchParams } from "next/navigation";
 import {
@@ -117,11 +118,11 @@ const navigationByArea: Record<ConsoleArea, NavigationItem[]> = {
       ],
     },
     {
-      name: "마을 관리",
+      name: "로컬페이지 관리",
       href: "/host/villages",
       icon: Settings,
       children: [
-        { name: "호스트 콘솔", href: "/host" },
+        { name: "호스트센터", href: "/host" },
         { name: "공개 홈", href: "/" },
       ],
     },
@@ -144,8 +145,8 @@ const titleByArea: Record<ConsoleArea, string> = {
 };
 
 const headerTitleByArea: Record<ConsoleArea, string> = {
-  host: "누비오 호스트센터",
-  admin: "누비오 관리자 운영",
+  host: "호스트센터",
+  admin: "관리자 운영",
 };
 
 export function OpsConsoleShell({
@@ -162,7 +163,7 @@ export function OpsConsoleShell({
   const [mobileOpen, setMobileOpen] = useState(false);
 
   return (
-    <div className="flex min-h-screen bg-gray-50">
+    <div className="flex min-h-screen bg-[#F9F9F9] text-[#0D0D0C]">
       <Sidebar area={area} currentPath={currentPath} pathname={pathname} />
 
       <div className="flex min-w-0 flex-1 flex-col">
@@ -173,7 +174,7 @@ export function OpsConsoleShell({
         />
 
         {mobileOpen ? (
-          <div className="border-b border-gray-200 bg-white md:hidden">
+          <div className="border-b border-[#F3E2D5] bg-white md:hidden">
             <SidebarContent
               area={area}
               currentPath={currentPath}
@@ -199,28 +200,41 @@ function Header({
   onToggleMobile: () => void;
 }) {
   return (
-    <header className="sticky top-0 z-40 bg-gradient-to-r from-blue-600 to-blue-700 text-white shadow-lg">
-      <div className="flex h-16 items-center justify-between gap-4 px-4 sm:px-6 lg:px-8">
+    <header className="sticky top-0 z-40 border-b border-[#F3E2D5] bg-white/95 shadow-[0_8px_24px_rgba(91,58,41,0.06)] backdrop-blur">
+      <div className="flex h-14 items-center justify-between gap-4 px-4 sm:px-6 lg:px-8">
         <div className="flex min-w-fit items-center gap-3">
           <button
             aria-expanded={mobileOpen}
             aria-label={mobileOpen ? "메뉴 닫기" : "메뉴 열기"}
-            className="inline-flex size-10 items-center justify-center rounded-md text-white hover:bg-white/20 md:hidden"
+            className="inline-flex size-10 items-center justify-center rounded-md border border-[#F3E2D5] text-[#5B3A29] hover:border-[#FE701E] hover:text-[#FE701E] md:hidden"
             onClick={onToggleMobile}
             type="button"
           >
             {mobileOpen ? <X size={22} /> : <Menu size={22} />}
           </button>
-          <Link className="text-xl font-bold hover:opacity-85" href={area === "host" ? "/host" : "/admin"}>
-            {headerTitleByArea[area]}
+          <Link
+            className="flex items-center gap-3 text-sm font-black text-[#5B3A29] hover:text-[#FE701E]"
+            href={area === "host" ? "/host" : "/admin"}
+          >
+            <Image
+              alt="누비오"
+              className="h-[25px] w-auto"
+              height={27}
+              priority
+              src="/brand/nuvio-wordmark.svg"
+              width={81}
+            />
+            <span className="hidden border-l border-[#F3E2D5] pl-3 sm:inline">
+              {headerTitleByArea[area]}
+            </span>
           </Link>
         </div>
 
         <div className="hidden max-w-md flex-1 md:block">
           <label className="relative block">
-            <Search className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-gray-400" />
+            <Search className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-[#FF9A3D]" />
             <input
-              className="w-full rounded-full border-0 bg-white/90 py-2 pl-10 pr-4 text-sm font-semibold text-gray-800 outline-none ring-0 placeholder:text-gray-400 focus:bg-white focus:ring-2 focus:ring-white/30"
+              className="w-full rounded-full border border-[#F3C3A5] bg-[#FFFDFB] py-2 pl-10 pr-4 text-sm font-semibold text-[#5B3A29] outline-none placeholder:text-[#A59A92] focus:border-[#FE701E] focus:ring-2 focus:ring-[#FE701E]/10"
               placeholder="프로그램, 문의, 양식 검색..."
               type="text"
             />
@@ -229,21 +243,21 @@ function Header({
 
         <div className="flex min-w-fit items-center gap-2">
           <Link
-            className="hidden rounded-md px-3 py-2 text-sm font-semibold text-white hover:bg-white/20 lg:inline-flex"
+            className="hidden rounded-md px-3 py-2 text-sm font-bold text-[#5B3A29] hover:bg-[#FFF6EC] hover:text-[#FE701E] lg:inline-flex"
             href={area === "host" ? "/admin" : "/host"}
           >
-            {area === "host" ? "관리자 페이지" : "호스트 페이지"}
+            {area === "host" ? "관리자 페이지" : "호스트센터"}
           </Link>
           <Link
-            className="inline-flex items-center gap-2 rounded-full px-3 py-2 text-sm font-semibold text-white hover:bg-white/20"
+            className="inline-flex items-center gap-2 rounded-full border border-[#F3E2D5] bg-[#FFFDFB] px-2 py-1.5 text-sm font-semibold text-[#5B3A29] hover:border-[#FE701E]"
             href="/mypage"
           >
-            <span className="grid size-8 place-items-center rounded-full bg-white text-blue-700">
+            <span className="grid size-8 place-items-center rounded-full bg-[#FFF6EC] text-[#FE701E]">
               <UserRound size={17} />
             </span>
             <span className="hidden text-left md:block">
               <span className="block text-sm leading-none">로컬 호스트님</span>
-              <span className="mt-1 block text-xs text-white/80">
+              <span className="mt-1 block text-xs text-[#8B7A6E]">
                 {area === "host" ? "호스트" : "관리자"}
               </span>
             </span>
@@ -264,7 +278,7 @@ function Sidebar({
   pathname: string;
 }) {
   return (
-    <aside className="hidden w-64 shrink-0 flex-col border-r border-gray-200 bg-white md:flex">
+    <aside className="hidden w-64 shrink-0 flex-col border-r border-[#F3E2D5] bg-white md:flex">
       <SidebarContent area={area} currentPath={currentPath} pathname={pathname} />
     </aside>
   );
@@ -297,11 +311,16 @@ function SidebarContent({
   return (
     <div className="flex h-full flex-col overflow-y-auto pt-5">
       <div className="flex shrink-0 items-center px-4">
-        <Link className="flex items-center" href={area === "host" ? "/host" : "/admin"}>
-          <span className="mr-3 grid size-8 place-items-center rounded-lg bg-blue-600 text-lg font-bold text-white">
-            M
-          </span>
-          <h1 className="text-xl font-bold text-gray-900">{titleByArea[area]}</h1>
+        <Link className="flex min-w-0 items-center gap-3" href={area === "host" ? "/host" : "/admin"}>
+          <Image
+            alt="누비오"
+            className="h-[30px] w-auto shrink-0"
+            height={37}
+            priority
+            src="/brand/nuvio-logo-combined.svg"
+            width={120}
+          />
+          <span className="sr-only">{titleByArea[area]}</span>
         </Link>
       </div>
 
@@ -424,17 +443,17 @@ function NavigationGroup({
     return (
       <Link
         aria-current={active ? "page" : undefined}
-        className={`group flex items-center rounded-md px-2 py-2 text-sm font-medium ${
+        className={`group flex items-center rounded-md px-2 py-2 text-sm font-bold transition ${
           active
-            ? "border-r-2 border-blue-600 bg-blue-50 text-blue-700"
-            : "text-gray-600 hover:bg-gray-50 hover:text-gray-900"
+            ? "border-r-2 border-[#FE701E] bg-[#FFF6EC] text-[#FE701E]"
+            : "text-[#5B3A29] hover:bg-[#FFF8F1] hover:text-[#FE701E]"
         }`}
         href={item.href}
         onClick={onNavigate}
       >
         <Icon
           className={`mr-3 size-5 shrink-0 ${
-            active ? "text-blue-500" : "text-gray-400 group-hover:text-gray-500"
+            active ? "text-[#FE701E]" : "text-[#A59A92] group-hover:text-[#FE701E]"
           }`}
         />
         <span className="flex-1">{item.name}</span>
@@ -446,10 +465,10 @@ function NavigationGroup({
     <div>
       <button
         aria-expanded={expanded}
-        className={`group flex w-full items-center rounded-md px-2 py-2 text-left text-sm font-medium ${
+        className={`group flex w-full items-center rounded-md px-2 py-2 text-left text-sm font-bold transition ${
           activeGroup
-            ? "border-r-2 border-blue-600 bg-blue-50 text-blue-700"
-            : "text-gray-600 hover:bg-gray-50 hover:text-gray-900"
+            ? "border-r-2 border-[#FE701E] bg-[#FFF6EC] text-[#FE701E]"
+            : "text-[#5B3A29] hover:bg-[#FFF8F1] hover:text-[#FE701E]"
         }`}
         onClick={onToggle}
         type="button"
@@ -457,8 +476,8 @@ function NavigationGroup({
         <Icon
           className={`mr-3 size-5 shrink-0 ${
             activeGroup
-              ? "text-blue-500"
-              : "text-gray-400 group-hover:text-gray-500"
+              ? "text-[#FE701E]"
+              : "text-[#A59A92] group-hover:text-[#FE701E]"
           }`}
         />
         <span className="flex-1">{item.name}</span>
@@ -477,10 +496,10 @@ function NavigationGroup({
             return (
               <Link
                 aria-current={activeChild ? "page" : undefined}
-                className={`block rounded-md px-2 py-1.5 text-sm ${
+                className={`block rounded-md px-2 py-1.5 text-sm font-semibold transition ${
                   activeChild
-                    ? "bg-blue-100 text-blue-700"
-                    : "text-gray-500 hover:bg-gray-50 hover:text-gray-700"
+                    ? "bg-[#FFF6EC] text-[#FE701E]"
+                    : "text-[#7D6F65] hover:bg-[#FFF8F1] hover:text-[#FE701E]"
                 }`}
                 href={child.href}
                 key={`${item.name}-${child.name}`}
