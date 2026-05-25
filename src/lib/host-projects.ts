@@ -96,9 +96,49 @@ export function buildHostProgramOverviews(
   const draftTitles = new Set(
     draftPrograms.map((program) => normalizeTitle(program.title)),
   );
-  const legacyPrograms = resolveProjectProgramTitles(project, applications)
+  const legacyPrograms = resolveProjectProgramTitles(project)
     .filter((title) => !draftTitles.has(normalizeTitle(title)))
     .map((title) => buildProgramOverviewFromTitle(project, title, applications));
+
+  return [...draftPrograms, ...legacyPrograms].sort(
+    (a, b) => Date.parse(b.updatedAt) - Date.parse(a.updatedAt),
+  );
+}
+
+export function buildStandaloneHostProgramOverviews(
+  applications: HostApplication[],
+  reportProjects: ReportProject[],
+  programDrafts: HostProgramDraft[] = [],
+): HostProgramOverview[] {
+  const { connectedIds, connectedTitles } = collectConnectedProgramKeys(reportProjects);
+  const standaloneDrafts = uniquePrograms(
+    programDrafts.filter((program) => {
+      if (connectedIds.has(program.id)) return false;
+      if (connectedTitles.has(normalizeTitle(program.title))) return false;
+      return true;
+    }),
+  );
+  const draftPrograms = standaloneDrafts.map((program) =>
+    buildStandaloneProgramOverviewFromDraft(program, applications),
+  );
+  const draftTitles = new Set(
+    draftPrograms.map((program) => normalizeTitle(program.title)),
+  );
+  const legacyPrograms = applications
+    .filter(
+      (application) =>
+        !application.programId || !connectedIds.has(application.programId),
+    )
+    .map((application) => application.programTitle)
+    .filter((title) => {
+      const normalizedTitle = normalizeTitle(title);
+      if (!normalizedTitle) return false;
+      if (draftTitles.has(normalizedTitle)) return false;
+      if (connectedTitles.has(normalizedTitle)) return false;
+      return true;
+    })
+    .filter((title, index, titles) => titles.indexOf(title) === index)
+    .map((title) => buildStandaloneProgramOverviewFromTitle(title, applications));
 
   return [...draftPrograms, ...legacyPrograms].sort(
     (a, b) => Date.parse(b.updatedAt) - Date.parse(a.updatedAt),
@@ -128,6 +168,24 @@ export function findHostProgramOverview(
   );
 }
 
+export function findStandaloneHostProgramOverview(
+  programId: string,
+  applications: HostApplication[],
+  reportProjects: ReportProject[],
+  programDrafts: HostProgramDraft[] = [],
+): HostProgramOverview | undefined {
+  return buildStandaloneHostProgramOverviews(
+    applications,
+    reportProjects,
+    programDrafts,
+  ).find(
+    (program) =>
+      program.id === programId ||
+      program.slug === programId ||
+      hostProgramId(program.title) === programId,
+  );
+}
+
 export function hostProgramId(programTitle: string): string {
   const slug = programTitle
     .normalize("NFKC")
@@ -141,6 +199,10 @@ export function hostProgramId(programTitle: string): string {
 
 export function hostProgramPath(projectId: string, programId: string): string {
   return `${hostProjectPath(projectId)}/programs/${encodeURIComponent(programId)}`;
+}
+
+export function hostStandaloneProgramPath(programId: string): string {
+  return `/host/programs/${encodeURIComponent(programId)}`;
 }
 
 function buildOperationProjectOverview(
@@ -232,6 +294,40 @@ function buildProgramOverviewFromDraft(
   };
 }
 
+function buildStandaloneProgramOverviewFromDraft(
+  program: HostProgramDraft,
+  applications: HostApplication[],
+): HostProgramOverview {
+  const programApplications = applications.filter(
+    (application) =>
+      application.programId === program.id ||
+      application.programTitle === program.title,
+  );
+  const applicationSummary = summarizeApplications(programApplications);
+  const pendingCount = programApplications.filter((application) =>
+    ["submitted", "screening"].includes(application.status),
+  ).length;
+
+  return {
+    activeCount:
+      applicationSummary.accepted +
+      applicationSummary.checkedIn +
+      applicationSummary.completed,
+    applicationCount: programApplications.length,
+    applications: programApplications,
+    id: program.id,
+    imageUrl: program.image || resolveProgramImage(program.title),
+    missingEvidenceCount: countMissingEvidence(programApplications),
+    pendingCount,
+    readiness: applicationSummary.reportReadiness,
+    slug: program.slug,
+    status: program.status,
+    title: program.title,
+    updatedAt: programApplications[0]?.submittedAt ?? program.updatedAt,
+    villageId: program.villageId,
+  };
+}
+
 function buildProgramOverviewFromTitle(
   project: HostProjectOverview,
   title: string,
@@ -260,6 +356,36 @@ function buildProgramOverviewFromTitle(
     status: "open",
     title,
     updatedAt: programApplications[0]?.submittedAt ?? project.updatedAt,
+  };
+}
+
+function buildStandaloneProgramOverviewFromTitle(
+  title: string,
+  applications: HostApplication[],
+): HostProgramOverview {
+  const programApplications = applications.filter(
+    (application) => application.programTitle === title,
+  );
+  const applicationSummary = summarizeApplications(programApplications);
+  const pendingCount = programApplications.filter((application) =>
+    ["submitted", "screening"].includes(application.status),
+  ).length;
+
+  return {
+    activeCount:
+      applicationSummary.accepted +
+      applicationSummary.checkedIn +
+      applicationSummary.completed,
+    applicationCount: programApplications.length,
+    applications: programApplications,
+    id: hostProgramId(title),
+    imageUrl: resolveProgramImage(title),
+    missingEvidenceCount: countMissingEvidence(programApplications),
+    pendingCount,
+    readiness: applicationSummary.reportReadiness,
+    status: "open",
+    title,
+    updatedAt: programApplications[0]?.submittedAt ?? new Date().toISOString(),
   };
 }
 
@@ -338,12 +464,7 @@ function resolveProjectProgramDrafts(
     return false;
   });
 
-  if (matchedPrograms.length > 0) return uniquePrograms(matchedPrograms);
-  if (!project.villageId) return [];
-
-  return uniquePrograms(
-    programDrafts.filter((program) => program.villageId === project.villageId),
-  );
+  return uniquePrograms(matchedPrograms);
 }
 
 function uniquePrograms(programDrafts: HostProgramDraft[]): HostProgramDraft[] {
@@ -368,23 +489,41 @@ function stableHash(value: string): string {
   return hash.toString(36);
 }
 
-function resolveProjectProgramTitles(
-  project: HostProjectOverview,
-  applications: HostApplication[],
-): string[] {
+function resolveProjectProgramTitles(project: HostProjectOverview): string[] {
   const explicitTitles = project.connectedProgramTitles.filter(
     (title) => title && title !== "전체 프로그램",
   );
   const scopedApplicationTitles = project.applications.map(
     (application) => application.programTitle,
   );
-  const fallbackTitles = applications.map((application) => application.programTitle);
   const titles =
     explicitTitles.length > 0
       ? explicitTitles
       : scopedApplicationTitles.length > 0
         ? scopedApplicationTitles
-        : fallbackTitles;
+        : [];
 
   return Array.from(new Set(titles));
+}
+
+function collectConnectedProgramKeys(reportProjects: ReportProject[]): {
+  connectedIds: Set<string>;
+  connectedTitles: Set<string>;
+} {
+  const connectedIds = new Set<string>();
+  const connectedTitles = new Set<string>();
+
+  for (const project of reportProjects) {
+    for (const id of [project.programId, ...project.connectedProgramIds]) {
+      if (id) connectedIds.add(id);
+    }
+    for (const title of project.connectedProgramTitles) {
+      const normalizedTitle = normalizeTitle(title);
+      if (normalizedTitle && normalizedTitle !== normalizeTitle("전체 프로그램")) {
+        connectedTitles.add(normalizedTitle);
+      }
+    }
+  }
+
+  return { connectedIds, connectedTitles };
 }

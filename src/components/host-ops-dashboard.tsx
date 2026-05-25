@@ -11,14 +11,15 @@ import { useMemo } from "react";
 import {
   buildHostProgramOverviews,
   buildHostProjectOverviews,
+  buildStandaloneHostProgramOverviews,
   hostProgramPath,
-  hostProjectPath,
+  hostStandaloneProgramPath,
   type HostProgramOverview,
 } from "@/lib/host-projects";
 import { useHostOperationsData } from "@/lib/use-host-operations-data";
 
 type ProgramListItem = HostProgramOverview & {
-  projectId: string;
+  projectId?: string;
   projectTitle: string;
   villageName: string;
 };
@@ -31,21 +32,31 @@ export function HostOpsDashboard() {
     [applications, programs, reportProjects],
   );
   const programItems = useMemo(
-    () =>
-      projects.flatMap((project) =>
+    () => {
+      const projectProgramItems: ProgramListItem[] = projects.flatMap((project) =>
         buildHostProgramOverviews(project, applications).map((program) => ({
           ...program,
           projectId: project.id,
           projectTitle: project.title,
           villageName: project.villageName,
         })),
-      ),
-    [applications, projects],
+      );
+      const standaloneProgramItems: ProgramListItem[] = buildStandaloneHostProgramOverviews(
+        applications,
+        reportProjects,
+        programs,
+      ).map((program) => ({
+        ...program,
+        projectId: undefined,
+        projectTitle: "폴더 없음",
+        villageName: "독립 프로그램",
+      }));
+
+      return [...projectProgramItems, ...standaloneProgramItems];
+    },
+    [applications, programs, projects, reportProjects],
   );
-  const createProgramHref =
-    projects.length > 0
-      ? `${hostProjectPath(projects[0].id)}/programs/new`
-      : "/host/projects/new";
+  const createProgramHref = "/host/programs/new";
 
   return (
     <div className="mx-auto max-w-7xl px-4 py-6 md:px-8">
@@ -87,13 +98,13 @@ export function HostOpsDashboard() {
             아직 운영중인 프로그램이 없습니다.
           </h2>
           <p className="mt-2 text-sm font-bold text-slate-500">
-            폴더를 만든 뒤 프로그램을 신설하면 이곳에 모여 보입니다.
+            프로그램을 만들면 이곳에 모여 보입니다. 필요하면 폴더에 연결할 수 있습니다.
           </p>
           <Link
             className="mt-5 inline-flex h-10 items-center justify-center gap-2 rounded-md bg-slate-950 px-3 text-sm font-black text-white"
-            href="/host/projects/new"
+            href={createProgramHref}
           >
-            <Plus size={16} />새 폴더
+            <Plus size={16} />새 프로그램
           </Link>
         </section>
       )}
@@ -102,7 +113,9 @@ export function HostOpsDashboard() {
 }
 
 function ProgramCard({ program }: { program: ProgramListItem }) {
-  const href = hostProgramPath(program.projectId, program.id);
+  const href = program.projectId
+    ? hostProgramPath(program.projectId, program.id)
+    : hostStandaloneProgramPath(program.id);
 
   return (
     <article className="group min-w-0">

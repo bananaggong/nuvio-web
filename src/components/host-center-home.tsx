@@ -3,10 +3,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import {
-  ArrowUpDown,
   ChevronDown,
-  ListFilter,
-  Loader2,
   MessageSquare,
   Plus,
 } from "lucide-react";
@@ -14,8 +11,9 @@ import { useMemo } from "react";
 import {
   buildHostProgramOverviews,
   buildHostProjectOverviews,
+  buildStandaloneHostProgramOverviews,
   hostProgramPath,
-  hostProjectPath,
+  hostStandaloneProgramPath,
   type HostProgramOverview,
 } from "@/lib/host-projects";
 import type { ProgramStatus } from "@/lib/types";
@@ -23,7 +21,7 @@ import { useHostOperationsData } from "@/lib/use-host-operations-data";
 import type { HostVillageWorkspace } from "@/lib/host-village-access";
 
 type ProgramListItem = HostProgramOverview & {
-  projectId: string;
+  projectId?: string;
   projectTitle: string;
   villageName: string;
 };
@@ -40,16 +38,15 @@ export function HostCenterHome({
 }: {
   workspace: HostVillageWorkspace;
 }) {
-  const { applications, isLoading, programs, reportProjects } =
-    useHostOperationsData();
+  const { applications, programs, reportProjects } = useHostOperationsData();
 
   const folders = useMemo(
     () => buildHostProjectOverviews(applications, reportProjects, programs),
     [applications, programs, reportProjects],
   );
   const programItems = useMemo(
-    () =>
-      folders
+    () => {
+      const folderProgramItems: ProgramListItem[] = folders
         .flatMap((folder) =>
           buildHostProgramOverviews(folder, applications).map((program) => ({
             ...program,
@@ -58,12 +55,25 @@ export function HostCenterHome({
             villageName: folder.villageName,
           })),
         )
-        .sort((a, b) => Date.parse(b.updatedAt) - Date.parse(a.updatedAt)),
-    [applications, folders],
+      const standaloneProgramItems: ProgramListItem[] = buildStandaloneHostProgramOverviews(
+        applications,
+        reportProjects,
+        programs,
+      ).map((program) => ({
+        ...program,
+        projectId: undefined,
+        projectTitle: "폴더 없음",
+        villageName: "독립 프로그램",
+      }));
+
+      return [...folderProgramItems, ...standaloneProgramItems].sort(
+        (a, b) => Date.parse(b.updatedAt) - Date.parse(a.updatedAt),
+      );
+    },
+    [applications, folders, programs, reportProjects],
   );
 
-  const createProgramHref =
-    folders[0] ? `${hostProjectPath(folders[0].id)}/programs/new` : "/host/programs";
+  const createProgramHref = "/host/programs/new";
   const groups = buildProgramGroups(programItems);
 
   return (
@@ -72,30 +82,7 @@ export function HostCenterHome({
       className="mx-auto w-full max-w-[1600px] px-4 py-6 md:px-8"
     >
       <div className="min-h-[calc(100vh-7rem)] border-l border-[#F3E2D5] pl-4 md:pl-6">
-        <header className="flex items-center justify-between gap-4">
-          <div>
-            <h1 className="text-2xl font-black text-[#0D0D0C]">호스트 홈</h1>
-          </div>
-          <div className="flex items-center gap-1 text-[#A59A92]">
-            {isLoading ? <Loader2 className="animate-spin" size={16} /> : null}
-            <button
-              aria-label="프로그램 필터"
-              className="grid size-8 place-items-center rounded-md hover:bg-[#FFF6EC] hover:text-[#FE701E]"
-              type="button"
-            >
-              <ListFilter size={15} />
-            </button>
-            <button
-              aria-label="프로그램 정렬"
-              className="grid size-8 place-items-center rounded-md hover:bg-[#FFF6EC] hover:text-[#FE701E]"
-              type="button"
-            >
-              <ArrowUpDown size={15} />
-            </button>
-          </div>
-        </header>
-
-        <div className="mt-6 space-y-9">
+        <div className="space-y-9">
           {groups.map((group) => (
             <ProgramStatusGroup
               createProgramHref={createProgramHref}
@@ -136,7 +123,9 @@ function ProgramStatusGroup({
 
 function ProgramCard({ program }: { program: ProgramListItem }) {
   const status = normalizeProgramStatus(program);
-  const href = hostProgramPath(program.projectId, program.id);
+  const href = program.projectId
+    ? hostProgramPath(program.projectId, program.id)
+    : hostStandaloneProgramPath(program.id);
   const statusLabel =
     status === "open"
       ? "공개 모집 화면"

@@ -15,8 +15,10 @@ import type { ReactNode } from "react";
 import {
   findHostProgramOverview,
   findHostProjectOverview,
+  findStandaloneHostProgramOverview,
   hostProgramPath,
   hostProjectPath,
+  hostStandaloneProgramPath,
 } from "@/lib/host-projects";
 import { useHostOperationsData } from "@/lib/use-host-operations-data";
 
@@ -25,23 +27,47 @@ export function HostProgramHub({
   projectId,
 }: {
   programId: string;
-  projectId: string;
+  projectId?: string;
 }) {
   const { applications, programs: hostPrograms, reportProjects } = useHostOperationsData();
 
   const project = useMemo(
-    () => findHostProjectOverview(projectId, applications, reportProjects, hostPrograms),
+    () =>
+      projectId
+        ? findHostProjectOverview(projectId, applications, reportProjects, hostPrograms)
+        : undefined,
     [applications, hostPrograms, projectId, reportProjects],
   );
   const program = useMemo(
     () =>
-      findHostProgramOverview(projectId, programId, applications, reportProjects, hostPrograms),
+      projectId
+        ? findHostProgramOverview(
+            projectId,
+            programId,
+            applications,
+            reportProjects,
+            hostPrograms,
+          )
+        : findStandaloneHostProgramOverview(
+            programId,
+            applications,
+            reportProjects,
+            hostPrograms,
+          ),
     [applications, hostPrograms, programId, projectId, reportProjects],
   );
-  const projectPath = hostProjectPath(projectId);
-  const programPath = hostProgramPath(projectId, programId);
+  const projectPath = projectId ? hostProjectPath(projectId) : "/host/programs";
+  const programPath =
+    projectId && program
+      ? hostProgramPath(projectId, program.id)
+      : hostStandaloneProgramPath(programId);
+  const applicationsHref =
+    projectId && program ? `${programPath}/applications` : "/host/applications";
+  const formsHref = projectId && program ? `${programPath}/forms` : "/host/forms";
+  const messagesHref =
+    projectId && program ? `${programPath}/messages` : "/host/messages";
 
-  if (!project || !program) {
+  if ((projectId && !project) || !program) {
     return (
       <div className="mx-auto max-w-5xl px-4 py-8 md:px-8">
         <Link
@@ -49,7 +75,7 @@ export function HostProgramHub({
           href={projectPath}
         >
           <ArrowLeft size={16} />
-          폴더
+          {projectId ? "폴더" : "프로그램 목록"}
         </Link>
         <div className="mt-5 rounded-md border border-slate-200 bg-white p-6">
           <h1 className="text-2xl font-black text-slate-950">
@@ -68,7 +94,7 @@ export function HostProgramHub({
           href={projectPath}
         >
           <ArrowLeft size={16} />
-          폴더
+          {projectId ? "폴더" : "프로그램 목록"}
         </Link>
       </div>
 
@@ -91,8 +117,10 @@ export function HostProgramHub({
             {program.title}
           </h1>
           <p className="mt-3 text-sm leading-7 text-slate-500">
-            {project.title} 폴더 안의 프로그램입니다. 신청자, 신청서, 안내 메시지는
-            이 프로그램 모집 흐름 안에서 관리합니다.
+            {project
+              ? `${project.title} 폴더 안의 프로그램입니다.`
+              : "아직 폴더에 담기지 않은 독립 프로그램입니다."}{" "}
+            신청자, 신청서, 안내 메시지는 이 프로그램 모집 흐름 안에서 관리합니다.
           </p>
           <div className="mt-5 grid gap-2 sm:grid-cols-3">
             <Metric label="신청자" value={`${program.applicationCount}명`} />
@@ -105,19 +133,19 @@ export function HostProgramHub({
       <section className="mt-6 grid gap-3 md:grid-cols-3">
         <ProgramTool
           description="이 프로그램에 신청한 사람만 검토합니다."
-          href={`${programPath}/applications`}
+          href={applicationsHref}
           icon={<Users size={20} />}
           title="신청자 CRM"
         />
         <ProgramTool
           description="이 프로그램 모집에 연결되는 질문 세트를 구성합니다."
-          href={`${programPath}/forms`}
+          href={formsHref}
           icon={<FilePlus2 size={20} />}
           title="신청서"
         />
         <ProgramTool
           description="이 프로그램 신청자에게 보낼 안내 메시지를 준비합니다."
-          href={`${programPath}/messages`}
+          href={messagesHref}
           icon={<MessageSquareText size={20} />}
           title="안내 메시지"
         />

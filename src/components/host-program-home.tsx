@@ -15,8 +15,10 @@ import { useMemo, useState, type ReactNode } from "react";
 import {
   buildHostProgramOverviews,
   buildHostProjectOverviews,
+  buildStandaloneHostProgramOverviews,
   hostProgramPath,
   hostProjectPath,
+  hostStandaloneProgramPath,
   type HostProgramOverview,
   type HostProjectOverview,
 } from "@/lib/host-projects";
@@ -28,13 +30,13 @@ import {
 import { useHostOperationsData } from "@/lib/use-host-operations-data";
 
 type ProgramListItem = HostProgramOverview & {
-  projectId: string;
+  projectId?: string;
   projectTitle: string;
   villageName: string;
 };
 
 export function HostProgramHome() {
-  const { applications, isLoading, programs, reportProjects, setReportProjects } =
+  const { applications, programs, reportProjects, setReportProjects } =
     useHostOperationsData();
   const [isFolderDialogOpen, setIsFolderDialogOpen] = useState(false);
   const [folderName, setFolderName] = useState("");
@@ -46,8 +48,8 @@ export function HostProgramHome() {
     [applications, programs, reportProjects],
   );
   const programItems = useMemo(
-    () =>
-      folders
+    () => {
+      const folderProgramItems: ProgramListItem[] = folders
         .flatMap((folder) =>
           buildHostProgramOverviews(folder, applications).map((program) => ({
             ...program,
@@ -56,12 +58,33 @@ export function HostProgramHome() {
             villageName: folder.villageName,
           })),
         )
-        .sort((a, b) => Date.parse(b.updatedAt) - Date.parse(a.updatedAt)),
-    [applications, folders],
+      const standaloneProgramItems: ProgramListItem[] = buildStandaloneHostProgramOverviews(
+        applications,
+        reportProjects,
+        programs,
+      ).map((program) => ({
+        ...program,
+        projectId: undefined,
+        projectTitle: "폴더 없음",
+        villageName: "독립 프로그램",
+      }));
+
+      return [...folderProgramItems, ...standaloneProgramItems].sort(
+        (a, b) => Date.parse(b.updatedAt) - Date.parse(a.updatedAt),
+      );
+    },
+    [applications, folders, programs, reportProjects],
   );
-  const createProgramHref = folders[0]
-    ? `${hostProjectPath(folders[0].id)}/programs/new`
-    : "";
+  const programsByFolder = useMemo(
+    () =>
+      programItems.reduce<Record<string, ProgramListItem[]>>((acc, program) => {
+        if (!program.projectId) return acc;
+        acc[program.projectId] = [...(acc[program.projectId] ?? []), program];
+        return acc;
+      }, {}),
+    [programItems],
+  );
+  const createProgramHref = "/host/programs/new";
   const trimmedFolderName = folderName.trim();
 
   function openFolderDialog() {
@@ -127,51 +150,30 @@ export function HostProgramHome() {
   return (
     <main className="mx-auto w-full max-w-[1600px] px-4 py-6 md:px-8">
       <div className="min-h-[calc(100vh-7rem)] border-l border-[#F3E2D5] pl-4 md:pl-6">
-        <header className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
-          <div>
-            <h1 className="text-2xl font-black text-[#0D0D0C] sm:text-3xl">
-              폴더와 최근 프로그램
-            </h1>
-            <p className="mt-2 text-sm font-bold text-[#8B7A6E]">
-              폴더 {folders.length}개 · 프로그램 {programItems.length}개
-              {isLoading ? " · 불러오는 중" : ""}
-            </p>
-          </div>
-          {createProgramHref ? (
-            <Link
-              className="inline-flex h-10 w-fit items-center justify-center gap-2 rounded-md bg-[#FE701E] px-3 text-sm font-black text-white transition hover:bg-[#E85F13]"
-              href={createProgramHref}
-            >
-              <Plus size={16} />
-              새 프로그램 만들기
-            </Link>
-          ) : null}
-        </header>
-
-        <section className="mt-8">
+        <section>
           <SectionTitle
-            description="프로그램이 담겨있는 폴더입니다."
             icon={<FolderOpen size={18} />}
             title="폴더"
           />
-          <div className="mt-3 grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
-            {folders.map((folder) => (
-              <FolderCard
-                folder={folder}
-                key={folder.id}
-                programCount={
-                  programItems.filter((program) => program.projectId === folder.id)
-                    .length
-                }
-              />
-            ))}
+          <div className="mt-3 grid gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
+            {folders.map((folder) => {
+              const folderPrograms = programsByFolder[folder.id] ?? [];
+
+              return (
+                <FolderCard
+                  folder={folder}
+                  key={folder.id}
+                  programCount={folderPrograms.length}
+                  programs={folderPrograms}
+                />
+              );
+            })}
             <NewCard label="새 폴더 만들기" onClick={openFolderDialog} />
           </div>
         </section>
 
         <section className="mt-10">
           <SectionTitle
-            description="최근 수정되었거나 연결된 프로그램부터 보여줍니다."
             icon={<Clock3 size={18} />}
             title="최근 본 프로그램"
           />
@@ -191,26 +193,15 @@ export function HostProgramHome() {
                 아직 프로그램이 없습니다.
               </h2>
               <p className="mt-2 text-sm font-bold text-[#8B7A6E]">
-                폴더를 만든 뒤 프로그램을 추가하면 이곳에 표시됩니다.
+                프로그램을 만들면 이곳에 표시됩니다. 필요하면 나중에 폴더에 넣을 수 있습니다.
               </p>
-              {createProgramHref ? (
-                <Link
-                  className="mt-5 inline-flex h-10 items-center justify-center gap-2 rounded-md bg-[#FE701E] px-3 text-sm font-black text-white hover:bg-[#E85F13]"
-                  href={createProgramHref}
-                >
-                  <Plus size={16} />
-                  새 프로그램 만들기
-                </Link>
-              ) : (
-                <button
-                  className="mt-5 inline-flex h-10 items-center justify-center gap-2 rounded-md bg-[#FE701E] px-3 text-sm font-black text-white hover:bg-[#E85F13]"
-                  onClick={openFolderDialog}
-                  type="button"
-                >
-                  <Plus size={16} />
-                  새 폴더 만들기
-                </button>
-              )}
+              <Link
+                className="mt-5 inline-flex h-10 items-center justify-center gap-2 rounded-md bg-[#FE701E] px-3 text-sm font-black text-white hover:bg-[#E85F13]"
+                href={createProgramHref}
+              >
+                <Plus size={16} />
+                새 프로그램 만들기
+              </Link>
             </div>
           )}
         </section>
@@ -292,11 +283,9 @@ export function HostProgramHome() {
 }
 
 function SectionTitle({
-  description,
   icon,
   title,
 }: {
-  description: string;
   icon: ReactNode;
   title: string;
 }) {
@@ -306,7 +295,6 @@ function SectionTitle({
         <span className="text-[#FE701E]">{icon}</span>
         {title}
       </h2>
-      <p className="text-sm font-bold text-[#8B7A6E]">{description}</p>
     </div>
   );
 }
@@ -314,16 +302,21 @@ function SectionTitle({
 function FolderCard({
   folder,
   programCount,
+  programs,
 }: {
   folder: HostProjectOverview;
   programCount: number;
+  programs: ProgramListItem[];
 }) {
+  const visiblePrograms = programs.slice(0, 3);
+  const remainingProgramCount = programs.length - visiblePrograms.length;
+
   return (
     <Link
       className="group block rounded-md border border-[#F3E2D5] bg-white p-4 shadow-sm transition hover:border-[#FE701E]/50 hover:shadow-md"
       href={hostProjectPath(folder.id)}
     >
-      <div className="flex min-h-32 flex-col justify-between">
+      <div className="flex min-h-52 flex-col justify-between">
         <div>
           <div className="flex items-start justify-between gap-3">
             <span className="grid size-10 shrink-0 place-items-center rounded-md bg-[#FFF6EC] text-[#FE701E]">
@@ -337,6 +330,30 @@ function FolderCard({
           <h3 className="mt-4 line-clamp-2 text-base font-black leading-6 text-[#0D0D0C]">
             {folder.title}
           </h3>
+          <div className="mt-3 space-y-1.5">
+            {visiblePrograms.length > 0 ? (
+              <>
+                {visiblePrograms.map((program) => (
+                  <p
+                    className="flex min-w-0 items-center gap-1.5 text-xs font-bold text-[#6F625A]"
+                    key={program.id}
+                  >
+                    <FileText className="shrink-0 text-[#FE701E]" size={12} />
+                    <span className="truncate">{program.title}</span>
+                  </p>
+                ))}
+                {remainingProgramCount > 0 ? (
+                  <p className="text-xs font-black text-[#FE701E]">
+                    + {remainingProgramCount}개 더
+                  </p>
+                ) : null}
+              </>
+            ) : (
+              <p className="rounded bg-[#FFF6EC] px-2 py-1.5 text-xs font-bold text-[#A06B4F]">
+                아직 프로그램 없음
+              </p>
+            )}
+          </div>
         </div>
         <p className="mt-3 text-sm font-bold text-[#8B7A6E]">
           프로그램 {programCount}개 · 신청 {folder.applicationCount}명
@@ -347,7 +364,9 @@ function FolderCard({
 }
 
 function ProgramCard({ program }: { program: ProgramListItem }) {
-  const href = hostProgramPath(program.projectId, program.id);
+  const href = program.projectId
+    ? hostProgramPath(program.projectId, program.id)
+    : hostStandaloneProgramPath(program.id);
 
   return (
     <article className="group min-w-0">
@@ -391,7 +410,7 @@ function ProgramCard({ program }: { program: ProgramListItem }) {
 function NewCard({ label, onClick }: { label: string; onClick: () => void }) {
   return (
     <button
-      className="grid min-h-40 place-items-center rounded-md border border-dashed border-[#F3C3A5] bg-white text-sm font-black text-[#FE701E] transition hover:border-[#FE701E] hover:bg-[#FFF6EC]"
+      className="grid min-h-52 place-items-center rounded-md border border-dashed border-[#F3C3A5] bg-white text-sm font-black text-[#FE701E] transition hover:border-[#FE701E] hover:bg-[#FFF6EC]"
       onClick={onClick}
       type="button"
     >

@@ -507,20 +507,15 @@ export function getReportApplications(
   applications = readHostApplicationsFromStorage(),
 ): HostApplication[] {
   const connectedIds = project.connectedProgramIds.filter(Boolean);
-  if (connectedIds.length > 0) {
-    return applications.filter(
-      (application) =>
-        typeof application.programId === "string" &&
-        connectedIds.includes(application.programId),
-    );
-  }
-
   const connectedTitles = project.connectedProgramTitles.filter(Boolean);
-  if (connectedTitles.length === 0 || connectedTitles.includes("전체 프로그램")) {
+  if (connectedTitles.includes("전체 프로그램")) {
     return applications;
   }
+  if (connectedIds.length === 0 && connectedTitles.length === 0) return [];
 
   return applications.filter((application) =>
+    (typeof application.programId === "string" &&
+      connectedIds.includes(application.programId)) ||
     connectedTitles.includes(application.programTitle),
   );
 }
