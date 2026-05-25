@@ -35,14 +35,14 @@ export async function POST(request: Request) {
     const file = formData.get("file");
 
     if (!(file instanceof File)) {
-      throw new Error("이미지 파일을 선택해주세요.");
+      throw new Error("Please choose an image file.");
     }
 
     validateUploadFile(file);
 
     const programId = sanitizePathSegment(asString(formData.get("programId")) || "draft");
     const usage = sanitizePathSegment(asString(formData.get("usage")) || "image");
-    const safeName = sanitizeFileName(file.name || "program-image");
+    const safeName = sanitizeFileName(file.name || "program-image", file.type, "program-image");
     const objectPath = [
       sanitizePathSegment(auth.user.id),
       programId,
@@ -89,24 +89,26 @@ export async function POST(request: Request) {
     return NextResponse.json(
       {
         error:
-          error instanceof Error
-            ? error.message
-            : "이미지를 업로드하지 못했어요.",
+          error instanceof Error ? error.message : "Failed to upload the image.",
       },
       { status: 400 },
     );
   }
 }
 
-function sanitizeFileName(value: string): string {
-  return (
+function sanitizeFileName(value: string, contentType: string, fallback: string): string {
+  const extension = safeExtension(value, contentType);
+  const baseName =
     value
-      .normalize("NFKC")
+      .normalize("NFKD")
+      .replace(/[\u0300-\u036f]/g, "")
+      .replace(/\.[^.]*$/u, "")
       .toLowerCase()
-      .replace(/[^a-z0-9가-힣._-]+/gu, "-")
-      .replace(/^-+|-+$/gu, "")
-      .slice(0, 120) || "program-image"
-  );
+      .replace(/[^a-z0-9_-]+/g, "-")
+      .replace(/^-+|-+$/g, "")
+      .slice(0, 80) || fallback;
+
+  return `${baseName}.${extension}`;
 }
 
 function sanitizePathSegment(value: string): string {
@@ -114,19 +116,31 @@ function sanitizePathSegment(value: string): string {
     value
       .normalize("NFKC")
       .toLowerCase()
-      .replace(/[^a-z0-9가-힣._-]+/gu, "-")
-      .replace(/^-+|-+$/gu, "")
+      .replace(/[^a-z0-9_-]+/g, "-")
+      .replace(/^-+|-+$/g, "")
       .slice(0, 96) || "draft"
   );
 }
 
+function safeExtension(fileName: string, contentType: string): string {
+  const extension = fileName.split(".").pop()?.toLowerCase() ?? "";
+  if (["gif", "jpg", "jpeg", "png", "webp"].includes(extension)) {
+    return extension === "jpeg" ? "jpg" : extension;
+  }
+
+  if (contentType === "image/gif") return "gif";
+  if (contentType === "image/png") return "png";
+  if (contentType === "image/webp") return "webp";
+  return "jpg";
+}
+
 function validateUploadFile(file: File) {
   if (file.size > maxUploadBytes) {
-    throw new Error("이미지는 5MB 이하만 업로드할 수 있어요.");
+    throw new Error("Images must be 5MB or smaller.");
   }
 
   if (!allowedUploadTypes.has(file.type)) {
-    throw new Error("JPG, PNG, WebP, GIF 이미지만 업로드할 수 있어요.");
+    throw new Error("Only JPG, PNG, WebP, and GIF images can be uploaded.");
   }
 }
 

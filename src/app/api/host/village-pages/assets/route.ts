@@ -115,8 +115,8 @@ async function handleFileUpload(request: Request) {
 
   const usage = asString(formData.get("usage")) || "page";
   const altText = asString(formData.get("altText"));
-  const safeName = sanitizeFileName(file.name || "asset");
-  const objectPath = `${villageSlug}/${Date.now()}-${safeName}`;
+  const safeName = sanitizeStorageFileName(file.name || "asset", file.type, "asset");
+  const objectPath = `${sanitizeStoragePathSegment(villageSlug)}/${Date.now()}-${safeName}`;
   const admin = createSupabaseAdminClient();
 
   const { data: buckets } = await admin.storage.listBuckets();
@@ -168,6 +168,44 @@ function sanitizeFileName(value: string): string {
       .replace(/^-+|-+$/gu, "")
       .slice(0, 120) || "asset"
   );
+}
+
+function sanitizeStorageFileName(value: string, contentType: string, fallback: string): string {
+  const extension = safeStorageExtension(value, contentType);
+  const baseName =
+    value
+      .normalize("NFKD")
+      .replace(/[\u0300-\u036f]/g, "")
+      .replace(/\.[^.]*$/u, "")
+      .toLowerCase()
+      .replace(/[^a-z0-9_-]+/g, "-")
+      .replace(/^-+|-+$/g, "")
+      .slice(0, 80) || fallback;
+
+  return `${baseName}.${extension}`;
+}
+
+function sanitizeStoragePathSegment(value: string): string {
+  return (
+    value
+      .normalize("NFKC")
+      .toLowerCase()
+      .replace(/[^a-z0-9_-]+/g, "-")
+      .replace(/^-+|-+$/g, "")
+      .slice(0, 96) || "village"
+  );
+}
+
+function safeStorageExtension(fileName: string, contentType: string): string {
+  const extension = fileName.split(".").pop()?.toLowerCase() ?? "";
+  if (["gif", "jpg", "jpeg", "png", "webp"].includes(extension)) {
+    return extension === "jpeg" ? "jpg" : extension;
+  }
+
+  if (contentType === "image/gif") return "gif";
+  if (contentType === "image/png") return "png";
+  if (contentType === "image/webp") return "webp";
+  return "jpg";
 }
 
 function validateUploadFile(file: File) {
