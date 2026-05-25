@@ -34,14 +34,14 @@ const intentOptions: Array<{
 }> = [
   {
     id: "participant",
-    title: "프로그램 참여자",
-    description: "관심 있는 프로그램을 저장하고 신청 내역과 알림을 관리합니다.",
+    title: "누비어로 시작하기",
+    description: "관심 있는 프로그램을 저장하고 내 여행 프로그램과 알림을 관리해요.",
     icon: UserRound,
   },
   {
     id: "host",
-    title: "로컬홈 / 브랜드 운영자",
-    description: "프로그램을 등록하고 신청폼, 신청자, 폴더를 관리합니다.",
+    title: "호스트로 시작하기",
+    description: "프로그램을 등록하고 신청폼, 신청자, 폴더를 관리해요.",
     icon: Building2,
   },
 ];
@@ -117,7 +117,7 @@ export function OnboardingPanel() {
           if (profileIntent) setSelectedIntent(profileIntent);
         }
       } catch {
-        if (active) setErrorMessage("계정 정보를 불러오지 못했습니다.");
+        if (active) setErrorMessage("계정 정보를 불러오지 못했어요.");
       } finally {
         if (active) setLoadingSession(false);
       }
@@ -148,7 +148,7 @@ export function OnboardingPanel() {
       !nextProfile.contactEmail ||
       !nextProfile.address
     ) {
-      setErrorMessage("이름, 전화번호, 연락 가능한 이메일, 주소를 모두 입력해 주세요.");
+      setErrorMessage("이름, 전화번호, 연락 가능한 이메일, 주소를 입력해 주세요.");
       setSaving(false);
       return;
     }
@@ -172,14 +172,14 @@ export function OnboardingPanel() {
 
       if (!response.ok) {
         const payload = (await response.json()) as { error?: string };
-        throw new Error(payload.error ?? "온보딩 저장에 실패했습니다.");
+        throw new Error(payload.error ?? "잠깐 문제가 생겼어요. 다시 시도해 주세요.");
       }
 
       router.push(destination);
       router.refresh();
     } catch (error) {
       setErrorMessage(
-        error instanceof Error ? error.message : "온보딩 저장에 실패했습니다.",
+        error instanceof Error ? error.message : "잠깐 문제가 생겼어요. 다시 시도해 주세요.",
       );
     } finally {
       setSaving(false);
@@ -200,11 +200,11 @@ export function OnboardingPanel() {
         <h1 className="mt-4 text-[28px] font-black leading-tight tracking-tight text-slate-950">
           {welcomeName}님,
           <br />
-          누비오에 오신 것을 환영합니다.
+          이제 시작이에요!
         </h1>
         <p className="mt-4 text-base font-semibold leading-7 text-slate-500">
-          프로그램 신청과 운영 안내에 사용할 기본 연락 정보를 확인해 주세요.
-          입력한 정보는 같은 계정의 참여와 운영 기능에서 함께 사용됩니다.
+          프로그램 신청과 운영 안내에 쓸 기본 연락 정보를 확인해 주세요.
+          같은 계정으로 누비어와 호스트 기능을 함께 사용할 수 있어요.
         </p>
 
         <form className="mt-10 grid gap-7" onSubmit={completeOnboarding}>
@@ -273,13 +273,13 @@ export function OnboardingPanel() {
               <option value="social">SNS</option>
               <option value="program">프로그램 공고</option>
               <option value="recommendation">지인 추천</option>
-              <option value="local-home">로컬홈/운영기관 안내</option>
+              <option value="local-home">로컬페이지/운영기관 안내</option>
             </select>
           </label>
 
           <fieldset className="grid gap-3">
             <legend className="mb-1 text-sm font-bold text-slate-800">
-              어떤 기능을 먼저 사용하고 싶나요?
+              어떤 방식으로 시작할까요?
             </legend>
             {intentOptions.map((option) => {
               const Icon = option.icon;
@@ -323,8 +323,8 @@ export function OnboardingPanel() {
           </fieldset>
 
           <p className="rounded-md bg-blue-50 px-4 py-3 text-sm font-semibold leading-6 text-blue-800">
-            선택한 용도는 시작 화면을 정하는 데만 사용됩니다. 같은 계정으로 참여와
-            운영 기능을 모두 사용할 수 있습니다.
+            선택한 용도는 시작 화면을 정하는 데만 사용돼요. 같은 계정으로 참여와
+            운영 기능을 모두 사용할 수 있어요.
           </p>
 
           {errorMessage ? (
@@ -344,9 +344,9 @@ export function OnboardingPanel() {
                 저장 중
               </>
             ) : selectedIntent === "host" ? (
-              "호스트센터로 계속"
+              "호스트센터로 계속하기"
             ) : (
-              "프로그램 탐색으로 계속"
+              "프로그램 탐색 계속하기"
             )}
           </button>
         </form>

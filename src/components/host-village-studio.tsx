@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import Image from "next/image";
 import Link from "next/link";
@@ -41,7 +41,7 @@ export function HostVillageStudio() {
 
         if (!response.ok) {
           throw new Error(
-            payload.error ?? "로그인 후 연결된 로컬홈을 불러올 수 있습니다.",
+            payload.error ?? "로그인하면 연결된 로컬페이지를 불러올 수 있어요.",
           );
         }
 
@@ -54,12 +54,12 @@ export function HostVillageStudio() {
             setVillage(createNewVillageDraft());
             setSyncError("");
           } else {
-            setSyncError("이 계정에 연결된 로컬홈이 아직 없습니다.");
+            setSyncError("이 계정에 연결된 로컬페이지가 아직 없습니다.");
           }
         }
       } catch {
         if (isMounted) {
-          setSyncError("연결된 로컬홈 데이터를 불러오지 못했습니다.");
+          setSyncError("연결된 로컬페이지 데이터를 불러오지 못했어요.");
         }
       } finally {
         if (isMounted) setIsLoading(false);
@@ -140,14 +140,14 @@ export function HostVillageStudio() {
       };
 
       if (!response.ok || !payload.data) {
-        throw new Error(payload.error ?? "로컬홈 저장에 실패했습니다.");
+        throw new Error(payload.error ?? "로컬페이지를 저장하지 못했어요.");
       }
 
       saveVillage(payload.data);
-      setSyncMessage("Supabase DB에 저장되었습니다.");
+      setSyncMessage("저장됐어요.");
     } catch (error) {
       setSyncError(
-        error instanceof Error ? error.message : "로컬홈 저장에 실패했습니다.",
+        error instanceof Error ? error.message : "로컬페이지를 저장하지 못했어요.",
       );
     } finally {
       setIsSyncing(false);
@@ -160,7 +160,7 @@ export function HostVillageStudio() {
         <section className="flex min-h-64 items-center justify-center rounded-md border border-slate-200 bg-white p-6">
           <p className="inline-flex items-center gap-2 text-sm font-black text-slate-600">
             <Loader2 className="animate-spin text-[var(--primary)]" size={18} />
-            연결된 로컬홈을 불러오는 중입니다.
+            연결된 로컬페이지를 불러오는 중이에요.
           </p>
         </section>
       </div>
@@ -173,13 +173,13 @@ export function HostVillageStudio() {
         <section className="rounded-md border border-slate-200 bg-white p-6">
           <p className="inline-flex items-center gap-2 text-sm font-black text-[var(--primary)]">
             <MapPin size={18} />
-            로컬홈 정보
+            로컬페이지 정보
           </p>
           <h1 className="mt-3 text-2xl font-black text-slate-950">
-            이 계정에 연결된 로컬홈이 없습니다.
+            이 계정에 연결된 로컬페이지가 없습니다.
           </h1>
           <p className="mt-2 max-w-2xl text-sm leading-6 text-slate-600">
-            새 로컬홈을 만들어 운영을 시작하거나, 기존 로컬홈은 관리자에게 권한
+            새 로컬페이지를 만들어 운영을 시작하거나, 기존 로컬페이지는 관리자에게 권한
             연결을 요청해 주세요.
           </p>
           {syncError ? (
@@ -193,7 +193,7 @@ export function HostVillageStudio() {
               onClick={startNewVillage}
               type="button"
             >
-              새 로컬홈 만들기
+              새 로컬페이지 만들기
             </button>
             <Link
               className="inline-flex h-10 items-center justify-center rounded-md bg-slate-950 px-3 text-sm font-black text-white"
@@ -250,11 +250,11 @@ export function HostVillageStudio() {
           <section className="min-w-0 rounded-md border border-slate-200 bg-white p-5">
             <h2 className="flex items-center gap-2 text-xl font-black text-slate-950">
               <MapPin className="text-[var(--primary)]" size={20} />
-              로컬홈 정보
+              로컬페이지 정보
             </h2>
             <div className="mt-5 grid gap-4">
               <div className="grid gap-4 md:grid-cols-2">
-                <TextField label="로컬홈 이름" value={village.name} onChange={(value) => updateVillage({ name: value })} />
+                <TextField label="로컬페이지 이름" value={village.name} onChange={(value) => updateVillage({ name: value })} />
                 <TextField label="URL slug" value={village.slug} onChange={updateSlug} />
               </div>
               <div className="grid gap-4 md:grid-cols-2">
@@ -510,13 +510,13 @@ function buildVillageChecklist(village: Village) {
     {
       id: "summary",
       label: "소개 문구",
-      helper: "참여자가 로컬홈 성격을 바로 이해할 수 있어야 합니다.",
+      helper: "참여자가 로컬페이지 성격을 바로 이해할 수 있어야 합니다.",
       done: village.summary.length >= 20 && village.description.length >= 40,
     },
     {
       id: "image",
       label: "대표 이미지",
-      helper: "로컬홈의 첫 인상을 만드는 실제 장소 이미지입니다.",
+      helper: "로컬페이지의 첫 인상을 만드는 실제 장소 이미지입니다.",
       done: /^https?:\/\//u.test(village.heroImage),
     },
     {
@@ -528,7 +528,7 @@ function buildVillageChecklist(village: Village) {
     {
       id: "programs",
       label: "프로그램 연결",
-      helper: "공개 프로그램 id 또는 slug를 연결하면 로컬홈 페이지에 표시됩니다.",
+      helper: "공개 프로그램 id 또는 slug를 연결하면 로컬페이지에 표시됩니다.",
       done: village.programIds.length > 0,
     },
   ];
@@ -541,7 +541,7 @@ function createDefaultSections(villageName: string): VillageSection[] {
       type: "story",
       title: `${villageName} 소개`,
       body: `${villageName}의 프로그램, 공지, 후기 흐름을 한곳에서 관리합니다.`,
-      items: ["로컬홈 소개", "프로그램 안내", "후기 수집"],
+      items: ["로컬페이지 소개", "프로그램 안내", "후기 수집"],
     },
   ];
 }
@@ -549,7 +549,7 @@ function createDefaultSections(villageName: string): VillageSection[] {
 function createNewVillageDraft(): Village {
   const now = new Date().toISOString();
   const suffix = Date.now().toString(36);
-  const name = "새 로컬홈";
+  const name = "새 로컬페이지";
 
   return {
     id: `village-${suffix}`,
@@ -557,10 +557,10 @@ function createNewVillageDraft(): Village {
     name,
     region: "전국",
     city: "로컬",
-    tagline: "우리 로컬홈의 프로그램과 소식을 소개합니다.",
-    summary: "로컬홈 소개, 프로그램 안내, 참여 후기와 공지를 한곳에서 관리합니다.",
+    tagline: "우리 로컬페이지의 프로그램과 소식을 소개합니다.",
+    summary: "로컬페이지 소개, 프로그램 안내, 참여 후기와 공지를 한곳에서 관리합니다.",
     description:
-      "운영자가 직접 로컬홈 소개, 프로그램, 문의 채널, 활동 기록을 구성할 수 있는 공개 페이지입니다.",
+      "운영자가 직접 로컬페이지 소개, 프로그램, 문의 채널, 활동 기록을 구성할 수 있는 공개 페이지입니다.",
     heroImage:
       "https://images.unsplash.com/photo-1500534314209-a25ddb2bd429?auto=format&fit=crop&w=1600&q=82",
     logoText: "LH",

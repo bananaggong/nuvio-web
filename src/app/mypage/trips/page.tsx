@@ -3,7 +3,7 @@ import { MypageTrips } from "@/components/mypage";
 import { createSeoMetadata } from "@/lib/seo";
 
 export const metadata: Metadata = createSeoMetadata({
-  title: "내 여행",
+  title: "내 여행 프로그램",
   noIndex: true,
   path: "/mypage/trips",
 });

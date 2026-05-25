@@ -123,7 +123,7 @@ export function ProgramActions({
         type="button"
       >
         <Bookmark size={17} />
-        저장
+        {state.bookmarks[id] ? "저장됨" : "저장하기"}
       </button>
       <button
         className={`inline-flex h-11 items-center justify-center gap-2 rounded-md border px-3 text-sm font-black disabled:cursor-wait disabled:opacity-70 ${
@@ -136,7 +136,7 @@ export function ProgramActions({
         type="button"
       >
         <Bell size={17} />
-        알림
+        {state.alerts[id] ? "알림 켜짐" : "알림 켜기"}
       </button>
       <button
         className={`inline-flex h-11 items-center justify-center gap-2 rounded-md border px-3 text-sm font-black disabled:cursor-wait disabled:opacity-70 ${
@@ -149,7 +149,7 @@ export function ProgramActions({
         type="button"
       >
         <CheckCircle2 size={17} />
-        관심 표시
+        관심 표시하기
       </button>
       <button
         className="inline-flex h-11 items-center justify-center gap-2 rounded-md border border-slate-200 bg-white px-3 text-sm font-black text-slate-700"
@@ -157,7 +157,7 @@ export function ProgramActions({
         type="button"
       >
         <Share2 size={17} />
-        {copied ? "복사됨" : "공유"}
+        {copied ? "복사됨" : "공유하기"}
       </button>
     </div>
   );

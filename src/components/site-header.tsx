@@ -15,8 +15,8 @@ import {
 import { useEffect, useRef, useState, type RefObject } from "react";
 
 const navItems = [
-  { href: "/magazine", label: "매거진", match: ["/magazine"] },
-  { href: "/villages", label: "채널", match: ["/villages"] },
+  { href: "/magazine", label: "소식지", match: ["/magazine"] },
+  { href: "/villages", label: "로컬채널", match: ["/villages"] },
 ];
 
 type HeaderSession =
@@ -129,7 +129,7 @@ export function SiteHeader() {
               className="size-[0.903vw] min-h-[11px] min-w-[11px] text-[#FF9A3D]"
               strokeWidth={2}
             />
-            어디로 떠날까요?
+            새로운 여행을 떠나볼까요?
           </Link>
 
           <nav className="flex items-center gap-[1.181vw]">
@@ -174,7 +174,7 @@ export function SiteHeader() {
                 className="size-[13px] text-[#FF9A3D]"
                 strokeWidth={2}
               />
-              어디로 떠날까요?
+              새로운 여행을 떠나볼까요?
             </Link>
             {navItems.map((item) => (
               <MobileLink
@@ -250,7 +250,7 @@ function DesktopAuthAction({
         </Link>
         <button
           aria-expanded={menuOpen}
-          aria-label="프로필 메뉴"
+          aria-label="마이페이지 메뉴"
           className="inline-flex size-[2.153vw] min-h-[26px] min-w-[26px] items-center justify-center transition-opacity hover:opacity-75"
           onClick={onToggleMenu}
           type="button"
@@ -318,14 +318,14 @@ function ProfileMenu({
           className="inline-flex h-[1.736vw] min-h-[25px] items-center justify-center rounded-[0.278vw] border border-[#D9D9D9] bg-[#F9F9F9] px-[0.833vw] text-[0.694vw] font-medium leading-[1.253] text-[#6D7A8A] transition-colors hover:border-[#FF9A3D] hover:text-[#FF9A3D] max-[1100px]:text-[10px]"
           href={signedIn ? "/mypage" : "/login?next=/mypage"}
         >
-          프로필 이동
+          마이페이지
         </Link>
       </div>
 
       <div className="mt-[1.111vw] grid grid-cols-3 gap-[0.972vw]">
-        <ProfileMenuMetric icon={CalendarDays} label="예약 일정" />
-        <ProfileMenuMetric icon={Bookmark} label="북마크" />
-        <ProfileMenuMetric icon={MessageCircle} label="메세지" />
+        <ProfileMenuMetric icon={CalendarDays} label="내 여행" />
+        <ProfileMenuMetric icon={Bookmark} label="저장" />
+        <ProfileMenuMetric icon={MessageCircle} label="메시지" />
       </div>
 
       <div className="mt-[1.111vw] flex items-center justify-between text-[0.833vw] leading-[1.253] max-[1100px]:text-xs">
@@ -424,7 +424,7 @@ function MobileAuthAction({
         href="/mypage"
         onClick={onSelect}
       >
-        내 프로필
+        마이페이지
         <span className="grid size-9 place-items-center rounded-full border border-[#FF9A3D] text-[#FF9A3D]">
           <Image
             alt=""

@@ -175,7 +175,7 @@ export function LoginPanel({
     event.preventDefault();
 
     if (!email.trim() || !password) {
-      setErrorMessage("이메일과 비밀번호를 입력해주세요.");
+      setErrorMessage("이메일과 비밀번호를 입력해 주세요.");
       return;
     }
 
@@ -217,13 +217,13 @@ export function LoginPanel({
 
     try {
       const response = await fetch("/api/auth/logout", { method: "POST" });
-      if (!response.ok) throw new Error("로그아웃에 실패했습니다.");
+      if (!response.ok) throw new Error("로그아웃하지 못했어요.");
       setAuthProfile(null);
-      setMessage("로그아웃되었습니다.");
+      setMessage("로그아웃됐어요.");
       router.refresh();
     } catch (error) {
       setErrorMessage(
-        error instanceof Error ? error.message : "로그아웃에 실패했습니다.",
+        error instanceof Error ? error.message : "로그아웃하지 못했어요.",
       );
     } finally {
       setLogoutLoading(false);
@@ -279,7 +279,7 @@ export function LoginPanel({
                 disabled={loading}
                 type="submit"
               >
-                {loading ? "로그인 중..." : "로그인"}
+                {loading ? "로그인 중..." : "로그인하기"}
               </button>
             </form>
 
@@ -316,12 +316,12 @@ export function LoginPanel({
               </Link>
             </p>
             <p className="mt-2 text-[13px] font-medium text-[#888]">
-              프로그램을 운영하나요?{" "}
+              프로그램을 운영하고 있나요?{" "}
               <Link
                 className="font-semibold text-[#378ADD] hover:underline"
                 href="/login?intent=host&next=/host"
               >
-                호스트센터로 시작하기
+                호스트로 시작하기
               </Link>
             </p>
           </div>
@@ -337,15 +337,15 @@ export function LoginPanel({
         <h1 className="text-center text-[26px] font-bold leading-snug text-[#111111]">
           {intent === "host" ? (
             <>
-              로컬홈 운영을
+              로컬페이지 운영을
               <br />
-              누비오에서 시작하세요
+              누비오에서 시작해보세요
             </>
           ) : (
             <>
-              누비오로 찾는
+              새로운 라이프스타일,
               <br />
-              가벼운 로컬 여정
+              여기서 시작해봐요
             </>
           )}
         </h1>
@@ -356,7 +356,7 @@ export function LoginPanel({
               {authProfile.displayName || authProfile.email}님으로 이미 로그인되어 있어요.
             </p>
             <p className="mt-0.5 text-[12px] text-amber-700">
-              이어서 사용하거나, 다른 계정으로 로그인하려면 먼저 로그아웃하세요.
+              이어서 사용하거나, 다른 계정으로 로그인하려면 먼저 로그아웃해 주세요.
             </p>
             <div className="mt-3 flex gap-2">
               <button
@@ -381,6 +381,9 @@ export function LoginPanel({
         ) : null}
 
         <div className="mt-10 w-full space-y-3">
+          <p className="text-center text-[13px] font-semibold text-[#888]">
+            간편 로그인
+          </p>
           {socialOrder.map((providerKey) => (
             <SocialButton
               disabled={Boolean(pendingProvider)}
@@ -433,16 +436,16 @@ export function LoginPanel({
               className="font-semibold text-[#378ADD] hover:underline"
               href={signupPath}
             >
-              회원가입
+              가입하기
             </Link>
           </p>
           <p className="mt-2 text-[13px] font-medium text-[#888]">
-            프로그램을 운영하나요?{" "}
+            프로그램을 운영하고 있나요?{" "}
             <Link
               className="font-semibold text-[#378ADD] hover:underline"
               href="/login?intent=host&next=/host"
             >
-              호스트센터로 시작하기
+              호스트로 시작하기
             </Link>
           </p>
         </div>

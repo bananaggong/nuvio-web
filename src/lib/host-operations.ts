@@ -160,7 +160,7 @@ export const seedMessageTemplates: MessageTemplate[] = [
     id: "msg-accepted",
     name: "합격 안내",
     trigger: "합격 처리 직후",
-    body: "{name}님, {program} 참여자로 선정되었습니다. 결제와 사전 서명을 오늘 안에 완료해주세요.",
+    body: "{name}님, {program} 참여자로 선정됐어요. 결제와 사전 서명을 오늘 안에 완료해 주세요.",
   },
   {
     id: "msg-reminder",

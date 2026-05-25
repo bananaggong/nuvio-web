@@ -139,8 +139,8 @@ export type ReportProjectSummary = {
 };
 
 export const operationFieldGroupLabels: Record<OperationFieldGroup, string> = {
-  organization_profile: "로컬홈 프로필",
-  operation_project: "운영 프로젝트",
+  organization_profile: "로컬페이지 프로필",
+  operation_project: "운영 폴더",
   budget_config: "예산 구조",
   expense_event: "지출 이벤트",
   evidence_item: "증빙 항목",
@@ -175,7 +175,7 @@ export const reportSectionLabels: Record<ReportSectionId, string> = {
   evidence: "증빙 준비",
   expenses: "지출 이벤트",
   nextActions: "다음 조치",
-  overview: "운영 프로젝트 개요",
+  overview: "운영 폴더 개요",
   risks: "리스크",
 };
 
@@ -263,11 +263,11 @@ export const defaultEvidenceRules: EvidenceRule[] = [
 export const seedReportProjects: ReportProject[] = [
   {
     id: "operation-boseong-2026",
-    title: "보성 로컬홈 2026 운영 프로젝트",
+    title: "보성 로컬페이지 2026 운영 폴더",
     villageId: "33333333-4444-4555-8666-777777777777",
     villageName: "전체차LAB",
     villageSlug: "boseong",
-    agencyName: "보성 로컬홈 운영팀",
+    agencyName: "보성 로컬페이지 운영팀",
     imageUrl: "/boseong/hero-illustration.png",
     programId: "",
     programTitle: "전체 프로그램",
@@ -358,7 +358,7 @@ export const seedReportProjects: ReportProject[] = [
         relatedProgramTitle: "전체 프로그램",
         participantCount: 6,
         photosCount: 12,
-        description: "다음 모집에 사용할 로컬홈 대표 이미지와 숏폼을 제작했습니다.",
+        description: "다음 모집에 사용할 로컬페이지 대표 이미지와 숏폼을 제작했습니다.",
       },
     ],
     manualFields: [
@@ -409,9 +409,9 @@ export function mergeReportProjects(
 export function createReportProject(): ReportProject {
   return {
     id: `operation-${Date.now()}`,
-    title: "새 운영 프로젝트",
+    title: "새 운영 폴더",
     villageId: "",
-    villageName: "로컬홈",
+    villageName: "로컬페이지",
     villageSlug: "",
     agencyName: "운영 조직명",
     imageUrl: "",
@@ -622,9 +622,9 @@ export function buildReportChecklist(
   return [
     {
       id: "operation_project",
-      label: "운영 프로젝트 설정",
+      label: "운영 폴더 설정",
       done: Boolean(project.title && project.villageName && project.periodLabel),
-      helper: "로컬홈, 운영 기간, 담당자 정보가 필요합니다.",
+      helper: "로컬페이지, 운영 기간, 담당자 정보가 필요합니다.",
     },
     {
       id: "budget_config",
@@ -706,7 +706,7 @@ export function buildGeneratedReportSections(
     overview: {
       id: "overview",
       title: reportSectionLabels.overview,
-      body: `${project.title}는 ${project.periodLabel} 동안 ${project.villageName}이 운영하는 로컬홈 프로젝트입니다. 공개 프로그램과 활동, 지출, 증빙을 한 곳에 모아 마감 준비율 ${summary.readiness}% 상태로 관리합니다.`,
+      body: `${project.title}는 ${project.periodLabel} 동안 ${project.villageName}이 운영하는 로컬페이지 폴더입니다. 공개 프로그램과 활동, 지출, 증빙을 한 곳에 모아 마감 준비율 ${summary.readiness}% 상태로 관리합니다.`,
     },
     risks: {
       id: "risks",
@@ -732,7 +732,7 @@ export function buildReportMarkdown(
   return [
     `# ${project.title}`,
     "",
-    `- 로컬홈: ${project.villageName}`,
+    `- 로컬페이지: ${project.villageName}`,
     `- 운영 조직: ${project.agencyName}`,
     `- 연결 프로그램: ${project.connectedProgramTitles.join(", ") || "전체 프로그램"}`,
     `- 운영 기간: ${project.periodLabel}`,
@@ -831,13 +831,13 @@ export function normalizeReportProjectModel(input: unknown): ReportProject {
     programId,
     sections: normalizeSections(value.sections),
     status: asReportStatus(value.status),
-    title: asString(value.title) || asString(value.name) || "운영 프로젝트",
+    title: asString(value.title) || asString(value.name) || "운영 폴더",
     updatedAt: asString(value.updatedAt) || new Date().toISOString(),
     villageId: asString(value.villageId),
     villageName:
       asString(value.villageName) ||
       asString(value.organizationName) ||
-      "로컬홈",
+      "로컬페이지",
     villageSlug: asString(value.villageSlug),
   };
 }

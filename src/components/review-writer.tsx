@@ -28,7 +28,7 @@ export function ReviewWriter() {
       const result = (await response.json()) as { error?: string };
 
       if (!response.ok) {
-        throw new Error(result.error ?? "후기를 저장하지 못했습니다.");
+        throw new Error(result.error ?? "후기를 저장하지 못했어요.");
       }
 
       setSubmitted(true);
@@ -37,7 +37,7 @@ export function ReviewWriter() {
       setErrorMessage(
         error instanceof Error
           ? error.message
-          : "후기 저장에 실패했습니다. 잠시 후 다시 시도해 주세요.",
+          : "잠깐 문제가 생겼어요. 다시 시도해 주세요.",
       );
     } finally {
       setIsSubmitting(false);
@@ -48,13 +48,12 @@ export function ReviewWriter() {
     <div className="mx-auto max-w-2xl px-5 py-8 md:px-8">
       <h1 className="text-3xl font-black text-slate-950">후기 작성</h1>
       <p className="mt-2 text-sm text-slate-500">
-        작성한 후기는 운영 DB에 검토 대기 상태로 저장됩니다. 운영자가 확인한
-        뒤 공개할 수 있습니다.
+        작성한 후기는 검토 대기 상태로 저장돼요. 운영자가 확인한 뒤 공개할 수 있어요.
       </p>
 
       {submitted ? (
         <div className="mt-5 rounded-md border border-teal-200 bg-teal-50 p-4 text-sm font-bold text-teal-800">
-          후기가 접수되었습니다. 검토 후 공개 여부가 결정됩니다.
+          후기가 접수됐어요. 검토 후 공개 여부가 결정돼요.
         </div>
       ) : null}
       {errorMessage ? (
@@ -111,7 +110,7 @@ export function ReviewWriter() {
           type="submit"
         >
           {isSubmitting ? <Loader2 className="animate-spin" size={18} /> : <Send size={18} />}
-          후기 접수
+          후기 접수하기
         </button>
       </form>
       <Link

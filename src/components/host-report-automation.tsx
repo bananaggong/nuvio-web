@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import Link from "next/link";
 import {
@@ -455,7 +455,7 @@ export function HostReportAutomation() {
                     value={selectedProject.title}
                   />
                   <TextInput
-                    label="로컬홈명"
+                    label="로컬페이지명"
                     onChange={(value) => updateProject({ villageName: value })}
                     value={selectedProject.villageName}
                   />

@@ -107,11 +107,11 @@ export function SignupPanel() {
       }
 
       setMessage(
-        "회원가입 요청이 접수되었습니다. 이메일 확인 후 같은 계정으로 참여와 운영 기능을 사용할 수 있어요.",
+        "가입 요청이 접수됐어요. 이메일을 확인하면 같은 계정으로 참여와 운영 기능을 사용할 수 있어요.",
       );
     } catch (error) {
       setErrorMessage(
-        error instanceof Error ? error.message : "회원가입을 완료하지 못했어요.",
+        error instanceof Error ? error.message : "가입을 완료하지 못했어요.",
       );
     } finally {
       setLoading(false);
@@ -132,7 +132,7 @@ export function SignupPanel() {
       <AuthHeader backHref={loginPath} />
       <div className="mx-auto flex h-[calc(100vh-3.5rem)] max-w-sm flex-1 flex-col px-6 py-8 lg:py-16">
         <h2 className="text-center text-[22px] font-bold leading-snug text-[#111111]">
-          이메일로 회원가입
+          이메일로 가입하기
         </h2>
 
         <div className="mt-8 flex flex-col gap-6">
@@ -187,12 +187,12 @@ export function SignupPanel() {
               disabled={loading}
               type="submit"
             >
-              {loading ? "가입 중..." : "회원가입 계속"}
+              {loading ? "가입 중..." : "가입 계속하기"}
             </button>
           </form>
 
           <p className="text-center text-[13px] font-medium leading-6 text-[#888]">
-            다음 단계에서 이름, 전화번호, 주소를 입력하면 가입이 완료됩니다.
+            다음 단계에서 이름, 전화번호, 주소를 입력하면 가입이 완료돼요.
           </p>
         </div>
 
@@ -250,7 +250,7 @@ function SignupAgreementScreen({
           <h2 className="text-center text-[24px] font-semibold leading-[1.35] text-[#111111]">
             원활한 서비스 이용을 위해
             <br />
-            약관에 동의해주세요.
+            약관에 동의해 주세요.
           </h2>
         </div>
 

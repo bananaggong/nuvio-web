@@ -3,7 +3,7 @@ import { MypageMemberInformation } from "@/components/mypage";
 import { createSeoMetadata } from "@/lib/seo";
 
 export const metadata: Metadata = createSeoMetadata({
-  title: "회원정보",
+  title: "회원 정보",
   noIndex: true,
   path: "/mypage/member-information",
 });

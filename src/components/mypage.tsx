@@ -234,23 +234,28 @@ const sideMenuItems: Array<{
   label: string;
   section: MypageSection;
 }> = [
-  { href: "/mypage/trips", label: "내 여행", icon: CalendarDays, section: "trips" },
+  {
+    href: "/mypage/trips",
+    label: "내 여행 프로그램",
+    icon: CalendarDays,
+    section: "trips",
+  },
   { href: "/mypage/reviews", label: "후기", icon: Star, section: "reviews" },
   {
     href: "/mypage/bookmarks",
-    label: "북마크",
+    label: "저장",
     icon: Bookmark,
     section: "bookmarks",
   },
   {
     href: "/mypage/messages",
-    label: "메세지함",
+    label: "메시지함",
     icon: MessageCircle,
     section: "messages",
   },
   {
     href: "/mypage/member-information",
-    label: "회원정보",
+    label: "회원 정보",
     icon: UserRound,
     section: "member",
   },
@@ -392,13 +397,13 @@ function MypageOverview({ context }: { context: MypageContext }) {
     <>
       <header className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <h1 className="text-[24px] font-semibold leading-tight tracking-normal text-[#4B3328]">
-          {context.profileName}님, 안녕하세요.
+          {context.profileName} 누비어님, 안녕하세요.
         </h1>
         <Link
           className="inline-flex h-[30px] w-fit items-center justify-center rounded-[4px] border border-[#d9d9d9] px-4 text-[12px] font-medium text-[#6B5145] transition hover:border-[#ffa143] hover:text-[#f7983a]"
           href={context.signedIn ? "/mypage/member-information" : "/login"}
         >
-          회원정보 수정
+          회원 정보 수정하기
         </Link>
       </header>
 
@@ -430,7 +435,7 @@ function MypageHomeContent({ context }: { context: MypageContext }) {
 
   return (
     <>
-      <DashboardSection heading="내 여행 목록" href="/mypage/trips">
+      <DashboardSection heading="내 여행 프로그램" href="/mypage/trips">
         <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
           {tripSlots.map((slot, index) => (
             <TripMiniCard
@@ -443,7 +448,7 @@ function MypageHomeContent({ context }: { context: MypageContext }) {
         </div>
       </DashboardSection>
 
-      <DashboardSection className="mt-[56px]" heading="최근 본 여행" href="/programs">
+      <DashboardSection className="mt-[56px]" heading="최근 본 프로그램" href="/programs">
         {context.recentlyViewedPrograms.length > 0 ? (
           <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
             {context.recentlyViewedPrograms.slice(0, 4).map((program) => (
@@ -474,14 +479,14 @@ function TripsContent({ context }: { context: MypageContext }) {
     <section>
       <PageTitle
         eyebrow="MY TRIP"
-        title="내 여행"
+        title="내 여행 프로그램"
         trailing={`${context.applications.length}건`}
       />
       <SegmentedTabs
         active={tab}
         items={[
-          { key: "planned", label: "여행 예정" },
-          { key: "completed", label: "지난 여행" },
+          { key: "planned", label: "예정된 여행" },
+          { key: "completed", label: "여행완료" },
           { key: "cancelled", label: "취소된 여행" },
         ]}
         onChange={setTab}
@@ -490,24 +495,39 @@ function TripsContent({ context }: { context: MypageContext }) {
         {context.loading ? (
           <ListSkeleton count={3} />
         ) : filteredApplications.length > 0 ? (
-          filteredApplications.map((application) => (
-            <TripDetailCard
-              application={application}
-              key={application.id}
-              program={findProgramForApplication(application, context.publicPrograms)}
-            />
-          ))
+          filteredApplications.map((application) => {
+            const reviewAction =
+              tab === "completed"
+                ? getCompletedTripReviewAction(application)
+                : undefined;
+
+            return (
+              <TripDetailCard
+                actionHref={reviewAction?.href}
+                actionLabel={reviewAction?.label}
+                application={application}
+                key={application.id}
+                program={findProgramForApplication(application, context.publicPrograms)}
+              />
+            );
+          })
         ) : (
           <EmptyState
             icon={CalendarDays}
-            title="표시할 여행이 없어요"
+            title="마음에 드는 프로그램을 찾아보세요"
             actionHref="/programs"
-            actionLabel="여행 둘러보기"
+            actionLabel="프로그램 찾아보기"
           />
         )}
       </div>
     </section>
   );
+}
+
+function getCompletedTripReviewAction(application: HostApplication) {
+  return application.reviewSubmitted
+    ? { href: "/mypage/reviews", label: "후기 보기" }
+    : { href: "/reviews/new", label: "후기 작성하기" };
 }
 
 function ReviewsContent({ context }: { context: MypageContext }) {
@@ -542,7 +562,7 @@ function ReviewsContent({ context }: { context: MypageContext }) {
             writableTrips.map((application) => (
               <TripDetailCard
                 actionHref="/reviews/new"
-                actionLabel="후기 작성"
+                actionLabel="후기 작성하기"
                 application={application}
                 key={application.id}
                 program={findProgramForApplication(application, context.publicPrograms)}
@@ -551,8 +571,8 @@ function ReviewsContent({ context }: { context: MypageContext }) {
           ) : (
             <EmptyState
               icon={Star}
-              title="작성 가능한 후기가 없어요"
-              body="여행이 완료되면 이곳에서 후기를 작성할 수 있어요."
+              title="여행을 마치면 후기를 작성할 수 있어요"
+              body="완료된 여행 프로그램이 생기면 이곳에 보여요."
             />
           )
         ) : matchedReviews.length > 0 || writtenTrips.length > 0 ? (
@@ -574,7 +594,7 @@ function ReviewsContent({ context }: { context: MypageContext }) {
               : null}
           </>
         ) : (
-          <EmptyState icon={Star} title="아직 작성한 후기가 없어요" />
+          <EmptyState icon={Star} title="후기를 쓰면 이곳에서 다시 볼 수 있어요" />
         )}
       </div>
     </section>
@@ -582,10 +602,13 @@ function ReviewsContent({ context }: { context: MypageContext }) {
 }
 
 function BookmarksContent({ context }: { context: MypageContext }) {
-  const [filter, setFilter] = useState<"all" | "open" | "closed">("all");
-  const filteredPrograms = context.bookmarkedPrograms.filter((program) => {
-    if (filter === "open") return program.status === "open" || program.status === "upcoming";
-    if (filter === "closed") return program.status === "closed" || program.status === "earlyClosed";
+  const [filter, setFilter] = useState<"all" | "open" | "upcoming">("all");
+  const visibleSavedPrograms = context.bookmarkedPrograms.filter(
+    (program) => program.status !== "closed" && program.status !== "earlyClosed",
+  );
+  const filteredPrograms = visibleSavedPrograms.filter((program) => {
+    if (filter === "open") return program.status === "open";
+    if (filter === "upcoming") return program.status === "upcoming";
     return true;
   });
 
@@ -593,15 +616,15 @@ function BookmarksContent({ context }: { context: MypageContext }) {
     <section>
       <PageTitle
         eyebrow="BOOKMARK"
-        title="북마크"
-        trailing={`${context.bookmarkedPrograms.length}개`}
+        title="저장"
+        trailing={`${visibleSavedPrograms.length}개`}
       />
       <SegmentedTabs
         active={filter}
         items={[
           { key: "all", label: "전체" },
-          { key: "open", label: "모집중" },
-          { key: "closed", label: "마감" },
+          { key: "open", label: "신청 가능" },
+          { key: "upcoming", label: "오픈 예정" },
         ]}
         onChange={setFilter}
       />
@@ -616,9 +639,9 @@ function BookmarksContent({ context }: { context: MypageContext }) {
           <div className="sm:col-span-2 xl:col-span-3">
             <EmptyState
               icon={Bookmark}
-              title="북마크한 여행이 없어요"
+              title="관심 있는 프로그램을 지금 저장해보세요"
               actionHref="/programs"
-              actionLabel="여행 찾기"
+              actionLabel="프로그램 찾아보기"
             />
           </div>
         )}
@@ -632,7 +655,7 @@ function MessagesContent({ context }: { context: MypageContext }) {
     <section>
       <PageTitle
         eyebrow="MESSAGE"
-        title="메세지함"
+        title="메시지함"
         trailing={`${context.notifications.length}개`}
       />
       <div className="mt-6 grid gap-3">
@@ -653,7 +676,7 @@ function MessagesContent({ context }: { context: MypageContext }) {
             </Link>
           ))
         ) : (
-          <EmptyState icon={MessageCircle} title="아직 받은 메세지가 없어요" />
+          <EmptyState icon={MessageCircle} title="새 메시지가 오면 이곳에서 확인할 수 있어요" />
         )}
       </div>
     </section>
@@ -802,7 +825,7 @@ function MemberInformationForm({
         setAddressSearchError(
           error instanceof Error
             ? error.message
-            : "주소 검색 서비스를 불러오지 못했습니다.",
+            : "주소 검색 서비스를 불러오지 못했어요.",
         );
         setStatus("");
       }
@@ -866,7 +889,7 @@ function MemberInformationForm({
         error?: string;
       };
       if (!response.ok || !payload.data) {
-        throw new Error(payload.error ?? "회원정보를 저장하지 못했습니다.");
+        throw new Error(payload.error ?? "회원 정보를 저장하지 못했어요.");
       }
       const updatedProfile = payload.data;
       const updatedEmailParts = splitEmailAddress(updatedProfile.contactEmail ?? "");
@@ -897,10 +920,10 @@ function MemberInformationForm({
       }));
       setEditMode(false);
       window.history.replaceState(null, "", "/mypage/member-information");
-      setStatus("저장되었습니다.");
+      setStatus("저장됐어요.");
     } catch (error) {
       setStatus(
-        error instanceof Error ? error.message : "회원정보를 저장하지 못했습니다.",
+        error instanceof Error ? error.message : "회원 정보를 저장하지 못했어요.",
       );
     } finally {
       setSaving(false);
@@ -1373,7 +1396,7 @@ function MemberInformationReadOnly({
           href="/mypage/member-information?edit=1"
           onClick={onEdit}
         >
-          회원정보 수정
+          회원 정보 수정하기
         </Link>
       </div>
     </>
@@ -1391,7 +1414,7 @@ function PointsContent() {
         </div>
         <div className="mt-6">
           <SectionHeader title="포인트 내역" />
-          <EmptyState icon={WalletCards} title="아직 포인트 내역이 없어요" compact />
+          <EmptyState icon={WalletCards} title="포인트가 쌓이면 이곳에서 확인할 수 있어요" compact />
         </div>
       </div>
     </section>
@@ -1414,7 +1437,7 @@ function CouponsContent() {
             />
             <button
               className="h-11 rounded-[4px] bg-[#f7983a] px-5 text-[14px] font-semibold text-white"
-              onClick={() => setMessage("등록 가능한 쿠폰이 아직 없습니다.")}
+              onClick={() => setMessage("등록 가능한 쿠폰이 생기면 알려드릴게요.")}
               type="button"
             >
               등록
@@ -1422,7 +1445,7 @@ function CouponsContent() {
           </div>
           <p className="mt-3 min-h-5 text-[13px] text-[#8F7A6C]">{message}</p>
         </div>
-        <EmptyState icon={Ticket} title="보유한 쿠폰이 없어요" />
+        <EmptyState icon={Ticket} title="쿠폰이 생기면 이곳에서 확인할 수 있어요" />
       </div>
     </section>
   );
@@ -1475,10 +1498,10 @@ function ProfileSummaryCard({
         </div>
 
         <div className="grid flex-1 grid-cols-2 gap-y-5 sm:grid-cols-4">
-          <SummaryMetric icon={CalendarDays} label="예약 일정" value={tripCount} />
-          <SummaryMetric icon={Bookmark} label="북마크" value={bookmarkCount} />
+          <SummaryMetric icon={CalendarDays} label="내 여행" value={tripCount} />
+          <SummaryMetric icon={Bookmark} label="저장" value={bookmarkCount} />
           <SummaryMetric icon={Star} label="후기" value={reviewCount} />
-          <SummaryMetric icon={MessageCircle} label="메세지" value={messageCount} />
+          <SummaryMetric icon={MessageCircle} label="메시지" value={messageCount} />
         </div>
       </div>
     </section>
@@ -1719,7 +1742,7 @@ function TripMiniCard({
           여행예정 00/00
         </p>
         <p className="mt-1 line-clamp-2 min-h-[44px] text-[16px] font-semibold leading-[22px] text-[#c7bbb4]">
-          예약한 여행이 없어요
+          마음에 드는 프로그램을 찾아보세요
         </p>
       </article>
     );
@@ -1946,7 +1969,7 @@ function RecentEmptyState() {
           width={82}
         />
         <p className="mt-5 text-[16px] font-medium text-[#8F7A6C]">
-          아직 둘러본 여행이 없어요
+          관심 있는 프로그램을 둘러보세요
         </p>
       </div>
     </div>
@@ -2383,7 +2406,7 @@ function loadKakaoPostcodeScript() {
           "error",
           () => {
             kakaoPostcodeScriptPromise = null;
-            reject(new Error("주소 검색 서비스를 불러오지 못했습니다."));
+            reject(new Error("주소 검색 서비스를 불러오지 못했어요."));
           },
           { once: true },
         );
@@ -2394,7 +2417,7 @@ function loadKakaoPostcodeScript() {
         const source = sources[index];
         if (!source) {
           kakaoPostcodeScriptPromise = null;
-          reject(new Error("주소 검색 서비스를 불러오지 못했습니다."));
+          reject(new Error("주소 검색 서비스를 불러오지 못했어요."));
           return;
         }
 
@@ -2445,7 +2468,7 @@ function waitForKakaoPostcodeConstructor(timeoutMs = 3000) {
       }
 
       if (Date.now() - startedAt >= timeoutMs) {
-        reject(new Error("주소 검색 서비스를 불러오지 못했습니다."));
+        reject(new Error("주소 검색 서비스를 불러오지 못했어요."));
         return;
       }
 

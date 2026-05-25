@@ -10,11 +10,11 @@ export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
 
 export const metadata: Metadata = createSeoMetadata({
-  title: "로컬 홈",
+  title: "로컬채널",
   description:
-    "누비오에 등록된 청년마을, 로컬 체류지, 워케이션 마을의 공식 홈을 모아봅니다.",
+    "누비오에 등록된 청년마을, 로컬 체류지, 워케이션 마을의 로컬페이지를 모아봅니다.",
   path: "/villages",
-  keywords: ["로컬홈", "청년마을", "워케이션 마을", "로컬 체류지"],
+  keywords: ["로컬페이지", "청년마을", "워케이션 마을", "로컬 체류지"],
 });
 
 export default async function VillagesPage() {
@@ -50,7 +50,7 @@ export default async function VillagesPage() {
                 {village.summary}
               </p>
               <span className="mt-5 inline-flex items-center gap-2 text-sm font-black text-slate-900 group-hover:text-[var(--primary)]">
-                로컬 홈 열기
+                로컬페이지 열기
                 <ArrowRight size={16} />
               </span>
             </div>

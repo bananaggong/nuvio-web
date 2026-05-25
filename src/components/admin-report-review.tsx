@@ -85,10 +85,10 @@ export function AdminReportReview() {
         <div className="mt-4 grid gap-5 xl:grid-cols-[minmax(0,1fr)_360px]">
           <div>
             <h1 className="max-w-4xl text-2xl font-black leading-tight text-slate-950 sm:text-3xl">
-              로컬홈별 운영 폴더의 마감 준비와 증빙 리스크를 검토합니다.
+              로컬페이지별 운영 폴더의 마감 준비와 증빙 리스크를 검토합니다.
             </h1>
             <p className="mt-3 max-w-3xl text-sm leading-7 text-slate-600">
-              관리자는 템플릿을 강제하기보다 각 로컬홈이 직접 구성한 예산,
+              관리자는 템플릿을 강제하기보다 각 로컬페이지가 직접 구성한 예산,
               지출, 증빙, 활동 필드를 기준으로 누락과 위험 신호를 확인합니다.
             </p>
           </div>
@@ -140,7 +140,7 @@ export function AdminReportReview() {
           <table className="w-full min-w-[920px] text-left text-sm">
             <thead className="bg-slate-50 text-xs font-black uppercase tracking-[0.08em] text-slate-500">
               <tr>
-                <th className="px-5 py-3">로컬홈 / 폴더</th>
+                <th className="px-5 py-3">로컬페이지 / 폴더</th>
                 <th className="px-5 py-3">상태</th>
                 <th className="px-5 py-3">준비율</th>
                 <th className="px-5 py-3">증빙</th>

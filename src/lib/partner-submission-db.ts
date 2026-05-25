@@ -75,13 +75,13 @@ export function normalizePartnerSubmissionInput(
     villageName: cleanText(value.villageName, 160),
   };
 
-  if (!normalized.villageName) throw new Error("로컬홈 이름을 입력해 주세요.");
+  if (!normalized.villageName) throw new Error("로컬페이지 이름을 입력해 주세요.");
   if (!normalized.organization) throw new Error("운영 주체를 입력해 주세요.");
   if (!normalized.manager) throw new Error("담당자명을 입력해 주세요.");
   if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/u.test(normalized.email)) {
     throw new Error("연락 가능한 이메일을 입력해 주세요.");
   }
-  if (!normalized.description) throw new Error("로컬홈 소개를 입력해 주세요.");
+  if (!normalized.description) throw new Error("로컬페이지 소개를 입력해 주세요.");
   if (!normalized.plannedPrograms) {
     throw new Error("운영 예정 프로그램을 입력해 주세요.");
   }

@@ -27,7 +27,7 @@ export const runtime = "nodejs";
 export const metadata: Metadata = {
   title: "호스트센터 | 누비오",
   description:
-    "누비오 호스트가 로컬홈, 프로그램, 신청자, 메시지, 정산 자료를 운영하는 시작 화면입니다.",
+    "누비오 호스트가 로컬페이지, 프로그램, 신청자, 메시지, 정산 자료를 운영하는 시작 화면입니다.",
 };
 
 const operations = [
@@ -92,16 +92,16 @@ export default async function HostPage() {
                 호스트센터
               </p>
               <h1 className="mt-3 max-w-3xl text-3xl font-black leading-tight tracking-tight text-slate-950">
-                내 계정에 연결된 로컬홈과 운영 업무를 시작합니다.
+                내 계정에 연결된 로컬페이지와 운영 업무를 시작해요.
               </h1>
               <p className="mt-3 max-w-3xl text-sm leading-7 text-slate-600">
-                누비오의 호스트 권한은 계정 전체 권한이 아니라 로컬홈 단위로 연결됩니다.
-                새 운영자는 로컬홈을 직접 만들고, 기존 로컬홈은 권한이 연결된 계정에서
-                운영 화면이 열리도록 준비했습니다.
+                누비오의 호스트 권한은 계정 전체 권한이 아니라 로컬페이지 단위로 연결돼요.
+                새 운영자는 로컬페이지를 직접 만들고, 기존 로컬페이지는 권한이 연결된 계정에서
+                운영 화면을 열 수 있어요.
               </p>
               <div className="mt-5 flex flex-wrap gap-2">
                 <PrimaryLink href="/host/projects" label="폴더 보기" />
-                <SecondaryLink href="/host/villages" label="로컬홈 정보 관리" />
+                <SecondaryLink href="/host/villages" label="로컬페이지 정보 관리" />
               </div>
             </div>
 
@@ -134,16 +134,16 @@ export default async function HostPage() {
         <section className="mt-6">
           <div className="flex items-end justify-between gap-3">
             <div>
-              <h2 className="text-xl font-black text-slate-950">내 로컬홈</h2>
+              <h2 className="text-xl font-black text-slate-950">내 로컬페이지</h2>
               <p className="mt-1 text-sm font-bold text-slate-500">
-                운영 권한이 연결된 로컬홈만 전용 운영 화면으로 들어갈 수 있습니다.
+                운영 권한이 연결된 로컬페이지만 전용 운영 화면으로 들어갈 수 있어요.
               </p>
             </div>
             <Link
               className="hidden h-10 items-center justify-center gap-2 rounded-md border border-slate-200 bg-white px-3 text-sm font-black text-slate-700 hover:border-[var(--primary)] hover:text-[var(--primary)] sm:inline-flex"
               href="/host/villages"
             >
-              로컬홈 관리
+              로컬페이지 관리
               <ArrowRight size={15} />
             </Link>
           </div>
@@ -244,17 +244,17 @@ function EmptyWorkspace({ signedIn }: { signedIn: boolean }) {
     <section className="mt-4 rounded-md border border-dashed border-slate-300 bg-white p-6">
       <p className="inline-flex items-center gap-2 text-sm font-black text-slate-700">
         <LockKeyhole size={18} />
-        연결된 로컬홈이 없습니다.
+        연결된 로컬페이지가 없습니다.
       </p>
       <p className="mt-2 max-w-2xl text-sm leading-6 text-slate-500">
         {signedIn
-          ? "아직 이 계정에 연결된 로컬홈이 없습니다. 새 로컬홈을 만들거나 기존 로컬홈 권한을 연결해 주세요."
-          : "로그인하면 이 계정에 연결된 로컬홈 운영 공간이 표시됩니다."}
+          ? "아직 이 계정에 연결된 로컬페이지가 없습니다. 새 로컬페이지를 만들거나 기존 로컬페이지 권한을 연결해 주세요."
+          : "로그인하면 이 계정에 연결된 로컬페이지 운영 공간이 표시돼요."}
       </p>
       <div className="mt-5 flex flex-wrap gap-2">
         <PrimaryLink
           href={signedIn ? "/host/villages?new=1" : "/login?intent=host&next=/host"}
-          label={signedIn ? "로컬홈 만들기" : "로그인"}
+          label={signedIn ? "로컬페이지 만들기" : "로그인"}
         />
         <SecondaryLink href="/partners/apply" label="운영 문의" />
       </div>

@@ -40,7 +40,7 @@ export async function generateMetadata({
     title: village.name,
     description: village.summary,
     image: village.heroImage,
-    keywords: [village.region, village.city, village.name, "로컬홈"],
+    keywords: [village.region, village.city, village.name, "로컬페이지"],
     path: canonicalVillagePath(village.slug),
   });
 }
@@ -72,7 +72,7 @@ export default async function ShortVillagePage({
           villageJsonLd(village, canonicalVillagePath(village.slug)),
           breadcrumbJsonLd([
             { name: "홈", path: "/" },
-            { name: "로컬홈", path: "/villages" },
+            { name: "로컬페이지", path: "/villages" },
             { name: village.name, path: canonicalVillagePath(village.slug) },
           ]),
         ]}

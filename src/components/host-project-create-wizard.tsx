@@ -37,7 +37,7 @@ export function HostProjectCreateWizard() {
       periodLabel: "운영 기간 미정",
       title: trimmedName,
       updatedAt: now,
-      villageName: "로컬홈",
+      villageName: "로컬페이지",
     };
 
     setIsCreating(true);
@@ -105,7 +105,7 @@ export function HostProjectCreateWizard() {
               onKeyDown={(event) => {
                 if (event.key === "Enter") void createProject();
               }}
-              placeholder="예: 보성 로컬홈 2026 운영"
+              placeholder="예: 보성 로컬페이지 2026 운영"
               value={projectName}
             />
           </label>

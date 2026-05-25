@@ -12,7 +12,7 @@ import { HostAccessBanner } from "@/components/host-access-banner";
 export const metadata: Metadata = {
   title: "호스트 설정 | 누비오",
   description:
-    "로컬홈 운영자가 팀 권한, 폴더 기본값, 알림, 데이터 설정을 관리하는 화면입니다.",
+    "로컬페이지 운영자가 팀 권한, 폴더 기본값, 알림, 데이터 설정을 관리하는 화면입니다.",
 };
 
 const settingGroups = [

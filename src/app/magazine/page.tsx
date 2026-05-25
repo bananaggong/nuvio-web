@@ -5,14 +5,14 @@ export const metadata: Metadata = createSeoMetadata({
   title: "누비오 소식지",
   description: "누비오의 로컬 체류 프로그램 소식과 이야기를 확인하세요.",
   path: "/magazine",
-  keywords: ["누비오 소식지", "누비오 매거진", "로컬 체류 프로그램"],
+  keywords: ["누비오 소식지", "로컬 라이프", "로컬 체류 프로그램"],
 });
 
 const magazineItems = Array.from({ length: 6 }, (_, index) => ({
   id: index + 1,
-  title: "여행 이름 제목입력하세요",
-  description: "해당 내용에 대해 입력하세요.",
-  author: "작성자명",
+  title: "로컬에서 시작한 새로운 이야기",
+  description: "누비어에게 전하는 프로그램과 지역 소식을 모았어요.",
+  author: "누비오",
 }));
 
 export default function MagazinePage() {

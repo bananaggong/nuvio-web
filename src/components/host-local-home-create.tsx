@@ -31,10 +31,10 @@ export function HostLocalHomeCreate() {
   const fileInputId = useId();
   const router = useRouter();
   const imagePreviewRef = useRef("");
-  const [name, setName] = useState("새 로컬홈");
+  const [name, setName] = useState("새 로컬페이지");
   const [location, setLocation] = useState("전국 로컬");
   const [summary, setSummary] = useState(
-    "로컬홈 소개, 프로그램 안내, 참여 후기와 공지를 한곳에서 관리합니다.",
+    "로컬페이지 소개, 프로그램 안내, 참여 후기와 공지를 한곳에서 관리합니다.",
   );
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [imagePreviewUrl, setImagePreviewUrl] = useState("");
@@ -43,11 +43,11 @@ export function HostLocalHomeCreate() {
   const [errorMessage, setErrorMessage] = useState("");
   const [createdHref, setCreatedHref] = useState("");
 
-  const trimmedName = name.trim() || "새 로컬홈";
+  const trimmedName = name.trim() || "새 로컬페이지";
   const trimmedLocation = location.trim() || "전국 로컬";
   const trimmedSummary =
     summary.trim() ||
-    "로컬홈 소개, 프로그램 안내, 참여 후기와 공지를 한곳에서 관리합니다.";
+    "로컬페이지 소개, 프로그램 안내, 참여 후기와 공지를 한곳에서 관리합니다.";
   const previewImage = imagePreviewUrl || fallbackHeroImage;
 
   const locationParts = useMemo(
@@ -68,7 +68,7 @@ export function HostLocalHomeCreate() {
     setCreatedHref("");
 
     if (!trimmedName) {
-      setErrorMessage("로컬홈 이름을 입력해 주세요.");
+      setErrorMessage("로컬페이지 이름을 입력해 주세요.");
       return;
     }
 
@@ -80,7 +80,7 @@ export function HostLocalHomeCreate() {
     setIsSubmitting(true);
 
     try {
-      setStatusMessage("로컬홈을 만들고 있습니다.");
+      setStatusMessage("로컬페이지를 만들고 있어요.");
       const createdVillage = await saveVillage(buildVillageDraft({
         name: trimmedName,
         region: locationParts.region,
@@ -99,14 +99,14 @@ export function HostLocalHomeCreate() {
           setCreatedHref(`/host/villages/${createdVillage.slug}`);
           setErrorMessage(
             error instanceof Error
-              ? `로컬홈은 만들어졌지만 이미지 저장에 실패했습니다. ${error.message}`
-              : "로컬홈은 만들어졌지만 이미지 저장에 실패했습니다.",
+              ? `로컬페이지는 만들어졌지만 이미지를 저장하지 못했어요. ${error.message}`
+              : "로컬페이지는 만들어졌지만 이미지를 저장하지 못했어요.",
           );
           return;
         }
       }
 
-      setStatusMessage("로컬홈이 만들어졌습니다. 호스트센터로 이동합니다.");
+      setStatusMessage("로컬페이지가 만들어졌어요. 호스트센터로 이동해요.");
       router.push("/host");
       router.refresh();
       setCreatedHref(`/host/villages/${finalVillage.slug}`);
@@ -114,7 +114,7 @@ export function HostLocalHomeCreate() {
       setErrorMessage(
         error instanceof Error
           ? error.message
-          : "로컬홈을 만드는 중 문제가 발생했습니다.",
+          : "로컬페이지를 만드는 중 잠깐 문제가 생겼어요.",
       );
     } finally {
       setIsSubmitting(false);
@@ -149,13 +149,13 @@ export function HostLocalHomeCreate() {
         >
           <p className="inline-flex items-center gap-2 text-sm font-black text-[var(--primary)]">
             <MapPin size={18} />
-            로컬홈 만들기
+            로컬페이지 만들기
           </p>
           <h1 className="mt-3 text-2xl font-black leading-tight text-slate-950 sm:text-3xl">
             처음 호스트센터에 들어온 계정입니다.
           </h1>
           <p className="mt-2 max-w-2xl text-sm leading-6 text-slate-600">
-            운영할 로컬홈의 첫 화면에 필요한 기본 정보만 먼저 등록해 주세요.
+            운영할 로컬페이지의 첫 화면에 필요한 기본 정보만 먼저 등록해 주세요.
           </p>
 
           <div className="mt-6 grid gap-5">
@@ -200,9 +200,9 @@ export function HostLocalHomeCreate() {
                 value={location}
               />
               <TextField
-                label="로컬홈 이름"
+                label="로컬페이지 이름"
                 onChange={setName}
-                placeholder="예: 새 로컬홈"
+                placeholder="예: 새 로컬페이지"
                 value={name}
               />
             </div>
@@ -214,7 +214,7 @@ export function HostLocalHomeCreate() {
               <textarea
                 className="min-h-28 w-full rounded-md border border-slate-200 p-3 text-sm leading-6 text-slate-800 outline-none focus:border-[var(--primary)]"
                 onChange={(event) => setSummary(event.target.value)}
-                placeholder="로컬홈 소개, 프로그램 안내, 참여 후기와 공지를 한곳에서 관리합니다."
+                placeholder="로컬페이지 소개, 프로그램 안내, 참여 후기와 공지를 한곳에서 관리합니다."
                 value={summary}
               />
             </label>
@@ -227,7 +227,7 @@ export function HostLocalHomeCreate() {
               type="submit"
             >
               {isSubmitting ? <Loader2 className="animate-spin" size={16} /> : null}
-              로컬홈 만들기
+              로컬페이지 만들기
               {!isSubmitting ? <ArrowRight size={16} /> : null}
             </button>
             <Link
@@ -244,7 +244,7 @@ export function HostLocalHomeCreate() {
                 <p className="text-red-700">{errorMessage}</p>
                 {createdHref ? (
                   <Link className="text-[var(--primary)] underline" href={createdHref}>
-                    만든 로컬홈으로 이동
+                    만든 로컬페이지로 이동하기
                   </Link>
                 ) : null}
               </div>
@@ -252,7 +252,7 @@ export function HostLocalHomeCreate() {
               <p className="text-[var(--primary)]">{statusMessage}</p>
             ) : createdHref ? (
               <Link className="text-[var(--primary)] underline" href={createdHref}>
-                만든 로컬홈으로 이동
+                만든 로컬페이지로 이동하기
               </Link>
             ) : null}
           </div>
@@ -279,7 +279,7 @@ export function HostLocalHomeCreate() {
               {trimmedSummary}
             </p>
             <p className="mt-5 text-sm font-black text-[var(--primary)]">
-              로컬홈 열기
+              로컬페이지 열기
               <ArrowRight className="ml-1 inline-block" size={15} />
             </p>
           </div>
@@ -322,7 +322,7 @@ async function saveVillage(village: Village): Promise<Village> {
   const payload = (await response.json().catch(() => ({}))) as VillagePayload;
 
   if (!response.ok || !payload.data) {
-    throw new Error(payload.error ?? "로컬홈 저장에 실패했습니다.");
+    throw new Error(payload.error ?? "로컬페이지를 저장하지 못했어요.");
   }
 
   return payload.data;
@@ -343,7 +343,7 @@ async function attachHeroImage(village: Village, file: File): Promise<Village> {
     VillageAssetPayload;
 
   if (!uploadResponse.ok || !uploadPayload.data?.url) {
-    throw new Error(uploadPayload.error ?? "이미지 업로드에 실패했습니다.");
+    throw new Error(uploadPayload.error ?? "이미지를 업로드하지 못했어요.");
   }
 
   return saveVillage({
@@ -386,7 +386,7 @@ function buildVillageDraft({
       {
         body: summary,
         id: "story",
-        items: ["로컬홈 소개", "프로그램 안내", "참여 후기와 공지"],
+        items: ["로컬페이지 소개", "프로그램 안내", "참여 후기와 공지"],
         title: `${name} 소개`,
         type: "story",
       },

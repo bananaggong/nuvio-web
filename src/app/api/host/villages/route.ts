@@ -57,7 +57,7 @@ export async function POST(request: Request) {
         : false;
 
       if (!existingVillage && workspaces.length > 0) {
-        return apiError("로컬홈은 계정당 하나만 만들 수 있습니다.", 409);
+        return apiError("로컬페이지는 계정당 하나만 만들 수 있습니다.", 409);
       }
 
       if (existingVillage && !canUpdateExistingVillage) {

@@ -69,7 +69,7 @@ export async function upsertReportProject(
 
 export function normalizeReportProject(input: unknown): ReportProject {
   if (!input || typeof input !== "object" || Array.isArray(input)) {
-    throw new Error("Operation project payload is required.");
+    throw new Error("운영 폴더 정보가 필요합니다.");
   }
 
   return normalizeReportProjectModel(input);
@@ -84,7 +84,7 @@ function mapProjectToInsert(
     programId: isUuid(project.programId ?? "")
       ? project.programId
       : project.connectedProgramIds.find(isUuid) ?? null,
-    name: project.title.trim() || "Operation project",
+    name: project.title.trim() || "운영 폴더",
     organizationName:
       project.villageName.trim() || project.agencyName.trim() || "누비오",
     reportType: "operation-closeout",

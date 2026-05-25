@@ -8,9 +8,9 @@ const defaultSiteUrl = "https://nuvio.kr";
 export const siteConfig = {
   name: "누비오",
   alternateName: "누비오",
-  title: "누비오 - 여행지원금과 로컬 체류 프로그램",
+  title: "누비오 - 로컬 라이프로 가는 온보딩 플랫폼",
   description:
-    "국내외 여행지원금, 워케이션, 한달살기, 반값여행, 로컬 프로젝트를 탐색하고 신청 과정을 기록하세요.",
+    "로컬여행, 한달살기, 워케이션, 청년마을 프로그램을 가볍게 탐색하고 나와 맞는 로컬 라이프를 찾아보세요.",
   url: normalizeSiteUrl(
     process.env.NEXT_PUBLIC_SITE_URL ||
       process.env.SITE_URL ||
@@ -154,8 +154,8 @@ export function webApplicationJsonLd() {
     featureList: [
       "여행지원금 프로그램 검색",
       "워케이션과 한달살기 모집 공고 탐색",
-      "로컬홈 기반 프로그램 안내와 후기 관리",
-      "신청 현황 기록과 실시간 공지 확인",
+      "로컬페이지 기반 프로그램 안내와 후기 관리",
+      "내 여행 프로그램 기록과 실시간 공지 확인",
     ],
     publisher: {
       "@id": `${siteConfig.url}/#organization`,

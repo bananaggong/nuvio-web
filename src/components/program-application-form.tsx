@@ -154,14 +154,14 @@ export function ProgramApplicationForm({
         const payload = (await response.json().catch(() => ({}))) as {
           error?: string;
         };
-        throw new Error(payload.error ?? "신청서를 저장하지 못했습니다.");
+        throw new Error(payload.error ?? "신청서를 저장하지 못했어요.");
       }
 
       const payload = (await response.json()) as {
         data?: { id: string };
       };
       if (!payload.data) {
-        throw new Error("신청서 저장 결과를 확인하지 못했습니다.");
+        throw new Error("신청서 저장 결과를 확인하지 못했어요.");
       }
 
       setSubmittedId(payload.data.id);
@@ -169,7 +169,7 @@ export function ProgramApplicationForm({
       setSubmitError(
         error instanceof Error
           ? error.message
-          : "신청서 저장에 실패했습니다. 잠시 후 다시 시도해 주세요.",
+          : "잠깐 문제가 생겼어요. 다시 시도해 주세요.",
       );
     } finally {
       setIsSubmitting(false);
@@ -182,10 +182,10 @@ export function ProgramApplicationForm({
         <div className="rounded-md border border-teal-200 bg-white p-6 text-center shadow-sm">
           <CheckCircle2 className="mx-auto text-[var(--primary)]" size={42} />
           <h1 className="mt-4 text-2xl font-black text-slate-950">
-            신청서가 접수되었습니다
+            신청서가 접수됐어요
           </h1>
           <p className="mt-3 text-sm leading-6 text-slate-600">
-            신청 내용은 호스트 콘솔의 신청자 파이프라인에 반영됩니다. 접수번호는{" "}
+            신청 내용은 호스트 콘솔의 신청자 파이프라인에 반영돼요. 접수번호는{" "}
             <span className="font-mono font-black text-slate-900">{submittedId}</span>
             입니다.
           </p>
@@ -199,7 +199,7 @@ export function ProgramApplicationForm({
               className="inline-flex h-11 items-center justify-center rounded-md bg-[var(--primary)] px-4 text-sm font-black text-white"
               href="/mypage"
             >
-              내 신청 내역 보기
+              내 여행 프로그램 보기
             </Link>
             <Link
               className="inline-flex h-11 items-center justify-center rounded-md border border-slate-200 px-4 text-sm font-black text-slate-700"
@@ -227,8 +227,8 @@ export function ProgramApplicationForm({
           {program.title}
         </h1>
         <p className="mt-2 text-sm leading-6 text-slate-500">
-          기본 연락처와 호스트가 설정한 신청 질문을 함께 제출합니다. 제출된 내용은
-          Supabase DB에 저장되고 호스트 운영 화면에서 확인할 수 있습니다.
+          기본 연락처와 호스트가 설정한 신청 질문을 함께 제출해요. 제출된 내용은
+          호스트 운영 화면에서 확인할 수 있어요.
         </p>
 
         <div className="mt-6 grid gap-4">
@@ -352,7 +352,7 @@ export function ProgramApplicationForm({
             type="submit"
           >
             <Send size={17} />
-            {isSubmitting ? "제출 중" : "신청서 제출"}
+            {isSubmitting ? "제출 중" : "신청하기"}
           </button>
         </div>
       </form>

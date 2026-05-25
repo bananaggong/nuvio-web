@@ -283,10 +283,10 @@ export async function queueApplicationSubmittedNotification(input: {
     programTitle: input.programTitle,
   };
   const applicantMessage: NotificationMessage = {
-    body: `${input.programTitle} 신청서가 접수되었습니다. 운영자가 검토를 시작하면 상태가 업데이트됩니다.`,
+    body: `${input.programTitle} 신청서가 접수됐어요. 운영자가 검토를 시작하면 상태가 업데이트돼요.`,
     href: "/mypage",
     metadata,
-    title: "신청서가 접수되었습니다",
+    title: "신청서가 접수됐어요",
     type: "application.submitted",
   };
 
@@ -325,10 +325,10 @@ export async function queueApplicationStatusNotification(input: {
     status: input.status,
   };
   const applicantMessage: NotificationMessage = {
-    body: `${input.programTitle} 신청 상태가 ${statusLabels[input.status]}로 변경되었습니다.`,
+    body: `${input.programTitle} 신청 상태가 ${statusLabels[input.status]}로 변경됐어요.`,
     href: "/mypage",
     metadata,
-    title: "신청 상태가 변경되었습니다",
+    title: "신청 상태가 변경됐어요",
     type: "application.statusChanged",
   };
 
@@ -470,14 +470,14 @@ async function notifyHostUsersAboutSubmittedApplication(input: {
   await Promise.all(
     recipients.map((recipient) =>
       createInAppNotificationIfEnabled(recipient.id, {
-        body: `${input.programTitle}에 ${applicantName}님의 신청서가 들어왔습니다.`,
+        body: `${input.programTitle}에 ${applicantName}님의 신청서가 들어왔어요.`,
         href: `/host/applications/${input.applicationId}`,
         metadata: {
           applicationId: input.applicationId,
           applicantName,
           programTitle: input.programTitle,
         },
-        title: "새 신청서가 접수되었습니다",
+        title: "새 신청서가 접수됐어요",
         type: "application.submitted.host",
       }),
     ),

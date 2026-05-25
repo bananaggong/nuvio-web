@@ -3,7 +3,7 @@ import { MypageBookmarks } from "@/components/mypage";
 import { createSeoMetadata } from "@/lib/seo";
 
 export const metadata: Metadata = createSeoMetadata({
-  title: "북마크",
+  title: "저장",
   noIndex: true,
   path: "/mypage/bookmarks",
 });

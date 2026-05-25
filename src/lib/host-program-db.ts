@@ -91,7 +91,7 @@ async function upsertScopedHostProgramDraft(
 ): Promise<HostProgramDraft> {
   const villageId = insertValue.villageId;
   if (!villageId || !allowedVillageIds.includes(villageId)) {
-    throw new Error("This account can only save programs for its connected local home.");
+    throw new Error("이 계정에 연결된 로컬페이지 프로그램만 저장할 수 있습니다.");
   }
 
   if (isUuid(draft.id)) {

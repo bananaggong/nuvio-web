@@ -36,7 +36,7 @@ export function PartnerForm() {
       setErrorMessage(
         error instanceof Error
           ? error.message
-          : "운영 문의 저장에 실패했습니다. 잠시 후 다시 시도해 주세요.",
+          : "잠깐 문제가 생겼어요. 다시 시도해 주세요.",
       );
     } finally {
       setIsSubmitting(false);
@@ -51,17 +51,17 @@ export function PartnerForm() {
           운영 문의
         </p>
         <h1 className="mt-2 text-3xl font-black tracking-tight text-slate-950">
-          로컬홈을 만들고 프로그램을 운영하세요
+          로컬페이지를 만들고 프로그램을 운영해보세요
         </h1>
         <p className="mt-3 text-base leading-7 text-slate-600">
-          로컬홈 구성이나 운영 작업이 필요하면 아래 양식으로 문의해 주세요.
-          접수 내용은 운영 DB에 저장되고 관리자 검토 대상으로 들어갑니다.
+          로컬페이지 구성이나 운영 작업이 필요하면 아래 양식으로 문의해 주세요.
+          접수 내용은 운영 DB에 저장되고 관리자 검토 대상으로 들어가요.
         </p>
       </div>
 
       {submitted ? (
         <div className="mt-5 rounded-md border border-teal-200 bg-teal-50 p-4 text-sm font-bold text-teal-800">
-          운영 문의가 접수되었습니다. 누비오 운영팀이 확인한 뒤 연락드릴게요.
+          운영 문의가 접수됐어요. 누비오 운영팀이 확인한 뒤 연락드릴게요.
         </div>
       ) : null}
       {errorMessage ? (
@@ -75,7 +75,7 @@ export function PartnerForm() {
         onSubmit={submit}
       >
         <div className="grid gap-4 md:grid-cols-2">
-          <Field label="로컬홈 브랜드명" name="villageName" required />
+          <Field label="로컬페이지 브랜드명" name="villageName" required />
           <Field
             label="운영 주체"
             name="organization"
@@ -88,7 +88,7 @@ export function PartnerForm() {
           <Field label="지역" name="region" placeholder="예: 전남 보성군" required />
         </div>
         <label className="grid gap-2 text-sm font-black text-slate-700">
-          로컬홈 소개
+          로컬페이지 소개
           <textarea
             className="min-h-32 rounded-md border border-slate-200 p-3 font-semibold leading-6 outline-none focus:ring-2 focus:ring-[var(--primary)]"
             name="description"
@@ -112,7 +112,7 @@ export function PartnerForm() {
         />
         <label className="flex items-start gap-2 text-sm font-bold text-slate-600">
           <input className="mt-1 accent-[var(--primary)]" required type="checkbox" />
-          제출한 자료를 누비오 로컬홈 구성과 운영 작업 안내 목적으로 사용하는 데
+          제출한 자료를 누비오 로컬페이지 구성과 운영 작업 안내 목적으로 사용하는 데
           동의합니다.
         </label>
         <button

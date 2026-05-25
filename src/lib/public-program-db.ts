@@ -1,4 +1,4 @@
-import { desc, isNotNull } from "drizzle-orm";
+import { and, desc, isNotNull, notInArray } from "drizzle-orm";
 import { getDb } from "@/db/client";
 import { programs as programsTable } from "@/db/schema";
 import { getCrawledProgramByIdentifier } from "@/lib/crawled-programs";
@@ -15,7 +15,12 @@ export async function listPublicPrograms(): Promise<Program[]> {
     const rows = await getDb()
       .select()
       .from(programsTable)
-      .where(isNotNull(programsTable.publishedAt))
+      .where(
+        and(
+          isNotNull(programsTable.publishedAt),
+          notInArray(programsTable.status, ["closed", "earlyClosed"]),
+        ),
+      )
       .orderBy(desc(programsTable.updatedAt))
       .limit(500);
 

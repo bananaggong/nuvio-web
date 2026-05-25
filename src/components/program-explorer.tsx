@@ -132,11 +132,11 @@ export function ProgramExplorer({
               </p>
             ) : null}
             <h1 className="max-w-[42vw] text-[2.083vw] font-bold leading-[1.45] tracking-normal text-white max-md:max-w-[58vw] max-md:text-3xl">
-              {activeSlide?.title ?? "누비오 로컬 체류 프로그램"}
+              {activeSlide?.title ?? "결이 맞는 로컬 라이프를 찾아보세요"}
             </h1>
             <p className="mt-[1.944vw] max-w-[38vw] text-[0.972vw] font-semibold leading-[1.5] text-white/85 max-md:max-w-[58vw] max-md:text-sm">
               {activeSlide?.subtitle ??
-                "지역에 머무르며 일하고 쉬는 프로그램을 찾아보세요."}
+                "가볍게 떠나보고, 나와 맞는 로컬의 시간을 발견해보세요."}
             </p>
 
             <div className="pointer-events-auto mt-[6.25vw] flex items-center gap-[1.181vw] max-md:mt-12 max-md:gap-3">
@@ -169,10 +169,10 @@ export function ProgramExplorer({
         <section className="mx-auto mt-[3.472vw] w-[74.583vw] max-md:w-full">
           <div>
             <h2 className="text-[1.389vw] font-semibold leading-none text-[#5B3A29] max-md:text-xl">
-              추천 프로그램
+              지금 인기있는 프로그램
             </h2>
             <p className="mt-[0.833vw] text-[0.764vw] font-medium leading-none text-[#9BA3AE] max-md:mt-2 max-md:text-sm">
-              지금 신청할 수 있는 로컬 체류 프로그램
+              새로운 라이프스타일을 경험할 수 있는 로컬 프로그램
             </p>
           </div>
 
@@ -214,7 +214,7 @@ export function ProgramExplorer({
 
           {featuredPrograms.length === 0 ? (
             <div className="mt-[1.667vw] rounded-[0.833vw] border border-[#E8E7E2] px-[1.667vw] py-[2.222vw] text-[0.833vw] font-semibold text-[#9BA3AE]">
-              공개된 프로그램이 없습니다.
+              마음에 드는 프로그램을 찾아보세요.
             </div>
           ) : null}
         </section>
