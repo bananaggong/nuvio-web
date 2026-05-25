@@ -1817,7 +1817,7 @@ function TripDetailCard({
             {tripStatusLabels[application.status]}
           </span>
           <span className="text-[12px] text-[#8F7A6C]">
-            예약번호 {application.id}
+            신청번호 {application.id}
           </span>
         </div>
         <Link
@@ -1828,7 +1828,7 @@ function TripDetailCard({
         </Link>
         <div className="mt-3 grid gap-1 text-[13px] leading-6 text-[#8F7A6C] sm:grid-cols-2">
           <span>신청일 {formatDate(application.submittedAt)}</span>
-          <span>참여자 {application.applicantName}</span>
+          <span>누비어 {application.applicantName}</span>
           <span>지역 {program?.region ?? "-"}</span>
           <span>기간 {program ? formatProgramPeriod(program) : "-"}</span>
         </div>

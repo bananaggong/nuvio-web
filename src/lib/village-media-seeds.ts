@@ -48,7 +48,7 @@ export const boseongMediaSeeds: VillageMediaContent[] = [
     provider: "youtube",
     summary: "숙박비를 재능으로 받는 청년들의 보성 체류 기록입니다.",
     body: [
-      "숙재받 3기 참여자들이 보성에서 각자의 재능을 꺼내고 지역의 사람, 공간, 풍경과 연결되는 과정을 담았습니다.",
+      "숙재받 3기 누비어들이 보성에서 각자의 재능을 꺼내고 지역의 사람, 공간, 풍경과 연결되는 과정을 담았습니다.",
       "전체차LAB이 운영하는 체류형 콘텐츠의 분위기를 가장 직접적으로 보여주는 영상 아카이브입니다.",
     ],
     thumbnail: "https://cdn.imweb.me/thumbnail/20251103/d38527c321388.jpg",
@@ -69,7 +69,7 @@ export const boseongMediaSeeds: VillageMediaContent[] = [
     summary: "숙재받 2기 청년들이 보성의 자연 안에서 만든 에피소드.",
     body: [
       "보성의 장소성과 청년들의 즉흥적인 활동을 묶어낸 숙재받 2기 콘텐츠입니다.",
-      "마을 페이지에서는 프로그램의 결과물과 참여자의 분위기를 함께 확인할 수 있도록 보관합니다.",
+      "로컬페이지에서는 프로그램의 결과물과 누비어의 분위기를 함께 확인할 수 있도록 보관합니다.",
     ],
     thumbnail: "https://cdn.imweb.me/thumbnail/20251103/56d09703580c7.jpg",
     embedUrl: youtubeEmbed("2FP0GsHWIB4"),
@@ -87,7 +87,7 @@ export const boseongMediaSeeds: VillageMediaContent[] = [
     provider: "youtube",
     summary: "숙재받 2기에서 제작된 공식 뮤직비디오 콘텐츠.",
     body: [
-      "참여자의 재능이 실제 영상 결과물로 이어진 사례입니다.",
+      "누비어의 재능이 실제 영상 결과물로 이어진 사례입니다.",
       "단순한 체류 후기가 아니라 지역을 배경으로 창작물이 만들어지는 과정을 보여줍니다.",
     ],
     thumbnail: "https://cdn.imweb.me/thumbnail/20251103/85c6db27f77dc.jpg",
@@ -104,10 +104,10 @@ export const boseongMediaSeeds: VillageMediaContent[] = [
     title: "김현표 - 지도엔 없는 곳으로 가려고 집을 나섰네",
     category: "original",
     provider: "youtube",
-    summary: "숙재받 2기 참여자의 음악과 보성의 장면이 만난 기록.",
+    summary: "숙재받 2기 누비어의 음악과 보성의 장면이 만난 기록.",
     body: [
       "청년의 창작 결과물이 지역의 풍경과 함께 남은 영상 콘텐츠입니다.",
-      "마을 홈페이지에서는 프로그램 결과물, 후기, 미디어가 서로 이어지도록 배치합니다.",
+      "로컬페이지에서는 프로그램 결과물, 후기, 미디어가 서로 이어지도록 배치합니다.",
     ],
     thumbnail: "https://cdn.imweb.me/thumbnail/20251103/7e79d35dce608.jpg",
     embedUrl: youtubeEmbed("KqA3pdMnzuI"),
@@ -123,10 +123,10 @@ export const boseongMediaSeeds: VillageMediaContent[] = [
     title: "100년이 지나도 우리 다시 만나",
     category: "original",
     provider: "youtube",
-    summary: "숙재받 EP.3로 남겨진 참여자들의 관계와 시간.",
+    summary: "숙재받 EP.3로 남겨진 누비어들의 관계와 시간.",
     body: [
       "보성에서 만들어진 관계와 장면을 에피소드 형태로 엮은 콘텐츠입니다.",
-      "기수별 기록이 흩어지지 않도록 누비오의 마을 페이지 안에서 다시 정리합니다.",
+      "기수별 기록이 흩어지지 않도록 누비오의 로컬페이지 안에서 다시 정리합니다.",
     ],
     thumbnail: "https://cdn.imweb.me/thumbnail/20251103/587ef4efbb8cc.jpg",
     embedUrl: youtubeEmbed("hqzynE_KuC0"),
@@ -145,7 +145,7 @@ export const boseongMediaSeeds: VillageMediaContent[] = [
     summary: "숙재받 EP.2, 재능 교환 체류 프로그램의 감정선.",
     body: [
       "숙재받의 핵심인 재능 교환과 체류 경험이 압축된 콘텐츠입니다.",
-      "프로그램 신청 전 참여자가 분위기를 파악할 수 있는 참고 자료로 활용합니다.",
+      "프로그램 신청 전 누비어가 분위기를 파악할 수 있는 참고 자료로 활용합니다.",
     ],
     thumbnail: "https://cdn.imweb.me/thumbnail/20250930/bc3aa62698a03.jpg",
     embedUrl: youtubeEmbed("CRKvgMclJ8M"),
@@ -164,7 +164,7 @@ export const boseongMediaSeeds: VillageMediaContent[] = [
     summary: "숙재받의 시작을 알리는 소개 콘텐츠.",
     body: [
       "숙재받 프로그램의 콘셉트와 보성 체류의 첫인상을 전달하는 초기 아카이브입니다.",
-      "신규 참여자가 프로그램 성격을 이해할 수 있도록 마을 홈페이지에 보관합니다.",
+      "신규 누비어가 프로그램 성격을 이해할 수 있도록 로컬페이지에 보관합니다.",
     ],
     thumbnail: "https://cdn.imweb.me/thumbnail/20250915/0a0a3fc52906a.jpg",
     embedUrl: youtubeEmbed("7POsECC_2Zw"),

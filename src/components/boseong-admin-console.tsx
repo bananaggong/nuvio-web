@@ -712,7 +712,7 @@ function createBoseongMediaDraft(): HostVillageMediaDraft {
     category: "original",
     provider: "youtube",
     summary: "전체차LAB의 활동을 기록한 미디어 콘텐츠입니다.",
-    body: ["콘텐츠의 맥락, 등장 프로그램, 참여자 경험을 정리합니다."],
+    body: ["콘텐츠의 맥락, 등장 프로그램, 누비어 경험을 정리합니다."],
     thumbnail: "https://cdn.imweb.me/thumbnail/20251103/d38527c321388.jpg",
     embedUrl: "https://www.youtube.com/embed/WtNVWrDM4HE",
     sourceName: "전체차LAB",

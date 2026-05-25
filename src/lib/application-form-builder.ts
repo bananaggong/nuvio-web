@@ -107,7 +107,7 @@ export const seedApplicationFormTemplates: ApplicationFormTemplate[] = [
       },
       {
         id: "block-intro",
-        body: "프로그램 운영자가 확인해야 하는 기본 정보를 작성해 주세요.",
+        body: "프로그램 호스트가 확인해야 하는 기본 정보를 작성해 주세요.",
         label: "안내",
         required: false,
         type: "description",

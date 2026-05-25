@@ -115,7 +115,7 @@ export default async function ReviewDetailPage({
         <div className="mt-6 space-y-4 text-base leading-8 text-slate-700">
           <p>{review.body}</p>
           <p>
-            경험은 프로그램 회차, 운영기관, 개인 일정에 따라 달라질 수 있습니다.
+            경험은 프로그램 회차, 호스트, 개인 일정에 따라 달라질 수 있습니다.
             신청 전 공식 공고와 최신 공지를 함께 확인해 주세요.
           </p>
         </div>

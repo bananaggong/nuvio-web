@@ -12,15 +12,15 @@ import { HostAccessBanner } from "@/components/host-access-banner";
 export const metadata: Metadata = {
   title: "호스트 설정 | 누비오",
   description:
-    "로컬페이지 운영자가 팀 권한, 폴더 기본값, 알림, 데이터 설정을 관리하는 화면입니다.",
+    "로컬페이지 호스트가 팀 권한, 폴더 기본값, 알림, 데이터 설정을 관리하는 화면입니다.",
 };
 
 const settingGroups = [
   {
     title: "팀/권한",
-    helper: "운영자 초대, 역할, 접근 범위를 관리합니다.",
+    helper: "호스트 초대, 역할, 접근 범위를 관리합니다.",
     icon: UsersRound,
-    items: ["운영자 계정", "역할 권한", "초대 링크"],
+    items: ["호스트 계정", "역할 권한", "초대 링크"],
     href: "/mypage",
   },
   {

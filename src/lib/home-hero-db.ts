@@ -58,7 +58,7 @@ export const defaultHomeHeroSlides: HomeHeroSlide[] = [
   },
   {
     id: "demo-host-center",
-    eyebrow: "운영자 공간",
+    eyebrow: "호스트 공간",
     title: "호스트센터에서 프로그램을 운영하세요",
     subtitle:
       "로컬채널, 프로그램 등록, 신청자 관리까지 운영 흐름을 한 화면에서 이어갈 수 있어요.",

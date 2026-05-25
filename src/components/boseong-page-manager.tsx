@@ -78,7 +78,7 @@ export function BoseongPageManager() {
 
         if (!sectionsResponse.ok || !sectionsPayload.data) {
           throw new Error(
-            sectionsPayload.error ?? "홈페이지 섹션을 불러오지 못했습니다.",
+            sectionsPayload.error ?? "로컬페이지 섹션을 불러오지 못했습니다.",
           );
         }
 
@@ -95,7 +95,7 @@ export function BoseongPageManager() {
           setMessage(
             error instanceof Error
               ? error.message
-              : "홈페이지 섹션을 불러오지 못했습니다.",
+              : "로컬페이지 섹션을 불러오지 못했습니다.",
           );
         }
       } finally {
@@ -189,7 +189,7 @@ export function BoseongPageManager() {
       }
 
       replaceSection(payload.data);
-      setMessage("발행했습니다. 공개 보성 홈페이지에 반영됩니다.");
+      setMessage("발행했습니다. 공개 보성 로컬페이지에 반영됩니다.");
     } catch (error) {
       setMessage(error instanceof Error ? error.message : "발행에 실패했습니다.");
     } finally {
@@ -249,7 +249,7 @@ export function BoseongPageManager() {
     <section className="mt-6 border border-slate-200 bg-white p-5 md:p-6">
       <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
         <div>
-          <p className="text-sm font-black text-teal-700">홈페이지 관리</p>
+          <p className="text-sm font-black text-teal-700">로컬페이지 관리</p>
           <h2 className="mt-1 text-2xl font-black text-slate-950">
             공개 페이지 섹션 편집
           </h2>
@@ -274,7 +274,7 @@ export function BoseongPageManager() {
             href="/host/villages/boseong/editor"
           >
             <PencilLine size={16} />
-            홈페이지에서 편집
+            로컬페이지에서 편집
           </Link>
           <Link
             className="inline-flex h-10 items-center gap-2 rounded-md border border-slate-200 px-3 text-sm font-black text-slate-700 hover:border-teal-700 hover:text-teal-700"
@@ -303,7 +303,7 @@ export function BoseongPageManager() {
       {loading ? (
         <div className="mt-6 flex min-h-64 items-center justify-center text-sm font-black text-slate-500">
           <Loader2 className="mr-2 animate-spin" size={17} />
-          홈페이지 섹션을 불러오는 중
+          로컬페이지 섹션을 불러오는 중
         </div>
       ) : (
         <div className="mt-6 grid gap-5 lg:grid-cols-[280px_minmax(0,1fr)]">

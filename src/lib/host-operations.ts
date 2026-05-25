@@ -113,7 +113,7 @@ export const seedHostApplications: HostApplication[] = [
   },
   {
     id: "app-005",
-    programTitle: "고흥 별빛 귀촌 2주 프로젝트",
+    programTitle: "고흥 별빛 귀촌 2주 프로그램",
     applicantName: "최도윤",
     email: "doyun@example.com",
     phone: "010-8841-6120",
@@ -160,7 +160,7 @@ export const seedMessageTemplates: MessageTemplate[] = [
     id: "msg-accepted",
     name: "합격 안내",
     trigger: "합격 처리 직후",
-    body: "{name}님, {program} 참여자로 선정됐어요. 결제와 사전 서명을 오늘 안에 완료해 주세요.",
+    body: "{name}님, {program} 참여가 확정됐어요. 결제와 사전 서명을 오늘 안에 완료해 주세요.",
   },
   {
     id: "msg-reminder",

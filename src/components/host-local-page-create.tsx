@@ -27,7 +27,7 @@ type VillagePayload = {
 const fallbackHeroImage =
   "https://images.unsplash.com/photo-1500534314209-a25ddb2bd429?auto=format&fit=crop&w=1600&q=82";
 
-export function HostLocalHomeCreate() {
+export function HostLocalPageCreate() {
   const fileInputId = useId();
   const router = useRouter();
   const imagePreviewRef = useRef("");
@@ -413,7 +413,7 @@ function createLocalSlug(value: string): string {
       .toLowerCase()
       .replace(/[^a-z0-9가-힣]+/gu, "-")
       .replace(/^-+|-+$/gu, "")
-      .slice(0, 48) || "local-home";
+      .slice(0, 48) || "local-page";
   const suffix = Date.now().toString(36).slice(-5);
 
   return `${base}-${suffix}`;

@@ -457,7 +457,7 @@ function EmptyBlock({ text, village }: { text: string; village: Village }) {
     <div className="border border-dashed border-[#cfc9b9] bg-white px-6 py-12 text-center">
       <p className="font-black">{text}</p>
       <p className="mt-2 text-sm leading-6 text-slate-600">
-        {village.name} 운영자가 게시하면 이 공간에 자동으로 모입니다.
+        {village.name} 호스트가 게시하면 이 공간에 자동으로 모입니다.
       </p>
       <Link
         className="mt-5 inline-flex items-center gap-2 text-sm font-black"

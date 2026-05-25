@@ -376,10 +376,10 @@ export function ProgramApplicationForm({
         <div className="rounded-md border border-slate-200 bg-[var(--surface-muted)] p-5">
           <p className="inline-flex items-center gap-2 text-sm font-black text-slate-950">
             <ShieldCheck size={17} />
-            운영자 확인 사항
+            호스트 확인 사항
           </p>
           <p className="mt-2 text-sm leading-6 text-slate-600">
-            최종 모집 조건, 환급 기준, 개인정보 처리 기준은 각 운영기관의 공식 공고를
+            최종 모집 조건, 환급 기준, 개인정보 처리 기준은 각 호스트의 공식 공고를
             기준으로 다시 확인해야 합니다.
           </p>
         </div>

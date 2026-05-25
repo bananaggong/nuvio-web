@@ -51,7 +51,7 @@ const adminQuickLinks = [
   {
     href: "/admin/logs",
     label: "감사 로그",
-    helper: "운영자 액션과 변경 이력",
+    helper: "호스트 액션과 변경 이력",
     icon: Shield,
   },
   {
@@ -632,7 +632,7 @@ function ProgramDraftForm({
         프로그램 초안 등록
       </h2>
       <p className="mt-1 text-sm leading-6 text-slate-500">
-        외부 공고나 파트너 접수를 검수한 뒤, 운영자가 빠르게 초안을 남깁니다.
+        외부 공고나 파트너 접수를 검수한 뒤, 호스트가 빠르게 초안을 남깁니다.
       </p>
       <form className="mt-5 grid gap-3" onSubmit={onSubmit}>
         <input

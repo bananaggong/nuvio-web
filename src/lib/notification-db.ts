@@ -283,7 +283,7 @@ export async function queueApplicationSubmittedNotification(input: {
     programTitle: input.programTitle,
   };
   const applicantMessage: NotificationMessage = {
-    body: `${input.programTitle} 신청서가 접수됐어요. 운영자가 검토를 시작하면 상태가 업데이트돼요.`,
+    body: `${input.programTitle} 신청서가 접수됐어요. 호스트가 검토를 시작하면 상태가 업데이트돼요.`,
     href: "/mypage",
     metadata,
     title: "신청서가 접수됐어요",

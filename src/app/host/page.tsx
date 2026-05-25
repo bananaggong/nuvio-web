@@ -15,7 +15,7 @@ import {
 } from "lucide-react";
 import { HostCenterHome } from "@/components/host-center-home";
 import { HostAccessBanner } from "@/components/host-access-banner";
-import { HostLocalHomeCreate } from "@/components/host-local-home-create";
+import { HostLocalPageCreate } from "@/components/host-local-page-create";
 import {
   getHostConsoleOverview,
   type HostVillageWorkspace,
@@ -73,7 +73,7 @@ export default async function HostPage() {
   const overview = await getHostConsoleOverview();
 
   if (overview.signedIn && overview.workspaces.length === 0) {
-    return <HostLocalHomeCreate />;
+    return <HostLocalPageCreate />;
   }
 
   if (overview.signedIn && overview.workspaces[0]) {
@@ -96,7 +96,7 @@ export default async function HostPage() {
               </h1>
               <p className="mt-3 max-w-3xl text-sm leading-7 text-slate-600">
                 누비오의 호스트 권한은 계정 전체 권한이 아니라 로컬페이지 단위로 연결돼요.
-                새 운영자는 로컬페이지를 직접 만들고, 기존 로컬페이지는 권한이 연결된 계정에서
+                새 호스트는 로컬페이지를 직접 만들고, 기존 로컬페이지는 권한이 연결된 계정에서
                 운영 화면을 열 수 있어요.
               </p>
               <div className="mt-5 flex flex-wrap gap-2">

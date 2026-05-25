@@ -444,7 +444,7 @@ function ParticipantReviewSection({
       className="flex min-h-[1076px] w-full flex-col items-center gap-4 pb-10"
       id="detail-section-2"
     >
-      <SectionTitle title="참여자 리뷰" />
+      <SectionTitle title="누비어 후기" />
 
       <div className="flex h-6 w-full items-center gap-2">
         <Star aria-hidden="true" className="size-6 fill-[#FE701E] text-[#FE701E]" />
@@ -504,7 +504,7 @@ function ParticipantReviewSection({
           ))
         ) : (
           <div className="flex min-h-[173px] w-[688px] items-center justify-center border-b border-[#F5E1D3] px-8 py-4 text-sm text-[#6D7A8A] max-md:w-full max-md:px-4">
-            아직 등록된 참가자 리뷰가 없습니다.
+            아직 등록된 누비어 후기가 없어요.
           </div>
         )}
       </div>
@@ -513,7 +513,7 @@ function ParticipantReviewSection({
         className="flex h-[29px] w-full items-center justify-center rounded bg-[#FFF6EC] p-0 text-xs font-medium leading-[1.253] text-[#FF9A3D]"
         href={reviewListHref}
       >
-        참여자 리뷰 전체보기
+        누비어 후기 전체보기
       </Link>
     </section>
   );

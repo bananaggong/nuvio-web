@@ -63,9 +63,9 @@ insert into public.homepage_hero_slides (
   ),
   (
     'demo-daon-local-lab',
-    '로컬 채널',
+    '로컬채널',
     '다온 로컬랩',
-    '빈집과 공유 작업공간, 지역 클래스를 연결해 남해 체류 경험을 운영하는 첫 번째 누비오 채널입니다.',
+    '빈집과 공유 작업공간, 지역 클래스를 연결해 남해 체류 경험을 운영하는 첫 번째 누비오 로컬채널입니다.',
     'https://images.unsplash.com/photo-1507525428034-b723cf961d3e?auto=format&fit=crop&w=1600&q=82',
     '/daon-local-lab',
     1,
@@ -83,9 +83,9 @@ insert into public.homepage_hero_slides (
   ),
   (
     'demo-host-center',
-    '운영자 공간',
+    '호스트 공간',
     '호스트센터에서 프로그램을 운영하세요',
-    '마을 채널, 프로그램 등록, 신청자 관리까지 운영 흐름을 한 화면에서 이어갈 수 있습니다.',
+    '로컬채널, 프로그램 등록, 신청자 관리까지 운영 흐름을 한 화면에서 이어갈 수 있습니다.',
     'https://images.unsplash.com/photo-1518005020951-eccb494ad742?auto=format&fit=crop&w=1600&q=82',
     '/host',
     3,

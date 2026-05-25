@@ -105,7 +105,7 @@ export function createHostProgramDraft(): HostProgramDraft {
     title: "새 로컬 체류 프로그램",
     region: "강원",
     city: "도시명",
-    summary: "참여자에게 제공할 핵심 혜택과 체류 경험을 한 문장으로 정리합니다.",
+    summary: "누비어에게 제공할 핵심 혜택과 체류 경험을 한 문장으로 정리합니다.",
     description: "프로그램 목적, 운영 방식, 제공 혜택, 참여 조건을 입력합니다.",
     theme: "workation",
     periodKey: "week",
@@ -167,7 +167,7 @@ export function buildProgramDraftChecklist(
       id: "content",
       label: "상세 설명",
       done: draft.description.trim().length >= 20,
-      helper: "참여자가 판단할 수 있는 설명을 충분히 입력합니다.",
+      helper: "누비어가 판단할 수 있는 설명을 충분히 입력합니다.",
     },
   ];
 }

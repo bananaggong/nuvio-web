@@ -1,5 +1,5 @@
 -- Demo scenario:
--- A fictional host signs up, connects one local-home channel, and publishes one program.
+-- A fictional host signs up, creates one local page, and publishes one program.
 
 insert into auth.users (
   instance_id,
@@ -160,8 +160,8 @@ insert into public.villages (
   '전라남도',
   '남해군',
   '남해 바다 앞에서 일하고 쉬는 7일',
-  '다온 로컬랩은 남해의 빈집과 공유 작업공간을 연결해 워케이션 프로그램을 운영하는 로컬 채널입니다.',
-  '가상의 호스트 박다온이 누비오에 가입한 뒤 만든 첫 운영 채널입니다. 참여자는 숙소, 작업 공간, 로컬 클래스가 결합된 워케이션 프로그램을 신청할 수 있습니다.',
+  '다온 로컬랩은 남해의 빈집과 공유 작업공간을 연결해 워케이션 프로그램을 운영하는 로컬페이지입니다.',
+  '가상의 호스트 박다온이 누비오에 가입한 뒤 만든 첫 로컬페이지입니다. 누비어는 숙소, 작업 공간, 로컬 클래스가 결합된 워케이션 프로그램을 신청할 수 있습니다.',
   'https://images.unsplash.com/photo-1507525428034-b723cf961d3e?auto=format&fit=crop&w=1600&q=82',
   'DAON',
   '#0f766e',
@@ -251,7 +251,7 @@ insert into public.programs (
   '남해군',
   false,
   '남해 바다 앞 공유 작업공간에서 7일간 일하고 쉬며 로컬 클래스를 경험하는 워케이션 프로그램입니다.',
-  '가상의 호스트 박다온이 누비오 호스트센터에서 등록한 첫 번째 프로그램입니다. 참여자는 숙소와 공유 오피스, 로컬 클래스, 커뮤니티 저녁 모임을 한 번에 신청합니다.',
+  '가상의 호스트 박다온이 누비오 호스트센터에서 등록한 첫 번째 프로그램입니다. 누비어는 숙소와 공유 오피스, 로컬 클래스, 커뮤니티 저녁 모임을 한 번에 신청합니다.',
   'workation',
   '["workation","local"]'::jsonb,
   '["남해","워케이션","로컬체류","바다"]'::jsonb,
@@ -275,7 +275,7 @@ insert into public.programs (
   'https://images.unsplash.com/photo-1500534314209-a25ddb2bd429?auto=format&fit=crop&w=1600&q=82',
   '["https://images.unsplash.com/photo-1500534314209-a25ddb2bd429?auto=format&fit=crop&w=1600&q=82","https://images.unsplash.com/photo-1507525428034-b723cf961d3e?auto=format&fit=crop&w=1600&q=82"]'::jsonb,
   '["신규","워케이션","지원금"]'::jsonb,
-  '["6박 7일 남해 체류형 워케이션입니다.","공유 작업공간, 로컬 클래스 2회, 커뮤니티 저녁 모임을 포함합니다.","운영자는 누비오 호스트센터에서 신청자와 안내 메시지를 관리합니다."]'::jsonb,
+  '["6박 7일 남해 체류형 워케이션입니다.","공유 작업공간, 로컬 클래스 2회, 커뮤니티 저녁 모임을 포함합니다.","호스트는 누비오 호스트센터에서 신청자와 안내 메시지를 관리합니다."]'::jsonb,
   '11111111-2222-4333-8444-555555555555',
   '2026-05-19 09:30:00+09',
   '0f8fad5b-d9cb-469f-a165-70867728950e',
@@ -386,12 +386,12 @@ insert into public.report_projects (
 ) values (
   '44444444-5555-4666-8777-888888888888',
   '22222222-3333-4444-8555-666666666666',
-  '다온 로컬랩 2026 운영 프로젝트',
+  '다온 로컬랩 2026 운영 폴더',
   '다온 로컬랩',
   'operation-closeout',
   'collecting',
   '{
-    "title": "다온 로컬랩 2026 운영 프로젝트",
+    "title": "다온 로컬랩 2026 운영 폴더",
     "villageName": "다온 로컬랩",
     "agencyName": "다온 로컬랩",
     "imageUrl": "https://images.unsplash.com/photo-1507525428034-b723cf961d3e?auto=format&fit=crop&w=1600&q=82",
@@ -430,13 +430,13 @@ insert into public.report_projects (
     "activityEvents": [
       {
         "id":"activity-orientation",
-        "title":"참여자 오리엔테이션",
+        "title":"누비어 오리엔테이션",
         "activityAt":"2026-06-17",
         "place":"다온 로컬랩 공유라운지",
         "relatedProgramTitle":"남해 바다 워케이션 7일",
         "participantCount":0,
         "photosCount":0,
-        "description":"참여자 체크인, 공간 안내, 로컬 클래스 일정을 공유합니다."
+        "description":"누비어 체크인, 공간 안내, 로컬 클래스 일정을 공유합니다."
       }
     ],
     "manualFields": [

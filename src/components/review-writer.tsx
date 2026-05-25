@@ -48,7 +48,7 @@ export function ReviewWriter() {
     <div className="mx-auto max-w-2xl px-5 py-8 md:px-8">
       <h1 className="text-3xl font-black text-slate-950">후기 작성</h1>
       <p className="mt-2 text-sm text-slate-500">
-        작성한 후기는 검토 대기 상태로 저장돼요. 운영자가 확인한 뒤 공개할 수 있어요.
+        작성한 후기는 검토 대기 상태로 저장돼요. 호스트가 확인한 뒤 공개할 수 있어요.
       </p>
 
       {submitted ? (

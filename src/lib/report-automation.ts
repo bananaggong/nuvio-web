@@ -289,7 +289,7 @@ export const seedReportProjects: ReportProject[] = [
         vendor: "보성 지역상점",
         paymentMethod: "card",
         linkedActivityId: "activity-tea-session",
-        memo: "참여자 체험 재료와 현장 운영 물품",
+        memo: "누비어 체험 재료와 현장 운영 물품",
         evidenceItems: [
           {
             ruleId: "evidence-receipt",
@@ -348,7 +348,7 @@ export const seedReportProjects: ReportProject[] = [
         relatedProgramTitle: "숙재밭",
         participantCount: 18,
         photosCount: 4,
-        description: "참여자들이 차밭 산책과 로컬 티 블렌딩을 경험했습니다.",
+        description: "누비어들이 차밭 산책과 로컬 티 블렌딩을 경험했습니다.",
       },
       {
         id: "activity-content",
@@ -688,7 +688,7 @@ export function buildGeneratedReportSections(
     evidence: {
       id: "evidence",
       title: reportSectionLabels.evidence,
-      body: `지출 유형별 증빙 ${summary.requiredEvidenceCount}개 중 ${summary.completedEvidenceCount}개가 수집됐고 ${summary.missingEvidenceCount}개가 남았습니다. 증빙 규칙은 운영자가 직접 설정한 항목을 기준으로 판단합니다.`,
+      body: `지출 유형별 증빙 ${summary.requiredEvidenceCount}개 중 ${summary.completedEvidenceCount}개가 수집됐고 ${summary.missingEvidenceCount}개가 남았습니다. 증빙 규칙은 호스트가 직접 설정한 항목을 기준으로 판단합니다.`,
     },
     expenses: {
       id: "expenses",

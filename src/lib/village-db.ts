@@ -195,7 +195,7 @@ export function normalizeHostVillage(input: unknown): Village {
     summary: asString(value.summary) || `${name}의 프로그램과 소식을 모아 보여줍니다.`,
     description:
       asString(value.description) ||
-      `${name} 운영자가 신청, 공지, 후기, 보고서 자료를 한곳에서 관리할 수 있는 마을 페이지입니다.`,
+      `${name} 호스트가 신청, 공지, 후기, 보고서 자료를 한곳에서 관리할 수 있는 로컬페이지입니다.`,
     heroImage: asString(value.heroImage) || fallbackImage,
     logoText: asString(value.logoText) || name.slice(0, 2).toUpperCase(),
     brandColor: normalizeColor(asString(value.brandColor), "#0f766e"),

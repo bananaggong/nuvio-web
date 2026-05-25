@@ -154,7 +154,7 @@ function ActivitiesView({ project }: { project: HostProjectOverview }) {
       <SectionHeading icon={<ClipboardList size={20} />} title="활동/참석" />
       <div className="mt-4 grid gap-3 md:grid-cols-3">
         <SmallMetric label="활동 기록" value={`${project.activityCount}건`} />
-        <SmallMetric label="참여자" value={`${project.activeCount}명`} />
+        <SmallMetric label="누비어" value={`${project.activeCount}명`} />
         <SmallMetric
           label="연결 프로그램"
           value={`${Math.max(project.programDrafts.length, project.connectedProgramTitles.length)}개`}

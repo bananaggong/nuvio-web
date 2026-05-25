@@ -255,6 +255,8 @@ npx vercel ls nuvio-web --scope bananaggongs-projects
 ## Product Docs
 
 - [NUVIO PRD](docs/nuvio-prd.md)
+- [NUVIO Product Guide](docs/nuvio-product-guide.md)
+- [NUVIO Terminology](docs/nuvio-terminology.md)
 - [PRD Implementation Status](docs/prd-implementation-status-2026-05-09.md)
 - [Layer Architecture](docs/nuvio-layer-architecture.md)
 - [Planning Review](docs/nuvio-planning-review.md)

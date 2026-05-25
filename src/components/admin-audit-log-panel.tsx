@@ -68,7 +68,7 @@ export function AdminAuditLogPanel() {
               주요 운영 변경 이력
             </h1>
             <p className="mt-2 max-w-3xl text-sm leading-6 text-slate-600">
-              신청 상태 변경, 프로그램 수정, 공고 소스 변경처럼 운영자가 수행한
+              신청 상태 변경, 프로그램 수정, 공고 소스 변경처럼 호스트가 수행한
               주요 액션을 시간순으로 확인합니다.
             </p>
           </div>

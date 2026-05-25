@@ -251,7 +251,7 @@ function Header({
               <UserRound size={17} />
             </span>
             <span className="hidden text-left md:block">
-              <span className="block text-sm leading-none">로컬 운영자님</span>
+              <span className="block text-sm leading-none">로컬 호스트님</span>
               <span className="mt-1 block text-xs text-white/80">
                 {area === "host" ? "호스트" : "관리자"}
               </span>
@@ -350,7 +350,7 @@ function buildNavigation(area: ConsoleArea, pathname: string): NavigationItem[] 
     icon: FolderKanban,
     children: [],
   };
-  const localHomeNavigation: NavigationItem = {
+  const localPageNavigation: NavigationItem = {
     name: "로컬페이지",
     href: "/host/villages",
     icon: Home,
@@ -374,7 +374,7 @@ function buildNavigation(area: ConsoleArea, pathname: string): NavigationItem[] 
   };
 
   if (!isProjectWorkspace) {
-    return [projectNavigation, formNavigation, localHomeNavigation, settingsNavigation];
+    return [projectNavigation, formNavigation, localPageNavigation, settingsNavigation];
   }
 
   return [
@@ -410,7 +410,7 @@ function buildNavigation(area: ConsoleArea, pathname: string): NavigationItem[] 
         { name: "마감/보고", href: projectHref("/closeout") },
       ],
     },
-    localHomeNavigation,
+    localPageNavigation,
     settingsNavigation,
   ];
 }

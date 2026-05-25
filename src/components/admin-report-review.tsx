@@ -115,7 +115,7 @@ export function AdminReportReview() {
           value={`${overBudgetCount}건`}
         />
         <RiskCard
-          helper="운영자가 직접 채워야 하는 필드"
+          helper="호스트가 직접 채워야 하는 필드"
           icon={<ClipboardCheck size={20} />}
           label="수동 입력"
           tone="neutral"

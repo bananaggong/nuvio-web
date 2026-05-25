@@ -510,7 +510,7 @@ function buildVillageChecklist(village: Village) {
     {
       id: "summary",
       label: "소개 문구",
-      helper: "참여자가 로컬페이지 성격을 바로 이해할 수 있어야 합니다.",
+      helper: "누비어가 로컬페이지 성격을 바로 이해할 수 있어야 합니다.",
       done: village.summary.length >= 20 && village.description.length >= 40,
     },
     {
@@ -553,14 +553,14 @@ function createNewVillageDraft(): Village {
 
   return {
     id: `village-${suffix}`,
-    slug: `local-home-${suffix}`,
+    slug: `local-page-${suffix}`,
     name,
     region: "전국",
     city: "로컬",
     tagline: "우리 로컬페이지의 프로그램과 소식을 소개합니다.",
     summary: "로컬페이지 소개, 프로그램 안내, 참여 후기와 공지를 한곳에서 관리합니다.",
     description:
-      "운영자가 직접 로컬페이지 소개, 프로그램, 문의 채널, 활동 기록을 구성할 수 있는 공개 페이지입니다.",
+      "호스트가 직접 로컬페이지 소개, 프로그램, 문의 채널, 활동 기록을 구성할 수 있는 공개 페이지입니다.",
     heroImage:
       "https://images.unsplash.com/photo-1500534314209-a25ddb2bd429?auto=format&fit=crop&w=1600&q=82",
     logoText: "LH",

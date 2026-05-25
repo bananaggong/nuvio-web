@@ -1,9 +1,9 @@
 import type { Review } from "@/lib/types";
 
 export const boseongReviewImportSource = {
-  fileName: "01_참여자_후기_모음집.docx",
+  fileName: "01_누비어_후기_모음집.docx",
   importedAt: "2026-05-06",
-  sourceLabel: "그린티모시레 전체차LAB 참여자 후기 모음집",
+  sourceLabel: "그린티모시레 전체차LAB 누비어 후기 모음집",
   totalCount: 69,
 } as const;
 
