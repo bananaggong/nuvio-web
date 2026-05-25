@@ -5,6 +5,7 @@ import {
   type ApiAuthContext,
 } from "@/lib/api-security";
 import type { ApplicationFormTemplate } from "@/lib/application-form-builder";
+import { asFormKind } from "@/lib/application-form-builder";
 import {
   listApplicationFormTemplatesFromDb,
   normalizeApplicationFormTemplate,
@@ -15,13 +16,21 @@ import { getProgramRecordByIdentifier } from "@/lib/program-db";
 
 export const runtime = "nodejs";
 
-export async function GET() {
+export async function GET(request: Request) {
   const auth = await requireHostRole();
   if (isApiAuthError(auth)) return auth.response;
 
   try {
+    const { searchParams } = new URL(request.url);
+    const requestedKind = searchParams.get("kind");
+    const formKind =
+      requestedKind === "application" || requestedKind === "inquiry"
+        ? asFormKind(requestedKind)
+        : undefined;
     const templates = await listApplicationFormTemplatesFromDb(
-      auth.profile.role === "admin" ? {} : { ownerId: auth.user.id },
+      auth.profile.role === "admin"
+        ? { formKind }
+        : { formKind, ownerId: auth.user.id },
     );
     return NextResponse.json({ data: templates });
   } catch (error) {

@@ -7,10 +7,16 @@ export const metadata: Metadata = {
     "누비오 호스트가 신청자 상태별 안내 메시지를 예약하고 수신자 큐를 관리하는 화면입니다.",
 };
 
-export default function HostMessagesPage() {
+export default async function HostMessagesPage({
+  searchParams,
+}: {
+  searchParams?: Promise<{ panel?: string }>;
+}) {
+  const panel = (await searchParams)?.panel;
+
   return (
     <>
-      <HostMessageAutomation />
+      <HostMessageAutomation panel={panel} />
     </>
   );
 }

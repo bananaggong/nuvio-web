@@ -1,11 +1,13 @@
 import { NextResponse } from "next/server";
 import { isApiAuthError, requireHostRole } from "@/lib/api-security";
 import { safeCreateAuditLog } from "@/lib/audit-log-db";
+import { listApplicationFormTemplatesFromDb } from "@/lib/application-form-db";
 import {
   listHostProgramDraftsFromDb,
   normalizeHostProgramDraft,
   upsertHostProgramDraft,
 } from "@/lib/host-program-db";
+import { getProgramPublishBlockers } from "@/lib/host-program-publish-readiness";
 import {
   listHostVillageWorkspaces,
   type HostVillageWorkspace,
@@ -63,6 +65,30 @@ export async function POST(request: Request) {
         },
         { status: 403 },
       );
+    }
+
+    if (scopedDraft.published) {
+      const applicationForms = await listApplicationFormTemplatesFromDb(
+        auth.profile.role === "admin"
+          ? { formKind: "application" }
+          : { formKind: "application", ownerId: auth.user.id },
+      );
+      const linkedApplicationForm = applicationForms.find((form) =>
+        isLinkedProgramForm(form, scopedDraft),
+      );
+      const blockers = getProgramPublishBlockers(scopedDraft, {
+        applicationForm: linkedApplicationForm,
+      });
+
+      if (blockers.length > 0) {
+        return NextResponse.json(
+          {
+            error: `공개하기 전에 ${blockers.map((item) => item.label).join(", ")}을(를) 완료해 주세요.`,
+            blockers,
+          },
+          { status: 400 },
+        );
+      }
     }
 
     const savedDraft = await upsertHostProgramDraft(
@@ -146,6 +172,16 @@ function findProgramWorkspace(
 
 function isNewGenericProgramDraft(draft: HostProgramDraft): boolean {
   return !isUuid(draft.id) && !normalizeIdentifier(draft.villageId);
+}
+
+function isLinkedProgramForm(
+  form: { programId?: string; programTitle: string },
+  draft: HostProgramDraft,
+): boolean {
+  return (
+    Boolean(form.programId && form.programId === draft.id) ||
+    normalizeIdentifier(form.programTitle) === normalizeIdentifier(draft.title)
+  );
 }
 
 function normalizeIdentifier(value: string | undefined): string {

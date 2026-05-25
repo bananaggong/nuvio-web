@@ -72,6 +72,7 @@ export function mapApplicationFormTemplateToInsert(
     programId,
     title: normalizedTemplate.name,
     description: normalizedTemplate.description,
+    formKind: normalizedTemplate.formKind,
     fields: normalizedTemplate.blocks.map((block) => ({
       body: block.body ?? "",
       branches: block.branches ?? [],

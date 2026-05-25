@@ -53,8 +53,14 @@ import type {
   ApplicationFormBlock,
   ApplicationFormBlockType,
   ApplicationFormBranch,
+  ApplicationFormKind,
   ApplicationFormTemplate,
 } from "@/lib/application-form-builder";
+
+const formKindLabels: Record<ApplicationFormKind, string> = {
+  application: "신청폼",
+  inquiry: "문의 양식",
+};
 
 const blockTypeLabels: Record<ApplicationFormBlockType, string> = {
   checkbox: "동의 체크",
@@ -292,14 +298,17 @@ export function HostFormBuilder({
   }
 
   function addTemplate() {
+    const formKind = programId
+      ? "application"
+      : selectedTemplate?.formKind ?? "application";
     const nextTemplate = routeProgram
       ? normalizeApplicationFormTemplateShape({
-          ...createEmptyTemplate(),
+          ...createEmptyTemplate("application"),
           name: `${routeProgram.title} 신청폼`,
           programId: routeProgram.id,
           programTitle: routeProgram.title,
         })
-      : createEmptyTemplate();
+      : createEmptyTemplate(formKind);
     setSyncMessage("");
     setSyncError("");
     saveTemplates([nextTemplate, ...templates]);
@@ -315,6 +324,7 @@ export function HostFormBuilder({
   function duplicateTemplate(template = selectedTemplate) {
     if (!template) return;
     const copiedTemplate = cloneApplicationFormTemplate(template, {
+      formKind: template.formKind,
       name: `${template.name} 복사본`,
       programId: template.programId,
       programTitle: template.programTitle,
@@ -450,14 +460,18 @@ export function HostFormBuilder({
       <div className="mb-5 flex flex-col items-stretch gap-3 sm:flex-row sm:items-center sm:justify-between">
         <Link
           className="inline-flex h-10 items-center justify-center gap-2 rounded-md border border-slate-200 bg-white px-3 text-sm font-black text-slate-700"
-          href={programBasePath ?? projectBasePath ?? "/host/forms"}
+          href={
+            programBasePath ??
+            projectBasePath ??
+            `/host/forms?kind=${selectedTemplate.formKind}`
+          }
         >
           <ArrowLeft size={16} />
           {programBasePath
             ? "프로그램 허브"
-            : projectBasePath
-              ? "폴더"
-              : "신청폼 목록"}
+              : projectBasePath
+                ? "폴더"
+                : `${formKindLabels[selectedTemplate.formKind]} 목록`}
         </Link>
         <div className="flex flex-col gap-2 sm:flex-row">
           <button
@@ -500,7 +514,7 @@ export function HostFormBuilder({
                 aria-label="신청폼명"
                 className="w-full min-w-0 border-none bg-transparent text-3xl font-black leading-tight text-slate-950 outline-none placeholder:text-slate-300"
                 onChange={(event) => updateTemplate({ name: event.target.value })}
-                placeholder="신청폼 제목"
+                placeholder={`${formKindLabels[selectedTemplate.formKind]} 제목`}
                 value={selectedTemplate.name}
               />
               <textarea
@@ -509,7 +523,11 @@ export function HostFormBuilder({
                 onChange={(event) =>
                   updateTemplate({ description: event.target.value })
                 }
-                placeholder="신청자에게 보여줄 간단한 안내를 적어주세요."
+                placeholder={
+                  selectedTemplate.formKind === "inquiry"
+                    ? "문의자에게 보여줄 간단한 안내를 적어주세요."
+                    : "신청자에게 보여줄 간단한 안내를 적어주세요."
+                }
                 value={selectedTemplate.description}
               />
 

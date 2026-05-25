@@ -2,8 +2,8 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { FilePlus2, Layers3, Plus } from "lucide-react";
-import { useEffect, useState } from "react";
+import { FilePlus2, FileQuestion, Layers3, Plus } from "lucide-react";
+import { useEffect, useMemo, useState } from "react";
 import {
   createEmptyTemplate,
   mergeApplicationFormTemplates,
@@ -11,13 +11,42 @@ import {
   readApplicationFormTemplates,
 } from "@/lib/application-form-builder";
 import type { ApplicationFormTemplate } from "@/lib/application-form-builder";
+import type { ApplicationFormKind } from "@/lib/application-form-builder";
 
-export function HostFormLibrary() {
+const formKindMeta: Record<
+  ApplicationFormKind,
+  { buttonLabel: string; emptyLabel: string; heading: string; title: string }
+> = {
+  application: {
+    buttonLabel: "새 신청폼",
+    emptyLabel: "아직 신청폼이 없습니다.",
+    heading: "신청폼 관리",
+    title: "신청폼",
+  },
+  inquiry: {
+    buttonLabel: "새 문의 양식",
+    emptyLabel: "아직 문의 양식이 없습니다.",
+    heading: "문의 양식 관리",
+    title: "문의 양식",
+  },
+};
+
+export function HostFormLibrary({
+  initialKind = "application",
+}: {
+  initialKind?: ApplicationFormKind;
+}) {
   const router = useRouter();
   const [templates, setTemplates] = useState<ApplicationFormTemplate[]>(() =>
     readApplicationFormTemplates().map(normalizeApplicationFormTemplateShape),
   );
+  const [activeKind, setActiveKind] = useState<ApplicationFormKind>(initialKind);
   const [isCreating, setIsCreating] = useState(false);
+  const activeTemplates = useMemo(
+    () => templates.filter((template) => template.formKind === activeKind),
+    [activeKind, templates],
+  );
+  const activeMeta = formKindMeta[activeKind];
 
   useEffect(() => {
     let isMounted = true;
@@ -54,8 +83,8 @@ export function HostFormLibrary() {
     };
   }, []);
 
-  async function createForm() {
-    const nextTemplate = createEmptyTemplate();
+  async function createForm(formKind: ApplicationFormKind) {
+    const nextTemplate = createEmptyTemplate(formKind);
     setIsCreating(true);
 
     try {
@@ -88,28 +117,52 @@ export function HostFormLibrary() {
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <p className="inline-flex items-center gap-2 text-sm font-black text-[var(--primary)]">
-            <FilePlus2 size={18} />
-            신청폼 관리
+            {activeKind === "inquiry" ? <FileQuestion size={18} /> : <FilePlus2 size={18} />}
+            {activeMeta.heading}
           </p>
           <h1 className="mt-2 text-2xl font-black leading-tight text-slate-950 sm:text-3xl">
-            신청폼
+            {activeMeta.title}
           </h1>
           <p className="mt-1 text-sm font-bold text-slate-500">
-            {templates.length}개 폼
+            {activeTemplates.length}개 폼
           </p>
         </div>
         <button
           className="inline-flex h-10 w-fit items-center justify-center gap-2 rounded-md bg-slate-950 px-3 text-sm font-black text-white disabled:cursor-wait disabled:opacity-70"
           disabled={isCreating}
-          onClick={() => void createForm()}
+          onClick={() => void createForm(activeKind)}
           type="button"
         >
-          <Plus size={16} />새 신청폼
+          <Plus size={16} />
+          {activeMeta.buttonLabel}
         </button>
       </div>
 
+      <div className="mt-6 inline-flex rounded-md border border-[#F3E2D5] bg-white p-1">
+        {(["application", "inquiry"] as ApplicationFormKind[]).map((formKind) => {
+          const selected = formKind === activeKind;
+          return (
+            <button
+              className={`h-9 rounded-md px-4 text-sm font-black transition ${
+                selected
+                  ? "bg-[#FE701E] text-white"
+                  : "text-[#8B7A6E] hover:bg-[#FFF1E8] hover:text-[#FE701E]"
+              }`}
+              key={formKind}
+              onClick={() => {
+                setActiveKind(formKind);
+                router.replace(`/host/forms?kind=${formKind}`, { scroll: false });
+              }}
+              type="button"
+            >
+              {formKindMeta[formKind].title}
+            </button>
+          );
+        })}
+      </div>
+
       <section className="mt-6 grid gap-x-6 gap-y-8 sm:grid-cols-2 xl:grid-cols-3">
-        {templates.map((template) => (
+        {activeTemplates.map((template) => (
           <Link
             className="group block rounded-md border border-slate-200 bg-white p-5 shadow-sm transition hover:-translate-y-0.5 hover:border-[var(--primary)] hover:shadow-md"
             href={`/host/forms/${encodeURIComponent(template.id)}`}
@@ -120,7 +173,7 @@ export function HostFormLibrary() {
                 <Layers3 size={20} />
               </span>
               <span className="rounded-full bg-[var(--surface-muted)] px-3 py-1 text-xs font-black text-slate-500">
-                {template.programTitle || "라이브러리"}
+                {template.programTitle || (template.formKind === "inquiry" ? "문의" : "라이브러리")}
               </span>
             </div>
             <h2 className="mt-5 break-words text-lg font-black leading-6 text-slate-950">
@@ -139,6 +192,27 @@ export function HostFormLibrary() {
             </div>
           </Link>
         ))}
+        {activeTemplates.length === 0 ? (
+          <div className="grid min-h-56 place-items-center rounded-md border border-dashed border-[#F3CBB3] bg-white p-8 text-center sm:col-span-2 xl:col-span-3">
+            <div>
+              <span className="mx-auto grid size-12 place-items-center rounded-md bg-[#FFF1E8] text-[#FE701E]">
+                {activeKind === "inquiry" ? <FileQuestion size={22} /> : <FilePlus2 size={22} />}
+              </span>
+              <p className="mt-4 text-lg font-black text-[#0D0D0C]">
+                {activeMeta.emptyLabel}
+              </p>
+              <button
+                className="mt-4 inline-flex h-10 items-center justify-center gap-2 rounded-md bg-[#FE701E] px-4 text-sm font-black text-white disabled:cursor-wait disabled:opacity-70"
+                disabled={isCreating}
+                onClick={() => void createForm(activeKind)}
+                type="button"
+              >
+                <Plus size={16} />
+                {activeMeta.buttonLabel}
+              </button>
+            </div>
+          </div>
+        ) : null}
       </section>
     </div>
   );

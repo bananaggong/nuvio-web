@@ -3,9 +3,11 @@ import { getDb } from "@/db/client";
 import { programApplicationForms } from "@/db/schema";
 import { getProgramRecordByIdentifier } from "@/lib/program-db";
 import type {
+  ApplicationFormKind,
   ApplicationFormTemplate,
 } from "@/lib/application-form-builder";
 import {
+  asFormKind,
   blocksToFields,
   normalizeApplicationFormBlocks,
   normalizeApplicationFormFields,
@@ -17,15 +19,25 @@ type FormInsert = typeof programApplicationForms.$inferInsert;
 type FormRow = typeof programApplicationForms.$inferSelect;
 
 export async function listApplicationFormTemplatesFromDb(options: {
+  formKind?: ApplicationFormKind;
   ownerId?: string;
 } = {}): Promise<ApplicationFormTemplate[]> {
   let query = getDb()
     .select()
     .from(programApplicationForms)
     .$dynamic();
+  const conditions = [];
 
   if (options.ownerId) {
-    query = query.where(eq(programApplicationForms.createdBy, options.ownerId));
+    conditions.push(eq(programApplicationForms.createdBy, options.ownerId));
+  }
+
+  if (options.formKind) {
+    conditions.push(eq(programApplicationForms.formKind, options.formKind));
+  }
+
+  if (conditions.length > 0) {
+    query = query.where(and(...conditions));
   }
 
   const rows = await query.orderBy(desc(programApplicationForms.updatedAt)).limit(200);
@@ -40,6 +52,7 @@ export async function getApplicationFormTemplateForProgram(
     const rows = await getDb()
       .select()
       .from(programApplicationForms)
+      .where(eq(programApplicationForms.formKind, "application"))
       .orderBy(desc(programApplicationForms.updatedAt))
       .limit(200);
     const programRecord = await getProgramRecordByIdentifier(program.id);
@@ -110,6 +123,7 @@ export function normalizeApplicationFormTemplate(
     id: asString(value.id) || `form-${Date.now()}`,
     name: asString(value.name) || "신청서",
     description: asString(value.description),
+    formKind: asFormKind(value.formKind),
     programId: asString(value.programId),
     programTitle: asString(value.programTitle),
     blocks: normalizeApplicationFormBlocks(value.blocks ?? value.fields),
@@ -128,6 +142,7 @@ function mapTemplateToInsert(
     createdBy: ownerId,
     title: normalizedTemplate.name.trim() || "Application form",
     description: normalizedTemplate.description.trim() || null,
+    formKind: normalizedTemplate.formKind,
     programId: isUuid(normalizedTemplate.programId ?? "")
       ? normalizedTemplate.programId
       : null,
@@ -154,6 +169,7 @@ function mapFormRowToTemplate(row: FormRow): ApplicationFormTemplate {
     id: row.id,
     name: row.title,
     description: row.description ?? "",
+    formKind: asFormKind(row.formKind),
     programId: row.programId ?? "",
     programTitle: row.programTitle ?? "",
     fields: blocks.length > 0 ? blocksToFields(blocks) : fields,

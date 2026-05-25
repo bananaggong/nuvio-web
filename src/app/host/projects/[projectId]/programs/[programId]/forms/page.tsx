@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { HostFormBuilder } from "@/components/host-form-builder";
+import { HostProgramFormAttachment } from "@/components/host-program-form-attachment";
 
 export const metadata: Metadata = {
   title: "프로그램 신청서 설정 | 누비오",
@@ -16,7 +16,7 @@ export default async function HostProgramFormsPage({
 
   return (
     <>
-      <HostFormBuilder
+      <HostProgramFormAttachment
         programId={decodeURIComponent(programId)}
         projectId={decodeURIComponent(projectId)}
       />

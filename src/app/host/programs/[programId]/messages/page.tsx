@@ -8,10 +8,18 @@ export const metadata: Metadata = {
 
 export default async function StandaloneProgramMessagesPage({
   params,
+  searchParams,
 }: {
   params: Promise<{ programId: string }>;
+  searchParams?: Promise<{ panel?: string }>;
 }) {
   const { programId } = await params;
+  const panel = (await searchParams)?.panel;
 
-  return <HostMessageAutomation programId={decodeURIComponent(programId)} />;
+  return (
+    <HostMessageAutomation
+      panel={panel}
+      programId={decodeURIComponent(programId)}
+    />
+  );
 }

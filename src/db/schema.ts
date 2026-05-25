@@ -687,6 +687,7 @@ export const programApplicationForms = pgTable(
       onDelete: "cascade",
     }),
     programTitle: text("program_title"),
+    formKind: text("form_kind").default("application").notNull(),
     title: text("title").notNull(),
     description: text("description"),
     fields: jsonb("fields").$type<Array<Record<string, unknown>>>().default(emptyArray).notNull(),
@@ -696,7 +697,42 @@ export const programApplicationForms = pgTable(
   },
   (table) => [
     index("program_application_forms_created_by_idx").on(table.createdBy),
+    index("program_application_forms_form_kind_idx").on(table.formKind),
     index("program_application_forms_program_id_idx").on(table.programId),
+  ],
+);
+
+export const programInquiries = pgTable(
+  "program_inquiries",
+  {
+    id: uuid("id").defaultRandom().primaryKey(),
+    villageId: uuid("village_id").references(() => villages.id, {
+      onDelete: "set null",
+    }),
+    programId: uuid("program_id").references(() => programs.id, {
+      onDelete: "set null",
+    }),
+    formId: uuid("form_id").references(() => programApplicationForms.id, {
+      onDelete: "set null",
+    }),
+    programTitle: text("program_title"),
+    contactName: text("contact_name").notNull(),
+    contactEmail: text("contact_email"),
+    contactPhone: text("contact_phone"),
+    title: text("title").notNull(),
+    message: text("message").notNull(),
+    status: text("status").default("new").notNull(),
+    answers: jsonb("answers").$type<Record<string, unknown>>().default(emptyObject).notNull(),
+    source: text("source").default("program").notNull(),
+    submittedBy: uuid("submitted_by"),
+    createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+    updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
+  },
+  (table) => [
+    index("program_inquiries_village_id_idx").on(table.villageId),
+    index("program_inquiries_program_id_idx").on(table.programId),
+    index("program_inquiries_status_idx").on(table.status),
+    index("program_inquiries_created_at_idx").on(table.createdAt),
   ],
 );
 

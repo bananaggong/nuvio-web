@@ -7,6 +7,7 @@ import {
   ArrowLeft,
   ArrowRight,
   CalendarDays,
+  CheckCircle2,
   ClipboardList,
   FilePlus2,
   ImageIcon,
@@ -49,7 +50,13 @@ import {
   type HostProgramItineraryDay,
   type HostProgramPlaceInfo,
   type HostProgramDraft,
+  type ProgramDraftChecklistItem,
 } from "@/lib/host-program-studio";
+import {
+  buildProgramPublishChecklist,
+  getProgramRecruitmentMethod,
+} from "@/lib/host-program-publish-readiness";
+import type { ApplicationFormTemplate } from "@/lib/application-form-builder";
 import type { ProgramStatus, ThemeKey } from "@/lib/types";
 import { useHostOperationsData } from "@/lib/use-host-operations-data";
 
@@ -168,6 +175,7 @@ export function HostProgramHub({
   const [isSaving, setIsSaving] = useState(false);
   const [saveMessage, setSaveMessage] = useState("");
   const [saveError, setSaveError] = useState("");
+  const [applicationForms, setApplicationForms] = useState<ApplicationFormTemplate[]>([]);
 
   const activePanel = normalizePanel(searchParams.get("panel"));
   const project = useMemo(
@@ -207,6 +215,52 @@ export function HostProgramHub({
   const applicationsHref = `${programPath}/applications`;
   const formsHref = `${programPath}/forms`;
   const messagesHref = `${programPath}/messages`;
+  const linkedApplicationForm = useMemo(() => {
+    if (!draft) return undefined;
+
+    return applicationForms.find((form) => isLinkedApplicationForm(form, draft));
+  }, [applicationForms, draft]);
+  const publishChecklist = useMemo(
+    () =>
+      draft
+        ? buildProgramPublishChecklist(draft, {
+            applicationForm: linkedApplicationForm,
+          })
+        : [],
+    [draft, linkedApplicationForm],
+  );
+  const publishBlockers = useMemo(
+    () => publishChecklist.filter((item) => !item.done),
+    [publishChecklist],
+  );
+  const readyToPublish = draft ? publishBlockers.length === 0 : false;
+
+  useEffect(() => {
+    let isMounted = true;
+
+    async function loadApplicationForms() {
+      try {
+        const response = await fetch("/api/host/forms?kind=application", {
+          cache: "no-store",
+        });
+        if (!response.ok) return;
+
+        const payload = (await response.json()) as {
+          data?: ApplicationFormTemplate[];
+        };
+        const forms = Array.isArray(payload.data) ? payload.data : [];
+        if (isMounted) setApplicationForms(forms);
+      } catch {
+        // The server-side publish guard still catches missing forms.
+      }
+    }
+
+    void loadApplicationForms();
+
+    return () => {
+      isMounted = false;
+    };
+  }, []);
 
   if (isLoading && !program) {
     return (
@@ -258,6 +312,14 @@ export function HostProgramHub({
 
   async function saveDraft() {
     if (!draft || isSaving || !draft.title.trim()) return;
+
+    if (draft.published && publishBlockers.length > 0) {
+      setSaveMessage("");
+      setSaveError(
+        `공개하기 전에 ${publishBlockers.map((item) => item.label).join(", ")}을(를) 완료해 주세요.`,
+      );
+      return;
+    }
 
     setIsSaving(true);
     setSaveMessage("");
@@ -363,7 +425,9 @@ export function HostProgramHub({
           <DashboardPanel
             applicationsHref={applicationsHref}
             formsHref={formsHref}
+            linkedApplicationForm={linkedApplicationForm}
             messagesHref={messagesHref}
+            publishChecklist={publishChecklist}
             programPath={programPath}
           />
         ) : null}
@@ -380,7 +444,12 @@ export function HostProgramHub({
           <GuidePanel draft={draft} updateDraft={updateDraft} />
         ) : null}
         {draft && activePanel === "management" ? (
-          <ManagementPanel draft={draft} updateDraft={updateDraft} />
+          <ManagementPanel
+            draft={draft}
+            publishBlockers={publishBlockers}
+            readyToPublish={readyToPublish}
+            updateDraft={updateDraft}
+          />
         ) : null}
         {draft && activePanel === "delete" ? (
           <DeletePanel draft={draft} />
@@ -393,40 +462,85 @@ export function HostProgramHub({
 function DashboardPanel({
   applicationsHref,
   formsHref,
+  linkedApplicationForm,
   messagesHref,
+  publishChecklist,
   programPath,
 }: {
   applicationsHref: string;
   formsHref: string;
+  linkedApplicationForm?: ApplicationFormTemplate;
   messagesHref: string;
+  publishChecklist: ProgramDraftChecklistItem[];
   programPath: string;
 }) {
+  const completedCount = publishChecklist.filter((item) => item.done).length;
+  const totalCount = publishChecklist.length;
+  const ready = totalCount > 0 && completedCount === totalCount;
+
   return (
-    <div className="grid gap-3 md:grid-cols-3">
-      <ToolCard
-        description="프로그램 제목, 모집 상태, 일정, 인원을 정리합니다."
-        href={`${programPath}?panel=basic`}
-        icon={<Settings size={20} />}
-        title="프로그램 설정"
-      />
-      <ToolCard
-        description="참여자가 제출할 질문과 안내 문구를 구성합니다."
-        href={formsHref}
-        icon={<FilePlus2 size={20} />}
-        title="신청 폼"
-      />
-      <ToolCard
-        description="신청자 목록과 검토 상태를 확인합니다."
-        href={applicationsHref}
-        icon={<Users size={20} />}
-        title="신청자 관리"
-      />
-      <ToolCard
-        description="공지, 문의, 알림 메시지를 준비합니다."
-        href={messagesHref}
-        icon={<MessageSquareText size={20} />}
-        title="공지/문의/알림"
-      />
+    <div className="grid gap-5">
+      <section className="rounded-md border border-[#F3E2D5] bg-white p-5 shadow-sm">
+        <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+          <div>
+            <p className="inline-flex items-center gap-2 text-sm font-black text-[#FE701E]">
+              <ClipboardList size={18} />
+              공개 전 체크리스트
+            </p>
+            <h2 className="mt-2 text-2xl font-black text-[#0D0D0C]">
+              {ready ? "공개 준비가 완료되었습니다." : "공개 전에 필요한 항목을 확인해 주세요."}
+            </h2>
+            <p className="mt-2 text-sm font-bold leading-6 text-[#8B7A6E]">
+              {completedCount}/{totalCount}개 완료
+              {linkedApplicationForm ? ` · 연결된 신청폼: ${linkedApplicationForm.name}` : ""}
+            </p>
+          </div>
+          <Link
+            className={`inline-flex h-10 w-fit items-center justify-center gap-2 rounded-md px-4 text-sm font-black ${
+              ready
+                ? "bg-[#FE701E] text-white"
+                : "border border-[#F3E2D5] bg-[#FFF8F2] text-[#5B3A29]"
+            }`}
+            href={`${programPath}?panel=management`}
+          >
+            공개 설정
+            <ArrowRight size={15} />
+          </Link>
+        </div>
+
+        <div className="mt-5 grid gap-3 md:grid-cols-2 xl:grid-cols-5">
+          {publishChecklist.map((item) => (
+            <ChecklistStatusCard item={item} key={item.id} />
+          ))}
+        </div>
+      </section>
+
+      <div className="grid gap-3 md:grid-cols-3">
+        <ToolCard
+          description="프로그램 제목, 모집 상태, 일정, 인원을 정리합니다."
+          href={`${programPath}?panel=basic`}
+          icon={<Settings size={20} />}
+          title="프로그램 설정"
+        />
+        <ToolCard
+          description="참여자가 제출할 질문과 안내 문구를 구성합니다."
+          href={formsHref}
+          icon={<FilePlus2 size={20} />}
+          title="신청 폼"
+        />
+        <ToolCard
+          description="신청자 목록과 검토 상태를 확인합니다."
+          href={applicationsHref}
+          icon={<Users size={20} />}
+          title="신청자 관리"
+        />
+        <ToolCard
+          description="공지, 문의, 알림 메시지를 준비합니다."
+          href={messagesHref}
+          icon={<MessageSquareText size={20} />}
+          title="공지/문의/알림"
+        />
+      </div>
     </div>
   );
 }
@@ -851,27 +965,63 @@ function GuidePanel({
 
 function ManagementPanel({
   draft,
+  publishBlockers,
+  readyToPublish,
   updateDraft,
 }: {
   draft: HostProgramDraft;
+  publishBlockers: ProgramDraftChecklistItem[];
+  readyToPublish: boolean;
   updateDraft: (patch: Partial<HostProgramDraft>) => void;
 }) {
   return (
     <PanelCard icon={<Settings size={19} />} title={panelLabels.management}>
-      <div className="grid gap-4 md:grid-cols-2">
+      <div className="grid gap-4">
+        {!readyToPublish ? (
+          <div className="rounded-md border border-[#F3CBB3] bg-[#FFF8F2] p-4">
+            <p className="text-sm font-black text-[#0D0D0C]">
+              아직 공개할 수 없습니다.
+            </p>
+            <p className="mt-1 text-sm font-bold leading-6 text-[#8B7A6E]">
+              아래 항목을 완료하면 공개 상태를 켤 수 있습니다.
+            </p>
+            <div className="mt-3 grid gap-2 sm:grid-cols-2">
+              {publishBlockers.map((item) => (
+                <div
+                  className="rounded-md border border-[#F3E2D5] bg-white px-3 py-2"
+                  key={item.id}
+                >
+                  <p className="text-sm font-black text-[#5B3A29]">
+                    {item.label}
+                  </p>
+                  <p className="mt-1 text-xs font-bold leading-5 text-[#8B7A6E]">
+                    {item.helper}
+                  </p>
+                </div>
+              ))}
+            </div>
+          </div>
+        ) : null}
+
+        <div className="grid gap-4 md:grid-cols-2">
         <label className="flex min-h-20 items-center justify-between gap-4 rounded-md border border-[#F3E2D5] bg-[#FFFDFB] p-4">
           <span>
             <span className="block text-sm font-black text-[#0D0D0C]">
               공개 상태
             </span>
             <span className="mt-1 block text-sm font-bold text-[#8B7A6E]">
-              켜면 공개 프로그램으로 사용할 준비 상태가 됩니다.
+              체크리스트가 완료되면 공개 프로그램으로 발행할 수 있습니다.
             </span>
           </span>
           <input
             checked={draft.published}
             className="size-5 accent-[#FE701E]"
-            onChange={(event) => updateDraft({ published: event.target.checked })}
+            disabled={!readyToPublish && !draft.published}
+            onChange={(event) =>
+              updateDraft({
+                published: event.target.checked ? readyToPublish : false,
+              })
+            }
             type="checkbox"
           />
         </label>
@@ -880,6 +1030,7 @@ function ManagementPanel({
           <p className="mt-2 text-sm font-bold text-[#8B7A6E]">
             {formatDateTime(draft.updatedAt)}
           </p>
+        </div>
         </div>
       </div>
     </PanelCard>
@@ -930,6 +1081,34 @@ function ToolCard({
         <ArrowRight size={15} />
       </span>
     </Link>
+  );
+}
+
+function ChecklistStatusCard({ item }: { item: ProgramDraftChecklistItem }) {
+  return (
+    <div
+      className={`rounded-md border p-4 ${
+        item.done
+          ? "border-[#DDEAD4] bg-[#F8FCF5]"
+          : "border-[#F3E2D5] bg-[#FFFDFB]"
+      }`}
+    >
+      <div className="flex items-center gap-2">
+        <span
+          className={`grid size-7 place-items-center rounded-full ${
+            item.done
+              ? "bg-[#7A8B52] text-white"
+              : "bg-[#FFF1E8] text-[#FE701E]"
+          }`}
+        >
+          {item.done ? <CheckCircle2 size={16} /> : <ClipboardList size={15} />}
+        </span>
+        <p className="text-sm font-black text-[#0D0D0C]">{item.label}</p>
+      </div>
+      <p className="mt-3 min-h-10 text-xs font-bold leading-5 text-[#8B7A6E]">
+        {item.done ? "완료되었습니다." : item.helper}
+      </p>
+    </div>
   );
 }
 
@@ -1719,6 +1898,17 @@ function findProgramDraft(
   });
 }
 
+function isLinkedApplicationForm(
+  form: ApplicationFormTemplate,
+  draft: HostProgramDraft,
+): boolean {
+  return (
+    form.formKind === "application" &&
+    (Boolean(form.programId && form.programId === draft.id) ||
+      normalizeIdentifier(form.programTitle) === normalizeIdentifier(draft.title))
+  );
+}
+
 function normalizePanel(value: string | null): ProgramPanel {
   if (
     value === "basic" ||
@@ -1734,6 +1924,10 @@ function normalizePanel(value: string | null): ProgramPanel {
   return "dashboard";
 }
 
+function normalizeIdentifier(value: string | undefined): string {
+  return (value ?? "").trim().toLowerCase();
+}
+
 function parseAmount(value: string): number {
   const normalized = value.replace(/[^\d]/gu, "");
   return normalized ? Number(normalized) : 0;
@@ -1744,12 +1938,7 @@ function statusLabel(status?: ProgramStatus): string {
 }
 
 function getRecruitmentMethod(applyUrl: string): RecruitmentMethod {
-  const url = applyUrl.trim();
-
-  if (url === noRecruitmentApplyUrl) return "none";
-  if (!url || url.startsWith("/") || url.includes("nuvio.kr")) return "nuvio";
-
-  return "external";
+  return getProgramRecruitmentMethod(applyUrl);
 }
 
 function buildInternalApplyUrl(draft: HostProgramDraft): string {

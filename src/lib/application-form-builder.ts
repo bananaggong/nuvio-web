@@ -1,6 +1,7 @@
 import { isDemoModeEnabled } from "@/lib/demo-mode";
 
 export type ApplicationFieldType = "text" | "textarea" | "select" | "checkbox";
+export type ApplicationFormKind = "application" | "inquiry";
 
 export type ApplicationFormBlockType =
   | "title"
@@ -50,6 +51,7 @@ export type ApplicationFormTemplate = {
   id: string;
   name: string;
   description: string;
+  formKind: ApplicationFormKind;
   programId?: string;
   programTitle: string;
   blocks: ApplicationFormBlock[];
@@ -96,6 +98,7 @@ export const seedApplicationFormTemplates: ApplicationFormTemplate[] = [
     id: "form-basic-program-application",
     name: "기본 프로그램 신청폼",
     description: "참여 동기, 가능 일정, 개인정보 동의를 확인합니다.",
+    formKind: "application",
     programTitle: "",
     updatedAt: "2026-05-04T00:00:00+09:00",
     blocks: [
@@ -183,8 +186,9 @@ export function normalizeApplicationFormTemplateShape(
     blocks: normalizedBlocks,
     description: asString(value.description),
     fields: normalizedFields,
+    formKind: asFormKind(value.formKind),
     id: asString(value.id) || `form-${Date.now()}`,
-    name: asString(value.name) || "신청폼",
+    name: asString(value.name) || defaultTemplateName(asFormKind(value.formKind)),
     programId: asString(value.programId),
     programTitle: asString(value.programTitle),
     updatedAt: asString(value.updatedAt) || new Date().toISOString(),
@@ -296,12 +300,15 @@ export function createEmptyField(): ApplicationFormField {
   return blocksToFields([createEmptyBlock("shortText")])[0];
 }
 
-export function createEmptyTemplate(): ApplicationFormTemplate {
+export function createEmptyTemplate(
+  formKind: ApplicationFormKind = "application",
+): ApplicationFormTemplate {
   return normalizeApplicationFormTemplateShape({
     blocks: [],
     description: "",
+    formKind,
     id: `form-${Date.now()}`,
-    name: "새 신청폼",
+    name: formKind === "inquiry" ? "새 문의 양식" : "새 신청폼",
     programId: "",
     programTitle: "",
     updatedAt: new Date().toISOString(),
@@ -311,7 +318,10 @@ export function createEmptyTemplate(): ApplicationFormTemplate {
 export function cloneApplicationFormTemplate(
   template: ApplicationFormTemplate,
   overrides: Partial<
-    Pick<ApplicationFormTemplate, "description" | "name" | "programId" | "programTitle">
+    Pick<
+      ApplicationFormTemplate,
+      "description" | "formKind" | "name" | "programId" | "programTitle"
+    >
   > = {},
 ): ApplicationFormTemplate {
   const now = Date.now();
@@ -370,6 +380,10 @@ function asFieldType(value: unknown): ApplicationFieldType {
     : "text";
 }
 
+export function asFormKind(value: unknown): ApplicationFormKind {
+  return asString(value) === "inquiry" ? "inquiry" : "application";
+}
+
 function legacyFieldTypeToBlockType(
   type: ApplicationFieldType,
 ): ApplicationFormBlockType {
@@ -406,6 +420,10 @@ function defaultBlockLabel(type: ApplicationFormBlockType): string {
   };
 
   return labels[type];
+}
+
+function defaultTemplateName(formKind: ApplicationFormKind): string {
+  return formKind === "inquiry" ? "문의 양식" : "신청폼";
 }
 
 function asString(value: unknown): string {

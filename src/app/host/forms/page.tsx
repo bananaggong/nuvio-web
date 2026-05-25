@@ -7,10 +7,16 @@ export const metadata: Metadata = {
     "누비오 호스트가 신청폼을 직접 만들고 프로그램에 복제해 재사용하는 화면입니다.",
 };
 
-export default function HostFormsPage() {
+export default async function HostFormsPage({
+  searchParams,
+}: {
+  searchParams?: Promise<{ kind?: string }>;
+}) {
+  const kind = (await searchParams)?.kind === "inquiry" ? "inquiry" : "application";
+
   return (
     <>
-      <HostFormLibrary />
+      <HostFormLibrary initialKind={kind} />
     </>
   );
 }
