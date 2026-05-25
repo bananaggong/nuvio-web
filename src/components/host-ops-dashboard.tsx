@@ -64,7 +64,7 @@ export function HostOpsDashboard() {
         <div>
           <p className="inline-flex items-center gap-2 text-sm font-black text-[var(--primary)]">
             <FolderKanban size={18} />
-            폴더 운영
+            프로그램 현황
           </p>
           <h1 className="mt-2 text-2xl font-black leading-tight text-slate-950 sm:text-3xl">
             운영중인 프로그램

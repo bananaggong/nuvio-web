@@ -21,8 +21,10 @@ import type {
 import {
   findHostProgramOverview,
   findHostProjectOverview,
+  findStandaloneHostProgramOverview,
   hostProgramPath,
   hostProjectPath,
+  hostStandaloneProgramPath,
 } from "@/lib/host-projects";
 import { useHostOperationsData } from "@/lib/use-host-operations-data";
 
@@ -69,18 +71,33 @@ export function HostApplicationsCrm({
     return findHostProjectOverview(projectId, applications, reportProjects, hostPrograms);
   }, [applications, hostPrograms, projectId, reportProjects]);
   const program = useMemo(() => {
-    if (!projectId || !programId) return undefined;
-    return findHostProgramOverview(
-      projectId,
-      programId,
-      applications,
-      reportProjects,
-      hostPrograms,
-    );
+    if (projectId && programId) {
+      return findHostProgramOverview(
+        projectId,
+        programId,
+        applications,
+        reportProjects,
+        hostPrograms,
+      );
+    }
+    if (programId) {
+      return findStandaloneHostProgramOverview(
+        programId,
+        applications,
+        reportProjects,
+        hostPrograms,
+      );
+    }
+    return undefined;
   }, [applications, hostPrograms, programId, projectId, reportProjects]);
   const projectBasePath = projectId ? hostProjectPath(projectId) : undefined;
   const programBasePath =
-    projectId && program ? hostProgramPath(projectId, program.id) : undefined;
+    projectId && program
+      ? hostProgramPath(projectId, program.id)
+      : program
+        ? hostStandaloneProgramPath(program.id)
+        : undefined;
+  const backHref = programBasePath ?? projectBasePath;
   const scopedApplications = program
     ? program.applications
     : project
@@ -164,10 +181,10 @@ export function HostApplicationsCrm({
 
   return (
     <div className="mx-auto max-w-7xl px-4 py-8 md:px-8">
-      {projectBasePath ? (
+      {backHref ? (
         <Link
           className="mb-5 inline-flex h-10 items-center justify-center gap-2 rounded-md border border-slate-200 bg-white px-3 text-sm font-black text-slate-700"
-          href={programBasePath ?? projectBasePath}
+          href={backHref}
         >
           {programBasePath ? "프로그램 허브" : "폴더"}
           <ArrowRight size={16} />

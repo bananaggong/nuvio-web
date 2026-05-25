@@ -2,14 +2,7 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import {
-  ArrowLeft,
-  ClipboardList,
-  FolderKanban,
-  ListChecks,
-  Plus,
-  Settings,
-} from "lucide-react";
+import { ArrowLeft, ClipboardList, FolderKanban, Plus } from "lucide-react";
 import { useMemo } from "react";
 import {
   buildHostProgramOverviews,
@@ -18,10 +11,6 @@ import {
   hostProjectPath,
   type HostProgramOverview,
 } from "@/lib/host-projects";
-import {
-  formatCurrency,
-  summarizeReportProject,
-} from "@/lib/report-automation";
 import { useHostOperationsData } from "@/lib/use-host-operations-data";
 
 export function HostProjectHub({ projectId }: { projectId: string }) {
@@ -35,26 +24,23 @@ export function HostProjectHub({ projectId }: { projectId: string }) {
     () => (project ? buildHostProgramOverviews(project, applications) : []),
     [applications, project],
   );
-  const reportSummary = project?.reportProject
-    ? summarizeReportProject(project.reportProject, applications)
-    : undefined;
 
   if (!project) {
     return (
       <div className="mx-auto max-w-5xl px-4 py-8 md:px-8">
         <Link
-          className="inline-flex h-10 items-center gap-2 rounded-md border border-slate-200 bg-white px-3 text-sm font-black text-slate-700"
-          href="/host"
+          className="inline-flex h-10 items-center gap-2 rounded-md border border-[#F3E2D5] bg-white px-3 text-sm font-black text-[#5B3A29]"
+          href="/host/programs"
         >
           <ArrowLeft size={16} />
           프로그램 목록
         </Link>
-        <div className="mt-5 rounded-md border border-slate-200 bg-white p-6">
-          <h1 className="text-2xl font-black text-slate-950">
+        <div className="mt-5 rounded-md border border-[#F3E2D5] bg-white p-6">
+          <h1 className="text-2xl font-black text-[#0D0D0C]">
             폴더를 찾을 수 없습니다.
           </h1>
-          <p className="mt-2 text-sm leading-6 text-slate-500">
-            폴더 목록에서 다시 선택하거나 새 폴더를 만들어 주세요.
+          <p className="mt-2 text-sm leading-6 text-[#7A6558]">
+            프로그램 목록에서 다시 선택하거나 새 폴더를 만들어 주세요.
           </p>
         </div>
       </div>
@@ -67,132 +53,73 @@ export function HostProjectHub({ projectId }: { projectId: string }) {
     <div className="mx-auto max-w-7xl px-4 py-6 md:px-8">
       <div className="mb-5 flex flex-wrap items-center justify-between gap-3">
         <Link
-          className="inline-flex h-10 items-center gap-2 rounded-md border border-slate-200 bg-white px-3 text-sm font-black text-slate-700"
-          href="/host"
+          className="inline-flex h-10 items-center gap-2 rounded-md border border-[#F3E2D5] bg-white px-3 text-sm font-black text-[#5B3A29]"
+          href="/host/programs"
         >
           <ArrowLeft size={16} />
           프로그램 목록
         </Link>
-        <div className="flex flex-wrap gap-2">
-          <Link
-            className="inline-flex h-10 items-center gap-2 rounded-md border border-slate-200 bg-white px-3 text-sm font-black text-slate-700"
-            href="/host/reports"
-          >
-            <Settings size={16} />
-            폴더 설정
-          </Link>
-          <Link
-            className="inline-flex h-10 items-center gap-2 rounded-md bg-slate-950 px-3 text-sm font-black text-white"
-            href={`${projectPath}/programs/new`}
-          >
-            <Plus size={16} />
-            새 프로그램
-          </Link>
-        </div>
+        <Link
+          className="inline-flex h-10 items-center gap-2 rounded-md bg-[#FE701E] px-3 text-sm font-black text-white transition hover:bg-[#E85F13]"
+          href={`${projectPath}/programs/new`}
+        >
+          <Plus size={16} />
+          새 프로그램
+        </Link>
       </div>
 
-      <section className="rounded-md border border-slate-200 bg-white p-5">
-        <div className="flex flex-col gap-5 lg:flex-row lg:items-start lg:justify-between">
-          <div className="flex min-w-0 gap-4">
-            <div className="grid size-12 shrink-0 place-items-center rounded-md bg-[var(--primary)] text-xl font-black text-white">
-              {project.title.slice(0, 1)}
-            </div>
-            <div className="min-w-0">
-              <p className="inline-flex items-center gap-2 text-sm font-black text-[var(--primary)]">
-                <FolderKanban size={18} />
-                폴더 작업공간
-              </p>
-              <h1 className="mt-2 break-words text-2xl font-black leading-tight text-slate-950 sm:text-3xl">
-                {project.title}
-              </h1>
-              <p className="mt-2 text-sm leading-6 text-slate-500">
-                폴더는 프로그램을 담는 상위 공간입니다. 신청자,
-                신청서, 안내 메시지는 프로그램 안에서 관리하고, 지출/증빙과
-                마감은 폴더 기준으로 모읍니다.
-              </p>
-            </div>
+      <section className="rounded-md border border-[#F3E2D5] bg-white p-5">
+        <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+          <div className="min-w-0">
+            <p className="inline-flex items-center gap-2 text-sm font-black text-[#FE701E]">
+              <FolderKanban size={18} />
+              폴더
+            </p>
+            <h1 className="mt-2 break-words text-2xl font-black leading-tight text-[#0D0D0C] sm:text-3xl">
+              {project.title}
+            </h1>
           </div>
-          <div className="grid min-w-[280px] gap-2 sm:grid-cols-2 lg:w-[360px]">
-            <HeaderMetric label="프로그램" value={`${programs.length}개`} />
-            <HeaderMetric label="신청자" value={`${project.applicationCount}명`} />
-            <HeaderMetric label="증빙 누락" value={`${project.missingEvidenceCount}개`} />
-            <HeaderMetric label="준비율" value={`${project.readiness}%`} />
+          <div className="rounded-md bg-[#FFF6EC] px-3 py-2 text-sm font-black text-[#FE701E]">
+            프로그램 {programs.length}개
           </div>
         </div>
       </section>
 
-      <div className="mt-6 grid gap-6 xl:grid-cols-[260px_minmax(0,1fr)]">
-        <aside className="space-y-4">
-          <section className="rounded-md border border-slate-200 bg-white p-4">
-            <h2 className="flex items-center gap-2 text-sm font-black text-slate-950">
-              <ListChecks className="text-[var(--primary)]" size={17} />
-              폴더 상태
-            </h2>
-            <div className="mt-3 grid gap-2">
-              <StatusLine label="상태" value={project.statusLabel} />
-              <StatusLine label="기간" value={project.periodLabel} />
-              <StatusLine
-                label="집행"
-                value={formatCurrency(reportSummary?.usedAmount ?? project.usedAmount)}
-              />
-              <StatusLine
-                label="활동"
-                value={`${reportSummary?.activityCount ?? project.activityCount}건`}
-              />
-            </div>
-          </section>
-        </aside>
+      <section className="mt-6 rounded-md border border-[#F3E2D5] bg-white p-5" id="programs">
+        <h2 className="flex items-center gap-2 text-lg font-black text-[#0D0D0C]">
+          <span className="text-[#FE701E]">
+            <ClipboardList size={18} />
+          </span>
+          프로그램
+        </h2>
 
-        <main className="min-w-0">
-          <section className="rounded-md border border-slate-200 bg-white p-5" id="programs">
-            <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
-              <div>
-                <p className="inline-flex items-center gap-2 text-sm font-black text-[var(--primary)]">
-                  <ClipboardList size={18} />
-                  프로그램
-                </p>
-                <h2 className="mt-2 text-2xl font-black text-slate-950">
-                  폴더 안의 프로그램
-                </h2>
-                <p className="mt-2 text-sm leading-6 text-slate-500">
-                  프로그램을 선택하면 그 안에서 신청자 CRM, 신청서, 안내 메시지를
-                  이어서 관리합니다.
-                </p>
-              </div>
-            </div>
-
-            {programs.length > 0 ? (
-              <div className="mt-5 grid gap-6 sm:grid-cols-2 xl:grid-cols-3">
-                {programs.map((program) => (
-                  <ProgramCard
-                    key={program.id}
-                    program={program}
-                    projectId={project.id}
-                    villageName={project.villageName}
-                  />
-                ))}
-              </div>
-            ) : (
-              <div className="mt-5 rounded-md border border-dashed border-slate-300 bg-[var(--surface-muted)] p-8 text-center">
-                <ClipboardList className="mx-auto text-slate-300" size={42} />
-                <h3 className="mt-4 text-xl font-black text-slate-950">
-                  아직 프로그램이 없습니다.
-                </h3>
-                <p className="mt-2 text-sm font-bold text-slate-500">
-                  프로그램을 신설하면 이 폴더 안에 파일처럼 쌓입니다.
-                </p>
-                <Link
-                  className="mt-5 inline-flex h-10 items-center justify-center gap-2 rounded-md bg-slate-950 px-3 text-sm font-black text-white"
-                  href={`${projectPath}/programs/new`}
-                >
-                  <Plus size={16} />
-                  프로그램 신설
-                </Link>
-              </div>
-            )}
-          </section>
-        </main>
-      </div>
+        {programs.length > 0 ? (
+          <div className="mt-4 grid gap-x-6 gap-y-8 sm:grid-cols-2 xl:grid-cols-3">
+            {programs.map((program) => (
+              <ProgramCard
+                key={program.id}
+                program={program}
+                projectId={project.id}
+                villageName={project.villageName}
+              />
+            ))}
+          </div>
+        ) : (
+          <div className="mt-4 rounded-md border border-dashed border-[#F3C3A5] bg-white p-8 text-center">
+            <ClipboardList className="mx-auto text-[#F3C3A5]" size={42} />
+            <h3 className="mt-4 text-xl font-black text-[#0D0D0C]">
+              아직 프로그램이 없습니다.
+            </h3>
+            <Link
+              className="mt-5 inline-flex h-10 items-center justify-center gap-2 rounded-md bg-[#FE701E] px-3 text-sm font-black text-white hover:bg-[#E85F13]"
+              href={`${projectPath}/programs/new`}
+            >
+              <Plus size={16} />
+              새 프로그램
+            </Link>
+          </div>
+        )}
+      </section>
     </div>
   );
 }
@@ -225,79 +152,28 @@ function ProgramCard({
         <div className="absolute inset-x-0 bottom-0 bg-black/70 p-3 text-white">
           <p className="line-clamp-1 text-sm font-black">{villageName}</p>
           <p className="mt-1 text-xs font-bold text-white/75">
-            모집/검토 · 준비율 {program.readiness}%
+            신청 {program.applicationCount}명
           </p>
         </div>
       </Link>
 
       <div className="pt-3">
-        <div className="flex min-w-0 items-start justify-between gap-3">
-          <Link className="min-w-0" href={programPath}>
-            <h3 className="line-clamp-2 text-base font-black leading-6 text-slate-950 group-hover:text-[var(--primary)]">
-              {program.title}
-            </h3>
-          </Link>
-          <span className="shrink-0 pt-0.5 text-base font-black text-slate-950">
-            {program.pendingCount > 0 ? `검토 ${program.pendingCount}` : `${program.readiness}%`}
-          </span>
-        </div>
-
+        <Link className="min-w-0" href={programPath}>
+          <h3 className="line-clamp-2 text-base font-black leading-6 text-slate-950 group-hover:text-[var(--primary)]">
+            {program.title}
+          </h3>
+        </Link>
         <p className="mt-1 text-sm font-bold text-slate-500">
-          프로그램 단위 운영
+          {getProgramStatusLabel(program.status)}
         </p>
-
-        <div className="mt-3 flex flex-wrap gap-2 text-xs font-black">
-          <ProgramSignal label="신청" value={`${program.applicationCount}명`} />
-          <ProgramSignal label="증빙" value={`${program.missingEvidenceCount}개`} />
-          <ProgramSignal label="참여" value={`${program.activeCount}명`} />
-        </div>
-
-        <div className="mt-3 flex flex-wrap gap-2">
-          <SubFeatureLink href={`${programPath}/applications`} label="신청자" />
-          <SubFeatureLink href={`${programPath}/forms`} label="신청서" />
-          <SubFeatureLink href={`${programPath}/messages`} label="메시지" />
-          <SubFeatureLink href={programPath} label="운영" />
-        </div>
       </div>
     </article>
   );
 }
 
-function HeaderMetric({ label, value }: { label: string; value: string }) {
-  return (
-    <div className="rounded-md bg-[var(--surface-muted)] p-3">
-      <p className="text-xs font-black text-slate-500">{label}</p>
-      <p className="mt-1 font-mono text-lg font-black text-slate-950">{value}</p>
-    </div>
-  );
-}
-
-function StatusLine({ label, value }: { label: string; value: string }) {
-  return (
-    <div className="rounded-md bg-[var(--surface-muted)] p-3">
-      <p className="text-xs font-black text-slate-500">{label}</p>
-      <p className="mt-1 break-words text-sm font-black text-slate-800">
-        {value}
-      </p>
-    </div>
-  );
-}
-
-function ProgramSignal({ label, value }: { label: string; value: string }) {
-  return (
-    <span className="rounded-md bg-[var(--surface-muted)] px-2 py-1 text-slate-600">
-      {label} {value}
-    </span>
-  );
-}
-
-function SubFeatureLink({ href, label }: { href: string; label: string }) {
-  return (
-    <Link
-      className="inline-flex h-8 items-center rounded-md border border-slate-200 px-2.5 text-xs font-black text-slate-600 hover:border-[var(--primary)] hover:text-[var(--primary)]"
-      href={href}
-    >
-      {label}
-    </Link>
-  );
+function getProgramStatusLabel(status: HostProgramOverview["status"]): string {
+  if (status === "open") return "모집중";
+  if (status === "upcoming") return "모집예정";
+  if (status === "closed" || status === "earlyClosed") return "마감";
+  return "상태 미정";
 }

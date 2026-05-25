@@ -412,10 +412,15 @@ function buildProgramNavigation(programBasePath: string): NavigationItem[] {
 }
 
 function getCurrentProgramBasePath(pathname: string) {
-  const match = pathname.match(/^\/host\/projects\/[^/]+\/programs\/[^/]+/u);
-  if (!match || match[0].endsWith("/programs/new")) return undefined;
+  const projectProgramMatch = pathname.match(
+    /^\/host\/projects\/[^/]+\/programs\/(?!new(?:\/|$))[^/]+/u,
+  );
+  if (projectProgramMatch) return projectProgramMatch[0];
 
-  return match[0];
+  const standaloneProgramMatch = pathname.match(
+    /^\/host\/programs\/(?!new(?:\/|$))[^/]+/u,
+  );
+  return standaloneProgramMatch?.[0];
 }
 
 function NavigationGroup({

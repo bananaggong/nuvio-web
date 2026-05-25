@@ -56,11 +56,11 @@ export default async function HostVillageConsolePage({
           </h1>
           <p className="mt-2 max-w-2xl text-sm leading-6 text-slate-600">
             이 로컬페이지의 전용 운영 화면은 아직 구성 전입니다. 현재는 공통 로컬페이지 정보와
-            폴더 운영 도구를 먼저 사용할 수 있습니다.
+            프로그램 관리 화면을 먼저 사용할 수 있습니다.
           </p>
           <div className="mt-5 flex flex-wrap gap-2">
             <HostLink href="/host/villages" label="로컬페이지 정보 수정" />
-            <HostLink href="/host/projects" label="폴더" />
+            <HostLink href="/host/programs" label="프로그램" />
             <HostLink href={`/${villageSlug}`} label="공개 페이지 보기" />
           </div>
         </section>

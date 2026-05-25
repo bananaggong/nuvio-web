@@ -1,25 +1,11 @@
-import type { Metadata } from "next";
-import { HostApplicationDetail } from "@/components/host-application-detail";
-
-export const metadata: Metadata = {
-  title: "폴더 신청서 상세 | 누비오",
-  description:
-    "선택한 폴더 안에서 신청서 응답과 상태 이력을 확인하는 화면입니다.",
-};
+import { redirect } from "next/navigation";
 
 export default async function HostProjectApplicationDetailPage({
   params,
 }: {
   params: Promise<{ applicationId: string; projectId: string }>;
 }) {
-  const { applicationId, projectId } = await params;
+  const { projectId } = await params;
 
-  return (
-    <>
-      <HostApplicationDetail
-        applicationId={decodeURIComponent(applicationId)}
-        projectId={decodeURIComponent(projectId)}
-      />
-    </>
-  );
+  redirect(`/host/projects/${encodeURIComponent(decodeURIComponent(projectId))}`);
 }

@@ -20,8 +20,10 @@ import { useEffect, useMemo, useState } from "react";
 import {
   findHostProgramOverview,
   findHostProjectOverview,
+  findStandaloneHostProgramOverview,
   hostProgramPath,
   hostProjectPath,
+  hostStandaloneProgramPath,
 } from "@/lib/host-projects";
 import {
   buildMessageExportCsv,
@@ -77,14 +79,24 @@ export function HostMessageAutomation({
     return findHostProjectOverview(projectId, applications, reportProjects, hostPrograms);
   }, [applications, hostPrograms, projectId, reportProjects]);
   const program = useMemo(() => {
-    if (!projectId || !programId) return undefined;
-    return findHostProgramOverview(
-      projectId,
-      programId,
-      applications,
-      reportProjects,
-      hostPrograms,
-    );
+    if (projectId && programId) {
+      return findHostProgramOverview(
+        projectId,
+        programId,
+        applications,
+        reportProjects,
+        hostPrograms,
+      );
+    }
+    if (programId) {
+      return findStandaloneHostProgramOverview(
+        programId,
+        applications,
+        reportProjects,
+        hostPrograms,
+      );
+    }
+    return undefined;
   }, [applications, hostPrograms, programId, projectId, reportProjects]);
   const projectApplications = program
     ? program.applications
@@ -93,7 +105,11 @@ export function HostMessageAutomation({
       : applications;
   const projectBasePath = projectId ? hostProjectPath(projectId) : undefined;
   const programBasePath =
-    projectId && program ? hostProgramPath(projectId, program.id) : undefined;
+    projectId && program
+      ? hostProgramPath(projectId, program.id)
+      : program
+        ? hostStandaloneProgramPath(program.id)
+        : undefined;
   const recipients = useMemo(() => {
     if (!selectedCampaign) return [];
     return buildMessageRecipientPreview(

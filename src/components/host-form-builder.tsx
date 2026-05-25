@@ -47,6 +47,7 @@ import {
   hostProgramId,
   hostProgramPath,
   hostProjectPath,
+  hostStandaloneProgramPath,
 } from "@/lib/host-projects";
 import type {
   ApplicationFormBlock,
@@ -161,7 +162,11 @@ export function HostFormBuilder({
   );
   const projectBasePath = projectId ? hostProjectPath(projectId) : undefined;
   const programBasePath =
-    projectId && programId ? hostProgramPath(projectId, programId) : undefined;
+    projectId && programId
+      ? hostProgramPath(projectId, programId)
+      : programId && routeProgram
+        ? hostStandaloneProgramPath(routeProgram.id)
+        : undefined;
   const selectedProgram = useMemo(() => {
     if (!selectedTemplate) return undefined;
 

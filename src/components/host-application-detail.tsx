@@ -17,7 +17,11 @@ import type {
   HostApplication,
   HostApplicationStatus,
 } from "@/lib/host-operations";
-import { hostProgramPath, hostProjectPath } from "@/lib/host-projects";
+import {
+  hostProgramPath,
+  hostProjectPath,
+  hostStandaloneProgramPath,
+} from "@/lib/host-projects";
 
 type StatusEvent = {
   id: string;
@@ -110,12 +114,16 @@ export function HostApplicationDetail({
     : [];
   const projectBasePath = projectId ? hostProjectPath(projectId) : undefined;
   const programBasePath =
-    projectId && programId ? hostProgramPath(projectId, programId) : undefined;
-  const applicationsPath = projectBasePath
-    ? programBasePath
-      ? `${programBasePath}/applications`
-      : `${projectBasePath}/applications`
-    : "/host/applications";
+    projectId && programId
+      ? hostProgramPath(projectId, programId)
+      : programId
+        ? hostStandaloneProgramPath(programId)
+        : undefined;
+  const applicationsPath = programBasePath
+    ? `${programBasePath}/applications`
+    : projectBasePath
+      ? `${projectBasePath}/applications`
+      : "/host/applications";
   const hubPath = programBasePath ?? projectBasePath ?? "/host";
 
   function updateStatus(status: HostApplicationStatus) {

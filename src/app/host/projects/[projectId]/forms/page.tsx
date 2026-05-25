@@ -1,11 +1,4 @@
-import type { Metadata } from "next";
-import { HostFormBuilder } from "@/components/host-form-builder";
-
-export const metadata: Metadata = {
-  title: "폴더 신청서 설정 | 누비오",
-  description:
-    "선택한 폴더의 모집 흐름에 연결되는 신청서 질문을 구성하는 화면입니다.",
-};
+import { redirect } from "next/navigation";
 
 export default async function HostProjectFormsPage({
   params,
@@ -14,9 +7,5 @@ export default async function HostProjectFormsPage({
 }) {
   const { projectId } = await params;
 
-  return (
-    <>
-      <HostFormBuilder projectId={decodeURIComponent(projectId)} />
-    </>
-  );
+  redirect(`/host/projects/${encodeURIComponent(decodeURIComponent(projectId))}`);
 }
