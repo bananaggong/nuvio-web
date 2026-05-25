@@ -67,14 +67,14 @@ export function HostCenterHome({
   const groups = buildProgramGroups(programItems);
 
   return (
-    <main className="mx-auto w-full max-w-[1600px] px-4 py-6 md:px-8">
+    <main
+      aria-label={`${workspace.title} 호스트 홈`}
+      className="mx-auto w-full max-w-[1600px] px-4 py-6 md:px-8"
+    >
       <div className="min-h-[calc(100vh-7rem)] border-l border-[#F3E2D5] pl-4 md:pl-6">
         <header className="flex items-center justify-between gap-4">
           <div>
             <h1 className="text-2xl font-black text-[#0D0D0C]">호스트 홈</h1>
-            <p className="mt-2 text-sm font-bold text-[#8B7A6E]">
-              {workspace.title}에서 운영 중인 프로그램을 바로 확인합니다.
-            </p>
           </div>
           <div className="flex items-center gap-1 text-[#A59A92]">
             {isLoading ? <Loader2 className="animate-spin" size={16} /> : null}

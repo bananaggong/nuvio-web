@@ -7,9 +7,11 @@ import {
   Clock3,
   FileText,
   FolderOpen,
+  Loader2,
   Plus,
+  X,
 } from "lucide-react";
-import { useMemo, type ReactNode } from "react";
+import { useMemo, useState, type ReactNode } from "react";
 import {
   buildHostProgramOverviews,
   buildHostProjectOverviews,
@@ -18,6 +20,11 @@ import {
   type HostProgramOverview,
   type HostProjectOverview,
 } from "@/lib/host-projects";
+import {
+  createReportProject,
+  mergeReportProjects,
+  type ReportProject,
+} from "@/lib/report-automation";
 import { useHostOperationsData } from "@/lib/use-host-operations-data";
 
 type ProgramListItem = HostProgramOverview & {
@@ -27,8 +34,12 @@ type ProgramListItem = HostProgramOverview & {
 };
 
 export function HostProgramHome() {
-  const { applications, isLoading, programs, reportProjects } =
+  const { applications, isLoading, programs, reportProjects, setReportProjects } =
     useHostOperationsData();
+  const [isFolderDialogOpen, setIsFolderDialogOpen] = useState(false);
+  const [folderName, setFolderName] = useState("");
+  const [folderError, setFolderError] = useState("");
+  const [isFolderSaving, setIsFolderSaving] = useState(false);
 
   const folders = useMemo(
     () => buildHostProjectOverviews(applications, reportProjects, programs),
@@ -50,18 +61,75 @@ export function HostProgramHome() {
   );
   const createProgramHref = folders[0]
     ? `${hostProjectPath(folders[0].id)}/programs/new`
-    : "/host/projects/new";
+    : "";
+  const trimmedFolderName = folderName.trim();
+
+  function openFolderDialog() {
+    setFolderError("");
+    setFolderName("");
+    setIsFolderDialogOpen(true);
+  }
+
+  function closeFolderDialog() {
+    if (isFolderSaving) return;
+    setIsFolderDialogOpen(false);
+    setFolderError("");
+    setFolderName("");
+  }
+
+  async function createFolder() {
+    if (!trimmedFolderName || isFolderSaving) return;
+
+    const now = new Date().toISOString();
+    const nextFolder: ReportProject = {
+      ...createReportProject(),
+      agencyName: "운영 조직명",
+      connectedProgramTitles: [],
+      ownerName: "운영 담당자",
+      periodLabel: "운영 기간 미정",
+      title: trimmedFolderName,
+      updatedAt: now,
+      villageName: "로컬페이지",
+    };
+
+    setIsFolderSaving(true);
+    setFolderError("");
+
+    try {
+      const response = await fetch("/api/host/reports", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(nextFolder),
+      });
+      const payload = (await response.json()) as {
+        data?: ReportProject;
+        error?: string;
+      };
+
+      if (!response.ok || !payload.data) {
+        throw new Error(payload.error ?? "폴더 저장에 실패했습니다.");
+      }
+
+      setReportProjects((current) =>
+        mergeReportProjects([payload.data as ReportProject], current),
+      );
+      setIsFolderDialogOpen(false);
+      setFolderName("");
+    } catch (error) {
+      setFolderError(
+        error instanceof Error ? error.message : "폴더 저장에 실패했습니다.",
+      );
+    } finally {
+      setIsFolderSaving(false);
+    }
+  }
 
   return (
     <main className="mx-auto w-full max-w-[1600px] px-4 py-6 md:px-8">
       <div className="min-h-[calc(100vh-7rem)] border-l border-[#F3E2D5] pl-4 md:pl-6">
         <header className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
           <div>
-            <p className="inline-flex items-center gap-2 rounded-full bg-[#FFF6EC] px-3 py-2 text-sm font-black text-[#FE701E]">
-              <FolderOpen size={15} />
-              프로그램 홈
-            </p>
-            <h1 className="mt-4 text-2xl font-black text-[#0D0D0C] sm:text-3xl">
+            <h1 className="text-2xl font-black text-[#0D0D0C] sm:text-3xl">
               폴더와 최근 프로그램
             </h1>
             <p className="mt-2 text-sm font-bold text-[#8B7A6E]">
@@ -69,13 +137,15 @@ export function HostProgramHome() {
               {isLoading ? " · 불러오는 중" : ""}
             </p>
           </div>
-          <Link
-            className="inline-flex h-10 w-fit items-center justify-center gap-2 rounded-md bg-[#FE701E] px-3 text-sm font-black text-white transition hover:bg-[#E85F13]"
-            href={createProgramHref}
-          >
-            <Plus size={16} />
-            새 프로그램 만들기
-          </Link>
+          {createProgramHref ? (
+            <Link
+              className="inline-flex h-10 w-fit items-center justify-center gap-2 rounded-md bg-[#FE701E] px-3 text-sm font-black text-white transition hover:bg-[#E85F13]"
+              href={createProgramHref}
+            >
+              <Plus size={16} />
+              새 프로그램 만들기
+            </Link>
+          ) : null}
         </header>
 
         <section className="mt-8">
@@ -84,7 +154,7 @@ export function HostProgramHome() {
             icon={<FolderOpen size={18} />}
             title="폴더"
           />
-          <div className="mt-3 grid gap-3 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4">
+          <div className="mt-3 grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
             {folders.map((folder) => (
               <FolderCard
                 folder={folder}
@@ -95,7 +165,7 @@ export function HostProgramHome() {
                 }
               />
             ))}
-            <NewCard href="/host/projects/new" label="새 폴더 만들기" />
+            <NewCard label="새 폴더 만들기" onClick={openFolderDialog} />
           </div>
         </section>
 
@@ -123,17 +193,100 @@ export function HostProgramHome() {
               <p className="mt-2 text-sm font-bold text-[#8B7A6E]">
                 폴더를 만든 뒤 프로그램을 추가하면 이곳에 표시됩니다.
               </p>
-              <Link
-                className="mt-5 inline-flex h-10 items-center justify-center gap-2 rounded-md bg-[#FE701E] px-3 text-sm font-black text-white hover:bg-[#E85F13]"
-                href={createProgramHref}
-              >
-                <Plus size={16} />
-                새 프로그램 만들기
-              </Link>
+              {createProgramHref ? (
+                <Link
+                  className="mt-5 inline-flex h-10 items-center justify-center gap-2 rounded-md bg-[#FE701E] px-3 text-sm font-black text-white hover:bg-[#E85F13]"
+                  href={createProgramHref}
+                >
+                  <Plus size={16} />
+                  새 프로그램 만들기
+                </Link>
+              ) : (
+                <button
+                  className="mt-5 inline-flex h-10 items-center justify-center gap-2 rounded-md bg-[#FE701E] px-3 text-sm font-black text-white hover:bg-[#E85F13]"
+                  onClick={openFolderDialog}
+                  type="button"
+                >
+                  <Plus size={16} />
+                  새 폴더 만들기
+                </button>
+              )}
             </div>
           )}
         </section>
       </div>
+      {isFolderDialogOpen ? (
+        <div
+          className="fixed inset-0 z-50 grid place-items-center bg-black/30 px-4"
+          role="presentation"
+        >
+          <form
+            aria-modal="true"
+            aria-labelledby="new-folder-title"
+            className="w-full max-w-sm rounded-md border border-[#F3E2D5] bg-white p-5 shadow-xl"
+            onSubmit={(event) => {
+              event.preventDefault();
+              void createFolder();
+            }}
+            role="dialog"
+          >
+            <div className="flex items-start justify-between gap-4">
+              <div>
+                <h2
+                  className="text-lg font-black text-[#0D0D0C]"
+                  id="new-folder-title"
+                >
+                  새 폴더 만들기
+                </h2>
+                <p className="mt-1 text-sm font-bold text-[#8B7A6E]">
+                  폴더 이름만 입력하면 바로 목록에 추가됩니다.
+                </p>
+              </div>
+              <button
+                aria-label="닫기"
+                className="grid size-8 shrink-0 place-items-center rounded-md text-[#8B7A6E] hover:bg-[#FFF6EC] hover:text-[#FE701E]"
+                onClick={closeFolderDialog}
+                type="button"
+              >
+                <X size={16} />
+              </button>
+            </div>
+
+            <label className="mt-5 grid gap-2">
+              <span className="text-sm font-black text-[#5B3A29]">폴더 이름</span>
+              <input
+                autoFocus
+                className="h-11 rounded-md border border-[#E6D6CA] px-3 text-sm font-bold text-[#0D0D0C] outline-none transition placeholder:text-[#B7A89D] focus:border-[#FE701E] focus:ring-2 focus:ring-[#FE701E]/15"
+                onChange={(event) => setFolderName(event.target.value)}
+                placeholder="예: 여름 시즌 프로그램"
+                value={folderName}
+              />
+            </label>
+
+            {folderError ? (
+              <p className="mt-3 text-sm font-bold text-red-600">{folderError}</p>
+            ) : null}
+
+            <div className="mt-5 flex justify-end gap-2">
+              <button
+                className="h-10 rounded-md border border-[#E6D6CA] px-4 text-sm font-black text-[#5B3A29] hover:bg-[#FFF6EC]"
+                onClick={closeFolderDialog}
+                type="button"
+              >
+                취소
+              </button>
+              <button
+                className="inline-flex h-10 items-center justify-center gap-2 rounded-md bg-[#FE701E] px-4 text-sm font-black text-white transition hover:bg-[#E85F13] disabled:cursor-not-allowed disabled:opacity-40"
+                disabled={!trimmedFolderName || isFolderSaving}
+                type="submit"
+              >
+                {isFolderSaving ? <Loader2 className="animate-spin" size={15} /> : null}
+                만들기
+              </button>
+            </div>
+          </form>
+        </div>
+      ) : null}
     </main>
   );
 }
@@ -170,7 +323,7 @@ function FolderCard({
       className="group block rounded-md border border-[#F3E2D5] bg-white p-4 shadow-sm transition hover:border-[#FE701E]/50 hover:shadow-md"
       href={hostProjectPath(folder.id)}
     >
-      <div className="flex min-h-28 flex-col justify-between">
+      <div className="flex min-h-32 flex-col justify-between">
         <div>
           <div className="flex items-start justify-between gap-3">
             <span className="grid size-10 shrink-0 place-items-center rounded-md bg-[#FFF6EC] text-[#FE701E]">
@@ -235,16 +388,17 @@ function ProgramCard({ program }: { program: ProgramListItem }) {
   );
 }
 
-function NewCard({ href, label }: { href: string; label: string }) {
+function NewCard({ label, onClick }: { label: string; onClick: () => void }) {
   return (
-    <Link
+    <button
       className="grid min-h-40 place-items-center rounded-md border border-dashed border-[#F3C3A5] bg-white text-sm font-black text-[#FE701E] transition hover:border-[#FE701E] hover:bg-[#FFF6EC]"
-      href={href}
+      onClick={onClick}
+      type="button"
     >
       <span className="inline-flex items-center gap-2">
         <Plus size={15} />
         {label}
       </span>
-    </Link>
+    </button>
   );
 }
