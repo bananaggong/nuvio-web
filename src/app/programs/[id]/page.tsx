@@ -88,6 +88,9 @@ const dummyProgram: Program = {
       id: "day-1",
       image:
         "https://images.unsplash.com/photo-1500534314209-a25ddb2bd429?auto=format&fit=crop&w=900&q=80",
+      images: [
+        "https://images.unsplash.com/photo-1500534314209-a25ddb2bd429?auto=format&fit=crop&w=900&q=80",
+      ],
       summary: "도착 후 로컬 오리엔테이션과 동네 산책을 진행합니다.",
       timetable: "14:00 집결 및 체크인\n16:00 오리엔테이션\n18:00 로컬 저녁",
       title: "1일차",
@@ -96,6 +99,9 @@ const dummyProgram: Program = {
       id: "day-2",
       image:
         "https://images.unsplash.com/photo-1441974231531-c6227db76b6e?auto=format&fit=crop&w=900&q=80",
+      images: [
+        "https://images.unsplash.com/photo-1441974231531-c6227db76b6e?auto=format&fit=crop&w=900&q=80",
+      ],
       summary: "지역 크리에이터와 함께하는 체험과 자유 탐방 시간이 이어집니다.",
       timetable: "10:00 로컬 체험\n13:00 점심\n15:00 자유 탐방",
       title: "2일차",
@@ -753,7 +759,8 @@ function BenefitRow({
 }
 
 function getProgramGalleryImages(program: Program): string[] {
-  const itineraryImages = program.itineraryDays?.map((day) => day.image) ?? [];
+  const itineraryImages =
+    program.itineraryDays?.flatMap((day) => [day.image, ...day.images]) ?? [];
   const images = [program.image, ...program.gallery, ...itineraryImages]
     .map((image) => image.trim())
     .filter(isDisplayableProgramImage);
@@ -767,7 +774,7 @@ function getProgramScheduleItems(
 ): ProgramScheduleItem[] {
   const itineraryDays =
     program.itineraryDays?.filter((day) =>
-      [day.title, day.summary, day.timetable, day.image].some((value) =>
+      [day.title, day.summary, day.timetable, day.image, ...day.images].some((value) =>
         value.trim(),
       ),
     ) ?? [];
@@ -775,13 +782,16 @@ function getProgramScheduleItems(
   if (itineraryDays.length > 0) {
     return itineraryDays.map((day, index) => {
       const timetable = splitTimetable(day.timetable);
+      const dayImages = [day.image, ...day.images]
+        .map((image) => image.trim())
+        .filter(isDisplayableProgramImage);
       return {
         body:
           day.summary ||
           timetable[0] ||
           `${program.title} ${index + 1}일차 일정입니다.`,
         day: day.title || `${index + 1}일차`,
-        image: day.image || galleryImages[index + 1] || galleryImages[0],
+        image: dayImages[0] || galleryImages[index + 1] || galleryImages[0],
         timetable,
       };
     });

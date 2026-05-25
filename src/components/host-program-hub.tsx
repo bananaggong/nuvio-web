@@ -1155,6 +1155,129 @@ function ImageAttachInput({
   );
 }
 
+function ImageGalleryAttachInput({
+  images,
+  onChange,
+  programId,
+  usage,
+}: {
+  images: string[];
+  onChange: (images: string[]) => void;
+  programId: string;
+  usage: string;
+}) {
+  const [error, setError] = useState("");
+  const [uploading, setUploading] = useState(false);
+
+  async function handleFileChange(event: ChangeEvent<HTMLInputElement>) {
+    const files = Array.from(event.target.files ?? []);
+    if (files.length === 0) return;
+
+    setError("");
+    setUploading(true);
+
+    try {
+      const uploadedImages = await Promise.all(
+        files.map((file) => uploadProgramImage(file, programId, usage)),
+      );
+
+      onChange(uniqueImages([...images, ...uploadedImages]));
+      event.target.value = "";
+    } catch (uploadError) {
+      setError(
+        uploadError instanceof Error
+          ? uploadError.message
+          : "이미지를 업로드하지 못했어요.",
+      );
+    } finally {
+      setUploading(false);
+    }
+  }
+
+  function removeImage(image: string) {
+    onChange(images.filter((item) => item !== image));
+  }
+
+  return (
+    <div className="space-y-3">
+      <label className="flex min-h-[54px] cursor-pointer items-center gap-3 rounded-md bg-[#F7F5F3] px-4 text-sm font-black text-[#8F837B] transition hover:bg-[#FFF6EC] hover:text-[#FE701E]">
+        {uploading ? (
+          <Loader2 className="animate-spin" size={18} />
+        ) : (
+          <ImagePlus size={18} />
+        )}
+        <span>{uploading ? "업로드 중" : "사진 여러 장 업로드"}</span>
+        <input
+          accept="image/*"
+          className="sr-only"
+          disabled={uploading}
+          multiple
+          onChange={handleFileChange}
+          type="file"
+        />
+      </label>
+      <p className="text-xs font-bold leading-5 text-[#8F837B]">
+        일정 사진은 여러 장을 한 번에 선택할 수 있어요. 파일당 5MB 이하 JPG, PNG, WebP, GIF를 지원합니다.
+      </p>
+      {error ? (
+        <p className="rounded-md bg-[#FFF1ED] px-3 py-2 text-xs font-bold text-[#D94B1D]">
+          {error}
+        </p>
+      ) : null}
+      {images.length > 0 ? (
+        <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
+          {images.map((image) => (
+            <div
+              className="group relative aspect-[4/3] overflow-hidden rounded-md border border-[#E6D6CA] bg-cover bg-center"
+              key={image}
+              style={{ backgroundImage: `url("${image}")` }}
+            >
+              <button
+                aria-label="일정 사진 삭제"
+                className="absolute right-2 top-2 inline-flex size-8 items-center justify-center rounded-md bg-white/90 text-[#5B3A29] opacity-0 shadow-sm transition group-hover:opacity-100"
+                onClick={() => removeImage(image)}
+                type="button"
+              >
+                <Trash2 size={15} />
+              </button>
+            </div>
+          ))}
+        </div>
+      ) : null}
+    </div>
+  );
+}
+
+async function uploadProgramImage(
+  file: File,
+  programId: string,
+  usage: string,
+): Promise<string> {
+  const formData = new FormData();
+  formData.append("file", file);
+  formData.append("programId", programId);
+  formData.append("usage", usage);
+
+  const response = await fetch("/api/host/program-assets", {
+    body: formData,
+    method: "POST",
+  });
+  const payload = (await response.json().catch(() => ({}))) as {
+    data?: { url?: string };
+    error?: string;
+  };
+
+  if (!response.ok || !payload.data?.url) {
+    throw new Error(payload.error ?? "이미지를 업로드하지 못했어요.");
+  }
+
+  return payload.data.url;
+}
+
+function uniqueImages(images: string[]): string[] {
+  return Array.from(new Set(images.map((image) => image.trim()).filter(Boolean)));
+}
+
 function ItineraryDayEditor({
   day,
   dayNumber,
@@ -1168,6 +1291,16 @@ function ItineraryDayEditor({
   onRemove: () => void;
   programId: string;
 }) {
+  const dayImages = uniqueImages([day.image, ...(day.images ?? [])]);
+
+  function updateImages(images: string[]) {
+    const nextImages = uniqueImages(images);
+    onChange({
+      image: nextImages[0] ?? "",
+      images: nextImages,
+    });
+  }
+
   return (
     <article className="rounded-md border border-[#E6D6CA] bg-white p-4">
       <div className="mb-4 flex items-center justify-between gap-3">
@@ -1201,11 +1334,11 @@ function ItineraryDayEditor({
           rows={5}
           value={day.timetable}
         />
-        <ImageAttachInput
-          onChange={(image) => onChange({ image })}
+        <ImageGalleryAttachInput
+          images={dayImages}
+          onChange={updateImages}
           programId={programId}
           usage={`day-${dayNumber}`}
-          value={day.image}
         />
       </div>
     </article>

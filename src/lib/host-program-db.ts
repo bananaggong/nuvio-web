@@ -184,9 +184,14 @@ export function normalizeHostProgramDraft(input: unknown): HostProgramDraft {
 function mapHostDraftToProgramInsert(draft: HostProgramDraft): ProgramInsert {
   const image = draft.image.trim() || fallbackImage;
   const hashtags = normalizeTags(draft.hashtags);
-  const itineraryImages = draft.itineraryDays
-    .map((day) => day.image.trim())
-    .filter(Boolean);
+  const itineraryImages = Array.from(
+    new Set(
+      draft.itineraryDays
+        .flatMap((day) => [day.image, ...day.images])
+        .map((image) => image.trim())
+        .filter(Boolean),
+    ),
+  );
   const body = [
     draft.description.trim() || draft.summary.trim(),
     encodeHostProgramMeta(draft),

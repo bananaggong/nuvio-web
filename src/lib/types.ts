@@ -25,6 +25,7 @@ export type ProgramItineraryDay = {
   summary: string;
   timetable: string;
   image: string;
+  images: string[];
 };
 
 export type ProgramPlaceInfo = {

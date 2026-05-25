@@ -11,6 +11,7 @@ export type HostProgramItineraryDay = {
   summary: string;
   timetable: string;
   image: string;
+  images: string[];
 };
 
 export type HostProgramPlaceInfo = {
@@ -109,6 +110,7 @@ export const seedHostProgramDrafts: HostProgramDraft[] = [
       {
         id: "day-1",
         image: "",
+        images: [],
         summary: "강릉 도착 후 오리엔테이션과 해변 산책을 진행합니다.",
         timetable: "14:00 체크인\n16:00 오리엔테이션\n18:00 로컬 저녁",
         title: "1일차",
@@ -240,6 +242,7 @@ export function createHostProgramItineraryDay(
   return {
     id: `day-${dayNumber}-${Date.now()}`,
     image: "",
+    images: [],
     summary: "",
     timetable: "",
     title: `${dayNumber}일차`,
@@ -262,9 +265,13 @@ export function normalizeHostProgramItineraryDays(
       }
 
       const record = item as Record<string, unknown>;
+      const legacyImage = asText(record.image);
+      const images = uniqueTexts(asTextArray(record.images));
+      const normalizedImages = images.length > 0 ? images : legacyImage ? [legacyImage] : [];
       return {
         id: asText(record.id) || `day-${index + 1}`,
-        image: asText(record.image),
+        image: legacyImage || normalizedImages[0] || "",
+        images: normalizedImages,
         summary: asText(record.summary),
         timetable: asText(record.timetable),
         title: asText(record.title) || `${index + 1}일차`,
@@ -339,4 +346,14 @@ export function stripHostProgramMeta(body: string[]): string[] {
 
 function asText(value: unknown): string {
   return typeof value === "string" ? value.trim() : "";
+}
+
+function asTextArray(value: unknown): string[] {
+  if (!Array.isArray(value)) return [];
+
+  return value.map((item) => asText(item)).filter(Boolean);
+}
+
+function uniqueTexts(values: string[]): string[] {
+  return Array.from(new Set(values));
 }
