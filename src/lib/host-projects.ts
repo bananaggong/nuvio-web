@@ -3,6 +3,7 @@ import {
   type HostApplication,
 } from "@/lib/host-operations";
 import type { HostProgramDraft } from "@/lib/host-program-studio";
+import type { ProgramStatus } from "@/lib/types";
 import { programs } from "@/lib/data";
 import {
   getReportApplications,
@@ -50,6 +51,7 @@ export type HostProgramOverview = {
   pendingCount: number;
   readiness: number;
   slug?: string;
+  status?: ProgramStatus;
   title: string;
   updatedAt: string;
   villageId?: string;
@@ -223,6 +225,7 @@ function buildProgramOverviewFromDraft(
     pendingCount,
     readiness: applicationSummary.reportReadiness,
     slug: program.slug,
+    status: program.status,
     title: program.title,
     updatedAt: programApplications[0]?.submittedAt ?? program.updatedAt ?? project.updatedAt,
     villageId: program.villageId,
@@ -254,6 +257,7 @@ function buildProgramOverviewFromTitle(
     missingEvidenceCount: countMissingEvidence(programApplications),
     pendingCount,
     readiness: applicationSummary.reportReadiness,
+    status: "open",
     title,
     updatedAt: programApplications[0]?.submittedAt ?? project.updatedAt,
   };

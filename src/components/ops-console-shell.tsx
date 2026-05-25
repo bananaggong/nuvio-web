@@ -10,7 +10,6 @@ import {
   ClipboardList,
   FilePlus2,
   FolderOpen,
-  FolderKanban,
   Home,
   Menu,
   MessageSquareText,
@@ -41,46 +40,34 @@ type NavigationItem = {
 const navigationByArea: Record<ConsoleArea, NavigationItem[]> = {
   host: [
     {
-      name: "폴더 관리",
-      href: "/host/projects",
-      icon: FolderKanban,
+      name: "홈",
+      href: "/host",
+      icon: Home,
       children: [],
     },
     {
-      name: "모집/신청",
-      href: "/host/programs",
+      name: "프로그램",
+      href: "/host/projects",
       icon: ClipboardList,
-      children: [
-        { name: "프로그램 관리", href: "/host/programs" },
-        { name: "신청서 설정", href: "/host/forms" },
-        { name: "신청자 CRM", href: "/host/applications" },
-      ],
+      children: [],
     },
     {
-      name: "커뮤니케이션",
+      name: "문의",
       href: "/host/messages",
       icon: MessageSquareText,
-      children: [{ name: "안내 메시지", href: "/host/messages" }],
+      children: [],
     },
     {
-      name: "활동/증빙",
-      href: "/host/reports",
-      icon: WalletCards,
-      children: [
-        { name: "활동/참석", href: "/host/reports" },
-        { name: "지출/증빙", href: "/host/reports" },
-        { name: "마감/보고", href: "/host/reports" },
-      ],
+      name: "양식 저장",
+      href: "/host/forms",
+      icon: FilePlus2,
+      children: [],
     },
     {
       name: "로컬페이지",
       href: "/host/villages",
-      icon: Home,
-      children: [
-        { name: "로컬페이지", href: "/host/villages" },
-        { name: "전체차LAB 운영", href: "/host/villages/boseong" },
-        { name: "전체차LAB 페이지 편집", href: "/host/villages/boseong/editor" },
-      ],
+      icon: FolderOpen,
+      children: [],
     },
     {
       name: "설정",
@@ -152,12 +139,12 @@ const navigationByArea: Record<ConsoleArea, NavigationItem[]> = {
 };
 
 const titleByArea: Record<ConsoleArea, string> = {
-  host: "호스트 운영",
+  host: "호스트센터",
   admin: "관리자 운영",
 };
 
 const headerTitleByArea: Record<ConsoleArea, string> = {
-  host: "누비오 호스트 운영",
+  host: "누비오 호스트센터",
   admin: "누비오 관리자 운영",
 };
 
@@ -230,7 +217,7 @@ function Header({
             <Search className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-gray-400" />
             <input
               className="w-full rounded-full border-0 bg-white/90 py-2 pl-10 pr-4 text-sm font-semibold text-gray-800 outline-none ring-0 placeholder:text-gray-400 focus:bg-white focus:ring-2 focus:ring-white/30"
-              placeholder="폴더, 신청자, 보고서 검색..."
+              placeholder="프로그램, 문의, 양식 검색..."
               type="text"
             />
           </label>
@@ -344,21 +331,35 @@ function buildNavigation(area: ConsoleArea, pathname: string): NavigationItem[] 
   const projectHref = (path: string) =>
     projectBasePath ? `${projectBasePath}${path}` : "/host/projects";
 
-  const projectNavigation: NavigationItem = {
-    name: "폴더 관리",
+  const homeNavigation: NavigationItem = {
+    name: "홈",
+    href: "/host",
+    icon: Home,
+    children: [],
+  };
+  const programNavigation: NavigationItem = {
+    name: "프로그램",
     href: "/host/projects",
-    icon: FolderKanban,
+    icon: ClipboardList,
+    children: [],
+  };
+  const inquiryNavigation: NavigationItem = {
+    name: "문의",
+    href: "/host/messages",
+    icon: MessageSquareText,
+    children: [],
+  };
+  const formNavigation: NavigationItem = {
+    name: "양식 저장",
+    href: "/host/forms",
+    icon: FilePlus2,
     children: [],
   };
   const localPageNavigation: NavigationItem = {
     name: "로컬페이지",
     href: "/host/villages",
-    icon: Home,
-    children: [
-      { name: "로컬페이지", href: "/host/villages" },
-      { name: "전체차LAB 운영", href: "/host/villages/boseong" },
-      { name: "전체차LAB 페이지 편집", href: "/host/villages/boseong/editor" },
-    ],
+    icon: FolderOpen,
+    children: [],
   };
   const settingsNavigation: NavigationItem = {
     name: "설정",
@@ -366,50 +367,72 @@ function buildNavigation(area: ConsoleArea, pathname: string): NavigationItem[] 
     icon: Settings,
     children: [],
   };
-  const formNavigation: NavigationItem = {
-    name: "신청폼 관리",
-    href: "/host/forms",
-    icon: FilePlus2,
-    children: [],
-  };
 
   if (!isProjectWorkspace) {
-    return [projectNavigation, formNavigation, localPageNavigation, settingsNavigation];
+    return [
+      homeNavigation,
+      programNavigation,
+      inquiryNavigation,
+      formNavigation,
+      localPageNavigation,
+      settingsNavigation,
+    ];
   }
 
   return [
-    projectNavigation,
-    formNavigation,
+    homeNavigation,
+    programNavigation,
     {
-      name: "모집/신청",
-      href: programHref("/applications"),
-      icon: ClipboardList,
+      name: "대시보드",
+      href: programBasePath ?? projectBasePath ?? "/host/projects",
+      icon: BarChart3,
+      children: [],
+    },
+    {
+      name: "프로그램 설정",
+      href: programBasePath ?? programSelectionHref,
+      icon: Settings,
       children: [
-        { name: "프로그램 선택", href: programSelectionHref },
-        {
-          name: "새 프로그램 신설",
-          href: projectBasePath ? `${projectBasePath}/programs/new` : "/host/projects",
-        },
-        { name: "신청서 설정", href: programHref("/forms") },
-        { name: "신청자 CRM", href: programHref("/applications") },
+        { name: "기본정보", href: programBasePath ?? programSelectionHref },
+        { name: "상세 정보", href: programBasePath ?? programSelectionHref },
+        { name: "장소 정보", href: programBasePath ?? programSelectionHref },
+        { name: "안내사항", href: programBasePath ?? programSelectionHref },
+        { name: "신청폼 작성", href: programHref("/forms") },
       ],
     },
     {
-      name: "커뮤니케이션",
+      name: "공지/문의/알림",
       href: programHref("/messages"),
       icon: MessageSquareText,
-      children: [{ name: "안내 메시지", href: programHref("/messages") }],
-    },
-    {
-      name: "활동/증빙",
-      href: projectHref("/evidence"),
-      icon: WalletCards,
       children: [
-        { name: "활동/참석", href: projectHref("/activities") },
-        { name: "지출/증빙", href: projectHref("/evidence") },
-        { name: "마감/보고", href: projectHref("/closeout") },
+        { name: "공지사항", href: programHref("/messages") },
+        { name: "문의사항", href: programHref("/messages") },
+        { name: "알림 안내 설정", href: programHref("/messages") },
       ],
     },
+    {
+      name: "신청자 관리",
+      href: programHref("/applications"),
+      icon: Users,
+      children: [
+        { name: "신청 경로 추적", href: programHref("/applications") },
+        { name: "관심도/저장", href: programHref("/applications") },
+        { name: "신청자 목록", href: programHref("/applications") },
+        { name: "영수증 관리", href: projectHref("/evidence") },
+        { name: "후기 관리", href: programHref("/applications") },
+      ],
+    },
+    {
+      name: "관리",
+      href: projectHref("/closeout"),
+      icon: WalletCards,
+      children: [
+        { name: "호스트 알림 채널", href: "/host/settings" },
+        { name: "프로그램 관리", href: programSelectionHref },
+        { name: "프로그램 취소 및 삭제", href: projectHref("/closeout") },
+      ],
+    },
+    formNavigation,
     localPageNavigation,
     settingsNavigation,
   ];
