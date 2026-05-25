@@ -9,6 +9,7 @@ import {
   ChevronRight,
   ChevronUp,
   Mail,
+  MapPin,
   Minus,
   MoreHorizontal,
   Phone,
@@ -19,7 +20,11 @@ import {
   Ticket,
 } from "lucide-react";
 import { JsonLdScript } from "@/components/json-ld";
-import { ProgramScheduleCards } from "@/components/program-schedule-popover";
+import { ProgramGalleryCarousel } from "@/components/program-gallery-carousel";
+import {
+  ProgramScheduleCards,
+  type ProgramScheduleItem,
+} from "@/components/program-schedule-popover";
 import { programs } from "@/lib/data";
 import { isDemoModeEnabled } from "@/lib/demo-mode";
 import { getPublicProgramByIdentifier } from "@/lib/public-program-db";
@@ -70,12 +75,42 @@ const dummyProgram: Program = {
     "https://images.unsplash.com/photo-1500530855697-b586d89ba3ee?auto=format&fit=crop&w=1200&q=80",
   gallery: [
     "https://images.unsplash.com/photo-1500530855697-b586d89ba3ee?auto=format&fit=crop&w=1200&q=80",
+    "https://images.unsplash.com/photo-1500534314209-a25ddb2bd429?auto=format&fit=crop&w=1200&q=80",
+    "https://images.unsplash.com/photo-1500534314209-a25ddb2bd429?auto=format&fit=crop&w=900&q=80",
   ],
   badges: ["자유신청", "로컬체험", "여행지원"],
   body: [
     "지역의 일상과 자연을 천천히 경험하며 머무르는 여행 프로그램입니다.",
     "일정, 신청 방식, 후기 영역을 실제 콘텐츠로 교체하기 전까지 화면 구조를 확인할 수 있습니다.",
   ],
+  itineraryDays: [
+    {
+      id: "day-1",
+      image:
+        "https://images.unsplash.com/photo-1500534314209-a25ddb2bd429?auto=format&fit=crop&w=900&q=80",
+      summary: "도착 후 로컬 오리엔테이션과 동네 산책을 진행합니다.",
+      timetable: "14:00 집결 및 체크인\n16:00 오리엔테이션\n18:00 로컬 저녁",
+      title: "1일차",
+    },
+    {
+      id: "day-2",
+      image:
+        "https://images.unsplash.com/photo-1441974231531-c6227db76b6e?auto=format&fit=crop&w=900&q=80",
+      summary: "지역 크리에이터와 함께하는 체험과 자유 탐방 시간이 이어집니다.",
+      timetable: "10:00 로컬 체험\n13:00 점심\n15:00 자유 탐방",
+      title: "2일차",
+    },
+  ],
+  placeInfo: {
+    accommodationEnabled: true,
+    accommodationMemo: "숙소 위치와 체크인 방법은 신청 확정 후 안내됩니다.",
+    accommodationName: "로컬 스테이",
+    meetingAddress: "서울특별시 중구 세종대로 110",
+    meetingAddressDetail: "1층 안내데스크",
+    meetingMemo: "시작 10분 전까지 도착해 주세요.",
+    parkingGuide: "공용 주차장 이용 가능 여부는 현장 상황에 따라 달라질 수 있습니다.",
+    transportGuide: "대중교통 이용을 권장합니다.",
+  },
   dataSource: "seed",
 };
 
@@ -161,6 +196,10 @@ export default async function ProgramDetailPage({
   const applyHref = program.applyUrl || `${canonicalPath}/apply`;
   const programReviews = await getProgramReviewsForDetail(program);
   const reviewListHref = getProgramReviewListHref(program);
+  const galleryImages = getProgramGalleryImages(program);
+  const introImage = galleryImages[0] ?? "";
+  const scheduleCards = getProgramScheduleItems(program, galleryImages);
+  const placeDetails = getProgramPlaceDetails(program);
 
   return (
     <div className="font-pretendard bg-white text-[#2B1E17]">
@@ -175,17 +214,7 @@ export default async function ProgramDetailPage({
         ]}
       />
 
-      <section
-        aria-label="프로그램 대표 이미지"
-        className="group flex h-[30.278vw] min-h-[300px] w-full items-center justify-between bg-[#778695] px-[1.806vw] max-md:h-[240px] max-md:min-h-[240px]"
-      >
-        <CarouselArrow ariaLabel="이전 이미지">
-          <ChevronLeft aria-hidden="true" className="size-10 stroke-[1.5]" />
-        </CarouselArrow>
-        <CarouselArrow ariaLabel="다음 이미지">
-          <ChevronRight aria-hidden="true" className="size-10 stroke-[1.5]" />
-        </CarouselArrow>
-      </section>
+      <ProgramGalleryCarousel images={galleryImages} title={program.title} />
 
       <div className="relative mx-auto grid w-[71.597vw] grid-cols-[minmax(0,48.056vw)_20.625vw] items-start gap-[2.917vw] pt-10 max-md:block max-md:w-[90vw] max-md:pt-7">
         <article className="flex w-[48.056vw] min-w-0 flex-col gap-[18px] max-md:w-full">
@@ -237,8 +266,32 @@ export default async function ProgramDetailPage({
           >
             <div
               aria-label="여행 소개 이미지 영역"
-              className="h-[856px] w-full bg-[#D9D9D9] max-md:h-[118vw] max-md:min-h-[420px]"
-            />
+              className={`relative h-[856px] w-full overflow-hidden bg-[#D9D9D9] bg-cover bg-center max-md:h-[118vw] max-md:min-h-[420px] ${
+                introImage ? "" : "bg-[linear-gradient(135deg,#E9E2DB,#D9D9D9)]"
+              }`}
+              style={
+                introImage
+                  ? { backgroundImage: `url("${escapeCssUrl(introImage)}")` }
+                  : undefined
+              }
+            >
+              <div
+                aria-hidden="true"
+                className="absolute inset-x-0 bottom-0 h-1/2 bg-gradient-to-t from-black/55 to-transparent"
+              />
+              <div className="absolute inset-x-0 bottom-0 flex flex-col gap-3 p-8 text-white max-md:p-5">
+                <p className="max-w-[580px] break-keep text-base font-semibold leading-[1.55] drop-shadow">
+                  {program.summary}
+                </p>
+                <div className="flex max-w-[580px] flex-col gap-2 text-sm font-medium leading-[1.7] text-white/90 drop-shadow">
+                  {program.body.slice(0, 2).map((paragraph, index) => (
+                    <p className="break-keep" key={`${paragraph}-${index}`}>
+                      {paragraph}
+                    </p>
+                  ))}
+                </div>
+              </div>
+            </div>
           </section>
 
           <section
@@ -246,7 +299,7 @@ export default async function ProgramDetailPage({
             id="detail-section-1"
           >
             <SectionTitle title="여행 일정" />
-            <ProgramScheduleCards items={scheduleItems} popupItems={floatingSchedule} />
+            <ProgramScheduleCards items={scheduleCards} popupItems={floatingSchedule} />
           </section>
 
           <ParticipantReviewSection
@@ -260,36 +313,65 @@ export default async function ProgramDetailPage({
           >
             <SectionTitle title="집결지 정보" />
 
-            <div className="flex w-full flex-col items-start gap-[34px] px-3">
-              <div className="flex w-[120px] flex-col items-start gap-2 text-sm font-medium leading-[1.253] text-[#6D7A8A]">
-                <p>집결지 장소 주소 입력</p>
-                <p>주차 안내 입력</p>
-                <p>
-                  이동수단 안내 입력
-                  <br />
-                  (버스노선)
-                  <br />
-                  (지하철 노선)
-                  <br />
-                  (다른 교통수단)
-                </p>
-              </div>
+            <div className="flex w-full flex-col items-start gap-[28px] px-3">
+              <dl className="grid w-full grid-cols-[92px_minmax(0,1fr)] gap-x-5 gap-y-4 text-sm leading-[1.55] max-md:grid-cols-1 max-md:gap-y-2">
+                <dt className="font-semibold text-[#5B3A29]">집결지</dt>
+                <dd className="break-keep text-[#6D7A8A]">
+                  {placeDetails.meetingAddress}
+                </dd>
+
+                {placeDetails.meetingMemo ? (
+                  <>
+                    <dt className="font-semibold text-[#5B3A29]">추가 안내</dt>
+                    <dd className="break-keep text-[#6D7A8A]">
+                      {placeDetails.meetingMemo}
+                    </dd>
+                  </>
+                ) : null}
+
+                <dt className="font-semibold text-[#5B3A29]">주차 안내</dt>
+                <dd className="break-keep text-[#6D7A8A]">
+                  {placeDetails.parkingGuide}
+                </dd>
+
+                <dt className="font-semibold text-[#5B3A29]">이동수단</dt>
+                <dd className="break-keep text-[#6D7A8A]">
+                  {placeDetails.transportGuide}
+                </dd>
+
+                {placeDetails.accommodation ? (
+                  <>
+                    <dt className="font-semibold text-[#5B3A29]">숙소 안내</dt>
+                    <dd className="break-keep text-[#6D7A8A]">
+                      {placeDetails.accommodation}
+                    </dd>
+                  </>
+                ) : null}
+              </dl>
               <div className="flex w-full flex-col items-start gap-[9px]">
                 <p className="flex items-center gap-[11px] text-sm font-medium leading-[1.253] text-[#6D7A8A]">
                   <Phone aria-hidden="true" className="size-5 text-[#FF9A3D]" />
                   {program.phone}
                 </p>
-                <p className="flex items-center gap-[11px] text-sm font-medium leading-[1.253] text-[#6D7A8A]">
+                <a
+                  className="flex items-center gap-[11px] text-sm font-medium leading-[1.253] text-[#6D7A8A]"
+                  href={program.sourceUrl || "#"}
+                  rel="noreferrer"
+                  target={program.sourceUrl ? "_blank" : undefined}
+                >
                   <Mail aria-hidden="true" className="size-5 text-[#FF9A3D]" />
-                  aaa@aaaaaa.com
-                </p>
+                  {program.sourceName}
+                </a>
               </div>
             </div>
 
             <div
               aria-label="지도 영역"
-              className="h-[243px] w-[662px] bg-[#D9D9D9] max-md:w-full"
-            />
+              className="flex h-[243px] w-[662px] flex-col items-center justify-center gap-3 rounded-md bg-[#F7F5F3] px-8 text-center text-sm font-medium leading-[1.55] text-[#6D7A8A] max-md:w-full"
+            >
+              <MapPin aria-hidden="true" className="size-7 text-[#FE701E]" />
+              <span className="break-keep">{placeDetails.meetingAddress}</span>
+            </div>
 
             <section
               className="flex w-[694.53px] flex-col items-center gap-7 max-md:w-full"
@@ -327,7 +409,7 @@ export default async function ProgramDetailPage({
                   일정
                 </strong>
                 <span className="text-xs font-normal leading-[1.6] text-[#6D7A8A]">
-                  2026.5.12-5.22
+                  {formatCompactDateRange(program.activityStart, program.activityEnd)}
                 </span>
               </div>
               <div className="flex items-center justify-center gap-1 border-l-[0.5px] border-[#F5E1D3] p-2">
@@ -340,7 +422,7 @@ export default async function ProgramDetailPage({
               </div>
             </div>
             <p className="-mt-3.5 mr-[13px] w-full text-right text-xs font-normal leading-[1.6] text-[#6D7A8A]">
-              ~2026년 5월 1일
+              ~{formatKoreanDate(program.recruitEnd)}
             </p>
 
             <div className="-mt-[3px] flex w-full items-center justify-between">
@@ -352,7 +434,7 @@ export default async function ProgramDetailPage({
               </strong>
             </div>
             <h2 className="-mt-[13px] self-start text-base font-medium leading-[1.253] text-[#5B3A29]">
-              여행 프로그램 이름
+              {program.title}
             </h2>
 
             <div className="flex w-full items-start gap-1.5">
@@ -615,24 +697,6 @@ function IconButton({
   );
 }
 
-function CarouselArrow({
-  ariaLabel,
-  children,
-}: {
-  ariaLabel: string;
-  children: React.ReactNode;
-}) {
-  return (
-    <button
-      aria-label={ariaLabel}
-      className="pointer-events-none inline-flex size-12 items-center justify-center border-0 bg-transparent p-0 text-white opacity-0 transition-opacity group-hover:pointer-events-auto group-hover:opacity-100 group-focus-within:pointer-events-auto group-focus-within:opacity-100"
-      type="button"
-    >
-      {children}
-    </button>
-  );
-}
-
 function GuideButton({ label }: { label: string }) {
   return (
     <button
@@ -686,6 +750,137 @@ function BenefitRow({
       </button>
     </div>
   );
+}
+
+function getProgramGalleryImages(program: Program): string[] {
+  const itineraryImages = program.itineraryDays?.map((day) => day.image) ?? [];
+  const images = [program.image, ...program.gallery, ...itineraryImages]
+    .map((image) => image.trim())
+    .filter(isDisplayableProgramImage);
+
+  return Array.from(new Set(images));
+}
+
+function getProgramScheduleItems(
+  program: Program,
+  galleryImages: string[],
+): ProgramScheduleItem[] {
+  const itineraryDays =
+    program.itineraryDays?.filter((day) =>
+      [day.title, day.summary, day.timetable, day.image].some((value) =>
+        value.trim(),
+      ),
+    ) ?? [];
+
+  if (itineraryDays.length > 0) {
+    return itineraryDays.map((day, index) => {
+      const timetable = splitTimetable(day.timetable);
+      return {
+        body:
+          day.summary ||
+          timetable[0] ||
+          `${program.title} ${index + 1}일차 일정입니다.`,
+        day: day.title || `${index + 1}일차`,
+        image: day.image || galleryImages[index + 1] || galleryImages[0],
+        timetable,
+      };
+    });
+  }
+
+  return scheduleItems.map((item, index) => ({
+    ...item,
+    image: galleryImages[index + 1] || galleryImages[0],
+  }));
+}
+
+function getProgramPlaceDetails(program: Program): {
+  accommodation: string;
+  meetingAddress: string;
+  meetingMemo: string;
+  parkingGuide: string;
+  transportGuide: string;
+} {
+  const placeInfo = program.placeInfo;
+  const meetingAddress =
+    joinText([placeInfo?.meetingAddress, placeInfo?.meetingAddressDetail]) ||
+    joinText([program.region, program.city]) ||
+    "집결지 정보는 준비 중입니다.";
+
+  const accommodation = placeInfo?.accommodationEnabled
+    ? joinText([placeInfo.accommodationName, placeInfo.accommodationMemo]) ||
+      "숙소 정보는 신청 확정 후 안내됩니다."
+    : "";
+
+  return {
+    accommodation,
+    meetingAddress,
+    meetingMemo: placeInfo?.meetingMemo?.trim() ?? "",
+    parkingGuide:
+      placeInfo?.parkingGuide?.trim() ||
+      "주차 가능 여부와 이용 방법은 신청 확정 후 안내됩니다.",
+    transportGuide:
+      placeInfo?.transportGuide?.trim() ||
+      "대중교통, 셔틀, 도보 이동 등 상세 이동 안내는 신청 확정 후 안내됩니다.",
+  };
+}
+
+function splitTimetable(value: string): string[] {
+  return value
+    .split(/\r?\n/)
+    .map((line) => line.trim())
+    .filter(Boolean);
+}
+
+function joinText(values: Array<string | undefined>): string {
+  return values.map((value) => value?.trim()).filter(Boolean).join(" ");
+}
+
+function formatCompactDateRange(start: string, end: string): string {
+  const startDate = parseDateParts(start);
+  const endDate = parseDateParts(end);
+  if (!startDate || !endDate) return joinText([start, end]);
+
+  if (startDate.year === endDate.year) {
+    return `${startDate.year}.${startDate.month}.${startDate.day}-${endDate.month}.${endDate.day}`;
+  }
+
+  return `${startDate.year}.${startDate.month}.${startDate.day}-${endDate.year}.${endDate.month}.${endDate.day}`;
+}
+
+function formatKoreanDate(value: string): string {
+  const date = parseDateParts(value);
+  if (!date) return value;
+  return `${date.year}년 ${date.month}월 ${date.day}일`;
+}
+
+function parseDateParts(value: string):
+  | {
+      day: number;
+      month: number;
+      year: number;
+    }
+  | null {
+  const match = /^(\d{4})-(\d{1,2})-(\d{1,2})/.exec(value);
+  if (!match) return null;
+
+  return {
+    day: Number(match[3]),
+    month: Number(match[2]),
+    year: Number(match[1]),
+  };
+}
+
+function isDisplayableProgramImage(value: string): boolean {
+  return (
+    value.startsWith("http://") ||
+    value.startsWith("https://") ||
+    value.startsWith("/") ||
+    /^data:image\/(png|jpe?g|webp|gif);base64,/i.test(value)
+  );
+}
+
+function escapeCssUrl(value: string): string {
+  return value.replace(/\\/g, "\\\\").replace(/"/g, '\\"');
 }
 
 async function getProgramReviewsForDetail(program: Program): Promise<Review[]> {

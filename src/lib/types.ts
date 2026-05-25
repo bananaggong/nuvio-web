@@ -19,6 +19,25 @@ export type ThemeKey =
 
 export type PeriodKey = "under4" | "week" | "twoWeeks" | "threeWeeks" | "month";
 
+export type ProgramItineraryDay = {
+  id: string;
+  title: string;
+  summary: string;
+  timetable: string;
+  image: string;
+};
+
+export type ProgramPlaceInfo = {
+  meetingAddress: string;
+  meetingAddressDetail: string;
+  meetingMemo: string;
+  parkingGuide: string;
+  transportGuide: string;
+  accommodationEnabled: boolean;
+  accommodationName: string;
+  accommodationMemo: string;
+};
+
 export type Program = {
   id: number | string;
   title: string;
@@ -52,6 +71,8 @@ export type Program = {
   gallery: string[];
   badges: string[];
   body: string[];
+  itineraryDays?: ProgramItineraryDay[];
+  placeInfo?: ProgramPlaceInfo;
   dataSource?: "database" | "external" | "seed";
   sourcePublishedAt?: string;
   sourceFetchedAt?: string;

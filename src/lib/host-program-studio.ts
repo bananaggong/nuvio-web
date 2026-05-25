@@ -5,6 +5,25 @@ import type {
 } from "@/lib/types";
 import { isDemoModeEnabled } from "@/lib/demo-mode";
 
+export type HostProgramItineraryDay = {
+  id: string;
+  title: string;
+  summary: string;
+  timetable: string;
+  image: string;
+};
+
+export type HostProgramPlaceInfo = {
+  meetingAddress: string;
+  meetingAddressDetail: string;
+  meetingMemo: string;
+  parkingGuide: string;
+  transportGuide: string;
+  accommodationEnabled: boolean;
+  accommodationName: string;
+  accommodationMemo: string;
+};
+
 export type HostProgramDraft = {
   id: string;
   slug?: string;
@@ -32,6 +51,8 @@ export type HostProgramDraft = {
   phone: string;
   hashtags: string[];
   image: string;
+  itineraryDays: HostProgramItineraryDay[];
+  placeInfo: HostProgramPlaceInfo;
   published: boolean;
   updatedAt: string;
 };
@@ -41,6 +62,19 @@ export type ProgramDraftChecklistItem = {
   label: string;
   done: boolean;
   helper: string;
+};
+
+export const HOST_PROGRAM_META_PREFIX = "__nuvio_host_program_meta__:";
+
+const emptyPlaceInfo: HostProgramPlaceInfo = {
+  accommodationEnabled: false,
+  accommodationMemo: "",
+  accommodationName: "",
+  meetingAddress: "",
+  meetingAddressDetail: "",
+  meetingMemo: "",
+  parkingGuide: "",
+  transportGuide: "",
 };
 
 export const seedHostProgramDrafts: HostProgramDraft[] = [
@@ -71,6 +105,20 @@ export const seedHostProgramDrafts: HostProgramDraft[] = [
     hashtags: ["워케이션", "강원", "공유오피스"],
     image:
       "https://images.unsplash.com/photo-1507525428034-b723cf961d3e?auto=format&fit=crop&w=1200&q=80",
+    itineraryDays: [
+      {
+        id: "day-1",
+        image: "",
+        summary: "강릉 도착 후 오리엔테이션과 해변 산책을 진행합니다.",
+        timetable: "14:00 체크인\n16:00 오리엔테이션\n18:00 로컬 저녁",
+        title: "1일차",
+      },
+    ],
+    placeInfo: {
+      ...emptyPlaceInfo,
+      meetingAddress: "강원특별자치도 강릉시 창해로 14",
+      transportGuide: "강릉역에서 택시 또는 시내버스로 이동할 수 있습니다.",
+    },
     published: false,
     updatedAt: "2026-05-04T00:00:00+09:00",
   },
@@ -126,6 +174,8 @@ export function createHostProgramDraft(): HostProgramDraft {
     hashtags: ["지역체류", "지원사업"],
     image:
       "https://images.unsplash.com/photo-1500534314209-a25ddb2bd429?auto=format&fit=crop&w=1200&q=80",
+    itineraryDays: [createHostProgramItineraryDay(1)],
+    placeInfo: createHostProgramPlaceInfo(),
     published: false,
     updatedAt: new Date().toISOString(),
   };
@@ -182,4 +232,111 @@ export function buildHostProgramJson(draft: HostProgramDraft): string {
     null,
     2,
   );
+}
+
+export function createHostProgramItineraryDay(
+  dayNumber: number,
+): HostProgramItineraryDay {
+  return {
+    id: `day-${dayNumber}-${Date.now()}`,
+    image: "",
+    summary: "",
+    timetable: "",
+    title: `${dayNumber}일차`,
+  };
+}
+
+export function createHostProgramPlaceInfo(): HostProgramPlaceInfo {
+  return { ...emptyPlaceInfo };
+}
+
+export function normalizeHostProgramItineraryDays(
+  value: unknown,
+): HostProgramItineraryDay[] {
+  if (!Array.isArray(value)) return [];
+
+  return value
+    .map((item, index) => {
+      if (!item || typeof item !== "object" || Array.isArray(item)) {
+        return null;
+      }
+
+      const record = item as Record<string, unknown>;
+      return {
+        id: asText(record.id) || `day-${index + 1}`,
+        image: asText(record.image),
+        summary: asText(record.summary),
+        timetable: asText(record.timetable),
+        title: asText(record.title) || `${index + 1}일차`,
+      };
+    })
+    .filter((item): item is HostProgramItineraryDay => Boolean(item));
+}
+
+export function normalizeHostProgramPlaceInfo(
+  value: unknown,
+): HostProgramPlaceInfo {
+  if (!value || typeof value !== "object" || Array.isArray(value)) {
+    return createHostProgramPlaceInfo();
+  }
+
+  const record = value as Record<string, unknown>;
+  return {
+    accommodationEnabled: Boolean(record.accommodationEnabled),
+    accommodationMemo: asText(record.accommodationMemo),
+    accommodationName: asText(record.accommodationName),
+    meetingAddress: asText(record.meetingAddress),
+    meetingAddressDetail: asText(record.meetingAddressDetail),
+    meetingMemo: asText(record.meetingMemo),
+    parkingGuide: asText(record.parkingGuide),
+    transportGuide: asText(record.transportGuide),
+  };
+}
+
+export function encodeHostProgramMeta(draft: HostProgramDraft): string {
+  return `${HOST_PROGRAM_META_PREFIX}${JSON.stringify({
+    itineraryDays: draft.itineraryDays,
+    placeInfo: draft.placeInfo,
+  })}`;
+}
+
+export function decodeHostProgramMeta(value: unknown): {
+  itineraryDays: HostProgramItineraryDay[];
+  placeInfo: HostProgramPlaceInfo;
+} {
+  const lines = Array.isArray(value) ? value : [];
+  const encoded = lines
+    .map((item) => (typeof item === "string" ? item : ""))
+    .find((item) => item.startsWith(HOST_PROGRAM_META_PREFIX));
+
+  if (!encoded) {
+    return {
+      itineraryDays: [],
+      placeInfo: createHostProgramPlaceInfo(),
+    };
+  }
+
+  try {
+    const parsed = JSON.parse(encoded.slice(HOST_PROGRAM_META_PREFIX.length)) as {
+      itineraryDays?: unknown;
+      placeInfo?: unknown;
+    };
+    return {
+      itineraryDays: normalizeHostProgramItineraryDays(parsed.itineraryDays),
+      placeInfo: normalizeHostProgramPlaceInfo(parsed.placeInfo),
+    };
+  } catch {
+    return {
+      itineraryDays: [],
+      placeInfo: createHostProgramPlaceInfo(),
+    };
+  }
+}
+
+export function stripHostProgramMeta(body: string[]): string[] {
+  return body.filter((item) => !item.startsWith(HOST_PROGRAM_META_PREFIX));
+}
+
+function asText(value: unknown): string {
+  return typeof value === "string" ? value.trim() : "";
 }

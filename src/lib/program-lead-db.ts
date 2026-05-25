@@ -8,7 +8,11 @@ import {
 import {
   upsertHostProgramDraft,
 } from "@/lib/host-program-db";
-import type { HostProgramDraft } from "@/lib/host-program-studio";
+import {
+  createHostProgramItineraryDay,
+  createHostProgramPlaceInfo,
+  type HostProgramDraft,
+} from "@/lib/host-program-studio";
 import type { ProgramLead, ProgramStatus, ThemeKey } from "@/lib/types";
 
 type LeadDecision = "approved" | "rejected";
@@ -225,6 +229,8 @@ function buildHostDraftFromLead(lead: ProgramLead): HostProgramDraft {
     hashtags: ["누비오후보", ...lead.suggestedThemes].slice(0, 8),
     image:
       "https://images.unsplash.com/photo-1500534314209-a25ddb2bd429?auto=format&fit=crop&w=1200&q=80",
+    itineraryDays: [createHostProgramItineraryDay(1)],
+    placeInfo: createHostProgramPlaceInfo(),
     published: false,
     updatedAt: new Date().toISOString(),
   };

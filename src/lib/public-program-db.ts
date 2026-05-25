@@ -4,6 +4,10 @@ import { programs as programsTable } from "@/db/schema";
 import { getCrawledProgramByIdentifier } from "@/lib/crawled-programs";
 import { getProgramById, programs as seedPrograms } from "@/lib/data";
 import { isDemoModeEnabled } from "@/lib/demo-mode";
+import {
+  decodeHostProgramMeta,
+  stripHostProgramMeta,
+} from "@/lib/host-program-studio";
 import type { Program } from "@/lib/types";
 
 type ProgramRow = typeof programsTable.$inferSelect;
@@ -100,6 +104,7 @@ function mapProgramRowToProgram(row: ProgramRow): Program {
   const image = row.imageUrl || fallbackImage;
   const hashtags = normalizeList(row.hashtags);
   const categories = row.categories.length > 0 ? row.categories : [row.theme];
+  const meta = decodeHostProgramMeta(row.body);
 
   return {
     id: row.legacyId ?? row.slug,
@@ -133,7 +138,11 @@ function mapProgramRowToProgram(row: ProgramRow): Program {
     image,
     gallery: normalizeList(row.gallery, [image]),
     badges: normalizeList(row.badges, hashtags.slice(0, 4)),
-    body: normalizeList(row.body, [row.description || row.summary]),
+    body: normalizeList(stripHostProgramMeta(row.body), [
+      row.description || row.summary,
+    ]),
+    itineraryDays: meta.itineraryDays,
+    placeInfo: meta.placeInfo,
     dataSource: "database",
   };
 }

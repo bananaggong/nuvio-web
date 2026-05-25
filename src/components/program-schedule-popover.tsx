@@ -6,6 +6,8 @@ import { useState } from "react";
 export type ProgramScheduleItem = {
   body: string;
   day: string;
+  image?: string;
+  timetable?: string[];
 };
 
 export function ProgramScheduleCards({
@@ -16,15 +18,22 @@ export function ProgramScheduleCards({
   popupItems: string[];
 }) {
   const [openDay, setOpenDay] = useState<string | null>(null);
-  const activeItem = items.find((item) => item.day === openDay) ?? items[0];
+  const activeItem = items.find((item) => item.day === openDay) ??
+    items[0] ?? {
+      body: "",
+      day: "일정",
+    };
+  const activeTimetable = activeItem?.timetable?.filter(Boolean) ?? [];
+  const activeSchedule =
+    activeTimetable.length > 0 ? activeTimetable : popupItems;
 
   return (
     <>
       <div className="flex w-full flex-col gap-[18px]">
-        {items.map((item) => (
+        {items.map((item, index) => (
           <ScheduleCard
             item={item}
-            key={item.day}
+            key={`${item.day}-${index}`}
             onOpen={() => setOpenDay(item.day)}
           />
         ))}
@@ -61,16 +70,19 @@ export function ProgramScheduleCards({
             </h3>
 
             <div className="mt-5 flex flex-col gap-2">
-              {popupItems.map((item, index) => (
-                <p className="flex flex-col gap-0.5" key={item}>
-                  <strong className="text-xs font-semibold leading-[1.253] text-[#FE701E]">
-                    {String(index * 2).padStart(2, "0")} : 00
-                  </strong>
-                  <span className="text-xs font-medium leading-[1.253] text-[#6D7A8A]">
-                    {item}
-                  </span>
-                </p>
-              ))}
+              {activeSchedule.map((item, index) => {
+                const scheduleLine = splitScheduleLine(item, index);
+                return (
+                  <p className="flex flex-col gap-0.5" key={`${item}-${index}`}>
+                    <strong className="text-xs font-semibold leading-[1.253] text-[#FE701E]">
+                      {scheduleLine.time}
+                    </strong>
+                    <span className="text-xs font-medium leading-[1.253] text-[#6D7A8A]">
+                      {scheduleLine.label}
+                    </span>
+                  </p>
+                );
+              })}
             </div>
           </div>
         </div>
@@ -86,19 +98,28 @@ function ScheduleCard({
   item: ProgramScheduleItem;
   onOpen: () => void;
 }) {
+  const hasImage = Boolean(item.image && isDisplayableImage(item.image));
+
   return (
-    <div className="flex h-[200px] w-[687px] items-start gap-3 overflow-hidden rounded-md border border-[#F3F3F3] max-md:h-auto max-md:w-full max-md:flex-col">
-      <div className="group/image flex h-[200px] w-[310px] shrink-0 items-center justify-between bg-[#7A8B52] px-2.5 max-md:w-full">
+    <div className="flex h-[200px] w-[687px] items-start gap-3 overflow-hidden rounded-md border border-[#F3F3F3] bg-white max-md:h-auto max-md:w-full max-md:flex-col">
+      <div
+        className="group/image flex h-[200px] w-[310px] shrink-0 items-center justify-between bg-[#7A8B52] bg-cover bg-center px-2.5 max-md:w-full"
+        style={
+          hasImage
+            ? { backgroundImage: `url("${escapeCssUrl(item.image ?? "")}")` }
+            : undefined
+        }
+      >
         <button
           aria-label={`${item.day} 이전`}
-          className="pointer-events-none inline-flex justify-center border-0 bg-transparent p-0 text-[#FCFCFC] opacity-0 transition-opacity group-hover/image:pointer-events-auto group-hover/image:opacity-100 group-focus-within/image:pointer-events-auto group-focus-within/image:opacity-100"
+          className="pointer-events-none inline-flex justify-center border-0 bg-transparent p-0 text-[#FCFCFC] opacity-0 drop-shadow-[0_2px_8px_rgba(0,0,0,0.45)] transition-opacity group-hover/image:pointer-events-auto group-hover/image:opacity-100 group-focus-within/image:pointer-events-auto group-focus-within/image:opacity-100"
           type="button"
         >
           <ChevronLeft aria-hidden="true" className="size-[18px]" />
         </button>
         <button
           aria-label={`${item.day} 다음`}
-          className="pointer-events-none inline-flex justify-center border-0 bg-transparent p-0 text-[#FCFCFC] opacity-0 transition-opacity group-hover/image:pointer-events-auto group-hover/image:opacity-100 group-focus-within/image:pointer-events-auto group-focus-within/image:opacity-100"
+          className="pointer-events-none inline-flex justify-center border-0 bg-transparent p-0 text-[#FCFCFC] opacity-0 drop-shadow-[0_2px_8px_rgba(0,0,0,0.45)] transition-opacity group-hover/image:pointer-events-auto group-hover/image:opacity-100 group-focus-within/image:pointer-events-auto group-focus-within/image:opacity-100"
           type="button"
         >
           <ChevronRight aria-hidden="true" className="size-[18px]" />
@@ -122,4 +143,35 @@ function ScheduleCard({
       </div>
     </div>
   );
+}
+
+function splitScheduleLine(
+  value: string,
+  index: number,
+): { label: string; time: string } {
+  const match = /^(\d{1,2}[:：]\d{2})\s*(.*)$/.exec(value);
+  if (match) {
+    return {
+      label: match[2] || value,
+      time: match[1],
+    };
+  }
+
+  return {
+    label: value,
+    time: `${String(index * 2).padStart(2, "0")} : 00`,
+  };
+}
+
+function isDisplayableImage(value: string): boolean {
+  return (
+    value.startsWith("http://") ||
+    value.startsWith("https://") ||
+    value.startsWith("/") ||
+    /^data:image\/(png|jpe?g|webp|gif);base64,/i.test(value)
+  );
+}
+
+function escapeCssUrl(value: string): string {
+  return value.replace(/\\/g, "\\\\").replace(/"/g, '\\"');
 }

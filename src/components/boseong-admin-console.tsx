@@ -20,7 +20,11 @@ import {
 import { BoseongPageManager } from "@/components/boseong-page-manager";
 import { HostSocialConnectionPanel } from "@/components/host-social-connection-panel";
 import { boseongMediaSeeds } from "@/lib/village-media-seeds";
-import type { HostProgramDraft } from "@/lib/host-program-studio";
+import {
+  createHostProgramItineraryDay,
+  createHostProgramPlaceInfo,
+  type HostProgramDraft,
+} from "@/lib/host-program-studio";
 import type {
   ProgramStatus,
   ReviewCategory,
@@ -683,6 +687,8 @@ function createBoseongProgramDraft(): HostProgramDraft {
     hashtags: ["보성", "전체차LAB", "청년마을"],
     image:
       "https://upload.wikimedia.org/wikipedia/commons/b/b3/Boseong_Green_Tea_Field.jpg",
+    itineraryDays: [createHostProgramItineraryDay(1)],
+    placeInfo: createHostProgramPlaceInfo(),
     published: false,
     updatedAt: new Date().toISOString(),
   };

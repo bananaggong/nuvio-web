@@ -1,7 +1,14 @@
 import { and, desc, eq, inArray } from "drizzle-orm";
 import { getDb } from "@/db/client";
 import { programs as programsTable } from "@/db/schema";
-import type { HostProgramDraft } from "@/lib/host-program-studio";
+import {
+  createHostProgramItineraryDay,
+  decodeHostProgramMeta,
+  encodeHostProgramMeta,
+  normalizeHostProgramItineraryDays,
+  normalizeHostProgramPlaceInfo,
+  type HostProgramDraft,
+} from "@/lib/host-program-studio";
 import type { PeriodKey, ProgramStatus, ThemeKey } from "@/lib/types";
 
 type ProgramInsert = typeof programsTable.$inferInsert;
@@ -132,6 +139,10 @@ export function normalizeHostProgramDraft(input: unknown): HostProgramDraft {
   const value = input as Record<string, unknown>;
   const id = asString(value.id) || `draft-${Date.now()}`;
   const today = toDateString(new Date());
+  const meta = decodeHostProgramMeta(asStringArray(value.body));
+  const itineraryDays = normalizeHostProgramItineraryDays(
+    value.itineraryDays ?? meta.itineraryDays,
+  );
 
   return {
     id,
@@ -160,6 +171,11 @@ export function normalizeHostProgramDraft(input: unknown): HostProgramDraft {
     phone: asString(value.phone),
     hashtags: asStringArray(value.hashtags),
     image: asString(value.image),
+    itineraryDays:
+      itineraryDays.length > 0
+        ? itineraryDays
+        : [createHostProgramItineraryDay(1)],
+    placeInfo: normalizeHostProgramPlaceInfo(value.placeInfo ?? meta.placeInfo),
     published: Boolean(value.published),
     updatedAt: asString(value.updatedAt) || new Date().toISOString(),
   };
@@ -168,6 +184,13 @@ export function normalizeHostProgramDraft(input: unknown): HostProgramDraft {
 function mapHostDraftToProgramInsert(draft: HostProgramDraft): ProgramInsert {
   const image = draft.image.trim() || fallbackImage;
   const hashtags = normalizeTags(draft.hashtags);
+  const itineraryImages = draft.itineraryDays
+    .map((day) => day.image.trim())
+    .filter(Boolean);
+  const body = [
+    draft.description.trim() || draft.summary.trim(),
+    encodeHostProgramMeta(draft),
+  ].filter(Boolean);
 
   return {
     title: draft.title.trim() || "누비오 program draft",
@@ -198,15 +221,21 @@ function mapHostDraftToProgramInsert(draft: HostProgramDraft): ProgramInsert {
     applyUrl: draft.applyUrl.trim() || "https://www.nuvio.kr/apply",
     phone: draft.phone.trim() || "000-0000-0000",
     imageUrl: image,
-    gallery: [image],
+    gallery: [image, ...itineraryImages],
     badges: hashtags.slice(0, 4),
-    body: [draft.description.trim() || draft.summary.trim()].filter(Boolean),
+    body,
     villageId: isUuid(draft.villageId ?? "") ? draft.villageId : null,
     publishedAt: draft.published ? new Date() : null,
   };
 }
 
 function mapProgramRowToHostDraft(row: ProgramRow): HostProgramDraft {
+  const meta = decodeHostProgramMeta(row.body);
+  const itineraryDays =
+    meta.itineraryDays.length > 0
+      ? meta.itineraryDays
+      : [createHostProgramItineraryDay(1)];
+
   return {
     id: row.id,
     villageId: row.villageId ?? "",
@@ -234,6 +263,8 @@ function mapProgramRowToHostDraft(row: ProgramRow): HostProgramDraft {
     phone: row.phone,
     hashtags: row.hashtags,
     image: row.imageUrl,
+    itineraryDays,
+    placeInfo: meta.placeInfo,
     published: Boolean(row.publishedAt),
     updatedAt: row.updatedAt.toISOString(),
   };
