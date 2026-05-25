@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useSearchParams } from "next/navigation";
 import {
   BarChart3,
   Calendar,
@@ -156,11 +156,14 @@ export function OpsConsoleShell({
   children: React.ReactNode;
 }) {
   const pathname = usePathname();
+  const searchParams = useSearchParams();
+  const search = searchParams.toString();
+  const currentPath = search ? `${pathname}?${search}` : pathname;
   const [mobileOpen, setMobileOpen] = useState(false);
 
   return (
     <div className="flex min-h-screen bg-gray-50">
-      <Sidebar area={area} pathname={pathname} />
+      <Sidebar area={area} currentPath={currentPath} pathname={pathname} />
 
       <div className="flex min-w-0 flex-1 flex-col">
         <Header
@@ -173,6 +176,7 @@ export function OpsConsoleShell({
           <div className="border-b border-gray-200 bg-white md:hidden">
             <SidebarContent
               area={area}
+              currentPath={currentPath}
               onNavigate={() => setMobileOpen(false)}
               pathname={pathname}
             />
@@ -252,24 +256,28 @@ function Header({
 
 function Sidebar({
   area,
+  currentPath,
   pathname,
 }: {
   area: ConsoleArea;
+  currentPath: string;
   pathname: string;
 }) {
   return (
     <aside className="hidden w-64 shrink-0 flex-col border-r border-gray-200 bg-white md:flex">
-      <SidebarContent area={area} pathname={pathname} />
+      <SidebarContent area={area} currentPath={currentPath} pathname={pathname} />
     </aside>
   );
 }
 
 function SidebarContent({
   area,
+  currentPath,
   pathname,
   onNavigate,
 }: {
   area: ConsoleArea;
+  currentPath: string;
   pathname: string;
   onNavigate?: () => void;
 }) {
@@ -301,11 +309,11 @@ function SidebarContent({
         {navigation.map((item) => (
           <NavigationGroup
             expanded={expandedItems.includes(item.name)}
+            currentPath={currentPath}
             item={item}
             key={`${area}-${item.name}`}
             onNavigate={onNavigate}
             onToggle={() => toggleExpanded(item.name)}
-            pathname={pathname}
           />
         ))}
       </nav>
@@ -316,157 +324,99 @@ function SidebarContent({
 function buildNavigation(area: ConsoleArea, pathname: string): NavigationItem[] {
   if (area !== "host") return navigationByArea[area];
 
-  const projectBasePath = getCurrentProjectBasePath(pathname);
   const programBasePath = getCurrentProgramBasePath(pathname);
-  const isProjectWorkspace = Boolean(projectBasePath);
-  const programSelectionHref = projectBasePath
-    ? `${projectBasePath}#programs`
-    : "/host/projects";
-  const programHref = (path: string) =>
-    programBasePath
-      ? `${programBasePath}${path}`
-      : projectBasePath
-        ? programSelectionHref
-        : "/host/projects";
-  const projectHref = (path: string) =>
-    projectBasePath ? `${projectBasePath}${path}` : "/host/projects";
 
-  const homeNavigation: NavigationItem = {
-    name: "홈",
-    href: "/host",
-    icon: Home,
-    children: [],
-  };
-  const programNavigation: NavigationItem = {
-    name: "프로그램",
-    href: "/host/projects",
-    icon: ClipboardList,
-    children: [],
-  };
-  const inquiryNavigation: NavigationItem = {
-    name: "문의",
-    href: "/host/messages",
-    icon: MessageSquareText,
-    children: [],
-  };
-  const formNavigation: NavigationItem = {
-    name: "양식 저장",
-    href: "/host/forms",
-    icon: FilePlus2,
-    children: [],
-  };
-  const localPageNavigation: NavigationItem = {
-    name: "로컬페이지",
-    href: "/host/villages",
-    icon: FolderOpen,
-    children: [],
-  };
-  const settingsNavigation: NavigationItem = {
-    name: "설정",
-    href: "/host/settings",
-    icon: Settings,
-    children: [],
-  };
-
-  if (!isProjectWorkspace) {
-    return [
-      homeNavigation,
-      programNavigation,
-      inquiryNavigation,
-      formNavigation,
-      localPageNavigation,
-      settingsNavigation,
-    ];
+  if (programBasePath) {
+    return buildProgramNavigation(programBasePath);
   }
 
+  return navigationByArea.host;
+}
+
+function buildProgramNavigation(programBasePath: string): NavigationItem[] {
+  const programPanelHref = (panel: string) => `${programBasePath}?panel=${panel}`;
+  const scopedHref = (path: string, panel?: string) =>
+    `${programBasePath}${path}${panel ? `?panel=${panel}` : ""}`;
+
   return [
-    homeNavigation,
-    programNavigation,
     {
       name: "대시보드",
-      href: programBasePath ?? projectBasePath ?? "/host/projects",
+      href: programBasePath,
       icon: BarChart3,
       children: [],
     },
     {
       name: "프로그램 설정",
-      href: programBasePath ?? programSelectionHref,
+      href: programPanelHref("basic"),
       icon: Settings,
       children: [
-        { name: "기본정보", href: programBasePath ?? programSelectionHref },
-        { name: "상세 정보", href: programBasePath ?? programSelectionHref },
-        { name: "장소 정보", href: programBasePath ?? programSelectionHref },
-        { name: "안내사항", href: programBasePath ?? programSelectionHref },
-        { name: "신청폼 작성", href: programHref("/forms") },
+        { name: "기본정보", href: programPanelHref("basic") },
+        { name: "상세 정보", href: programPanelHref("detail") },
+        { name: "장소 정보", href: programPanelHref("place") },
+        { name: "안내사항", href: programPanelHref("guide") },
+        { name: "신청폼 작성", href: scopedHref("/forms") },
       ],
     },
     {
-      name: "공지/문의/알림",
-      href: programHref("/messages"),
+      name: "공지 / 문의 / 알림",
+      href: scopedHref("/messages"),
       icon: MessageSquareText,
       children: [
-        { name: "공지사항", href: programHref("/messages") },
-        { name: "문의사항", href: programHref("/messages") },
-        { name: "알림 안내 설정", href: programHref("/messages") },
+        { name: "공지사항", href: scopedHref("/messages", "notice") },
+        { name: "문의사항", href: scopedHref("/messages", "inquiry") },
+        { name: "알림 안내 설정", href: scopedHref("/messages", "notification") },
       ],
     },
     {
       name: "신청자 관리",
-      href: programHref("/applications"),
+      href: scopedHref("/applications"),
       icon: Users,
       children: [
-        { name: "신청 경로 추적", href: programHref("/applications") },
-        { name: "관심도/저장", href: programHref("/applications") },
-        { name: "신청자 목록", href: programHref("/applications") },
-        { name: "영수증 관리", href: projectHref("/evidence") },
-        { name: "후기 관리", href: programHref("/applications") },
+        { name: "신청 경로 추적", href: scopedHref("/applications", "funnel") },
+        { name: "관심도, 찜, 즐겨찾기 관련", href: scopedHref("/applications", "saved") },
+        { name: "신청자 목록", href: scopedHref("/applications") },
+        { name: "영수증 관리", href: scopedHref("/applications", "receipts") },
+        { name: "후기 관리", href: scopedHref("/applications", "reviews") },
       ],
     },
     {
       name: "관리",
-      href: projectHref("/closeout"),
+      href: programPanelHref("management"),
       icon: WalletCards,
       children: [
-        { name: "호스트 알림 채널", href: "/host/settings" },
-        { name: "프로그램 관리", href: programSelectionHref },
-        { name: "프로그램 취소 및 삭제", href: projectHref("/closeout") },
+        { name: "호스트 알림 채널", href: "/host/settings?panel=notifications" },
+        { name: "프로그램 관리", href: programPanelHref("management") },
+        { name: "프로그램 취소 및 삭제", href: programPanelHref("delete") },
       ],
     },
-    formNavigation,
-    localPageNavigation,
-    settingsNavigation,
   ];
-}
-
-function getCurrentProjectBasePath(pathname: string) {
-  const match = pathname.match(/^\/host\/projects\/[^/]+/u);
-  return match?.[0];
 }
 
 function getCurrentProgramBasePath(pathname: string) {
   const match = pathname.match(/^\/host\/projects\/[^/]+\/programs\/[^/]+/u);
   if (!match || match[0].endsWith("/programs/new")) return undefined;
+
   return match[0];
 }
 
 function NavigationGroup({
   item,
-  pathname,
+  currentPath,
   expanded,
   onToggle,
   onNavigate,
 }: {
   item: NavigationItem;
-  pathname: string;
+  currentPath: string;
   expanded: boolean;
   onToggle: () => void;
   onNavigate?: () => void;
 }) {
   const Icon = item.icon;
   const hasChildren = item.children.length > 0;
-  const active = isActivePath(pathname, item.href);
+  const active = isActivePath(currentPath, item.href);
   const childActive = item.children.some((child) =>
-    isActivePath(pathname, child.href),
+    isActivePath(currentPath, child.href),
   );
   const activeGroup = active || childActive;
 
@@ -522,7 +472,7 @@ function NavigationGroup({
       {expanded ? (
         <div className="ml-6 space-y-1">
           {item.children.map((child) => {
-            const activeChild = isActivePath(pathname, child.href);
+            const activeChild = isActivePath(currentPath, child.href);
 
             return (
               <Link
@@ -546,11 +496,26 @@ function NavigationGroup({
   );
 }
 
-function isActivePath(pathname: string, href: string) {
-  if (href === "/") return pathname === "/";
-  if (href === "/host") {
-    return pathname === href;
+function isActivePath(currentPath: string, href: string) {
+  const current = splitInternalHref(currentPath);
+  const target = splitInternalHref(href);
+
+  if (target.search) {
+    return current.pathname === target.pathname && current.search === target.search;
   }
-  if (href === "/admin") return pathname === href;
-  return pathname === href || pathname.startsWith(`${href}/`);
+
+  if (target.pathname === "/") return current.pathname === "/";
+  if (target.pathname === "/host") {
+    return current.pathname === target.pathname;
+  }
+  if (target.pathname === "/admin") return current.pathname === target.pathname;
+
+  return current.pathname === target.pathname || current.pathname.startsWith(`${target.pathname}/`);
+}
+
+function splitInternalHref(value: string) {
+  const [withoutHash] = value.split("#");
+  const [pathname = "/", search = ""] = withoutHash.split("?");
+
+  return { pathname: pathname || "/", search };
 }
