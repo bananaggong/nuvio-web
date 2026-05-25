@@ -47,7 +47,7 @@ const navigationByArea: Record<ConsoleArea, NavigationItem[]> = {
     },
     {
       name: "프로그램",
-      href: "/host/projects",
+      href: "/host/programs",
       icon: ClipboardList,
       children: [],
     },
