@@ -3,7 +3,6 @@ import Image from "next/image";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import {
-  Bookmark,
   ChevronDown,
   ChevronLeft,
   ChevronRight,
@@ -14,12 +13,12 @@ import {
   MoreHorizontal,
   Phone,
   Plus,
-  Share2,
   Star,
   Tag,
   Ticket,
 } from "lucide-react";
 import { JsonLdScript } from "@/components/json-ld";
+import { nuvioIcons } from "@/components/icons/nuvio-icons";
 import { ProgramGalleryCarousel } from "@/components/program-gallery-carousel";
 import {
   ProgramScheduleCards,
@@ -222,9 +221,9 @@ export default async function ProgramDetailPage({
 
       <ProgramGalleryCarousel images={galleryImages} title={program.title} />
 
-      <div className="relative mx-auto grid w-[71.597vw] grid-cols-[minmax(0,48.056vw)_20.625vw] items-start gap-[2.917vw] pt-10 max-md:block max-md:w-[90vw] max-md:pt-7">
-        <article className="flex w-[48.056vw] min-w-0 flex-col gap-[18px] max-md:w-full">
-          <header className="flex h-[121px] w-full items-start justify-between pb-10 max-md:h-auto max-md:min-h-[100px]">
+      <div className="relative mx-auto grid w-[71.597vw] grid-cols-[minmax(0,48.056vw)_minmax(0,20.625vw)] items-start gap-[2.917vw] pt-10 min-[1440px]:pt-[2.778vw] max-md:block max-md:w-[90vw] max-md:pt-7">
+        <article className="flex w-full min-w-0 flex-col gap-[18px] min-[1440px]:gap-[1.25vw] max-md:w-full">
+          <header className="flex h-[121px] w-full items-start justify-between pb-10 min-[1440px]:h-[8.403vw] min-[1440px]:pb-[2.778vw] max-md:h-auto max-md:min-h-[100px]">
             <div className="flex w-[188px] flex-col items-start gap-2">
               <h1 className="whitespace-nowrap text-xl font-semibold leading-[1.253] text-[#5B3A29]">
                 {program.title}
@@ -238,10 +237,24 @@ export default async function ProgramDetailPage({
             </div>
             <div className="flex w-[65px] items-center justify-between text-[#CAC4BC]">
               <IconButton ariaLabel="공유하기">
-                <Share2 aria-hidden="true" className="size-5" />
+                <Image
+                  alt=""
+                  aria-hidden="true"
+                  className="size-5"
+                  height={21}
+                  src={nuvioIcons.share}
+                  width={21}
+                />
               </IconButton>
               <IconButton ariaLabel="저장하기">
-                <Bookmark aria-hidden="true" className="size-5" />
+                <Image
+                  alt=""
+                  aria-hidden="true"
+                  className="h-5 w-[17px]"
+                  height={20}
+                  src={nuvioIcons.bookmark}
+                  width={17}
+                />
               </IconButton>
             </div>
           </header>
@@ -267,12 +280,12 @@ export default async function ProgramDetailPage({
           </nav>
 
           <section
-            className="flex h-[886px] w-full flex-col pb-[30px] max-md:h-[118vw] max-md:min-h-[420px] max-md:pb-0"
+            className="flex h-[886px] w-full flex-col pb-[30px] min-[1440px]:h-[61.528vw] min-[1440px]:pb-[2.083vw] max-md:h-[118vw] max-md:min-h-[420px] max-md:pb-0"
             id="detail-section-0"
           >
             <div
               aria-label="여행 소개 이미지 영역"
-              className={`relative h-[856px] w-full overflow-hidden bg-[#D9D9D9] bg-cover bg-center max-md:h-[118vw] max-md:min-h-[420px] ${
+              className={`relative h-[856px] w-full overflow-hidden bg-[#D9D9D9] bg-cover bg-center min-[1440px]:h-[59.444vw] max-md:h-[118vw] max-md:min-h-[420px] ${
                 introImage ? "" : "bg-[linear-gradient(135deg,#E9E2DB,#D9D9D9)]"
               }`}
               style={
@@ -314,7 +327,7 @@ export default async function ProgramDetailPage({
           />
 
           <section
-            className="flex min-h-[932px] w-[694.53px] flex-col items-center gap-7 pb-10 max-md:w-full"
+            className="flex min-h-[932px] w-full flex-col items-center gap-7 pb-10 min-[1440px]:min-h-[64.722vw] max-md:w-full"
             id="detail-section-3"
           >
             <SectionTitle title="집결지 정보" />
@@ -373,14 +386,14 @@ export default async function ProgramDetailPage({
 
             <div
               aria-label="지도 영역"
-              className="flex h-[243px] w-[662px] flex-col items-center justify-center gap-3 rounded-md bg-[#F7F5F3] px-8 text-center text-sm font-medium leading-[1.55] text-[#6D7A8A] max-md:w-full"
+              className="flex h-[243px] w-[45.972vw] flex-col items-center justify-center gap-3 rounded-md bg-[#F7F5F3] px-8 text-center text-sm font-medium leading-[1.55] text-[#6D7A8A] min-[1440px]:h-[16.875vw] max-md:w-full"
             >
               <MapPin aria-hidden="true" className="size-7 text-[#FE701E]" />
               <span className="break-keep">{placeDetails.meetingAddress}</span>
             </div>
 
             <section
-              className="flex w-[694.53px] flex-col items-center gap-7 max-md:w-full"
+              className="flex w-full flex-col items-center gap-7 max-md:w-full"
               id="detail-section-4"
             >
               <SectionTitle title="안내사항" />
@@ -396,7 +409,7 @@ export default async function ProgramDetailPage({
                   </button>
                   <div
                     aria-label="환불규정 내용 영역"
-                    className="h-[188px] w-[677px] bg-[#D9D9D9] max-md:w-full"
+                    className="h-[188px] w-full bg-[#D9D9D9] min-[1440px]:h-[13.056vw] max-md:w-full"
                   />
                 </div>
               </div>
@@ -404,25 +417,25 @@ export default async function ProgramDetailPage({
           </section>
         </article>
 
-        <aside className="sticky top-[86px] flex w-[20.625vw] min-w-0 flex-col items-start gap-[11px] self-start max-md:static max-md:mt-[34px] max-md:w-full">
+        <aside className="sticky top-[86px] flex w-full min-w-0 flex-col items-start gap-[11px] self-start min-[1440px]:gap-[0.764vw] max-md:static max-md:mt-[34px] max-md:w-full">
           <section
-            className="flex h-[333px] w-[297px] flex-col items-center gap-[17px] rounded-md border border-[#F5E1D3] bg-[#FCFCFC] p-4 max-md:w-full"
+            className="flex min-h-[333px] w-full flex-col items-center gap-[17px] rounded-md border border-[#F5E1D3] bg-[#FCFCFC] p-4 min-[1440px]:min-h-[23.125vw] min-[1440px]:gap-[1.181vw] min-[1440px]:p-[1.111vw] max-md:w-full"
             id="apply"
           >
-            <div className="grid min-h-[35px] grid-cols-[123.5px_123.5px] items-center rounded-[7px] border-[0.5px] border-[#F5E1D3] max-md:w-full max-md:grid-cols-2">
-              <div className="flex items-center justify-center gap-1 p-2">
-                <strong className="text-xs font-medium leading-[1.253] text-[#5B3A29]">
+            <div className="grid min-h-[35px] w-[93.208%] grid-cols-[minmax(0,1fr)_minmax(0,1fr)] items-center rounded-[7px] border-[0.5px] border-[#F5E1D3] min-[1440px]:min-h-[2.431vw] max-md:w-full max-md:grid-cols-2">
+              <div className="flex min-w-0 items-center justify-center gap-1 p-2 min-[1440px]:gap-[0.278vw] min-[1440px]:p-[0.556vw]">
+                <strong className="shrink-0 whitespace-nowrap text-xs font-medium leading-[1.253] text-[#5B3A29]">
                   일정
                 </strong>
-                <span className="text-xs font-normal leading-[1.6] text-[#6D7A8A]">
+                <span className="min-w-0 whitespace-nowrap text-xs font-normal leading-[1.6] text-[#6D7A8A]">
                   {formatCompactDateRange(program.activityStart, program.activityEnd)}
                 </span>
               </div>
-              <div className="flex items-center justify-center gap-1 border-l-[0.5px] border-[#F5E1D3] p-2">
-                <strong className="text-xs font-medium leading-[1.253] text-[#5B3A29]">
+              <div className="flex min-w-0 items-center justify-center gap-1 border-l-[0.5px] border-[#F5E1D3] p-2 min-[1440px]:gap-[0.278vw] min-[1440px]:p-[0.556vw]">
+                <strong className="shrink-0 whitespace-nowrap text-xs font-medium leading-[1.253] text-[#5B3A29]">
                   모집
                 </strong>
-                <span className="text-xs font-normal leading-[1.6] text-[#6D7A8A]">
+                <span className="min-w-0 whitespace-nowrap text-xs font-normal leading-[1.6] text-[#6D7A8A]">
                   {program.capacity}
                 </span>
               </div>
@@ -485,7 +498,7 @@ export default async function ProgramDetailPage({
             </a>
           </section>
 
-          <div className="flex w-[297px] flex-col gap-[9px] max-md:w-full">
+          <div className="flex w-full flex-col gap-[9px] min-[1440px]:gap-[0.625vw] max-md:w-full">
             <BenefitRow icon={<Ticket aria-hidden="true" className="size-3.5" />} label="쿠폰" value="받기" />
             <BenefitRow
               icon={<Tag aria-hidden="true" className="size-[13px]" />}
@@ -581,7 +594,7 @@ function ParticipantReviewSection({
         </Link>
       </div>
 
-      <div className="flex w-[688px] flex-col max-md:w-full">
+      <div className="flex w-full flex-col max-md:w-full">
         {visibleReviews.length > 0 ? (
           visibleReviews.map((review) => (
             <ReviewCard
@@ -591,7 +604,7 @@ function ParticipantReviewSection({
             />
           ))
         ) : (
-          <div className="flex min-h-[173px] w-[688px] items-center justify-center border-b border-[#F5E1D3] px-8 py-4 text-sm text-[#6D7A8A] max-md:w-full max-md:px-4">
+          <div className="flex min-h-[173px] w-full items-center justify-center border-b border-[#F5E1D3] px-8 py-4 text-sm text-[#6D7A8A] max-md:w-full max-md:px-4">
             아직 등록된 누비어 후기가 없어요.
           </div>
         )}
@@ -620,7 +633,7 @@ function ReviewCard({
 
   return (
     <section
-      className={`flex w-[688px] flex-col items-start border-b border-[#F5E1D3] px-8 py-4 max-md:w-full max-md:px-4 ${
+      className={`flex w-full flex-col items-start border-b border-[#F5E1D3] px-8 py-4 max-md:w-full max-md:px-4 ${
         images.length === 0 ? "min-h-[173px]" : "min-h-[293px]"
       }`}
     >
@@ -646,7 +659,7 @@ function ReviewCard({
           {formatReviewDate(review.date)}
         </time>
       </div>
-      <p className="mt-2 line-clamp-3 max-h-[58px] w-[624px] overflow-hidden px-2 text-xs font-normal leading-[1.6] text-[#2B1E17] max-md:w-full">
+      <p className="mt-2 line-clamp-3 max-h-[58px] w-full overflow-hidden px-2 text-xs font-normal leading-[1.6] text-[#2B1E17] max-md:w-full">
         {reviewBody}
       </p>
       <Link
@@ -674,7 +687,7 @@ function ReviewCard({
           ))}
           <div
             aria-hidden="true"
-            className="pointer-events-none absolute left-[-11px] top-[50px] flex h-[20.5px] w-[645.53px] items-center justify-between text-white opacity-0 transition-opacity group-hover/gallery:opacity-100 group-focus-within/gallery:opacity-100 max-md:hidden"
+            className="pointer-events-none absolute left-[-11px] right-[-11px] top-[50px] flex h-[20.5px] items-center justify-between text-white opacity-0 transition-opacity group-hover/gallery:opacity-100 group-focus-within/gallery:opacity-100 max-md:hidden"
           >
             <ChevronLeft className="size-[20.5px]" />
             <ChevronRight className="size-[20.5px]" />
@@ -743,12 +756,12 @@ function BenefitRow({
   value: string;
 }) {
   return (
-    <div className="flex h-[33px] w-[297px] items-center gap-2 rounded-[3px] border border-[#F5E1D3] bg-[#FCFCFC] p-1.5 max-md:w-full">
+    <div className="flex h-[33px] w-full items-center gap-2 rounded-[3px] border border-[#F5E1D3] bg-[#FCFCFC] p-1.5 min-[1440px]:h-[2.292vw] min-[1440px]:p-[0.417vw] max-md:w-full">
       <span className="flex-1 text-xs font-semibold leading-[1.253] text-[#5B3A29]">
         {label}
       </span>
       <button
-        className="flex h-[21px] items-center gap-[3px] rounded-[3px] border-0 bg-[#FF9A3D] px-[7px] py-px text-xs font-normal leading-[1.6] text-[#FCFCFC]"
+        className="flex h-[21px] items-center gap-[3px] rounded-[3px] border-0 bg-[#FF9A3D] px-[7px] py-px text-xs font-normal leading-[1.6] text-[#FCFCFC] min-[1440px]:h-[1.458vw] min-[1440px]:px-[0.486vw]"
         type="button"
       >
         {icon}
