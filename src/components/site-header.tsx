@@ -13,6 +13,7 @@ import {
   X,
 } from "lucide-react";
 import { useEffect, useRef, useState, type RefObject } from "react";
+import { nuvioIcons } from "@/components/icons/nuvio-icons";
 
 const navItems = [
   { href: "/magazine", label: "소식지", match: ["/magazine"] },
@@ -244,7 +245,7 @@ function DesktopAuthAction({
             aria-hidden="true"
             className="size-[1.389vw] min-h-[20px] min-w-[20px]"
             height={21}
-            src="/icons/header-bell.png"
+            src={nuvioIcons.bell}
             width={20}
           />
         </Link>
@@ -260,7 +261,7 @@ function DesktopAuthAction({
             aria-hidden="true"
             className="size-[1.458vw] min-h-[21px] min-w-[21px]"
             height={21}
-            src="/icons/header-profile.png"
+            src={nuvioIcons.user}
             width={21}
           />
         </button>
@@ -286,7 +287,7 @@ function DesktopAuthAction({
         aria-hidden="true"
         className="h-full w-full"
         height={36}
-        src="/icons/header-action-frame.png"
+        src={nuvioIcons.headerActionFrame}
         width={31}
       />
     </Link>
@@ -431,7 +432,7 @@ function MobileAuthAction({
             aria-hidden="true"
             className="size-[21px]"
             height={21}
-            src="/icons/header-profile.png"
+            src={nuvioIcons.user}
             width={21}
           />
         </span>
@@ -451,7 +452,7 @@ function MobileAuthAction({
         aria-hidden="true"
         className="h-[36px] w-[31px]"
         height={36}
-        src="/icons/header-action-frame.png"
+        src={nuvioIcons.headerActionFrame}
         width={31}
       />
     </Link>

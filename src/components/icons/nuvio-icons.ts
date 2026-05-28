@@ -1,0 +1,26 @@
+export const nuvioIcons = {
+  arrowCircleRight: "/icons/nuvio/arrow-circle-right.svg",
+  bell: "/icons/nuvio/bell.svg",
+  bookmark: "/icons/nuvio/bookmark.svg",
+  bookmarkFilled: "/icons/nuvio/bookmark-filled.svg",
+  calendar: "/icons/nuvio/calendar.svg",
+  coupon: "/icons/nuvio/coupon.svg",
+  dropdown: "/icons/nuvio/dropdown.svg",
+  dropup: "/icons/nuvio/dropup.svg",
+  headerActionFrame: "/icons/nuvio/header-action-frame.svg",
+  login: "/icons/nuvio/login.svg",
+  mail: "/icons/nuvio/mail.svg",
+  map: "/icons/nuvio/map.svg",
+  message: "/icons/nuvio/message.svg",
+  moreHorizontal: "/icons/nuvio/more-horizontal.svg",
+  notificationDot: "/icons/nuvio/notification-dot.svg",
+  phone: "/icons/nuvio/phone.svg",
+  place: "/icons/nuvio/place.svg",
+  promotion: "/icons/nuvio/promotion.svg",
+  review: "/icons/nuvio/review.svg",
+  settings: "/icons/nuvio/settings.svg",
+  share: "/icons/nuvio/share.svg",
+  user: "/icons/nuvio/user.svg",
+} as const;
+
+export type NuvioIconName = keyof typeof nuvioIcons;
