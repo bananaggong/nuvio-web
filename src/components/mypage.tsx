@@ -6,10 +6,14 @@ import { usePathname } from "next/navigation";
 import {
   Bookmark,
   CalendarDays,
+  ChevronLeft,
   ChevronRight,
   Gift,
   LogOut,
   MessageCircle,
+  Minus,
+  Plus,
+  Search,
   Settings,
   Star,
   Ticket,
@@ -297,11 +301,10 @@ export function MypageBookmarks() {
 }
 
 export function MypageMessages() {
-  return (
-    <MypageFrame activeSection="messages">
-      {(context) => <MessagesContent context={context} />}
-    </MypageFrame>
-  );
+  const data = useMypageData();
+  const context = useMypageContext(data);
+
+  return <MessagesContent context={context} />;
 }
 
 export function MypageMemberInformation({
@@ -650,37 +653,414 @@ function BookmarksContent({ context }: { context: MypageContext }) {
   );
 }
 
+type MessageThread = {
+  hostName: string;
+  id: string;
+  location: string;
+  period: string;
+  statusLabel: string;
+  statusTone: "closed" | "open";
+  timeLabel: string;
+  title: string;
+  unread: boolean;
+};
+
 function MessagesContent({ context }: { context: MypageContext }) {
+  const [threadQuery, setThreadQuery] = useState("");
+  const [conversationSearchOpen, setConversationSearchOpen] = useState(false);
+  const [activeThreadId, setActiveThreadId] = useState<string | null>(null);
+  const threads = useMemo(
+    () =>
+      buildMessageThreads({
+        applications: context.applications,
+        notifications: context.notifications,
+        publicPrograms: context.publicPrograms,
+        visibleTrips: context.visibleTrips,
+      }),
+    [
+      context.applications,
+      context.notifications,
+      context.publicPrograms,
+      context.visibleTrips,
+    ],
+  );
+  const visibleThreads = useMemo(() => {
+    const query = threadQuery.trim().toLowerCase();
+    if (!query) return threads;
+
+    return threads.filter((thread) =>
+      [thread.title, thread.hostName, thread.location]
+        .join(" ")
+        .toLowerCase()
+        .includes(query),
+    );
+  }, [threadQuery, threads]);
+  const activeThread =
+    visibleThreads.find((thread) => thread.id === activeThreadId) ??
+    visibleThreads[0] ??
+    null;
+
   return (
-    <section>
-      <PageTitle
-        eyebrow="MESSAGE"
-        title="메시지함"
-        trailing={`${context.notifications.length}개`}
-      />
-      <div className="mt-6 grid gap-3">
-        {context.notifications.length > 0 ? (
-          context.notifications.map((notification) => (
-            <Link
-              className="grid gap-1 rounded-[6px] border border-[#d9d9d9] px-5 py-4 text-[#4B3328] transition hover:border-[#f7983a]"
-              href={notification.href || "/mypage/messages"}
-              key={notification.id}
-            >
-              <span className="text-[15px] font-semibold">{notification.title}</span>
-              <span className="text-[13px] leading-6 text-[#8F7A6C]">
-                {notification.body}
-              </span>
-              <span className="text-[12px] text-[#b6a79f]">
-                {formatDateTime(notification.createdAt)}
-              </span>
-            </Link>
-          ))
-        ) : (
-          <EmptyState icon={MessageCircle} title="새 메시지가 오면 이곳에서 확인할 수 있어요" />
-        )}
+    <section className="font-pretendard min-h-[calc(100vh-70px)] bg-white pb-24 pt-3 text-[#5B3A29]">
+      <div className="mx-auto w-full max-w-[1025px] px-5 lg:px-0">
+        <div className="flex items-center gap-[19px]">
+          <ChevronLeft
+            aria-hidden="true"
+            className="h-[15px] w-[11px] shrink-0 text-[#FF9A3D]"
+            strokeWidth={2}
+          />
+          <h1 className="min-w-0 flex-1 text-[16px] font-semibold leading-[1.253]">
+            메세지
+          </h1>
+        </div>
+
+        <div className="flex w-full items-start justify-center gap-4 py-5 max-lg:flex-col">
+          <aside className="flex w-[357px] shrink-0 flex-col gap-[6px] self-stretch border-r-[3px] border-[#F3F3F3] pr-5 max-lg:w-full max-lg:border-b-[3px] max-lg:border-r-0 max-lg:pb-5 max-lg:pr-0">
+            <MessageThreadSearch value={threadQuery} onChange={setThreadQuery} />
+            {context.loading && threads.length === 0 ? (
+              <MessageListSkeleton />
+            ) : visibleThreads.length > 0 ? (
+              visibleThreads.map((thread) => (
+                <MessageThreadRow
+                  active={thread.id === activeThread?.id}
+                  key={thread.id}
+                  onSelect={() => {
+                    setActiveThreadId(thread.id);
+                    setConversationSearchOpen(false);
+                  }}
+                  thread={thread}
+                />
+              ))
+            ) : null}
+          </aside>
+
+          <MessageConversationPanel
+            searchOpen={conversationSearchOpen}
+            thread={activeThread}
+            onCloseSearch={() => setConversationSearchOpen(false)}
+            onOpenSearch={() => setConversationSearchOpen(true)}
+          />
+        </div>
       </div>
     </section>
   );
+}
+
+function MessageThreadSearch({
+  onChange,
+  value,
+}: {
+  onChange: (value: string) => void;
+  value: string;
+}) {
+  return (
+    <label className="flex h-6 w-full items-center gap-2 rounded-[40px] border border-[#6D7A8A] bg-[#F9F9F9] px-[9px] py-1">
+      <Search
+        aria-hidden="true"
+        className="h-[14px] w-[14px] shrink-0 text-[#6D7A8A]"
+        strokeWidth={1.75}
+      />
+      <input
+        aria-label="메세지 검색"
+        className="min-w-0 flex-1 bg-transparent pl-[3px] pr-[6px] text-[12px] font-semibold leading-[1.253] text-[#6D7A8A] outline-none placeholder:text-[#6D7A8A]"
+        onChange={(event) => onChange(event.target.value)}
+        placeholder="검색"
+        value={value}
+      />
+    </label>
+  );
+}
+
+function MessageThreadRow({
+  active,
+  onSelect,
+  thread,
+}: {
+  active: boolean;
+  onSelect: () => void;
+  thread: MessageThread;
+}) {
+  return (
+    <button
+      className={`flex w-full items-center justify-center gap-3 rounded-[12px] bg-[#F3F3F3] px-[6px] py-2 text-left transition hover:bg-[#EFEFEF] ${
+        active ? "shadow-[inset_0_0_0_1px_rgba(247,178,103,0.22)]" : ""
+      }`}
+      onClick={onSelect}
+      type="button"
+    >
+      <span className="size-[35px] shrink-0 rounded-full bg-[#D9D9D9]" />
+      <span className="flex min-w-0 flex-1 flex-col gap-[3px] leading-[1.253]">
+        <span
+          className={`truncate text-[14px] text-[#5B3A29] ${
+            thread.unread ? "font-semibold" : "font-normal"
+          }`}
+        >
+          {thread.title}
+        </span>
+        <span className="truncate text-[12px] font-medium text-[#6D7A8A]">
+          {thread.hostName}
+        </span>
+      </span>
+      <span className="flex self-stretch flex-col items-end justify-center pr-[6px]">
+        <span className="flex min-h-[20px] items-center justify-center">
+          {thread.unread ? (
+            <span className="size-[6px] rounded-full bg-[#FE701E]" />
+          ) : null}
+        </span>
+        <span className="whitespace-nowrap text-right text-[12px] font-normal leading-[1.6] text-[#6D7A8A]">
+          {thread.timeLabel}
+        </span>
+      </span>
+    </button>
+  );
+}
+
+function MessageConversationPanel({
+  onCloseSearch,
+  onOpenSearch,
+  searchOpen,
+  thread,
+}: {
+  onCloseSearch: () => void;
+  onOpenSearch: () => void;
+  searchOpen: boolean;
+  thread: MessageThread | null;
+}) {
+  if (!thread) {
+    return (
+      <div className="flex h-[503px] min-w-0 flex-1 flex-col items-center justify-center rounded-[22px] bg-[#F9F9F9] px-[6px] py-2 max-lg:w-full">
+        <div className="flex flex-col items-center justify-center gap-[13px]">
+          <Image
+            alt=""
+            className="h-[34px] w-[29px] grayscale opacity-30"
+            height={34}
+            src="/brand/nuvio-symbol.svg"
+            width={29}
+          />
+          <p className="whitespace-nowrap text-[12px] font-normal leading-[1.6] text-[#D9D9D9]">
+            아직 메세지가 없어요
+          </p>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="flex h-[503px] min-w-0 flex-1 flex-col items-center gap-3 rounded-[22px] bg-[#F9F9F9] px-[6px] py-2 max-lg:w-full">
+      <div className="flex w-full items-center justify-center gap-3 border-b border-[#F3F3F3] px-2.5 pb-3 pt-[7px]">
+        <span className="h-[49px] w-[45px] shrink-0 rounded-[6px] bg-[#D9D9D9]" />
+        <div className="flex min-w-0 flex-1 flex-col justify-center gap-0.5">
+          <div className="flex min-w-0 items-end gap-2">
+            <h2 className="truncate text-[14px] font-semibold leading-[1.253] text-[#5B3A29]">
+              {thread.title}
+            </h2>
+            <span
+              className={`inline-flex h-[19px] shrink-0 items-center justify-center rounded-[6px] px-[6px] py-[3px] text-[12px] leading-[1.253] ${
+                thread.statusTone === "closed"
+                  ? "bg-[#6D7A8A] font-semibold text-[#F3F3F3]"
+                  : "bg-[#F7B267] font-normal leading-[1.6] text-[#FCFCFC]"
+              }`}
+            >
+              {thread.statusLabel}
+            </span>
+          </div>
+          <div className="flex min-w-0 items-center justify-center gap-3 text-[12px] text-[#6D7A8A] max-md:flex-wrap max-md:justify-start">
+            <p className="min-w-0 flex-1 truncate font-medium leading-[1.253]">
+              {thread.location}
+            </p>
+            <p className="shrink-0 whitespace-nowrap font-medium leading-[1.253]">
+              여행 기간 {thread.period}
+            </p>
+            <p className="w-[177px] shrink-0 truncate text-right font-normal leading-[1.6] max-md:w-auto">
+              {thread.hostName}
+            </p>
+          </div>
+        </div>
+      </div>
+
+      <div className="flex w-full shrink-0 items-center justify-end gap-3 px-2.5 py-1">
+        {searchOpen ? (
+          <div className="flex h-[26px] w-[571px] max-w-[calc(100%-30px)] items-center gap-2 rounded-[12px] bg-[#F3F3F3] py-1 pl-[12px] pr-2">
+            <Search
+              aria-hidden="true"
+              className="size-[18px] shrink-0 text-[#FE701E]"
+              strokeWidth={1.8}
+            />
+            <input
+              aria-label="대화내용 검색"
+              className="min-w-0 flex-1 bg-transparent text-[12px] font-normal leading-[1.6] text-[#6D7A8A] outline-none placeholder:text-[#CAC4BC]"
+              placeholder="대화내용 검색"
+            />
+          </div>
+        ) : (
+          <button
+            aria-label="대화내용 검색 열기"
+            className="inline-flex size-[18px] items-center justify-center text-[#CAC4BC] transition hover:text-[#FE701E]"
+            onClick={onOpenSearch}
+            type="button"
+          >
+            <Search aria-hidden="true" className="size-[18px]" strokeWidth={1.8} />
+          </button>
+        )}
+        <button
+          aria-label={searchOpen ? "대화내용 검색 닫기" : "대화 접기"}
+          className="inline-flex size-[18px] items-center justify-center rounded-full bg-[#CAC4BC] text-white transition hover:bg-[#B8B0A8]"
+          onClick={searchOpen ? onCloseSearch : undefined}
+          type="button"
+        >
+          <Minus aria-hidden="true" className="size-[11px]" strokeWidth={2.4} />
+        </button>
+      </div>
+
+      <div className="flex min-h-0 w-full flex-1 flex-col items-center justify-end pb-[11px]">
+        <label className="flex h-[37px] w-[593px] max-w-full items-center gap-2 rounded-[40px] border border-[#FF9A3D] bg-[#F9F9F9] p-[9px]">
+          <span className="inline-flex size-3 shrink-0 items-center justify-center rounded-full bg-[#FF9A3D] text-white">
+            <Plus aria-hidden="true" className="size-2" strokeWidth={2.4} />
+          </span>
+          <input
+            aria-label="메세지 입력"
+            className="min-w-0 flex-1 bg-transparent pl-[3px] pr-[6px] text-[12px] font-normal leading-[1.6] text-[#6D7A8A] outline-none placeholder:text-[#D9D9D9]"
+            placeholder="메세지 입력"
+          />
+        </label>
+      </div>
+    </div>
+  );
+}
+
+function MessageListSkeleton() {
+  return (
+    <>
+      {[0, 1].map((item) => (
+        <div
+          className="flex animate-pulse items-center gap-3 rounded-[12px] bg-[#F3F3F3] px-[6px] py-2"
+          key={item}
+        >
+          <span className="size-[35px] rounded-full bg-[#D9D9D9]" />
+          <span className="flex flex-1 flex-col gap-[7px]">
+            <span className="h-3 w-28 rounded bg-[#D9D9D9]" />
+            <span className="h-3 w-16 rounded bg-[#D9D9D9]" />
+          </span>
+        </div>
+      ))}
+    </>
+  );
+}
+
+function buildMessageThreads({
+  applications,
+  notifications,
+  publicPrograms,
+  visibleTrips,
+}: Pick<
+  MypageContext,
+  "applications" | "notifications" | "publicPrograms" | "visibleTrips"
+>): MessageThread[] {
+  const notificationThreads = notifications.map((notification) => {
+    const application = findApplicationForMessageNotification(
+      notification,
+      applications,
+    );
+    const program =
+      findProgramForMessageNotification(notification, publicPrograms) ??
+      (application
+        ? findProgramForApplication(application, publicPrograms)
+        : undefined);
+
+    return createMessageThread({
+      application,
+      createdAt: notification.createdAt,
+      id: `notification-${notification.id}`,
+      program,
+      title: program?.title ?? application?.programTitle ?? notification.title,
+      unread: !notification.readAt,
+    });
+  });
+
+  if (notificationThreads.length > 0) return notificationThreads;
+
+  return visibleTrips.slice(0, 6).map((application) => {
+    const program = findProgramForApplication(application, publicPrograms);
+
+    return createMessageThread({
+      application,
+      createdAt: application.submittedAt,
+      id: `application-${application.id}`,
+      program,
+      title: program?.title ?? application.programTitle,
+      unread: false,
+    });
+  });
+}
+
+function createMessageThread({
+  application,
+  createdAt,
+  id,
+  program,
+  title,
+  unread,
+}: {
+  application?: HostApplication;
+  createdAt: string;
+  id: string;
+  program?: Program;
+  title: string;
+  unread: boolean;
+}): MessageThread {
+  const closed =
+    program?.status === "closed" ||
+    program?.status === "earlyClosed" ||
+    application?.status === "completed" ||
+    application?.status === "rejected";
+
+  return {
+    hostName: program?.sourceName || "호스트명",
+    id,
+    location: program ? `${program.region} ${program.city}` : "프로그램 지역 위치",
+    period: program
+      ? `${formatMessageDate(program.activityStart)} - ${formatMessageDate(
+          program.activityEnd,
+        )}`
+      : "0000. 00. 00 - 0000. 00. 00",
+    statusLabel: closed ? "마감" : "모집중",
+    statusTone: closed ? "closed" : "open",
+    timeLabel: formatMessageRelativeTime(createdAt),
+    title: title || "프로그램 제목",
+    unread,
+  };
+}
+
+function findApplicationForMessageNotification(
+  notification: UserNotification,
+  applications: HostApplication[],
+) {
+  const searchText = getNotificationSearchText(notification);
+
+  return applications.find((application) => {
+    if (searchText.includes(application.programTitle)) return true;
+    return application.programId ? searchText.includes(application.programId) : false;
+  });
+}
+
+function findProgramForMessageNotification(
+  notification: UserNotification,
+  programs: Program[],
+) {
+  const searchText = getNotificationSearchText(notification);
+
+  return programs.find((program) => {
+    const id = String(program.id);
+    return (
+      searchText.includes(program.title) ||
+      searchText.includes(program.slug) ||
+      searchText.includes(id)
+    );
+  });
+}
+
+function getNotificationSearchText(notification: UserNotification) {
+  return `${notification.title} ${notification.body} ${notification.href}`;
 }
 
 function MemberInformationContent({
@@ -2521,6 +2901,15 @@ function formatShortDate(value: string) {
   ).padStart(2, "0")}`;
 }
 
+function formatMessageDate(value: string) {
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return "0000. 00. 00";
+  return `${date.getFullYear()}. ${String(date.getMonth() + 1).padStart(
+    2,
+    "0",
+  )}. ${String(date.getDate()).padStart(2, "0")}`;
+}
+
 function formatDate(value: string) {
   const date = new Date(value);
   if (Number.isNaN(date.getTime())) return "-";
@@ -2531,16 +2920,26 @@ function formatDate(value: string) {
   });
 }
 
-function formatDateTime(value: string) {
+function formatMessageRelativeTime(value: string) {
   const date = new Date(value);
   if (Number.isNaN(date.getTime())) return "-";
-  return date.toLocaleString("ko-KR", {
-    day: "2-digit",
-    hour: "2-digit",
-    minute: "2-digit",
-    month: "2-digit",
-    year: "numeric",
-  });
+
+  const diffMs = Date.now() - date.getTime();
+  const minute = 60 * 1000;
+  const hour = 60 * minute;
+  const day = 24 * hour;
+
+  if (diffMs < hour) {
+    return `${Math.max(1, Math.floor(diffMs / minute))}분전`;
+  }
+  if (diffMs < day) {
+    return `${Math.floor(diffMs / hour)}시간전`;
+  }
+  if (diffMs < day * 30) {
+    return `${Math.floor(diffMs / day)}일전`;
+  }
+
+  return formatDate(value);
 }
 
 function formatProgramPeriod(program: Program) {

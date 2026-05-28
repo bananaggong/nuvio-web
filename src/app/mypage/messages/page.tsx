@@ -3,7 +3,7 @@ import { MypageMessages } from "@/components/mypage";
 import { createSeoMetadata } from "@/lib/seo";
 
 export const metadata: Metadata = createSeoMetadata({
-  title: "메시지함",
+  title: "메세지",
   noIndex: true,
   path: "/mypage/messages",
 });
