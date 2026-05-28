@@ -240,7 +240,7 @@ const sideMenuItems: Array<{
 }> = [
   {
     href: "/mypage/trips",
-    label: "내 여행 프로그램",
+    label: "내 여행",
     icon: CalendarDays,
     section: "trips",
   },
