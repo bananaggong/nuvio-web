@@ -702,8 +702,8 @@ function MessagesContent({ context }: { context: MypageContext }) {
 
   return (
     <section className="font-pretendard min-h-[calc(100vh-70px)] bg-white pb-24 pt-3 text-[#5B3A29]">
-      <div className="mx-auto w-full max-w-[1025px] px-5 lg:px-0">
-        <div className="flex items-center gap-[19px]">
+      <div className="mx-auto w-full max-w-[1025px] px-5 lg:px-0 min-[1440px]:w-[71.181vw] min-[1440px]:max-w-none">
+        <div className="flex items-center gap-[19px] min-[1440px]:gap-[1.319vw]">
           <ChevronLeft
             aria-hidden="true"
             className="h-[15px] w-[11px] shrink-0 text-[#FF9A3D]"
@@ -714,8 +714,8 @@ function MessagesContent({ context }: { context: MypageContext }) {
           </h1>
         </div>
 
-        <div className="flex w-full items-start justify-center gap-4 py-5 max-lg:flex-col">
-          <aside className="flex w-[357px] shrink-0 flex-col gap-[6px] self-stretch border-r-[3px] border-[#F3F3F3] pr-5 max-lg:w-full max-lg:border-b-[3px] max-lg:border-r-0 max-lg:pb-5 max-lg:pr-0">
+        <div className="flex w-full items-start justify-center gap-4 py-5 max-lg:flex-col min-[1440px]:gap-[1.111vw] min-[1440px]:py-[1.389vw]">
+          <aside className="flex w-[357px] shrink-0 flex-col gap-[6px] self-stretch border-r-[3px] border-[#F3F3F3] pr-5 max-lg:w-full max-lg:border-b-[3px] max-lg:border-r-0 max-lg:pb-5 max-lg:pr-0 min-[1440px]:w-[24.792vw] min-[1440px]:gap-[0.417vw] min-[1440px]:border-r-[0.208vw] min-[1440px]:pr-[1.389vw]">
             <MessageThreadSearch value={threadQuery} onChange={setThreadQuery} />
             {context.loading && threads.length === 0 ? (
               <MessageListSkeleton />
@@ -754,10 +754,10 @@ function MessageThreadSearch({
   value: string;
 }) {
   return (
-    <label className="flex h-6 w-full items-center gap-2 rounded-[40px] border border-[#6D7A8A] bg-[#F9F9F9] px-[9px] py-1">
+    <label className="flex h-6 w-full items-center gap-2 rounded-[40px] border border-[#6D7A8A] bg-[#F9F9F9] px-[9px] py-1 min-[1440px]:h-[1.667vw] min-[1440px]:gap-[0.556vw] min-[1440px]:px-[0.625vw] min-[1440px]:py-[0.278vw]">
       <Search
         aria-hidden="true"
-        className="h-[14px] w-[14px] shrink-0 text-[#6D7A8A]"
+        className="h-[14px] w-[14px] shrink-0 text-[#6D7A8A] min-[1440px]:h-[0.972vw] min-[1440px]:w-[0.972vw]"
         strokeWidth={1.75}
       />
       <input
@@ -782,13 +782,13 @@ function MessageThreadRow({
 }) {
   return (
     <button
-      className={`flex w-full items-center justify-center gap-3 rounded-[12px] bg-[#F3F3F3] px-[6px] py-2 text-left transition hover:bg-[#EFEFEF] ${
+      className={`flex w-full items-center justify-center gap-3 rounded-[12px] bg-[#F3F3F3] px-[6px] py-2 text-left transition hover:bg-[#EFEFEF] min-[1440px]:gap-[0.833vw] min-[1440px]:rounded-[0.833vw] min-[1440px]:px-[0.417vw] min-[1440px]:py-[0.556vw] ${
         active ? "shadow-[inset_0_0_0_1px_rgba(247,178,103,0.22)]" : ""
       }`}
       onClick={onSelect}
       type="button"
     >
-      <span className="size-[35px] shrink-0 rounded-full bg-[#D9D9D9]" />
+      <span className="size-[35px] shrink-0 rounded-full bg-[#D9D9D9] min-[1440px]:size-[2.431vw]" />
       <span className="flex min-w-0 flex-1 flex-col gap-[3px] leading-[1.253]">
         <span
           className={`truncate text-[14px] text-[#5B3A29] ${
@@ -828,11 +828,11 @@ function MessageConversationPanel({
 }) {
   if (!thread) {
     return (
-      <div className="flex h-[503px] min-w-0 flex-1 flex-col items-center justify-center rounded-[22px] bg-[#F9F9F9] px-[6px] py-2 max-lg:w-full">
-        <div className="flex flex-col items-center justify-center gap-[13px]">
+      <div className="flex h-[503px] min-w-0 flex-1 flex-col items-center justify-center rounded-[22px] bg-[#F9F9F9] px-[6px] py-2 max-lg:w-full min-[1440px]:h-[34.931vw] min-[1440px]:rounded-[1.528vw] min-[1440px]:px-[0.417vw] min-[1440px]:py-[0.556vw]">
+        <div className="flex flex-col items-center justify-center gap-[13px] min-[1440px]:gap-[0.903vw]">
           <Image
             alt=""
-            className="h-[34px] w-[29px] grayscale opacity-30"
+            className="h-[34px] w-[29px] grayscale opacity-30 min-[1440px]:h-[2.361vw] min-[1440px]:w-[2.014vw]"
             height={34}
             src="/brand/nuvio-symbol.svg"
             width={29}
@@ -846,9 +846,9 @@ function MessageConversationPanel({
   }
 
   return (
-    <div className="flex h-[503px] min-w-0 flex-1 flex-col items-center gap-3 rounded-[22px] bg-[#F9F9F9] px-[6px] py-2 max-lg:w-full">
-      <div className="flex w-full items-center justify-center gap-3 border-b border-[#F3F3F3] px-2.5 pb-3 pt-[7px]">
-        <span className="h-[49px] w-[45px] shrink-0 rounded-[6px] bg-[#D9D9D9]" />
+    <div className="flex h-[503px] min-w-0 flex-1 flex-col items-center gap-3 rounded-[22px] bg-[#F9F9F9] px-[6px] py-2 max-lg:w-full min-[1440px]:h-[34.931vw] min-[1440px]:gap-[0.833vw] min-[1440px]:rounded-[1.528vw] min-[1440px]:px-[0.417vw] min-[1440px]:py-[0.556vw]">
+      <div className="flex w-full items-center justify-center gap-3 border-b border-[#F3F3F3] px-2.5 pb-3 pt-[7px] min-[1440px]:gap-[0.833vw] min-[1440px]:px-[0.694vw] min-[1440px]:pb-[0.833vw] min-[1440px]:pt-[0.486vw]">
+        <span className="h-[49px] w-[45px] shrink-0 rounded-[6px] bg-[#D9D9D9] min-[1440px]:h-[3.403vw] min-[1440px]:w-[3.125vw] min-[1440px]:rounded-[0.417vw]" />
         <div className="flex min-w-0 flex-1 flex-col justify-center gap-0.5">
           <div className="flex min-w-0 items-end gap-2">
             <h2 className="truncate text-[14px] font-semibold leading-[1.253] text-[#5B3A29]">
@@ -871,16 +871,16 @@ function MessageConversationPanel({
             <p className="shrink-0 whitespace-nowrap font-medium leading-[1.253]">
               여행 기간 {thread.period}
             </p>
-            <p className="w-[177px] shrink-0 truncate text-right font-normal leading-[1.6] max-md:w-auto">
+            <p className="w-[177px] shrink-0 truncate text-right font-normal leading-[1.6] max-md:w-auto min-[1440px]:w-[12.292vw]">
               {thread.hostName}
             </p>
           </div>
         </div>
       </div>
 
-      <div className="flex w-full shrink-0 items-center justify-end gap-3 px-2.5 py-1">
+      <div className="flex w-full shrink-0 items-center justify-end gap-3 px-2.5 py-1 min-[1440px]:gap-[0.833vw] min-[1440px]:px-[0.694vw] min-[1440px]:py-[0.278vw]">
         {searchOpen ? (
-          <div className="flex h-[26px] w-[571px] max-w-[calc(100%-30px)] items-center gap-2 rounded-[12px] bg-[#F3F3F3] py-1 pl-[12px] pr-2">
+          <div className="flex h-[26px] w-[571px] max-w-[calc(100%-30px)] items-center gap-2 rounded-[12px] bg-[#F3F3F3] py-1 pl-[12px] pr-2 min-[1440px]:h-[1.806vw] min-[1440px]:w-[39.653vw] min-[1440px]:gap-[0.556vw] min-[1440px]:rounded-[0.833vw] min-[1440px]:py-[0.278vw] min-[1440px]:pl-[0.833vw] min-[1440px]:pr-[0.556vw]">
             <Search
               aria-hidden="true"
               className="size-[18px] shrink-0 text-[#FE701E]"
@@ -912,8 +912,8 @@ function MessageConversationPanel({
         </button>
       </div>
 
-      <div className="flex min-h-0 w-full flex-1 flex-col items-center justify-end pb-[11px]">
-        <label className="flex h-[37px] w-[593px] max-w-full items-center gap-2 rounded-[40px] border border-[#FF9A3D] bg-[#F9F9F9] p-[9px]">
+      <div className="flex min-h-0 w-full flex-1 flex-col items-center justify-end pb-[11px] min-[1440px]:pb-[0.764vw]">
+        <label className="flex h-[37px] w-[593px] max-w-full items-center gap-2 rounded-[40px] border border-[#FF9A3D] bg-[#F9F9F9] p-[9px] min-[1440px]:h-[2.569vw] min-[1440px]:w-[41.181vw] min-[1440px]:gap-[0.556vw] min-[1440px]:p-[0.625vw]">
           <span className="inline-flex size-3 shrink-0 items-center justify-center rounded-full bg-[#FF9A3D] text-white">
             <Plus aria-hidden="true" className="size-2" strokeWidth={2.4} />
           </span>
