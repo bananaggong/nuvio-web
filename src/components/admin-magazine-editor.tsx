@@ -28,7 +28,6 @@ import {
 import { useEffect, useMemo, useRef, useState } from "react";
 import { EditorContent, useEditor, type Editor } from "@tiptap/react";
 import StarterKit from "@tiptap/starter-kit";
-import Image from "@tiptap/extension-image";
 import LinkExtension from "@tiptap/extension-link";
 import Placeholder from "@tiptap/extension-placeholder";
 import TextAlign from "@tiptap/extension-text-align";
@@ -37,6 +36,7 @@ import TableCell from "@tiptap/extension-table-cell";
 import TableHeader from "@tiptap/extension-table-header";
 import TableRow from "@tiptap/extension-table-row";
 import Underline from "@tiptap/extension-underline";
+import { ResizableMagazineImage } from "@/components/magazine-resizable-image";
 import type { MagazinePost } from "@/lib/magazine-db";
 import { MAGAZINE_CATEGORIES } from "@/lib/magazine-types";
 
@@ -98,7 +98,7 @@ export function AdminMagazineEditor({ postId }: AdminMagazineEditorProps) {
         linkOnPaste: true,
         openOnClick: false,
       }),
-      Image.configure({
+      ResizableMagazineImage.configure({
         allowBase64: false,
         inline: false,
       }),

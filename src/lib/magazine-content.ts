@@ -36,7 +36,7 @@ export function sanitizeMagazineHtml(input: string): string {
     ],
     allowedAttributes: {
       a: ["href", "name", "target", "rel"],
-      img: ["alt", "height", "src", "title", "width"],
+      img: ["alt", "src", "title", "width"],
       "*": ["style"],
     },
     allowedSchemes: ["http", "https", "mailto"],
@@ -53,6 +53,25 @@ export function sanitizeMagazineHtml(input: string): string {
         rel: "noopener noreferrer",
         target: "_blank",
       }),
+      img: (tagName, attribs) => {
+        const width = sanitizeImageWidth(
+          attribs.width ?? parseStyleWidth(attribs.style),
+        );
+        const nextAttribs = { ...attribs };
+        delete nextAttribs.height;
+        delete nextAttribs.style;
+
+        if (width) {
+          nextAttribs.width = String(width);
+        } else {
+          delete nextAttribs.width;
+        }
+
+        return {
+          attribs: nextAttribs,
+          tagName,
+        };
+      },
     },
   }).trim();
 }
@@ -86,4 +105,16 @@ export function stripHtmlText(html: string): string {
   })
     .replace(/\s+/gu, " ")
     .trim();
+}
+
+function sanitizeImageWidth(value: string | undefined): number | null {
+  if (!value) return null;
+  const width = Number(value.replace(/px$/iu, ""));
+  if (!Number.isFinite(width)) return null;
+  return Math.round(Math.max(120, Math.min(width, 1200)));
+}
+
+function parseStyleWidth(style: string | undefined): string | undefined {
+  if (!style) return undefined;
+  return style.match(/(?:^|;)\s*width\s*:\s*(\d{1,4})(?:px)?\s*(?:;|$)/iu)?.[1];
 }

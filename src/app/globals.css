@@ -148,8 +148,73 @@ a {
 .magazine-editor-content .ProseMirror img {
   border-radius: 8px;
   display: block;
+  height: auto;
   margin: 1.5rem auto;
   max-width: 100%;
+}
+
+.magazine-editor-content .ProseMirror .magazine-resizable-image {
+  display: block;
+  margin: 1.5rem auto;
+  max-width: 100%;
+  position: relative;
+  width: fit-content;
+}
+
+.magazine-editor-content .ProseMirror .magazine-resizable-image img {
+  display: block;
+  height: auto;
+  margin: 0;
+  max-width: 100%;
+  width: 100%;
+}
+
+.magazine-editor-content .ProseMirror .magazine-resizable-image.is-selected img {
+  outline: 2px solid var(--primary);
+  outline-offset: 3px;
+}
+
+.magazine-image-controls {
+  align-items: center;
+  background: rgba(43, 30, 23, 0.92);
+  border-radius: 6px;
+  box-shadow: 0 10px 30px rgba(43, 30, 23, 0.18);
+  color: white;
+  display: flex;
+  gap: 2px;
+  left: 50%;
+  padding: 4px;
+  position: absolute;
+  top: -42px;
+  transform: translateX(-50%);
+  z-index: 2;
+}
+
+.magazine-image-controls button {
+  border-radius: 4px;
+  color: white;
+  font-size: 12px;
+  font-weight: 800;
+  line-height: 1;
+  padding: 7px 8px;
+}
+
+.magazine-image-controls button:hover {
+  background: rgba(255, 255, 255, 0.14);
+}
+
+.magazine-image-resize-handle {
+  background: var(--primary);
+  border: 2px solid white;
+  border-radius: 999px;
+  bottom: -9px;
+  box-shadow: 0 4px 12px rgba(43, 30, 23, 0.22);
+  cursor: nwse-resize;
+  height: 18px;
+  position: absolute;
+  right: -9px;
+  width: 18px;
+  z-index: 3;
 }
 
 .magazine-content table,
