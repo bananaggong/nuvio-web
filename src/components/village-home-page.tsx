@@ -11,6 +11,7 @@ import {
 } from "lucide-react";
 import { StatusBadge } from "@/components/status-badge";
 import { BoseongIntroSection } from "@/components/boseong-intro-section";
+import { NuvioEmptyState } from "@/components/nuvio-empty-state";
 import {
   VillageSiteFooter,
   VillageSiteHeader,
@@ -472,13 +473,16 @@ function GuideLine({
   );
 }
 
-function EmptyBlock({ text, village }: { text: string; village: Village }) {
+function EmptyBlock({ text }: { text: string; village: Village }) {
+  const label = text.includes("후기")
+    ? "참여 후기"
+    : text.includes("미디어")
+      ? "미디어"
+      : "프로그램";
+
   return (
-    <div className="border border-dashed border-[#cfc9b9] bg-white px-6 py-10 text-center">
-      <p className="font-black">{text}</p>
-      <p className="mt-2 text-sm leading-6 text-slate-600">
-        {village.name} 호스트가 등록하면 이 공간에 노출됩니다.
-      </p>
+    <div className="border border-dashed border-[#cfc9b9] bg-white text-center">
+      <NuvioEmptyState className="min-h-[240px]" label={label} />
     </div>
   );
 }

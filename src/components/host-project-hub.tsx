@@ -4,6 +4,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { ArrowLeft, ClipboardList, FolderKanban, Plus } from "lucide-react";
 import { useMemo } from "react";
+import { NuvioEmptyState } from "@/components/nuvio-empty-state";
 import {
   buildHostProgramOverviews,
   findHostProjectOverview,
@@ -105,18 +106,13 @@ export function HostProjectHub({ projectId }: { projectId: string }) {
             ))}
           </div>
         ) : (
-          <div className="mt-4 rounded-md border border-dashed border-[#F3C3A5] bg-white p-8 text-center">
-            <ClipboardList className="mx-auto text-[#F3C3A5]" size={42} />
-            <h3 className="mt-4 text-xl font-black text-[#0D0D0C]">
-              아직 프로그램이 없습니다.
-            </h3>
-            <Link
-              className="mt-5 inline-flex h-10 items-center justify-center gap-2 rounded-md bg-[#FE701E] px-3 text-sm font-black text-white hover:bg-[#E85F13]"
-              href={`${projectPath}/programs/new`}
-            >
-              <Plus size={16} />
-              새 프로그램
-            </Link>
+          <div className="mt-4 rounded-md border border-dashed border-[#F3C3A5] bg-white">
+            <NuvioEmptyState
+              actionHref={`${projectPath}/programs/new`}
+              actionLabel="새 프로그램"
+              className="min-h-[250px]"
+              label="프로그램"
+            />
           </div>
         )}
       </section>

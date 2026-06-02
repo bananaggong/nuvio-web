@@ -68,3 +68,119 @@ a {
     system-ui,
     sans-serif;
 }
+
+.magazine-editor-content .ProseMirror p.is-editor-empty:first-child::before {
+  color: #a8afb8;
+  content: attr(data-placeholder);
+  float: left;
+  height: 0;
+  pointer-events: none;
+}
+
+.magazine-content h1,
+.magazine-editor-content .ProseMirror h1 {
+  color: #2b1e17;
+  font-size: clamp(2rem, 4vw, 3.5rem);
+  font-weight: 900;
+  line-height: 1.1;
+  margin: 2rem 0 1rem;
+}
+
+.magazine-content h2,
+.magazine-editor-content .ProseMirror h2 {
+  color: #2b1e17;
+  font-size: clamp(1.5rem, 2.4vw, 2.25rem);
+  font-weight: 900;
+  line-height: 1.2;
+  margin: 2rem 0 1rem;
+}
+
+.magazine-content h3,
+.magazine-editor-content .ProseMirror h3 {
+  color: #2b1e17;
+  font-size: 1.35rem;
+  font-weight: 800;
+  line-height: 1.35;
+  margin: 1.5rem 0 0.75rem;
+}
+
+.magazine-content p,
+.magazine-editor-content .ProseMirror p {
+  margin: 1rem 0;
+}
+
+.magazine-content a,
+.magazine-editor-content .ProseMirror a {
+  color: var(--primary);
+  font-weight: 700;
+  text-decoration: underline;
+  text-underline-offset: 0.2em;
+}
+
+.magazine-content blockquote,
+.magazine-editor-content .ProseMirror blockquote {
+  border-left: 4px solid var(--primary);
+  color: #5b3a29;
+  font-weight: 700;
+  margin: 1.5rem 0;
+  padding: 0.75rem 0 0.75rem 1rem;
+}
+
+.magazine-content ul,
+.magazine-content ol,
+.magazine-editor-content .ProseMirror ul,
+.magazine-editor-content .ProseMirror ol {
+  margin: 1rem 0;
+  padding-left: 1.4rem;
+}
+
+.magazine-content ul,
+.magazine-editor-content .ProseMirror ul {
+  list-style: disc;
+}
+
+.magazine-content ol,
+.magazine-editor-content .ProseMirror ol {
+  list-style: decimal;
+}
+
+.magazine-content img,
+.magazine-editor-content .ProseMirror img {
+  border-radius: 8px;
+  display: block;
+  margin: 1.5rem auto;
+  max-width: 100%;
+}
+
+.magazine-content table,
+.magazine-editor-content .ProseMirror table {
+  border-collapse: collapse;
+  margin: 1.5rem 0;
+  width: 100%;
+}
+
+.magazine-content td,
+.magazine-content th,
+.magazine-editor-content .ProseMirror td,
+.magazine-editor-content .ProseMirror th {
+  border: 1px solid #e4d7cd;
+  padding: 0.6rem 0.75rem;
+  text-align: left;
+}
+
+.magazine-content th,
+.magazine-editor-content .ProseMirror th {
+  background: #fff6ec;
+  color: #4b3328;
+  font-weight: 800;
+}
+
+.magazine-content pre,
+.magazine-editor-content .ProseMirror pre {
+  background: #2b1e17;
+  border-radius: 8px;
+  color: white;
+  margin: 1.5rem 0;
+  overflow-x: auto;
+  padding: 1rem;
+}

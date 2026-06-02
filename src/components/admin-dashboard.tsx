@@ -37,6 +37,12 @@ const programStatusTone: Record<ProgramStatus, string> = {
 
 const adminQuickLinks = [
   {
+    href: "/admin/magazine",
+    label: "소식지 관리",
+    helper: "매거진 글 작성, 공개, 보관",
+    icon: FileText,
+  },
+  {
     href: "/admin/reports",
     label: "운영 폴더 검토",
     helper: "증빙 누락, 예산 리스크, 마감 준비율",

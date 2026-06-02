@@ -118,6 +118,15 @@ const navigationByArea: Record<ConsoleArea, NavigationItem[]> = {
       ],
     },
     {
+      name: "소식지",
+      href: "/admin/magazine",
+      icon: FilePlus2,
+      children: [
+        { name: "소식지 관리", href: "/admin/magazine" },
+        { name: "새 글 작성", href: "/admin/magazine/new" },
+      ],
+    },
+    {
       name: "로컬페이지 관리",
       href: "/host/villages",
       icon: Settings,

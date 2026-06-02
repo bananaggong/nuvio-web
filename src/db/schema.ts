@@ -70,6 +70,11 @@ export const reviewStatusEnum = pgEnum("review_status", [
   "published",
   "hidden",
 ]);
+export const magazinePostStatusEnum = pgEnum("magazine_post_status", [
+  "draft",
+  "published",
+  "archived",
+]);
 export const villageMediaCategoryEnum = pgEnum("village_media_category", [
   "original",
   "broadcast",
@@ -408,6 +413,40 @@ export const announcements = pgTable(
   (table) => [
     index("announcements_date_idx").on(table.date),
     index("announcements_program_id_idx").on(table.programId),
+  ],
+);
+
+export const magazinePosts = pgTable(
+  "magazine_posts",
+  {
+    id: uuid("id").defaultRandom().primaryKey(),
+    slug: text("slug").notNull(),
+    title: text("title").notNull(),
+    subtitle: text("subtitle"),
+    excerpt: text("excerpt"),
+    category: text("category").default("local").notNull(),
+    coverImageUrl: text("cover_image_url"),
+    coverImageAlt: text("cover_image_alt"),
+    contentJson: jsonb("content_json")
+      .$type<Record<string, unknown>>()
+      .default(emptyObject)
+      .notNull(),
+    contentHtml: text("content_html").notNull(),
+    status: magazinePostStatusEnum("status").default("draft").notNull(),
+    authorId: uuid("author_id").references(() => profiles.id, {
+      onDelete: "set null",
+    }),
+    publishedAt: timestamp("published_at", { withTimezone: true }),
+    archivedAt: timestamp("archived_at", { withTimezone: true }),
+    createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+    updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
+  },
+  (table) => [
+    uniqueIndex("magazine_posts_slug_idx").on(table.slug),
+    index("magazine_posts_status_idx").on(table.status),
+    index("magazine_posts_published_at_idx").on(table.publishedAt),
+    index("magazine_posts_category_idx").on(table.category),
+    index("magazine_posts_author_id_idx").on(table.authorId),
   ],
 );
 

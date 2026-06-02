@@ -12,6 +12,7 @@ import {
   X,
 } from "lucide-react";
 import { useMemo, useState, type ReactNode } from "react";
+import { NuvioEmptyState } from "@/components/nuvio-empty-state";
 import {
   buildHostProgramOverviews,
   buildHostProjectOverviews,
@@ -187,21 +188,13 @@ export function HostProgramHome() {
               ))}
             </div>
           ) : (
-            <div className="mt-3 rounded-md border border-dashed border-[#F3C3A5] bg-white p-10 text-center">
-              <FileText className="mx-auto text-[#F3C3A5]" size={44} />
-              <h2 className="mt-4 text-xl font-black text-[#0D0D0C]">
-                아직 프로그램이 없습니다.
-              </h2>
-              <p className="mt-2 text-sm font-bold text-[#8B7A6E]">
-                프로그램을 만들면 이곳에 표시됩니다. 필요하면 나중에 폴더에 넣을 수 있습니다.
-              </p>
-              <Link
-                className="mt-5 inline-flex h-10 items-center justify-center gap-2 rounded-md bg-[#FE701E] px-3 text-sm font-black text-white hover:bg-[#E85F13]"
-                href={createProgramHref}
-              >
-                <Plus size={16} />
-                새 프로그램 만들기
-              </Link>
+            <div className="mt-3 rounded-md border border-dashed border-[#F3C3A5] bg-white">
+              <NuvioEmptyState
+                actionHref={createProgramHref}
+                actionLabel="새 프로그램 만들기"
+                className="min-h-[280px]"
+                label="프로그램"
+              />
             </div>
           )}
         </section>

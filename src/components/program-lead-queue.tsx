@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { Check, ExternalLink, Plus, Radar, RotateCw, X } from "lucide-react";
 import { useEffect, useState } from "react";
+import { NuvioEmptyState } from "@/components/nuvio-empty-state";
 import { themeOptions } from "@/lib/data";
 import type { ProgramLead } from "@/lib/types";
 
@@ -165,9 +166,11 @@ function saveDecision(leadId: string, decision: LeadDecision) {
             />
           ))
         ) : (
-          <p className="rounded-md border border-dashed border-slate-300 p-3 text-sm text-slate-500">
-            현재 기준으로 프로그램 후보가 없습니다.
-          </p>
+          <NuvioEmptyState
+            className="rounded-md border border-dashed border-slate-300 bg-white"
+            compact
+            label="프로그램 후보"
+          />
         )}
       </div>
     </section>

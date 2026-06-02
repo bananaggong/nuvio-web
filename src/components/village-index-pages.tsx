@@ -8,6 +8,7 @@ import {
   BoseongFigmaProgramsPage,
   BoseongFigmaReviewsPage,
 } from "@/components/boseong-figma-site";
+import { NuvioEmptyState } from "@/components/nuvio-empty-state";
 import { StatusBadge } from "@/components/status-badge";
 import { VillageSiteFooter, VillageSiteHeader } from "@/components/village-site-chrome";
 import { formatDate, getDday } from "@/lib/format";
@@ -453,14 +454,13 @@ function SectionCard({
 }
 
 function EmptyBlock({ text, village }: { text: string; village: Village }) {
+  const label = text.includes("후기") ? "참여 후기" : "프로그램";
+
   return (
-    <div className="border border-dashed border-[#cfc9b9] bg-white px-6 py-12 text-center">
-      <p className="font-black">{text}</p>
-      <p className="mt-2 text-sm leading-6 text-slate-600">
-        {village.name} 호스트가 게시하면 이 공간에 자동으로 모입니다.
-      </p>
+    <div className="border border-dashed border-[#cfc9b9] bg-white text-center">
+      <NuvioEmptyState className="min-h-[260px]" label={label} />
       <Link
-        className="mt-5 inline-flex items-center gap-2 text-sm font-black"
+        className="mx-auto mb-8 inline-flex items-center gap-2 text-sm font-black"
         href={villagePath(village.slug)}
         style={{ color: village.brandColor }}
       >

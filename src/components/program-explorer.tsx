@@ -4,6 +4,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { useMemo, useRef, useState, type MouseEvent, type TouchEvent } from "react";
 import { ChevronLeft, ChevronRight } from "lucide-react";
+import { NuvioEmptyState } from "@/components/nuvio-empty-state";
 import { programPath } from "@/lib/program-routing";
 import type { HomeHeroSlide } from "@/lib/home-hero-db";
 import type { Program } from "@/lib/types";
@@ -213,9 +214,12 @@ export function ProgramExplorer({
           </div>
 
           {featuredPrograms.length === 0 ? (
-            <div className="mt-[1.667vw] rounded-[0.833vw] border border-[#E8E7E2] px-[1.667vw] py-[2.222vw] text-[0.833vw] font-semibold text-[#9BA3AE]">
-              마음에 드는 프로그램을 찾아보세요.
-            </div>
+            <>
+              <NuvioEmptyState
+                className="mt-[1.667vw] rounded-[0.833vw] bg-[#FAFAFA]"
+                label="프로그램"
+              />
+            </>
           ) : null}
         </section>
       </section>

@@ -31,6 +31,8 @@ import {
   type ReactNode,
 } from "react";
 import { getProgramById } from "@/lib/data";
+import { NuvioEmptyState } from "@/components/nuvio-empty-state";
+import { SupportContactForm } from "@/components/support-contact-form";
 import type { HostApplication } from "@/lib/host-operations";
 import { programPath } from "@/lib/program-routing";
 import type { Program, Review } from "@/lib/types";
@@ -172,7 +174,8 @@ type MypageSection =
   | "member"
   | "points"
   | "coupons"
-  | "settings";
+  | "settings"
+  | "support";
 
 const DEFAULT_MEMBER_EMAIL = "rhkd3539@naver.com";
 const CUSTOM_EMAIL_DOMAIN = "custom";
@@ -354,6 +357,14 @@ export function MypageSettings() {
   );
 }
 
+export function MypageSupport() {
+  return (
+    <MypageFrame activeSection="support">
+      {(context) => <SupportContent context={context} />}
+    </MypageFrame>
+  );
+}
+
 function MypageFrame({
   activeSection,
   children,
@@ -517,7 +528,7 @@ function TripsContent({ context }: { context: MypageContext }) {
         ) : (
           <EmptyState
             icon={CalendarDays}
-            title="마음에 드는 프로그램을 찾아보세요"
+            title="아직 여행 프로그램이 없어요"
             actionHref="/programs"
             actionLabel="프로그램 찾아보기"
           />
@@ -574,7 +585,7 @@ function ReviewsContent({ context }: { context: MypageContext }) {
           ) : (
             <EmptyState
               icon={Star}
-              title="여행을 마치면 후기를 작성할 수 있어요"
+              title="아직 작성할 후기가 없어요"
               body="완료된 여행 프로그램이 생기면 이곳에 보여요."
             />
           )
@@ -597,7 +608,7 @@ function ReviewsContent({ context }: { context: MypageContext }) {
               : null}
           </>
         ) : (
-          <EmptyState icon={Star} title="후기를 쓰면 이곳에서 다시 볼 수 있어요" />
+          <EmptyState icon={Star} title="아직 후기가 없어요" />
         )}
       </div>
     </section>
@@ -642,7 +653,7 @@ function BookmarksContent({ context }: { context: MypageContext }) {
           <div className="sm:col-span-2 xl:col-span-3">
             <EmptyState
               icon={Bookmark}
-              title="관심 있는 프로그램을 지금 저장해보세요"
+              title="아직 저장한 프로그램이 없어요"
               actionHref="/programs"
               actionLabel="프로그램 찾아보기"
             />
@@ -829,18 +840,11 @@ function MessageConversationPanel({
   if (!thread) {
     return (
       <div className="flex h-[503px] min-w-0 flex-1 flex-col items-center justify-center rounded-[22px] bg-[#F9F9F9] px-[6px] py-2 max-lg:w-full min-[1440px]:h-[34.931vw] min-[1440px]:rounded-[1.528vw] min-[1440px]:px-[0.417vw] min-[1440px]:py-[0.556vw]">
-        <div className="flex flex-col items-center justify-center gap-[13px] min-[1440px]:gap-[0.903vw]">
-          <Image
-            alt=""
-            className="h-[34px] w-[29px] grayscale opacity-30 min-[1440px]:h-[2.361vw] min-[1440px]:w-[2.014vw]"
-            height={34}
-            src="/brand/nuvio-symbol.svg"
-            width={29}
-          />
-          <p className="whitespace-nowrap text-[12px] font-normal leading-[1.6] text-[#D9D9D9]">
-            아직 메세지가 없어요
-          </p>
-        </div>
+        <NuvioEmptyState
+          className="h-full min-h-0"
+          compact
+          label="메시지"
+        />
       </div>
     );
   }
@@ -1794,7 +1798,7 @@ function PointsContent() {
         </div>
         <div className="mt-6">
           <SectionHeader title="포인트 내역" />
-          <EmptyState icon={WalletCards} title="포인트가 쌓이면 이곳에서 확인할 수 있어요" compact />
+          <EmptyState icon={WalletCards} title="아직 포인트가 없어요" compact />
         </div>
       </div>
     </section>
@@ -1825,7 +1829,7 @@ function CouponsContent() {
           </div>
           <p className="mt-3 min-h-5 text-[13px] text-[#8F7A6C]">{message}</p>
         </div>
-        <EmptyState icon={Ticket} title="쿠폰이 생기면 이곳에서 확인할 수 있어요" />
+        <EmptyState icon={Ticket} title="아직 쿠폰이 없어요" />
       </div>
     </section>
   );
@@ -1840,6 +1844,23 @@ function SettingsContent() {
         <SettingRow label="프로그램 알림" value="기본값" />
         <SettingRow label="계정 보안" value="소셜 로그인" />
       </div>
+    </section>
+  );
+}
+
+function SupportContent({ context }: { context: MypageContext }) {
+  const profile = context.authSession.profile;
+
+  return (
+    <section>
+      <PageTitle eyebrow="SUPPORT" title="고객센터" />
+      <SupportContactForm
+        initialValues={{
+          email: profile?.contactEmail ?? context.authSession.user?.email ?? "",
+          name: context.signedIn ? context.profileName : "",
+          phone: profile?.phone ?? "",
+        }}
+      />
     </section>
   );
 }
@@ -1953,6 +1974,7 @@ function MypageSideMenu({
   signedIn: boolean;
 }) {
   const pathname = usePathname();
+  const supportActive = activeSection === "support" || pathname === "/support";
 
   return (
     <aside className="flex gap-3 overflow-x-auto pb-2 lg:block lg:space-y-[13px] lg:overflow-visible lg:pb-0">
@@ -1966,7 +1988,9 @@ function MypageSideMenu({
         />
       ))}
       <Link
-        className="flex shrink-0 items-center gap-2 text-[14px] font-medium text-[#4B3328] transition hover:text-[#f7983a] lg:w-full"
+        className={`flex shrink-0 items-center gap-2 text-[14px] font-medium transition lg:w-full ${
+          supportActive ? "text-[#f7983a]" : "text-[#4B3328] hover:text-[#f7983a]"
+        }`}
         href="/support"
       >
         <Gift className="lg:hidden" size={16} strokeWidth={1.8} />
@@ -2117,13 +2141,13 @@ function TripMiniCard({
   if (!application) {
     return (
       <article className="min-w-0">
-        <div className="aspect-square w-full rounded-[16px] bg-[#f3f3f3]" />
-        <p className="mt-3 text-[12px] font-medium text-[#b4a59b]">
-          여행예정 00/00
-        </p>
-        <p className="mt-1 line-clamp-2 min-h-[44px] text-[16px] font-semibold leading-[22px] text-[#c7bbb4]">
-          마음에 드는 프로그램을 찾아보세요
-        </p>
+        <NuvioEmptyState
+          className="aspect-square min-h-0 rounded-[16px] bg-[#f3f3f3] px-2 py-0"
+          compact
+          iconClassName="h-[30px] w-[26px]"
+          label="여행 프로그램"
+          textClassName="mt-3 text-[12px]"
+        />
       </article>
     );
   }
@@ -2304,7 +2328,6 @@ function EmptyState({
   actionLabel,
   body,
   compact = false,
-  icon: Icon,
   title,
 }: {
   actionHref?: string;
@@ -2315,43 +2338,26 @@ function EmptyState({
   title: string;
 }) {
   return (
-    <div
-      className={`grid place-items-center rounded-[6px] border border-dashed border-[#d9d9d9] text-center ${
-        compact ? "min-h-[180px] px-5 py-8" : "min-h-[260px] px-5 py-12"
-      }`}
-    >
-      <div>
-        <Icon className="mx-auto text-[#c7bbb4]" size={30} strokeWidth={1.6} />
-        <p className="mt-4 text-[16px] font-semibold text-[#4B3328]">{title}</p>
-        {body ? <p className="mt-2 text-[13px] text-[#8F7A6C]">{body}</p> : null}
-        {actionHref && actionLabel ? (
-          <Link
-            className="mt-5 inline-flex h-10 items-center justify-center rounded-[4px] border border-[#f7983a] px-4 text-[13px] font-semibold text-[#f7983a]"
-            href={actionHref}
-          >
-            {actionLabel}
-          </Link>
-        ) : null}
-      </div>
-    </div>
+    <NuvioEmptyState
+      actionHref={actionHref}
+      actionLabel={actionLabel}
+      className="rounded-[6px] border border-dashed border-[#d9d9d9] bg-white"
+      compact={compact}
+      description={body}
+      message={title}
+      textClassName="text-[16px] font-medium"
+    />
   );
 }
 
 function RecentEmptyState() {
   return (
-    <div className="grid min-h-[220px] place-items-center rounded-[6px] bg-white">
-      <div className="text-center">
-        <Image
-          alt="누비오"
-          className="mx-auto opacity-30"
-          height={24}
-          src="/brand/nuvio-wordmark.svg"
-          width={82}
-        />
-        <p className="mt-5 text-[16px] font-medium text-[#8F7A6C]">
-          관심 있는 프로그램을 둘러보세요
-        </p>
-      </div>
+    <div className="rounded-[6px] bg-white">
+      <NuvioEmptyState
+        className="min-h-[220px]"
+        label="최근 본 프로그램"
+        textClassName="text-[16px]"
+      />
     </div>
   );
 }

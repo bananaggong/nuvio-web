@@ -4,6 +4,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { Heart, MessageCircle, Plus, Search, Share2 } from "lucide-react";
 import { useMemo, useState } from "react";
+import { NuvioEmptyState } from "@/components/nuvio-empty-state";
 import { getProgramById, reviewCategories, reviews } from "@/lib/data";
 import { formatDateTime } from "@/lib/format";
 import type { ReviewCategory } from "@/lib/types";
@@ -149,6 +150,12 @@ export function ReviewFeed() {
               </article>
             );
           })}
+          {filteredReviews.length === 0 ? (
+            <NuvioEmptyState
+              className="rounded-[6px] bg-[#FAFAFA]"
+              label={keyword.trim() ? "검색 결과" : "후기"}
+            />
+          ) : null}
         </div>
 
         <Link

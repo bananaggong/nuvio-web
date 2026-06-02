@@ -19,6 +19,7 @@ import {
 } from "lucide-react";
 import { JsonLdScript } from "@/components/json-ld";
 import { nuvioIcons } from "@/components/icons/nuvio-icons";
+import { NuvioEmptyState } from "@/components/nuvio-empty-state";
 import { ProgramGalleryCarousel } from "@/components/program-gallery-carousel";
 import {
   ProgramScheduleCards,
@@ -222,8 +223,8 @@ export default async function ProgramDetailPage({
       <ProgramGalleryCarousel images={galleryImages} title={program.title} />
 
       <div className="relative mx-auto grid w-[71.597vw] grid-cols-[minmax(0,48.056vw)_minmax(0,20.625vw)] items-start gap-[2.917vw] pt-10 min-[1440px]:pt-[2.778vw] max-md:block max-md:w-[90vw] max-md:pt-7">
-        <article className="flex w-full min-w-0 flex-col gap-[18px] min-[1440px]:gap-[1.25vw] max-md:w-full">
-          <header className="flex h-[121px] w-full items-start justify-between pb-10 min-[1440px]:h-[8.403vw] min-[1440px]:pb-[2.778vw] max-md:h-auto max-md:min-h-[100px]">
+        <article className="flex w-full min-w-0 flex-col gap-3 min-[1440px]:gap-[0.833vw] max-md:w-full">
+          <header className="flex w-full items-start justify-between pb-1.5 min-[1440px]:pb-[0.417vw] max-md:pb-2">
             <div className="flex w-[188px] flex-col items-start gap-2">
               <h1 className="whitespace-nowrap text-xl font-semibold leading-[1.253] text-[#5B3A29]">
                 {program.title}
@@ -261,7 +262,7 @@ export default async function ProgramDetailPage({
 
           <nav
             aria-label="프로그램 상세 메뉴"
-            className="flex h-[33px] w-full items-center gap-[21px] overflow-x-auto border-y-[0.5px] border-[#F5E1D3] pt-1.5 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden max-md:gap-4"
+            className="sticky top-[max(56px,4.861vw)] z-30 flex h-[33px] w-full items-center gap-[21px] overflow-x-auto border-y-[0.5px] border-[#F5E1D3] bg-white/95 pt-1.5 backdrop-blur [scrollbar-width:none] [&::-webkit-scrollbar]:hidden max-md:top-[56px] max-md:gap-4"
           >
             {detailTabs.map((tab, index) => (
               <a
@@ -280,7 +281,7 @@ export default async function ProgramDetailPage({
           </nav>
 
           <section
-            className="flex h-[886px] w-full flex-col pb-[30px] min-[1440px]:h-[61.528vw] min-[1440px]:pb-[2.083vw] max-md:h-[118vw] max-md:min-h-[420px] max-md:pb-0"
+            className="flex h-[886px] w-full scroll-mt-[calc(max(56px,4.861vw)+42px)] flex-col pb-[30px] min-[1440px]:h-[61.528vw] min-[1440px]:pb-[2.083vw] max-md:h-[118vw] max-md:min-h-[420px] max-md:scroll-mt-[104px] max-md:pb-0"
             id="detail-section-0"
           >
             <div
@@ -314,7 +315,7 @@ export default async function ProgramDetailPage({
           </section>
 
           <section
-            className="flex min-h-[496px] w-full flex-col gap-[18px] pb-10"
+            className="flex min-h-[496px] w-full scroll-mt-[calc(max(56px,4.861vw)+42px)] flex-col gap-[18px] pb-10 max-md:scroll-mt-[104px]"
             id="detail-section-1"
           >
             <SectionTitle title="여행 일정" />
@@ -327,7 +328,7 @@ export default async function ProgramDetailPage({
           />
 
           <section
-            className="flex min-h-[932px] w-full flex-col items-center gap-7 pb-10 min-[1440px]:min-h-[64.722vw] max-md:w-full"
+            className="flex min-h-[932px] w-full scroll-mt-[calc(max(56px,4.861vw)+42px)] flex-col items-center gap-7 pb-10 min-[1440px]:min-h-[64.722vw] max-md:w-full max-md:scroll-mt-[104px]"
             id="detail-section-3"
           >
             <SectionTitle title="집결지 정보" />
@@ -393,7 +394,7 @@ export default async function ProgramDetailPage({
             </div>
 
             <section
-              className="flex w-full flex-col items-center gap-7 max-md:w-full"
+              className="flex w-full scroll-mt-[calc(max(56px,4.861vw)+42px)] flex-col items-center gap-7 max-md:w-full max-md:scroll-mt-[104px]"
               id="detail-section-4"
             >
               <SectionTitle title="안내사항" />
@@ -542,7 +543,7 @@ function ParticipantReviewSection({
 
   return (
     <section
-      className="flex min-h-[1076px] w-full flex-col items-center gap-4 pb-10"
+      className="flex min-h-[1076px] w-full scroll-mt-[calc(max(56px,4.861vw)+42px)] flex-col items-center gap-4 pb-10 max-md:scroll-mt-[104px]"
       id="detail-section-2"
     >
       <SectionTitle title="누비어 후기" />
@@ -604,9 +605,13 @@ function ParticipantReviewSection({
             />
           ))
         ) : (
-          <div className="flex min-h-[173px] w-full items-center justify-center border-b border-[#F5E1D3] px-8 py-4 text-sm text-[#6D7A8A] max-md:w-full max-md:px-4">
-            아직 등록된 누비어 후기가 없어요.
-          </div>
+          <>
+            <NuvioEmptyState
+              className="min-h-[173px] border-b border-[#F5E1D3] max-md:w-full"
+              compact
+              label="누비어 후기"
+            />
+          </>
         )}
       </div>
 

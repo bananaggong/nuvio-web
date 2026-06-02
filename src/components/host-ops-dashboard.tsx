@@ -3,11 +3,11 @@
 import Image from "next/image";
 import Link from "next/link";
 import {
-  ClipboardList,
   FolderKanban,
   Plus,
 } from "lucide-react";
 import { useMemo } from "react";
+import { NuvioEmptyState } from "@/components/nuvio-empty-state";
 import {
   buildHostProgramOverviews,
   buildHostProjectOverviews,
@@ -92,20 +92,13 @@ export function HostOpsDashboard() {
           ))}
         </section>
       ) : (
-        <section className="mt-6 rounded-md border border-dashed border-slate-300 bg-white p-10 text-center">
-          <ClipboardList className="mx-auto text-slate-300" size={44} />
-          <h2 className="mt-4 text-xl font-black text-slate-950">
-            아직 운영중인 프로그램이 없습니다.
-          </h2>
-          <p className="mt-2 text-sm font-bold text-slate-500">
-            프로그램을 만들면 이곳에 모여 보입니다. 필요하면 폴더에 연결할 수 있습니다.
-          </p>
-          <Link
-            className="mt-5 inline-flex h-10 items-center justify-center gap-2 rounded-md bg-slate-950 px-3 text-sm font-black text-white"
-            href={createProgramHref}
-          >
-            <Plus size={16} />새 프로그램
-          </Link>
+        <section className="mt-6 rounded-md border border-dashed border-slate-300 bg-white">
+          <NuvioEmptyState
+            actionHref={createProgramHref}
+            actionLabel="새 프로그램"
+            className="min-h-[280px]"
+            label="운영중인 프로그램"
+          />
         </section>
       )}
     </div>
