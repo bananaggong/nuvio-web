@@ -2,6 +2,8 @@
 
 import Image from "next/image";
 import Link from "next/link";
+import { X } from "lucide-react";
+import { useState } from "react";
 import {
   HostFolderInsideHeader,
   HostWorkspaceContent,
@@ -11,15 +13,32 @@ import {
 import type { HostProgramDraft } from "@/lib/host-program-studio";
 import {
   buildHostProgramOverviews,
+  buildStandaloneHostProgramOverviews,
   findHostProjectOverview,
   hostProjectPath,
 } from "@/lib/host-projects";
+import type { ReportProject } from "@/lib/report-automation";
 import type { ProgramStatus } from "@/lib/types";
 import { useHostOperationsData } from "@/lib/use-host-operations-data";
 
+type AddProgramFilter = "open" | "upcoming" | "closed";
+
 export function HostProjectHub({ projectId }: { projectId: string }) {
-  const { applications, programs: hostPrograms, reportProjects } =
-    useHostOperationsData();
+  const {
+    applications,
+    programs: hostPrograms,
+    reportProjects,
+    setReportProjects,
+  } = useHostOperationsData();
+  const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
+  const [addFilter, setAddFilter] = useState<AddProgramFilter>("open");
+  const [selectedAddProgramIds, setSelectedAddProgramIds] = useState<string[]>([]);
+  const [isDeleteMode, setIsDeleteMode] = useState(false);
+  const [selectedDeleteProgramIds, setSelectedDeleteProgramIds] = useState<string[]>(
+    [],
+  );
+  const [isSaving, setIsSaving] = useState(false);
+  const [actionError, setActionError] = useState("");
 
   const project = findHostProjectOverview(
     projectId,
@@ -35,6 +54,46 @@ export function HostProjectHub({ projectId }: { projectId: string }) {
         villageName: project.villageName,
       }))
     : [];
+  const standalonePrograms: HostProgramListItem[] = buildStandaloneHostProgramOverviews(
+    applications,
+    reportProjects,
+    hostPrograms,
+  ).map((program) => ({
+    ...program,
+    projectId: undefined,
+    projectTitle: "폴더 없음",
+    villageName: project?.villageName ?? "로컬페이지",
+  }));
+  const currentProgramKeys = new Set(
+    programs.flatMap((program) => [
+      program.id,
+      program.slug ?? "",
+      normalizeProgramTitle(program.title),
+    ]),
+  );
+  const addCandidates = standalonePrograms.filter(
+    (program) =>
+      !currentProgramKeys.has(program.id) &&
+      !currentProgramKeys.has(program.slug ?? "") &&
+      !currentProgramKeys.has(normalizeProgramTitle(program.title)),
+  );
+  const filteredAddCandidates = addCandidates.filter((program) => {
+    const status = normalizeInsideFolderStatus(program.status);
+    return addFilter === "closed"
+      ? status === "closed" || status === "earlyClosed"
+      : status === addFilter;
+  });
+  const addFilterCounts = {
+    closed: addCandidates.filter((program) =>
+      ["closed", "earlyClosed"].includes(normalizeInsideFolderStatus(program.status)),
+    ).length,
+    open: addCandidates.filter(
+      (program) => normalizeInsideFolderStatus(program.status) === "open",
+    ).length,
+    upcoming: addCandidates.filter(
+      (program) => normalizeInsideFolderStatus(program.status) === "upcoming",
+    ).length,
+  };
 
   if (!project) {
     return (
@@ -58,22 +117,149 @@ export function HostProjectHub({ projectId }: { projectId: string }) {
     );
   }
 
-  const projectPath = hostProjectPath(project.id);
+  const activeProject = project;
+  const projectPath = hostProjectPath(activeProject.id);
+
+  async function saveReportProject(nextProject: ReportProject) {
+    setIsSaving(true);
+    setActionError("");
+
+    try {
+      const response = await fetch("/api/host/reports", {
+        body: JSON.stringify(nextProject),
+        headers: { "Content-Type": "application/json" },
+        method: "POST",
+      });
+      const payload = (await response.json()) as {
+        data?: ReportProject;
+        error?: string;
+      };
+
+      if (!response.ok || !payload.data) {
+        throw new Error(payload.error ?? "폴더 정보를 저장하지 못했습니다.");
+      }
+
+      setReportProjects((current) =>
+        current.some((item) => item.id === payload.data?.id)
+          ? current.map((item) =>
+              item.id === payload.data?.id ? (payload.data as ReportProject) : item,
+            )
+          : [payload.data as ReportProject, ...current],
+      );
+    } catch (error) {
+      setActionError(
+        error instanceof Error ? error.message : "폴더 정보를 저장하지 못했습니다.",
+      );
+      throw error;
+    } finally {
+      setIsSaving(false);
+    }
+  }
+
+  async function addSelectedPrograms() {
+    const baseProject = resolveReportProject(
+      activeProject.id,
+      reportProjects,
+      activeProject.reportProject,
+    );
+    if (!baseProject || selectedAddProgramIds.length === 0 || isSaving) return;
+
+    const selectedPrograms = addCandidates.filter((program) =>
+      selectedAddProgramIds.includes(program.id),
+    );
+    const connectedProgramIds = new Set(baseProject.connectedProgramIds);
+    const connectedProgramTitles = new Set(baseProject.connectedProgramTitles);
+
+    selectedPrograms.forEach((program) => {
+      connectedProgramIds.add(program.id);
+      connectedProgramTitles.add(program.title);
+    });
+
+    await saveReportProject({
+      ...baseProject,
+      connectedProgramIds: Array.from(connectedProgramIds),
+      connectedProgramTitles: Array.from(connectedProgramTitles),
+      updatedAt: new Date().toISOString(),
+    });
+    setSelectedAddProgramIds([]);
+    setIsAddDialogOpen(false);
+  }
+
+  async function deleteSelectedPrograms() {
+    const baseProject = resolveReportProject(
+      activeProject.id,
+      reportProjects,
+      activeProject.reportProject,
+    );
+    if (!baseProject || selectedDeleteProgramIds.length === 0 || isSaving) return;
+
+    const selectedPrograms = programs.filter((program) =>
+      selectedDeleteProgramIds.includes(program.id),
+    );
+    const deleteIds = new Set(selectedPrograms.map((program) => program.id));
+    const deleteTitles = new Set(selectedPrograms.map((program) => program.title));
+
+    await saveReportProject({
+      ...baseProject,
+      connectedProgramIds: baseProject.connectedProgramIds.filter(
+        (id) => !deleteIds.has(id),
+      ),
+      connectedProgramTitles: baseProject.connectedProgramTitles.filter(
+        (title) => !deleteTitles.has(title),
+      ),
+      programId: deleteIds.has(baseProject.programId ?? "") ? "" : baseProject.programId,
+      programTitle: deleteTitles.has(baseProject.programTitle)
+        ? "전체 프로그램"
+        : baseProject.programTitle,
+      updatedAt: new Date().toISOString(),
+    });
+    setSelectedDeleteProgramIds([]);
+    setIsDeleteMode(false);
+  }
+
+  function toggleAddProgram(programId: string) {
+    setSelectedAddProgramIds((current) =>
+      current.includes(programId)
+        ? current.filter((id) => id !== programId)
+        : [...current, programId],
+    );
+  }
+
+  function toggleDeleteProgram(programId: string) {
+    setSelectedDeleteProgramIds((current) =>
+      current.includes(programId)
+        ? current.filter((id) => id !== programId)
+        : [...current, programId],
+    );
+  }
 
   return (
     <HostWorkspaceLayout sidebarHeight="min-h-[366px]">
       <HostWorkspaceContent insideFolder>
-        <div className="w-full max-w-[82.222vw] pt-[1.667vw] max-md:max-w-none max-md:pt-5">
+        <div className="relative w-full pt-[1.667vw] max-md:pt-5">
           <HostFolderInsideHeader
             count={programs.length}
-            createHref={`${projectPath}/programs/new`}
-            title={project.title}
+            deleteActive={isDeleteMode}
+            onAdd={() => {
+              setActionError("");
+              setSelectedAddProgramIds([]);
+              setIsAddDialogOpen(true);
+            }}
+            onDelete={() => {
+              setActionError("");
+              setSelectedDeleteProgramIds([]);
+              setIsDeleteMode((current) => !current);
+            }}
+            title={activeProject.title}
           />
+          {actionError ? (
+            <p className="mt-3 text-[13px] font-medium text-red-600">{actionError}</p>
+          ) : null}
 
           {programs.length > 0 ? (
             <div className="mt-[1.528vw] inline-grid grid-cols-[repeat(4,fit-content(100%))] gap-[1.111vw] pl-[1.389vw] pr-[0.833vw] max-xl:grid-cols-[repeat(3,fit-content(100%))] max-lg:grid-cols-[repeat(2,fit-content(100%))] max-md:grid-cols-1 max-md:pl-0">
               {programs.slice(0, 8).map((program) => {
-                const draft = project.programDrafts.find(
+                const draft = activeProject.programDrafts.find(
                   (item) =>
                     item.id === program.id ||
                     item.slug === program.slug ||
@@ -84,8 +270,11 @@ export function HostProjectHub({ projectId }: { projectId: string }) {
                   <InsideFolderProgramCard
                     draft={draft}
                     key={program.id}
+                    onToggleSelect={() => toggleDeleteProgram(program.id)}
                     program={program}
                     projectPath={projectPath}
+                    selectable={isDeleteMode}
+                    selected={selectedDeleteProgramIds.includes(program.id)}
                   />
                 );
               })}
@@ -95,20 +284,160 @@ export function HostProjectHub({ projectId }: { projectId: string }) {
               저장된 프로그램이 없습니다.
             </div>
           )}
+          {isDeleteMode ? (
+            <div className="mt-[1.806vw] flex justify-end gap-[0.625vw]">
+              <button
+                className="inline-flex h-[29px] items-center justify-center rounded-[4px] bg-[#CAC4BC] px-[1.25vw] text-[12px] font-medium leading-[1.253] text-[#FFF6EC]"
+                disabled={isSaving}
+                onClick={() => {
+                  setIsDeleteMode(false);
+                  setSelectedDeleteProgramIds([]);
+                  setActionError("");
+                }}
+                type="button"
+              >
+                취소
+              </button>
+              <button
+                className="inline-flex h-[29px] items-center justify-center rounded-[4px] bg-[#FE701E] px-[1.25vw] text-[12px] font-medium leading-[1.253] text-[#FFF6EC] disabled:opacity-45"
+                disabled={selectedDeleteProgramIds.length === 0 || isSaving}
+                onClick={() => void deleteSelectedPrograms()}
+                type="button"
+              >
+                삭제
+              </button>
+            </div>
+          ) : null}
+          {isAddDialogOpen ? (
+            <AddProgramsDialog
+              addFilter={addFilter}
+              candidates={filteredAddCandidates.slice(0, 6)}
+              counts={addFilterCounts}
+              isSaving={isSaving}
+              onAdd={() => void addSelectedPrograms()}
+              onClose={() => {
+                setIsAddDialogOpen(false);
+                setSelectedAddProgramIds([]);
+              }}
+              onFilterChange={setAddFilter}
+              onToggleProgram={toggleAddProgram}
+              selectedIds={selectedAddProgramIds}
+            />
+          ) : null}
         </div>
       </HostWorkspaceContent>
     </HostWorkspaceLayout>
   );
 }
 
+function AddProgramsDialog({
+  addFilter,
+  candidates,
+  counts,
+  isSaving,
+  onAdd,
+  onClose,
+  onFilterChange,
+  onToggleProgram,
+  selectedIds,
+}: {
+  addFilter: AddProgramFilter;
+  candidates: HostProgramListItem[];
+  counts: Record<AddProgramFilter, number>;
+  isSaving: boolean;
+  onAdd: () => void;
+  onClose: () => void;
+  onFilterChange: (filter: AddProgramFilter) => void;
+  onToggleProgram: (programId: string) => void;
+  selectedIds: string[];
+}) {
+  const filterItems: Array<{ label: string; value: AddProgramFilter }> = [
+    { label: `오픈 (${formatTwoDigits(counts.open)})`, value: "open" },
+    { label: "예정", value: "upcoming" },
+    { label: "마감", value: "closed" },
+  ];
+
+  return (
+    <div className="absolute left-0 top-[4.167vw] z-40 w-[41.875vw] min-w-[603px] rounded-[12px] border border-[#D9D9D9] bg-[#F9F9F9] px-[1.25vw] py-[1.667vw] max-md:fixed max-md:left-5 max-md:right-5 max-md:top-24 max-md:w-auto max-md:min-w-0">
+      <div className="flex justify-end">
+        <button
+          aria-label="닫기"
+          className="inline-flex size-4 items-center justify-center text-[#0D0D0C]"
+          onClick={onClose}
+          type="button"
+        >
+          <X size={16} strokeWidth={2.2} />
+        </button>
+      </div>
+      <p className="mt-2 text-[14px] font-medium leading-[1.253] text-[#0D0D0C]">
+        추가할 프로그램을 선택하세요.
+      </p>
+      <div className="mt-2 flex items-center gap-[0.625vw]">
+        {filterItems.map((item) => (
+          <button
+            className={`inline-flex h-[30px] w-[7.639vw] min-w-[110px] items-center justify-center rounded-[20px] text-[12px] font-bold leading-[1.253] ${
+              addFilter === item.value
+                ? "bg-[#FF9A3D] text-[#F9F9F9]"
+                : "bg-[#CAC4BC] text-[#F3F3F3]"
+            }`}
+            key={item.value}
+            onClick={() => onFilterChange(item.value)}
+            type="button"
+          >
+            {item.label}
+          </button>
+        ))}
+      </div>
+      <div className="mt-2 grid min-h-[58px] w-full grid-cols-3 gap-x-[1.875vw] gap-y-3 p-2 max-md:grid-cols-1">
+        {candidates.length > 0 ? (
+          candidates.map((program) => (
+            <label
+              className="flex min-w-0 items-center gap-2 text-[14px] font-medium leading-[1.253] text-[#0D0D0C]"
+              key={program.id}
+            >
+              <input
+                checked={selectedIds.includes(program.id)}
+                className="size-[14px] accent-[#FE701E]"
+                onChange={() => onToggleProgram(program.id)}
+                type="checkbox"
+              />
+              <span className="truncate">{program.title}</span>
+            </label>
+          ))
+        ) : (
+          <p className="col-span-3 text-[14px] font-medium leading-[1.253] text-[#6D7A8A] max-md:col-span-1">
+            추가할 수 있는 프로그램이 없습니다.
+          </p>
+        )}
+      </div>
+      <div className="mt-[1.111vw] flex justify-end">
+        <button
+          className="inline-flex h-[29px] items-center justify-center rounded-[4px] bg-[#FE701E] px-[1.25vw] text-[12px] font-medium leading-[1.253] text-[#FFF6EC] disabled:opacity-45"
+          disabled={selectedIds.length === 0 || isSaving}
+          onClick={onAdd}
+          type="button"
+        >
+          추가
+        </button>
+      </div>
+    </div>
+  );
+}
+
 function InsideFolderProgramCard({
   draft,
+  onToggleSelect,
   program,
   projectPath,
+  selectable = false,
+  selected = false,
 }: {
   draft?: HostProgramDraft;
+  onToggleSelect?: () => void;
   program: HostProgramListItem;
   projectPath: string;
+  selectable?: boolean;
+  selected?: boolean;
 }) {
   const status = program.status ?? "open";
   const statusMeta = getInsideFolderStatusMeta(status);
@@ -127,11 +456,19 @@ function InsideFolderProgramCard({
       ? `마감일 :${draft?.recruitEnd ? ` ${formatCompactDate(draft.recruitEnd)}` : ""}`
       : `오픈일 :${draft?.recruitStart ? ` ${formatCompactDate(draft.recruitStart)}` : ""}`;
 
-  return (
-    <Link
-      className="block w-[16.319vw] min-w-[235px] rounded-[8px] border border-[#D9D9D9] bg-white p-[0.833vw] text-[#0D0D0C] transition hover:border-[#FE701E] max-md:w-full"
-      href={href}
-    >
+  const cardClassName =
+    "relative block w-[16.319vw] min-w-[235px] rounded-[8px] border border-[#D9D9D9] bg-white p-[0.833vw] text-left text-[#0D0D0C] transition hover:border-[#FE701E] max-md:w-full";
+  const cardBody = (
+    <>
+      {selectable ? (
+        <span
+          className={`absolute left-[0.833vw] top-[0.833vw] z-10 grid size-[14px] place-items-center border border-[#6D7A8A] bg-[#D9D9D9] text-[10px] leading-none text-[#FE701E] ${
+            selected ? "bg-white" : ""
+          }`}
+        >
+          {selected ? "✓" : ""}
+        </span>
+      ) : null}
       <div className="flex items-center gap-[0.694vw]">
         <div className="relative h-[5.694vw] min-h-[82px] w-[4.792vw] min-w-[69px] shrink-0 overflow-hidden rounded-[6px] bg-[#D9D9D9]">
           {program.imageUrl ? (
@@ -176,6 +513,20 @@ function InsideFolderProgramCard({
           {statusMeta.label}
         </span>
       </div>
+    </>
+  );
+
+  if (selectable) {
+    return (
+      <button className={cardClassName} onClick={onToggleSelect} type="button">
+        {cardBody}
+      </button>
+    );
+  }
+
+  return (
+    <Link className={cardClassName} href={href}>
+      {cardBody}
     </Link>
   );
 }
@@ -204,4 +555,20 @@ function formatCompactDate(value: string): string {
 
 function formatTwoDigits(value: number): string {
   return String(value).padStart(2, "0");
+}
+
+function normalizeInsideFolderStatus(status?: ProgramStatus): ProgramStatus {
+  return status ?? "open";
+}
+
+function normalizeProgramTitle(value: string): string {
+  return value.replace(/\s+/gu, "").trim().toLowerCase();
+}
+
+function resolveReportProject(
+  projectId: string,
+  reportProjects: ReportProject[],
+  fallback?: ReportProject,
+): ReportProject | null {
+  return reportProjects.find((project) => project.id === projectId) ?? fallback ?? null;
 }

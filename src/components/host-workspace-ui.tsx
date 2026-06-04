@@ -141,7 +141,7 @@ export function HostWorkspaceContent({
     <section
       className={`min-w-0 flex-1 ${
         insideFolder
-          ? "pl-[1.944vw] max-md:px-5"
+          ? "pl-[1.944vw] pr-[3.611vw] max-md:px-5"
           : "pl-[2.778vw] pr-[3.75vw] max-md:px-5"
       }`}
     >
@@ -364,11 +364,15 @@ function HostMiniProgramCardPlaceholder() {
 
 export function HostFolderInsideHeader({
   count,
-  createHref,
+  deleteActive = false,
+  onAdd,
+  onDelete,
   title,
 }: {
   count: number;
-  createHref: string;
+  deleteActive?: boolean;
+  onAdd: () => void;
+  onDelete: () => void;
   title: string;
 }) {
   return (
@@ -385,19 +389,21 @@ export function HostFolderInsideHeader({
       </h1>
       <div className="flex flex-1 items-center justify-end" />
       <button
-        aria-label="폴더 접기"
+        aria-label={deleteActive ? "삭제 선택 취소" : "폴더에서 프로그램 제거"}
         className="inline-flex size-[1.111vw] min-h-4 min-w-4 items-center justify-center rounded-full bg-[#FF9A3D] text-white"
+        onClick={onDelete}
         type="button"
       >
         <Minus size={10} strokeWidth={2.4} />
       </button>
-      <Link
+      <button
         aria-label="프로그램 추가"
         className="inline-flex size-[1.111vw] min-h-4 min-w-4 items-center justify-center rounded-full bg-[#FF9A3D] text-white"
-        href={createHref}
+        onClick={onAdd}
+        type="button"
       >
         <Plus size={10} strokeWidth={2.4} />
-      </Link>
+      </button>
     </div>
   );
 }
