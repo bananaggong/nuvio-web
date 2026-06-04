@@ -242,11 +242,15 @@ export function HostProjectHub({ projectId }: { projectId: string }) {
             deleteActive={isDeleteMode}
             onAdd={() => {
               setActionError("");
+              setIsDeleteMode(false);
+              setSelectedDeleteProgramIds([]);
               setSelectedAddProgramIds([]);
               setIsAddDialogOpen(true);
             }}
             onDelete={() => {
               setActionError("");
+              setIsAddDialogOpen(false);
+              setSelectedAddProgramIds([]);
               setSelectedDeleteProgramIds([]);
               setIsDeleteMode((current) => !current);
             }}
@@ -358,67 +362,69 @@ function AddProgramsDialog({
   ];
 
   return (
-    <div className="absolute left-0 top-[4.167vw] z-40 w-[41.875vw] min-w-[603px] rounded-[12px] border border-[#D9D9D9] bg-[#F9F9F9] px-[1.25vw] py-[1.667vw] max-md:fixed max-md:left-5 max-md:right-5 max-md:top-24 max-md:w-auto max-md:min-w-0">
-      <div className="flex justify-end">
-        <button
-          aria-label="닫기"
-          className="inline-flex size-4 items-center justify-center text-[#0D0D0C]"
-          onClick={onClose}
-          type="button"
-        >
-          <X size={16} strokeWidth={2.2} />
-        </button>
-      </div>
-      <p className="mt-2 text-[14px] font-medium leading-[1.253] text-[#0D0D0C]">
-        추가할 프로그램을 선택하세요.
-      </p>
-      <div className="mt-2 flex items-center gap-[0.625vw]">
-        {filterItems.map((item) => (
+    <div className="pointer-events-none fixed inset-0 z-[90]">
+      <div className="pointer-events-auto absolute left-[17.777vw] top-[9.028vw] w-[41.875vw] min-w-[603px] rounded-[12px] border border-[#D9D9D9] bg-[#F9F9F9] px-[1.25vw] py-[1.667vw] max-md:left-5 max-md:right-5 max-md:top-24 max-md:w-auto max-md:min-w-0">
+        <div className="flex justify-end">
           <button
-            className={`inline-flex h-[30px] w-[7.639vw] min-w-[110px] items-center justify-center rounded-[20px] text-[12px] font-bold leading-[1.253] ${
-              addFilter === item.value
-                ? "bg-[#FF9A3D] text-[#F9F9F9]"
-                : "bg-[#CAC4BC] text-[#F3F3F3]"
-            }`}
-            key={item.value}
-            onClick={() => onFilterChange(item.value)}
+            aria-label="닫기"
+            className="inline-flex size-4 items-center justify-center text-[#0D0D0C]"
+            onClick={onClose}
             type="button"
           >
-            {item.label}
+            <X size={16} strokeWidth={2.2} />
           </button>
-        ))}
-      </div>
-      <div className="mt-2 grid min-h-[58px] w-full grid-cols-3 gap-x-[1.875vw] gap-y-3 p-2 max-md:grid-cols-1">
-        {candidates.length > 0 ? (
-          candidates.map((program) => (
-            <label
-              className="flex min-w-0 items-center gap-2 text-[14px] font-medium leading-[1.253] text-[#0D0D0C]"
-              key={program.id}
+        </div>
+        <p className="mt-2 text-[14px] font-medium leading-[1.253] text-[#0D0D0C]">
+          추가할 프로그램을 선택하세요.
+        </p>
+        <div className="mt-2 flex items-center gap-[0.625vw]">
+          {filterItems.map((item) => (
+            <button
+              className={`inline-flex h-[30px] w-[7.639vw] min-w-[110px] items-center justify-center rounded-[20px] text-[12px] font-bold leading-[1.253] ${
+                addFilter === item.value
+                  ? "bg-[#FF9A3D] text-[#F9F9F9]"
+                  : "bg-[#CAC4BC] text-[#F3F3F3]"
+              }`}
+              key={item.value}
+              onClick={() => onFilterChange(item.value)}
+              type="button"
             >
-              <input
-                checked={selectedIds.includes(program.id)}
-                className="size-[14px] accent-[#FE701E]"
-                onChange={() => onToggleProgram(program.id)}
-                type="checkbox"
-              />
-              <span className="truncate">{program.title}</span>
-            </label>
-          ))
-        ) : (
-          <p className="col-span-3 text-[14px] font-medium leading-[1.253] text-[#6D7A8A] max-md:col-span-1">
-            추가할 수 있는 프로그램이 없습니다.
-          </p>
-        )}
-      </div>
-      <div className="mt-[1.111vw] flex justify-end">
-        <button
-          className="inline-flex h-[29px] items-center justify-center rounded-[4px] bg-[#FE701E] px-[1.25vw] text-[12px] font-medium leading-[1.253] text-[#FFF6EC] disabled:opacity-45"
-          disabled={selectedIds.length === 0 || isSaving}
-          onClick={onAdd}
-          type="button"
-        >
-          추가
-        </button>
+              {item.label}
+            </button>
+          ))}
+        </div>
+        <div className="mt-2 grid min-h-[58px] w-full grid-cols-3 gap-x-[1.875vw] gap-y-3 p-2 max-md:grid-cols-1">
+          {candidates.length > 0 ? (
+            candidates.map((program) => (
+              <label
+                className="flex min-w-0 items-center gap-2 text-[14px] font-medium leading-[1.253] text-[#0D0D0C]"
+                key={program.id}
+              >
+                <input
+                  checked={selectedIds.includes(program.id)}
+                  className="size-[14px] accent-[#FE701E]"
+                  onChange={() => onToggleProgram(program.id)}
+                  type="checkbox"
+                />
+                <span className="truncate">{program.title}</span>
+              </label>
+            ))
+          ) : (
+            <p className="col-span-3 text-[14px] font-medium leading-[1.253] text-[#6D7A8A] max-md:col-span-1">
+              추가할 수 있는 프로그램이 없습니다.
+            </p>
+          )}
+        </div>
+        <div className="mt-[1.111vw] flex justify-end">
+          <button
+            className="inline-flex h-[29px] items-center justify-center rounded-[4px] bg-[#FE701E] px-[1.25vw] text-[12px] font-medium leading-[1.253] text-[#FFF6EC] disabled:opacity-45"
+            disabled={selectedIds.length === 0 || isSaving}
+            onClick={onAdd}
+            type="button"
+          >
+            추가
+          </button>
+        </div>
       </div>
     </div>
   );
@@ -456,8 +462,9 @@ function InsideFolderProgramCard({
       ? `마감일 :${draft?.recruitEnd ? ` ${formatCompactDate(draft.recruitEnd)}` : ""}`
       : `오픈일 :${draft?.recruitStart ? ` ${formatCompactDate(draft.recruitStart)}` : ""}`;
 
-  const cardClassName =
-    "relative block w-[16.319vw] min-w-[235px] rounded-[8px] border border-[#D9D9D9] bg-white p-[0.833vw] text-left text-[#0D0D0C] transition hover:border-[#FE701E] max-md:w-full";
+  const cardClassName = `relative block w-[16.319vw] min-w-[235px] rounded-[8px] border border-[#D9D9D9] p-[0.833vw] text-left text-[#0D0D0C] transition hover:border-[#FE701E] max-md:w-full ${
+    selectable ? "bg-[#F3F3F3]" : "bg-white"
+  }`;
   const cardBody = (
     <>
       {selectable ? (
@@ -469,49 +476,51 @@ function InsideFolderProgramCard({
           {selected ? "✓" : ""}
         </span>
       ) : null}
-      <div className="flex items-center gap-[0.694vw]">
-        <div className="relative h-[5.694vw] min-h-[82px] w-[4.792vw] min-w-[69px] shrink-0 overflow-hidden rounded-[6px] bg-[#D9D9D9]">
-          {program.imageUrl ? (
-            <Image
-              alt=""
-              className="object-cover"
-              fill
-              sizes="92px"
-              src={program.imageUrl}
-            />
-          ) : null}
-        </div>
-        <div className="flex min-w-0 flex-1 flex-col gap-1">
-          <p className="truncate text-[12px] font-normal leading-[1.253]">
-            프로그램 넘버{" "}
-            <span className="text-[#FE701E]">{programNumber || "000000000"}</span>
-          </p>
-          <p className="line-clamp-2 text-[14px] font-medium leading-[1.253]">
-            {program.title}
-          </p>
-          <div className="flex flex-col gap-1 text-[12px] font-normal leading-[1.253]">
-            <p className="truncate">{periodLabel}</p>
-            <p className="truncate">{dateLabel}</p>
+      <div className={selectable ? "opacity-45" : ""}>
+        <div className="flex items-center gap-[0.694vw]">
+          <div className="relative h-[5.694vw] min-h-[82px] w-[4.792vw] min-w-[69px] shrink-0 overflow-hidden rounded-[6px] bg-[#D9D9D9]">
+            {program.imageUrl ? (
+              <Image
+                alt=""
+                className="object-cover"
+                fill
+                sizes="92px"
+                src={program.imageUrl}
+              />
+            ) : null}
+          </div>
+          <div className="flex min-w-0 flex-1 flex-col gap-1">
+            <p className="truncate text-[12px] font-normal leading-[1.253]">
+              프로그램 넘버{" "}
+              <span className="text-[#FE701E]">{programNumber || "000000000"}</span>
+            </p>
+            <p className="line-clamp-2 text-[14px] font-medium leading-[1.253]">
+              {program.title}
+            </p>
+            <div className="flex flex-col gap-1 text-[12px] font-normal leading-[1.253]">
+              <p className="truncate">{periodLabel}</p>
+              <p className="truncate">{dateLabel}</p>
+            </div>
           </div>
         </div>
-      </div>
-      <div className="mt-[0.486vw] flex items-center gap-[0.417vw] text-[12px] font-normal leading-[1.253]">
-        <p className="whitespace-nowrap">
-          <span className="text-[#6D7A8A]">신청</span>{" "}
-          {isMetricPending ? "--/--" : `${formatTwoDigits(program.applicationCount)}/00`}
-        </p>
-        <p className="whitespace-nowrap">
-          <span className="text-[#6D7A8A]">조회</span>{" "}
-          {isMetricPending ? "--" : formatTwoDigits(program.readiness)}
-        </p>
-        <p className="whitespace-nowrap">
-          <span className="text-[#6D7A8A]">저장</span> {isMetricPending ? "--" : "00"}
-        </p>
-        <span
-          className={`ml-auto inline-flex shrink-0 items-center rounded-[6px] px-[0.417vw] py-[0.208vw] text-[12px] font-semibold leading-[1.253] ${statusMeta.className}`}
-        >
-          {statusMeta.label}
-        </span>
+        <div className="mt-[0.486vw] flex items-center gap-[0.417vw] text-[12px] font-normal leading-[1.253]">
+          <p className="whitespace-nowrap">
+            <span className="text-[#6D7A8A]">신청</span>{" "}
+            {isMetricPending ? "--/--" : `${formatTwoDigits(program.applicationCount)}/00`}
+          </p>
+          <p className="whitespace-nowrap">
+            <span className="text-[#6D7A8A]">조회</span>{" "}
+            {isMetricPending ? "--" : formatTwoDigits(program.readiness)}
+          </p>
+          <p className="whitespace-nowrap">
+            <span className="text-[#6D7A8A]">저장</span> {isMetricPending ? "--" : "00"}
+          </p>
+          <span
+            className={`ml-auto inline-flex shrink-0 items-center rounded-[6px] px-[0.417vw] py-[0.208vw] text-[12px] font-semibold leading-[1.253] ${statusMeta.className}`}
+          >
+            {statusMeta.label}
+          </span>
+        </div>
       </div>
     </>
   );
