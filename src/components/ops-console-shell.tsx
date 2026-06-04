@@ -176,8 +176,13 @@ export function OpsConsoleShell({
     area === "host" &&
     (/^\/host\/programs\/new(?:\/|$)/u.test(pathname) ||
       /^\/host\/projects\/[^/]+\/programs\/new(?:\/|$)/u.test(pathname));
+  const isHostWorkspacePage =
+    area === "host" &&
+    (pathname === "/host" ||
+      pathname === "/host/programs" ||
+      /^\/host\/projects\/[^/]+\/?$/u.test(pathname));
 
-  if (programBuilderPath || isProgramBuilderCreate) {
+  if (programBuilderPath || isProgramBuilderCreate || isHostWorkspacePage) {
     return (
       <div className="min-h-screen bg-white text-[#33241C]">
         <SiteHeader />

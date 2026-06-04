@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { HostProgramHome } from "@/components/host-program-home";
+import { redirect } from "next/navigation";
 
 export const metadata: Metadata = {
   title: "프로그램 홈 | 누비오",
@@ -8,5 +8,5 @@ export const metadata: Metadata = {
 };
 
 export default function HostProgramsPage() {
-  return <HostProgramHome />;
+  redirect("/host");
 }
