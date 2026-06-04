@@ -4,9 +4,8 @@ import Image from "next/image";
 import Link from "next/link";
 import {
   Bell,
-  ChevronDown,
   ChevronLeft,
-  ChevronRight,
+  Minus,
   Plus,
 } from "lucide-react";
 import type { ReactNode } from "react";
@@ -373,33 +372,31 @@ export function HostFolderInsideHeader({
   title: string;
 }) {
   return (
-    <div className="flex h-5 w-full items-center">
+    <div className="flex h-5 w-full items-center gap-[0.972vw]">
       <Link
         aria-label="내 프로그램으로 돌아가기"
-        className="mr-[0.972vw] inline-flex size-5 items-center justify-center text-[#FE701E]"
+        className="inline-flex h-5 w-[0.833vw] min-w-3 items-center justify-center text-[#6D7A8A] transition hover:text-[#FE701E]"
         href="/host"
       >
-        <ChevronLeft size={18} />
+        <ChevronLeft size={18} strokeWidth={1.8} />
       </Link>
-      <h1 className="shrink-0 text-[14px] font-black leading-5 text-[#33241C]">
+      <h1 className="shrink-0 text-[16px] font-medium leading-[1.253] text-[#6D7A8A]">
         {title} ({count})
       </h1>
-      <div className="mx-[0.972vw] flex h-4 flex-1 items-center">
-        <span className="h-px flex-1 bg-[#B6C0CA]" />
-        <button
-          aria-label="폴더 옵션"
-          className="ml-2 inline-flex size-4 items-center justify-center rounded-full bg-[#FF9A3D] text-white"
-          type="button"
-        >
-          <ChevronDown size={12} />
-        </button>
-      </div>
+      <div className="flex flex-1 items-center justify-end" />
+      <button
+        aria-label="폴더 접기"
+        className="inline-flex size-[1.111vw] min-h-4 min-w-4 items-center justify-center rounded-full bg-[#FF9A3D] text-white"
+        type="button"
+      >
+        <Minus size={10} strokeWidth={2.4} />
+      </button>
       <Link
-        aria-label="새 프로그램"
-        className="inline-flex size-4 items-center justify-center rounded-full bg-[#FF9A3D] text-white"
+        aria-label="프로그램 추가"
+        className="inline-flex size-[1.111vw] min-h-4 min-w-4 items-center justify-center rounded-full bg-[#FF9A3D] text-white"
         href={createHref}
       >
-        <ChevronRight size={12} />
+        <Plus size={10} strokeWidth={2.4} />
       </Link>
     </div>
   );
