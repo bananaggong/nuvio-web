@@ -8,7 +8,9 @@ import {
   AlignRight,
   Archive,
   Bold,
+  Check,
   Code2,
+  Columns3,
   Heading1,
   Heading2,
   ImageIcon,
@@ -19,9 +21,11 @@ import {
   Loader2,
   Quote,
   Redo2,
+  Rows3,
   Save,
   Strikethrough,
   Table2,
+  Trash2,
   Underline as UnderlineIcon,
   Undo2,
 } from "lucide-react";
@@ -58,6 +62,12 @@ type AdminMagazineEditorProps = {
 
 const inputClassName =
   "h-11 w-full rounded-md border border-slate-200 bg-white px-3 text-sm font-semibold text-slate-900 outline-none transition focus:border-[var(--primary)] focus:ring-2 focus:ring-orange-100";
+
+const tableSizeInputClassName =
+  "h-7 w-12 rounded-[3px] border border-white/25 bg-white/10 px-2 text-center text-xs font-black text-white outline-none transition focus:border-white focus:bg-white/20";
+
+const TABLE_SIZE_MIN = 1;
+const TABLE_SIZE_MAX = 20;
 
 export function AdminMagazineEditor({ postId }: AdminMagazineEditorProps) {
   const router = useRouter();
@@ -555,8 +565,36 @@ function EditorToolbar({
   onImageClick: () => void;
   uploading: boolean;
 }) {
+  const [tableColumns, setTableColumns] = useState(3);
+  const [tableRows, setTableRows] = useState(3);
+  const [tableHasHeader, setTableHasHeader] = useState(true);
+
   if (!editor) {
     return <div className="h-12 border-b border-slate-200 bg-slate-50" />;
+  }
+
+  const isTableActive = editor.isActive("table");
+
+  function insertTable() {
+    if (!editor) return;
+
+    editor
+      .chain()
+      .focus()
+      .insertTable({
+        cols: tableColumns,
+        rows: tableRows,
+        withHeaderRow: tableHasHeader,
+      })
+      .run();
+  }
+
+  function updateTableColumns(value: string) {
+    setTableColumns(readTableSize(value, tableColumns));
+  }
+
+  function updateTableRows(value: string) {
+    setTableRows(readTableSize(value, tableRows));
   }
 
   function setLink() {
@@ -624,9 +662,75 @@ function EditorToolbar({
       <ToolbarButton active={editor.isActive("link")} onClick={setLink} title="링크">
         <LinkIcon size={16} />
       </ToolbarButton>
-      <ToolbarButton onClick={() => editor.chain().focus().insertTable({ cols: 3, rows: 3, withHeaderRow: true }).run()} title="표 삽입">
+      <div className="flex items-center gap-1 rounded-[4px] border border-white/15 bg-white/5 px-1 py-0.5">
+        <label className="flex items-center gap-1 text-[11px] font-black text-white/85" title="표 열 수">
+          <Columns3 size={14} />
+          <input
+            aria-label="표 열 수"
+            className={tableSizeInputClassName}
+            max={TABLE_SIZE_MAX}
+            min={TABLE_SIZE_MIN}
+            onChange={(event) => updateTableColumns(event.currentTarget.value)}
+            type="number"
+            value={tableColumns}
+          />
+        </label>
+        <label className="flex items-center gap-1 text-[11px] font-black text-white/85" title="표 행 수">
+          <Rows3 size={14} />
+          <input
+            aria-label="표 행 수"
+            className={tableSizeInputClassName}
+            max={TABLE_SIZE_MAX}
+            min={TABLE_SIZE_MIN}
+            onChange={(event) => updateTableRows(event.currentTarget.value)}
+            type="number"
+            value={tableRows}
+          />
+        </label>
+        <button
+          aria-pressed={tableHasHeader}
+          className={`inline-flex h-7 items-center gap-1 rounded-[3px] px-2 text-[11px] font-black transition ${
+            tableHasHeader ? "bg-white text-[#4a4a4a]" : "text-white hover:bg-white/15"
+          }`}
+          onClick={() => setTableHasHeader((current) => !current)}
+          title="헤더 행"
+          type="button"
+        >
+          {tableHasHeader ? <Check size={13} /> : null}
+          헤더
+        </button>
+      </div>
+      <ToolbarButton onClick={insertTable} title="표 삽입">
         <Table2 size={16} />
       </ToolbarButton>
+      {isTableActive ? (
+        <>
+          <ToolbarDivider />
+          <div className="flex items-center gap-1 rounded-[4px] border border-white/15 bg-white/5 px-1 py-0.5">
+            <ToolbarTextButton onClick={() => editor.chain().focus().addColumnBefore().run()} title="왼쪽에 열 추가">
+              열 앞+
+            </ToolbarTextButton>
+            <ToolbarTextButton onClick={() => editor.chain().focus().addColumnAfter().run()} title="오른쪽에 열 추가">
+              열 뒤+
+            </ToolbarTextButton>
+            <ToolbarTextButton onClick={() => editor.chain().focus().deleteColumn().run()} title="현재 열 삭제">
+              열-
+            </ToolbarTextButton>
+            <ToolbarTextButton onClick={() => editor.chain().focus().addRowBefore().run()} title="위에 행 추가">
+              행 위+
+            </ToolbarTextButton>
+            <ToolbarTextButton onClick={() => editor.chain().focus().addRowAfter().run()} title="아래에 행 추가">
+              행 아래+
+            </ToolbarTextButton>
+            <ToolbarTextButton onClick={() => editor.chain().focus().deleteRow().run()} title="현재 행 삭제">
+              행-
+            </ToolbarTextButton>
+            <ToolbarTextButton destructive onClick={() => editor.chain().focus().deleteTable().run()} title="표 삭제">
+              <Trash2 size={13} />
+            </ToolbarTextButton>
+          </div>
+        </>
+      ) : null}
       <ToolbarButton active={editor.isActive("codeBlock")} onClick={() => editor.chain().focus().toggleCodeBlock().run()} title="코드 블록">
         <Code2 size={16} />
       </ToolbarButton>
@@ -639,6 +743,15 @@ function EditorToolbar({
       </ToolbarButton>
     </div>
   );
+}
+
+function readTableSize(value: string, fallback: number): number {
+  if (!value) return fallback;
+
+  const nextValue = Number(value);
+  if (!Number.isFinite(nextValue)) return fallback;
+
+  return Math.max(TABLE_SIZE_MIN, Math.min(TABLE_SIZE_MAX, Math.round(nextValue)));
 }
 
 function ToolbarButton({
@@ -656,6 +769,31 @@ function ToolbarButton({
     <button
       className={`inline-flex size-8 items-center justify-center rounded-[3px] transition ${
         active ? "bg-white text-[#4a4a4a]" : "text-white hover:bg-white/15"
+      }`}
+      onClick={onClick}
+      title={title}
+      type="button"
+    >
+      {children}
+    </button>
+  );
+}
+
+function ToolbarTextButton({
+  children,
+  destructive = false,
+  onClick,
+  title,
+}: {
+  children: React.ReactNode;
+  destructive?: boolean;
+  onClick: () => void;
+  title: string;
+}) {
+  return (
+    <button
+      className={`inline-flex h-7 min-w-7 items-center justify-center rounded-[3px] px-2 text-[11px] font-black transition ${
+        destructive ? "text-orange-100 hover:bg-red-500/25" : "text-white hover:bg-white/15"
       }`}
       onClick={onClick}
       title={title}

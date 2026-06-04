@@ -1,8 +1,7 @@
 "use client";
 
-import Image from "next/image";
 import Link from "next/link";
-import { useSearchParams } from "next/navigation";
+import { usePathname, useSearchParams } from "next/navigation";
 import {
   ArrowLeft,
   ArrowRight,
@@ -64,6 +63,7 @@ type ProgramPanel =
   | "dashboard"
   | "basic"
   | "detail"
+  | "schedule"
   | "place"
   | "guide"
   | "management"
@@ -77,6 +77,7 @@ const panelLabels: Record<ProgramPanel, string> = {
   guide: "안내사항",
   management: "프로그램 관리",
   place: "장소 정보",
+  schedule: "일정 안내",
 };
 
 const statusOptions: Array<{ label: string; value: ProgramStatus }> = [
@@ -169,6 +170,7 @@ export function HostProgramHub({
   programId: string;
   projectId?: string;
 }) {
+  const pathname = usePathname();
   const searchParams = useSearchParams();
   const { applications, isLoading, programs: hostPrograms, reportProjects, setPrograms } =
     useHostOperationsData();
@@ -356,106 +358,373 @@ export function HostProgramHub({
     }
   }
 
+  const currentUpdatedAt = draft?.updatedAt ?? program.updatedAt;
+  const showPreviewRail = activePanel === "detail" || activePanel === "schedule";
+
   return (
-    <div className="mx-auto w-full max-w-[1600px] px-4 py-6 md:px-8">
-      <div className="mb-5 flex flex-wrap items-center justify-between gap-3">
-        <Link
-          className="inline-flex h-10 items-center gap-2 rounded-md border border-[#F3E2D5] bg-white px-3 text-sm font-black text-[#5B3A29]"
-          href={projectPath}
-        >
-          <ArrowLeft size={16} />
-          {projectId ? "폴더" : "프로그램 목록"}
-        </Link>
-        <button
-          className="inline-flex h-10 items-center justify-center gap-2 rounded-md bg-[#FE701E] px-4 text-sm font-black text-white transition hover:bg-[#E85F13] disabled:cursor-not-allowed disabled:opacity-40"
-          disabled={!draft || !draft.title.trim() || isSaving}
-          onClick={() => void saveDraft()}
-          type="button"
-        >
-          <Save size={16} />
-          {isSaving ? "저장 중" : "저장하기"}
-        </button>
+    <div className="font-pretendard min-h-[calc(100vh-4.861vw)] bg-white text-[#33241C]">
+      <div className="flex min-h-[calc(100vh-4.861vw)] max-md:flex-col">
+        <ProgramBuilderSidebar
+          activePanel={activePanel}
+          applicationsHref={applicationsHref}
+          formsHref={formsHref}
+          messagesHref={messagesHref}
+          pathname={pathname}
+          programId={program.id}
+          programPath={programPath}
+          projectHref={projectPath}
+          projectLabel={projectId ? "폴더" : "프로그램 목록"}
+          status={statusLabel(draft?.status ?? program.status)}
+          title={draft?.title || program.title}
+        />
+
+        <section className="flex min-w-0 flex-1 flex-col border-l border-[#AEB8C2]">
+          <div className="flex h-[4.514vw] min-h-[64px] items-center justify-center px-[2.778vw] text-[14px] font-semibold leading-none text-[#7C8794]">
+            최근 수정일 : {formatDateTime(currentUpdatedAt)}
+          </div>
+
+          <div
+            className={`grid flex-1 min-w-0 ${
+              showPreviewRail
+                ? "xl:grid-cols-[minmax(0,67.014vw)_minmax(300px,17.153vw)]"
+                : ""
+            }`}
+          >
+            <main className="min-w-0 px-[2.778vw] pb-[6.389vw] max-md:px-5">
+              <div className="min-h-7">
+                {saveMessage ? (
+                  <p className="text-[14px] font-black text-[#FE701E]">
+                    {saveMessage}
+                  </p>
+                ) : null}
+                {saveError ? (
+                  <p className="text-[14px] font-black text-red-600">
+                    {saveError}
+                  </p>
+                ) : null}
+                {!draft ? (
+                  <p className="text-[14px] font-bold text-red-600">
+                    이 프로그램은 아직 편집 가능한 초안 데이터가 없습니다.
+                  </p>
+                ) : null}
+              </div>
+
+              <div className={showPreviewRail ? "pt-[1.528vw]" : ""}>
+                {activePanel === "dashboard" ? (
+                  <DashboardPanel
+                    applicationsHref={applicationsHref}
+                    formsHref={formsHref}
+                    linkedApplicationForm={linkedApplicationForm}
+                    messagesHref={messagesHref}
+                    publishChecklist={publishChecklist}
+                    programPath={programPath}
+                  />
+                ) : null}
+                {draft && activePanel === "basic" ? (
+                  <BasicPanel draft={draft} updateDraft={updateDraft} />
+                ) : null}
+                {draft && activePanel === "detail" ? (
+                  <DetailPanel draft={draft} updateDraft={updateDraft} />
+                ) : null}
+                {draft && activePanel === "schedule" ? (
+                  <SchedulePanel draft={draft} updateDraft={updateDraft} />
+                ) : null}
+                {draft && activePanel === "place" ? (
+                  <PlacePanel draft={draft} updateDraft={updateDraft} />
+                ) : null}
+                {draft && activePanel === "guide" ? (
+                  <GuidePanel draft={draft} updateDraft={updateDraft} />
+                ) : null}
+                {draft && activePanel === "management" ? (
+                  <ManagementPanel
+                    draft={draft}
+                    publishBlockers={publishBlockers}
+                    readyToPublish={readyToPublish}
+                    updateDraft={updateDraft}
+                  />
+                ) : null}
+                {draft && activePanel === "delete" ? <DeletePanel draft={draft} /> : null}
+              </div>
+            </main>
+
+            {showPreviewRail && draft ? (
+              <ProgramBuilderPreviewRail draft={draft} panel={activePanel} />
+            ) : null}
+          </div>
+
+          <div className="sticky bottom-0 flex h-[4.792vw] min-h-[60px] items-center border-t border-[#AEB8C2] bg-white px-[2.083vw]">
+            <button
+              className="inline-flex h-[2.083vw] min-h-[34px] min-w-[86px] items-center justify-center rounded-[4px] bg-[#FE701E] px-[1.111vw] text-[13px] font-black text-white transition hover:bg-[#E85F13] disabled:cursor-not-allowed disabled:opacity-40"
+              disabled={!draft || !draft.title.trim() || isSaving}
+              onClick={() => void saveDraft()}
+              type="button"
+            >
+              {isSaving ? (
+                "저장 중"
+              ) : (
+                <>
+                  <Save size={14} />
+                  저장하기
+                </>
+              )}
+            </button>
+          </div>
+        </section>
       </div>
-
-      <section className="grid overflow-hidden rounded-md border border-[#F3E2D5] bg-white lg:grid-cols-[360px_minmax(0,1fr)]">
-        <div className="relative min-h-64 bg-[#FFF6EC]">
-          <Image
-            alt={program.title}
-            className="object-cover"
-            fill
-            sizes="(max-width: 1024px) 100vw, 360px"
-            src={draft?.image?.trim() || program.imageUrl || "/brand/nuvio-logo-combined.svg"}
-          />
-        </div>
-        <div className="p-5 sm:p-6">
-          <p className="inline-flex items-center gap-2 text-sm font-black text-[#FE701E]">
-            <ClipboardList size={18} />
-            프로그램 제작 화면
-          </p>
-          <h1 className="mt-4 max-w-3xl text-2xl font-black leading-tight text-[#0D0D0C] sm:text-3xl">
-            {draft?.title || program.title}
-          </h1>
-          <p className="mt-3 max-w-3xl text-sm font-bold leading-7 text-[#8B7A6E]">
-            프로그램은 먼저 이름만으로 만들고, 이 화면에서 공개 정보와 운영 설정을
-            채워갑니다.
-          </p>
-          <div className="mt-5 grid gap-2 sm:grid-cols-3">
-            <Metric label="신청" value={`${program.applicationCount}명`} />
-            <Metric label="검토 대기" value={`${program.pendingCount}명`} />
-            <Metric label="상태" value={statusLabel(draft?.status ?? program.status)} />
-          </div>
-          <div className="mt-4 min-h-6">
-            {saveMessage ? (
-              <p className="text-sm font-black text-[#FE701E]">{saveMessage}</p>
-            ) : null}
-            {saveError ? (
-              <p className="text-sm font-black text-red-600">{saveError}</p>
-            ) : null}
-            {!draft ? (
-              <p className="text-sm font-bold text-red-600">
-                이 프로그램은 아직 편집 가능한 초안 데이터가 없습니다.
-              </p>
-            ) : null}
-          </div>
-        </div>
-      </section>
-
-      <section className="mt-6">
-        {activePanel === "dashboard" ? (
-          <DashboardPanel
-            applicationsHref={applicationsHref}
-            formsHref={formsHref}
-            linkedApplicationForm={linkedApplicationForm}
-            messagesHref={messagesHref}
-            publishChecklist={publishChecklist}
-            programPath={programPath}
-          />
-        ) : null}
-        {draft && activePanel === "basic" ? (
-          <BasicPanel draft={draft} updateDraft={updateDraft} />
-        ) : null}
-        {draft && activePanel === "detail" ? (
-          <DetailPanel draft={draft} updateDraft={updateDraft} />
-        ) : null}
-        {draft && activePanel === "place" ? (
-          <PlacePanel draft={draft} updateDraft={updateDraft} />
-        ) : null}
-        {draft && activePanel === "guide" ? (
-          <GuidePanel draft={draft} updateDraft={updateDraft} />
-        ) : null}
-        {draft && activePanel === "management" ? (
-          <ManagementPanel
-            draft={draft}
-            publishBlockers={publishBlockers}
-            readyToPublish={readyToPublish}
-            updateDraft={updateDraft}
-          />
-        ) : null}
-        {draft && activePanel === "delete" ? (
-          <DeletePanel draft={draft} />
-        ) : null}
-      </section>
     </div>
+  );
+}
+
+type ProgramBuilderSidebarProps = {
+  activePanel: ProgramPanel;
+  applicationsHref: string;
+  formsHref: string;
+  messagesHref: string;
+  pathname: string;
+  programId: string;
+  programPath: string;
+  projectHref: string;
+  projectLabel: string;
+  status: string;
+  title: string;
+};
+
+type ProgramBuilderMenuItem = {
+  danger?: boolean;
+  href: string;
+  label: string;
+};
+
+type ProgramBuilderMenuSection = {
+  items: ProgramBuilderMenuItem[];
+  title: string;
+};
+
+function ProgramBuilderSidebar({
+  activePanel,
+  applicationsHref,
+  formsHref,
+  messagesHref,
+  pathname,
+  programId,
+  programPath,
+  projectHref,
+  projectLabel,
+  status,
+  title,
+}: ProgramBuilderSidebarProps) {
+  const menuSections: ProgramBuilderMenuSection[] = [
+    {
+      title: "대시보드",
+      items: [{ href: `${programPath}?panel=dashboard`, label: "대시보드" }],
+    },
+    {
+      title: "프로그램 설정",
+      items: [
+        { href: `${programPath}?panel=basic`, label: "기본정보" },
+        { href: `${programPath}?panel=detail`, label: "상세정보" },
+        { href: `${programPath}?panel=schedule`, label: "일정안내" },
+        { href: `${programPath}?panel=place`, label: "장소안내" },
+        { href: `${programPath}?panel=guide`, label: "안내사항" },
+      ],
+    },
+    {
+      title: "신청폼 설정",
+      items: [
+        { href: formsHref, label: "신청폼 연결" },
+        { href: applicationsHref, label: "신청 관리" },
+        { href: messagesHref, label: "참가 메시지 관리" },
+      ],
+    },
+    {
+      title: "운영 관리",
+      items: [
+        { href: `${programPath}?panel=management`, label: "쿠폰 / 프로모션" },
+        { href: messagesHref, label: "메시지함" },
+        { href: `${applicationsHref}?panel=funnel`, label: "신청 정보 추적" },
+        { href: `${applicationsHref}?panel=receipts`, label: "영수증 관리" },
+        { href: `${applicationsHref}?panel=reviews`, label: "후기 관리" },
+        {
+          danger: true,
+          href: `${programPath}?panel=delete`,
+          label: "프로그램 취소 및 삭제",
+        },
+      ],
+    },
+  ];
+
+  return (
+    <aside className="w-[15.833vw] min-w-[228px] shrink-0 bg-white max-md:w-full">
+      <div className="px-[0.556vw] py-[1.111vw] max-md:px-5 max-md:py-5">
+        <Link
+          className="inline-flex h-8 items-center gap-2 rounded-[4px] px-2 text-[13px] font-black text-[#7C8794] transition hover:bg-[#F6F1ED] hover:text-[#FE701E]"
+          href={projectHref}
+        >
+          <ArrowLeft size={14} />
+          {projectLabel}
+        </Link>
+
+        <div className="mt-[0.694vw] border-b border-[#E8E2DE] px-2 pb-[1.111vw] max-md:mt-3 max-md:pb-4">
+          <p className="text-[13px] font-black leading-5 text-[#33241C]">
+            {title || "프로그램 제목"}
+          </p>
+          <p className="mt-1 text-[12px] font-bold leading-5 text-[#7C8794]">
+            프로그램 넘버 :{" "}
+            <span className="font-black text-[#FE701E]">
+              {formatProgramNumber(programId)}
+            </span>
+          </p>
+          <span className="mt-2 inline-flex h-6 items-center rounded-[3px] bg-[#FFF0E6] px-2 text-[12px] font-black text-[#FE701E]">
+            {status}
+          </span>
+        </div>
+
+        <nav className="mt-[0.833vw] grid gap-[1.042vw] max-md:mt-4 max-md:gap-4">
+          {menuSections.map((section) => (
+            <ProgramBuilderMenuSectionView
+              activePanel={activePanel}
+              key={section.title}
+              pathname={pathname}
+              section={section}
+            />
+          ))}
+        </nav>
+      </div>
+    </aside>
+  );
+}
+
+function ProgramBuilderMenuSectionView({
+  activePanel,
+  pathname,
+  section,
+}: {
+  activePanel: ProgramPanel;
+  pathname: string;
+  section: ProgramBuilderMenuSection;
+}) {
+  return (
+    <section>
+      <h2 className="px-2 text-[12px] font-black leading-5 text-[#A7B0BA]">
+        {section.title}
+      </h2>
+      <div className="mt-1 grid gap-1">
+        {section.items.map((item) => {
+          const active = isProgramBuilderItemActive(item.href, pathname, activePanel);
+
+          return (
+            <Link
+              className={`flex min-h-8 items-center rounded-[4px] px-2 text-[13px] font-black leading-5 transition ${
+                active
+                  ? "bg-[#FFF1E8] text-[#FE701E]"
+                  : item.danger
+                    ? "text-[#C85C42] hover:bg-[#FFF1E8]"
+                    : "text-[#33241C] hover:bg-[#F6F1ED] hover:text-[#FE701E]"
+              }`}
+              href={item.href}
+              key={item.label}
+            >
+              {item.label}
+            </Link>
+          );
+        })}
+      </div>
+    </section>
+  );
+}
+
+function ProgramBuilderPreviewRail({
+  draft,
+  panel,
+}: {
+  draft: HostProgramDraft;
+  panel: ProgramPanel;
+}) {
+  const programPeriod = formatProgramPeriod(draft.activityStart, draft.activityEnd);
+  const recruitDeadline = draft.recruitEnd
+    ? `~${formatKoreanDate(draft.recruitEnd)}`
+    : "~모집 마감일 미정";
+  const dayCount = Math.max(draft.itineraryDays.length, 1);
+
+  return (
+    <aside className="hidden border-l border-[#AEB8C2] bg-[#FBFAF9] px-[1.389vw] py-[1.528vw] xl:block">
+      <div className="sticky top-[1.528vw] grid gap-[1.111vw]">
+        <p className="text-center text-[13px] font-black text-[#7C8794]">
+          미리보기
+        </p>
+
+        <section className="rounded-[5px] border border-[#F2D7C7] bg-white p-[1.111vw]">
+          <div className="rounded-[5px] border border-[#F2D7C7] px-[0.833vw] py-[0.694vw]">
+            <div className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-[0.833vw] text-[12px] font-bold text-[#6D7A8A]">
+              <div className="flex min-w-0 items-center gap-[0.625vw]">
+                <span className="font-black text-[#33241C]">일정</span>
+                <span className="min-w-0 whitespace-nowrap">{programPeriod}</span>
+              </div>
+              <span className="whitespace-nowrap border-l border-[#F2D7C7] pl-[0.833vw]">
+                모집 {draft.capacity || "TBD"}
+              </span>
+            </div>
+          </div>
+
+          <p className="mt-[0.556vw] text-right text-[12px] font-bold text-[#6D7A8A]">
+            {recruitDeadline}
+          </p>
+          <div className="mt-[0.972vw] flex items-center justify-between text-[13px] font-black">
+            <span className="text-[#FE701E]">자유신청</span>
+            <span className="text-[#75883F]">D-20</span>
+          </div>
+          <h3 className="mt-[0.417vw] text-[16px] font-black leading-6 text-[#33241C]">
+            {draft.title || "프로그램 이름"}
+          </h3>
+          <p className="mt-[0.694vw] text-[18px] font-black text-[#33241C]">
+            {draft.fee || "TBD"} <span className="text-[12px] text-[#AEB8C2]">/명</span>
+          </p>
+          <div className="mt-[1.111vw] rounded-[4px] bg-[#F6F6F6] p-[0.694vw]">
+            <div className="flex items-center justify-between text-[12px] font-bold text-[#7C8794]">
+              <span>신청 인원</span>
+              <span>00</span>
+            </div>
+            <div className="mt-[0.556vw] flex items-center justify-between border-t border-[#F2D7C7] pt-[0.556vw] text-[16px] font-black text-[#33241C]">
+              <span>총액</span>
+              <span>{draft.fee || "TBD"}</span>
+            </div>
+          </div>
+          <button
+            className="mt-[0.833vw] h-[2.014vw] min-h-[32px] w-full rounded-[4px] bg-[#FE701E] text-[13px] font-black text-white"
+            type="button"
+          >
+            신청하기
+          </button>
+        </section>
+
+        <section className="rounded-[5px] border border-[#F2D7C7] bg-white p-[1.111vw]">
+          <div
+            className="aspect-[4/3] rounded-[3px] bg-[#D9D9D9] bg-cover bg-center"
+            style={draft.image ? { backgroundImage: `url("${draft.image}")` } : undefined}
+          />
+          <h3 className="mt-[0.833vw] text-[15px] font-black leading-6 text-[#33241C]">
+            {panel === "schedule" ? `${dayCount}일차 일정 안내` : "상세 페이지 본문"}
+          </h3>
+          {panel === "schedule" ? (
+            <div className="mt-[0.694vw] grid gap-2">
+              {draft.itineraryDays.slice(0, 3).map((day, index) => (
+                <div
+                  className="rounded-[4px] bg-[#F6F6F6] px-3 py-2 text-[12px] font-bold leading-5 text-[#6D7A8A]"
+                  key={day.id}
+                >
+                  <span className="font-black text-[#FE701E]">{index + 1}일차</span>{" "}
+                  {day.title || "일정 요약"}
+                </div>
+              ))}
+            </div>
+          ) : (
+            <p className="mt-[0.694vw] max-h-24 overflow-hidden text-[12px] font-bold leading-5 text-[#6D7A8A]">
+              {draft.summary || draft.description || "프로그램 소개가 이 영역에 표시됩니다."}
+            </p>
+          )}
+        </section>
+      </div>
+    </aside>
   );
 }
 
@@ -556,8 +825,8 @@ function BasicPanel({
   const priceMode = getPriceMode(draft.fee);
 
   return (
-    <section className="rounded-md border border-[#F3E2D5] bg-white px-5 py-7 sm:px-6">
-      <div className="max-w-[680px] space-y-12">
+    <section className="bg-white pt-[1.528vw]">
+      <div className="w-full max-w-[925px] space-y-12 xl:max-w-[64.236vw]">
         <QuestionField label="프로그램명을 입력해주세요.">
           <LargeTextInput
             onChange={(title) => updateDraft({ title })}
@@ -687,39 +956,9 @@ function DetailPanel({
   draft: HostProgramDraft;
   updateDraft: (patch: Partial<HostProgramDraft>) => void;
 }) {
-  function updateItineraryDay(
-    dayId: string,
-    patch: Partial<HostProgramItineraryDay>,
-  ) {
-    updateDraft({
-      itineraryDays: draft.itineraryDays.map((day) =>
-        day.id === dayId ? { ...day, ...patch } : day,
-      ),
-    });
-  }
-
-  function addItineraryDay() {
-    updateDraft({
-      itineraryDays: [
-        ...draft.itineraryDays,
-        createHostProgramItineraryDay(draft.itineraryDays.length + 1),
-      ],
-    });
-  }
-
-  function removeItineraryDay(dayId: string) {
-    const nextDays = draft.itineraryDays.filter((day) => day.id !== dayId);
-    updateDraft({
-      itineraryDays:
-        nextDays.length > 0
-          ? nextDays
-          : [createHostProgramItineraryDay(1)],
-    });
-  }
-
   return (
     <PanelCard icon={<ImageIcon size={19} />} title={panelLabels.detail}>
-      <div className="max-w-[720px] space-y-10">
+      <div className="w-full max-w-[925px] space-y-10 xl:max-w-[64.236vw]">
         <QuestionField label="행사의 카테고리를 설정해주세요.">
           <SelectInput
             label="카테고리"
@@ -767,36 +1006,77 @@ function DetailPanel({
             효과적입니다. 이미지 권장 가로 사이즈는 1000px입니다.
           </InfoNote>
         </QuestionField>
+      </div>
+    </PanelCard>
+  );
+}
 
-        <section className="space-y-4">
-          <div className="flex flex-wrap items-center justify-between gap-3 border-t border-[#E8D8CD] pt-7">
-            <h3 className="flex items-center gap-2 text-base font-black text-[#28211D]">
-              <CalendarDays size={18} className="text-[#FE701E]" />
-              여행 일정 / 일정 안내
-            </h3>
-            <button
-              className="inline-flex h-9 items-center gap-2 rounded-md border border-[#E6D6CA] bg-white px-3 text-sm font-black text-[#5B3A29] transition hover:border-[#FE701E] hover:text-[#FE701E]"
-              onClick={addItineraryDay}
-              type="button"
-            >
-              <Plus size={15} />
-              일정 추가
-            </button>
-          </div>
+function SchedulePanel({
+  draft,
+  updateDraft,
+}: {
+  draft: HostProgramDraft;
+  updateDraft: (patch: Partial<HostProgramDraft>) => void;
+}) {
+  function updateItineraryDay(
+    dayId: string,
+    patch: Partial<HostProgramItineraryDay>,
+  ) {
+    updateDraft({
+      itineraryDays: draft.itineraryDays.map((day) =>
+        day.id === dayId ? { ...day, ...patch } : day,
+      ),
+    });
+  }
 
-          <div className="grid gap-4">
-            {draft.itineraryDays.map((day, index) => (
-              <ItineraryDayEditor
-                day={day}
-                dayNumber={index + 1}
-                key={day.id}
-                onChange={(patch) => updateItineraryDay(day.id, patch)}
-                onRemove={() => removeItineraryDay(day.id)}
-                programId={draft.id}
-              />
-            ))}
-          </div>
-        </section>
+  function addItineraryDay() {
+    updateDraft({
+      itineraryDays: [
+        ...draft.itineraryDays,
+        createHostProgramItineraryDay(draft.itineraryDays.length + 1),
+      ],
+    });
+  }
+
+  function removeItineraryDay(dayId: string) {
+    const nextDays = draft.itineraryDays.filter((day) => day.id !== dayId);
+    updateDraft({
+      itineraryDays:
+        nextDays.length > 0
+          ? nextDays
+          : [createHostProgramItineraryDay(1)],
+    });
+  }
+
+  return (
+    <PanelCard icon={<CalendarDays size={19} />} title={panelLabels.schedule}>
+      <div className="w-full max-w-[925px] space-y-6 xl:max-w-[64.236vw]">
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <p className="text-[14px] font-bold leading-6 text-[#6D7A8A]">
+            날짜별 일정, 타임테이블, 일정 사진을 입력하면 상세 페이지 일정 안내 영역에 반영됩니다.
+          </p>
+          <button
+            className="inline-flex h-9 items-center gap-2 rounded-[4px] border border-[#E6D6CA] bg-white px-3 text-[13px] font-black text-[#5B3A29] transition hover:border-[#FE701E] hover:text-[#FE701E]"
+            onClick={addItineraryDay}
+            type="button"
+          >
+            <Plus size={15} />
+            일정 추가
+          </button>
+        </div>
+
+        <div className="grid gap-4">
+          {draft.itineraryDays.map((day, index) => (
+            <ItineraryDayEditor
+              day={day}
+              dayNumber={index + 1}
+              key={day.id}
+              onChange={(patch) => updateItineraryDay(day.id, patch)}
+              onRemove={() => removeItineraryDay(day.id)}
+              programId={draft.id}
+            />
+          ))}
+        </div>
       </div>
     </PanelCard>
   );
@@ -820,7 +1100,7 @@ function PlacePanel({
 
   return (
     <PanelCard icon={<MapPin size={19} />} title={panelLabels.place}>
-      <div className="max-w-[720px] space-y-10">
+      <div className="w-full max-w-[925px] space-y-10 xl:max-w-[64.236vw]">
         <div className="grid gap-4 md:grid-cols-2">
           <TextInput
             label="지역"
@@ -1122,22 +1402,13 @@ function PanelCard({
   title: string;
 }) {
   return (
-    <section className="rounded-md border border-[#F3E2D5] bg-white p-5">
-      <h2 className="flex items-center gap-2 text-lg font-black text-[#0D0D0C]">
+    <section className="bg-white pt-[1.528vw]">
+      <h2 className="flex items-center gap-2 text-[16px] font-black leading-6 text-[#0D0D0C]">
         <span className="text-[#FE701E]">{icon}</span>
         {title}
       </h2>
-      <div className="mt-5 space-y-4">{children}</div>
+      <div className="mt-[1.389vw] space-y-4">{children}</div>
     </section>
-  );
-}
-
-function Metric({ label, value }: { label: string; value: string }) {
-  return (
-    <div className="rounded-md bg-[#FFF6EC] p-3">
-      <p className="text-xs font-black text-[#A06B4F]">{label}</p>
-      <p className="mt-1 font-mono text-lg font-black text-[#0D0D0C]">{value}</p>
-    </div>
   );
 }
 
@@ -1169,7 +1440,7 @@ function LargeTextInput({
 }) {
   return (
     <input
-      className="h-[54px] w-full rounded-md border border-[#E6D6CA] bg-white px-4 text-base font-bold text-[#0D0D0C] outline-none transition placeholder:text-[#9F9288] focus:border-[#FE701E] focus:ring-2 focus:ring-[#FE701E]/15"
+      className="h-[38px] w-full rounded-[4px] border border-[#E6D6CA] bg-white px-3 text-[14px] font-bold text-[#0D0D0C] outline-none transition placeholder:text-[#9F9288] focus:border-[#FE701E] focus:ring-2 focus:ring-[#FE701E]/15"
       onChange={(event) => onChange(event.target.value)}
       placeholder={placeholder}
       type="text"
@@ -1190,7 +1461,7 @@ function BareDateInput({
   return (
     <input
       aria-label={ariaLabel}
-      className="h-11 w-full rounded-md border border-[#E6D6CA] bg-white px-3 text-sm font-bold text-[#0D0D0C] outline-none transition focus:border-[#FE701E] focus:ring-2 focus:ring-[#FE701E]/15"
+      className="h-[38px] w-full rounded-[4px] border border-[#E6D6CA] bg-white px-3 text-[14px] font-bold text-[#0D0D0C] outline-none transition focus:border-[#FE701E] focus:ring-2 focus:ring-[#FE701E]/15"
       onChange={(event) => onChange(event.target.value)}
       type="date"
       value={value}
@@ -1627,7 +1898,7 @@ function AddressSearchField({
           value={address}
         />
         <button
-          className="inline-flex h-[54px] items-center justify-center gap-2 rounded-md border border-[#E6D6CA] bg-white px-4 text-sm font-black text-[#5B3A29] transition hover:border-[#FE701E] hover:text-[#FE701E]"
+          className="inline-flex h-[38px] items-center justify-center gap-2 rounded-[4px] border border-[#E6D6CA] bg-white px-4 text-[13px] font-black text-[#5B3A29] transition hover:border-[#FE701E] hover:text-[#FE701E]"
           onClick={() => {
             setAddressSearchError("");
             setPostcodeEmbedded(false);
@@ -1640,7 +1911,7 @@ function AddressSearchField({
         </button>
       </div>
       <input
-        className="h-[54px] w-full rounded-md border border-[#E6D6CA] bg-white px-4 text-base font-bold text-[#0D0D0C] outline-none transition placeholder:text-[#9F9288] focus:border-[#FE701E] focus:ring-2 focus:ring-[#FE701E]/15"
+        className="h-[38px] w-full rounded-[4px] border border-[#E6D6CA] bg-white px-3 text-[14px] font-bold text-[#0D0D0C] outline-none transition placeholder:text-[#9F9288] focus:border-[#FE701E] focus:ring-2 focus:ring-[#FE701E]/15"
         onChange={(event) => onAddressDetailChange(event.target.value)}
         placeholder="상세주소를 입력해주세요."
         ref={detailAddressInputRef}
@@ -1909,10 +2180,70 @@ function isLinkedApplicationForm(
   );
 }
 
+function isProgramBuilderItemActive(
+  href: string,
+  pathname: string,
+  activePanel: ProgramPanel,
+): boolean {
+  const [hrefPath, hrefQuery = ""] = href.split("?");
+  const itemPanel = new URLSearchParams(hrefQuery).get("panel");
+
+  if (itemPanel) {
+    return hrefPath === pathname && itemPanel === activePanel;
+  }
+
+  return hrefPath === pathname;
+}
+
+function formatProgramNumber(programId: string): string {
+  const normalizedId = programId.trim();
+  if (!normalizedId) return "-";
+
+  return normalizedId.length > 12 ? normalizedId.slice(0, 12) : normalizedId;
+}
+
+function formatProgramPeriod(start: string, end: string): string {
+  const startParts = getDateParts(start);
+  const endParts = getDateParts(end);
+  const startDate = startParts ? formatShortDateParts(startParts) : start.trim();
+  const endDate = endParts ? formatShortDateParts(endParts) : end.trim();
+
+  if (startParts && endParts && startParts.year === endParts.year) {
+    return `${startDate}-${endParts.month}.${endParts.day}`;
+  }
+
+  if (startDate && endDate) return `${startDate}-${endDate}`;
+  return startDate || endDate || "일정 미정";
+}
+
+function formatKoreanDate(value: string): string {
+  const parts = getDateParts(value);
+  return parts ? `${parts.year}년 ${parts.month}월 ${parts.day}일` : "마감일 미정";
+}
+
+function getDateParts(value: string):
+  | { day: number; month: number; year: string }
+  | undefined {
+  const normalizedDate = normalizeDateInput(value);
+  const match = normalizedDate.match(/^(\d{4})-(\d{2})-(\d{2})/u);
+  if (!match) return undefined;
+
+  return {
+    day: Number(match[3]),
+    month: Number(match[2]),
+    year: match[1],
+  };
+}
+
+function formatShortDateParts(parts: { day: number; month: number; year: string }): string {
+  return `${parts.year}.${parts.month}.${parts.day}`;
+}
+
 function normalizePanel(value: string | null): ProgramPanel {
   if (
     value === "basic" ||
     value === "detail" ||
+    value === "schedule" ||
     value === "place" ||
     value === "guide" ||
     value === "management" ||

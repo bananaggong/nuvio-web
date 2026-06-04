@@ -23,6 +23,7 @@ import {
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import { useState } from "react";
+import { SiteHeader } from "@/components/site-header";
 
 type ConsoleArea = "host" | "admin";
 
@@ -170,6 +171,20 @@ export function OpsConsoleShell({
   const search = searchParams.toString();
   const currentPath = search ? `${pathname}?${search}` : pathname;
   const [mobileOpen, setMobileOpen] = useState(false);
+  const programBuilderPath = area === "host" ? getCurrentProgramBasePath(pathname) : undefined;
+  const isProgramBuilderCreate =
+    area === "host" &&
+    (/^\/host\/programs\/new(?:\/|$)/u.test(pathname) ||
+      /^\/host\/projects\/[^/]+\/programs\/new(?:\/|$)/u.test(pathname));
+
+  if (programBuilderPath || isProgramBuilderCreate) {
+    return (
+      <div className="min-h-screen bg-white text-[#33241C]">
+        <SiteHeader />
+        <main>{children}</main>
+      </div>
+    );
+  }
 
   return (
     <div className="flex min-h-screen bg-[#F9F9F9] text-[#0D0D0C]">
@@ -380,6 +395,7 @@ function buildProgramNavigation(programBasePath: string): NavigationItem[] {
       children: [
         { name: "기본정보", href: programPanelHref("basic") },
         { name: "상세 정보", href: programPanelHref("detail") },
+        { name: "일정 안내", href: programPanelHref("schedule") },
         { name: "장소 정보", href: programPanelHref("place") },
         { name: "안내사항", href: programPanelHref("guide") },
         { name: "신청폼 작성", href: scopedHref("/forms") },

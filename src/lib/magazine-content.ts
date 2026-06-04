@@ -1,6 +1,11 @@
 import sanitizeHtml from "sanitize-html";
 
 const allowedTextAlign = [/^left$/u, /^center$/u, /^right$/u, /^justify$/u];
+const allowedCssLength = [
+  /^auto$/u,
+  /^\d{1,5}(?:\.\d+)?px$/u,
+  /^\d{1,3}(?:\.\d+)?%$/u,
+];
 
 export function sanitizeMagazineHtml(input: string): string {
   return sanitizeHtml(input, {
@@ -9,6 +14,8 @@ export function sanitizeMagazineHtml(input: string): string {
       "blockquote",
       "br",
       "code",
+      "col",
+      "colgroup",
       "em",
       "figcaption",
       "figure",
@@ -36,7 +43,11 @@ export function sanitizeMagazineHtml(input: string): string {
     ],
     allowedAttributes: {
       a: ["href", "name", "target", "rel"],
+      col: ["style", "width"],
       img: ["alt", "src", "title", "width"],
+      table: ["style"],
+      td: ["align", "colspan", "colwidth", "data-colwidth", "rowspan", "style"],
+      th: ["align", "colspan", "colwidth", "data-colwidth", "rowspan", "style"],
       "*": ["style"],
     },
     allowedSchemes: ["http", "https", "mailto"],
@@ -47,12 +58,31 @@ export function sanitizeMagazineHtml(input: string): string {
       "*": {
         "text-align": allowedTextAlign,
       },
+      col: {
+        "min-width": allowedCssLength,
+        width: allowedCssLength,
+      },
+      table: {
+        "min-width": allowedCssLength,
+        width: allowedCssLength,
+      },
+      td: {
+        "min-width": allowedCssLength,
+        "text-align": allowedTextAlign,
+        width: allowedCssLength,
+      },
+      th: {
+        "min-width": allowedCssLength,
+        "text-align": allowedTextAlign,
+        width: allowedCssLength,
+      },
     },
     transformTags: {
       a: sanitizeHtml.simpleTransform("a", {
         rel: "noopener noreferrer",
         target: "_blank",
       }),
+      col: sanitizeTableColumn,
       img: (tagName, attribs) => {
         const width = sanitizeImageWidth(
           attribs.width ?? parseStyleWidth(attribs.style),
@@ -72,6 +102,8 @@ export function sanitizeMagazineHtml(input: string): string {
           tagName,
         };
       },
+      td: sanitizeTableCell,
+      th: sanitizeTableCell,
     },
   }).trim();
 }
@@ -117,4 +149,86 @@ function sanitizeImageWidth(value: string | undefined): number | null {
 function parseStyleWidth(style: string | undefined): string | undefined {
   if (!style) return undefined;
   return style.match(/(?:^|;)\s*width\s*:\s*(\d{1,4})(?:px)?\s*(?:;|$)/iu)?.[1];
+}
+
+function sanitizeTableCell(
+  tagName: string,
+  attribs: Record<string, string>,
+): sanitizeHtml.Tag {
+  const nextAttribs = { ...attribs };
+  const colspan = sanitizeSpanAttribute(attribs.colspan);
+  const rowspan = sanitizeSpanAttribute(attribs.rowspan);
+  const colwidth = sanitizeColWidthAttribute(
+    attribs.colwidth ?? attribs["data-colwidth"],
+  );
+
+  if (colspan) {
+    nextAttribs.colspan = colspan;
+  } else {
+    delete nextAttribs.colspan;
+  }
+
+  if (rowspan) {
+    nextAttribs.rowspan = rowspan;
+  } else {
+    delete nextAttribs.rowspan;
+  }
+
+  if (colwidth) {
+    nextAttribs.colwidth = colwidth;
+    nextAttribs["data-colwidth"] = colwidth;
+  } else {
+    delete nextAttribs.colwidth;
+    delete nextAttribs["data-colwidth"];
+  }
+
+  return {
+    attribs: nextAttribs,
+    tagName,
+  };
+}
+
+function sanitizeTableColumn(
+  tagName: string,
+  attribs: Record<string, string>,
+): sanitizeHtml.Tag {
+  const nextAttribs = { ...attribs };
+  const width = sanitizeCssLength(attribs.width);
+
+  if (width) {
+    nextAttribs.width = width;
+  } else {
+    delete nextAttribs.width;
+  }
+
+  return {
+    attribs: nextAttribs,
+    tagName,
+  };
+}
+
+function sanitizeSpanAttribute(value: string | undefined): string | undefined {
+  if (!value) return undefined;
+
+  const span = Number(value);
+  if (!Number.isInteger(span)) return undefined;
+
+  return String(Math.max(1, Math.min(span, 20)));
+}
+
+function sanitizeColWidthAttribute(value: string | undefined): string | undefined {
+  if (!value) return undefined;
+
+  const widths = value
+    .split(",")
+    .map((item) => Number(item.trim()))
+    .filter((item) => Number.isInteger(item) && item >= 25 && item <= 2000)
+    .slice(0, 20);
+
+  return widths.length > 0 ? widths.join(",") : undefined;
+}
+
+function sanitizeCssLength(value: string | undefined): string | undefined {
+  if (!value) return undefined;
+  return allowedCssLength.some((pattern) => pattern.test(value)) ? value : undefined;
 }
