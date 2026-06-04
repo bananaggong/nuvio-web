@@ -40,49 +40,76 @@ export function HostWorkspaceLayout({
 function HostWorkspaceSidebar({ sidebarHeight }: { sidebarHeight: string }) {
   return (
     <aside
-      className={`w-[15.833vw] min-w-[228px] shrink-0 bg-white ${sidebarHeight} max-md:w-full max-md:min-h-0`}
+      className={`w-[15.833vw] min-w-[228px] shrink-0 border-r border-[#6D7A8A] bg-white shadow-[2px_5px_5.2px_rgba(0,0,0,0.23)] ${sidebarHeight} max-md:w-full max-md:min-h-0 max-md:border-r-0 max-md:shadow-none`}
     >
       <div className="px-[0.417vw] max-md:px-5">
         <div className="w-[15vw] min-w-[216px] max-md:w-full">
-          <section className="h-[5.972vw] min-h-[86px] border-b border-[#E7E1DD]">
-            <div className="flex h-10 items-center justify-between px-2 text-[13px] font-black text-[#33241C]">
-              <span>로컬 호스트님</span>
-              <Bell size={17} className="text-[#FF9A3D]" />
+          <section className="h-[5.972vw] min-h-[86px]">
+            <div className="flex h-[2.778vw] min-h-10 items-center justify-center pb-[0.556vw] pt-[0.833vw]">
+              <span className="w-[12.222vw] min-w-[176px] text-[16px] font-semibold leading-[1.253] text-[#5B3A29]">
+                로컬 호스트님
+              </span>
+              <Bell
+                size={20}
+                strokeWidth={1.8}
+                className="size-5 shrink-0 text-[#FF9A3D]"
+              />
             </div>
-            <div className="grid h-[46px] grid-cols-3 items-end text-center">
-              {["프로필", "채널", "관리자"].map((label, index) => (
-                <Link
-                  className={`flex h-[34px] items-center justify-center border-r border-[#F0D5C5] text-[12px] font-black last:border-r-0 ${
-                    index === 0 ? "text-[#FE701E]" : "text-[#A99A90]"
-                  }`}
-                  href={index === 0 ? "/host" : index === 1 ? "/host/villages" : "/admin"}
-                  key={label}
-                >
-                  {label}
-                </Link>
-              ))}
+            <div className="flex h-[3.194vw] min-h-[46px] items-end border-b border-[#D9D9D9] pt-[0.833vw] text-center">
+              <Link
+                className="flex h-[2.361vw] min-h-[34px] flex-1 items-center justify-center border-b-2 border-[#FF9A3D] pb-[0.556vw] pt-[0.347vw] text-[14px] font-medium leading-[1.253] text-[#FE701E]"
+                href="/host"
+              >
+                호스트
+              </Link>
+              <span className="mb-[0.417vw] h-[1.528vw] min-h-[22px] w-px bg-[#D9D9D9]" />
+              <Link
+                className="flex h-[2.361vw] min-h-[34px] flex-1 items-center justify-center py-[0.556vw] text-[14px] font-normal leading-[1.253] text-[#CAC4BC] transition hover:text-[#FE701E]"
+                href="/host/villages"
+              >
+                로컬
+              </Link>
+              <span className="mb-[0.417vw] h-[1.528vw] min-h-[22px] w-px bg-[#D9D9D9]" />
+              <Link
+                className="flex h-[2.361vw] min-h-[34px] flex-1 items-center justify-center py-[0.556vw] text-[14px] font-normal leading-[1.253] text-[#CAC4BC] transition hover:text-[#FE701E]"
+                href="/admin"
+              >
+                관리자
+              </Link>
             </div>
           </section>
 
-          <nav className="mt-3 px-3 text-[13px] font-black leading-[18px]">
-            <section>
-              <Link className="block text-[#33241C]" href="/host">
+          <nav className="mt-[0.833vw] px-[0.833vw] text-[#5B3A29]">
+            <section className="flex flex-col gap-[0.417vw]">
+              <Link
+                className="block w-full text-[14px] font-semibold leading-[1.253]"
+                href="/host"
+              >
                 내 프로그램
               </Link>
-              <div className="mt-2 grid gap-1.5 pl-1">
+              <div className="flex w-full flex-col gap-[3px] border-b-[0.8px] border-[#6D7A8A] pb-[0.833vw] pl-[0.417vw]">
                 <HostSidebarSubLink href="/host?status=open" label="오픈 프로그램" />
                 <HostSidebarSubLink href="/host?status=upcoming" label="예정 프로그램" />
                 <HostSidebarSubLink href="/host?status=closed" label="마감 프로그램" />
               </div>
             </section>
-            <div className="mt-3 grid gap-3 border-t border-[#E7E1DD] pt-3">
-              <Link className="text-[#33241C] hover:text-[#FE701E]" href="/host/messages">
+            <div className="mt-[0.903vw] grid gap-[0.903vw]">
+              <Link
+                className="text-[14px] font-normal leading-[1.253] text-[#5B3A29] hover:text-[#FE701E]"
+                href="/host/messages"
+              >
                 메세지함
               </Link>
-              <Link className="text-[#33241C] hover:text-[#FE701E]" href="/host/forms">
+              <Link
+                className="text-[14px] font-normal leading-[1.253] text-[#5B3A29] hover:text-[#FE701E]"
+                href="/host/forms"
+              >
                 신청서 양식
               </Link>
-              <Link className="text-[#FE701E]" href="/host/settings">
+              <Link
+                className="text-[14px] font-normal leading-[1.253] text-[#5B3A29] hover:text-[#FE701E]"
+                href="/host/settings"
+              >
                 설정
               </Link>
             </div>
@@ -96,7 +123,7 @@ function HostWorkspaceSidebar({ sidebarHeight }: { sidebarHeight: string }) {
 function HostSidebarSubLink({ href, label }: { href: string; label: string }) {
   return (
     <Link
-      className="block rounded-[3px] px-1.5 py-0.5 text-[12px] font-bold text-[#7C8794] transition hover:bg-[#FFF1E8] hover:text-[#FE701E]"
+      className="block w-fit px-[0.556vw] py-[0.139vw] text-[12px] font-normal leading-[1.253] text-[#5B3A29] transition hover:text-[#FE701E]"
       href={href}
     >
       {label}
