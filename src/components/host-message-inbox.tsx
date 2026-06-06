@@ -254,7 +254,10 @@ function OngoingMessagesView({
       style={hostMessageScaleStyle}
     >
       <section className="flex h-[calc(100vh-4.861vw)] min-h-[658px] flex-col overflow-hidden max-lg:h-auto max-lg:min-h-0">
-        <div className="flex min-h-[50px] items-center gap-[14px] border-b border-[#6D7A8A] px-[1.944vw] py-3 max-lg:flex-wrap max-lg:px-5">
+        <div
+          className="flex items-center gap-[14px] border-b border-[#6D7A8A] px-[1.944vw] max-lg:flex-wrap max-lg:px-5"
+          style={{ height: scaledSize(70), minHeight: scaledSize(70) }}
+        >
           <Link
             aria-label="호스트 홈으로 돌아가기"
             className="inline-flex size-5 items-center justify-center text-[#6D7A8A] transition hover:text-[#FE701E]"

@@ -2729,7 +2729,9 @@ function PlacePanel({
         <DetailFormBlock>
           <div className="flex w-full flex-col gap-[var(--figma-24)]">
             <div className="flex items-center gap-[var(--figma-12)]">
-              <SettingsFieldLabel>숙소 안내</SettingsFieldLabel>
+              <div className="shrink-0 whitespace-nowrap">
+                <SettingsFieldLabel>숙소 안내</SettingsFieldLabel>
+              </div>
               <ToggleRow
                 checked={draft.placeInfo.accommodationEnabled}
                 label="숙소여부"
