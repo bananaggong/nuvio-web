@@ -1,22 +1,24 @@
 import type { Metadata } from "next";
-import { HostMessageAutomation } from "@/components/host-message-automation";
+import {
+  HostMessageInbox,
+  type HostMessageInboxView,
+} from "@/components/host-message-inbox";
 
 export const metadata: Metadata = {
-  title: "메시지 자동화 센터",
-  description:
-    "누비오 호스트가 신청자 상태별 안내 메시지를 예약하고 수신자 큐를 관리하는 화면입니다.",
+  title: "메세지함 | 누비오",
+  description: "누비오 호스트가 진행 중인 문의와 종료된 상담을 확인하는 화면입니다.",
 };
 
 export default async function HostMessagesPage({
   searchParams,
 }: {
-  searchParams?: Promise<{ panel?: string }>;
+  searchParams?: Promise<{ panel?: string; view?: string }>;
 }) {
-  const panel = (await searchParams)?.panel;
+  const params = await searchParams;
+  const view: HostMessageInboxView =
+    params?.view === "ended" || params?.panel === "ended" || params?.panel === "end"
+      ? "ended"
+      : "ongoing";
 
-  return (
-    <>
-      <HostMessageAutomation panel={panel} />
-    </>
-  );
+  return <HostMessageInbox view={view} />;
 }

@@ -179,6 +179,7 @@ export function OpsConsoleShell({
   const isHostWorkspacePage =
     area === "host" &&
     (pathname === "/host" ||
+      pathname === "/host/messages" ||
       pathname === "/host/programs" ||
       /^\/host\/projects\/[^/]+\/?$/u.test(pathname));
 

@@ -2,6 +2,7 @@
 
 import Image from "next/image";
 import Link from "next/link";
+import { usePathname, useSearchParams } from "next/navigation";
 import {
   Bell,
   ChevronLeft,
@@ -37,6 +38,13 @@ export function HostWorkspaceLayout({
 }
 
 function HostWorkspaceSidebar({ sidebarHeight }: { sidebarHeight: string }) {
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
+  const messageView = searchParams.get("view");
+  const onMessagesPage = pathname === "/host/messages";
+  const ongoingMessagesActive = onMessagesPage && messageView !== "ended";
+  const endedMessagesActive = onMessagesPage && messageView === "ended";
+
   return (
     <aside
       className={`w-[15.833vw] min-w-[228px] shrink-0 border-r border-[#6D7A8A] bg-white shadow-[2px_5px_5.2px_rgba(0,0,0,0.23)] ${sidebarHeight} max-md:w-full max-md:min-h-0 max-md:border-r-0 max-md:shadow-none`}
@@ -93,12 +101,27 @@ function HostWorkspaceSidebar({ sidebarHeight }: { sidebarHeight: string }) {
               </div>
             </section>
             <div className="mt-[0.903vw] grid gap-[0.903vw]">
-              <Link
-                className="text-[14px] font-normal leading-[1.253] text-[#5B3A29] hover:text-[#FE701E]"
-                href="/host/messages"
-              >
-                메세지함
-              </Link>
+              <section className="flex flex-col gap-[6px]">
+                <p
+                  className={`text-[14px] leading-[1.253] ${
+                    onMessagesPage ? "font-semibold" : "font-normal"
+                  }`}
+                >
+                  메세지
+                </p>
+                <div className="flex w-full flex-col gap-[3px] border-b-[0.8px] border-[#6D7A8A] pb-[0.833vw] pl-[0.417vw]">
+                  <HostSidebarSubLink
+                    active={ongoingMessagesActive}
+                    href="/host/messages"
+                    label="진행 중인 메세지"
+                  />
+                  <HostSidebarSubLink
+                    active={endedMessagesActive}
+                    href="/host/messages?view=ended"
+                    label="종료된 메세지"
+                  />
+                </div>
+              </section>
               <Link
                 className="text-[14px] font-normal leading-[1.253] text-[#5B3A29] hover:text-[#FE701E]"
                 href="/host/forms"
@@ -119,10 +142,22 @@ function HostWorkspaceSidebar({ sidebarHeight }: { sidebarHeight: string }) {
   );
 }
 
-function HostSidebarSubLink({ href, label }: { href: string; label: string }) {
+function HostSidebarSubLink({
+  active = false,
+  href,
+  label,
+}: {
+  active?: boolean;
+  href: string;
+  label: string;
+}) {
   return (
     <Link
-      className="block w-fit px-[0.556vw] py-[0.139vw] text-[12px] font-normal leading-[1.253] text-[#5B3A29] transition hover:text-[#FE701E]"
+      className={`block w-fit rounded-[4px] px-[0.556vw] py-[0.139vw] text-[12px] leading-[1.253] transition ${
+        active
+          ? "bg-[#FF9A3D] font-semibold text-[#F9F9F9]"
+          : "font-normal text-[#5B3A29] hover:text-[#FE701E]"
+      }`}
       href={href}
     >
       {label}
