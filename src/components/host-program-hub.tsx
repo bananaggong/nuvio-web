@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { EditorContent, useEditor, type Editor } from "@tiptap/react";
@@ -8,8 +9,6 @@ import UnderlineExtension from "@tiptap/extension-underline";
 import {
   ArrowLeft,
   Bold,
-  ChevronDown,
-  ChevronUp,
   Heading1,
   Heading2,
   Italic,
@@ -23,7 +22,7 @@ import {
   Undo2,
   X,
 } from "lucide-react";
-import { ProgramCard } from "@/components/program-card";
+import { nuvioIcons } from "@/components/icons/nuvio-icons";
 import {
   useEffect,
   useMemo,
@@ -67,6 +66,7 @@ import {
   getProgramScheduleItems,
 } from "@/lib/program-detail-view-model";
 import type { ApplicationFormTemplate } from "@/lib/application-form-builder";
+import { getDday } from "@/lib/format";
 import { mergeReportProjects } from "@/lib/report-automation";
 import type { Program, ProgramStatus, ThemeKey } from "@/lib/types";
 import { useHostOperationsData } from "@/lib/use-host-operations-data";
@@ -1781,19 +1781,28 @@ function PreviewFrame({
   onToggle: () => void;
   title: string;
 }) {
+  const toggleIcon = collapsed ? nuvioIcons.dropdown : nuvioIcons.dropup;
+
   return (
     <section className="rounded-[var(--figma-7)] border border-[#6D7A8A] bg-[#F9F9F9] p-[1.389vw]">
       <div className="flex h-[var(--figma-30)] items-start justify-between gap-[var(--figma-14)]">
-        <span className="rounded bg-[#6D7A8A] px-[var(--figma-12)] py-[var(--figma-6)] text-[length:var(--figma-12)] font-bold leading-[1.253] text-[#F9F9F9]">
+        <span className="rounded-full bg-[#FF9A3D] px-[var(--figma-14)] py-[var(--figma-6)] text-[length:var(--figma-12)] font-bold leading-[1.253] text-[#F9F9F9]">
           {title}
         </span>
         <button
           aria-label={`${title} ${collapsed ? "펼치기" : "접기"}`}
-          className="grid h-[var(--figma-20)] w-[var(--figma-32)] place-items-center rounded-[4px] border border-[#6D7A8A] text-[#6D7A8A]"
+          className="grid size-[var(--figma-21)] place-items-center border-0 bg-transparent p-0"
           onClick={onToggle}
           type="button"
         >
-          {collapsed ? <ChevronDown size={14} /> : <ChevronUp size={14} />}
+          <Image
+            alt=""
+            aria-hidden="true"
+            className="size-full"
+            height={21}
+            src={toggleIcon}
+            width={21}
+          />
         </button>
       </div>
       {collapsed ? null : <div className="mt-[var(--figma-14)]">{children}</div>}
@@ -1802,12 +1811,77 @@ function PreviewFrame({
 }
 
 function ThumbnailPreviewContent({ program }: { program: Program }) {
+  const deadline = getDday(program.recruitEnd, program.status);
+  const location = [program.region, program.city].filter(Boolean).join(" ");
+  const summary = getProgramIntroParagraphs(program, 1)[0] ?? program.summary;
+  const mainImageStyle = program.image
+    ? { backgroundImage: `url("${escapeCssUrl(program.image)}")` }
+    : undefined;
+
   return (
-    <div className="grid min-h-[29.216vw] place-items-center px-[1.25vw] py-[1.667vw]">
-      <div className="pointer-events-none w-[16.994vw] max-w-[326px] min-w-[230px]">
-        <ProgramCard program={program} />
-      </div>
+    <div className="flex min-h-[29.216vw] items-center justify-center gap-[1.389vw] px-[1.25vw] py-[1.667vw]">
+      <article className="w-[13.403vw] min-w-[192px] max-w-[257px] overflow-hidden">
+        <div
+          aria-label={`${program.title} 썸네일 이미지`}
+          className="aspect-[0.79] w-full overflow-hidden rounded-[6px] bg-[#D9D9D9] bg-cover bg-center shadow-sm ring-1 ring-[#E6D6CA]"
+          role="img"
+          style={mainImageStyle}
+        />
+        <div className="mt-[10px] flex items-start justify-between gap-3">
+          <h3 className="line-clamp-2 min-w-0 text-[12px] font-bold leading-[1.25] text-[#2B1E17]">
+            {program.title}
+          </h3>
+          <strong className="shrink-0 text-[12px] font-bold leading-[1.25] text-[#2B1E17]">
+            {deadline}
+          </strong>
+        </div>
+        <div className="mt-[8px] grid gap-[5px] text-[8px] font-medium leading-[1.35] text-[#6D7A8A]">
+          <PreviewMetaLine icon={nuvioIcons.place} text={program.sourceName} />
+          <PreviewMetaLine icon={nuvioIcons.map} text={location} />
+          <PreviewMetaLine
+            icon={nuvioIcons.calendar}
+            text={`~${formatProgramKoreanDate(program.recruitEnd)}`}
+          />
+        </div>
+      </article>
+
+      <article className="w-[7.222vw] min-w-[104px] max-w-[139px] overflow-hidden opacity-90">
+        <div
+          aria-label={`${program.title} 작은 썸네일 이미지`}
+          className="aspect-[0.81] w-full overflow-hidden rounded-[5px] bg-[#D9D9D9] bg-cover bg-center shadow-sm ring-1 ring-[#E6D6CA]"
+          role="img"
+          style={mainImageStyle}
+        />
+        <p className="mt-[8px] truncate text-[7px] font-medium leading-[1.3] text-[#6D7A8A]">
+          {location || "프로그램 지역 위치"}
+        </p>
+        <h4 className="mt-[5px] line-clamp-2 text-[9px] font-bold leading-[1.28] text-[#5B3A29]">
+          {program.title}
+        </h4>
+        <p className="mt-[6px] line-clamp-3 text-[7px] font-normal leading-[1.45] text-[#C9C4BD]">
+          {summary}
+        </p>
+        <p className="mt-[8px] truncate text-[7px] font-medium leading-[1.3] text-[#6D7A8A]">
+          {program.sourceName}
+        </p>
+      </article>
     </div>
+  );
+}
+
+function PreviewMetaLine({ icon, text }: { icon: string; text: string }) {
+  return (
+    <span className="flex min-w-0 items-center gap-[5px]">
+      <Image
+        alt=""
+        aria-hidden="true"
+        className="size-[9px] shrink-0 opacity-75"
+        height={9}
+        src={icon}
+        width={9}
+      />
+      <span className="truncate">{text}</span>
+    </span>
   );
 }
 
