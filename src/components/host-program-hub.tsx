@@ -14,12 +14,15 @@ import {
   Italic,
   List,
   ListOrdered,
+  Minus,
+  Plus,
   Redo2,
   Search,
   Settings,
   Trash2,
   Underline,
   Undo2,
+  Upload,
   X,
 } from "lucide-react";
 import { nuvioIcons } from "@/components/icons/nuvio-icons";
@@ -2238,6 +2241,20 @@ function SchedulePanel({
   updatedAt: string;
   updateDraft: (patch: Partial<HostProgramDraft>) => void;
 }) {
+  const itineraryDayIds = useMemo(
+    () => draft.itineraryDays.map((day) => day.id),
+    [draft.itineraryDays],
+  );
+  const [expandedDayIds, setExpandedDayIds] = useState<Set<string>>(
+    () => new Set(itineraryDayIds[0] ? [itineraryDayIds[0]] : []),
+  );
+  const renderedExpandedDayIds = useMemo(() => {
+    const validIds = new Set(itineraryDayIds);
+    const next = new Set([...expandedDayIds].filter((id) => validIds.has(id)));
+    if (next.size === 0 && itineraryDayIds[0]) next.add(itineraryDayIds[0]);
+    return next;
+  }, [expandedDayIds, itineraryDayIds]);
+
   function updateItineraryDay(
     dayId: string,
     patch: Partial<HostProgramItineraryDay>,
@@ -2250,44 +2267,52 @@ function SchedulePanel({
   }
 
   function addItineraryDay() {
+    const nextDay = createHostProgramItineraryDay(draft.itineraryDays.length + 1);
     updateDraft({
-      itineraryDays: [
-        ...draft.itineraryDays,
-        createHostProgramItineraryDay(draft.itineraryDays.length + 1),
-      ],
+      itineraryDays: [...draft.itineraryDays, nextDay],
     });
+    setExpandedDayIds((current) => new Set([...current, nextDay.id]));
   }
 
-  function removeItineraryDay(dayId: string) {
-    const nextDays = draft.itineraryDays.filter((day) => day.id !== dayId);
-    updateDraft({
-      itineraryDays:
-        nextDays.length > 0
-          ? nextDays
-          : [createHostProgramItineraryDay(1)],
+  function toggleItineraryDay(dayId: string) {
+    setExpandedDayIds((current) => {
+      const next = new Set(current);
+      if (next.has(dayId)) {
+        next.delete(dayId);
+      } else {
+        next.add(dayId);
+      }
+      return next;
     });
   }
 
   return (
     <SettingsPreviewLayout draft={draft} updatedAt={updatedAt}>
-      <div className="flex flex-col gap-[2.222vw]">
+      <div className="flex flex-col gap-[var(--figma-21)]">
         {draft.itineraryDays.map((day, index) => (
           <ScheduleDayFigmaEditor
             day={day}
             dayNumber={index + 1}
+            expanded={renderedExpandedDayIds.has(day.id)}
             key={day.id}
             onChange={(patch) => updateItineraryDay(day.id, patch)}
-            onRemove={() => removeItineraryDay(day.id)}
+            onToggle={() => toggleItineraryDay(day.id)}
             programId={draft.id}
           />
         ))}
-        <button
-          className="flex h-[3.542vw] max-h-[68px] min-h-[51px] w-full items-center justify-center rounded-[var(--figma-7)] border border-dashed border-[#D9D9D9] text-[length:var(--figma-12)] font-medium leading-[1.253] text-[#6D7A8A] transition hover:border-[#FE701E] hover:text-[#FE701E]"
-          onClick={addItineraryDay}
-          type="button"
-        >
-          아래의 버튼을 눌러 일정을 추가해 주세요
-        </button>
+        <div className="flex flex-col items-center gap-[var(--figma-8)] py-[var(--figma-8)]">
+          <p className="text-[length:var(--figma-12)] font-medium leading-[1.253] text-[#6D7A8A]">
+            아래의 버튼을 눌러 일정을 추가해 주세요
+          </p>
+          <button
+            aria-label="일정 추가"
+            className="grid size-[var(--figma-21)] place-items-center rounded-full bg-[#6D7A8A] text-white transition hover:bg-[#5D6876]"
+            onClick={addItineraryDay}
+            type="button"
+          >
+            <Plus aria-hidden="true" className="size-[var(--figma-12)]" strokeWidth={3} />
+          </button>
+        </div>
       </div>
     </SettingsPreviewLayout>
   );
@@ -2318,84 +2343,237 @@ function SettingsPreviewLayout({
 function ScheduleDayFigmaEditor({
   day,
   dayNumber,
+  expanded,
   onChange,
-  onRemove,
+  onToggle,
   programId,
 }: {
   day: HostProgramItineraryDay;
   dayNumber: number;
+  expanded: boolean;
   onChange: (patch: Partial<HostProgramItineraryDay>) => void;
-  onRemove: () => void;
+  onToggle: () => void;
   programId: string;
 }) {
-  const timeTableCount = day.timetable
-    .split("\n")
-    .map((line) => line.trim())
-    .filter(Boolean).length;
+  const parsedTimetableRows = useMemo(
+    () => parseTimetableRows(day.timetable),
+    [day.timetable],
+  );
+  const [visibleTimetableRowCount, setVisibleTimetableRowCount] = useState(
+    Math.max(1, parsedTimetableRows.length),
+  );
+  const renderedTimetableRowCount = Math.max(
+    visibleTimetableRowCount,
+    parsedTimetableRows.length,
+    1,
+  );
+  const timetableRows = useMemo(() => {
+    const rows = [...parsedTimetableRows];
+    while (rows.length < renderedTimetableRowCount) {
+      rows.push({ text: "", time: "" });
+    }
+    return rows.slice(0, 8);
+  }, [parsedTimetableRows, renderedTimetableRowCount]);
+  const timeTableCount = countFilledTimetableRows(timetableRows);
+
+  function updateTimetableRows(nextRows: ScheduleTimetableRow[]) {
+    setVisibleTimetableRowCount(Math.max(1, Math.min(8, nextRows.length)));
+    onChange({ timetable: serializeTimetableRows(nextRows) });
+  }
+
+  function updateTimetableRow(index: number, patch: Partial<ScheduleTimetableRow>) {
+    const nextRows = timetableRows.map((row, rowIndex) =>
+      rowIndex === index ? { ...row, ...patch } : row,
+    );
+    updateTimetableRows(nextRows);
+  }
+
+  function addTimetableRow() {
+    if (timetableRows.length >= 8) return;
+    setVisibleTimetableRowCount((current) => Math.min(8, current + 1));
+  }
+
+  function removeTimetableRow(index: number) {
+    const nextRows = timetableRows.filter((_, rowIndex) => rowIndex !== index);
+    updateTimetableRows(
+      nextRows.length > 0 ? nextRows : [{ text: "", time: "" }],
+    );
+  }
+
+  const toggleIcon = expanded ? nuvioIcons.dropup : nuvioIcons.dropdown;
 
   return (
-    <DetailFormBlock className="min-h-[35.208vw]">
+    <DetailFormBlock className={expanded ? "" : "py-[var(--figma-14)]"}>
       <div className="flex w-full flex-col">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-[var(--figma-14)]">
-            <p className="text-[length:var(--figma-16)] font-semibold leading-[1.253] text-[#0D0D0C]">
+        <button
+          aria-expanded={expanded}
+          className="flex h-[var(--figma-35)] w-full items-center justify-between rounded-[var(--figma-7)] bg-[#6D7A8A] px-[var(--figma-12)] text-left text-[#F9F9F9]"
+          onClick={onToggle}
+          type="button"
+        >
+          <span className="flex min-w-0 items-center gap-[var(--figma-14)]">
+            <span className="text-[length:var(--figma-14)] font-semibold leading-[1.253]">
               {dayNumber}일차
-            </p>
-            <p className="text-[length:var(--figma-14)] font-medium leading-[1.253] text-[#6D7A8A]">
+            </span>
+            <span className="truncate text-[length:var(--figma-12)] font-medium leading-[1.253]">
               타임 테이블 ({timeTableCount.toString().padStart(2, "0")}개)
+            </span>
+          </span>
+          <Image
+            alt=""
+            aria-hidden="true"
+            className="size-[var(--figma-16)] shrink-0 brightness-0 invert"
+            height={16}
+            src={toggleIcon}
+            width={16}
+          />
+        </button>
+
+        {expanded ? (
+          <div className="px-[var(--figma-14)] pt-[var(--figma-10)]">
+            <p className="text-[length:var(--figma-12)] font-normal leading-[1.253] text-[#6D7A8A]">
+              JPG, PNG, WebP, GIF 파일을 5MB 이하로 업로드 할 수 있어요
             </p>
+            <p className="mt-[var(--figma-8)] text-[length:var(--figma-12)] font-medium leading-[1.253] text-[#6D7A8A]">
+              활동 사진 (최대 5장)
+            </p>
+            <SchedulePhotoSlots
+              day={day}
+              onChange={onChange}
+              programId={programId}
+            />
+
+            <p className="mt-[var(--figma-10)] text-[length:var(--figma-12)] font-semibold leading-[1.253] text-[#7A8B52]">
+              해당 일차의 활동이나 장소가 담긴 사진을 올려주세요
+            </p>
+
+            <div className="mt-[var(--figma-21)] flex flex-col gap-[var(--figma-10)]">
+              <SettingsFieldLabel>일정 소개</SettingsFieldLabel>
+              <textarea
+                className="h-[var(--figma-31)] resize-none rounded-[var(--figma-7)] border-[0.5px] border-[#F7B267] bg-transparent px-[var(--figma-8)] py-[var(--figma-6)] text-[#0D0D0C] outline-none placeholder:text-[#D9D9D9] focus:border-[#FE701E]"
+                maxLength={100}
+                onChange={(event) => onChange({ summary: event.target.value })}
+                placeholder="이날의 여행 컨셉과 체험 내용을 간략히 소개해주세요"
+                style={{ fontSize: "var(--figma-12)" }}
+                value={day.summary}
+              />
+              <p className="text-right text-[length:var(--figma-10)] font-normal leading-[1.253] text-[#D9D9D9]">
+                {day.summary.length} / 100
+              </p>
+            </div>
+
+            <div className="mt-[var(--figma-14)] flex flex-col gap-[var(--figma-10)]">
+              <SettingsFieldLabel>타임 테이블 (최대8개)</SettingsFieldLabel>
+              <div className="grid gap-[var(--figma-6)]">
+                {timetableRows.map((row, index) => (
+                  <div
+                    className="flex items-center gap-[var(--figma-6)]"
+                    key={`${index}-${timetableRows.length}`}
+                  >
+                    <input
+                      aria-label={`${dayNumber}일차 ${index + 1}번째 일정 선택`}
+                      className="size-[var(--figma-10)] shrink-0 rounded-[2px] border border-[#AEB8C2] accent-[#FE701E]"
+                      type="checkbox"
+                    />
+                    <input
+                      aria-label={`${dayNumber}일차 ${index + 1}번째 일정 시간`}
+                      className="h-[var(--figma-24)] w-[3.056vw] min-w-[44px] max-w-[59px] rounded-[var(--figma-7)] border-[0.5px] border-[#D9D9D9] bg-white px-[var(--figma-4)] text-center text-[length:var(--figma-10)] font-medium leading-[1.253] text-[#6D7A8A] outline-none placeholder:text-[#D9D9D9] focus:border-[#FE701E]"
+                      inputMode="numeric"
+                      onChange={(event) =>
+                        updateTimetableRow(index, {
+                          time: normalizeTimetableTimeInput(event.target.value),
+                        })
+                      }
+                      placeholder="00 : 00"
+                      value={row.time}
+                    />
+                    <input
+                      aria-label={`${dayNumber}일차 ${index + 1}번째 일정 내용`}
+                      className="h-[var(--figma-24)] min-w-0 flex-1 rounded-[var(--figma-7)] border-[0.5px] border-[#D9D9D9] bg-white px-[var(--figma-8)] text-[length:var(--figma-10)] font-medium leading-[1.253] text-[#0D0D0C] outline-none placeholder:text-[#D9D9D9] focus:border-[#FE701E]"
+                      onChange={(event) =>
+                        updateTimetableRow(index, { text: event.target.value })
+                      }
+                      placeholder="일정을 간단하게 작성해주세요"
+                      value={row.text}
+                    />
+                    <button
+                      aria-label={`${dayNumber}일차 ${index + 1}번째 일정 삭제`}
+                      className="grid size-[var(--figma-10)] shrink-0 place-items-center rounded-full bg-[#CAC4BC] text-white transition hover:bg-[#AEB8C2] disabled:cursor-not-allowed disabled:opacity-40"
+                      disabled={timetableRows.length <= 1}
+                      onClick={() => removeTimetableRow(index)}
+                      type="button"
+                    >
+                      <Minus aria-hidden="true" className="size-[var(--figma-6)]" strokeWidth={3} />
+                    </button>
+                  </div>
+                ))}
+              </div>
+              <button
+                className="mx-auto inline-flex items-center gap-[var(--figma-4)] text-[length:var(--figma-10)] font-medium leading-[1.253] text-[#CAC4BC] transition hover:text-[#FE701E] disabled:cursor-not-allowed disabled:opacity-50"
+                disabled={timetableRows.length >= 8}
+                onClick={addTimetableRow}
+                type="button"
+              >
+                <span className="grid size-[var(--figma-10)] place-items-center rounded-full bg-[#CAC4BC] text-white">
+                  <Plus aria-hidden="true" className="size-[var(--figma-6)]" strokeWidth={3} />
+                </span>
+                타임테이블 추가
+              </button>
+            </div>
           </div>
-          <button
-            aria-label={`${dayNumber}일차 삭제`}
-            className="text-[length:var(--figma-12)] font-medium text-[#6D7A8A] transition hover:text-red-600"
-            onClick={onRemove}
-            type="button"
-          >
-            삭제
-          </button>
-        </div>
-
-        <p className="mt-[2.083vw] text-[length:var(--figma-14)] font-normal leading-[1.253] text-[#6D7A8A]">
-          JPG, PNG, WebP, GIF 파일을 5MB 이하로 업로드 할 수 있어요
-        </p>
-        <SchedulePhotoSlots
-          day={day}
-          onChange={onChange}
-          programId={programId}
-        />
-
-        <p className="mt-[var(--figma-14)] text-[length:var(--figma-14)] font-semibold leading-[1.253] text-[#7A8B52]">
-          해당 일차의 활동이나 장소가 담긴 사진을 올려주세요
-        </p>
-
-        <div className="mt-[2.222vw] flex flex-col gap-[var(--figma-14)]">
-          <SettingsFieldLabel>일정 소개</SettingsFieldLabel>
-          <textarea
-            className="h-[var(--figma-50)] resize-none rounded-[var(--figma-7)] border-[0.5px] border-[#F7B267] bg-transparent px-[var(--figma-12)] py-[var(--figma-8)] text-[#0D0D0C] outline-none placeholder:text-[#D9D9D9] focus:border-[#FE701E]"
-            maxLength={100}
-            onChange={(event) => onChange({ summary: event.target.value })}
-            placeholder="이날의 여행 컨셉과 체험 내용을 간략히 소개해주세요"
-            style={{ fontSize: "var(--figma-12)" }}
-            value={day.summary}
-          />
-          <p className="text-right text-[length:var(--figma-12)] font-normal leading-[1.253] text-[#D9D9D9]">
-            {day.summary.length} / 100
-          </p>
-        </div>
-
-        <div className="mt-[var(--figma-14)] flex flex-col gap-[var(--figma-14)]">
-          <SettingsFieldLabel>타임 테이블 (최대8개)</SettingsFieldLabel>
-          <textarea
-            className="min-h-[6.944vw] max-h-[133px] resize-none rounded-[var(--figma-7)] border-[0.5px] border-[#F7B267] bg-transparent px-[var(--figma-12)] py-[var(--figma-8)] text-[#0D0D0C] outline-none placeholder:text-[#D9D9D9] focus:border-[#FE701E]"
-            onChange={(event) => onChange({ timetable: event.target.value })}
-            placeholder={"00 : 00  일정을 간단하게 작성해주세요\n줄바꿈으로 일정을 추가할 수 있어요"}
-            style={{ fontSize: "var(--figma-12)" }}
-            value={day.timetable}
-          />
-        </div>
+        ) : null}
       </div>
     </DetailFormBlock>
   );
+}
+
+type ScheduleTimetableRow = {
+  text: string;
+  time: string;
+};
+
+function parseTimetableRows(value: string): ScheduleTimetableRow[] {
+  const rows = value
+    .split("\n")
+    .map((line) => line.trim())
+    .filter(Boolean)
+    .slice(0, 8)
+    .map((line) => {
+      const match = line.match(/^(\d{1,2})\s*:\s*(\d{2})(?:\s+(.+))?$/u);
+      if (!match) return { text: line, time: "" };
+
+      const hour = match[1].padStart(2, "0");
+      return {
+        text: match[3] ?? "",
+        time: `${hour}:${match[2]}`,
+      };
+    });
+
+  return rows.length > 0 ? rows : [{ text: "", time: "" }];
+}
+
+function serializeTimetableRows(rows: ScheduleTimetableRow[]): string {
+  return rows
+    .map((row) => ({
+      text: row.text.trim(),
+      time: row.time.trim(),
+    }))
+    .filter((row) => row.text || row.time)
+    .map((row) => {
+      if (row.time && row.text) return `${row.time} ${row.text}`;
+      return row.time || row.text;
+    })
+    .join("\n");
+}
+
+function countFilledTimetableRows(rows: ScheduleTimetableRow[]): number {
+  return rows.filter((row) => row.text.trim() || row.time.trim()).length;
+}
+
+function normalizeTimetableTimeInput(value: string): string {
+  const digits = value.replace(/\D/gu, "").slice(0, 4);
+  if (digits.length <= 2) return digits;
+  return `${digits.slice(0, 2)}:${digits.slice(2)}`;
 }
 
 function SchedulePhotoSlots({
@@ -2428,18 +2606,25 @@ function SchedulePhotoSlots({
   }
 
   return (
-    <div className="mt-[var(--figma-14)] grid grid-cols-5 gap-[var(--figma-12)]">
+    <div className="mt-[var(--figma-8)] flex gap-[var(--figma-10)]">
       {Array.from({ length: 5 }).map((_, index) => {
         const image = images[index] ?? "";
         return (
           <label
-            className="grid h-[7.708vw] max-h-[148px] min-h-[111px] cursor-pointer place-items-center rounded-[var(--figma-7)] border border-dashed border-[#D9D9D9] bg-[#F9F9F9] bg-cover bg-center text-[length:var(--figma-12)] font-medium leading-[1.253] text-[#D9D9D9] transition hover:border-[#FE701E] hover:text-[#FE701E]"
+            className="flex h-[5.347vw] min-h-[77px] max-h-[103px] w-[5.347vw] min-w-[77px] max-w-[103px] cursor-pointer flex-col items-center justify-center gap-[var(--figma-6)] rounded-[var(--figma-7)] border border-dashed border-[#F7B267] bg-[#F9F9F9] bg-cover bg-center text-[length:var(--figma-10)] font-medium leading-[1.253] text-[#D9D9D9] transition hover:border-[#FE701E] hover:text-[#FE701E]"
             key={index}
             style={image ? { backgroundImage: `url("${image}")` } : undefined}
           >
             <span className={image ? "rounded bg-white/85 px-2 py-1" : ""}>
               {uploadingIndex === index ? "업로드 중" : image ? "변경" : "파일 업로드"}
             </span>
+            {!image ? (
+              <Upload
+                aria-hidden="true"
+                className="size-[var(--figma-12)] text-[#FE701E]"
+                strokeWidth={1.8}
+              />
+            ) : null}
             <input
               accept="image/*"
               className="sr-only"
