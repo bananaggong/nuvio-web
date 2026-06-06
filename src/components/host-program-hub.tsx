@@ -2332,7 +2332,7 @@ function ScheduleDayFigmaEditor({
     .filter(Boolean).length;
 
   return (
-    <DetailFormBlock className="min-h-[35.208vw] max-h-[676px]">
+    <DetailFormBlock className="min-h-[35.208vw]">
       <div className="flex w-full flex-col">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-[var(--figma-14)]">
