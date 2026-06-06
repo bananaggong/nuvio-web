@@ -103,6 +103,9 @@ export function getProgramRecruitmentMethod(
   const url = applyUrl.trim();
 
   if (url === "#no-recruitment") return "none";
+  if (url === "#lottery-application" || url === "#host-screening-application") {
+    return "nuvio";
+  }
   if (!url || url.startsWith("/") || url.includes("nuvio.kr")) return "nuvio";
 
   return "external";

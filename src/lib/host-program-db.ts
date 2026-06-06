@@ -5,6 +5,8 @@ import {
   createHostProgramItineraryDay,
   decodeHostProgramMeta,
   encodeHostProgramMeta,
+  normalizeHostProgramDetailImages,
+  normalizeHostProgramGuideInfo,
   normalizeHostProgramItineraryDays,
   normalizeHostProgramPlaceInfo,
   type HostProgramDraft,
@@ -212,11 +214,15 @@ export function normalizeHostProgramDraft(input: unknown): HostProgramDraft {
     phone: asString(value.phone),
     hashtags: asStringArray(value.hashtags),
     image: asString(value.image),
+    detailImages: normalizeHostProgramDetailImages(
+      value.detailImages ?? meta.detailImages,
+    ),
     itineraryDays:
       itineraryDays.length > 0
         ? itineraryDays
         : [createHostProgramItineraryDay(1)],
     placeInfo: normalizeHostProgramPlaceInfo(value.placeInfo ?? meta.placeInfo),
+    guideInfo: normalizeHostProgramGuideInfo(value.guideInfo ?? meta.guideInfo),
     published: Boolean(value.published),
     updatedAt: asString(value.updatedAt) || new Date().toISOString(),
   };
@@ -267,7 +273,7 @@ function mapHostDraftToProgramInsert(draft: HostProgramDraft): ProgramInsert {
     applyUrl: draft.applyUrl.trim() || "https://www.nuvio.kr/apply",
     phone: draft.phone.trim() || "000-0000-0000",
     imageUrl: image,
-    gallery: [image, ...itineraryImages],
+    gallery: [image, ...draft.detailImages, ...itineraryImages],
     badges: hashtags.slice(0, 4),
     body,
     villageId: isUuid(draft.villageId ?? "") ? draft.villageId : null,
@@ -309,8 +315,10 @@ function mapProgramRowToHostDraft(row: ProgramRow): HostProgramDraft {
     phone: row.phone,
     hashtags: row.hashtags,
     image: row.imageUrl,
+    detailImages: meta.detailImages,
     itineraryDays,
     placeInfo: meta.placeInfo,
+    guideInfo: meta.guideInfo,
     published: Boolean(row.publishedAt),
     updatedAt: row.updatedAt.toISOString(),
   };

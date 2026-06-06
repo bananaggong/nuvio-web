@@ -21,6 +21,7 @@ import { BoseongPageManager } from "@/components/boseong-page-manager";
 import { HostSocialConnectionPanel } from "@/components/host-social-connection-panel";
 import { boseongMediaSeeds } from "@/lib/village-media-seeds";
 import {
+  createHostProgramGuideInfo,
   createHostProgramItineraryDay,
   createHostProgramPlaceInfo,
   type HostProgramDraft,
@@ -687,8 +688,10 @@ function createBoseongProgramDraft(): HostProgramDraft {
     hashtags: ["보성", "전체차LAB", "청년마을"],
     image:
       "https://upload.wikimedia.org/wikipedia/commons/b/b3/Boseong_Green_Tea_Field.jpg",
+    detailImages: [],
     itineraryDays: [createHostProgramItineraryDay(1)],
     placeInfo: createHostProgramPlaceInfo(),
+    guideInfo: createHostProgramGuideInfo(),
     published: false,
     updatedAt: new Date().toISOString(),
   };

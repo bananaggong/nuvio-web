@@ -25,6 +25,19 @@ export type HostProgramPlaceInfo = {
   accommodationMemo: string;
 };
 
+export type HostProgramRefundRule = {
+  id: string;
+  daysBefore: string;
+  refundRate: string;
+};
+
+export type HostProgramGuideInfo = {
+  includedItems: string[];
+  excludedItems: string[];
+  preparationItems: string[];
+  refundRules: HostProgramRefundRule[];
+};
+
 export type HostProgramDraft = {
   id: string;
   slug?: string;
@@ -52,8 +65,10 @@ export type HostProgramDraft = {
   phone: string;
   hashtags: string[];
   image: string;
+  detailImages: string[];
   itineraryDays: HostProgramItineraryDay[];
   placeInfo: HostProgramPlaceInfo;
+  guideInfo: HostProgramGuideInfo;
   published: boolean;
   updatedAt: string;
 };
@@ -76,6 +91,16 @@ const emptyPlaceInfo: HostProgramPlaceInfo = {
   meetingMemo: "",
   parkingGuide: "",
   transportGuide: "",
+};
+
+const emptyGuideInfo: HostProgramGuideInfo = {
+  excludedItems: ["개인 교통비", "점심 식사 비용"],
+  includedItems: ["숙박 2박", "프로그램 체험비 전체"],
+  preparationItems: ["편한 복장, 개인 운동화", "음주 후 참가는 삼가주세요"],
+  refundRules: [
+    { daysBefore: "7", id: "refund-7", refundRate: "100" },
+    { daysBefore: "3", id: "refund-3", refundRate: "50" },
+  ],
 };
 
 export const seedHostProgramDrafts: HostProgramDraft[] = [
@@ -106,6 +131,7 @@ export const seedHostProgramDrafts: HostProgramDraft[] = [
     hashtags: ["워케이션", "강원", "공유오피스"],
     image:
       "https://images.unsplash.com/photo-1507525428034-b723cf961d3e?auto=format&fit=crop&w=1200&q=80",
+    detailImages: [],
     itineraryDays: [
       {
         id: "day-1",
@@ -121,6 +147,7 @@ export const seedHostProgramDrafts: HostProgramDraft[] = [
       meetingAddress: "강원특별자치도 강릉시 창해로 14",
       transportGuide: "강릉역에서 택시 또는 시내버스로 이동할 수 있습니다.",
     },
+    guideInfo: createHostProgramGuideInfo(),
     published: false,
     updatedAt: "2026-05-04T00:00:00+09:00",
   },
@@ -176,8 +203,10 @@ export function createHostProgramDraft(): HostProgramDraft {
     hashtags: ["지역체류", "지원사업"],
     image:
       "https://images.unsplash.com/photo-1500534314209-a25ddb2bd429?auto=format&fit=crop&w=1200&q=80",
+    detailImages: [],
     itineraryDays: [createHostProgramItineraryDay(1)],
     placeInfo: createHostProgramPlaceInfo(),
+    guideInfo: createHostProgramGuideInfo(),
     published: false,
     updatedAt: new Date().toISOString(),
   };
@@ -253,6 +282,15 @@ export function createHostProgramPlaceInfo(): HostProgramPlaceInfo {
   return { ...emptyPlaceInfo };
 }
 
+export function createHostProgramGuideInfo(): HostProgramGuideInfo {
+  return {
+    excludedItems: [...emptyGuideInfo.excludedItems],
+    includedItems: [...emptyGuideInfo.includedItems],
+    preparationItems: [...emptyGuideInfo.preparationItems],
+    refundRules: emptyGuideInfo.refundRules.map((rule) => ({ ...rule })),
+  };
+}
+
 export function normalizeHostProgramItineraryDays(
   value: unknown,
 ): HostProgramItineraryDay[] {
@@ -280,6 +318,10 @@ export function normalizeHostProgramItineraryDays(
     .filter((item): item is HostProgramItineraryDay => Boolean(item));
 }
 
+export function normalizeHostProgramDetailImages(value: unknown): string[] {
+  return uniqueTexts(asTextArray(value)).slice(0, 20);
+}
+
 export function normalizeHostProgramPlaceInfo(
   value: unknown,
 ): HostProgramPlaceInfo {
@@ -300,14 +342,37 @@ export function normalizeHostProgramPlaceInfo(
   };
 }
 
+export function normalizeHostProgramGuideInfo(
+  value: unknown,
+): HostProgramGuideInfo {
+  if (!value || typeof value !== "object" || Array.isArray(value)) {
+    return createHostProgramGuideInfo();
+  }
+
+  const record = value as Record<string, unknown>;
+  return {
+    excludedItems: normalizeGuideItems(record.excludedItems, emptyGuideInfo.excludedItems),
+    includedItems: normalizeGuideItems(record.includedItems, emptyGuideInfo.includedItems),
+    preparationItems: normalizeGuideItems(
+      record.preparationItems,
+      emptyGuideInfo.preparationItems,
+    ),
+    refundRules: normalizeRefundRules(record.refundRules),
+  };
+}
+
 export function encodeHostProgramMeta(draft: HostProgramDraft): string {
   return `${HOST_PROGRAM_META_PREFIX}${JSON.stringify({
+    detailImages: draft.detailImages,
+    guideInfo: draft.guideInfo,
     itineraryDays: draft.itineraryDays,
     placeInfo: draft.placeInfo,
   })}`;
 }
 
 export function decodeHostProgramMeta(value: unknown): {
+  detailImages: string[];
+  guideInfo: HostProgramGuideInfo;
   itineraryDays: HostProgramItineraryDay[];
   placeInfo: HostProgramPlaceInfo;
 } {
@@ -318,6 +383,8 @@ export function decodeHostProgramMeta(value: unknown): {
 
   if (!encoded) {
     return {
+      detailImages: [],
+      guideInfo: createHostProgramGuideInfo(),
       itineraryDays: [],
       placeInfo: createHostProgramPlaceInfo(),
     };
@@ -325,15 +392,21 @@ export function decodeHostProgramMeta(value: unknown): {
 
   try {
     const parsed = JSON.parse(encoded.slice(HOST_PROGRAM_META_PREFIX.length)) as {
+      detailImages?: unknown;
+      guideInfo?: unknown;
       itineraryDays?: unknown;
       placeInfo?: unknown;
     };
     return {
+      detailImages: normalizeHostProgramDetailImages(parsed.detailImages),
+      guideInfo: normalizeHostProgramGuideInfo(parsed.guideInfo),
       itineraryDays: normalizeHostProgramItineraryDays(parsed.itineraryDays),
       placeInfo: normalizeHostProgramPlaceInfo(parsed.placeInfo),
     };
   } catch {
     return {
+      detailImages: [],
+      guideInfo: createHostProgramGuideInfo(),
       itineraryDays: [],
       placeInfo: createHostProgramPlaceInfo(),
     };
@@ -346,6 +419,32 @@ export function stripHostProgramMeta(body: string[]): string[] {
 
 function asText(value: unknown): string {
   return typeof value === "string" ? value.trim() : "";
+}
+
+function normalizeGuideItems(value: unknown, fallback: string[]): string[] {
+  const items = uniqueTexts(asTextArray(value)).slice(0, 12);
+  return items.length > 0 ? items : [...fallback];
+}
+
+function normalizeRefundRules(value: unknown): HostProgramRefundRule[] {
+  if (!Array.isArray(value)) return emptyGuideInfo.refundRules.map((rule) => ({ ...rule }));
+
+  const rules = value
+    .map((item, index) => {
+      if (!item || typeof item !== "object" || Array.isArray(item)) return null;
+      const record = item as Record<string, unknown>;
+      return {
+        daysBefore: asText(record.daysBefore),
+        id: asText(record.id) || `refund-${index + 1}`,
+        refundRate: asText(record.refundRate),
+      };
+    })
+    .filter((rule): rule is HostProgramRefundRule =>
+      Boolean(rule && (rule.daysBefore || rule.refundRate)),
+    )
+    .slice(0, 8);
+
+  return rules.length > 0 ? rules : emptyGuideInfo.refundRules.map((rule) => ({ ...rule }));
 }
 
 function asTextArray(value: unknown): string[] {

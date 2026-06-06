@@ -9,6 +9,7 @@ import {
   upsertHostProgramDraft,
 } from "@/lib/host-program-db";
 import {
+  createHostProgramGuideInfo,
   createHostProgramItineraryDay,
   createHostProgramPlaceInfo,
   type HostProgramDraft,
@@ -229,8 +230,10 @@ function buildHostDraftFromLead(lead: ProgramLead): HostProgramDraft {
     hashtags: ["누비오후보", ...lead.suggestedThemes].slice(0, 8),
     image:
       "https://images.unsplash.com/photo-1500534314209-a25ddb2bd429?auto=format&fit=crop&w=1200&q=80",
+    detailImages: [],
     itineraryDays: [createHostProgramItineraryDay(1)],
     placeInfo: createHostProgramPlaceInfo(),
+    guideInfo: createHostProgramGuideInfo(),
     published: false,
     updatedAt: new Date().toISOString(),
   };
