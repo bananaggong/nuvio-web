@@ -1784,7 +1784,7 @@ function PreviewFrame({
   const toggleIcon = collapsed ? nuvioIcons.dropdown : nuvioIcons.dropup;
 
   return (
-    <section className="rounded-[var(--figma-7)] border border-[#6D7A8A] bg-[#F9F9F9] p-[1.389vw]">
+    <section className="min-w-0 rounded-[var(--figma-7)] border border-[#6D7A8A] bg-[#F9F9F9] p-[1.389vw]">
       <div className="flex h-[var(--figma-30)] items-start justify-between gap-[var(--figma-14)]">
         <span className="rounded-full bg-[#FF9A3D] px-[var(--figma-14)] py-[var(--figma-6)] text-[length:var(--figma-12)] font-bold leading-[1.253] text-[#F9F9F9]">
           {title}
@@ -1805,7 +1805,11 @@ function PreviewFrame({
           />
         </button>
       </div>
-      {collapsed ? null : <div className="mt-[var(--figma-14)]">{children}</div>}
+      {collapsed ? null : (
+        <div className="mt-[var(--figma-14)] min-w-0 overflow-hidden">
+          {children}
+        </div>
+      )}
     </section>
   );
 }
@@ -1886,6 +1890,9 @@ function PreviewMetaLine({ icon, text }: { icon: string; text: string }) {
 }
 
 function DetailPagePreviewContent({ program }: { program: Program }) {
+  const [scaleContainerRef, previewScale] = usePreviewCanvasScale(
+    detailPreviewCanvasWidth,
+  );
   const galleryImages = getProgramGalleryImages(program);
   const introImage = galleryImages[0] ?? "";
   const introParagraphs = getProgramIntroParagraphs(program);
@@ -1894,163 +1901,235 @@ function DetailPagePreviewContent({ program }: { program: Program }) {
   const guideDetails = getProgramGuideDetails(program);
 
   return (
-    <div className="overflow-hidden bg-white text-[#2B1E17]">
-      <div className="flex h-[2.5vw] min-h-[36px] items-center justify-between border-b border-[#F5E1D3] px-[1.25vw] text-[length:var(--figma-12)] text-[#6D7A8A]">
-        <span>어디로 떠날까요?</span>
-        <span>매거진&nbsp;&nbsp;채널</span>
-      </div>
+    <div
+      className="min-w-0 max-w-full overflow-hidden bg-white text-[#2B1E17]"
+      ref={scaleContainerRef}
+      style={{ height: Math.ceil(detailPreviewCanvasHeight * previewScale) }}
+    >
       <div
-        className="relative h-[10.387vw] max-h-[199px] min-h-[120px] bg-[#778695] bg-cover bg-center"
-        style={
-          introImage ? { backgroundImage: `url("${escapeCssUrl(introImage)}")` } : undefined
-        }
+        className="origin-top-left bg-white"
+        style={{
+          height: detailPreviewCanvasHeight,
+          transform: `scale(${previewScale})`,
+          width: detailPreviewCanvasWidth,
+        }}
       >
-        <div aria-hidden="true" className="absolute inset-0 bg-black/10" />
-      </div>
+        <div className="flex h-[56px] items-center border-b border-[#F5E1D3] bg-white px-[30px]">
+          <Image
+            alt="누비오"
+            className="h-[30px] w-[85px]"
+            height={30}
+            src="/brand/nuvio-wordmark.svg"
+            width={85}
+          />
+          <div className="ml-auto flex items-center gap-[34px] text-[12px] font-medium text-[#5B3A29]">
+            <span className="rounded-full border border-[#FF9A3D] px-[48px] py-[8px] text-[#6D7A8A]">
+              어디로 떠날까요?
+            </span>
+            <span>매거진</span>
+            <span>채널</span>
+            <span className="h-[18px] w-px bg-[#F5B16F]" />
+            <Image alt="" height={20} src={nuvioIcons.bell} width={20} />
+            <Image alt="" height={20} src={nuvioIcons.user} width={20} />
+          </div>
+        </div>
 
-      <div className="grid grid-cols-[minmax(0,1fr)_minmax(128px,10.556vw)] gap-[1.25vw] px-[1.25vw] py-[1.667vw]">
-        <article className="min-w-0">
-          <div className="flex items-start justify-between gap-[var(--figma-12)]">
-            <div className="min-w-0">
-              <h2 className="truncate text-[length:var(--figma-16)] font-semibold leading-[1.253] text-[#5B3A29]">
-                {program.title}
-              </h2>
-              <p className="mt-[var(--figma-6)] truncate text-[length:var(--figma-12)] text-[#6D7A8A]">
-                {[program.region, program.city].filter(Boolean).join(", ")}
-              </p>
-              <span className="mt-[var(--figma-8)] inline-flex rounded bg-[#F7B267] px-[var(--figma-6)] py-[3px] text-[length:var(--figma-12)] font-semibold leading-[1.253] text-[#FCFCFC]">
-                {program.badges[0] ?? "자유신청"}
-              </span>
+        <div
+          className="h-[436px] bg-[#778695] bg-cover bg-center"
+          style={
+            introImage
+              ? { backgroundImage: `url("${escapeCssUrl(introImage)}")` }
+              : undefined
+          }
+        />
+
+        <div className="mx-auto grid w-[1031px] grid-cols-[692px_297px] gap-[42px] pt-[40px]">
+          <article className="min-w-0">
+            <div className="flex items-start justify-between pb-[6px]">
+              <div className="w-[420px]">
+                <h2 className="truncate text-[20px] font-semibold leading-[1.253] text-[#5B3A29]">
+                  {program.title}
+                </h2>
+                <p className="mt-[8px] text-[12px] font-normal leading-[1.6] text-[#6D7A8A]">
+                  {[program.region, program.city].filter(Boolean).join(", ")}
+                </p>
+                <span className="mt-[8px] inline-flex rounded-md bg-[#F7B267] px-[6px] py-[3px] text-[12px] font-semibold leading-[1.253] text-[#FCFCFC]">
+                  {program.badges[0] ?? "자유신청"}
+                </span>
+              </div>
             </div>
-          </div>
 
-          <div className="mt-[var(--figma-14)] flex gap-[var(--figma-14)] overflow-hidden border-y border-[#F5E1D3] py-[var(--figma-8)] text-[length:var(--figma-12)]">
-            <span className="shrink-0 font-semibold text-[#5B3A29]">여행 소개</span>
-            <span className="shrink-0 text-[#C9C4BD]">일정 안내</span>
-            <span className="shrink-0 text-[#C9C4BD]">후기</span>
-            <span className="shrink-0 text-[#C9C4BD]">집결지 정보</span>
-            <span className="shrink-0 text-[#C9C4BD]">안내사항</span>
-          </div>
+            <nav className="mt-[8px] flex h-[33px] items-center gap-[21px] border-y border-[#F5E1D3] pt-[6px] text-[12px] leading-[1.6]">
+              <span className="relative h-[27px] font-semibold text-[#5B3A29] after:absolute after:bottom-[-1px] after:left-0 after:h-[2px] after:w-full after:bg-[#FE701E]">
+                여행 소개
+              </span>
+              <span className="h-[27px] text-[#CAC4BC]">일정 안내</span>
+              <span className="h-[27px] text-[#CAC4BC]">후기</span>
+              <span className="h-[27px] text-[#CAC4BC]">집결지 정보</span>
+              <span className="h-[27px] text-[#CAC4BC]">안내사항</span>
+            </nav>
 
-          <section className="mt-[var(--figma-14)]">
-            <div
-              className="relative h-[18.056vw] max-h-[347px] min-h-[210px] overflow-hidden bg-[#D9D9D9] bg-cover bg-center"
-              style={
-                introImage
-                  ? { backgroundImage: `url("${escapeCssUrl(introImage)}")` }
-                  : undefined
-              }
-            >
+            <section className="relative mt-[16px] h-[620px] overflow-hidden bg-[#D9D9D9] bg-cover bg-center">
               <div
-                aria-hidden="true"
-                className="absolute inset-x-0 bottom-0 h-1/2 bg-gradient-to-t from-black/55 to-transparent"
+                className="absolute inset-0 bg-cover bg-center"
+                style={
+                  introImage
+                    ? { backgroundImage: `url("${escapeCssUrl(introImage)}")` }
+                    : undefined
+                }
               />
-              <div className="absolute inset-x-0 bottom-0 grid gap-[var(--figma-6)] p-[var(--figma-16)] text-[length:var(--figma-12)] font-medium leading-[1.55] text-white">
+              <div className="absolute inset-x-0 bottom-0 h-1/2 bg-gradient-to-t from-black/55 to-transparent" />
+              <div className="absolute inset-x-0 bottom-0 grid gap-[8px] p-[26px] text-[14px] font-medium leading-[1.7] text-white">
                 {introParagraphs.map((paragraph, index) => (
                   <p className="line-clamp-2 break-keep" key={`${paragraph}-${index}`}>
                     {paragraph}
                   </p>
                 ))}
               </div>
-            </div>
-          </section>
+            </section>
 
-          <PreviewDetailSection title="여행 일정">
-            <div className="grid gap-[var(--figma-8)]">
-              {scheduleCards.map((item, index) => (
-                <article
-                  className="grid grid-cols-[minmax(88px,10.764vw)_minmax(0,1fr)] overflow-hidden rounded-[var(--figma-7)] border border-[#F3F3F3] bg-white"
-                  key={`${item.day}-${index}`}
+            <DesktopPreviewSection title="여행 일정">
+              <div className="grid gap-[18px]">
+                {scheduleCards.map((item, index) => (
+                  <article
+                    className="grid h-[200px] grid-cols-[310px_minmax(0,1fr)] overflow-hidden rounded-md border border-[#F3F3F3] bg-white"
+                    key={`${item.day}-${index}`}
+                  >
+                    <div
+                      className="bg-[#7A8B52] bg-cover bg-center"
+                      style={
+                        item.image
+                          ? { backgroundImage: `url("${escapeCssUrl(item.image)}")` }
+                          : undefined
+                      }
+                    />
+                    <div className="min-w-0 p-[14px]">
+                      <h4 className="text-[16px] font-semibold leading-[1.253] text-[#5B3A29]">
+                        {item.day}
+                      </h4>
+                      <p className="mt-[13px] line-clamp-3 max-w-[359px] break-keep text-[12px] font-medium leading-[1.46] text-[#6D7A8A]">
+                        {item.body}
+                      </p>
+                      <p className="mt-[13px] text-[12px] font-normal leading-[1.6] text-[#FE701E]">
+                        일정 보기
+                      </p>
+                    </div>
+                  </article>
+                ))}
+              </div>
+            </DesktopPreviewSection>
+
+            <DesktopPreviewSection title="집결지 정보">
+              <dl className="grid grid-cols-[92px_minmax(0,1fr)] gap-x-[20px] gap-y-[16px] px-[12px] text-[14px] leading-[1.55]">
+                <dt className="font-semibold text-[#5B3A29]">집결지</dt>
+                <dd className="break-keep text-[#6D7A8A]">{placeDetails.meetingAddress}</dd>
+                <dt className="font-semibold text-[#5B3A29]">주차 안내</dt>
+                <dd className="break-keep text-[#6D7A8A]">{placeDetails.parkingGuide}</dd>
+                <dt className="font-semibold text-[#5B3A29]">이동수단</dt>
+                <dd className="break-keep text-[#6D7A8A]">{placeDetails.transportGuide}</dd>
+              </dl>
+            </DesktopPreviewSection>
+
+            <DesktopPreviewSection title="안내사항">
+              {[
+                ["신청안내", [guideDetails.applicationGuide]],
+                ["포함사항", guideDetails.includedItems],
+                ["불포함사항", guideDetails.excludedItems],
+                ["준비물", guideDetails.preparationItems],
+                ["환불규정", guideDetails.refundRules],
+              ].map(([label, values]) => (
+                <div
+                  className="grid min-h-[52px] grid-cols-[96px_minmax(0,1fr)] gap-[16px] border-b border-[#F5E1D3] px-[8px] py-[17px] text-[14px]"
+                  key={label as string}
                 >
-                  <div
-                    className="min-h-[6.944vw] bg-[#7A8B52] bg-cover bg-center"
-                    style={
-                      item.image
-                        ? { backgroundImage: `url("${escapeCssUrl(item.image)}")` }
-                        : undefined
-                    }
-                  />
-                  <div className="min-w-0 p-[var(--figma-10)]">
-                    <h4 className="text-[length:var(--figma-12)] font-semibold text-[#5B3A29]">
-                      {item.day}
-                    </h4>
-                    <p className="mt-[var(--figma-6)] line-clamp-3 text-[length:var(--figma-12)] leading-[1.46] text-[#6D7A8A]">
-                      {item.body}
-                    </p>
+                  <strong className="font-normal leading-[1.253] text-[#5B3A29]">
+                    {label as string}
+                  </strong>
+                  <div className="grid gap-[6px] text-[12px] font-medium leading-[1.65] text-[#6D7A8A]">
+                    {(values as string[]).map((value, index) => (
+                      <p className="break-keep" key={`${value}-${index}`}>
+                        {value}
+                      </p>
+                    ))}
                   </div>
-                </article>
+                </div>
               ))}
-            </div>
-          </PreviewDetailSection>
+            </DesktopPreviewSection>
+          </article>
 
-          <PreviewDetailSection title="집결지 정보">
-            <dl className="grid grid-cols-[72px_minmax(0,1fr)] gap-x-[var(--figma-12)] gap-y-[var(--figma-8)] text-[length:var(--figma-12)] leading-[1.55]">
-              <dt className="font-semibold text-[#5B3A29]">집결지</dt>
-              <dd className="break-keep text-[#6D7A8A]">{placeDetails.meetingAddress}</dd>
-              <dt className="font-semibold text-[#5B3A29]">주차 안내</dt>
-              <dd className="break-keep text-[#6D7A8A]">{placeDetails.parkingGuide}</dd>
-              <dt className="font-semibold text-[#5B3A29]">이동수단</dt>
-              <dd className="break-keep text-[#6D7A8A]">{placeDetails.transportGuide}</dd>
-            </dl>
-            <div className="mt-[var(--figma-12)] grid min-h-[6.944vw] place-items-center rounded bg-[#F7F5F3] px-[var(--figma-12)] text-center text-[length:var(--figma-12)] font-medium leading-[1.55] text-[#6D7A8A]">
-              {placeDetails.meetingAddress}
-            </div>
-          </PreviewDetailSection>
-
-          <PreviewDetailSection title="안내사항">
-            <PreviewGuideRow label="신청안내" values={[guideDetails.applicationGuide]} />
-            <PreviewGuideRow label="포함사항" values={guideDetails.includedItems} />
-            <PreviewGuideRow label="불포함사항" values={guideDetails.excludedItems} />
-            <PreviewGuideRow label="준비물" values={guideDetails.preparationItems} />
-            <PreviewGuideRow label="환불규정" values={guideDetails.refundRules} />
-          </PreviewDetailSection>
-        </article>
-
-        <aside className="sticky top-[var(--figma-16)] min-w-0">
-          <section className="rounded-[var(--figma-7)] border border-[#F5E1D3] bg-[#FCFCFC] p-[var(--figma-12)] text-[length:var(--figma-12)]">
-            <div className="grid grid-cols-2 rounded border border-[#F5E1D3] text-center leading-[1.6] text-[#6D7A8A]">
-              <span className="p-[var(--figma-6)]">
-                일정 {formatCompactDateRange(program.activityStart, program.activityEnd)}
-              </span>
-              <span className="border-l border-[#F5E1D3] p-[var(--figma-6)]">
-                모집 {program.capacity}
-              </span>
-            </div>
-            <p className="mt-[var(--figma-8)] text-right leading-[1.6] text-[#6D7A8A]">
-              ~{formatProgramKoreanDate(program.recruitEnd)}
-            </p>
-            <div className="mt-[var(--figma-8)] flex items-center justify-between">
-              <span className="font-medium text-[#F7B267]">자유신청</span>
-              <strong className="font-semibold text-[#7A8B52]">D-20</strong>
-            </div>
-            <h3 className="mt-[var(--figma-8)] line-clamp-2 font-medium leading-[1.253] text-[#5B3A29]">
-              {program.title}
-            </h3>
-            <p className="mt-[var(--figma-8)] font-medium leading-[1.253] text-[#5B3A29]">
-              {program.fee}
-              <span className="pl-1 font-normal text-[#CAC4BC]">/명</span>
-            </p>
-            <div className="mt-[var(--figma-10)] rounded bg-[#F3F3F3] p-[var(--figma-8)] leading-[1.6] text-[#6D7A8A]">
-              <div className="flex items-center justify-between">
-                <span>신청 인원</span>
-                <span>00</span>
+          <aside className="sticky top-[86px] min-w-0">
+            <section className="min-h-[333px] rounded-md border border-[#F5E1D3] bg-[#FCFCFC] p-[16px] text-[12px]">
+              <div className="grid min-h-[35px] grid-cols-2 rounded-[7px] border border-[#F5E1D3] text-center leading-[1.6] text-[#6D7A8A]">
+                <span className="p-[8px]">
+                  일정 {formatCompactDateRange(program.activityStart, program.activityEnd)}
+                </span>
+                <span className="border-l border-[#F5E1D3] p-[8px]">
+                  모집 {program.capacity}
+                </span>
               </div>
-              <div className="mt-[var(--figma-6)] flex items-center justify-between border-t border-[#F5E1D3] pt-[var(--figma-6)] text-[#5B3A29]">
-                <strong>총액</strong>
-                <strong>{program.fee}</strong>
+              <p className="mt-[8px] text-right leading-[1.6] text-[#6D7A8A]">
+                ~{formatProgramKoreanDate(program.recruitEnd)}
+              </p>
+              <div className="mt-[8px] flex items-center justify-between">
+                <span className="font-medium text-[#F7B267]">자유신청</span>
+                <strong className="font-semibold text-[#7A8B52]">D-20</strong>
               </div>
-            </div>
-            <div className="mt-[var(--figma-8)] grid h-[var(--figma-30)] place-items-center rounded bg-[#FE701E] font-medium text-[#FFF6EC]">
-              신청하기
-            </div>
-          </section>
-        </aside>
+              <h3 className="mt-[8px] line-clamp-2 text-[16px] font-medium leading-[1.253] text-[#5B3A29]">
+                {program.title}
+              </h3>
+              <p className="mt-[12px] text-[16px] font-medium leading-[1.253] text-[#5B3A29]">
+                {program.fee}
+                <span className="pl-[4px] text-[12px] font-normal text-[#CAC4BC]">/명</span>
+              </p>
+              <div className="mt-[14px] rounded-[5px] bg-[#F3F3F3] p-[6px] leading-[1.6] text-[#6D7A8A]">
+                <div className="flex items-center justify-between">
+                  <span>신청 인원</span>
+                  <span>00</span>
+                </div>
+                <div className="mt-[6px] flex items-center justify-between border-t border-[#F5E1D3] pt-[6px] text-[16px] text-[#5B3A29]">
+                  <strong>총액</strong>
+                  <strong>{program.fee}</strong>
+                </div>
+              </div>
+              <div className="mt-[8px] grid h-[29px] place-items-center rounded bg-[#FE701E] font-medium text-[#FFF6EC]">
+                신청하기
+              </div>
+            </section>
+          </aside>
+        </div>
       </div>
     </div>
   );
 }
 
-function PreviewDetailSection({
+const detailPreviewCanvasWidth = 1440;
+const detailPreviewCanvasHeight = 2050;
+
+function usePreviewCanvasScale(baseWidth: number) {
+  const containerRef = useRef<HTMLDivElement>(null);
+  const [scale, setScale] = useState(0.48);
+
+  useEffect(() => {
+    const container = containerRef.current;
+    if (!container) return;
+
+    const updateScale = () => {
+      const width = container.clientWidth;
+      setScale(width > 0 ? Math.min(1, width / baseWidth) : 0.48);
+    };
+
+    updateScale();
+
+    const observer = new ResizeObserver(updateScale);
+    observer.observe(container);
+
+    return () => observer.disconnect();
+  }, [baseWidth]);
+
+  return [containerRef, scale] as const;
+}
+
+function DesktopPreviewSection({
   children,
   title,
 }: {
@@ -2058,30 +2137,15 @@ function PreviewDetailSection({
   title: string;
 }) {
   return (
-    <section className="mt-[1.667vw]">
-      <div className="flex h-5 items-center gap-[var(--figma-8)]">
-        <h3 className="shrink-0 whitespace-nowrap text-[length:var(--figma-14)] font-semibold leading-[1.253] text-[#5B3A29]">
+    <section className="mt-[40px]">
+      <div className="flex h-[20px] items-center gap-[8px]">
+        <h3 className="shrink-0 whitespace-nowrap text-[16px] font-semibold leading-[1.253] text-[#5B3A29]">
           {title}
         </h3>
         <span aria-hidden="true" className="h-px min-w-px flex-1 bg-[#F5E1D3]" />
       </div>
-      <div className="mt-[var(--figma-12)]">{children}</div>
+      <div className="mt-[18px]">{children}</div>
     </section>
-  );
-}
-
-function PreviewGuideRow({ label, values }: { label: string; values: string[] }) {
-  return (
-    <div className="grid grid-cols-[76px_minmax(0,1fr)] gap-[var(--figma-10)] border-b border-[#F5E1D3] px-[var(--figma-6)] py-[var(--figma-10)] text-[length:var(--figma-12)] leading-[1.55]">
-      <strong className="font-normal text-[#5B3A29]">{label}</strong>
-      <div className="grid gap-[var(--figma-4)] text-[#6D7A8A]">
-        {values.map((value, index) => (
-          <p className="break-keep" key={`${value}-${index}`}>
-            {value}
-          </p>
-        ))}
-      </div>
-    </div>
   );
 }
 
