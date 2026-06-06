@@ -1351,8 +1351,8 @@ function DetailPanel({
   const detailImages = draft.detailImages ?? [];
 
   return (
-    <section className="flex w-[81.389vw] max-w-[1563px] items-start gap-[1.389vw] bg-white max-lg:flex-col">
-      <div className="w-[41.389vw] max-w-[795px] shrink-0 max-lg:w-full max-lg:max-w-none">
+    <section className="flex w-full max-w-[1563px] items-start gap-[1.706%] bg-white max-lg:flex-col max-lg:gap-[1.389vw]">
+      <div className="w-[50.852%] max-w-[795px] shrink-0 max-lg:w-full max-lg:max-w-none">
         <div className="flex h-[6.667vw] max-h-[128px] items-start justify-end pt-[3.056vw] text-[length:var(--figma-16)] font-normal leading-[1.253] text-[#6D7A8A]">
           최근 수정일 : {formatDateTime(updatedAt)}
         </div>
@@ -1736,7 +1736,7 @@ function DetailPreviewRail({ draft }: { draft: HostProgramDraft }) {
   const previewProgram = useMemo(() => mapHostDraftToPreviewProgram(draft), [draft]);
 
   return (
-    <aside className="min-h-[120.962vw] w-[38.611vw] max-w-[741px] shrink-0 border-l border-[#6D7A8A] bg-white max-lg:w-full max-lg:max-w-none">
+    <aside className="min-h-[120.962vw] w-[47.442%] max-w-[741px] shrink-0 border-l border-[#6D7A8A] bg-white max-lg:w-full max-lg:max-w-none">
       <p className="pt-[4.375vw] text-center text-[length:var(--figma-16)] font-medium leading-[1.253] text-[#6D7A8A]">
         미리보기
       </p>
@@ -2230,8 +2230,8 @@ function SettingsPreviewLayout({
   updatedAt: string;
 }) {
   return (
-    <section className="flex w-[81.389vw] max-w-[1563px] items-start gap-[1.389vw] bg-white max-lg:flex-col">
-      <div className="w-[41.389vw] max-w-[795px] shrink-0 max-lg:w-full max-lg:max-w-none">
+    <section className="flex w-full max-w-[1563px] items-start gap-[1.706%] bg-white max-lg:flex-col max-lg:gap-[1.389vw]">
+      <div className="w-[50.852%] max-w-[795px] shrink-0 max-lg:w-full max-lg:max-w-none">
         <div className="flex h-[6.667vw] max-h-[128px] items-start justify-end pt-[3.056vw] text-[length:var(--figma-16)] font-normal leading-[1.253] text-[#6D7A8A]">
           최근 수정일 : {formatDateTime(updatedAt)}
         </div>
