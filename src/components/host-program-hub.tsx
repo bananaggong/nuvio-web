@@ -1373,7 +1373,7 @@ function DetailPanel({
               <div className="flex flex-col gap-[var(--figma-14)]">
                 <SettingsFieldLabel>프로그램 사진</SettingsFieldLabel>
                 <p className="text-[length:var(--figma-14)] font-normal leading-[1.253] text-[#6D7A8A]">
-                  JPG, PNG, WebP, GIF 파일을 5MB 이하로 업로드할 수 있어요
+                  JPG, PNG, WebP, GIF 파일을 5MB 이하로 업로드 할 수 있어요
                 </p>
               </div>
 
@@ -1737,10 +1737,10 @@ function DetailPreviewRail({ draft }: { draft: HostProgramDraft }) {
 
   return (
     <aside className="min-h-[120.962vw] w-[47.442%] max-w-[741px] shrink-0 border-l border-[#6D7A8A] bg-white max-lg:w-full max-lg:max-w-none">
-      <p className="pt-[4.375vw] text-center text-[length:var(--figma-16)] font-medium leading-[1.253] text-[#6D7A8A]">
+      <p className="pt-[var(--figma-44)] text-center text-[length:var(--figma-16)] font-medium leading-[1.253] text-[#6D7A8A]">
         미리보기
       </p>
-      <div className="mt-[1.667vw] grid gap-[1.667vw] px-[0.764vw]">
+      <div className="mt-[var(--figma-21)] grid gap-[1.667vw] px-[0.764vw]">
         <PreviewFrame
           collapsed={collapsed.thumbnail}
           onToggle={() =>
@@ -2354,7 +2354,7 @@ function ScheduleDayFigmaEditor({
         </div>
 
         <p className="mt-[2.083vw] text-[length:var(--figma-14)] font-normal leading-[1.253] text-[#6D7A8A]">
-          JPG, PNG, WebP, GIF 파일을 5MB 이하로 업로드할 수 있어요
+          JPG, PNG, WebP, GIF 파일을 5MB 이하로 업로드 할 수 있어요
         </p>
         <SchedulePhotoSlots
           day={day}
