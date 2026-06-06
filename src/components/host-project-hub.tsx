@@ -352,7 +352,7 @@ function NewProgramDialog({
   return (
     <div className="pointer-events-none fixed inset-0 z-[90]">
       <form
-        className="pointer-events-auto absolute left-[17.777vw] top-[9.028vw] w-[41.875vw] min-w-[603px] rounded-[12px] border border-[#D9D9D9] bg-[#F9F9F9] px-[1.25vw] py-[1.667vw] shadow-[0_18px_50px_rgba(0,0,0,0.12)] max-md:left-5 max-md:right-5 max-md:top-24 max-md:w-auto max-md:min-w-0"
+        className="pointer-events-auto absolute left-[17.777vw] top-[9.028vw] w-[41.875vw] min-w-[603px] max-w-[804px] rounded-[12px] border border-[#D9D9D9] bg-[#F9F9F9] px-[1.25vw] py-[1.667vw] shadow-[0_18px_50px_rgba(0,0,0,0.12)] max-md:left-5 max-md:right-5 max-md:top-24 max-md:w-auto max-md:min-w-0"
         onSubmit={(event) => {
           event.preventDefault();
           if (canCreate) onCreate();

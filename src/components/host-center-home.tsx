@@ -1,6 +1,7 @@
 "use client";
 
 import { Loader2, X } from "lucide-react";
+import { useRouter } from "next/navigation";
 import { useMemo, useState } from "react";
 import {
   HostFolderCard,
@@ -15,7 +16,13 @@ import {
   buildHostProgramOverviews,
   buildHostProjectOverviews,
   buildStandaloneHostProgramOverviews,
+  hostStandaloneProgramPath,
 } from "@/lib/host-projects";
+import {
+  createHostProgramDraft,
+  mergeHostProgramDrafts,
+  type HostProgramDraft,
+} from "@/lib/host-program-studio";
 import {
   createReportProject,
   mergeReportProjects,
@@ -37,12 +44,22 @@ export function HostCenterHome({
 }: {
   workspace: HostVillageWorkspace;
 }) {
-  const { applications, programs, reportProjects, setReportProjects } =
-    useHostOperationsData();
+  const router = useRouter();
+  const {
+    applications,
+    programs,
+    reportProjects,
+    setPrograms,
+    setReportProjects,
+  } = useHostOperationsData();
   const [isFolderDialogOpen, setIsFolderDialogOpen] = useState(false);
+  const [isProgramDialogOpen, setIsProgramDialogOpen] = useState(false);
   const [folderName, setFolderName] = useState("");
+  const [programName, setProgramName] = useState("");
   const [folderError, setFolderError] = useState("");
+  const [programError, setProgramError] = useState("");
   const [isFolderSaving, setIsFolderSaving] = useState(false);
+  const [isProgramSaving, setIsProgramSaving] = useState(false);
 
   const folders = useMemo(
     () => buildHostProjectOverviews(applications, reportProjects, programs),
@@ -84,6 +101,7 @@ export function HostCenterHome({
   );
   const groups = useMemo(() => buildProgramGroups(programItems), [programItems]);
   const trimmedFolderName = folderName.trim();
+  const trimmedProgramName = programName.trim();
 
   function openFolderDialog() {
     setFolderError("");
@@ -96,6 +114,19 @@ export function HostCenterHome({
     setIsFolderDialogOpen(false);
     setFolderError("");
     setFolderName("");
+  }
+
+  function openProgramDialog() {
+    setProgramError("");
+    setProgramName("");
+    setIsProgramDialogOpen(true);
+  }
+
+  function closeProgramDialog() {
+    if (isProgramSaving) return;
+    setIsProgramDialogOpen(false);
+    setProgramError("");
+    setProgramName("");
   }
 
   async function createFolder() {
@@ -145,6 +176,45 @@ export function HostCenterHome({
     }
   }
 
+  async function createProgram() {
+    if (!trimmedProgramName || isProgramSaving) return;
+
+    const programDraft = buildStandaloneNewProgramDraft(trimmedProgramName, workspace);
+
+    setIsProgramSaving(true);
+    setProgramError("");
+
+    try {
+      const response = await fetch("/api/host/programs", {
+        body: JSON.stringify(programDraft),
+        headers: { "Content-Type": "application/json" },
+        method: "POST",
+      });
+      const payload = (await response.json()) as {
+        data?: HostProgramDraft;
+        error?: string;
+      };
+
+      if (!response.ok || !payload.data) {
+        throw new Error(payload.error ?? "프로그램을 생성하지 못했습니다.");
+      }
+
+      const savedProgram = payload.data;
+      setPrograms((current) => mergeHostProgramDrafts([savedProgram], current));
+      setIsProgramDialogOpen(false);
+      setProgramName("");
+      router.push(
+        `${hostStandaloneProgramPath(savedProgram.id)}?panel=dashboard&created=1`,
+      );
+    } catch (error) {
+      setProgramError(
+        error instanceof Error ? error.message : "프로그램을 생성하지 못했습니다.",
+      );
+    } finally {
+      setIsProgramSaving(false);
+    }
+  }
+
   return (
     <HostWorkspaceLayout>
       <HostWorkspaceContent>
@@ -182,7 +252,7 @@ export function HostCenterHome({
 
           <section className="mt-[2.222vw] max-md:mt-8">
             <HostSectionTitle
-              action={<HostSmallButton>프로그램추가 +</HostSmallButton>}
+              action={<HostSmallButton onClick={openProgramDialog}>새 프로그램</HostSmallButton>}
               title="프로그램 현황"
             />
             <div className="mt-[0.833vw] grid gap-[1.111vw] max-md:mt-5">
@@ -207,7 +277,7 @@ export function HostCenterHome({
           <form
             aria-modal="true"
             aria-labelledby="new-folder-title"
-            className="ml-[3.056vw] w-[41.875vw] min-w-[360px] max-w-[603px] rounded-[5px] border border-[#F3E2D5] bg-white p-[1.111vw] shadow-[0_18px_48px_rgba(91,58,41,0.14)] max-md:mx-auto max-md:p-5"
+            className="ml-[3.056vw] w-[41.875vw] min-w-[360px] max-w-[804px] rounded-[5px] border border-[#F3E2D5] bg-white p-[1.111vw] shadow-[0_18px_48px_rgba(91,58,41,0.14)] max-md:mx-auto max-md:p-5"
             onSubmit={(event) => {
               event.preventDefault();
               void createFolder();
@@ -257,6 +327,70 @@ export function HostCenterHome({
           </form>
         </div>
       ) : null}
+      {isProgramDialogOpen ? (
+        <div
+          className="fixed inset-0 z-[80] bg-black/20 px-4 py-[calc(4.861vw+24px)]"
+          role="presentation"
+        >
+          <form
+            aria-modal="true"
+            aria-labelledby="new-program-title"
+            className="ml-[3.056vw] w-[41.875vw] min-w-[360px] max-w-[804px] rounded-[5px] border border-[#F3E2D5] bg-white p-[1.111vw] shadow-[0_18px_48px_rgba(91,58,41,0.14)] max-md:mx-auto max-md:p-5"
+            onSubmit={(event) => {
+              event.preventDefault();
+              void createProgram();
+            }}
+            role="dialog"
+          >
+            <div className="flex items-center justify-between">
+              <h2
+                className="text-[15px] font-black text-[#33241C]"
+                id="new-program-title"
+              >
+                새 프로그램
+              </h2>
+              <button
+                aria-label="닫기"
+                className="inline-flex size-8 items-center justify-center text-[#33241C] hover:text-[#FE701E]"
+                onClick={closeProgramDialog}
+                type="button"
+              >
+                <X size={18} />
+              </button>
+            </div>
+            <p className="mt-[0.556vw] text-[13px] font-bold leading-5 text-[#8B7A6E]">
+              프로그램 이름을 입력하고 생성하면 대시보드에서 본격적으로 작성할 수 있습니다.
+            </p>
+            <input
+              autoFocus
+              className="mt-[0.833vw] h-[38px] w-full rounded-[4px] border border-[#F3E2D5] px-3 text-[13px] font-bold text-[#33241C] outline-none placeholder:text-[#C8BDB5] focus:border-[#FE701E]"
+              onChange={(event) => setProgramName(event.target.value)}
+              placeholder="프로그램 이름을 입력해주세요."
+              value={programName}
+            />
+            {programError ? (
+              <p className="mt-3 text-[13px] font-bold text-red-600">{programError}</p>
+            ) : null}
+            <div className="mt-[1.111vw] flex justify-end gap-2">
+              <button
+                className="h-[32px] rounded-[4px] border border-[#F3E2D5] px-4 text-[12px] font-black text-[#6D7A8A]"
+                onClick={closeProgramDialog}
+                type="button"
+              >
+                취소
+              </button>
+              <button
+                className="inline-flex h-[32px] items-center gap-2 rounded-[4px] bg-[#FE701E] px-4 text-[12px] font-black text-white disabled:opacity-40"
+                disabled={!trimmedProgramName || isProgramSaving}
+                type="submit"
+              >
+                {isProgramSaving ? <Loader2 className="animate-spin" size={14} /> : null}
+                생성하기
+              </button>
+            </div>
+          </form>
+        </div>
+      ) : null}
     </HostWorkspaceLayout>
   );
 }
@@ -292,6 +426,52 @@ function buildProgramGroups(programs: HostProgramListItem[]): ProgramGroup[] {
       title: "마감된 프로그램",
     },
   ];
+}
+
+function buildStandaloneNewProgramDraft(
+  title: string,
+  workspace: HostVillageWorkspace,
+): HostProgramDraft {
+  const baseDraft = createHostProgramDraft();
+  const now = new Date().toISOString();
+
+  return {
+    ...baseDraft,
+    id: `draft-${Date.now()}`,
+    villageId: workspace.villageId,
+    title,
+    region: workspace.region,
+    city: workspace.city,
+    summary: "",
+    description: "",
+    recruitStart: new Date().toISOString().slice(0, 10),
+    recruitEnd: "",
+    activityStart: "",
+    activityEnd: "",
+    target: "",
+    capacity: "",
+    subsidyLabel: "",
+    subsidyAmount: 0,
+    fee: "",
+    sourceName: workspace.title,
+    sourceUrl: `https://nuvio.kr/${workspace.slug}`,
+    applyUrl: "",
+    phone: "",
+    hashtags: [],
+    image: workspace.heroImage || "",
+    itineraryDays: [],
+    placeInfo: {
+      ...baseDraft.placeInfo,
+      meetingAddress: "",
+      meetingAddressDetail: "",
+      meetingMemo: "",
+      parkingGuide: "",
+      transportGuide: "",
+    },
+    published: false,
+    status: "upcoming",
+    updatedAt: now,
+  };
 }
 
 function normalizeProgramStatus(program: HostProgramListItem): ProgramStatus {
