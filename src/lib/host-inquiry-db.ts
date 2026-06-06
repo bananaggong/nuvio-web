@@ -5,6 +5,7 @@ import {
   normalizeHostInquiry,
   normalizeHostInquiryStatus,
   type HostInquiry,
+  type HostInquiryStatus,
 } from "@/lib/host-inquiries";
 
 type InquiryInsert = typeof programInquiries.$inferInsert;
@@ -47,6 +48,28 @@ export async function createProgramInquiry(
     .returning();
 
   return mapInquiryRowToInquiry(row);
+}
+
+export async function updateHostInquiryStatus(
+  inquiryId: string,
+  status: HostInquiryStatus,
+  options: { villageIds?: string[] } = {},
+): Promise<HostInquiry | null> {
+  if (options.villageIds && options.villageIds.length === 0) return null;
+
+  const conditions = [eq(programInquiries.id, inquiryId)];
+
+  if (options.villageIds) {
+    conditions.push(inArray(programInquiries.villageId, options.villageIds));
+  }
+
+  const [row] = await getDb()
+    .update(programInquiries)
+    .set({ status, updatedAt: new Date() })
+    .where(and(...conditions))
+    .returning();
+
+  return row ? mapInquiryRowToInquiry(row) : null;
 }
 
 function mapInquiryToInsert(inquiry: HostInquiry): InquiryInsert {

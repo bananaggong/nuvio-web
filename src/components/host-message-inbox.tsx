@@ -13,12 +13,14 @@ import {
   ToggleRight,
   X,
 } from "lucide-react";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState, type CSSProperties } from "react";
 import { HostWorkspaceLayout } from "@/components/host-workspace-ui";
+import { type HostApplication } from "@/lib/host-operations";
 import {
-  seedHostApplications,
-  type HostApplication,
-} from "@/lib/host-operations";
+  normalizeHostInquiry,
+  type HostInquiry,
+  type HostInquiryStatus,
+} from "@/lib/host-inquiries";
 import { useHostOperationsData } from "@/lib/use-host-operations-data";
 
 export type HostMessageInboxView = "ended" | "ongoing";
@@ -34,6 +36,8 @@ type MessageThread = {
   periodLabel: string;
   programNumber: string;
   programTitle: string;
+  sourceId: string;
+  status: HostInquiryStatus;
   timeLabel: string;
   unread: boolean;
 };
@@ -66,19 +70,134 @@ const defaultAutoAnswerItems: AutoAnswerItem[] = [
   },
 ];
 
+const hostMessageScaleStyle = {
+  "--host-message-scale":
+    "clamp(1, calc(min(100vw, 1920px) / 1440), 1.333333)",
+} as CSSProperties;
+
+function scaledSize(value: number): string {
+  return `clamp(${value}px, ${((value / 1440) * 100).toFixed(3)}vw, ${Math.round(
+    value * (4 / 3),
+  )}px)`;
+}
+
 export function HostMessageInbox({ view }: { view: HostMessageInboxView }) {
   const { applications } = useHostOperationsData();
-  const threads = useMemo(() => {
-    const source = applications.length > 0 ? applications : seedHostApplications;
-    return buildMessageThreads(source);
-  }, [applications]);
-  const [selectedId, setSelectedId] = useState(threads[0]?.id ?? "");
+  const [inquiries, setInquiries] = useState<HostInquiry[]>([]);
+  const [isLoadingInquiries, setIsLoadingInquiries] = useState(true);
+  const [loadError, setLoadError] = useState("");
+  const [actionError, setActionError] = useState("");
+  const [closingThreadId, setClosingThreadId] = useState("");
+  const allThreads = useMemo(
+    () => buildMessageThreads(inquiries, applications),
+    [applications, inquiries],
+  );
+  const threads = useMemo(
+    () =>
+      allThreads.filter((thread) =>
+        view === "ended" ? thread.status === "closed" : thread.status !== "closed",
+      ),
+    [allThreads, view],
+  );
+  const closedThreads = useMemo(
+    () => allThreads.filter((thread) => thread.status === "closed"),
+    [allThreads],
+  );
+  const [selectedId, setSelectedId] = useState("");
   const selectedThread = threads.find((thread) => thread.id === selectedId) ?? threads[0];
   const selectedThreadId = selectedThread?.id;
+
+  useEffect(() => {
+    let active = true;
+
+    async function loadInquiries() {
+      setIsLoadingInquiries(true);
+      setLoadError("");
+
+      try {
+        const response = await fetch("/api/host/inquiries", { cache: "no-store" });
+        const payload = (await response.json().catch(() => ({}))) as {
+          data?: HostInquiry[];
+          error?: string;
+        };
+
+        if (!response.ok) {
+          if (response.status === 401) {
+            throw new Error("로그인 후 메세지함을 확인할 수 있습니다.");
+          }
+          throw new Error(payload.error ?? "문의 목록을 불러오지 못했습니다.");
+        }
+
+        if (active) {
+          setInquiries(
+            Array.isArray(payload.data)
+              ? payload.data.map(normalizeHostInquiry)
+              : [],
+          );
+        }
+      } catch (error) {
+        if (active) {
+          setLoadError(
+            error instanceof Error
+              ? error.message
+              : "문의 목록을 불러오지 못했습니다.",
+          );
+          setInquiries([]);
+        }
+      } finally {
+        if (active) setIsLoadingInquiries(false);
+      }
+    }
+
+    void loadInquiries();
+
+    return () => {
+      active = false;
+    };
+  }, []);
+
+  async function closeThread(thread: MessageThread) {
+    if (closingThreadId) return;
+
+    setClosingThreadId(thread.id);
+    setActionError("");
+
+    try {
+      const response = await fetch(`/api/host/inquiries/${thread.sourceId}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ status: "closed" satisfies HostInquiryStatus }),
+      });
+      const payload = (await response.json().catch(() => ({}))) as {
+        data?: HostInquiry;
+        error?: string;
+      };
+
+      if (!response.ok || !payload.data) {
+        throw new Error(payload.error ?? "상담을 종료하지 못했습니다.");
+      }
+
+      const nextInquiry = normalizeHostInquiry(payload.data);
+      setInquiries((current) =>
+        current.map((inquiry) =>
+          inquiry.id === nextInquiry.id ? nextInquiry : inquiry,
+        ),
+      );
+      setSelectedId("");
+    } catch (error) {
+      setActionError(
+        error instanceof Error ? error.message : "상담을 종료하지 못했습니다.",
+      );
+    } finally {
+      setClosingThreadId("");
+    }
+  }
 
   if (view === "ended") {
     return (
       <EndedMessagesView
+        isLoading={isLoadingInquiries}
+        loadError={loadError}
         onSelectThread={setSelectedId}
         selectedThread={selectedThread}
         selectedThreadId={selectedThreadId}
@@ -89,6 +208,12 @@ export function HostMessageInbox({ view }: { view: HostMessageInboxView }) {
 
   return (
     <OngoingMessagesView
+      actionError={actionError}
+      closedThreads={closedThreads}
+      closingThreadId={closingThreadId}
+      isLoading={isLoadingInquiries}
+      loadError={loadError}
+      onCloseThread={closeThread}
       onSelectThread={setSelectedId}
       selectedThread={selectedThread}
       selectedThreadId={selectedThreadId}
@@ -98,11 +223,23 @@ export function HostMessageInbox({ view }: { view: HostMessageInboxView }) {
 }
 
 function OngoingMessagesView({
+  actionError,
+  closedThreads,
+  closingThreadId,
+  isLoading,
+  loadError,
+  onCloseThread,
   onSelectThread,
   selectedThread,
   selectedThreadId,
   threads,
 }: {
+  actionError: string;
+  closedThreads: MessageThread[];
+  closingThreadId: string;
+  isLoading: boolean;
+  loadError: string;
+  onCloseThread: (thread: MessageThread) => void;
   onSelectThread: (threadId: string) => void;
   selectedThread?: MessageThread;
   selectedThreadId?: string;
@@ -111,7 +248,11 @@ function OngoingMessagesView({
   const [settingsOpen, setSettingsOpen] = useState(false);
 
   return (
-    <div className="font-pretendard min-h-[calc(100vh-4.861vw)] bg-white text-[#5B3A29]">
+    <div
+      className="font-pretendard min-h-[calc(100vh-4.861vw)] bg-white text-[#5B3A29]"
+      data-host-message-scale="ongoing"
+      style={hostMessageScaleStyle}
+    >
       <section className="flex h-[calc(100vh-4.861vw)] min-h-[658px] flex-col overflow-hidden max-lg:h-auto max-lg:min-h-0">
         <div className="flex min-h-[50px] items-center gap-[14px] border-b border-[#6D7A8A] px-[1.944vw] py-3 max-lg:flex-wrap max-lg:px-5">
           <Link
@@ -124,7 +265,10 @@ function OngoingMessagesView({
           <h1 className="shrink-0 text-[16px] font-medium leading-[1.253] text-[#6D7A8A]">
             메세지함 ({formatTwoDigits(threads.length)})
           </h1>
-          <label className="relative h-[28px] w-[28.542vw] min-w-[280px] max-w-[411px] flex-1 max-lg:max-w-none">
+          <label
+            className="relative h-[28px] min-w-[280px] flex-1 max-lg:max-w-none"
+            style={{ maxWidth: scaledSize(411), width: scaledSize(411) }}
+          >
             <Search
               aria-hidden="true"
               className="absolute left-[9px] top-1/2 size-[14px] -translate-y-1/2 text-[#6D7A8A]"
@@ -148,18 +292,32 @@ function OngoingMessagesView({
         </div>
 
         <div className="flex-1 overflow-auto">
-          <div className="grid min-h-[608px] min-w-[1060px] grid-cols-[360px_minmax(420px,1fr)_360px]">
+          <div
+            className="mx-auto grid min-h-[608px] min-w-[1060px] max-w-[1920px]"
+            data-host-message-grid="ongoing"
+            style={{
+              gridTemplateColumns: `${scaledSize(360)} minmax(${scaledSize(620)}, 1fr) ${scaledSize(390)}`,
+            }}
+          >
             <aside className="flex min-h-full flex-col border-r border-[#6D7A8A]">
               <div className="flex-1 px-3 pt-[18px]">
                 <div className="grid gap-[6px]">
-                  {threads.slice(0, 5).map((thread) => (
+                  {isLoading ? (
+                    <MessageListState label="문의를 불러오는 중입니다." />
+                  ) : loadError ? (
+                    <MessageListState label={loadError} />
+                  ) : threads.length > 0 ? (
+                    threads.slice(0, 8).map((thread) => (
                     <ThreadListButton
                       active={thread.id === selectedThreadId}
                       key={thread.id}
                       onClick={() => onSelectThread(thread.id)}
                       thread={thread}
                     />
-                  ))}
+                    ))
+                  ) : (
+                    <MessageListState label="진행 중인 메세지가 없습니다." />
+                  )}
                 </div>
               </div>
               <Link
@@ -172,7 +330,14 @@ function OngoingMessagesView({
 
             <ChatConversationPanel thread={selectedThread} />
 
-            <ThreadDetailPanel thread={selectedThread} variant="ongoing" />
+            <ThreadDetailPanel
+              actionError={actionError}
+              closing={selectedThread ? closingThreadId === selectedThread.id : false}
+              previousThreads={closedThreads}
+              onCloseThread={onCloseThread}
+              thread={selectedThread}
+              variant="ongoing"
+            />
           </div>
         </div>
       </section>
@@ -185,11 +350,15 @@ function OngoingMessagesView({
 }
 
 function EndedMessagesView({
+  isLoading,
+  loadError,
   onSelectThread,
   selectedThread,
   selectedThreadId,
   threads,
 }: {
+  isLoading: boolean;
+  loadError: string;
   onSelectThread: (threadId: string) => void;
   selectedThread?: MessageThread;
   selectedThreadId?: string;
@@ -197,8 +366,15 @@ function EndedMessagesView({
 }) {
   return (
     <HostWorkspaceLayout>
-      <section className="flex min-w-0 flex-1 bg-white max-lg:flex-col">
-        <div className="w-[38vw] min-w-[430px] max-w-[547px] px-[1.389vw] pt-[1.667vw] max-lg:w-full max-lg:max-w-none max-lg:px-5">
+      <section
+        className="flex min-w-0 flex-1 bg-white max-lg:flex-col"
+        data-host-message-scale="ended"
+        style={hostMessageScaleStyle}
+      >
+        <div
+          className="min-w-[430px] px-[1.389vw] pt-[1.667vw] max-lg:w-full max-lg:max-w-none max-lg:px-5"
+          style={{ maxWidth: scaledSize(547), width: scaledSize(547) }}
+        >
           <div className="flex h-5 items-center gap-[14px]">
             <Link
               aria-label="진행 중인 메세지로 돌아가기"
@@ -252,7 +428,12 @@ function EndedMessagesView({
             </div>
 
             <div className="grid gap-3">
-              {threads.slice(0, 6).map((thread) => (
+              {isLoading ? (
+                <MessageListState label="문의를 불러오는 중입니다." />
+              ) : loadError ? (
+                <MessageListState label={loadError} />
+              ) : threads.length > 0 ? (
+                threads.slice(0, 12).map((thread) => (
                 <button
                   className={`grid min-h-[42px] grid-cols-[69px_minmax(0,1fr)_92px] items-center gap-[23px] rounded-[6px] border px-3 py-3 text-left text-[14px] leading-[1.253] text-[#6D7A8A] transition ${
                     thread.id === selectedThreadId
@@ -271,7 +452,10 @@ function EndedMessagesView({
                     {thread.dateLabel}
                   </span>
                 </button>
-              ))}
+                ))
+              ) : (
+                <MessageListState label="종료된 메세지가 없습니다." />
+              )}
             </div>
           </div>
         </div>
@@ -334,6 +518,14 @@ function ThreadListButton({
   );
 }
 
+function MessageListState({ label }: { label: string }) {
+  return (
+    <div className="rounded-[12px] border border-dashed border-[#D9D9D9] px-4 py-5 text-center text-[12px] font-medium leading-[1.6] text-[#6D7A8A]">
+      {label}
+    </div>
+  );
+}
+
 function ChatConversationPanel({ thread }: { thread?: MessageThread }) {
   return (
     <section className="flex min-h-full flex-col px-4 pt-[14px]">
@@ -341,7 +533,11 @@ function ChatConversationPanel({ thread }: { thread?: MessageThread }) {
         <Search aria-hidden="true" className="size-5 text-[#CAC4BC]" strokeWidth={1.8} />
       </div>
       <div className="flex flex-1 items-start justify-center pt-4">
-        <AutoAnswerPreview />
+        {thread ? (
+          <AutoAnswerPreview />
+        ) : (
+          <EmptyConversation label="대화를 선택해주세요." />
+        )}
       </div>
       <div className="flex min-h-[58px] items-end pb-[11px] pr-[15px]">
         <label className="flex h-[37px] w-full items-center gap-2 rounded-full border border-[#FF9A3D] bg-[#F9F9F9] p-[9px]">
@@ -361,14 +557,46 @@ function ChatConversationPanel({ thread }: { thread?: MessageThread }) {
   );
 }
 
+function EmptyConversation({ label }: { label: string }) {
+  return (
+    <div className="grid min-h-[180px] w-full max-w-[365px] place-items-center rounded-[12px] border border-dashed border-[#D9D9D9] text-center text-[13px] font-medium leading-[1.6] text-[#6D7A8A]">
+      {label}
+    </div>
+  );
+}
+
 function ThreadDetailPanel({
+  actionError,
+  closing = false,
+  onCloseThread,
+  previousThreads = [],
   thread,
   variant,
 }: {
+  actionError?: string;
+  closing?: boolean;
+  onCloseThread?: (thread: MessageThread) => void;
+  previousThreads?: MessageThread[];
   thread?: MessageThread;
   variant: "ended" | "ongoing";
 }) {
   const isEnded = variant === "ended";
+
+  if (!thread) {
+    return (
+      <aside
+        className={`min-w-0 border-l border-[#6D7A8A] px-5 ${
+          isEnded
+            ? "flex-1 pt-[50px]"
+            : "pt-[17px] shadow-[2px_5px_5.2px_rgba(0,0,0,0.23)]"
+        }`}
+      >
+        <div className="grid min-h-[240px] place-items-center rounded-[8px] border border-dashed border-[#D9D9D9] p-5 text-center text-[13px] font-medium leading-[1.6] text-[#6D7A8A]">
+          대화를 선택하면 상세 정보가 표시됩니다.
+        </div>
+      </aside>
+    );
+  }
 
   return (
     <aside
@@ -419,11 +647,20 @@ function ThreadDetailPanel({
             </div>
           </div>
           <button
-            className="mt-4 inline-flex h-[30px] w-full items-center justify-center rounded-[6px] bg-[#CAC4BC] text-[12px] font-bold leading-[1.6] text-[#F3F3F3]"
+            className="mt-4 inline-flex h-[30px] w-full items-center justify-center rounded-[6px] bg-[#CAC4BC] text-[12px] font-bold leading-[1.6] text-[#F3F3F3] disabled:cursor-wait disabled:opacity-70"
+            disabled={!thread || closing}
+            onClick={() => {
+              if (thread && onCloseThread) onCloseThread(thread);
+            }}
             type="button"
           >
-            상담 종료
+            {closing ? "종료 중" : "상담 종료"}
           </button>
+          {actionError ? (
+            <p className="mt-2 text-[12px] font-semibold leading-[1.253] text-red-600">
+              {actionError}
+            </p>
+          ) : null}
         </>
       )}
 
@@ -451,17 +688,25 @@ function ThreadDetailPanel({
           <p className="text-[14px] font-semibold leading-[1.253] text-[#5B3A29]">
             이전 상담 내역
           </p>
-          {["문의한 프로그램 명 또는 호스트 문의", "강릉에서 한달살기 워케이션", "호스트 문의"].map(
-            (title) => (
+          {previousThreads.length > 0 ? (
+            previousThreads.slice(0, 3).map((previousThread) => (
               <button
                 className="flex min-h-[32px] items-center gap-3 rounded-[6px] border border-[#6D7A8A] px-[10px] py-[7px] text-left text-[14px] leading-[1.253] text-[#6D7A8A]"
-                key={title}
+                key={previousThread.id}
                 type="button"
               >
-                <span className="min-w-0 flex-1 truncate font-semibold">{title}</span>
-                <span className="shrink-0 font-normal">0000. 00. 00</span>
+                <span className="min-w-0 flex-1 truncate font-semibold">
+                  {previousThread.programTitle || "호스트 문의"}
+                </span>
+                <span className="shrink-0 font-normal">
+                  {previousThread.dateLabel}
+                </span>
               </button>
-            ),
+            ))
+          ) : (
+            <p className="rounded-[6px] border border-[#D9D9D9] px-[10px] py-[7px] text-[12px] font-medium leading-[1.253] text-[#6D7A8A]">
+              이전 상담 내역이 없습니다.
+            </p>
           )}
         </div>
       ) : null}
@@ -512,7 +757,10 @@ function MiniProgramHeader({ thread }: { thread?: MessageThread }) {
 
 function AutoAnswerPreview() {
   return (
-    <div className="mx-auto w-full max-w-[365px] rounded-[12px] border border-[#D9D9D9] bg-[#F9F9F9] px-[18px] py-6">
+    <div
+      className="mx-auto w-full rounded-[12px] border border-[#D9D9D9] bg-[#F9F9F9] px-[18px] py-6"
+      style={{ maxWidth: scaledSize(365) }}
+    >
       <p className="whitespace-pre-wrap text-[14px] font-medium leading-[1.253] text-[#0D0D0C]">
         호스트가 입력한 첫인사 텍스트가 쓰여질 공간 입니다{"\n"}
         ex) 안녕하세요 ㅇㅇㅇ에 관심 가져주셔서 감사해요.{"\n"}
@@ -725,12 +973,24 @@ function Avatar({
   );
 }
 
-function buildMessageThreads(applications: HostApplication[]): MessageThread[] {
-  const uniqueApplications = dedupeByGuestAndProgram(applications);
-  const source = uniqueApplications.length > 0 ? uniqueApplications : seedHostApplications;
+function buildMessageThreads(
+  inquiries: HostInquiry[],
+  applications: HostApplication[],
+): MessageThread[] {
+  const applicationByProgramId = new Map(
+    applications
+      .filter((application) => application.programId)
+      .map((application) => [application.programId, application]),
+  );
+  const applicationByProgramTitle = new Map(
+    applications.map((application) => [normalizeTitle(application.programTitle), application]),
+  );
 
-  return source.map((application, index) => {
-    const submitted = new Date(application.submittedAt);
+  return inquiries.map((inquiry, index) => {
+    const relatedApplication =
+      applicationByProgramId.get(inquiry.programId) ??
+      applicationByProgramTitle.get(normalizeTitle(inquiry.programTitle));
+    const submitted = new Date(inquiry.submittedAt);
     const dateLabel = Number.isNaN(submitted.getTime())
       ? "0000. 00. 00"
       : new Intl.DateTimeFormat("ko-KR", {
@@ -743,33 +1003,28 @@ function buildMessageThreads(applications: HostApplication[]): MessageThread[] {
 
     return {
       bookingInfo:
-        application.status === "completed"
+        relatedApplication?.status === "completed"
           ? "참여 완료"
-          : application.status === "accepted"
+          : relatedApplication?.status === "accepted"
             ? "예약 확정"
             : "예약 확인 중",
       dateLabel,
-      guestName: application.applicantName || "게스트명",
-      id: application.id || `message-thread-${index}`,
-      imageUrl: resolveThreadImage(application.programTitle),
-      lastMessage: application.memo || "궁금한 점이 있으시면 아래 항목을 눌러보세요 :)",
+      guestName: inquiry.contactName || "게스트명",
+      id: inquiry.id || `message-thread-${index}`,
+      imageUrl: resolveThreadImage(inquiry.programTitle),
+      lastMessage: inquiry.message,
       openDate: dateLabel,
       periodLabel: "0000. 00. 00 - 0000. 00. 00",
-      programNumber: `P-${String(index + 1).padStart(4, "0")}`,
-      programTitle: application.programTitle || "문의한 프로그램 명 또는 호스트 문의",
-      timeLabel: index === 0 ? "3분전" : index === 1 ? "3일전" : dateLabel,
-      unread: index === 0,
+      programNumber: inquiry.programId
+        ? `P-${inquiry.programId.slice(0, 4).toUpperCase()}`
+        : `P-${String(index + 1).padStart(4, "0")}`,
+      programTitle:
+        inquiry.programTitle || inquiry.title || "문의한 프로그램 명 또는 호스트 문의",
+      sourceId: inquiry.id,
+      status: inquiry.status,
+      timeLabel: formatRelativeTime(inquiry.submittedAt, dateLabel),
+      unread: inquiry.status === "new",
     };
-  });
-}
-
-function dedupeByGuestAndProgram(applications: HostApplication[]): HostApplication[] {
-  const seen = new Set<string>();
-  return applications.filter((application) => {
-    const key = `${application.programTitle}-${application.applicantName}`;
-    if (seen.has(key)) return false;
-    seen.add(key);
-    return true;
   });
 }
 
@@ -784,6 +1039,27 @@ function resolveThreadImage(programTitle: string): string {
     return "https://images.unsplash.com/photo-1500534314209-a25ddb2bd429?auto=format&fit=crop&w=480&q=80";
   }
   return "/brand/nuvio-logo-combined.svg";
+}
+
+function normalizeTitle(value: string): string {
+  return value.replace(/\s+/gu, "").trim().toLowerCase();
+}
+
+function formatRelativeTime(value: string, fallback: string): string {
+  const date = new Date(value);
+  const diffMs = Date.now() - date.getTime();
+
+  if (Number.isNaN(diffMs) || diffMs < 0) return fallback;
+
+  const minute = 60 * 1000;
+  const hour = 60 * minute;
+  const day = 24 * hour;
+
+  if (diffMs < hour) return `${Math.max(1, Math.floor(diffMs / minute))}분전`;
+  if (diffMs < day) return `${Math.floor(diffMs / hour)}시간전`;
+  if (diffMs < day * 7) return `${Math.floor(diffMs / day)}일전`;
+
+  return fallback;
 }
 
 function formatTwoDigits(value: number): string {
