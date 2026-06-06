@@ -23,6 +23,7 @@ import {
   Undo2,
   X,
 } from "lucide-react";
+import { ProgramCard } from "@/components/program-card";
 import {
   useEffect,
   useMemo,
@@ -55,9 +56,19 @@ import {
   type ProgramDraftChecklistItem,
 } from "@/lib/host-program-studio";
 import { buildProgramPublishChecklist } from "@/lib/host-program-publish-readiness";
+import {
+  escapeCssUrl,
+  formatCompactDateRange,
+  formatKoreanDate as formatProgramKoreanDate,
+  getProgramGalleryImages,
+  getProgramGuideDetails,
+  getProgramIntroParagraphs,
+  getProgramPlaceDetails,
+  getProgramScheduleItems,
+} from "@/lib/program-detail-view-model";
 import type { ApplicationFormTemplate } from "@/lib/application-form-builder";
 import { mergeReportProjects } from "@/lib/report-automation";
-import type { ProgramStatus, ThemeKey } from "@/lib/types";
+import type { Program, ProgramStatus, ThemeKey } from "@/lib/types";
 import { useHostOperationsData } from "@/lib/use-host-operations-data";
 
 type ProgramPanel =
@@ -115,9 +126,11 @@ type ProgramDashboardDialog = "delete" | "onboarding-required" | "open-schedule"
 const figmaScaleStyle = {
   "--figma-scale":
     "clamp(1, calc(min(100vw, 1920px) / 1440), 1.333333)",
+  "--figma-4": "clamp(4px, 0.278vw, 5.333px)",
   "--figma-6": "clamp(6px, 0.417vw, 8px)",
   "--figma-7": "clamp(7px, 0.486vw, 9.333px)",
   "--figma-8": "clamp(8px, 0.556vw, 10.667px)",
+  "--figma-10": "clamp(10px, 0.694vw, 13.333px)",
   "--figma-12": "clamp(12px, 0.833vw, 16px)",
   "--figma-14": "clamp(14px, 0.972vw, 18.667px)",
   "--figma-16": "clamp(16px, 1.111vw, 21.333px)",
@@ -1720,6 +1733,7 @@ function DetailPreviewRail({ draft }: { draft: HostProgramDraft }) {
     detail: false,
     thumbnail: false,
   });
+  const previewProgram = useMemo(() => mapHostDraftToPreviewProgram(draft), [draft]);
 
   return (
     <aside className="min-h-[120.962vw] w-[38.611vw] max-w-[741px] shrink-0 border-l border-[#6D7A8A] bg-white max-lg:w-full max-lg:max-w-none">
@@ -1737,7 +1751,7 @@ function DetailPreviewRail({ draft }: { draft: HostProgramDraft }) {
           }
           title="썸네일 카드"
         >
-          <ThumbnailPreviewContent draft={draft} />
+          <ThumbnailPreviewContent program={previewProgram} />
         </PreviewFrame>
         <PreviewFrame
           collapsed={collapsed.detail}
@@ -1749,7 +1763,7 @@ function DetailPreviewRail({ draft }: { draft: HostProgramDraft }) {
           }
           title="상세 페이지"
         >
-          <DetailPagePreviewContent draft={draft} />
+          <DetailPagePreviewContent program={previewProgram} />
         </PreviewFrame>
       </div>
     </aside>
@@ -1787,133 +1801,266 @@ function PreviewFrame({
   );
 }
 
-function ThumbnailPreviewContent({ draft }: { draft: HostProgramDraft }) {
-  const summary = stripHtml(draft.summary || draft.description);
-
+function ThumbnailPreviewContent({ program }: { program: Program }) {
   return (
-    <div className="flex min-h-[29.216vw] items-center justify-center gap-[1.944vw]">
-      <article className="w-[16.994vw] max-w-[326px] overflow-hidden rounded-[8px] bg-white shadow-sm">
-        <div
-          className="h-[17.917vw] max-h-[344px] bg-[#D9D9D9] bg-cover bg-center"
-          style={draft.image ? { backgroundImage: `url("${draft.image}")` } : undefined}
-        />
-        <div className="p-[var(--figma-16)]">
-          <p className="text-[length:var(--figma-12)] text-[#6D7A8A]">
-            {draft.region || "프로그램 지역 위치"}
-          </p>
-          <h3 className="mt-[var(--figma-8)] text-[length:var(--figma-16)] font-semibold leading-[1.253] text-[#5B3A29]">
-            {draft.title || "프로그램 제목 입력"}
-          </h3>
-          <p className="mt-[var(--figma-8)] line-clamp-2 text-[length:var(--figma-12)] leading-[1.4] text-[#C9C4BD]">
-            {summary || "프로그램 소개 간략한 작은글을 작성해 주세요."}
-          </p>
-          <p className="mt-[var(--figma-16)] text-[length:var(--figma-12)] text-[#6D7A8A]">
-            {draft.sourceName || "호스트명"}
-          </p>
-        </div>
-      </article>
-      <article className="w-[9.189vw] max-w-[176px] overflow-hidden rounded-[8px] bg-white opacity-90 shadow-sm">
-        <div
-          className="h-[10.417vw] max-h-[200px] bg-[#D9D9D9] bg-cover bg-center"
-          style={draft.image ? { backgroundImage: `url("${draft.image}")` } : undefined}
-        />
-        <div className="p-[var(--figma-12)]">
-          <p className="text-[length:var(--figma-12)] text-[#6D7A8A]">
-            {draft.region || "지역"}
-          </p>
-          <h3 className="mt-[var(--figma-6)] text-[length:var(--figma-14)] font-semibold leading-[1.253] text-[#5B3A29]">
-            {draft.title || "프로그램 제목"}
-          </h3>
-          <p className="mt-[var(--figma-6)] line-clamp-4 text-[length:var(--figma-12)] leading-[1.35] text-[#C9C4BD]">
-            {summary || "프로그램 소개 간략한 작은글을 작성해 주세요."}
-          </p>
-        </div>
-      </article>
+    <div className="grid min-h-[29.216vw] place-items-center px-[1.25vw] py-[1.667vw]">
+      <div className="pointer-events-none w-[16.994vw] max-w-[326px] min-w-[230px]">
+        <ProgramCard program={program} />
+      </div>
     </div>
   );
 }
 
-function DetailPagePreviewContent({ draft }: { draft: HostProgramDraft }) {
-  const detailHtml = normalizeEditorHtml(draft.description);
+function DetailPagePreviewContent({ program }: { program: Program }) {
+  const galleryImages = getProgramGalleryImages(program);
+  const introImage = galleryImages[0] ?? "";
+  const introParagraphs = getProgramIntroParagraphs(program);
+  const scheduleCards = getProgramScheduleItems(program, galleryImages).slice(0, 3);
+  const placeDetails = getProgramPlaceDetails(program);
+  const guideDetails = getProgramGuideDetails(program);
 
   return (
-    <div className="overflow-hidden bg-white">
-      <div className="flex h-[1.677vw] min-h-[24px] items-center justify-between border-b border-[#F7B267] px-[1.25vw] text-[length:var(--figma-12)] text-[#6D7A8A]">
+    <div className="overflow-hidden bg-white text-[#2B1E17]">
+      <div className="flex h-[2.5vw] min-h-[36px] items-center justify-between border-b border-[#F5E1D3] px-[1.25vw] text-[length:var(--figma-12)] text-[#6D7A8A]">
         <span>어디로 떠날까요?</span>
         <span>매거진&nbsp;&nbsp;채널</span>
       </div>
       <div
-        className="h-[10.387vw] max-h-[199px] bg-[#6D7A8A] bg-cover bg-center"
-        style={draft.image ? { backgroundImage: `url("${draft.image}")` } : undefined}
-      />
-      <div className="mx-auto w-[25.556vw] max-w-[491px] py-[2.222vw]">
-        <h2 className="text-[length:var(--figma-16)] font-semibold leading-[1.253] text-[#5B3A29]">
-          {draft.title || "여행 프로그램 이름 입력"}
-        </h2>
-        <p className="mt-[var(--figma-8)] text-[length:var(--figma-12)] text-[#6D7A8A]">
-          {[draft.region, draft.city].filter(Boolean).join(", ") || "지역, 입력하기"}
-        </p>
-        <div className="mt-[var(--figma-14)] flex gap-[var(--figma-16)] border-b border-[#E6D6CA] pb-[var(--figma-8)] text-[length:var(--figma-12)]">
-          <span className="font-semibold text-[#5B3A29]">여행 소개</span>
-          <span className="text-[#C9C4BD]">일정 안내</span>
-          <span className="text-[#C9C4BD]">후기</span>
-          <span className="text-[#C9C4BD]">집결지 정보</span>
-          <span className="text-[#C9C4BD]">안내사항</span>
-        </div>
-        <div
-          className="prose prose-sm mt-[var(--figma-16)] max-w-none text-[length:var(--figma-12)] leading-[1.6] text-[#5B3A29]"
-          dangerouslySetInnerHTML={{ __html: detailHtml }}
-        />
-        <section className="mt-[2.222vw]">
-          <h3 className="text-[length:var(--figma-14)] font-semibold text-[#5B3A29]">
-            여행 일정
-          </h3>
-          <div className="mt-[var(--figma-12)] grid gap-[var(--figma-12)]">
-            {draft.itineraryDays.map((day, index) => (
-              <article
-                className="rounded-[var(--figma-7)] border border-[#E6D6CA] p-[var(--figma-12)]"
-                key={day.id}
-              >
-                <p className="text-[length:var(--figma-12)] font-semibold text-[#5B3A29]">
-                  {index + 1}일차 {day.title && day.title !== `${index + 1}일차` ? day.title : ""}
-                </p>
-                <p className="mt-[var(--figma-6)] line-clamp-3 text-[length:var(--figma-12)] leading-[1.5] text-[#6D7A8A]">
-                  {day.summary || "여행 일정 소개를 입력해주세요."}
-                </p>
-              </article>
-            ))}
-          </div>
-        </section>
-        <section className="mt-[2.222vw]">
-          <h3 className="text-[length:var(--figma-14)] font-semibold text-[#5B3A29]">
-            집결지 정보
-          </h3>
-          <div className="mt-[var(--figma-12)] text-[length:var(--figma-12)] leading-[1.6] text-[#6D7A8A]">
-            <p>{draft.placeInfo.meetingAddress || "집결지 장소 주소 입력"}</p>
-            <p>{draft.placeInfo.parkingGuide || "주차 안내 입력"}</p>
-            <p>{draft.placeInfo.transportGuide || "이동수단 안내 입력"}</p>
-            <p>{draft.phone || "0000-0000-0000"}</p>
-          </div>
-        </section>
-        <section className="mt-[2.222vw]">
-          <h3 className="text-[length:var(--figma-14)] font-semibold text-[#5B3A29]">
-            안내사항
-          </h3>
-          <div className="mt-[var(--figma-12)] grid gap-[var(--figma-8)] text-[length:var(--figma-12)] leading-[1.6] text-[#6D7A8A]">
-            <p>포함: {draft.guideInfo.includedItems.filter(Boolean).join(", ") || "입력 필요"}</p>
-            <p>불포함: {draft.guideInfo.excludedItems.filter(Boolean).join(", ") || "입력 필요"}</p>
-            <p>준비물: {draft.guideInfo.preparationItems.filter(Boolean).join(", ") || "입력 필요"}</p>
-            {draft.guideInfo.refundRules.map((rule) => (
-              <p key={rule.id}>
-                {rule.daysBefore || "00"}일 전 취소 시 {rule.refundRate || "00"}% 환불
+        className="relative h-[10.387vw] max-h-[199px] min-h-[120px] bg-[#778695] bg-cover bg-center"
+        style={
+          introImage ? { backgroundImage: `url("${escapeCssUrl(introImage)}")` } : undefined
+        }
+      >
+        <div aria-hidden="true" className="absolute inset-0 bg-black/10" />
+      </div>
+
+      <div className="grid grid-cols-[minmax(0,1fr)_minmax(128px,10.556vw)] gap-[1.25vw] px-[1.25vw] py-[1.667vw]">
+        <article className="min-w-0">
+          <div className="flex items-start justify-between gap-[var(--figma-12)]">
+            <div className="min-w-0">
+              <h2 className="truncate text-[length:var(--figma-16)] font-semibold leading-[1.253] text-[#5B3A29]">
+                {program.title}
+              </h2>
+              <p className="mt-[var(--figma-6)] truncate text-[length:var(--figma-12)] text-[#6D7A8A]">
+                {[program.region, program.city].filter(Boolean).join(", ")}
               </p>
-            ))}
+              <span className="mt-[var(--figma-8)] inline-flex rounded bg-[#F7B267] px-[var(--figma-6)] py-[3px] text-[length:var(--figma-12)] font-semibold leading-[1.253] text-[#FCFCFC]">
+                {program.badges[0] ?? "자유신청"}
+              </span>
+            </div>
           </div>
-        </section>
+
+          <div className="mt-[var(--figma-14)] flex gap-[var(--figma-14)] overflow-hidden border-y border-[#F5E1D3] py-[var(--figma-8)] text-[length:var(--figma-12)]">
+            <span className="shrink-0 font-semibold text-[#5B3A29]">여행 소개</span>
+            <span className="shrink-0 text-[#C9C4BD]">일정 안내</span>
+            <span className="shrink-0 text-[#C9C4BD]">후기</span>
+            <span className="shrink-0 text-[#C9C4BD]">집결지 정보</span>
+            <span className="shrink-0 text-[#C9C4BD]">안내사항</span>
+          </div>
+
+          <section className="mt-[var(--figma-14)]">
+            <div
+              className="relative h-[18.056vw] max-h-[347px] min-h-[210px] overflow-hidden bg-[#D9D9D9] bg-cover bg-center"
+              style={
+                introImage
+                  ? { backgroundImage: `url("${escapeCssUrl(introImage)}")` }
+                  : undefined
+              }
+            >
+              <div
+                aria-hidden="true"
+                className="absolute inset-x-0 bottom-0 h-1/2 bg-gradient-to-t from-black/55 to-transparent"
+              />
+              <div className="absolute inset-x-0 bottom-0 grid gap-[var(--figma-6)] p-[var(--figma-16)] text-[length:var(--figma-12)] font-medium leading-[1.55] text-white">
+                {introParagraphs.map((paragraph, index) => (
+                  <p className="line-clamp-2 break-keep" key={`${paragraph}-${index}`}>
+                    {paragraph}
+                  </p>
+                ))}
+              </div>
+            </div>
+          </section>
+
+          <PreviewDetailSection title="여행 일정">
+            <div className="grid gap-[var(--figma-8)]">
+              {scheduleCards.map((item, index) => (
+                <article
+                  className="grid grid-cols-[minmax(88px,10.764vw)_minmax(0,1fr)] overflow-hidden rounded-[var(--figma-7)] border border-[#F3F3F3] bg-white"
+                  key={`${item.day}-${index}`}
+                >
+                  <div
+                    className="min-h-[6.944vw] bg-[#7A8B52] bg-cover bg-center"
+                    style={
+                      item.image
+                        ? { backgroundImage: `url("${escapeCssUrl(item.image)}")` }
+                        : undefined
+                    }
+                  />
+                  <div className="min-w-0 p-[var(--figma-10)]">
+                    <h4 className="text-[length:var(--figma-12)] font-semibold text-[#5B3A29]">
+                      {item.day}
+                    </h4>
+                    <p className="mt-[var(--figma-6)] line-clamp-3 text-[length:var(--figma-12)] leading-[1.46] text-[#6D7A8A]">
+                      {item.body}
+                    </p>
+                  </div>
+                </article>
+              ))}
+            </div>
+          </PreviewDetailSection>
+
+          <PreviewDetailSection title="집결지 정보">
+            <dl className="grid grid-cols-[72px_minmax(0,1fr)] gap-x-[var(--figma-12)] gap-y-[var(--figma-8)] text-[length:var(--figma-12)] leading-[1.55]">
+              <dt className="font-semibold text-[#5B3A29]">집결지</dt>
+              <dd className="break-keep text-[#6D7A8A]">{placeDetails.meetingAddress}</dd>
+              <dt className="font-semibold text-[#5B3A29]">주차 안내</dt>
+              <dd className="break-keep text-[#6D7A8A]">{placeDetails.parkingGuide}</dd>
+              <dt className="font-semibold text-[#5B3A29]">이동수단</dt>
+              <dd className="break-keep text-[#6D7A8A]">{placeDetails.transportGuide}</dd>
+            </dl>
+            <div className="mt-[var(--figma-12)] grid min-h-[6.944vw] place-items-center rounded bg-[#F7F5F3] px-[var(--figma-12)] text-center text-[length:var(--figma-12)] font-medium leading-[1.55] text-[#6D7A8A]">
+              {placeDetails.meetingAddress}
+            </div>
+          </PreviewDetailSection>
+
+          <PreviewDetailSection title="안내사항">
+            <PreviewGuideRow label="신청안내" values={[guideDetails.applicationGuide]} />
+            <PreviewGuideRow label="포함사항" values={guideDetails.includedItems} />
+            <PreviewGuideRow label="불포함사항" values={guideDetails.excludedItems} />
+            <PreviewGuideRow label="준비물" values={guideDetails.preparationItems} />
+            <PreviewGuideRow label="환불규정" values={guideDetails.refundRules} />
+          </PreviewDetailSection>
+        </article>
+
+        <aside className="sticky top-[var(--figma-16)] min-w-0">
+          <section className="rounded-[var(--figma-7)] border border-[#F5E1D3] bg-[#FCFCFC] p-[var(--figma-12)] text-[length:var(--figma-12)]">
+            <div className="grid grid-cols-2 rounded border border-[#F5E1D3] text-center leading-[1.6] text-[#6D7A8A]">
+              <span className="p-[var(--figma-6)]">
+                일정 {formatCompactDateRange(program.activityStart, program.activityEnd)}
+              </span>
+              <span className="border-l border-[#F5E1D3] p-[var(--figma-6)]">
+                모집 {program.capacity}
+              </span>
+            </div>
+            <p className="mt-[var(--figma-8)] text-right leading-[1.6] text-[#6D7A8A]">
+              ~{formatProgramKoreanDate(program.recruitEnd)}
+            </p>
+            <div className="mt-[var(--figma-8)] flex items-center justify-between">
+              <span className="font-medium text-[#F7B267]">자유신청</span>
+              <strong className="font-semibold text-[#7A8B52]">D-20</strong>
+            </div>
+            <h3 className="mt-[var(--figma-8)] line-clamp-2 font-medium leading-[1.253] text-[#5B3A29]">
+              {program.title}
+            </h3>
+            <p className="mt-[var(--figma-8)] font-medium leading-[1.253] text-[#5B3A29]">
+              {program.fee}
+              <span className="pl-1 font-normal text-[#CAC4BC]">/명</span>
+            </p>
+            <div className="mt-[var(--figma-10)] rounded bg-[#F3F3F3] p-[var(--figma-8)] leading-[1.6] text-[#6D7A8A]">
+              <div className="flex items-center justify-between">
+                <span>신청 인원</span>
+                <span>00</span>
+              </div>
+              <div className="mt-[var(--figma-6)] flex items-center justify-between border-t border-[#F5E1D3] pt-[var(--figma-6)] text-[#5B3A29]">
+                <strong>총액</strong>
+                <strong>{program.fee}</strong>
+              </div>
+            </div>
+            <div className="mt-[var(--figma-8)] grid h-[var(--figma-30)] place-items-center rounded bg-[#FE701E] font-medium text-[#FFF6EC]">
+              신청하기
+            </div>
+          </section>
+        </aside>
       </div>
     </div>
   );
 }
+
+function PreviewDetailSection({
+  children,
+  title,
+}: {
+  children: ReactNode;
+  title: string;
+}) {
+  return (
+    <section className="mt-[1.667vw]">
+      <div className="flex h-5 items-center gap-[var(--figma-8)]">
+        <h3 className="shrink-0 whitespace-nowrap text-[length:var(--figma-14)] font-semibold leading-[1.253] text-[#5B3A29]">
+          {title}
+        </h3>
+        <span aria-hidden="true" className="h-px min-w-px flex-1 bg-[#F5E1D3]" />
+      </div>
+      <div className="mt-[var(--figma-12)]">{children}</div>
+    </section>
+  );
+}
+
+function PreviewGuideRow({ label, values }: { label: string; values: string[] }) {
+  return (
+    <div className="grid grid-cols-[76px_minmax(0,1fr)] gap-[var(--figma-10)] border-b border-[#F5E1D3] px-[var(--figma-6)] py-[var(--figma-10)] text-[length:var(--figma-12)] leading-[1.55]">
+      <strong className="font-normal text-[#5B3A29]">{label}</strong>
+      <div className="grid gap-[var(--figma-4)] text-[#6D7A8A]">
+        {values.map((value, index) => (
+          <p className="break-keep" key={`${value}-${index}`}>
+            {value}
+          </p>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function mapHostDraftToPreviewProgram(draft: HostProgramDraft): Program {
+  const image = draft.image.trim() || previewFallbackImage;
+  const hashtags = draft.hashtags.map((tag) => tag.trim().replace(/^#/u, "")).filter(Boolean);
+  const itineraryImages = uniqueImages(
+    draft.itineraryDays.flatMap((day) => [day.image, ...day.images]),
+  );
+  const body = [draft.description.trim() || draft.summary.trim()].filter(Boolean);
+
+  return {
+    activityEnd: draft.activityEnd,
+    activityStart: draft.activityStart,
+    announcement: `${draft.recruitEnd} 모집 마감`,
+    applicants: 0,
+    applyUrl: draft.applyUrl.trim() || "https://www.nuvio.kr/apply",
+    badges: hashtags.slice(0, 4),
+    body,
+    capacity: draft.capacity.trim() || "모집 인원",
+    categories: [draft.theme],
+    city: draft.city.trim() || "입력하기",
+    description: draft.description.trim() || draft.summary.trim(),
+    fee: draft.fee.trim() || "무료",
+    gallery: uniqueImages([image, ...draft.detailImages, ...itineraryImages]),
+    guideInfo: draft.guideInfo,
+    hashtags,
+    id: draft.id,
+    image,
+    itineraryDays: draft.itineraryDays,
+    periodKey: draft.periodKey,
+    phone: draft.phone.trim() || "000-0000-0000",
+    placeInfo: draft.placeInfo,
+    recruitEnd: draft.recruitEnd,
+    recruitStart: draft.recruitStart,
+    region: draft.region.trim() || "지역",
+    slug: draft.slug || draft.id,
+    sourceName: draft.sourceName.trim() || "누비오 Host",
+    sourceUrl: draft.sourceUrl.trim() || "https://www.nuvio.kr",
+    status: draft.status,
+    subsidyAmount: draft.subsidyAmount,
+    subsidyLabel: draft.subsidyLabel.trim() || "지원 혜택 협의",
+    summary:
+      stripHtml(draft.summary || draft.description).trim() ||
+      "프로그램 소개를 입력해주세요.",
+    target: draft.target.trim() || "참여 대상",
+    theme: draft.theme,
+    title: draft.title.trim() || "여행 프로그램 이름 입력",
+  };
+}
+
+const previewFallbackImage =
+  "https://images.unsplash.com/photo-1500534314209-a25ddb2bd429?auto=format&fit=crop&w=1200&q=80";
 
 function normalizeEditorHtml(value: string): string {
   const trimmedValue = value.trim();

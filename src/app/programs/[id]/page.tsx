@@ -23,10 +23,20 @@ import { NuvioEmptyState } from "@/components/nuvio-empty-state";
 import { ProgramGalleryCarousel } from "@/components/program-gallery-carousel";
 import {
   ProgramScheduleCards,
-  type ProgramScheduleItem,
 } from "@/components/program-schedule-popover";
 import { programs } from "@/lib/data";
 import { isDemoModeEnabled } from "@/lib/demo-mode";
+import {
+  escapeCssUrl,
+  floatingScheduleItems,
+  formatCompactDateRange,
+  formatKoreanDate,
+  getProgramGalleryImages,
+  getProgramGuideDetails,
+  getProgramIntroParagraphs,
+  getProgramPlaceDetails,
+  getProgramScheduleItems,
+} from "@/lib/program-detail-view-model";
 import { getPublicProgramByIdentifier } from "@/lib/public-program-db";
 import { programPath } from "@/lib/program-routing";
 import { listPublicProgramReviewsFromDb } from "@/lib/review-db";
@@ -122,26 +132,6 @@ const dummyProgram: Program = {
 
 const detailTabs = ["여행 소개", "일정 안내", "후기", "집결지 정보", "안내사항"];
 
-const scheduleItems = [
-  {
-    day: "1일차",
-    body: "여행 1일차 프로그램 일정에 관해 어떤 체험을 할 것이고 대략적으로 어떤 컨셉의 여행인지에 대한 간략한 소개글을 작성하세요. 최대로 작성 가능한 글자수 제한을 둬야합니다. 3줄안에 끝내야함.",
-  },
-  {
-    day: "2일차",
-    body: "여행 2일차 프로그램 일정에 관해 어떤 체험을 할 것이고 대략적으로 어떤 컨셉의 여행인지에 대한 간략한 소개글을 작성하세요. 최대로 작성 가능한 글자수 제한을 둬야합니다. 3줄안에 끝내야함.",
-  },
-];
-
-const floatingSchedule = [
-  "공항 도착",
-  "숙소 이동",
-  "오리엔테이션",
-  "지역 산책",
-  "자유 일정",
-  "일정 마무리",
-];
-
 const boseongProgramReviewHrefs: Record<string, string> = {
   "1013": "/boseong/reviews?program=talent-for-stay",
   "1014": "/boseong/reviews?program=local-salon",
@@ -204,8 +194,10 @@ export default async function ProgramDetailPage({
   const reviewListHref = getProgramReviewListHref(program);
   const galleryImages = getProgramGalleryImages(program);
   const introImage = galleryImages[0] ?? "";
+  const introParagraphs = getProgramIntroParagraphs(program);
   const scheduleCards = getProgramScheduleItems(program, galleryImages);
   const placeDetails = getProgramPlaceDetails(program);
+  const guideDetails = getProgramGuideDetails(program);
 
   return (
     <div className="font-pretendard bg-white text-[#2B1E17]">
@@ -304,7 +296,7 @@ export default async function ProgramDetailPage({
                   {program.summary}
                 </p>
                 <div className="flex max-w-[580px] flex-col gap-2 text-sm font-medium leading-[1.7] text-white/90 drop-shadow">
-                  {program.body.slice(0, 2).map((paragraph, index) => (
+                  {introParagraphs.map((paragraph, index) => (
                     <p className="break-keep" key={`${paragraph}-${index}`}>
                       {paragraph}
                     </p>
@@ -319,7 +311,10 @@ export default async function ProgramDetailPage({
             id="detail-section-1"
           >
             <SectionTitle title="여행 일정" />
-            <ProgramScheduleCards items={scheduleCards} popupItems={floatingSchedule} />
+            <ProgramScheduleCards
+              items={scheduleCards}
+              popupItems={floatingScheduleItems}
+            />
           </section>
 
           <ParticipantReviewSection
@@ -399,7 +394,10 @@ export default async function ProgramDetailPage({
             >
               <SectionTitle title="안내사항" />
               <div className="flex w-full flex-col">
-                <GuideButton label="신청안내" />
+                <GuideInfoRow label="신청안내" values={[guideDetails.applicationGuide]} />
+                <GuideInfoRow label="포함사항" values={guideDetails.includedItems} />
+                <GuideInfoRow label="불포함사항" values={guideDetails.excludedItems} />
+                <GuideInfoRow label="준비물" values={guideDetails.preparationItems} />
                 <div className="flex w-full flex-col gap-3 border-b border-[#F5E1D3] px-2 pb-1">
                   <button
                     className="flex h-[47px] w-full items-center justify-between border-0 bg-transparent py-[17px] text-sm font-normal leading-[1.253] text-[#5B3A29]"
@@ -410,8 +408,14 @@ export default async function ProgramDetailPage({
                   </button>
                   <div
                     aria-label="환불규정 내용 영역"
-                    className="h-[188px] w-full bg-[#D9D9D9] min-[1440px]:h-[13.056vw] max-md:w-full"
-                  />
+                    className="flex min-h-[188px] w-full flex-col justify-center gap-2 rounded-md bg-[#F7F5F3] px-4 py-5 text-xs font-medium leading-[1.65] text-[#6D7A8A] min-[1440px]:min-h-[13.056vw] max-md:w-full"
+                  >
+                    {guideDetails.refundRules.map((rule, index) => (
+                      <p className="break-keep" key={`${rule}-${index}`}>
+                        {rule}
+                      </p>
+                    ))}
+                  </div>
                 </div>
               </div>
             </section>
@@ -721,15 +725,18 @@ function IconButton({
   );
 }
 
-function GuideButton({ label }: { label: string }) {
+function GuideInfoRow({ label, values }: { label: string; values: string[] }) {
   return (
-    <button
-      className="flex h-[52px] w-full items-center justify-between border-0 border-b border-[#F5E1D3] bg-transparent px-2 py-[17px] text-sm font-normal leading-[1.253] text-[#5B3A29]"
-      type="button"
-    >
-      {label}
-      <ChevronDown aria-hidden="true" className="h-4 w-[15px]" />
-    </button>
+    <div className="grid min-h-[52px] w-full grid-cols-[96px_minmax(0,1fr)] gap-4 border-b border-[#F5E1D3] px-2 py-[17px] text-sm leading-[1.253] max-md:grid-cols-1 max-md:gap-2">
+      <strong className="font-normal text-[#5B3A29]">{label}</strong>
+      <div className="flex flex-col gap-1.5 text-xs font-medium leading-[1.65] text-[#6D7A8A]">
+        {values.map((value, index) => (
+          <p className="break-keep" key={`${value}-${index}`}>
+            {value}
+          </p>
+        ))}
+      </div>
+    </div>
   );
 }
 
@@ -774,141 +781,6 @@ function BenefitRow({
       </button>
     </div>
   );
-}
-
-function getProgramGalleryImages(program: Program): string[] {
-  const itineraryImages =
-    program.itineraryDays?.flatMap((day) => [day.image, ...day.images]) ?? [];
-  const images = [program.image, ...program.gallery, ...itineraryImages]
-    .map((image) => image.trim())
-    .filter(isDisplayableProgramImage);
-
-  return Array.from(new Set(images));
-}
-
-function getProgramScheduleItems(
-  program: Program,
-  galleryImages: string[],
-): ProgramScheduleItem[] {
-  const itineraryDays =
-    program.itineraryDays?.filter((day) =>
-      [day.title, day.summary, day.timetable, day.image, ...day.images].some((value) =>
-        value.trim(),
-      ),
-    ) ?? [];
-
-  if (itineraryDays.length > 0) {
-    return itineraryDays.map((day, index) => {
-      const timetable = splitTimetable(day.timetable);
-      const dayImages = [day.image, ...day.images]
-        .map((image) => image.trim())
-        .filter(isDisplayableProgramImage);
-      return {
-        body:
-          day.summary ||
-          timetable[0] ||
-          `${program.title} ${index + 1}일차 일정입니다.`,
-        day: day.title || `${index + 1}일차`,
-        image: dayImages[0] || galleryImages[index + 1] || galleryImages[0],
-        timetable,
-      };
-    });
-  }
-
-  return scheduleItems.map((item, index) => ({
-    ...item,
-    image: galleryImages[index + 1] || galleryImages[0],
-  }));
-}
-
-function getProgramPlaceDetails(program: Program): {
-  accommodation: string;
-  meetingAddress: string;
-  meetingMemo: string;
-  parkingGuide: string;
-  transportGuide: string;
-} {
-  const placeInfo = program.placeInfo;
-  const meetingAddress =
-    joinText([placeInfo?.meetingAddress, placeInfo?.meetingAddressDetail]) ||
-    joinText([program.region, program.city]) ||
-    "집결지 정보는 준비 중입니다.";
-
-  const accommodation = placeInfo?.accommodationEnabled
-    ? joinText([placeInfo.accommodationName, placeInfo.accommodationMemo]) ||
-      "숙소 정보는 신청 확정 후 안내됩니다."
-    : "";
-
-  return {
-    accommodation,
-    meetingAddress,
-    meetingMemo: placeInfo?.meetingMemo?.trim() ?? "",
-    parkingGuide:
-      placeInfo?.parkingGuide?.trim() ||
-      "주차 가능 여부와 이용 방법은 신청 확정 후 안내됩니다.",
-    transportGuide:
-      placeInfo?.transportGuide?.trim() ||
-      "대중교통, 셔틀, 도보 이동 등 상세 이동 안내는 신청 확정 후 안내됩니다.",
-  };
-}
-
-function splitTimetable(value: string): string[] {
-  return value
-    .split(/\r?\n/)
-    .map((line) => line.trim())
-    .filter(Boolean);
-}
-
-function joinText(values: Array<string | undefined>): string {
-  return values.map((value) => value?.trim()).filter(Boolean).join(" ");
-}
-
-function formatCompactDateRange(start: string, end: string): string {
-  const startDate = parseDateParts(start);
-  const endDate = parseDateParts(end);
-  if (!startDate || !endDate) return joinText([start, end]);
-
-  if (startDate.year === endDate.year) {
-    return `${startDate.year}.${startDate.month}.${startDate.day}-${endDate.month}.${endDate.day}`;
-  }
-
-  return `${startDate.year}.${startDate.month}.${startDate.day}-${endDate.year}.${endDate.month}.${endDate.day}`;
-}
-
-function formatKoreanDate(value: string): string {
-  const date = parseDateParts(value);
-  if (!date) return value;
-  return `${date.year}년 ${date.month}월 ${date.day}일`;
-}
-
-function parseDateParts(value: string):
-  | {
-      day: number;
-      month: number;
-      year: number;
-    }
-  | null {
-  const match = /^(\d{4})-(\d{1,2})-(\d{1,2})/.exec(value);
-  if (!match) return null;
-
-  return {
-    day: Number(match[3]),
-    month: Number(match[2]),
-    year: Number(match[1]),
-  };
-}
-
-function isDisplayableProgramImage(value: string): boolean {
-  return (
-    value.startsWith("http://") ||
-    value.startsWith("https://") ||
-    value.startsWith("/") ||
-    /^data:image\/(png|jpe?g|webp|gif);base64,/i.test(value)
-  );
-}
-
-function escapeCssUrl(value: string): string {
-  return value.replace(/\\/g, "\\\\").replace(/"/g, '\\"');
 }
 
 async function getProgramReviewsForDetail(program: Program): Promise<Review[]> {

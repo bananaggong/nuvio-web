@@ -143,6 +143,7 @@ function mapProgramRowToProgram(row: ProgramRow): Program {
     ]),
     itineraryDays: meta.itineraryDays,
     placeInfo: meta.placeInfo,
+    guideInfo: meta.guideInfo,
     dataSource: "database",
   };
 }

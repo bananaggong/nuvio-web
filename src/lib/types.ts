@@ -39,6 +39,19 @@ export type ProgramPlaceInfo = {
   accommodationMemo: string;
 };
 
+export type ProgramRefundRule = {
+  id: string;
+  daysBefore: string;
+  refundRate: string;
+};
+
+export type ProgramGuideInfo = {
+  includedItems: string[];
+  excludedItems: string[];
+  preparationItems: string[];
+  refundRules: ProgramRefundRule[];
+};
+
 export type Program = {
   id: number | string;
   title: string;
@@ -74,6 +87,7 @@ export type Program = {
   body: string[];
   itineraryDays?: ProgramItineraryDay[];
   placeInfo?: ProgramPlaceInfo;
+  guideInfo?: ProgramGuideInfo;
   dataSource?: "database" | "external" | "seed";
   sourcePublishedAt?: string;
   sourceFetchedAt?: string;
