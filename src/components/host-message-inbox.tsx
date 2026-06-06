@@ -811,13 +811,13 @@ function AutoAnswerSettingsDialog({ onClose }: { onClose: () => void }) {
 
   return (
     <div
-      className="fixed inset-0 z-[90] flex items-start justify-center bg-black/10 px-4 pt-[calc(4.861vw+48px)]"
+      className="fixed inset-0 z-[90] grid place-items-center overflow-y-auto bg-black/10 px-4 py-8"
       role="presentation"
     >
       <section
         aria-labelledby="auto-answer-settings-title"
         aria-modal="true"
-        className="w-full max-w-[603px] rounded-[12px] border border-[#D9D9D9] bg-[#F9F9F9] px-[18px] py-6 shadow-[0_18px_54px_rgba(13,13,12,0.16)]"
+        className="max-h-[calc(100vh-64px)] w-full max-w-[603px] overflow-y-auto rounded-[12px] border border-[#D9D9D9] bg-[#F9F9F9] px-[18px] py-6 shadow-[0_18px_54px_rgba(13,13,12,0.16)]"
         role="dialog"
       >
         <div className="flex justify-end">

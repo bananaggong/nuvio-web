@@ -271,13 +271,13 @@ export function HostCenterHome({
 
       {isFolderDialogOpen ? (
         <div
-          className="fixed inset-0 z-[80] bg-black/20 px-4 py-[calc(4.861vw+24px)]"
+          className="fixed inset-0 z-[80] grid place-items-center overflow-y-auto bg-black/20 px-4 py-8"
           role="presentation"
         >
           <form
             aria-modal="true"
             aria-labelledby="new-folder-title"
-            className="ml-[3.056vw] w-[41.875vw] min-w-[360px] max-w-[804px] rounded-[5px] border border-[#F3E2D5] bg-white p-[1.111vw] shadow-[0_18px_48px_rgba(91,58,41,0.14)] max-md:mx-auto max-md:p-5"
+            className="w-[41.875vw] min-w-[360px] max-w-[804px] rounded-[5px] border border-[#F3E2D5] bg-white p-[1.111vw] shadow-[0_18px_48px_rgba(91,58,41,0.14)] max-md:w-full max-md:min-w-0 max-md:p-5"
             onSubmit={(event) => {
               event.preventDefault();
               void createFolder();
@@ -329,13 +329,13 @@ export function HostCenterHome({
       ) : null}
       {isProgramDialogOpen ? (
         <div
-          className="fixed inset-0 z-[80] bg-black/20 px-4 py-[calc(4.861vw+24px)]"
+          className="fixed inset-0 z-[80] grid place-items-center overflow-y-auto bg-black/20 px-4 py-8"
           role="presentation"
         >
           <form
             aria-modal="true"
             aria-labelledby="new-program-title"
-            className="ml-[3.056vw] w-[41.875vw] min-w-[360px] max-w-[804px] rounded-[5px] border border-[#F3E2D5] bg-white p-[1.111vw] shadow-[0_18px_48px_rgba(91,58,41,0.14)] max-md:mx-auto max-md:p-5"
+            className="w-[41.875vw] min-w-[360px] max-w-[804px] rounded-[5px] border border-[#F3E2D5] bg-white p-[1.111vw] shadow-[0_18px_48px_rgba(91,58,41,0.14)] max-md:w-full max-md:min-w-0 max-md:p-5"
             onSubmit={(event) => {
               event.preventDefault();
               void createProgram();
