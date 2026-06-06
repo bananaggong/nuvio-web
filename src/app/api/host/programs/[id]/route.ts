@@ -12,7 +12,7 @@ import type { HostProgramDraft } from "@/lib/host-program-studio";
 export const runtime = "nodejs";
 
 export async function DELETE(
-  _request: Request,
+  request: Request,
   { params }: { params: Promise<{ id: string }> },
 ) {
   const auth = await requireHostRole();
@@ -20,6 +20,8 @@ export async function DELETE(
 
   try {
     const { id } = await params;
+    const mode = new URL(request.url).searchParams.get("mode");
+    const allowCompletedDelete = mode === "management";
 
     if (!isUuid(id)) {
       return NextResponse.json({ error: "Invalid program id." }, { status: 400 });
@@ -52,7 +54,7 @@ export async function DELETE(
       applicationForm: linkedApplicationForm,
     });
 
-    if (program.published || blockers.length === 0) {
+    if (!allowCompletedDelete && (program.published || blockers.length === 0)) {
       return NextResponse.json(
         {
           error:

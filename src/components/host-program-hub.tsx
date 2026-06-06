@@ -74,7 +74,7 @@ type ProgramPanel =
 const panelLabels: Record<ProgramPanel, string> = {
   basic: "기본정보",
   dashboard: "대시보드",
-  delete: "취소 및 삭제",
+  delete: "프로그램 삭제",
   detail: "상세 정보",
   guide: "안내사항",
   management: "프로그램 관리",
@@ -407,17 +407,27 @@ export function HostProgramHub({
     setDashboardDialog(null);
   }
 
-  async function deleteProgram() {
-    if (!draft || !canDeleteBeforeOnboarding || isDeleting) return;
+  async function deleteProgram({
+    allowCompleted = false,
+  }: {
+    allowCompleted?: boolean;
+  } = {}) {
+    if (!draft || isDeleting) return;
+    if (!allowCompleted && !canDeleteBeforeOnboarding) return;
 
     setIsDeleting(true);
     setSaveMessage("");
     setSaveError("");
 
     try {
-      const response = await fetch(`/api/host/programs/${encodeURIComponent(draft.id)}`, {
-        method: "DELETE",
-      });
+      const response = await fetch(
+        `/api/host/programs/${encodeURIComponent(draft.id)}${
+          allowCompleted ? "?mode=management" : ""
+        }`,
+        {
+          method: "DELETE",
+        },
+      );
       const payload = (await response.json().catch(() => ({}))) as {
         data?: HostProgramDraft;
         error?: string;
@@ -578,7 +588,14 @@ export function HostProgramHub({
                     updateDraft={updateDraft}
                   />
                 ) : null}
-                {draft && activePanel === "delete" ? <DeletePanel draft={draft} /> : null}
+                {draft && activePanel === "delete" ? (
+                  <DeletePanel
+                    draft={draft}
+                    isDeleting={isDeleting}
+                    onDelete={() => void deleteProgram({ allowCompleted: true })}
+                    readyToPublish={readyToPublish}
+                  />
+                ) : null}
               </div>
             </main>
 
@@ -708,7 +725,7 @@ function ProgramBuilderSidebar({
         {
           danger: true,
           href: `${programPath}?panel=delete`,
-          label: "프로그램 취소 및 삭제",
+          label: "프로그램 삭제",
         },
       ],
     },
@@ -1574,18 +1591,51 @@ function ManagementPanel({
   );
 }
 
-function DeletePanel({ draft }: { draft: HostProgramDraft }) {
+function DeletePanel({
+  draft,
+  isDeleting,
+  onDelete,
+  readyToPublish,
+}: {
+  draft: HostProgramDraft;
+  isDeleting: boolean;
+  onDelete: () => void;
+  readyToPublish: boolean;
+}) {
+  const [confirmed, setConfirmed] = useState(false);
+
   return (
     <PanelCard icon={<Trash2 size={19} />} title={panelLabels.delete}>
       <div className="rounded-md border border-red-100 bg-red-50 p-4">
         <h2 className="text-lg font-black text-red-700">
-          {draft.title} 삭제는 운영 단계에 따라 제한됩니다.
+          {draft.title} 프로그램을 삭제할 수 있습니다.
         </h2>
         <p className="mt-2 text-sm font-bold leading-6 text-red-700/80">
-          온보딩이 완료된 프로그램은 대시보드의 빠른 삭제 버튼이 비활성화됩니다.
-          공개 이후 삭제나 취소는 신청자, 신청폼, 메시지 이력을 확인하는 별도 절차로
-          진행합니다.
+          {readyToPublish
+            ? "온보딩이 완료된 프로그램이므로 대시보드의 빠른 삭제 버튼은 비활성화됩니다. 이 사이드탭에서 별도 확인 후 삭제할 수 있습니다."
+            : "아직 온보딩이 완료되지 않은 프로그램입니다. 대시보드의 프로젝트 삭제 버튼 또는 이 화면에서 삭제할 수 있습니다."}
         </p>
+        <label className="mt-5 flex items-start gap-3 rounded-md border border-red-200 bg-white px-4 py-3">
+          <input
+            checked={confirmed}
+            className="mt-1 size-4 accent-red-600"
+            onChange={(event) => setConfirmed(event.target.checked)}
+            type="checkbox"
+          />
+          <span className="text-sm font-bold leading-6 text-red-700">
+            프로그램 데이터와 폴더 연결을 삭제하는 것을 확인했습니다.
+          </span>
+        </label>
+        <div className="mt-5 flex justify-end">
+          <button
+            className="inline-flex h-10 items-center justify-center rounded-md bg-red-600 px-5 text-sm font-black text-white transition hover:bg-red-700 disabled:cursor-not-allowed disabled:opacity-40"
+            disabled={!confirmed || isDeleting}
+            onClick={onDelete}
+            type="button"
+          >
+            {isDeleting ? "삭제 중" : "프로그램 삭제"}
+          </button>
+        </div>
       </div>
     </PanelCard>
   );
