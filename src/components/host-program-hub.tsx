@@ -1893,6 +1893,8 @@ function DetailPagePreviewContent({ program }: { program: Program }) {
   const [scaleContainerRef, previewScale] = usePreviewCanvasScale(
     detailPreviewCanvasWidth,
   );
+  const scaledCanvasHeight = Math.ceil(detailPreviewCanvasHeight * previewScale);
+  const scaledCanvasWidth = Math.ceil(detailPreviewCanvasWidth * previewScale);
   const galleryImages = getProgramGalleryImages(program);
   const introImage = galleryImages[0] ?? "";
   const introParagraphs = getProgramIntroParagraphs(program);
@@ -1902,18 +1904,21 @@ function DetailPagePreviewContent({ program }: { program: Program }) {
 
   return (
     <div
-      className="min-w-0 max-w-full overflow-hidden bg-white text-[#2B1E17]"
+      data-preview-scroll-viewport="detail-page"
+      className="min-w-0 max-w-full overflow-y-auto overflow-x-hidden bg-white text-[#2B1E17] [scrollbar-width:thin]"
       ref={scaleContainerRef}
-      style={{ height: Math.ceil(detailPreviewCanvasHeight * previewScale) }}
+      style={{ height: detailPreviewViewportHeight }}
     >
-      <div
-        className="origin-top-left bg-white"
-        style={{
-          height: detailPreviewCanvasHeight,
-          transform: `scale(${previewScale})`,
-          width: detailPreviewCanvasWidth,
-        }}
-      >
+      <div style={{ height: scaledCanvasHeight, width: scaledCanvasWidth }}>
+        <div
+          data-preview-canvas="detail-page"
+          className="origin-top-left bg-white"
+          style={{
+            height: detailPreviewCanvasHeight,
+            transform: `scale(${previewScale})`,
+            width: detailPreviewCanvasWidth,
+          }}
+        >
         <div className="flex h-[56px] items-center border-b border-[#F5E1D3] bg-white px-[30px]">
           <Image
             alt="누비오"
@@ -2098,12 +2103,14 @@ function DetailPagePreviewContent({ program }: { program: Program }) {
           </aside>
         </div>
       </div>
+      </div>
     </div>
   );
 }
 
 const detailPreviewCanvasWidth = 1440;
 const detailPreviewCanvasHeight = 2050;
+const detailPreviewViewportHeight = "clamp(520px, 36vw, 690px)";
 
 function usePreviewCanvasScale(baseWidth: number) {
   const containerRef = useRef<HTMLDivElement>(null);
