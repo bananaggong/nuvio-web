@@ -1064,34 +1064,36 @@ function BasicPanel({
           </div>
         </SettingsFormBlock>
 
-        <SettingsFormBlock className="flex-col gap-[var(--figma-44)]">
-          <div className="flex w-full flex-col gap-[var(--figma-14)]">
-            <div className="flex flex-col gap-[var(--figma-12)]">
-              <SettingsFieldLabel>프로그램 운영기간</SettingsFieldLabel>
-              <p className="text-[length:var(--figma-14)] font-normal leading-[1.253] text-[#6D7A8A]">
-                1일 프로그램 이라면 시작일과 종료일을 동일하게 선택해 주세요.
-              </p>
+        <SettingsFormBlock>
+          <div className="flex w-full flex-col gap-[var(--figma-44)]">
+            <div className="flex w-full flex-col gap-[var(--figma-14)]">
+              <div className="flex flex-col gap-[var(--figma-12)]">
+                <SettingsFieldLabel>프로그램 운영기간</SettingsFieldLabel>
+                <p className="text-[length:var(--figma-14)] font-normal leading-[1.253] text-[#6D7A8A]">
+                  1일 프로그램 이라면 시작일과 종료일을 동일하게 선택해 주세요.
+                </p>
+              </div>
+              <DateRangeInputs
+                endLabel="종료일"
+                endValue={draft.activityEnd}
+                onEndChange={(activityEnd) => updateDraft({ activityEnd })}
+                onStartChange={(activityStart) => updateDraft({ activityStart })}
+                startLabel="시작일"
+                startValue={draft.activityStart}
+              />
             </div>
-            <DateRangeInputs
-              endLabel="종료일"
-              endValue={draft.activityEnd}
-              onEndChange={(activityEnd) => updateDraft({ activityEnd })}
-              onStartChange={(activityStart) => updateDraft({ activityStart })}
-              startLabel="시작일"
-              startValue={draft.activityStart}
-            />
-          </div>
 
-          <div className="flex w-full flex-col gap-[var(--figma-14)]">
-            <SettingsFieldLabel>모집기간</SettingsFieldLabel>
-            <DateRangeInputs
-              endLabel="종료일"
-              endValue={draft.recruitEnd}
-              onEndChange={(recruitEnd) => updateDraft({ recruitEnd })}
-              onStartChange={(recruitStart) => updateDraft({ recruitStart })}
-              startLabel="시작일"
-              startValue={draft.recruitStart}
-            />
+            <div className="flex w-full flex-col gap-[var(--figma-14)]">
+              <SettingsFieldLabel>모집기간</SettingsFieldLabel>
+              <DateRangeInputs
+                endLabel="종료일"
+                endValue={draft.recruitEnd}
+                onEndChange={(recruitEnd) => updateDraft({ recruitEnd })}
+                onStartChange={(recruitStart) => updateDraft({ recruitStart })}
+                startLabel="시작일"
+                startValue={draft.recruitStart}
+              />
+            </div>
           </div>
         </SettingsFormBlock>
 
