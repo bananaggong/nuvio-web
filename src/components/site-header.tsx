@@ -16,8 +16,8 @@ import { useEffect, useRef, useState, type RefObject } from "react";
 import { nuvioIcons } from "@/components/icons/nuvio-icons";
 
 const navItems = [
-  { href: "/magazine", label: "소식지", match: ["/magazine"] },
-  { href: "/villages", label: "로컬채널", match: ["/villages"] },
+  { href: "/magazine", label: "매거진", match: ["/magazine"] },
+  { href: "/villages", label: "채널", match: ["/villages"] },
 ];
 
 type HeaderSession =

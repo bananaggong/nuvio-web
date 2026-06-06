@@ -57,7 +57,8 @@ assertIncludes(hostProgramHub, "아직 필수 항목들이 작성되지 않았�
 assertIncludes(hostProgramHub, "setDashboardDialog(\"onboarding-required\")", "open schedule blocker");
 assertIncludes(hostProgramHub, "function OpenScheduleDialog", "open schedule dialog");
 assertIncludes(hostProgramHub, "function DeleteProgramDialog", "dashboard delete dialog");
-assertIncludes(hostProgramHub, "disabled={!canDeleteBeforeOnboarding}", "dashboard delete disabled guard");
+assertIncludes(hostProgramHub, "canDelete={canDeleteBeforeOnboarding}", "dashboard delete guard wiring");
+assertIncludes(hostProgramHub, "disabled={!canDelete}", "dashboard delete disabled guard");
 assertIncludes(hostProgramHub, "allowCompleted ? \"?mode=management\" : \"\"", "managed delete API mode");
 assertIncludes(hostProgramHub, "onDelete={() => void deleteProgram({ allowCompleted: true })}", "side tab managed delete");
 assertIncludes(hostProgramHub, "프로그램 데이터와 폴더 연결을 삭제하는 것을 확인했습니다.", "side tab delete confirmation");

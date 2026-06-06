@@ -1,25 +1,19 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname, useRouter, useSearchParams } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import {
   ArrowLeft,
-  ArrowRight,
   CalendarDays,
-  CheckCircle2,
-  ClipboardList,
-  FilePlus2,
   ImageIcon,
   ImagePlus,
   Loader2,
   MapPin,
-  MessageSquareText,
   Plus,
   Save,
   Search,
   Settings,
   Trash2,
-  Users,
   WalletCards,
   X,
 } from "lucide-react";
@@ -180,7 +174,6 @@ export function HostProgramHub({
   projectId?: string;
 }) {
   const router = useRouter();
-  const pathname = usePathname();
   const searchParams = useSearchParams();
   const {
     applications,
@@ -488,6 +481,17 @@ export function HostProgramHub({
 
   const currentUpdatedAt = draft?.updatedAt ?? program.updatedAt;
   const showPreviewRail = activePanel === "detail" || activePanel === "schedule";
+  const dashboardPanelActive = activePanel === "dashboard";
+
+  function openScheduleDialog() {
+    if (!readyToPublish) {
+      setDashboardDialog("onboarding-required");
+      return;
+    }
+
+    setScheduledOpenDate(draft?.recruitStart || new Date().toISOString().slice(0, 10));
+    setDashboardDialog("open-schedule");
+  }
 
   return (
     <div className="font-pretendard min-h-[calc(100vh-4.861vw)] bg-white text-[#33241C]">
@@ -497,19 +501,22 @@ export function HostProgramHub({
           applicationsHref={applicationsHref}
           formsHref={formsHref}
           messagesHref={messagesHref}
-          pathname={pathname}
           programId={program.id}
           programPath={programPath}
-          projectHref={projectPath}
-          projectLabel={projectId ? "폴더" : "프로그램 목록"}
-          status={dashboardState === "creating" ? "생성중" : statusLabel(draft?.status ?? program.status)}
+          status={
+            dashboardState === "creating"
+              ? "프로그램 작성중"
+              : statusLabel(draft?.status ?? program.status)
+          }
           title={draft?.title || program.title}
         />
 
-        <section className="flex min-w-0 flex-1 flex-col border-l border-[#AEB8C2]">
+        <section className="flex min-w-0 flex-1 flex-col">
+          {!dashboardPanelActive ? (
           <div className="flex h-[4.514vw] min-h-[64px] items-center justify-center px-[2.778vw] text-[14px] font-semibold leading-none text-[#7C8794]">
             최근 수정일 : {formatDateTime(currentUpdatedAt)}
           </div>
+          ) : null}
 
           <div
             className={`grid flex-1 min-w-0 ${
@@ -518,7 +525,14 @@ export function HostProgramHub({
                 : ""
             }`}
           >
-            <main className="min-w-0 px-[2.778vw] pb-[6.389vw] max-md:px-5">
+            <main
+              className={
+                dashboardPanelActive
+                  ? "min-w-0 pb-0"
+                  : "min-w-0 px-[2.778vw] pb-[6.389vw] max-md:px-5"
+              }
+            >
+              {!dashboardPanelActive ? (
               <div className="min-h-7">
                 {saveMessage ? (
                   <p className="text-[14px] font-black text-[#FE701E]">
@@ -536,31 +550,15 @@ export function HostProgramHub({
                   </p>
                 ) : null}
               </div>
+              ) : null}
 
-              <div className={showPreviewRail ? "pt-[1.528vw]" : ""}>
+              <div className={dashboardPanelActive ? "" : showPreviewRail ? "pt-[1.528vw]" : ""}>
                 {activePanel === "dashboard" ? (
                   <DashboardPanel
-                    applicationsHref={applicationsHref}
-                    canDeleteBeforeOnboarding={canDeleteBeforeOnboarding}
                     dashboardState={dashboardState}
                     draft={draft}
                     formsHref={formsHref}
-                    linkedApplicationForm={linkedApplicationForm}
-                    messagesHref={messagesHref}
-                    onDeleteProgram={() => setDashboardDialog("delete")}
-                    onOpenSchedule={() => {
-                      if (!readyToPublish) {
-                        setDashboardDialog("onboarding-required");
-                        return;
-                      }
-
-                      setScheduledOpenDate(
-                        draft?.recruitStart || new Date().toISOString().slice(0, 10),
-                      );
-                      setDashboardDialog("open-schedule");
-                    }}
                     publishChecklist={publishChecklist}
-                    publishBlockers={publishBlockers}
                     program={program}
                     programPath={programPath}
                   />
@@ -604,6 +602,13 @@ export function HostProgramHub({
             ) : null}
           </div>
 
+          {dashboardPanelActive ? (
+            <DashboardFooter
+              canDelete={canDeleteBeforeOnboarding}
+              onDelete={() => setDashboardDialog("delete")}
+              onOpenSchedule={openScheduleDialog}
+            />
+          ) : (
           <div className="sticky bottom-0 flex h-[4.792vw] min-h-[60px] items-center border-t border-[#AEB8C2] bg-white px-[2.083vw]">
             <button
               className="inline-flex h-[2.083vw] min-h-[34px] min-w-[86px] items-center justify-center rounded-[4px] bg-[#FE701E] px-[1.111vw] text-[13px] font-black text-white transition hover:bg-[#E85F13] disabled:cursor-not-allowed disabled:opacity-40"
@@ -621,6 +626,7 @@ export function HostProgramHub({
               )}
             </button>
           </div>
+          )}
         </section>
       </div>
       {dashboardDialog === "onboarding-required" ? (
@@ -658,23 +664,9 @@ type ProgramBuilderSidebarProps = {
   applicationsHref: string;
   formsHref: string;
   messagesHref: string;
-  pathname: string;
   programId: string;
   programPath: string;
-  projectHref: string;
-  projectLabel: string;
   status: string;
-  title: string;
-};
-
-type ProgramBuilderMenuItem = {
-  danger?: boolean;
-  href: string;
-  label: string;
-};
-
-type ProgramBuilderMenuSection = {
-  items: ProgramBuilderMenuItem[];
   title: string;
 };
 
@@ -683,131 +675,96 @@ function ProgramBuilderSidebar({
   applicationsHref,
   formsHref,
   messagesHref,
-  pathname,
   programId,
   programPath,
-  projectHref,
-  projectLabel,
   status,
   title,
 }: ProgramBuilderSidebarProps) {
-  const menuSections: ProgramBuilderMenuSection[] = [
-    {
-      title: "대시보드",
-      items: [{ href: `${programPath}?panel=dashboard`, label: "대시보드" }],
-    },
-    {
-      title: "프로그램 설정",
-      items: [
-        { href: `${programPath}?panel=basic`, label: "기본정보" },
-        { href: `${programPath}?panel=detail`, label: "상세정보" },
-        { href: `${programPath}?panel=schedule`, label: "일정안내" },
-        { href: `${programPath}?panel=place`, label: "장소안내" },
-        { href: `${programPath}?panel=guide`, label: "안내사항" },
-      ],
-    },
-    {
-      title: "신청폼 설정",
-      items: [
-        { href: formsHref, label: "신청폼 연결" },
-        { href: applicationsHref, label: "신청 관리" },
-        { href: messagesHref, label: "참가 메시지 관리" },
-      ],
-    },
-    {
-      title: "운영 관리",
-      items: [
-        { href: `${programPath}?panel=management`, label: "쿠폰 / 프로모션" },
-        { href: messagesHref, label: "메시지함" },
-        { href: `${applicationsHref}?panel=funnel`, label: "신청 정보 추적" },
-        { href: `${applicationsHref}?panel=receipts`, label: "영수증 관리" },
-        { href: `${applicationsHref}?panel=reviews`, label: "후기 관리" },
-        {
-          danger: true,
-          href: `${programPath}?panel=delete`,
-          label: "프로그램 삭제",
-        },
-      ],
-    },
-  ];
-
   return (
-    <aside className="w-[15.833vw] min-w-[228px] shrink-0 bg-white max-md:w-full">
-      <div className="px-[0.556vw] py-[1.111vw] max-md:px-5 max-md:py-5">
-        <Link
-          className="inline-flex h-8 items-center gap-2 rounded-[4px] px-2 text-[13px] font-black text-[#7C8794] transition hover:bg-[#F6F1ED] hover:text-[#FE701E]"
-          href={projectHref}
-        >
-          <ArrowLeft size={14} />
-          {projectLabel}
-        </Link>
-
-        <div className="mt-[0.694vw] border-b border-[#E8E2DE] px-2 pb-[1.111vw] max-md:mt-3 max-md:pb-4">
-          <p className="text-[13px] font-black leading-5 text-[#33241C]">
-            {title || "프로그램 제목"}
-          </p>
-          <p className="mt-1 text-[12px] font-bold leading-5 text-[#7C8794]">
-            프로그램 넘버 :{" "}
-            <span className="font-black text-[#FE701E]">
-              {formatProgramNumber(programId)}
+    <aside
+      className="w-[15.833vw] min-w-[228px] shrink-0 border-r border-[#6D7A8A] bg-white shadow-[2px_5px_5.2px_rgba(0,0,0,0.23)] max-md:w-full"
+      style={figmaScaleStyle}
+    >
+      <div className="flex h-full flex-col gap-[0.833vw] px-[0.417vw] max-md:px-5">
+        <section className="flex w-full flex-col gap-[0.278vw]">
+          <div className="flex w-full items-center justify-center px-[0.833vw] pt-[0.833vw]">
+            <p className="min-w-0 flex-1 text-[16px] font-semibold leading-[1.253] text-[#5B3A29]">
+              {title || "프로그램 제목"}
+            </p>
+            <span className="shrink-0 rounded-[6px] bg-[#7A8B52] px-[6px] py-[3px] text-[12px] font-semibold leading-[1.253] text-[#F3F3F3]">
+              {status}
             </span>
-          </p>
-          <span className="mt-2 inline-flex h-6 items-center rounded-[3px] bg-[#FFF0E6] px-2 text-[12px] font-black text-[#FE701E]">
-            {status}
-          </span>
-        </div>
+          </div>
+          <div className="flex w-full items-center justify-center border-b border-[#D9D9D9] pb-[0.556vw] pt-[0.139vw]">
+            <p className="h-[18px] w-[13.333vw] min-w-[192px] text-[14px] font-semibold leading-[1.253] text-[#5B3A29]">
+              프로그램 넘버 :{" "}
+              <span className="text-[#FE701E]">{formatProgramNumber(programId)}</span>
+            </p>
+          </div>
+        </section>
 
-        <nav className="mt-[0.833vw] grid gap-[1.042vw] max-md:mt-4 max-md:gap-4">
-          {menuSections.map((section) => (
-            <ProgramBuilderMenuSectionView
-              activePanel={activePanel}
-              key={section.title}
-              pathname={pathname}
-              section={section}
-            />
-          ))}
+        <nav className="flex w-full flex-col gap-[0.903vw] px-[0.833vw] text-[#5B3A29]">
+          <section className="flex flex-col gap-[0.417vw]">
+            <Link
+              className={`text-[14px] leading-[1.253] ${
+                activePanel === "dashboard" ? "font-semibold" : "font-normal"
+              }`}
+              href={`${programPath}?panel=dashboard`}
+            >
+              대시보드
+            </Link>
+            <p className="text-[14px] font-normal leading-[1.253]">
+              프로그램 설정
+            </p>
+            <div className="flex flex-col gap-[3px] border-b-[0.8px] border-[#6D7A8A] pb-[0.833vw] pl-[0.417vw]">
+              <ProgramSidebarTextLink href={`${programPath}?panel=basic`} label="기본정보" />
+              <ProgramSidebarTextLink href={`${programPath}?panel=detail`} label="상세정보" />
+              <ProgramSidebarTextLink href={`${programPath}?panel=schedule`} label="일정안내" />
+              <ProgramSidebarTextLink href={`${programPath}?panel=place`} label="장소안내" />
+              <ProgramSidebarTextLink href={`${programPath}?panel=guide`} label="안내사항" />
+            </div>
+          </section>
+
+          <section className="flex flex-col gap-[0.417vw]">
+            <p className="text-[14px] font-normal leading-[1.253]">
+              신청폼 현황
+            </p>
+            <div className="flex flex-col gap-[3px] border-b-[0.8px] border-[#6D7A8A] pb-[0.833vw] pl-[0.417vw]">
+              <ProgramSidebarTextLink href={formsHref} label="신청폼 연결" />
+              <ProgramSidebarTextLink href={applicationsHref} label="신청 관리" />
+              <ProgramSidebarTextLink href={messagesHref} label="결과 메세지 관리" />
+            </div>
+          </section>
+
+          <Link className="text-[14px] font-normal leading-[1.253]" href={`${programPath}?panel=management`}>
+            쿠폰 / 프로모션
+          </Link>
+          <Link className="text-[14px] font-normal leading-[1.253]" href={messagesHref}>
+            문의
+          </Link>
+          <Link className="text-[14px] font-normal leading-[1.253]" href={`${applicationsHref}?panel=receipts`}>
+            결제 관리
+          </Link>
+          <Link className="text-[14px] font-normal leading-[1.253]" href={`${applicationsHref}?panel=reviews`}>
+            후기 관리
+          </Link>
+          <Link className="text-[14px] font-normal leading-[1.253]" href={`${programPath}?panel=delete`}>
+            프로그램 삭제
+          </Link>
         </nav>
       </div>
     </aside>
   );
 }
 
-function ProgramBuilderMenuSectionView({
-  activePanel,
-  pathname,
-  section,
-}: {
-  activePanel: ProgramPanel;
-  pathname: string;
-  section: ProgramBuilderMenuSection;
-}) {
+function ProgramSidebarTextLink({ href, label }: { href: string; label: string }) {
   return (
-    <section>
-      <h2 className="px-2 text-[12px] font-black leading-5 text-[#A7B0BA]">
-        {section.title}
-      </h2>
-      <div className="mt-1 grid gap-1">
-        {section.items.map((item) => {
-          const active = isProgramBuilderItemActive(item.href, pathname, activePanel);
-
-          return (
-            <Link
-              className={`flex min-h-8 items-center rounded-[4px] px-2 text-[13px] font-black leading-5 transition ${
-                active
-                  ? "bg-[#FFF1E8] text-[#FE701E]"
-                  : item.danger
-                    ? "text-[#C85C42] hover:bg-[#FFF1E8]"
-                    : "text-[#33241C] hover:bg-[#F6F1ED] hover:text-[#FE701E]"
-              }`}
-              href={item.href}
-              key={item.label}
-            >
-              {item.label}
-            </Link>
-          );
-        })}
-      </div>
-    </section>
+    <Link
+      className="w-fit px-[0.556vw] py-[0.139vw] text-[12px] font-normal leading-[1.253] text-[#5B3A29]"
+      href={href}
+    >
+      {label}
+    </Link>
   );
 }
 
@@ -907,182 +864,79 @@ function ProgramBuilderPreviewRail({
 }
 
 function DashboardPanel({
-  applicationsHref,
-  canDeleteBeforeOnboarding,
   dashboardState,
   draft,
   formsHref,
-  linkedApplicationForm,
-  messagesHref,
-  onDeleteProgram,
-  onOpenSchedule,
   publishChecklist,
-  publishBlockers,
   program,
   programPath,
 }: {
-  applicationsHref: string;
-  canDeleteBeforeOnboarding: boolean;
   dashboardState: ProgramDashboardState;
   draft?: HostProgramDraft;
   formsHref: string;
-  linkedApplicationForm?: ApplicationFormTemplate;
-  messagesHref: string;
-  onDeleteProgram: () => void;
-  onOpenSchedule: () => void;
   publishChecklist: ProgramDraftChecklistItem[];
-  publishBlockers: ProgramDraftChecklistItem[];
   program: HostProgramOverview;
   programPath: string;
 }) {
-  const completedCount = publishChecklist.filter((item) => item.done).length;
-  const totalCount = publishChecklist.length;
-  const ready = totalCount > 0 && completedCount === totalCount;
-  const statusMeta = getDashboardStateMeta(dashboardState);
   const onboardingSteps = buildDashboardOnboardingSteps(
     publishChecklist,
     draft,
     programPath,
     formsHref,
   );
-  const firstIncompleteStep = onboardingSteps.find((step) => !step.done);
-  const applicationsCount = program.applicationCount;
-  const pendingCount = program.pendingCount;
-  const activeCount = program.activeCount;
+  const completedCount = onboardingSteps.filter((item) => item.done).length;
+  const totalCount = onboardingSteps.length;
+  const completionPercent = totalCount > 0 ? (completedCount / totalCount) * 100 : 0;
+  const statusMeta = getDashboardStateMeta(dashboardState);
 
   return (
     <div
-      className="mx-auto grid w-full max-w-[1920px] gap-[1.25vw] pt-[0.694vw]"
+      className="flex flex-col gap-[2.222vw] pl-[2.778vw] pt-[4.167vw]"
       data-program-dashboard={dashboardState}
       style={figmaScaleStyle}
     >
-      <section className="grid gap-[1.111vw] border-b border-[#D9D9D9] pb-[1.667vw]">
-        <div className="flex flex-wrap items-start justify-between gap-4">
-          <div className="min-w-0">
-            <div className="flex flex-wrap items-center gap-2">
-              <span
-                className={`inline-flex h-[28px] items-center rounded-[6px] px-3 text-[12px] font-bold leading-[1.253] ${statusMeta.badgeClassName}`}
-              >
-                {statusMeta.label}
-              </span>
-              <span className="text-[12px] font-medium leading-[1.253] text-[#6D7A8A]">
-                프로그램 넘버 {formatProgramNumber(program.id)}
-              </span>
-            </div>
-            <h1 className="mt-[0.694vw] text-[24px] font-bold leading-[1.253] text-[#0D0D0C]">
-              {program.title}
-            </h1>
-            <p className="mt-[0.486vw] max-w-[760px] text-[14px] font-medium leading-[1.6] text-[#6D7A8A]">
-              {statusMeta.description}
-            </p>
-          </div>
-          <div className="flex flex-wrap items-center gap-[0.556vw]">
-            <button
-              className="inline-flex h-[34px] items-center justify-center gap-2 rounded-[4px] bg-[#FE701E] px-4 text-[13px] font-bold leading-[1.253] text-white transition hover:bg-[#E85F13]"
-              onClick={onOpenSchedule}
-              type="button"
-            >
-              <CalendarDays size={15} />
-              오픈 예약하기
-            </button>
-            <button
-              className="inline-flex h-[34px] items-center justify-center gap-2 rounded-[4px] border border-[#D9D9D9] bg-white px-4 text-[13px] font-bold leading-[1.253] text-[#6D7A8A] transition hover:border-[#FE701E] hover:text-[#FE701E] disabled:cursor-not-allowed disabled:opacity-40"
-              disabled={!canDeleteBeforeOnboarding}
-              onClick={onDeleteProgram}
-              type="button"
-            >
-              <Trash2 size={15} />
-              프로젝트 삭제
-            </button>
-          </div>
+      <section className="flex w-[64.236vw] max-w-[1233px] items-start gap-[3.056vw] rounded-[8px] border border-[#6D7A8A] px-[1.528vw] py-[1.667vw]">
+        <div
+          className="h-[7.5vw] max-h-[144px] min-h-[108px] w-[7.222vw] min-w-[104px] max-w-[139px] shrink-0 rounded-[16px] bg-[#D9D9D9] bg-cover bg-center"
+          style={draft?.image ? { backgroundImage: `url("${draft.image}")` } : undefined}
+        />
+        <div className="flex min-w-0 flex-1 flex-col justify-center gap-[1.319vw] self-stretch text-[#0D0D0C]">
+          <h1 className="text-[24px] font-medium leading-[1.253]">
+            {program.title || "프로그램 제목"}
+          </h1>
+          <p className="text-[16px] font-normal leading-[1.253]">
+            프로그램 넘버 : {formatProgramNumber(program.id)}
+          </p>
         </div>
-
-        <div className="grid gap-[0.833vw] md:grid-cols-4">
-          <DashboardMetric label="온보딩" value={`${completedCount}/${totalCount}`} />
-          <DashboardMetric label="신청" value={`${applicationsCount}명`} />
-          <DashboardMetric label="검토중" value={`${pendingCount}명`} />
-          <DashboardMetric label="참여 확정" value={`${activeCount}명`} />
-        </div>
+        <span
+          className={`shrink-0 rounded-[6px] px-[6px] py-[3px] text-[12px] font-semibold leading-[1.253] ${statusMeta.badgeClassName}`}
+        >
+          {statusMeta.label}
+        </span>
       </section>
 
-      {dashboardState === "creating" ? (
-        <section className="grid gap-[1.111vw]">
-          <div className="flex flex-wrap items-end justify-between gap-3">
-            <div>
-              <h2 className="text-[18px] font-bold leading-[1.253] text-[#0D0D0C]">
-                프로그램 생성 온보딩
-              </h2>
-              <p className="mt-2 text-[13px] font-medium leading-[1.6] text-[#6D7A8A]">
-                {ready
-                  ? "필수 항목이 모두 작성되었습니다."
-                  : `필수 항목 ${publishBlockers.length}개가 아직 작성되지 않았습니다.`}
-                {linkedApplicationForm ? ` 연결된 신청폼: ${linkedApplicationForm.name}` : ""}
-              </p>
-            </div>
-            {firstIncompleteStep ? (
-              <Link
-                className="inline-flex h-[32px] items-center justify-center gap-2 rounded-[4px] border border-[#FE701E] px-3 text-[12px] font-bold leading-[1.253] text-[#FE701E]"
-                href={firstIncompleteStep.href}
-              >
-                이어서 작성하기
-                <ArrowRight size={14} />
-              </Link>
-            ) : null}
-          </div>
-          <div className="grid gap-[0.625vw]">
-            {onboardingSteps.map((step) => (
-              <DashboardOnboardingStep step={step} key={step.id} />
-            ))}
-          </div>
-        </section>
-      ) : (
-        <section className="grid gap-[0.833vw] md:grid-cols-3">
-          <DashboardActionLink
-            description="신청자 목록과 검토 상태를 확인합니다."
-            href={applicationsHref}
-            icon={<Users size={18} />}
-            title="신청자 관리"
+      <section className="flex w-[64.236vw] max-w-[1233px] flex-col gap-[1.319vw]">
+        <div className="flex w-full items-center justify-between text-[16px] font-semibold leading-[1.253] text-[#0D0D0C]">
+          <p>프로그램 완성도</p>
+          <p>
+            {completedCount}/{totalCount} 완료
+          </p>
+        </div>
+        <div className="h-[6px] w-full bg-[#D9D9D9]">
+          <div
+            className="h-full bg-[#FE701E]"
+            style={{ width: `${completionPercent}%` }}
           />
-          <DashboardActionLink
-            description="참여자 문의와 운영 메시지를 확인합니다."
-            href={messagesHref}
-            icon={<MessageSquareText size={18} />}
-            title="메시지 관리"
-          />
-          <DashboardActionLink
-            description="공개 상태와 모집 방식을 조정합니다."
-            href={`${programPath}?panel=management`}
-            icon={<Settings size={18} />}
-            title="운영 설정"
-          />
-        </section>
-      )}
+        </div>
+        <p className="text-[16px] font-medium leading-[1.253] text-[#6D7A8A]">
+          모든 필수 항목들이 작성 완료되면 [오픈 예약하기]를 눌러 프로그램를 오픈할 수 있어요.
+        </p>
+      </section>
 
-      <section className="grid gap-3 md:grid-cols-3">
-        <ToolCard
-          description="프로그램 제목, 모집 상태, 일정, 인원을 정리합니다."
-          href={`${programPath}?panel=basic`}
-          icon={<Settings size={20} />}
-          title="프로그램 설정"
-        />
-        <ToolCard
-          description="참여자가 제출할 질문과 안내 문구를 구성합니다."
-          href={formsHref}
-          icon={<FilePlus2 size={20} />}
-          title="신청 폼"
-        />
-        <ToolCard
-          description="신청자 목록과 검토 상태를 확인합니다."
-          href={applicationsHref}
-          icon={<Users size={20} />}
-          title="신청자 관리"
-        />
-        <ToolCard
-          description="공지, 문의, 알림 메시지를 준비합니다."
-          href={messagesHref}
-          icon={<MessageSquareText size={20} />}
-          title="공지/문의/알림"
-        />
+      <section className="flex w-[59.167vw] max-w-[1136px] flex-col gap-[1.736vw]">
+        {onboardingSteps.map((step) => (
+          <DashboardChecklistRow key={step.id} step={step} />
+        ))}
       </section>
     </div>
   );
@@ -1641,37 +1495,6 @@ function DeletePanel({
   );
 }
 
-function ToolCard({
-  description,
-  href,
-  icon,
-  title,
-}: {
-  description: string;
-  href: string;
-  icon: ReactNode;
-  title: string;
-}) {
-  return (
-    <Link
-      className="rounded-md border border-[#F3E2D5] bg-white p-5 transition hover:border-[#FE701E]/60 hover:bg-[#FFF6EC]"
-      href={href}
-    >
-      <h2 className="flex items-center gap-2 text-lg font-black text-[#0D0D0C]">
-        <span className="text-[#FE701E]">{icon}</span>
-        {title}
-      </h2>
-      <p className="mt-2 text-sm font-bold leading-6 text-[#8B7A6E]">
-        {description}
-      </p>
-      <span className="mt-4 inline-flex items-center gap-2 text-sm font-black text-[#FE701E]">
-        열기
-        <ArrowRight size={15} />
-      </span>
-    </Link>
-  );
-}
-
 type DashboardOnboardingStep = {
   done: boolean;
   helper: string;
@@ -1680,75 +1503,102 @@ type DashboardOnboardingStep = {
   label: string;
 };
 
-function DashboardMetric({ label, value }: { label: string; value: string }) {
-  return (
-    <div className="min-h-[72px] rounded-[6px] border border-[#D9D9D9] bg-[#F9F9F9] px-4 py-3">
-      <p className="text-[12px] font-medium leading-[1.253] text-[#6D7A8A]">
-        {label}
-      </p>
-      <p className="mt-2 text-[20px] font-bold leading-[1.253] text-[#0D0D0C]">
-        {value}
-      </p>
-    </div>
-  );
-}
+const dashboardStepCopy: Record<
+  string,
+  { action: string; helper: string; label: string }
+> = {
+  "application-form": {
+    action: "연결하기",
+    helper: "신청폼이 없으면 게스트가 신청할 수 없어요. 기존 폼을 가져오거나 새로 만들어주세요",
+    label: "신청폼 연결",
+  },
+  basic: {
+    action: "작성하기",
+    helper: "프로그램 제목, 카테고리, 지역, 정원, 참가비를 입력해주세요",
+    label: "기본정보",
+  },
+  detail: {
+    action: "작성하기",
+    helper: "대표사진, 짧은 요약, 상세설명 등 프로그램에 대해 입력해 주세요",
+    label: "상세정보",
+  },
+  operation: {
+    action: "작성하기",
+    helper: "프로그램 진행 시 안내사항, 포함 및 불포함 항목 등 입력해 주세요",
+    label: "안내사항",
+  },
+  place: {
+    action: "작성하기",
+    helper: "집결지, 숙소, 등 주요 활동 장소를 입력해 주세요",
+    label: "장소안내",
+  },
+  schedule: {
+    action: "작성하기",
+    helper: "1일차, 2일차 등 일정 타임라인을 입력해주세요",
+    label: "일정안내",
+  },
+};
 
-function DashboardOnboardingStep({ step }: { step: DashboardOnboardingStep }) {
+function DashboardChecklistRow({ step }: { step: DashboardOnboardingStep }) {
+  const copy = dashboardStepCopy[step.id] ?? {
+    action: "작성하기",
+    helper: step.helper,
+    label: step.label,
+  };
+
   return (
-    <div className="grid min-h-[58px] grid-cols-[minmax(0,1fr)_auto] items-center gap-4 rounded-[6px] border border-[#D9D9D9] bg-white px-4 py-3">
-      <div className="flex min-w-0 items-start gap-3">
-        <span
-          className={`grid size-[28px] shrink-0 place-items-center rounded-full ${
-            step.done
-              ? "bg-[#7A8B52] text-white"
-              : "bg-[#FFF1E8] text-[#FE701E]"
-          }`}
-        >
-          {step.done ? <CheckCircle2 size={16} /> : <ClipboardList size={15} />}
-        </span>
-        <div className="min-w-0">
-          <p className="text-[14px] font-bold leading-[1.253] text-[#0D0D0C]">
-            {step.label}
-          </p>
-          <p className="mt-1 line-clamp-2 text-[12px] font-medium leading-[1.45] text-[#6D7A8A]">
-            {step.done ? "작성 완료" : step.helper}
-          </p>
-        </div>
-      </div>
+    <div className="flex h-[3.75vw] min-h-[54px] max-h-[72px] w-full items-center gap-[1.944vw] rounded-[6px] border border-[#D9D9D9] p-[0.833vw]">
+      <span
+        aria-hidden="true"
+        className={`size-[16px] shrink-0 rounded-[4px] border ${
+          step.done
+            ? "border-[#FE701E] bg-[#FE701E]"
+            : "border-[#CAC4BC] bg-transparent"
+        }`}
+      />
+      <p className="shrink-0 text-[14px] font-semibold leading-[1.253] text-[#0D0D0C]">
+        {copy.label}
+      </p>
+      <p className="min-w-0 flex-1 truncate text-[12px] font-semibold leading-[1.253] text-[#6D7A8A]">
+        {copy.helper}
+      </p>
       <Link
-        className="inline-flex h-[29px] items-center justify-center rounded-[4px] border border-[#FF9A3D] px-3 text-[12px] font-bold leading-[1.253] text-[#FE701E]"
+        className="inline-flex h-[29px] shrink-0 items-center justify-center rounded-[4px] border-[0.8px] border-[#FE701E] bg-[#FCFCFC] px-[18px] text-[12px] font-normal leading-[1.253] text-[#FE701E]"
         href={step.href}
       >
-        작성하기
+        {copy.action}
       </Link>
     </div>
   );
 }
 
-function DashboardActionLink({
-  description,
-  href,
-  icon,
-  title,
+function DashboardFooter({
+  canDelete,
+  onDelete,
+  onOpenSchedule,
 }: {
-  description: string;
-  href: string;
-  icon: ReactNode;
-  title: string;
+  canDelete: boolean;
+  onDelete: () => void;
+  onOpenSchedule: () => void;
 }) {
   return (
-    <Link
-      className="rounded-[6px] border border-[#D9D9D9] bg-white p-4 transition hover:border-[#FE701E]"
-      href={href}
-    >
-      <p className="flex items-center gap-2 text-[14px] font-bold leading-[1.253] text-[#0D0D0C]">
-        <span className="text-[#FE701E]">{icon}</span>
-        {title}
-      </p>
-      <p className="mt-2 text-[12px] font-medium leading-[1.6] text-[#6D7A8A]">
-        {description}
-      </p>
-    </Link>
+    <div className="flex w-full gap-[1.806vw] border-t border-[#6D7A8A] bg-white px-[1.944vw] py-[1.389vw]">
+      <button
+        className="inline-flex h-[29px] items-center justify-center rounded-[4px] bg-[#FE701E] px-[19px] text-[12px] font-medium leading-[1.253] text-[#FFF6EC]"
+        onClick={onOpenSchedule}
+        type="button"
+      >
+        오픈 예약하기
+      </button>
+      <button
+        className="inline-flex h-[29px] items-center justify-center rounded-[4px] bg-[#CAC4BC] px-[19px] text-[12px] font-medium leading-[1.253] text-[#FFF6EC] disabled:cursor-not-allowed disabled:opacity-60"
+        disabled={!canDelete}
+        onClick={onDelete}
+        type="button"
+      >
+        프로젝트 삭제
+      </button>
+    </div>
   );
 }
 
@@ -2724,21 +2574,6 @@ function isLinkedApplicationForm(
   );
 }
 
-function isProgramBuilderItemActive(
-  href: string,
-  pathname: string,
-  activePanel: ProgramPanel,
-): boolean {
-  const [hrefPath, hrefQuery = ""] = href.split("?");
-  const itemPanel = new URLSearchParams(hrefQuery).get("panel");
-
-  if (itemPanel) {
-    return hrefPath === pathname && itemPanel === activePanel;
-  }
-
-  return hrefPath === pathname;
-}
-
 function formatProgramNumber(programId: string): string {
   const normalizedId = programId.trim();
   if (!normalizedId) return "-";
@@ -2829,10 +2664,10 @@ function getDashboardStateMeta(state: ProgramDashboardState): {
 } {
   if (state === "creating") {
     return {
-      badgeClassName: "bg-[#FFF0E6] text-[#FE701E]",
+      badgeClassName: "bg-[#7A8B52] text-[#F3F3F3]",
       description:
         "필수 온보딩 항목을 작성하는 단계입니다. 모든 항목이 완료되면 오픈 예약을 진행할 수 있습니다.",
-      label: "생성중",
+      label: "프로그램 작성중",
     };
   }
 
