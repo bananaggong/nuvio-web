@@ -2,6 +2,7 @@
 
 import Image from "next/image";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { X } from "lucide-react";
 import { useState } from "react";
 import {
@@ -12,27 +13,33 @@ import {
 } from "@/components/host-workspace-ui";
 import type { HostProgramDraft } from "@/lib/host-program-studio";
 import {
+  createHostProgramDraft,
+  mergeHostProgramDrafts,
+} from "@/lib/host-program-studio";
+import {
   buildHostProgramOverviews,
-  buildStandaloneHostProgramOverviews,
   findHostProjectOverview,
+  hostProgramPath,
   hostProjectPath,
 } from "@/lib/host-projects";
-import type { ReportProject } from "@/lib/report-automation";
+import {
+  mergeReportProjects,
+  type ReportProject,
+} from "@/lib/report-automation";
 import type { ProgramStatus } from "@/lib/types";
 import { useHostOperationsData } from "@/lib/use-host-operations-data";
 
-type AddProgramFilter = "open" | "upcoming" | "closed";
-
 export function HostProjectHub({ projectId }: { projectId: string }) {
+  const router = useRouter();
   const {
     applications,
     programs: hostPrograms,
     reportProjects,
+    setPrograms,
     setReportProjects,
   } = useHostOperationsData();
-  const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
-  const [addFilter, setAddFilter] = useState<AddProgramFilter>("open");
-  const [selectedAddProgramIds, setSelectedAddProgramIds] = useState<string[]>([]);
+  const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
+  const [newProgramTitle, setNewProgramTitle] = useState("");
   const [isDeleteMode, setIsDeleteMode] = useState(false);
   const [selectedDeleteProgramIds, setSelectedDeleteProgramIds] = useState<string[]>(
     [],
@@ -54,46 +61,6 @@ export function HostProjectHub({ projectId }: { projectId: string }) {
         villageName: project.villageName,
       }))
     : [];
-  const standalonePrograms: HostProgramListItem[] = buildStandaloneHostProgramOverviews(
-    applications,
-    reportProjects,
-    hostPrograms,
-  ).map((program) => ({
-    ...program,
-    projectId: undefined,
-    projectTitle: "폴더 없음",
-    villageName: project?.villageName ?? "로컬페이지",
-  }));
-  const currentProgramKeys = new Set(
-    programs.flatMap((program) => [
-      program.id,
-      program.slug ?? "",
-      normalizeProgramTitle(program.title),
-    ]),
-  );
-  const addCandidates = standalonePrograms.filter(
-    (program) =>
-      !currentProgramKeys.has(program.id) &&
-      !currentProgramKeys.has(program.slug ?? "") &&
-      !currentProgramKeys.has(normalizeProgramTitle(program.title)),
-  );
-  const filteredAddCandidates = addCandidates.filter((program) => {
-    const status = normalizeInsideFolderStatus(program.status);
-    return addFilter === "closed"
-      ? status === "closed" || status === "earlyClosed"
-      : status === addFilter;
-  });
-  const addFilterCounts = {
-    closed: addCandidates.filter((program) =>
-      ["closed", "earlyClosed"].includes(normalizeInsideFolderStatus(program.status)),
-    ).length,
-    open: addCandidates.filter(
-      (program) => normalizeInsideFolderStatus(program.status) === "open",
-    ).length,
-    upcoming: addCandidates.filter(
-      (program) => normalizeInsideFolderStatus(program.status) === "upcoming",
-    ).length,
-  };
 
   if (!project) {
     return (
@@ -156,33 +123,78 @@ export function HostProjectHub({ projectId }: { projectId: string }) {
     }
   }
 
-  async function addSelectedPrograms() {
+  async function createProgram() {
     const baseProject = resolveReportProject(
       activeProject.id,
       reportProjects,
       activeProject.reportProject,
     );
-    if (!baseProject || selectedAddProgramIds.length === 0 || isSaving) return;
+    const trimmedTitle = newProgramTitle.trim();
+    if (!baseProject || !trimmedTitle || isSaving) return;
 
-    const selectedPrograms = addCandidates.filter((program) =>
-      selectedAddProgramIds.includes(program.id),
-    );
-    const connectedProgramIds = new Set(baseProject.connectedProgramIds);
-    const connectedProgramTitles = new Set(baseProject.connectedProgramTitles);
+    const programDraft = buildNewProgramDraft(trimmedTitle, baseProject);
 
-    selectedPrograms.forEach((program) => {
-      connectedProgramIds.add(program.id);
-      connectedProgramTitles.add(program.title);
-    });
+    setIsSaving(true);
+    setActionError("");
 
-    await saveReportProject({
-      ...baseProject,
-      connectedProgramIds: Array.from(connectedProgramIds),
-      connectedProgramTitles: Array.from(connectedProgramTitles),
-      updatedAt: new Date().toISOString(),
-    });
-    setSelectedAddProgramIds([]);
-    setIsAddDialogOpen(false);
+    try {
+      const programResponse = await fetch("/api/host/programs", {
+        body: JSON.stringify(programDraft),
+        headers: { "Content-Type": "application/json" },
+        method: "POST",
+      });
+      const programPayload = (await programResponse.json()) as {
+        data?: HostProgramDraft;
+        error?: string;
+      };
+
+      if (!programResponse.ok || !programPayload.data) {
+        throw new Error(programPayload.error ?? "프로그램을 생성하지 못했습니다.");
+      }
+
+      const savedProgram = programPayload.data;
+      const nextProject = {
+        ...baseProject,
+        programId: baseProject.programId || savedProgram.id,
+        connectedProgramIds: Array.from(
+          new Set([...baseProject.connectedProgramIds, savedProgram.id]),
+        ),
+        connectedProgramTitles: Array.from(
+          new Set([...baseProject.connectedProgramTitles, savedProgram.title]),
+        ),
+        updatedAt: new Date().toISOString(),
+      } satisfies ReportProject;
+
+      const reportResponse = await fetch("/api/host/reports", {
+        body: JSON.stringify(nextProject),
+        headers: { "Content-Type": "application/json" },
+        method: "POST",
+      });
+      const reportPayload = (await reportResponse.json()) as {
+        data?: ReportProject;
+        error?: string;
+      };
+
+      if (!reportResponse.ok || !reportPayload.data) {
+        throw new Error(reportPayload.error ?? "폴더에 프로그램을 연결하지 못했습니다.");
+      }
+
+      setPrograms((current) => mergeHostProgramDrafts([savedProgram], current));
+      setReportProjects((current) =>
+        mergeReportProjects([reportPayload.data as ReportProject], current),
+      );
+      setNewProgramTitle("");
+      setIsCreateDialogOpen(false);
+      router.push(
+        `${hostProgramPath(activeProject.id, savedProgram.id)}?panel=dashboard&created=1`,
+      );
+    } catch (error) {
+      setActionError(
+        error instanceof Error ? error.message : "프로그램을 생성하지 못했습니다.",
+      );
+    } finally {
+      setIsSaving(false);
+    }
   }
 
   async function deleteSelectedPrograms() {
@@ -217,14 +229,6 @@ export function HostProjectHub({ projectId }: { projectId: string }) {
     setIsDeleteMode(false);
   }
 
-  function toggleAddProgram(programId: string) {
-    setSelectedAddProgramIds((current) =>
-      current.includes(programId)
-        ? current.filter((id) => id !== programId)
-        : [...current, programId],
-    );
-  }
-
   function toggleDeleteProgram(programId: string) {
     setSelectedDeleteProgramIds((current) =>
       current.includes(programId)
@@ -244,13 +248,13 @@ export function HostProjectHub({ projectId }: { projectId: string }) {
               setActionError("");
               setIsDeleteMode(false);
               setSelectedDeleteProgramIds([]);
-              setSelectedAddProgramIds([]);
-              setIsAddDialogOpen(true);
+              setNewProgramTitle("");
+              setIsCreateDialogOpen(true);
             }}
             onDelete={() => {
               setActionError("");
-              setIsAddDialogOpen(false);
-              setSelectedAddProgramIds([]);
+              setIsCreateDialogOpen(false);
+              setNewProgramTitle("");
               setSelectedDeleteProgramIds([]);
               setIsDeleteMode((current) => !current);
             }}
@@ -312,20 +316,16 @@ export function HostProjectHub({ projectId }: { projectId: string }) {
               </button>
             </div>
           ) : null}
-          {isAddDialogOpen ? (
-            <AddProgramsDialog
-              addFilter={addFilter}
-              candidates={filteredAddCandidates.slice(0, 6)}
-              counts={addFilterCounts}
+          {isCreateDialogOpen ? (
+            <NewProgramDialog
               isSaving={isSaving}
-              onAdd={() => void addSelectedPrograms()}
               onClose={() => {
-                setIsAddDialogOpen(false);
-                setSelectedAddProgramIds([]);
+                setIsCreateDialogOpen(false);
+                setNewProgramTitle("");
               }}
-              onFilterChange={setAddFilter}
-              onToggleProgram={toggleAddProgram}
-              selectedIds={selectedAddProgramIds}
+              onCreate={() => void createProgram()}
+              onTitleChange={setNewProgramTitle}
+              title={newProgramTitle}
             />
           ) : null}
         </div>
@@ -334,36 +334,30 @@ export function HostProjectHub({ projectId }: { projectId: string }) {
   );
 }
 
-function AddProgramsDialog({
-  addFilter,
-  candidates,
-  counts,
+function NewProgramDialog({
   isSaving,
-  onAdd,
   onClose,
-  onFilterChange,
-  onToggleProgram,
-  selectedIds,
+  onCreate,
+  onTitleChange,
+  title,
 }: {
-  addFilter: AddProgramFilter;
-  candidates: HostProgramListItem[];
-  counts: Record<AddProgramFilter, number>;
   isSaving: boolean;
-  onAdd: () => void;
   onClose: () => void;
-  onFilterChange: (filter: AddProgramFilter) => void;
-  onToggleProgram: (programId: string) => void;
-  selectedIds: string[];
+  onCreate: () => void;
+  onTitleChange: (title: string) => void;
+  title: string;
 }) {
-  const filterItems: Array<{ label: string; value: AddProgramFilter }> = [
-    { label: `오픈 (${formatTwoDigits(counts.open)})`, value: "open" },
-    { label: "예정", value: "upcoming" },
-    { label: "마감", value: "closed" },
-  ];
+  const canCreate = title.trim().length > 0 && !isSaving;
 
   return (
     <div className="pointer-events-none fixed inset-0 z-[90]">
-      <div className="pointer-events-auto absolute left-[17.777vw] top-[9.028vw] w-[41.875vw] min-w-[603px] rounded-[12px] border border-[#D9D9D9] bg-[#F9F9F9] px-[1.25vw] py-[1.667vw] max-md:left-5 max-md:right-5 max-md:top-24 max-md:w-auto max-md:min-w-0">
+      <form
+        className="pointer-events-auto absolute left-[17.777vw] top-[9.028vw] w-[41.875vw] min-w-[603px] rounded-[12px] border border-[#D9D9D9] bg-[#F9F9F9] px-[1.25vw] py-[1.667vw] shadow-[0_18px_50px_rgba(0,0,0,0.12)] max-md:left-5 max-md:right-5 max-md:top-24 max-md:w-auto max-md:min-w-0"
+        onSubmit={(event) => {
+          event.preventDefault();
+          if (canCreate) onCreate();
+        }}
+      >
         <div className="flex justify-end">
           <button
             aria-label="닫기"
@@ -374,58 +368,28 @@ function AddProgramsDialog({
             <X size={16} strokeWidth={2.2} />
           </button>
         </div>
-        <p className="mt-2 text-[14px] font-medium leading-[1.253] text-[#0D0D0C]">
-          추가할 프로그램을 선택하세요.
-        </p>
-        <div className="mt-2 flex items-center gap-[0.625vw]">
-          {filterItems.map((item) => (
-            <button
-              className={`inline-flex h-[30px] w-[7.639vw] min-w-[110px] items-center justify-center rounded-[20px] text-[12px] font-bold leading-[1.253] ${
-                addFilter === item.value
-                  ? "bg-[#FF9A3D] text-[#F9F9F9]"
-                  : "bg-[#CAC4BC] text-[#F3F3F3]"
-              }`}
-              key={item.value}
-              onClick={() => onFilterChange(item.value)}
-              type="button"
-            >
-              {item.label}
-            </button>
-          ))}
-        </div>
-        <div className="mt-2 grid min-h-[58px] w-full grid-cols-3 gap-x-[1.875vw] gap-y-3 p-2 max-md:grid-cols-1">
-          {candidates.length > 0 ? (
-            candidates.map((program) => (
-              <label
-                className="flex min-w-0 items-center gap-2 text-[14px] font-medium leading-[1.253] text-[#0D0D0C]"
-                key={program.id}
-              >
-                <input
-                  checked={selectedIds.includes(program.id)}
-                  className="size-[14px] accent-[#FE701E]"
-                  onChange={() => onToggleProgram(program.id)}
-                  type="checkbox"
-                />
-                <span className="truncate">{program.title}</span>
-              </label>
-            ))
-          ) : (
-            <p className="col-span-3 text-[14px] font-medium leading-[1.253] text-[#6D7A8A] max-md:col-span-1">
-              추가할 수 있는 프로그램이 없습니다.
-            </p>
-          )}
+        <div className="mt-2 grid gap-[10px]">
+          <p className="text-[14px] font-medium leading-[1.253] text-[#0D0D0C]">
+            새 프로그램 이름을 입력해주세요.
+          </p>
+          <input
+            autoFocus
+            className="h-[40px] rounded-[6px] border border-[#CAC4BC] bg-white px-3 text-[14px] font-medium leading-[1.253] text-[#0D0D0C] outline-none transition placeholder:text-[#CAC4BC] focus:border-[#FF9A3D] focus:ring-2 focus:ring-[#FF9A3D]/15"
+            onChange={(event) => onTitleChange(event.target.value)}
+            placeholder="프로그램 이름"
+            value={title}
+          />
         </div>
         <div className="mt-[1.111vw] flex justify-end">
           <button
             className="inline-flex h-[29px] items-center justify-center rounded-[4px] bg-[#FE701E] px-[1.25vw] text-[12px] font-medium leading-[1.253] text-[#FFF6EC] disabled:opacity-45"
-            disabled={selectedIds.length === 0 || isSaving}
-            onClick={onAdd}
-            type="button"
+            disabled={!canCreate}
+            type="submit"
           >
-            추가
+            {isSaving ? "생성 중" : "생성하기"}
           </button>
         </div>
-      </div>
+      </form>
     </div>
   );
 }
@@ -566,18 +530,56 @@ function formatTwoDigits(value: number): string {
   return String(value).padStart(2, "0");
 }
 
-function normalizeInsideFolderStatus(status?: ProgramStatus): ProgramStatus {
-  return status ?? "open";
-}
-
-function normalizeProgramTitle(value: string): string {
-  return value.replace(/\s+/gu, "").trim().toLowerCase();
-}
-
 function resolveReportProject(
   projectId: string,
   reportProjects: ReportProject[],
   fallback?: ReportProject,
 ): ReportProject | null {
   return reportProjects.find((project) => project.id === projectId) ?? fallback ?? null;
+}
+
+function buildNewProgramDraft(
+  title: string,
+  project: ReportProject,
+): HostProgramDraft {
+  const now = new Date().toISOString();
+  const baseDraft = createHostProgramDraft();
+
+  return {
+    ...baseDraft,
+    id: `draft-${Date.now()}`,
+    villageId: project.villageId ?? "",
+    title,
+    region: project.villageName ?? "",
+    city: "",
+    summary: "",
+    description: "",
+    recruitStart: new Date().toISOString().slice(0, 10),
+    recruitEnd: "",
+    activityStart: "",
+    activityEnd: "",
+    target: "",
+    capacity: "",
+    subsidyLabel: "",
+    subsidyAmount: 0,
+    fee: "",
+    sourceName: project.agencyName ?? "",
+    sourceUrl: project.villageSlug ? `https://nuvio.kr/${project.villageSlug}` : "",
+    applyUrl: "",
+    phone: "",
+    hashtags: [],
+    image: project.imageUrl || "",
+    itineraryDays: [],
+    placeInfo: {
+      ...baseDraft.placeInfo,
+      meetingAddress: "",
+      meetingAddressDetail: "",
+      meetingMemo: "",
+      parkingGuide: "",
+      transportGuide: "",
+    },
+    published: false,
+    status: "upcoming",
+    updatedAt: now,
+  };
 }

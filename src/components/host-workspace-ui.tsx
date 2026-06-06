@@ -432,12 +432,13 @@ export function HostFolderInsideHeader({
         <Minus size={10} strokeWidth={2.4} />
       </button>
       <button
-        aria-label="프로그램 추가"
-        className="inline-flex size-[1.111vw] min-h-4 min-w-4 items-center justify-center rounded-full bg-[#FF9A3D] text-white"
+        aria-label="새 프로그램 만들기"
+        className="inline-flex h-[29px] items-center justify-center gap-1 rounded-[4px] bg-[#7C8794] px-3 text-[12px] font-black leading-[1.253] text-white transition hover:bg-[#667482]"
         onClick={onAdd}
         type="button"
       >
-        <Plus size={10} strokeWidth={2.4} />
+        <Plus size={13} strokeWidth={2.4} />
+        새 프로그램
       </button>
     </div>
   );

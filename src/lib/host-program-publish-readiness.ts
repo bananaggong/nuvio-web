@@ -20,7 +20,7 @@ export function buildProgramPublishChecklist(
     {
       done:
         draft.title.trim().length > 0 &&
-        draft.capacity.trim().length > 0 &&
+        hasMeaningfulText(draft.capacity, ["TBD", "모집 인원"]) &&
         hasValidDate(draft.recruitEnd) &&
         hasValidDate(draft.activityStart) &&
         hasValidDate(draft.activityEnd),
@@ -30,12 +30,24 @@ export function buildProgramPublishChecklist(
     },
     {
       done:
-        draft.summary.trim().length >= 8 &&
-        draft.description.trim().length >= 20 &&
+        hasMeaningfulSummary(draft.summary, draft.title) &&
+        hasMeaningfulDescription(draft.description, draft.title, draft.summary) &&
         hasVisualAsset(draft.image),
       helper: "대표 사진, 짧은 요약, 상세 설명을 채워야 공개 화면이 비어 보이지 않습니다.",
       id: "detail",
       label: "상세정보",
+    },
+    {
+      done: draft.itineraryDays.some(
+        (day) =>
+          day.summary.trim().length > 0 ||
+          day.timetable.trim().length > 0 ||
+          day.images.length > 0 ||
+          day.image.trim().length > 0,
+      ),
+      helper: "일차별 일정, 타임테이블, 일정 사진 중 하나 이상을 작성해야 합니다.",
+      id: "schedule",
+      label: "일정안내",
     },
     {
       done:
@@ -61,12 +73,12 @@ export function buildProgramPublishChecklist(
     },
     {
       done:
-        draft.fee.trim().length > 0 &&
-        draft.phone.trim().length > 0 &&
-        draft.sourceName.trim().length > 0,
+        hasMeaningfulText(draft.fee, ["TBD", "미정", "가격 미정"]) &&
+        hasMeaningfulText(draft.phone, ["000-0000-0000"]) &&
+        hasMeaningfulText(draft.sourceName, ["누비오 Host"]),
       helper: "참가비, 문의 연락처, 운영 기관명을 입력해야 합니다.",
       id: "operation",
-      label: "운영정보",
+      label: "안내사항",
     },
   ];
 }
@@ -104,6 +116,26 @@ function hasVisualAsset(value: string): boolean {
   const image = value.trim();
   if (!image) return false;
   return !image.includes("/brand/nuvio-logo-combined.svg");
+}
+
+function hasMeaningfulText(value: string, placeholders: string[] = []): boolean {
+  const text = value.trim();
+  if (!text) return false;
+  return !placeholders.includes(text);
+}
+
+function hasMeaningfulSummary(summary: string, title: string): boolean {
+  const text = summary.trim();
+  return text.length >= 8 && text !== title.trim();
+}
+
+function hasMeaningfulDescription(
+  description: string,
+  title: string,
+  summary: string,
+): boolean {
+  const text = description.trim();
+  return text.length >= 20 && text !== title.trim() && text !== summary.trim();
 }
 
 function isExternalUrl(value: string): boolean {

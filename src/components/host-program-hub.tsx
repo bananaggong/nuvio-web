@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname, useSearchParams } from "next/navigation";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import {
   ArrowLeft,
   ArrowRight,
@@ -29,6 +29,7 @@ import {
   useRef,
   useState,
   type ChangeEvent,
+  type CSSProperties,
   type InputHTMLAttributes,
   type ReactNode,
   type RefObject,
@@ -56,6 +57,7 @@ import {
   getProgramRecruitmentMethod,
 } from "@/lib/host-program-publish-readiness";
 import type { ApplicationFormTemplate } from "@/lib/application-form-builder";
+import { mergeReportProjects } from "@/lib/report-automation";
 import type { ProgramStatus, ThemeKey } from "@/lib/types";
 import { useHostOperationsData } from "@/lib/use-host-operations-data";
 
@@ -107,6 +109,13 @@ const noRecruitmentApplyUrl = "#no-recruitment";
 
 type RecruitmentMethod = "nuvio" | "external" | "none";
 type PriceMode = "free" | "paid" | "undecided";
+type ProgramDashboardState = "creating" | "upcoming" | "open" | "ended";
+type ProgramDashboardDialog = "delete" | "onboarding-required" | "open-schedule" | null;
+
+const figmaScaleStyle = {
+  "--figma-scale":
+    "clamp(1, calc(min(100vw, 1920px) / 1440), 1.333333)",
+} as CSSProperties;
 
 type KakaoPostcodeData = {
   address: string;
@@ -170,14 +179,25 @@ export function HostProgramHub({
   programId: string;
   projectId?: string;
 }) {
+  const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
-  const { applications, isLoading, programs: hostPrograms, reportProjects, setPrograms } =
-    useHostOperationsData();
+  const {
+    applications,
+    isLoading,
+    programs: hostPrograms,
+    reportProjects,
+    setPrograms,
+    setReportProjects,
+  } = useHostOperationsData();
   const [isSaving, setIsSaving] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
   const [saveMessage, setSaveMessage] = useState("");
   const [saveError, setSaveError] = useState("");
   const [applicationForms, setApplicationForms] = useState<ApplicationFormTemplate[]>([]);
+  const [dashboardDialog, setDashboardDialog] =
+    useState<ProgramDashboardDialog>(null);
+  const [scheduledOpenDate, setScheduledOpenDate] = useState("");
 
   const activePanel = normalizePanel(searchParams.get("panel"));
   const project = useMemo(
@@ -236,6 +256,11 @@ export function HostProgramHub({
     [publishChecklist],
   );
   const readyToPublish = draft ? publishBlockers.length === 0 : false;
+  const dashboardState = getProgramDashboardState(
+    draft?.status ?? program?.status,
+    readyToPublish,
+  );
+  const canDeleteBeforeOnboarding = Boolean(draft && !readyToPublish);
 
   useEffect(() => {
     let isMounted = true;
@@ -312,10 +337,10 @@ export function HostProgramHub({
     );
   }
 
-  async function saveDraft() {
-    if (!draft || isSaving || !draft.title.trim()) return;
+  async function persistDraft(nextDraft: HostProgramDraft, successMessage: string) {
+    if (isSaving || !nextDraft.title.trim()) return;
 
-    if (draft.published && publishBlockers.length > 0) {
+    if (nextDraft.published && publishBlockers.length > 0) {
       setSaveMessage("");
       setSaveError(
         `공개하기 전에 ${publishBlockers.map((item) => item.label).join(", ")}을(를) 완료해 주세요.`,
@@ -331,7 +356,7 @@ export function HostProgramHub({
       const response = await fetch("/api/host/programs", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(draft),
+        body: JSON.stringify(nextDraft),
       });
       const payload = (await response.json()) as {
         data?: HostProgramDraft;
@@ -345,16 +370,109 @@ export function HostProgramHub({
       setPrograms((current) =>
         mergeHostProgramDrafts(
           [payload.data as HostProgramDraft],
-          current.filter((item) => item.id !== draft.id),
+          current.filter((item) => item.id !== nextDraft.id),
         ),
       );
-      setSaveMessage("저장되었습니다.");
+      setSaveMessage(successMessage);
     } catch (error) {
       setSaveError(
         error instanceof Error ? error.message : "프로그램 저장에 실패했습니다.",
       );
     } finally {
       setIsSaving(false);
+    }
+  }
+
+  async function saveDraft() {
+    if (!draft) return;
+    await persistDraft(draft, "저장되었습니다.");
+  }
+
+  async function scheduleProgramOpen() {
+    if (!draft || !readyToPublish) {
+      setDashboardDialog("onboarding-required");
+      return;
+    }
+
+    await persistDraft(
+      {
+        ...draft,
+        published: true,
+        recruitStart: scheduledOpenDate || draft.recruitStart,
+        status: "upcoming",
+        updatedAt: new Date().toISOString(),
+      },
+      "오픈 예약이 저장되었습니다.",
+    );
+    setDashboardDialog(null);
+  }
+
+  async function deleteProgram() {
+    if (!draft || !canDeleteBeforeOnboarding || isDeleting) return;
+
+    setIsDeleting(true);
+    setSaveMessage("");
+    setSaveError("");
+
+    try {
+      const response = await fetch(`/api/host/programs/${encodeURIComponent(draft.id)}`, {
+        method: "DELETE",
+      });
+      const payload = (await response.json().catch(() => ({}))) as {
+        data?: HostProgramDraft;
+        error?: string;
+      };
+
+      if (!response.ok) {
+        throw new Error(payload.error ?? "프로그램을 삭제하지 못했습니다.");
+      }
+
+      setPrograms((current) => current.filter((item) => item.id !== draft.id));
+
+      if (projectId && project?.reportProject) {
+        const nextProject = {
+          ...project.reportProject,
+          connectedProgramIds: project.reportProject.connectedProgramIds.filter(
+            (id) => id !== draft.id,
+          ),
+          connectedProgramTitles: project.reportProject.connectedProgramTitles.filter(
+            (title) => title !== draft.title,
+          ),
+          programId:
+            project.reportProject.programId === draft.id
+              ? ""
+              : project.reportProject.programId,
+          programTitle:
+            project.reportProject.programTitle === draft.title
+              ? "전체 프로그램"
+              : project.reportProject.programTitle,
+          updatedAt: new Date().toISOString(),
+        };
+
+        const reportResponse = await fetch("/api/host/reports", {
+          body: JSON.stringify(nextProject),
+          headers: { "Content-Type": "application/json" },
+          method: "POST",
+        });
+        const reportPayload = (await reportResponse.json()) as {
+          data?: typeof nextProject;
+          error?: string;
+        };
+
+        const savedProject = reportPayload.data;
+        if (reportResponse.ok && savedProject) {
+          setReportProjects((current) => mergeReportProjects([savedProject], current));
+        }
+      }
+
+      router.push(projectPath);
+    } catch (error) {
+      setSaveError(
+        error instanceof Error ? error.message : "프로그램을 삭제하지 못했습니다.",
+      );
+    } finally {
+      setDashboardDialog(null);
+      setIsDeleting(false);
     }
   }
 
@@ -374,7 +492,7 @@ export function HostProgramHub({
           programPath={programPath}
           projectHref={projectPath}
           projectLabel={projectId ? "폴더" : "프로그램 목록"}
-          status={statusLabel(draft?.status ?? program.status)}
+          status={dashboardState === "creating" ? "생성중" : statusLabel(draft?.status ?? program.status)}
           title={draft?.title || program.title}
         />
 
@@ -413,10 +531,27 @@ export function HostProgramHub({
                 {activePanel === "dashboard" ? (
                   <DashboardPanel
                     applicationsHref={applicationsHref}
+                    canDeleteBeforeOnboarding={canDeleteBeforeOnboarding}
+                    dashboardState={dashboardState}
+                    draft={draft}
                     formsHref={formsHref}
                     linkedApplicationForm={linkedApplicationForm}
                     messagesHref={messagesHref}
+                    onDeleteProgram={() => setDashboardDialog("delete")}
+                    onOpenSchedule={() => {
+                      if (!readyToPublish) {
+                        setDashboardDialog("onboarding-required");
+                        return;
+                      }
+
+                      setScheduledOpenDate(
+                        draft?.recruitStart || new Date().toISOString().slice(0, 10),
+                      );
+                      setDashboardDialog("open-schedule");
+                    }}
                     publishChecklist={publishChecklist}
+                    publishBlockers={publishBlockers}
+                    program={program}
                     programPath={programPath}
                   />
                 ) : null}
@@ -471,6 +606,32 @@ export function HostProgramHub({
           </div>
         </section>
       </div>
+      {dashboardDialog === "onboarding-required" ? (
+        <OnboardingRequiredDialog
+          blockers={publishBlockers}
+          formsHref={formsHref}
+          onClose={() => setDashboardDialog(null)}
+          programPath={programPath}
+        />
+      ) : null}
+      {dashboardDialog === "open-schedule" && draft ? (
+        <OpenScheduleDialog
+          isSaving={isSaving}
+          onClose={() => setDashboardDialog(null)}
+          onSchedule={() => void scheduleProgramOpen()}
+          onScheduledDateChange={setScheduledOpenDate}
+          scheduledDate={scheduledOpenDate}
+        />
+      ) : null}
+      {dashboardDialog === "delete" && draft ? (
+        <DeleteProgramDialog
+          canDelete={canDeleteBeforeOnboarding}
+          isDeleting={isDeleting}
+          onClose={() => setDashboardDialog(null)}
+          onDelete={() => void deleteProgram()}
+          programTitle={draft.title}
+        />
+      ) : null}
     </div>
   );
 }
@@ -730,61 +891,157 @@ function ProgramBuilderPreviewRail({
 
 function DashboardPanel({
   applicationsHref,
+  canDeleteBeforeOnboarding,
+  dashboardState,
+  draft,
   formsHref,
   linkedApplicationForm,
   messagesHref,
+  onDeleteProgram,
+  onOpenSchedule,
   publishChecklist,
+  publishBlockers,
+  program,
   programPath,
 }: {
   applicationsHref: string;
+  canDeleteBeforeOnboarding: boolean;
+  dashboardState: ProgramDashboardState;
+  draft?: HostProgramDraft;
   formsHref: string;
   linkedApplicationForm?: ApplicationFormTemplate;
   messagesHref: string;
+  onDeleteProgram: () => void;
+  onOpenSchedule: () => void;
   publishChecklist: ProgramDraftChecklistItem[];
+  publishBlockers: ProgramDraftChecklistItem[];
+  program: HostProgramOverview;
   programPath: string;
 }) {
   const completedCount = publishChecklist.filter((item) => item.done).length;
   const totalCount = publishChecklist.length;
   const ready = totalCount > 0 && completedCount === totalCount;
+  const statusMeta = getDashboardStateMeta(dashboardState);
+  const onboardingSteps = buildDashboardOnboardingSteps(
+    publishChecklist,
+    draft,
+    programPath,
+    formsHref,
+  );
+  const firstIncompleteStep = onboardingSteps.find((step) => !step.done);
+  const applicationsCount = program.applicationCount;
+  const pendingCount = program.pendingCount;
+  const activeCount = program.activeCount;
 
   return (
-    <div className="grid gap-5">
-      <section className="rounded-md border border-[#F3E2D5] bg-white p-5 shadow-sm">
-        <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
-          <div>
-            <p className="inline-flex items-center gap-2 text-sm font-black text-[#FE701E]">
-              <ClipboardList size={18} />
-              공개 전 체크리스트
-            </p>
-            <h2 className="mt-2 text-2xl font-black text-[#0D0D0C]">
-              {ready ? "공개 준비가 완료되었습니다." : "공개 전에 필요한 항목을 확인해 주세요."}
-            </h2>
-            <p className="mt-2 text-sm font-bold leading-6 text-[#8B7A6E]">
-              {completedCount}/{totalCount}개 완료
-              {linkedApplicationForm ? ` · 연결된 신청폼: ${linkedApplicationForm.name}` : ""}
+    <div
+      className="mx-auto grid w-full max-w-[1920px] gap-[1.25vw] pt-[0.694vw]"
+      data-program-dashboard={dashboardState}
+      style={figmaScaleStyle}
+    >
+      <section className="grid gap-[1.111vw] border-b border-[#D9D9D9] pb-[1.667vw]">
+        <div className="flex flex-wrap items-start justify-between gap-4">
+          <div className="min-w-0">
+            <div className="flex flex-wrap items-center gap-2">
+              <span
+                className={`inline-flex h-[28px] items-center rounded-[6px] px-3 text-[12px] font-bold leading-[1.253] ${statusMeta.badgeClassName}`}
+              >
+                {statusMeta.label}
+              </span>
+              <span className="text-[12px] font-medium leading-[1.253] text-[#6D7A8A]">
+                프로그램 넘버 {formatProgramNumber(program.id)}
+              </span>
+            </div>
+            <h1 className="mt-[0.694vw] text-[24px] font-bold leading-[1.253] text-[#0D0D0C]">
+              {program.title}
+            </h1>
+            <p className="mt-[0.486vw] max-w-[760px] text-[14px] font-medium leading-[1.6] text-[#6D7A8A]">
+              {statusMeta.description}
             </p>
           </div>
-          <Link
-            className={`inline-flex h-10 w-fit items-center justify-center gap-2 rounded-md px-4 text-sm font-black ${
-              ready
-                ? "bg-[#FE701E] text-white"
-                : "border border-[#F3E2D5] bg-[#FFF8F2] text-[#5B3A29]"
-            }`}
-            href={`${programPath}?panel=management`}
-          >
-            공개 설정
-            <ArrowRight size={15} />
-          </Link>
+          <div className="flex flex-wrap items-center gap-[0.556vw]">
+            <button
+              className="inline-flex h-[34px] items-center justify-center gap-2 rounded-[4px] bg-[#FE701E] px-4 text-[13px] font-bold leading-[1.253] text-white transition hover:bg-[#E85F13]"
+              onClick={onOpenSchedule}
+              type="button"
+            >
+              <CalendarDays size={15} />
+              오픈 예약하기
+            </button>
+            <button
+              className="inline-flex h-[34px] items-center justify-center gap-2 rounded-[4px] border border-[#D9D9D9] bg-white px-4 text-[13px] font-bold leading-[1.253] text-[#6D7A8A] transition hover:border-[#FE701E] hover:text-[#FE701E] disabled:cursor-not-allowed disabled:opacity-40"
+              disabled={!canDeleteBeforeOnboarding}
+              onClick={onDeleteProgram}
+              type="button"
+            >
+              <Trash2 size={15} />
+              프로젝트 삭제
+            </button>
+          </div>
         </div>
 
-        <div className="mt-5 grid gap-3 md:grid-cols-2 xl:grid-cols-5">
-          {publishChecklist.map((item) => (
-            <ChecklistStatusCard item={item} key={item.id} />
-          ))}
+        <div className="grid gap-[0.833vw] md:grid-cols-4">
+          <DashboardMetric label="온보딩" value={`${completedCount}/${totalCount}`} />
+          <DashboardMetric label="신청" value={`${applicationsCount}명`} />
+          <DashboardMetric label="검토중" value={`${pendingCount}명`} />
+          <DashboardMetric label="참여 확정" value={`${activeCount}명`} />
         </div>
       </section>
 
-      <div className="grid gap-3 md:grid-cols-3">
+      {dashboardState === "creating" ? (
+        <section className="grid gap-[1.111vw]">
+          <div className="flex flex-wrap items-end justify-between gap-3">
+            <div>
+              <h2 className="text-[18px] font-bold leading-[1.253] text-[#0D0D0C]">
+                프로그램 생성 온보딩
+              </h2>
+              <p className="mt-2 text-[13px] font-medium leading-[1.6] text-[#6D7A8A]">
+                {ready
+                  ? "필수 항목이 모두 작성되었습니다."
+                  : `필수 항목 ${publishBlockers.length}개가 아직 작성되지 않았습니다.`}
+                {linkedApplicationForm ? ` 연결된 신청폼: ${linkedApplicationForm.name}` : ""}
+              </p>
+            </div>
+            {firstIncompleteStep ? (
+              <Link
+                className="inline-flex h-[32px] items-center justify-center gap-2 rounded-[4px] border border-[#FE701E] px-3 text-[12px] font-bold leading-[1.253] text-[#FE701E]"
+                href={firstIncompleteStep.href}
+              >
+                이어서 작성하기
+                <ArrowRight size={14} />
+              </Link>
+            ) : null}
+          </div>
+          <div className="grid gap-[0.625vw]">
+            {onboardingSteps.map((step) => (
+              <DashboardOnboardingStep step={step} key={step.id} />
+            ))}
+          </div>
+        </section>
+      ) : (
+        <section className="grid gap-[0.833vw] md:grid-cols-3">
+          <DashboardActionLink
+            description="신청자 목록과 검토 상태를 확인합니다."
+            href={applicationsHref}
+            icon={<Users size={18} />}
+            title="신청자 관리"
+          />
+          <DashboardActionLink
+            description="참여자 문의와 운영 메시지를 확인합니다."
+            href={messagesHref}
+            icon={<MessageSquareText size={18} />}
+            title="메시지 관리"
+          />
+          <DashboardActionLink
+            description="공개 상태와 모집 방식을 조정합니다."
+            href={`${programPath}?panel=management`}
+            icon={<Settings size={18} />}
+            title="운영 설정"
+          />
+        </section>
+      )}
+
+      <section className="grid gap-3 md:grid-cols-3">
         <ToolCard
           description="프로그램 제목, 모집 상태, 일정, 인원을 정리합니다."
           href={`${programPath}?panel=basic`}
@@ -809,7 +1066,7 @@ function DashboardPanel({
           icon={<MessageSquareText size={20} />}
           title="공지/문의/알림"
         />
-      </div>
+      </section>
     </div>
   );
 }
@@ -1322,11 +1579,12 @@ function DeletePanel({ draft }: { draft: HostProgramDraft }) {
     <PanelCard icon={<Trash2 size={19} />} title={panelLabels.delete}>
       <div className="rounded-md border border-red-100 bg-red-50 p-4">
         <h2 className="text-lg font-black text-red-700">
-          {draft.title} 삭제 기능은 아직 연결하지 않았습니다.
+          {draft.title} 삭제는 운영 단계에 따라 제한됩니다.
         </h2>
         <p className="mt-2 text-sm font-bold leading-6 text-red-700/80">
-          실제 신청자와 신청폼이 연결될 수 있으므로 삭제/취소는 별도 확인 절차를
-          붙여서 구현하는 것이 안전합니다.
+          온보딩이 완료된 프로그램은 대시보드의 빠른 삭제 버튼이 비활성화됩니다.
+          공개 이후 삭제나 취소는 신청자, 신청폼, 메시지 이력을 확인하는 별도 절차로
+          진행합니다.
         </p>
       </div>
     </PanelCard>
@@ -1364,30 +1622,266 @@ function ToolCard({
   );
 }
 
-function ChecklistStatusCard({ item }: { item: ProgramDraftChecklistItem }) {
+type DashboardOnboardingStep = {
+  done: boolean;
+  helper: string;
+  href: string;
+  id: string;
+  label: string;
+};
+
+function DashboardMetric({ label, value }: { label: string; value: string }) {
   return (
-    <div
-      className={`rounded-md border p-4 ${
-        item.done
-          ? "border-[#DDEAD4] bg-[#F8FCF5]"
-          : "border-[#F3E2D5] bg-[#FFFDFB]"
-      }`}
-    >
-      <div className="flex items-center gap-2">
+    <div className="min-h-[72px] rounded-[6px] border border-[#D9D9D9] bg-[#F9F9F9] px-4 py-3">
+      <p className="text-[12px] font-medium leading-[1.253] text-[#6D7A8A]">
+        {label}
+      </p>
+      <p className="mt-2 text-[20px] font-bold leading-[1.253] text-[#0D0D0C]">
+        {value}
+      </p>
+    </div>
+  );
+}
+
+function DashboardOnboardingStep({ step }: { step: DashboardOnboardingStep }) {
+  return (
+    <div className="grid min-h-[58px] grid-cols-[minmax(0,1fr)_auto] items-center gap-4 rounded-[6px] border border-[#D9D9D9] bg-white px-4 py-3">
+      <div className="flex min-w-0 items-start gap-3">
         <span
-          className={`grid size-7 place-items-center rounded-full ${
-            item.done
+          className={`grid size-[28px] shrink-0 place-items-center rounded-full ${
+            step.done
               ? "bg-[#7A8B52] text-white"
               : "bg-[#FFF1E8] text-[#FE701E]"
           }`}
         >
-          {item.done ? <CheckCircle2 size={16} /> : <ClipboardList size={15} />}
+          {step.done ? <CheckCircle2 size={16} /> : <ClipboardList size={15} />}
         </span>
-        <p className="text-sm font-black text-[#0D0D0C]">{item.label}</p>
+        <div className="min-w-0">
+          <p className="text-[14px] font-bold leading-[1.253] text-[#0D0D0C]">
+            {step.label}
+          </p>
+          <p className="mt-1 line-clamp-2 text-[12px] font-medium leading-[1.45] text-[#6D7A8A]">
+            {step.done ? "작성 완료" : step.helper}
+          </p>
+        </div>
       </div>
-      <p className="mt-3 min-h-10 text-xs font-bold leading-5 text-[#8B7A6E]">
-        {item.done ? "완료되었습니다." : item.helper}
+      <Link
+        className="inline-flex h-[29px] items-center justify-center rounded-[4px] border border-[#FF9A3D] px-3 text-[12px] font-bold leading-[1.253] text-[#FE701E]"
+        href={step.href}
+      >
+        작성하기
+      </Link>
+    </div>
+  );
+}
+
+function DashboardActionLink({
+  description,
+  href,
+  icon,
+  title,
+}: {
+  description: string;
+  href: string;
+  icon: ReactNode;
+  title: string;
+}) {
+  return (
+    <Link
+      className="rounded-[6px] border border-[#D9D9D9] bg-white p-4 transition hover:border-[#FE701E]"
+      href={href}
+    >
+      <p className="flex items-center gap-2 text-[14px] font-bold leading-[1.253] text-[#0D0D0C]">
+        <span className="text-[#FE701E]">{icon}</span>
+        {title}
       </p>
+      <p className="mt-2 text-[12px] font-medium leading-[1.6] text-[#6D7A8A]">
+        {description}
+      </p>
+    </Link>
+  );
+}
+
+function OnboardingRequiredDialog({
+  blockers,
+  formsHref,
+  onClose,
+  programPath,
+}: {
+  blockers: ProgramDraftChecklistItem[];
+  formsHref: string;
+  onClose: () => void;
+  programPath: string;
+}) {
+  const firstBlocker = blockers[0];
+
+  return (
+    <ProgramDashboardModal onClose={onClose}>
+      <h2 className="text-[18px] font-bold leading-[1.253] text-[#0D0D0C]">
+        아직 필수 항목들이 작성되지 않았어요!
+      </h2>
+      <p className="mt-3 text-[13px] font-medium leading-[1.6] text-[#6D7A8A]">
+        오픈 예약을 하려면 아래 온보딩 항목을 먼저 완료해주세요.
+      </p>
+      <div className="mt-4 grid gap-2">
+        {blockers.map((item) => (
+          <div
+            className="rounded-[6px] border border-[#F3E2D5] bg-[#FFF8F2] px-3 py-2"
+            key={item.id}
+          >
+            <p className="text-[13px] font-bold leading-[1.253] text-[#5B3A29]">
+              {item.label}
+            </p>
+            <p className="mt-1 text-[12px] font-medium leading-[1.45] text-[#6D7A8A]">
+              {item.helper}
+            </p>
+          </div>
+        ))}
+      </div>
+      <div className="mt-5 flex justify-end gap-2">
+        <button
+          className="inline-flex h-[32px] items-center rounded-[4px] bg-[#CAC4BC] px-4 text-[12px] font-bold leading-[1.253] text-white"
+          onClick={onClose}
+          type="button"
+        >
+          닫기
+        </button>
+        {firstBlocker ? (
+          <Link
+            className="inline-flex h-[32px] items-center rounded-[4px] bg-[#FE701E] px-4 text-[12px] font-bold leading-[1.253] text-white"
+            href={getChecklistHref(firstBlocker.id, programPath, formsHref)}
+          >
+            작성하러 가기
+          </Link>
+        ) : null}
+      </div>
+    </ProgramDashboardModal>
+  );
+}
+
+function OpenScheduleDialog({
+  isSaving,
+  onClose,
+  onSchedule,
+  onScheduledDateChange,
+  scheduledDate,
+}: {
+  isSaving: boolean;
+  onClose: () => void;
+  onSchedule: () => void;
+  onScheduledDateChange: (value: string) => void;
+  scheduledDate: string;
+}) {
+  return (
+    <ProgramDashboardModal onClose={onClose}>
+      <h2 className="text-[18px] font-bold leading-[1.253] text-[#0D0D0C]">
+        오픈 예약하기
+      </h2>
+      <p className="mt-3 text-[13px] font-medium leading-[1.6] text-[#6D7A8A]">
+        선택한 날짜에 맞춰 프로그램을 모집예정 상태로 저장합니다.
+      </p>
+      <label className="mt-4 grid gap-2">
+        <span className="text-[13px] font-bold leading-[1.253] text-[#5B3A29]">
+          오픈 예약일
+        </span>
+        <input
+          className="h-[40px] rounded-[6px] border border-[#CAC4BC] bg-white px-3 text-[14px] font-medium leading-[1.253] text-[#0D0D0C] outline-none focus:border-[#FF9A3D] focus:ring-2 focus:ring-[#FF9A3D]/15"
+          onChange={(event) => onScheduledDateChange(event.target.value)}
+          type="date"
+          value={scheduledDate}
+        />
+      </label>
+      <div className="mt-5 flex justify-end gap-2">
+        <button
+          className="inline-flex h-[32px] items-center rounded-[4px] bg-[#CAC4BC] px-4 text-[12px] font-bold leading-[1.253] text-white"
+          onClick={onClose}
+          type="button"
+        >
+          취소
+        </button>
+        <button
+          className="inline-flex h-[32px] items-center rounded-[4px] bg-[#FE701E] px-4 text-[12px] font-bold leading-[1.253] text-white disabled:opacity-45"
+          disabled={isSaving || !scheduledDate}
+          onClick={onSchedule}
+          type="button"
+        >
+          {isSaving ? "저장 중" : "예약하기"}
+        </button>
+      </div>
+    </ProgramDashboardModal>
+  );
+}
+
+function DeleteProgramDialog({
+  canDelete,
+  isDeleting,
+  onClose,
+  onDelete,
+  programTitle,
+}: {
+  canDelete: boolean;
+  isDeleting: boolean;
+  onClose: () => void;
+  onDelete: () => void;
+  programTitle: string;
+}) {
+  return (
+    <ProgramDashboardModal onClose={onClose}>
+      <h2 className="text-[18px] font-bold leading-[1.253] text-[#0D0D0C]">
+        프로그램을 삭제할까요?
+      </h2>
+      <p className="mt-3 text-[13px] font-medium leading-[1.6] text-[#6D7A8A]">
+        {canDelete
+          ? `${programTitle}은 아직 온보딩이 완료되지 않아 삭제할 수 있습니다.`
+          : "온보딩이 완료된 프로그램은 이 버튼으로 삭제할 수 없습니다."}
+      </p>
+      <div className="mt-5 flex justify-end gap-2">
+        <button
+          className="inline-flex h-[32px] items-center rounded-[4px] bg-[#CAC4BC] px-4 text-[12px] font-bold leading-[1.253] text-white"
+          onClick={onClose}
+          type="button"
+        >
+          취소
+        </button>
+        <button
+          className="inline-flex h-[32px] items-center rounded-[4px] bg-[#FE701E] px-4 text-[12px] font-bold leading-[1.253] text-white disabled:opacity-45"
+          disabled={!canDelete || isDeleting}
+          onClick={onDelete}
+          type="button"
+        >
+          {isDeleting ? "삭제 중" : "삭제하기"}
+        </button>
+      </div>
+    </ProgramDashboardModal>
+  );
+}
+
+function ProgramDashboardModal({
+  children,
+  onClose,
+}: {
+  children: ReactNode;
+  onClose: () => void;
+}) {
+  return (
+    <div
+      aria-modal="true"
+      className="fixed inset-0 z-[100] bg-black/20"
+      role="dialog"
+    >
+      <div className="absolute left-[17.777vw] top-[9.028vw] w-[41.875vw] min-w-[603px] rounded-[12px] border border-[#D9D9D9] bg-[#F9F9F9] px-[1.25vw] py-[1.667vw] shadow-[0_18px_50px_rgba(0,0,0,0.12)] max-md:left-5 max-md:right-5 max-md:top-24 max-md:w-auto max-md:min-w-0">
+        <div className="flex justify-end">
+          <button
+            aria-label="닫기"
+            className="inline-flex size-4 items-center justify-center text-[#0D0D0C]"
+            onClick={onClose}
+            type="button"
+          >
+            <X size={16} strokeWidth={2.2} />
+          </button>
+        </div>
+        <div className="mt-2">{children}</div>
+      </div>
     </div>
   );
 }
@@ -2266,6 +2760,125 @@ function parseAmount(value: string): number {
 
 function statusLabel(status?: ProgramStatus): string {
   return statusOptions.find((option) => option.value === status)?.label ?? "상태 미정";
+}
+
+function getProgramDashboardState(
+  status: ProgramStatus | undefined,
+  readyToPublish: boolean,
+): ProgramDashboardState {
+  if (!readyToPublish) return "creating";
+  if (status === "closed" || status === "earlyClosed") return "ended";
+  if (status === "open") return "open";
+  return "upcoming";
+}
+
+function getDashboardStateMeta(state: ProgramDashboardState): {
+  badgeClassName: string;
+  description: string;
+  label: string;
+} {
+  if (state === "creating") {
+    return {
+      badgeClassName: "bg-[#FFF0E6] text-[#FE701E]",
+      description:
+        "필수 온보딩 항목을 작성하는 단계입니다. 모든 항목이 완료되면 오픈 예약을 진행할 수 있습니다.",
+      label: "생성중",
+    };
+  }
+
+  if (state === "open") {
+    return {
+      badgeClassName: "bg-[#F7B267] text-white",
+      description:
+        "현재 모집이 진행 중입니다. 신청 현황, 메시지, 운영 설정을 확인하며 프로그램을 관리하세요.",
+      label: "모집중",
+    };
+  }
+
+  if (state === "ended") {
+    return {
+      badgeClassName: "bg-[#C75C36] text-white",
+      description:
+        "모집 또는 운영이 종료된 프로그램입니다. 신청 기록과 메시지 내역을 중심으로 확인할 수 있습니다.",
+      label: "종료",
+    };
+  }
+
+  return {
+    badgeClassName: "bg-[#6D7A8A] text-white",
+    description:
+      "오픈 예약이 준비된 프로그램입니다. 예약일과 공개 설정을 확인한 뒤 모집을 시작할 수 있습니다.",
+    label: "모집예정",
+  };
+}
+
+function buildDashboardOnboardingSteps(
+  checklist: ProgramDraftChecklistItem[],
+  draft: HostProgramDraft | undefined,
+  programPath: string,
+  formsHref: string,
+): DashboardOnboardingStep[] {
+  const checklistById = new Map(checklist.map((item) => [item.id, item]));
+  const orderedIds = [
+    "basic",
+    "detail",
+    "schedule",
+    "place",
+    "operation",
+    "application-form",
+  ];
+
+  return orderedIds
+    .map((id) => {
+      const item = checklistById.get(id) ?? getVirtualChecklistItem(id, draft);
+      if (!item) return null;
+
+      return {
+        done: item.done,
+        helper: item.helper,
+        href: getChecklistHref(item.id, programPath, formsHref),
+        id: item.id,
+        label: item.label,
+      };
+    })
+    .filter((item): item is DashboardOnboardingStep => Boolean(item));
+}
+
+function getVirtualChecklistItem(
+  id: string,
+  draft: HostProgramDraft | undefined,
+): ProgramDraftChecklistItem | null {
+  if (id !== "schedule") return null;
+
+  const itineraryDone = Boolean(
+    draft?.itineraryDays.some(
+      (day) =>
+        day.summary.trim().length > 0 ||
+        day.timetable.trim().length > 0 ||
+        day.images.length > 0 ||
+        day.image.trim().length > 0,
+    ),
+  );
+
+  return {
+    done: itineraryDone,
+    helper: "일차별 일정, 타임테이블, 일정 사진 중 하나 이상을 작성해야 합니다.",
+    id: "schedule",
+    label: "일정안내",
+  };
+}
+
+function getChecklistHref(
+  itemId: string,
+  programPath: string,
+  formsHref: string,
+): string {
+  if (itemId === "application-form") return formsHref || `${programPath}?panel=dashboard`;
+  if (itemId === "detail") return `${programPath}?panel=detail`;
+  if (itemId === "place") return `${programPath}?panel=place`;
+  if (itemId === "schedule") return `${programPath}?panel=schedule`;
+  if (itemId === "operation") return `${programPath}?panel=guide`;
+  return `${programPath}?panel=basic`;
 }
 
 function getRecruitmentMethod(applyUrl: string): RecruitmentMethod {

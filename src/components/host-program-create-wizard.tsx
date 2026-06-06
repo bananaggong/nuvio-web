@@ -103,8 +103,8 @@ export function HostProgramCreateWizard({ projectId }: { projectId?: string }) {
 
       router.push(
         projectId
-          ? `${hostProgramPath(projectId, savedProgram.id)}?panel=basic`
-          : `${hostStandaloneProgramPath(savedProgram.id)}?panel=basic`,
+          ? `${hostProgramPath(projectId, savedProgram.id)}?panel=dashboard&created=1`
+          : `${hostStandaloneProgramPath(savedProgram.id)}?panel=dashboard&created=1`,
       );
     } catch (error) {
       setErrorMessage(

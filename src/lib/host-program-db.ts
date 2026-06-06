@@ -41,6 +41,47 @@ export async function listHostProgramDraftsFromDb(options: {
   return rows.map(mapProgramRowToHostDraft);
 }
 
+export async function getHostProgramDraftFromDb(
+  programId: string,
+  options: { allowedVillageIds?: string[] } = {},
+): Promise<HostProgramDraft | null> {
+  if (options.allowedVillageIds && options.allowedVillageIds.length === 0) return null;
+
+  const conditions = [eq(programsTable.id, programId)];
+
+  if (options.allowedVillageIds) {
+    conditions.push(inArray(programsTable.villageId, options.allowedVillageIds));
+  }
+
+  const [row] = await getDb()
+    .select()
+    .from(programsTable)
+    .where(and(...conditions))
+    .limit(1);
+
+  return row ? mapProgramRowToHostDraft(row) : null;
+}
+
+export async function deleteHostProgramDraftFromDb(
+  programId: string,
+  options: { allowedVillageIds?: string[] } = {},
+): Promise<HostProgramDraft | null> {
+  if (options.allowedVillageIds && options.allowedVillageIds.length === 0) return null;
+
+  const conditions = [eq(programsTable.id, programId)];
+
+  if (options.allowedVillageIds) {
+    conditions.push(inArray(programsTable.villageId, options.allowedVillageIds));
+  }
+
+  const [row] = await getDb()
+    .delete(programsTable)
+    .where(and(...conditions))
+    .returning();
+
+  return row ? mapProgramRowToHostDraft(row) : null;
+}
+
 export async function upsertHostProgramDraft(
   draft: HostProgramDraft,
   options: UpsertHostProgramDraftOptions = {},
