@@ -113,7 +113,15 @@ const hostScreeningApplyUrl = "#host-screening-application";
 type BasicApplicationMethod = "host" | "lottery" | "open";
 type PriceMode = "free" | "paid" | "undecided";
 type ProgramDashboardState = "creating" | "upcoming" | "open" | "ended";
-type ProgramDashboardDialog = "delete" | "onboarding-required" | "open-schedule" | null;
+type ProgramDashboardDialog =
+  | "additional-recruitment"
+  | "copy-program"
+  | "delete"
+  | "next-round"
+  | "onboarding-required"
+  | "open-schedule"
+  | null;
+type DashboardDeadlineMode = "auto" | "manual";
 
 const figmaScaleStyle = {
   "--figma-scale":
@@ -249,6 +257,16 @@ export function HostProgramHub({
   const [dashboardDialog, setDashboardDialog] =
     useState<ProgramDashboardDialog>(null);
   const [scheduledOpenDate, setScheduledOpenDate] = useState("");
+  const [scheduledCloseDate, setScheduledCloseDate] = useState("");
+  const [scheduledDeadlineMode, setScheduledDeadlineMode] =
+    useState<DashboardDeadlineMode>("manual");
+  const [copyProgramTitle, setCopyProgramTitle] = useState("");
+  const [additionalRecruitEnd, setAdditionalRecruitEnd] = useState("");
+  const [additionalCapacity, setAdditionalCapacity] = useState("");
+  const [nextRoundNumber, setNextRoundNumber] = useState("");
+  const [nextRoundOpenDate, setNextRoundOpenDate] = useState("");
+  const [nextRoundCloseDate, setNextRoundCloseDate] = useState("");
+  const [nextRoundCapacity, setNextRoundCapacity] = useState("");
 
   const activePanel = normalizePanel(searchParams.get("panel"));
   const project = useMemo(
@@ -450,10 +468,82 @@ export function HostProgramHub({
         ...draft,
         published: true,
         recruitStart: scheduledOpenDate || draft.recruitStart,
+        recruitEnd:
+          scheduledDeadlineMode === "manual"
+            ? scheduledCloseDate || draft.recruitEnd
+            : draft.recruitEnd,
         status: "upcoming",
         updatedAt: new Date().toISOString(),
       },
       "오픈 예약이 저장되었습니다.",
+    );
+    setDashboardDialog(null);
+  }
+
+  async function copyProgram() {
+    if (!draft) return;
+
+    const now = Date.now();
+    const copiedDraft: HostProgramDraft = {
+      ...draft,
+      id: `draft-copy-${now}`,
+      published: false,
+      slug: undefined,
+      status: "upcoming",
+      title: copyProgramTitle.trim() || `${draft.title} (2)`,
+      updatedAt: new Date().toISOString(),
+    };
+
+    await persistDraft(copiedDraft, "프로그램이 복사되었습니다.");
+    setDashboardDialog(null);
+  }
+
+  async function startAdditionalRecruitment() {
+    if (!draft) return;
+
+    const additionalCount = parsePositiveInteger(additionalCapacity);
+    const nextCapacity =
+      additionalCount > 0
+        ? formatCapacityCount(extractCapacityCount(draft.capacity) + additionalCount)
+        : draft.capacity;
+
+    await persistDraft(
+      {
+        ...draft,
+        capacity: nextCapacity,
+        published: true,
+        recruitEnd: additionalRecruitEnd || draft.recruitEnd,
+        status: "open",
+        updatedAt: new Date().toISOString(),
+      },
+      "추가 모집이 시작되었습니다.",
+    );
+    setDashboardDialog(null);
+  }
+
+  async function startNextRound() {
+    if (!draft) return;
+
+    const roundNumber = parsePositiveInteger(nextRoundNumber);
+    const nextTitle =
+      roundNumber > 0 ? `${stripRoundSuffix(draft.title)} ${roundNumber}기` : draft.title;
+
+    await persistDraft(
+      {
+        ...draft,
+        activityStart: nextRoundOpenDate || draft.activityStart,
+        activityEnd: nextRoundCloseDate || draft.activityEnd,
+        capacity: nextRoundCapacity.trim()
+          ? formatCapacityCount(parsePositiveInteger(nextRoundCapacity))
+          : draft.capacity,
+        published: true,
+        recruitStart: nextRoundOpenDate || draft.recruitStart,
+        recruitEnd: nextRoundCloseDate || draft.recruitEnd,
+        status: "upcoming",
+        title: nextTitle,
+        updatedAt: new Date().toISOString(),
+      },
+      "다음 기수 모집이 준비되었습니다.",
     );
     setDashboardDialog(null);
   }
@@ -554,7 +644,28 @@ export function HostProgramHub({
     }
 
     setScheduledOpenDate(draft?.recruitStart || new Date().toISOString().slice(0, 10));
+    setScheduledCloseDate(draft?.recruitEnd || "");
+    setScheduledDeadlineMode("manual");
     setDashboardDialog("open-schedule");
+  }
+
+  function openCopyProgramDialog() {
+    setCopyProgramTitle(draft ? `${draft.title} (2)` : "");
+    setDashboardDialog("copy-program");
+  }
+
+  function openAdditionalRecruitmentDialog() {
+    setAdditionalRecruitEnd(draft?.recruitEnd || "");
+    setAdditionalCapacity("");
+    setDashboardDialog("additional-recruitment");
+  }
+
+  function openNextRoundDialog() {
+    setNextRoundNumber("");
+    setNextRoundOpenDate(draft?.activityStart || "");
+    setNextRoundCloseDate(draft?.activityEnd || "");
+    setNextRoundCapacity(extractCapacityCount(draft?.capacity ?? "").toString());
+    setDashboardDialog("next-round");
   }
 
   return (
@@ -629,6 +740,8 @@ export function HostProgramHub({
                     dashboardState={dashboardState}
                     draft={draft}
                     formsHref={formsHref}
+                    onAdditionalRecruitment={openAdditionalRecruitmentDialog}
+                    onOpenSchedule={openScheduleDialog}
                     publishChecklist={publishChecklist}
                     program={program}
                     programPath={programPath}
@@ -692,8 +805,12 @@ export function HostProgramHub({
           {dashboardPanelActive ? (
             <DashboardFooter
               canDelete={canDeleteBeforeOnboarding}
+              dashboardState={dashboardState}
               onDelete={() => setDashboardDialog("delete")}
+              onNextRound={openNextRoundDialog}
               onOpenSchedule={openScheduleDialog}
+              onProgramCopy={openCopyProgramDialog}
+              onSave={() => void saveDraft()}
             />
           ) : activePanel === "delete" || activePanel === "management" ? null : (
           <div className="flex w-full border-t border-[#6D7A8A] bg-white px-[1.944vw] py-[1.389vw]">
@@ -719,11 +836,59 @@ export function HostProgramHub({
       ) : null}
       {dashboardDialog === "open-schedule" && draft ? (
         <OpenScheduleDialog
+          deadlineMode={scheduledDeadlineMode}
           isSaving={isSaving}
+          onDeadlineModeChange={setScheduledDeadlineMode}
           onClose={() => setDashboardDialog(null)}
           onSchedule={() => void scheduleProgramOpen()}
+          onScheduledCloseDateChange={setScheduledCloseDate}
           onScheduledDateChange={setScheduledOpenDate}
+          scheduledCloseDate={scheduledCloseDate}
           scheduledDate={scheduledOpenDate}
+        />
+      ) : null}
+      {dashboardDialog === "copy-program" && draft ? (
+        <CopyProgramDialog
+          isSaving={isSaving}
+          onClose={() => setDashboardDialog(null)}
+          onCopy={() => void copyProgram()}
+          onTitleChange={setCopyProgramTitle}
+          title={copyProgramTitle}
+        />
+      ) : null}
+      {dashboardDialog === "additional-recruitment" && draft ? (
+        <AdditionalRecruitmentDialog
+          approvedCount={program.activeCount}
+          capacity={draft.capacity}
+          currentEndDate={draft.recruitEnd}
+          endDate={additionalRecruitEnd}
+          isSaving={isSaving}
+          onCapacityChange={setAdditionalCapacity}
+          onClose={() => setDashboardDialog(null)}
+          onEndDateChange={setAdditionalRecruitEnd}
+          onStart={() => void startAdditionalRecruitment()}
+          requestedCapacity={additionalCapacity}
+        />
+      ) : null}
+      {dashboardDialog === "next-round" && draft ? (
+        <NextRoundDialog
+          capacity={nextRoundCapacity}
+          closeDate={nextRoundCloseDate}
+          currentRoundDateRange={formatDashboardDateRange(
+            draft.activityStart,
+            draft.activityEnd,
+          )}
+          currentRoundNumber={extractRoundNumber(draft.title)}
+          currentCapacity={draft.capacity}
+          isSaving={isSaving}
+          onCapacityChange={setNextRoundCapacity}
+          onClose={() => setDashboardDialog(null)}
+          onCloseDateChange={setNextRoundCloseDate}
+          onOpenDateChange={setNextRoundOpenDate}
+          onRoundNumberChange={setNextRoundNumber}
+          onStart={() => void startNextRound()}
+          openDate={nextRoundOpenDate}
+          roundNumber={nextRoundNumber}
         />
       ) : null}
       {dashboardDialog === "delete" && draft ? (
@@ -990,6 +1155,8 @@ function DashboardPanel({
   dashboardState,
   draft,
   formsHref,
+  onAdditionalRecruitment,
+  onOpenSchedule,
   publishChecklist,
   program,
   programPath,
@@ -997,6 +1164,8 @@ function DashboardPanel({
   dashboardState: ProgramDashboardState;
   draft?: HostProgramDraft;
   formsHref: string;
+  onAdditionalRecruitment: () => void;
+  onOpenSchedule: () => void;
   publishChecklist: ProgramDraftChecklistItem[];
   program: HostProgramOverview;
   programPath: string;
@@ -1011,6 +1180,19 @@ function DashboardPanel({
   const totalCount = onboardingSteps.length;
   const completionPercent = totalCount > 0 ? (completedCount / totalCount) * 100 : 0;
   const statusMeta = getDashboardStateMeta(dashboardState);
+
+  if (dashboardState !== "creating") {
+    return (
+      <DashboardStatusPanel
+        dashboardState={dashboardState}
+        draft={draft}
+        onAdditionalRecruitment={onAdditionalRecruitment}
+        onOpenSchedule={onOpenSchedule}
+        program={program}
+        statusMeta={statusMeta}
+      />
+    );
+  }
 
   return (
     <div
@@ -1062,6 +1244,325 @@ function DashboardPanel({
         ))}
       </section>
     </div>
+  );
+}
+
+function DashboardStatusPanel({
+  dashboardState,
+  draft,
+  onAdditionalRecruitment,
+  onOpenSchedule,
+  program,
+  statusMeta,
+}: {
+  dashboardState: Exclude<ProgramDashboardState, "creating">;
+  draft?: HostProgramDraft;
+  onAdditionalRecruitment: () => void;
+  onOpenSchedule: () => void;
+  program: HostProgramOverview;
+  statusMeta: ReturnType<typeof getDashboardStateMeta>;
+}) {
+  const status = draft?.status ?? program.status ?? "upcoming";
+  const activityRange = draft
+    ? formatDashboardDateRange(draft.activityStart, draft.activityEnd)
+    : "0000년 00월 00일 - 00월 00일";
+  const recruitRange = draft
+    ? formatDashboardDateRange(draft.recruitStart, draft.recruitEnd)
+    : "0000년 00월 00일 - 00월 00일";
+  const recruitDays = draft
+    ? countDateDays(draft.recruitStart, draft.recruitEnd)
+    : 0;
+  const openDday = draft ? getDashboardDday(draft.recruitStart, status) : "D - 00";
+  const deadlineDday = draft ? getDday(draft.recruitEnd, status) : "D - 00";
+  const acceptedCount = program.activeCount;
+  const pendingCount = program.pendingCount;
+  const applicationRows = program.applications.slice(0, 3);
+  const reviewRows = program.applications
+    .filter((application) => application.reviewSubmitted)
+    .slice(0, 3);
+
+  return (
+    <div
+      className="flex flex-col gap-[var(--figma-32)] pl-[var(--figma-40)] pt-[var(--figma-44)]"
+      data-program-dashboard={dashboardState}
+      style={figmaScaleStyle}
+    >
+      <div className="flex w-[64.236vw] max-w-[1233px] items-center justify-end text-[16px] font-normal leading-[1.253] text-[#6D7A8A]">
+        최근 수정일 : {formatDateTime(draft?.updatedAt ?? program.updatedAt)}
+      </div>
+
+      <section className="flex w-[64.236vw] max-w-[1233px] items-start justify-end gap-[var(--figma-44)] rounded-[8px] border border-[#6D7A8A] px-[var(--figma-22)] py-[var(--figma-24)]">
+        <div
+          className="h-[15.649vw] max-h-[301px] min-h-[225px] w-[15.069vw] min-w-[217px] max-w-[289px] shrink-0 rounded-[16px] bg-[#D9D9D9] bg-cover bg-center"
+          style={
+            draft?.image || program.imageUrl
+              ? { backgroundImage: `url("${escapeCssUrl(draft?.image || program.imageUrl)}")` }
+              : undefined
+          }
+        />
+        <div className="flex w-[43.056vw] max-w-[827px] min-w-[620px] flex-col items-center gap-[var(--figma-8)]">
+          <div className="flex w-full justify-end">
+            <span
+              className={`shrink-0 rounded-[6px] px-[6px] py-[3px] text-[12px] font-semibold leading-[1.253] ${statusMeta.badgeClassName}`}
+            >
+              {statusMeta.label}
+            </span>
+          </div>
+          <h1 className="w-full text-[24px] font-medium leading-[1.253] text-[#0D0D0C]">
+            {program.title || draft?.title || "프로그램 제목"}
+          </h1>
+          <div className="flex w-full items-start gap-[var(--figma-8)] text-[16px] font-normal leading-[1.253] text-[#0D0D0C]">
+            <p className="shrink-0 whitespace-nowrap">
+              프로그램 넘버 : {formatProgramNumber(program.id)}
+            </p>
+            <p className="min-w-0 flex-1 text-center">
+              프로그램 진행일 : {activityRange}
+            </p>
+          </div>
+
+          <div className="flex w-full items-center gap-[var(--figma-12)]">
+            {dashboardState === "upcoming" ? (
+              <>
+                <DashboardSummaryCard
+                  actionLabel="오픈일 수정"
+                  label="오픈 예정일"
+                  onAction={onOpenSchedule}
+                  primary={formatDashboardDate(draft?.recruitStart)}
+                  value={openDday}
+                />
+                <DashboardSummaryCard
+                  actionLabel="모집기간 수정"
+                  label="프로그램 모집 기간"
+                  onAction={onOpenSchedule}
+                  primary={`${recruitRange} (${recruitDays}일)`}
+                  value={`${recruitDays} 일`}
+                />
+              </>
+            ) : dashboardState === "open" ? (
+              <>
+                <DashboardSummaryCard
+                  label="프로그램 모집 기간"
+                  primary={`${recruitRange} (${recruitDays}일)`}
+                  value={`${recruitDays} 일`}
+                />
+                <DashboardSummaryCard
+                  actionLabel="마감일 수정"
+                  label="마감 예정일"
+                  onAction={onAdditionalRecruitment}
+                  primary={formatDashboardDate(draft?.recruitEnd)}
+                  value={deadlineDday.replace(/^D-/u, "D - ")}
+                />
+              </>
+            ) : (
+              <>
+                <DashboardSummaryCard
+                  label="프로그램 모집 기간"
+                  primary={`${recruitRange} (${recruitDays}일)`}
+                  value={`${recruitDays} 일`}
+                />
+                <DashboardSummaryCard
+                  actionLabel="추가모집"
+                  label="마감"
+                  onAction={onAdditionalRecruitment}
+                  primary={formatDashboardDate(draft?.recruitEnd)}
+                  value=""
+                />
+              </>
+            )}
+          </div>
+        </div>
+      </section>
+
+      <section className="grid w-[64.236vw] max-w-[1233px] grid-cols-4 gap-[var(--figma-10)]">
+        <DashboardMetricCard
+          helper={`승인 ${acceptedCount}/${extractCapacityCount(draft?.capacity ?? "") || "00"}`}
+          label="신청자"
+          value={`${program.applicationCount}`}
+          valueSuffix="명"
+        />
+        <DashboardMetricCard label="검토 대기" value={`${pendingCount}`} valueSuffix="건" />
+        <DashboardMetricCard label="미확인 메세지" value="0" valueSuffix="건" />
+        <DashboardMetricCard label="저장" value="0" valueSuffix="회" />
+      </section>
+
+      <section className="flex w-[64.236vw] max-w-[1233px] items-center gap-[var(--figma-12)]">
+        <DashboardListCard
+          emptyText="아직 받은 신청서가 없어요"
+          rows={applicationRows.map((application) => ({
+            badge: application.status === "accepted" ? "승인" : application.status === "rejected" ? "거절" : "검토대기",
+            badgeTone:
+              application.status === "accepted"
+                ? "green"
+                : application.status === "rejected"
+                  ? "slate"
+                  : "orange",
+            date: formatDashboardDate(application.submittedAt),
+            title: application.applicantName,
+          }))}
+          title={`받은 신청서 (${padDashboardCount(program.applicationCount)})`}
+        />
+        <DashboardListCard
+          emptyText="아직 받은 후기가 없어요"
+          rows={reviewRows.map((application, index) => ({
+            badge: index === 0 ? "새로뜬 후기" : undefined,
+            badgeTone: "red",
+            date: formatDashboardDate(application.submittedAt),
+            title: application.applicantName,
+          }))}
+          title={`받은 후기 (${padDashboardCount(reviewRows.length)})`}
+        />
+      </section>
+    </div>
+  );
+}
+
+function DashboardSummaryCard({
+  actionLabel,
+  label,
+  onAction,
+  primary,
+  value,
+}: {
+  actionLabel?: string;
+  label: string;
+  onAction?: () => void;
+  primary: string;
+  value: string;
+}) {
+  return (
+    <div className="flex h-[9.167vw] min-h-[132px] max-h-[176px] min-w-0 flex-1 flex-col justify-center gap-[var(--figma-6)] rounded-[8px] border border-[#6D7A8A] px-[var(--figma-6)]">
+      {actionLabel ? (
+        <div className="flex w-full justify-end px-[var(--figma-12)]">
+          <button
+            className="rounded-[12px] bg-[#FFF6EC] px-[8px] py-[2px] text-[12px] font-medium leading-[1.253] text-[#6D7A8A]"
+            onClick={onAction}
+            type="button"
+          >
+            {actionLabel}
+          </button>
+        </div>
+      ) : null}
+      <div className="flex w-full items-center px-[var(--figma-12)] py-[var(--figma-2)]">
+        <p className="text-[16px] font-medium leading-[1.253] text-[#6D7A8A]">
+          {label}
+        </p>
+      </div>
+      <div className="flex w-full items-center justify-between gap-[var(--figma-12)] px-[var(--figma-16)] text-[#0D0D0C]">
+        <p className="min-w-0 whitespace-pre-line text-[16px] font-semibold leading-[1.253]">
+          {primary}
+        </p>
+        {value ? (
+          <p className="shrink-0 text-[24px] font-medium leading-[1.253] text-[#FF9A3D]">
+            {value}
+          </p>
+        ) : null}
+      </div>
+    </div>
+  );
+}
+
+function DashboardMetricCard({
+  helper,
+  label,
+  value,
+  valueSuffix,
+}: {
+  helper?: string;
+  label: string;
+  value: string;
+  valueSuffix: string;
+}) {
+  return (
+    <div className="flex h-[9.167vw] min-h-[132px] max-h-[176px] flex-col items-center justify-center rounded-[8px] border border-[#6D7A8A]">
+      <div className="flex flex-col gap-[var(--figma-6)] px-[var(--figma-6)] py-[var(--figma-2)]">
+        <div className="flex items-center gap-[var(--figma-8)] whitespace-nowrap text-[16px] font-medium leading-[1.253]">
+          <span className="text-[#6D7A8A]">{label}</span>
+          <span className="text-[24px] text-[#FF9A3D]">
+            {padDashboardCount(value)} {valueSuffix}
+          </span>
+        </div>
+        {helper ? (
+          <p className="whitespace-nowrap text-[16px] font-semibold leading-[1.253] text-[#0D0D0C]">
+            {helper}
+          </p>
+        ) : null}
+      </div>
+    </div>
+  );
+}
+
+function DashboardListCard({
+  emptyText,
+  rows,
+  title,
+}: {
+  emptyText: string;
+  rows: Array<{
+    badge?: string;
+    badgeTone?: "green" | "orange" | "red" | "slate";
+    date: string;
+    title: string;
+  }>;
+  title: string;
+}) {
+  return (
+    <div className="flex h-[14.653vw] min-h-[211px] max-h-[281px] min-w-0 flex-1 flex-col gap-[var(--figma-12)] rounded-[8px] border border-[#6D7A8A] p-[var(--figma-22)]">
+      <div className="flex w-full items-center gap-[var(--figma-8)] px-[var(--figma-6)] py-[var(--figma-2)] text-[16px] font-medium leading-[1.253]">
+        <p className="shrink-0 whitespace-nowrap text-[#6D7A8A]">{title}</p>
+        <p className="min-w-0 flex-1 text-right text-[14px] text-[#CAC4BC]">
+          더보기+
+        </p>
+      </div>
+      {rows.length > 0 ? (
+        <div className="grid">
+          {rows.map((row) => (
+            <div
+              className="flex items-center justify-center gap-[var(--figma-12)] border-b border-[#D9D9D9] px-[var(--figma-12)] py-[var(--figma-6)]"
+              key={`${row.title}-${row.date}-${row.badge ?? ""}`}
+            >
+              <p className="shrink-0 whitespace-nowrap text-[16px] font-medium leading-[1.253] text-[#0D0D0C]">
+                {row.title}
+              </p>
+              {row.badge ? <DashboardTinyBadge label={row.badge} tone={row.badgeTone} /> : null}
+              <p className="min-w-0 flex-1 text-right text-[14px] font-medium leading-[1.253] text-[#6D7A8A]">
+                {row.date}
+              </p>
+            </div>
+          ))}
+        </div>
+      ) : (
+        <div className="flex min-h-0 flex-1 items-center justify-center">
+          <p className="text-center text-[14px] font-medium leading-[1.253] text-[#0D0D0C]">
+            {emptyText}
+          </p>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function DashboardTinyBadge({
+  label,
+  tone = "orange",
+}: {
+  label: string;
+  tone?: "green" | "orange" | "red" | "slate";
+}) {
+  const toneClassName =
+    tone === "green"
+      ? "bg-[#7A8B52] text-[#F3F3F3]"
+      : tone === "red"
+        ? "bg-[#C75C36] text-[#FCFCFC]"
+        : tone === "slate"
+          ? "bg-[#6D7A8A] text-[#F3F3F3]"
+          : "bg-[#F7B267] text-[#FCFCFC]";
+
+  return (
+    <span
+      className={`shrink-0 rounded-[6px] px-[6px] py-[3px] text-[12px] font-semibold leading-[1.253] ${toneClassName}`}
+    >
+      {label}
+    </span>
   );
 }
 
@@ -2572,7 +3073,7 @@ function parseTimetableRows(value: string): ScheduleTimetableRow[] {
     .filter(Boolean)
     .slice(0, 8)
     .map((line) => {
-      const match = line.match(/^(\d{1,2})\s*:\s*(\d{2})(?:\s+(.+))?$/u);
+      const match = line.match(/^(\d{1,2})\s*:\s*(\d{2})(?:\s*(?:\||-|–|\s)\s*(.+))?$/u);
       if (!match) return { text: line, time: "" };
 
       const hour = match[1].padStart(2, "0");
@@ -2644,7 +3145,7 @@ function SchedulePhotoSlots({
         const image = images[index] ?? "";
         return (
           <label
-            className="flex h-[var(--figma-110)] w-[var(--figma-96)] cursor-pointer flex-col items-center justify-center gap-[var(--figma-6)] rounded-[var(--figma-7)] border border-dashed border-[#F7B267] bg-[#F9F9F9] bg-cover bg-center text-[length:var(--figma-10)] font-medium leading-[1.253] text-[#D9D9D9] transition hover:border-[#FE701E] hover:text-[#FE701E]"
+            className="flex h-[var(--figma-110)] w-[var(--figma-96)] cursor-pointer flex-col items-center justify-center gap-[var(--figma-6)] rounded-[var(--figma-7)] border-[0.5px] border-solid border-[#F7B267] bg-[#F9F9F9] bg-cover bg-center text-[length:var(--figma-10)] font-medium leading-[1.253] text-[#D9D9D9] transition hover:border-[#FE701E] hover:text-[#FE701E]"
             key={index}
             style={image ? { backgroundImage: `url("${image}")` } : undefined}
           >
@@ -3498,31 +3999,88 @@ function DashboardChecklistRow({ step }: { step: DashboardOnboardingStep }) {
 
 function DashboardFooter({
   canDelete,
+  dashboardState,
   onDelete,
+  onNextRound,
   onOpenSchedule,
+  onProgramCopy,
+  onSave,
 }: {
   canDelete: boolean;
+  dashboardState: ProgramDashboardState;
   onDelete: () => void;
+  onNextRound: () => void;
   onOpenSchedule: () => void;
+  onProgramCopy: () => void;
+  onSave: () => void;
 }) {
+  if (dashboardState === "creating") {
+    return (
+      <div className="flex w-full gap-[1.806vw] border-t border-[#6D7A8A] bg-white px-[1.944vw] py-[1.389vw]">
+        <DashboardFooterButton onClick={onOpenSchedule} tone="orange">
+          오픈 예약하기
+        </DashboardFooterButton>
+        <DashboardFooterButton disabled={!canDelete} onClick={onDelete} tone="sand">
+          프로젝트 삭제
+        </DashboardFooterButton>
+      </div>
+    );
+  }
+
+  if (dashboardState === "ended") {
+    return (
+      <div className="flex w-full gap-[1.806vw] border-t border-[#6D7A8A] bg-white px-[1.944vw] py-[1.389vw]">
+        <DashboardFooterButton onClick={onNextRound} tone="outline-orange">
+          다음 기수 모집
+        </DashboardFooterButton>
+        <DashboardFooterButton onClick={onProgramCopy} tone="slate">
+          프로그램 복사
+        </DashboardFooterButton>
+      </div>
+    );
+  }
+
   return (
     <div className="flex w-full gap-[1.806vw] border-t border-[#6D7A8A] bg-white px-[1.944vw] py-[1.389vw]">
-      <button
-        className="inline-flex h-[29px] items-center justify-center rounded-[4px] bg-[#FE701E] px-[19px] text-[12px] font-medium leading-[1.253] text-[#FFF6EC]"
-        onClick={onOpenSchedule}
-        type="button"
-      >
-        오픈 예약하기
-      </button>
-      <button
-        className="inline-flex h-[29px] items-center justify-center rounded-[4px] bg-[#CAC4BC] px-[19px] text-[12px] font-medium leading-[1.253] text-[#FFF6EC] disabled:cursor-not-allowed disabled:opacity-60"
-        disabled={!canDelete}
-        onClick={onDelete}
-        type="button"
-      >
-        프로젝트 삭제
-      </button>
+      <DashboardFooterButton onClick={onSave} tone="orange">
+        저장하기
+      </DashboardFooterButton>
+      <DashboardFooterButton onClick={onProgramCopy} tone="slate">
+        프로그램 복사
+      </DashboardFooterButton>
     </div>
+  );
+}
+
+function DashboardFooterButton({
+  children,
+  disabled = false,
+  onClick,
+  tone,
+}: {
+  children: ReactNode;
+  disabled?: boolean;
+  onClick: () => void;
+  tone: "orange" | "outline-orange" | "sand" | "slate";
+}) {
+  const toneClassName =
+    tone === "orange"
+      ? "bg-[#FE701E] text-[#FFF6EC]"
+      : tone === "outline-orange"
+        ? "border-[0.8px] border-[#FE701E] bg-[#FCFCFC] text-[#FE701E]"
+        : tone === "slate"
+          ? "bg-[#6D7A8A] text-[#FFF6EC]"
+          : "bg-[#CAC4BC] text-[#FFF6EC]";
+
+  return (
+    <button
+      className={`inline-flex h-[29px] items-center justify-center rounded-[4px] px-[19px] text-[12px] font-medium leading-[1.253] disabled:cursor-not-allowed disabled:opacity-60 ${toneClassName}`}
+      disabled={disabled}
+      onClick={onClick}
+      type="button"
+    >
+      {children}
+    </button>
   );
 }
 
@@ -3584,53 +4142,255 @@ function OnboardingRequiredDialog({
 }
 
 function OpenScheduleDialog({
+  deadlineMode,
   isSaving,
+  onDeadlineModeChange,
   onClose,
   onSchedule,
+  onScheduledCloseDateChange,
   onScheduledDateChange,
+  scheduledCloseDate,
   scheduledDate,
 }: {
+  deadlineMode: DashboardDeadlineMode;
   isSaving: boolean;
+  onDeadlineModeChange: (value: DashboardDeadlineMode) => void;
   onClose: () => void;
   onSchedule: () => void;
+  onScheduledCloseDateChange: (value: string) => void;
   onScheduledDateChange: (value: string) => void;
+  scheduledCloseDate: string;
   scheduledDate: string;
 }) {
   return (
     <ProgramDashboardModal onClose={onClose}>
-      <h2 className="text-[18px] font-bold leading-[1.253] text-[#0D0D0C]">
-        오픈 예약하기
+      <h2 className="text-[14px] font-medium leading-[1.253] text-[#0D0D0C]">
+        오픈 일정 설정
       </h2>
-      <p className="mt-3 text-[13px] font-medium leading-[1.6] text-[#6D7A8A]">
-        선택한 날짜에 맞춰 프로그램을 모집예정 상태로 저장합니다.
+      <p className="mt-[16px] text-[14px] font-normal leading-[1.253] text-[#6D7A8A]">
+        오픈일과 모집 마감 방식을 설정해주세요.
       </p>
-      <label className="mt-4 grid gap-2">
-        <span className="text-[13px] font-bold leading-[1.253] text-[#5B3A29]">
-          오픈 예약일
-        </span>
-        <input
-          className="h-[40px] rounded-[6px] border border-[#CAC4BC] bg-white px-3 text-[14px] font-medium leading-[1.253] text-[#0D0D0C] outline-none focus:border-[#FF9A3D] focus:ring-2 focus:ring-[#FF9A3D]/15"
-          onChange={(event) => onScheduledDateChange(event.target.value)}
-          type="date"
-          value={scheduledDate}
-        />
-      </label>
-      <div className="mt-5 flex justify-end gap-2">
-        <button
-          className="inline-flex h-[32px] items-center rounded-[4px] bg-[#CAC4BC] px-4 text-[12px] font-bold leading-[1.253] text-white"
-          onClick={onClose}
-          type="button"
-        >
-          취소
-        </button>
-        <button
-          className="inline-flex h-[32px] items-center rounded-[4px] bg-[#FE701E] px-4 text-[12px] font-bold leading-[1.253] text-white disabled:opacity-45"
+      <div className="mt-[16px] grid gap-[16px]">
+        <DashboardModalField label="오픈 예정일">
+          <DashboardDateInput
+            onChange={onScheduledDateChange}
+            value={scheduledDate}
+          />
+        </DashboardModalField>
+        <DashboardModalField label="마감 예정일">
+          <div className="grid gap-[6px]">
+            <DashboardRadioOption
+              checked={deadlineMode === "auto"}
+              label="모집 완료 시 자동 마감"
+              onClick={() => onDeadlineModeChange("auto")}
+            />
+            <DashboardRadioOption
+              checked={deadlineMode === "manual"}
+              label="마감 날짜 직접 설정"
+              onClick={() => onDeadlineModeChange("manual")}
+            />
+            <DashboardDateInput
+              disabled={deadlineMode === "auto"}
+              onChange={onScheduledCloseDateChange}
+              value={scheduledCloseDate}
+            />
+          </div>
+        </DashboardModalField>
+      </div>
+      <div className="flex w-full justify-end pt-[12px]">
+        <DashboardModalButton
           disabled={isSaving || !scheduledDate}
           onClick={onSchedule}
-          type="button"
+          width="compact"
         >
-          {isSaving ? "저장 중" : "예약하기"}
-        </button>
+          {isSaving ? "저장 중" : "생성"}
+        </DashboardModalButton>
+      </div>
+    </ProgramDashboardModal>
+  );
+}
+
+function CopyProgramDialog({
+  isSaving,
+  onClose,
+  onCopy,
+  onTitleChange,
+  title,
+}: {
+  isSaving: boolean;
+  onClose: () => void;
+  onCopy: () => void;
+  onTitleChange: (value: string) => void;
+  title: string;
+}) {
+  return (
+    <ProgramDashboardModal onClose={onClose}>
+      <h2 className="text-[14px] font-medium leading-[1.253] text-[#0D0D0C]">
+        프로그램 복사
+      </h2>
+      <div className="mt-[21px] text-[14px] font-normal leading-[1.253] text-[#6D7A8A]">
+        <p>복사된 프로그램은</p>
+        <p>호스트 페이지 [내 프로그램 &gt; 예정 프로그램]에서 확인 가능합니다.</p>
+      </div>
+      <input
+        className="mt-[21px] h-[30px] w-full rounded-[7px] border-[0.5px] border-[#F7B267] bg-[#F9F9F9] px-[12px] text-[12px] font-medium leading-[1.253] text-[#0D0D0C] outline-none placeholder:text-[#D9D9D9]"
+        onChange={(event) => onTitleChange(event.target.value)}
+        placeholder="해당 프로그램 이름(2)"
+        value={title}
+      />
+      <div className="flex w-full justify-end pt-[12px]">
+        <DashboardModalButton
+          disabled={isSaving || !title.trim()}
+          onClick={onCopy}
+          width="compact"
+        >
+          {isSaving ? "저장 중" : "생성"}
+        </DashboardModalButton>
+      </div>
+    </ProgramDashboardModal>
+  );
+}
+
+function AdditionalRecruitmentDialog({
+  approvedCount,
+  capacity,
+  currentEndDate,
+  endDate,
+  isSaving,
+  onCapacityChange,
+  onClose,
+  onEndDateChange,
+  onStart,
+  requestedCapacity,
+}: {
+  approvedCount: number;
+  capacity: string;
+  currentEndDate: string;
+  endDate: string;
+  isSaving: boolean;
+  onCapacityChange: (value: string) => void;
+  onClose: () => void;
+  onEndDateChange: (value: string) => void;
+  onStart: () => void;
+  requestedCapacity: string;
+}) {
+  return (
+    <ProgramDashboardModal onClose={onClose}>
+      <div className="grid gap-[22px]">
+        <div className="grid gap-[12px] text-[14px] leading-[1.253]">
+          <h2 className="font-medium text-[#0D0D0C]">추가 모집</h2>
+          <p className="font-normal text-[#6D7A8A]">
+            마감일 연장 또는 정원을 추가해 모집을 이어나갈 수 있어요
+          </p>
+        </div>
+        <DashboardModalField label="마감일 변경">
+          <p className="px-[6px] text-[14px] font-medium leading-[1.253] text-[#6D7A8A]">
+            현재 마감일 : {formatDashboardDate(currentEndDate)}
+          </p>
+          <DashboardDateInput onChange={onEndDateChange} value={endDate} />
+        </DashboardModalField>
+        <DashboardModalField label="정원 추가">
+          <div className="flex gap-[12px] text-[14px] font-normal leading-[1.253] text-[#6D7A8A]">
+            <p>현재 정원 : {capacity || "00명"}</p>
+            <p>승인 인원 : {approvedCount}명</p>
+          </div>
+          <DashboardUnitInput
+            onChange={onCapacityChange}
+            unit="명"
+            value={requestedCapacity}
+          />
+        </DashboardModalField>
+        <DashboardModalButton disabled={isSaving} onClick={onStart} width="full">
+          {isSaving ? "저장 중" : "추가 모집 시작"}
+        </DashboardModalButton>
+      </div>
+    </ProgramDashboardModal>
+  );
+}
+
+function NextRoundDialog({
+  capacity,
+  closeDate,
+  currentCapacity,
+  currentRoundDateRange,
+  currentRoundNumber,
+  isSaving,
+  onCapacityChange,
+  onClose,
+  onCloseDateChange,
+  onOpenDateChange,
+  onRoundNumberChange,
+  onStart,
+  openDate,
+  roundNumber,
+}: {
+  capacity: string;
+  closeDate: string;
+  currentCapacity: string;
+  currentRoundDateRange: string;
+  currentRoundNumber: number;
+  isSaving: boolean;
+  onCapacityChange: (value: string) => void;
+  onClose: () => void;
+  onCloseDateChange: (value: string) => void;
+  onOpenDateChange: (value: string) => void;
+  onRoundNumberChange: (value: string) => void;
+  onStart: () => void;
+  openDate: string;
+  roundNumber: string;
+}) {
+  return (
+    <ProgramDashboardModal onClose={onClose}>
+      <div className="grid gap-[22px]">
+        <section className="grid gap-[12px] border-b border-[#6D7A8A] px-[8px] pb-[10px] text-[14px] leading-[1.253]">
+          <h2 className="font-medium text-[#0D0D0C]">다음 기수 모집</h2>
+          <div className="font-normal text-[#6D7A8A]">
+            <p>이 프로그램 페이지를 그대로 유지하며 다음 기수를 오픈해요</p>
+            <p>후기, 저장 등 기존 정보는 모두 이어지고, 다음 기수 알림 신청자에게</p>
+            <p>오픈 알림이 발송돼요</p>
+          </div>
+          <div className="flex items-center gap-[6px]">
+            <p className="shrink-0 font-medium text-[#0D0D0C]">현재 기수</p>
+            <div className="flex min-w-0 items-center gap-[14px] px-[6px]">
+              <span className="rounded-[14px] bg-[#F7B267] px-[16px] py-[3px] text-[12px] font-semibold leading-[1.253] text-[#FCFCFC]">
+                {padDashboardCount(currentRoundNumber)} 기
+              </span>
+              <span className="text-[14px] font-medium leading-[1.253] text-[#6D7A8A]">
+                {currentRoundDateRange}
+              </span>
+              <span className="text-[14px] font-medium leading-[1.253] text-[#6D7A8A]">
+                정원 : {currentCapacity || "00명"}
+              </span>
+            </div>
+          </div>
+        </section>
+        <DashboardModalField label="기수 넘버">
+          <p className="text-[12px] font-medium leading-[1.253] text-[#6D7A8A]">
+            프로그램 제목 옆 자동 입력 됩니다.
+          </p>
+          <DashboardUnitInput
+            onChange={onRoundNumberChange}
+            unit="기"
+            value={roundNumber}
+          />
+        </DashboardModalField>
+        <DashboardModalField label="오픈 예정일">
+          <DashboardDateInput onChange={onOpenDateChange} value={openDate} />
+        </DashboardModalField>
+        <DashboardModalField label="마감 예정일">
+          <DashboardRadioOption checked={false} label="모집 완료 시 자동 마감" onClick={() => undefined} />
+          <DashboardRadioOption checked label="마감 날짜 직접 설정" onClick={() => undefined} />
+          <DashboardDateInput onChange={onCloseDateChange} value={closeDate} />
+        </DashboardModalField>
+        <DashboardModalField label="모집 정원">
+          <DashboardUnitInput onChange={onCapacityChange} unit="명" value={capacity} />
+        </DashboardModalField>
+        <p className="text-[14px] font-normal leading-[1.253] text-[#6D7A8A]">
+          일정, 장소 등 세부 내용은 재오픈 후 프로그램 설정에서 수정할 수 있어요
+        </p>
+        <DashboardModalButton disabled={isSaving} onClick={onStart} width="full">
+          {isSaving ? "저장 중" : "다음 기수 시작"}
+        </DashboardModalButton>
       </div>
     </ProgramDashboardModal>
   );
@@ -3651,32 +4411,147 @@ function DeleteProgramDialog({
 }) {
   return (
     <ProgramDashboardModal onClose={onClose}>
-      <h2 className="text-[18px] font-bold leading-[1.253] text-[#0D0D0C]">
-        프로그램을 삭제할까요?
+      <h2 className="text-[14px] font-medium leading-[1.253] text-[#0D0D0C]">
+        프로그램 삭제
       </h2>
-      <p className="mt-3 text-[13px] font-medium leading-[1.6] text-[#6D7A8A]">
-        {canDelete
-          ? `${programTitle}은 아직 온보딩이 완료되지 않아 삭제할 수 있습니다.`
-          : "온보딩이 완료된 프로그램은 이 버튼으로 삭제할 수 없습니다."}
+      <p className="mt-[7px] text-[16px] font-semibold leading-[1.253] text-[#6D7A8A]">
+        작성한 내용이 모두 영구 삭제가 돼요!
       </p>
-      <div className="mt-5 flex justify-end gap-2">
-        <button
-          className="inline-flex h-[32px] items-center rounded-[4px] bg-[#CAC4BC] px-4 text-[12px] font-bold leading-[1.253] text-white"
-          onClick={onClose}
-          type="button"
-        >
-          취소
-        </button>
-        <button
-          className="inline-flex h-[32px] items-center rounded-[4px] bg-[#FE701E] px-4 text-[12px] font-bold leading-[1.253] text-white disabled:opacity-45"
+      <p className="mt-[7px] text-[12px] font-medium leading-[1.253] text-[#DE1D1D]">
+        {canDelete
+          ? "삭제 후 복구가 불가능 해요."
+          : `${programTitle}은 온보딩이 완료되어 빠른 삭제가 제한돼요.`}
+      </p>
+      <div className="pt-[14px]">
+        <DashboardModalButton
           disabled={!canDelete || isDeleting}
           onClick={onDelete}
-          type="button"
+          width="full"
         >
           {isDeleting ? "삭제 중" : "삭제하기"}
-        </button>
+        </DashboardModalButton>
       </div>
     </ProgramDashboardModal>
+  );
+}
+
+function DashboardModalField({
+  children,
+  label,
+}: {
+  children: ReactNode;
+  label: string;
+}) {
+  return (
+    <label className="grid gap-[6px]">
+      <span className="text-[14px] font-medium leading-[1.253] text-[#0D0D0C]">
+        {label}
+      </span>
+      {children}
+    </label>
+  );
+}
+
+function DashboardDateInput({
+  disabled = false,
+  onChange,
+  value,
+}: {
+  disabled?: boolean;
+  onChange: (value: string) => void;
+  value: string;
+}) {
+  return (
+    <div className="relative w-[255px] rounded-[7px] border-[0.5px] border-[#F7B267] bg-[#F9F9F9]">
+      <input
+        className="h-[34px] w-full appearance-none rounded-[7px] bg-transparent px-[12px] pr-[42px] text-[12px] font-medium leading-[1.253] text-[#0D0D0C] outline-none placeholder:text-[#D9D9D9] disabled:text-[#CAC4BC]"
+        disabled={disabled}
+        onChange={(event) => onChange(event.target.value)}
+        type="date"
+        value={value}
+      />
+      <CalendarDays
+        aria-hidden="true"
+        className="pointer-events-none absolute right-[12px] top-1/2 -translate-y-1/2 text-[#6D7A8A]"
+        size={19}
+        strokeWidth={1.8}
+      />
+    </div>
+  );
+}
+
+function DashboardRadioOption({
+  checked,
+  label,
+  onClick,
+}: {
+  checked: boolean;
+  label: string;
+  onClick: () => void;
+}) {
+  return (
+    <button
+      className="inline-flex w-fit items-center gap-[6px] px-[6px] text-left text-[14px] font-medium leading-[1.253] text-[#6D7A8A]"
+      onClick={onClick}
+      type="button"
+    >
+      <span
+        className={`grid size-[14px] place-items-center rounded-full border ${
+          checked ? "border-[#FE701E]" : "border-[#6D7A8A]"
+        }`}
+      >
+        {checked ? <span className="size-[8px] rounded-full bg-[#FE701E]" /> : null}
+      </span>
+      {label}
+    </button>
+  );
+}
+
+function DashboardUnitInput({
+  onChange,
+  unit,
+  value,
+}: {
+  onChange: (value: string) => void;
+  unit: string;
+  value: string;
+}) {
+  return (
+    <div className="flex h-[34px] w-[105px] items-center rounded-[7px] border-[0.5px] border-[#F7B267] bg-[#F9F9F9] pl-[12px] pr-[6px] text-[12px] font-medium leading-[1.253]">
+      <input
+        className="min-w-0 flex-1 bg-transparent text-[#0D0D0C] outline-none placeholder:text-[#D9D9D9]"
+        inputMode="numeric"
+        onChange={(event) => onChange(event.target.value.replace(/[^\d]/gu, ""))}
+        placeholder="0"
+        value={value}
+      />
+      <span className="shrink-0 text-[#0D0D0C]">{unit}</span>
+    </div>
+  );
+}
+
+function DashboardModalButton({
+  children,
+  disabled = false,
+  onClick,
+  width,
+}: {
+  children: ReactNode;
+  disabled?: boolean;
+  onClick: () => void;
+  width: "compact" | "full";
+}) {
+  return (
+    <button
+      className={`inline-flex h-[29px] items-center justify-center rounded-[4px] bg-[#FE701E] pb-[5px] pl-[19px] pr-[18px] pt-[6px] text-[12px] font-medium leading-[1.253] text-[#FFF6EC] disabled:cursor-not-allowed disabled:opacity-45 ${
+        width === "full" ? "w-full" : ""
+      }`}
+      disabled={disabled}
+      onClick={onClick}
+      type="button"
+    >
+      {children}
+    </button>
   );
 }
 
@@ -3693,7 +4568,7 @@ function ProgramDashboardModal({
       className="fixed inset-0 z-[100] grid place-items-center overflow-y-auto bg-black/20 px-4 py-8"
       role="dialog"
     >
-      <div className="w-[41.875vw] min-w-[603px] max-w-[804px] rounded-[12px] border border-[#D9D9D9] bg-[#F9F9F9] px-[1.25vw] py-[1.667vw] shadow-[0_18px_50px_rgba(0,0,0,0.12)] max-md:w-full max-md:min-w-0">
+      <div className="w-[457px] max-w-[calc(100vw-32px)] rounded-[12px] border border-[#D9D9D9] bg-[#F9F9F9] px-[18px] py-[24px] shadow-[0_18px_50px_rgba(0,0,0,0.12)]">
         <div className="flex justify-end">
           <button
             aria-label="닫기"
@@ -3704,7 +4579,7 @@ function ProgramDashboardModal({
             <X size={16} strokeWidth={2.2} />
           </button>
         </div>
-        <div className="mt-2">{children}</div>
+        <div className="mt-[6px]">{children}</div>
       </div>
     </div>
   );
@@ -4040,6 +4915,87 @@ function isLinkedApplicationForm(
     (Boolean(form.programId && form.programId === draft.id) ||
       normalizeIdentifier(form.programTitle) === normalizeIdentifier(draft.title))
   );
+}
+
+function parsePositiveInteger(value: string): number {
+  const parsed = Number.parseInt(value.replace(/[^\d]/gu, ""), 10);
+  return Number.isFinite(parsed) && parsed > 0 ? parsed : 0;
+}
+
+function extractCapacityCount(value: string): number {
+  return parsePositiveInteger(value);
+}
+
+function formatCapacityCount(value: number): string {
+  return value > 0 ? `${value}명` : "0명";
+}
+
+function stripRoundSuffix(value: string): string {
+  return value.replace(/\s*\d+\s*기$/u, "").trim();
+}
+
+function extractRoundNumber(value: string): number {
+  const match = value.match(/(\d+)\s*기$/u);
+  return match ? Number(match[1]) : 0;
+}
+
+function padDashboardCount(value: number | string): string {
+  const numericValue =
+    typeof value === "number" ? value : Number.parseInt(value, 10);
+
+  if (!Number.isFinite(numericValue)) return "00";
+  return numericValue.toString().padStart(2, "0");
+}
+
+function formatDashboardDate(value?: string): string {
+  if (!value) return "0000년 00월 00일";
+
+  const parts = getDateParts(value);
+  if (!parts) return value;
+
+  return `${parts.year}년 ${parts.month}월 ${parts.day}일`;
+}
+
+function formatDashboardDateRange(start?: string, end?: string): string {
+  if (!start && !end) return "0000년 00월 00일 - 00월 00일";
+
+  const startParts = start ? getDateParts(start) : undefined;
+  const endParts = end ? getDateParts(end) : undefined;
+
+  if (startParts && endParts && startParts.year === endParts.year) {
+    return `${startParts.year}년 ${startParts.month}월 ${startParts.day}일 - ${endParts.month}월 ${endParts.day}일`;
+  }
+
+  return `${formatDashboardDate(start)} - ${formatDashboardDate(end)}`;
+}
+
+function countDateDays(start?: string, end?: string): number {
+  if (!start || !end) return 0;
+
+  const startDate = new Date(`${start}T00:00:00+09:00`);
+  const endDate = new Date(`${end}T00:00:00+09:00`);
+  if (Number.isNaN(startDate.getTime()) || Number.isNaN(endDate.getTime())) {
+    return 0;
+  }
+
+  return Math.max(
+    0,
+    Math.round((endDate.getTime() - startDate.getTime()) / 86_400_000) + 1,
+  );
+}
+
+function getDashboardDday(targetDate: string, status: ProgramStatus): string {
+  if (status === "closed") return "마감";
+  if (status === "earlyClosed") return "조기마감";
+
+  const target = new Date(`${targetDate}T00:00:00+09:00`);
+  if (Number.isNaN(target.getTime())) return "D - 00";
+
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  const diff = Math.ceil((target.getTime() - today.getTime()) / 86_400_000);
+  if (diff <= 0) return "D-Day";
+  return `D - ${diff.toString().padStart(2, "0")}`;
 }
 
 function formatProgramNumber(programId: string): string {
