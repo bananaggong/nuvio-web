@@ -175,6 +175,46 @@ const figmaScaleStyle = {
   "--figma-462": "clamp(462px, 32.083vw, 616px)",
 } as CSSProperties;
 
+function HostProgramFigmaScaleOverrides() {
+  return (
+    <style>{`
+      [data-host-program-scale] .text-\\[7px\\] { font-size: calc(7px * var(--figma-scale)); }
+      [data-host-program-scale] .text-\\[8px\\] { font-size: calc(8px * var(--figma-scale)); }
+      [data-host-program-scale] .text-\\[9px\\] { font-size: calc(9px * var(--figma-scale)); }
+      [data-host-program-scale] .text-\\[10px\\],
+      [data-host-program-scale] .text-\\[length\\:var\\(--figma-10\\)\\] { font-size: var(--figma-10); }
+      [data-host-program-scale] .text-\\[12px\\],
+      [data-host-program-scale] .text-\\[length\\:var\\(--figma-12\\)\\] { font-size: var(--figma-12); }
+      [data-host-program-scale] .text-\\[13px\\] { font-size: calc(13px * var(--figma-scale)); }
+      [data-host-program-scale] .text-\\[14px\\],
+      [data-host-program-scale] .text-\\[length\\:var\\(--figma-14\\)\\] { font-size: var(--figma-14); }
+      [data-host-program-scale] .text-\\[16px\\],
+      [data-host-program-scale] .text-\\[length\\:var\\(--figma-16\\)\\] { font-size: var(--figma-16); }
+      [data-host-program-scale] .text-\\[18px\\],
+      [data-host-program-scale] .text-\\[length\\:var\\(--figma-18\\)\\] { font-size: var(--figma-18); }
+      [data-host-program-scale] .text-\\[20px\\],
+      [data-host-program-scale] .text-\\[length\\:var\\(--figma-20\\)\\] { font-size: var(--figma-20); }
+      [data-host-program-scale] .text-\\[24px\\],
+      [data-host-program-scale] .text-\\[length\\:var\\(--figma-24\\)\\] { font-size: var(--figma-24); }
+      [data-host-program-scale] .font-normal { font-weight: 400; }
+      [data-host-program-scale] .font-medium { font-weight: 500; }
+      [data-host-program-scale] .font-semibold { font-weight: 600; }
+      [data-host-program-scale] .font-bold { font-weight: 700; }
+      [data-host-program-scale] .font-black { font-weight: 900; }
+      [data-host-program-scale] .leading-none { line-height: 1; }
+      [data-host-program-scale] .leading-\\[1\\.25\\] { line-height: 1.25; }
+      [data-host-program-scale] .leading-\\[1\\.253\\] { line-height: 1.253; }
+      [data-host-program-scale] .leading-\\[1\\.28\\] { line-height: 1.28; }
+      [data-host-program-scale] .leading-\\[1\\.3\\] { line-height: 1.3; }
+      [data-host-program-scale] .leading-\\[1\\.35\\] { line-height: 1.35; }
+      [data-host-program-scale] .leading-\\[1\\.45\\] { line-height: 1.45; }
+      [data-host-program-scale] .leading-\\[1\\.46\\] { line-height: 1.46; }
+      [data-host-program-scale] .leading-\\[1\\.6\\] { line-height: 1.6; }
+      [data-host-program-scale] .leading-\\[1\\.7\\] { line-height: 1.7; }
+    `}</style>
+  );
+}
+
 type KakaoPostcodeData = {
   address: string;
   apartment: "Y" | "N";
@@ -687,8 +727,10 @@ export function HostProgramHub({
   return (
     <div
       className="font-pretendard min-h-[calc(100vh-4.861vw)] bg-white text-[#33241C]"
+      data-host-program-scale
       style={figmaScaleStyle}
     >
+      <HostProgramFigmaScaleOverrides />
       <div className="flex min-h-[calc(100vh-4.861vw)] max-md:flex-col">
         <ProgramBuilderSidebar
           activePanel={activePanel}
