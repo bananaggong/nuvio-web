@@ -153,6 +153,10 @@ const figmaScaleStyle = {
   "--figma-50": "clamp(50px, 3.472vw, 66.667px)",
   "--figma-96": "clamp(96px, 6.667vw, 128px)",
   "--figma-110": "clamp(110px, 7.639vw, 146.667px)",
+  "--figma-113": "clamp(113px, 7.847vw, 150.667px)",
+  "--figma-193": "clamp(193px, 13.403vw, 257.333px)",
+  "--figma-256": "clamp(256px, 17.778vw, 341.333px)",
+  "--figma-262": "clamp(262px, 18.194vw, 349.333px)",
 } as CSSProperties;
 
 type KakaoPostcodeData = {
@@ -565,7 +569,7 @@ export function HostProgramHub({
 
         <section className="flex min-w-0 flex-1 flex-col">
           {!dashboardPanelActive && !embeddedPreviewPanel ? (
-          <div className="ml-[2.778vw] flex h-[5.972vw] min-h-[86px] w-[64.236vw] max-w-[1233px] items-end justify-end pb-[1.25vw] text-[16px] font-normal leading-[1.253] text-[#6D7A8A]">
+          <div className="ml-[2.778vw] flex h-[var(--figma-96)] w-[64.236vw] max-w-[1233px] items-start justify-end pt-[var(--figma-44)] text-[16px] font-normal leading-[1.253] text-[#6D7A8A]">
             최근 수정일 : {formatDateTime(currentUpdatedAt)}
           </div>
           ) : null}
@@ -586,7 +590,9 @@ export function HostProgramHub({
                   : "min-w-0 px-[2.778vw] pb-0 max-md:px-5"
               }
             >
-              {!dashboardPanelActive && !embeddedPreviewPanel ? (
+              {!dashboardPanelActive &&
+              !embeddedPreviewPanel &&
+              (saveMessage || saveError || !draft) ? (
               <div className="min-h-[var(--figma-28)]">
                 {saveMessage ? (
                   <p className="text-[14px] font-black text-[#FE701E]">
@@ -1060,8 +1066,8 @@ function BasicPanel({
 
   return (
     <section className="bg-white">
-      <div className="w-[64.236vw] max-w-[1233px]">
-        <SettingsFormBlock>
+      <div className="flex w-[64.236vw] max-w-[1233px] flex-col gap-[var(--figma-32)]">
+        <SettingsFormBlock className="min-h-[var(--figma-113)]">
           <div className="flex w-full flex-col gap-[var(--figma-14)]">
             <SettingsFieldLabel>프로그램 명</SettingsFieldLabel>
             <FigmaTextInput
@@ -1072,7 +1078,7 @@ function BasicPanel({
           </div>
         </SettingsFormBlock>
 
-        <SettingsFormBlock>
+        <SettingsFormBlock className="min-h-[var(--figma-262)]">
           <div className="flex w-full flex-col gap-[var(--figma-44)]">
             <div className="flex w-full flex-col gap-[var(--figma-14)]">
               <div className="flex flex-col gap-[var(--figma-12)]">
@@ -1105,7 +1111,7 @@ function BasicPanel({
           </div>
         </SettingsFormBlock>
 
-        <SettingsFormBlock>
+        <SettingsFormBlock className="min-h-[var(--figma-113)]">
           <div className="flex w-full flex-col gap-[var(--figma-14)]">
             <SettingsFieldLabel>모집인원</SettingsFieldLabel>
             <div className="flex items-center gap-[var(--figma-8)]">
@@ -1123,7 +1129,7 @@ function BasicPanel({
           </div>
         </SettingsFormBlock>
 
-        <SettingsFormBlock>
+        <SettingsFormBlock className="min-h-[var(--figma-256)]">
           <div className="flex w-full flex-col gap-[var(--figma-14)]">
             <SettingsFieldLabel>신청방법</SettingsFieldLabel>
             <div className="flex flex-col gap-[var(--figma-6)]">
@@ -1161,7 +1167,7 @@ function BasicPanel({
           </div>
         </SettingsFormBlock>
 
-        <SettingsFormBlock>
+        <SettingsFormBlock className="min-h-[var(--figma-193)]">
           <div className="flex w-full flex-col gap-[var(--figma-14)]">
             <SettingsFieldLabel>프로그램 비용</SettingsFieldLabel>
             <div className="flex flex-col gap-[var(--figma-6)]">
