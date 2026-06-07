@@ -346,26 +346,38 @@ export function HostFolderCard({
 
 export function HostProgramRow({
   actionLabel,
+  expanded = false,
   statusFilter,
   items,
   title,
 }: {
   actionLabel: string;
+  expanded?: boolean;
   statusFilter: string;
   items: HostProgramListItem[];
   title: string;
 }) {
-  const visibleItems = items.slice(0, 4);
+  const visibleItems = expanded ? items : items.slice(0, 4);
 
   return (
-    <section className="h-[var(--host-219)] min-h-[219px]">
+    <section
+      className={
+        expanded
+          ? "min-h-[var(--host-219)] pb-[var(--host-16)]"
+          : "h-[var(--host-219)] min-h-[219px]"
+      }
+    >
       <div className="flex h-[var(--host-18)] items-center gap-[var(--host-16)]">
         <h3 className="shrink-0 text-[var(--host-14)] font-medium leading-[1.253] text-[#6D7A8A]">
           {title} ({String(items.length).padStart(2, "0")})
         </h3>
         <span className="h-px flex-1 bg-[#B6C0CA]" />
       </div>
-      <div className="mt-[var(--host-37)] flex items-center gap-[var(--host-23)] max-md:mt-6 max-md:flex-wrap">
+      <div
+        className={`mt-[var(--host-37)] flex items-center gap-[var(--host-23)] max-md:mt-6 max-md:flex-wrap ${
+          expanded ? "flex-wrap" : ""
+        }`}
+      >
         {visibleItems.map((program) => (
           <HostMiniProgramCard
             actionLabel={actionLabel}
@@ -373,20 +385,22 @@ export function HostProgramRow({
             program={program}
           />
         ))}
-        {visibleItems.length < 4
+        {!expanded && visibleItems.length < 4
           ? Array.from({ length: 4 - visibleItems.length }).map((_, index) => (
               <HostMiniProgramCardPlaceholder key={index} />
             ))
           : null}
-        <Link
-          className="flex h-[var(--host-42)] w-[var(--host-42)] shrink-0 flex-col items-center justify-center gap-[var(--host-8)] text-center text-[var(--host-12)] font-normal leading-[1.253] text-[#6D7A8A]"
-          href={`/host?status=${encodeURIComponent(statusFilter)}`}
-        >
-          <span className="grid size-[var(--host-20)] place-items-center rounded-full bg-[#FF9A3D] text-white">
-            <Plus className="size-[var(--host-14)]" strokeWidth={2.4} />
-          </span>
-          <span>전체보기</span>
-        </Link>
+        {!expanded ? (
+          <Link
+            className="flex h-[var(--host-42)] w-[var(--host-42)] shrink-0 flex-col items-center justify-center gap-[var(--host-8)] text-center text-[var(--host-12)] font-normal leading-[1.253] text-[#6D7A8A]"
+            href={`/host?status=${encodeURIComponent(statusFilter)}`}
+          >
+            <span className="grid size-[var(--host-20)] place-items-center rounded-full bg-[#FF9A3D] text-white">
+              <Plus className="size-[var(--host-14)]" strokeWidth={2.4} />
+            </span>
+            <span>전체보기</span>
+          </Link>
+        ) : null}
       </div>
     </section>
   );

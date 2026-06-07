@@ -1,7 +1,7 @@
 "use client";
 
 import { Loader2, X } from "lucide-react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { useMemo, useState } from "react";
 import {
   HostFolderCard,
@@ -47,6 +47,7 @@ export function HostCenterHome({
   workspace: HostVillageWorkspace;
 }) {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const {
     applications,
     programs,
@@ -107,6 +108,9 @@ export function HostCenterHome({
     [programItems],
   );
   const groups = useMemo(() => buildProgramGroups(programItems), [programItems]);
+  const expandedProgramGroupId = getProgramGroupFromStatus(
+    searchParams.get("status"),
+  );
   const folderDialogCounts = useMemo(() => {
     return programItems.reduce<Record<FolderProgramFilter, number>>(
       (acc, program) => {
@@ -318,6 +322,7 @@ export function HostCenterHome({
               {groups.map((group) => (
                 <HostProgramRow
                   actionLabel={group.actionLabel}
+                  expanded={expandedProgramGroupId === group.id}
                   items={group.items}
                   key={group.id}
                   statusFilter={group.id}
@@ -547,6 +552,14 @@ function buildProgramGroups(programs: HostProgramListItem[]): ProgramGroup[] {
       title: "마감된 프로그램",
     },
   ];
+}
+
+function getProgramGroupFromStatus(status: string | null): ProgramGroup["id"] | null {
+  if (status === "open" || status === "upcoming" || status === "closed") {
+    return status;
+  }
+
+  return null;
 }
 
 function buildStandaloneNewProgramDraft(
