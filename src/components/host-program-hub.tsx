@@ -3304,6 +3304,18 @@ function PlacePanel({
     });
   }
 
+  const accommodationSameAsMeeting =
+    draft.placeInfo.accommodationName.trim().length > 0 &&
+    draft.placeInfo.accommodationName.trim() ===
+      draft.placeInfo.meetingAddress.trim();
+
+  function toggleAccommodationSameAsMeeting(checked: boolean) {
+    updatePlaceInfo({
+      accommodationEnabled: checked ? true : draft.placeInfo.accommodationEnabled,
+      accommodationName: checked ? draft.placeInfo.meetingAddress : "",
+    });
+  }
+
   return (
     <SettingsPreviewLayout draft={draft} updatedAt={updatedAt}>
       <div className="flex flex-col gap-[var(--figma-32)]">
@@ -3403,7 +3415,12 @@ function PlacePanel({
             </div>
             <label className="flex items-center gap-[var(--figma-8)] text-[length:var(--figma-14)] font-normal leading-[1.253] text-[#6D7A8A]">
               <input
+                checked={accommodationSameAsMeeting}
                 className="size-[var(--figma-18)] rounded-[4px] border border-[#6D7A8A] accent-[#FE701E]"
+                disabled={!draft.placeInfo.meetingAddress.trim()}
+                onChange={(event) =>
+                  toggleAccommodationSameAsMeeting(event.target.checked)
+                }
                 type="checkbox"
               />
               집결지와 동일한 장소에요
