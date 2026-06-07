@@ -17,7 +17,6 @@ import {
   Minus,
   Plus,
   Redo2,
-  Search,
   Settings,
   Trash2,
   Underline,
@@ -129,6 +128,7 @@ type ProgramDashboardDialog = "delete" | "onboarding-required" | "open-schedule"
 const figmaScaleStyle = {
   "--figma-scale":
     "clamp(1, calc(min(100vw, 1920px) / 1440), 1.333333)",
+  "--figma-2": "clamp(2px, 0.139vw, 2.667px)",
   "--figma-4": "clamp(4px, 0.278vw, 5.333px)",
   "--figma-6": "clamp(6px, 0.417vw, 8px)",
   "--figma-7": "clamp(7px, 0.486vw, 9.333px)",
@@ -140,6 +140,7 @@ const figmaScaleStyle = {
   "--figma-16": "clamp(16px, 1.111vw, 21.333px)",
   "--figma-18": "clamp(18px, 1.25vw, 24px)",
   "--figma-19": "clamp(19px, 1.319vw, 25.333px)",
+  "--figma-20": "clamp(20px, 1.389vw, 26.667px)",
   "--figma-21": "clamp(21px, 1.458vw, 28px)",
   "--figma-22": "clamp(22px, 1.528vw, 29.333px)",
   "--figma-23": "clamp(23px, 1.597vw, 30.667px)",
@@ -154,14 +155,17 @@ const figmaScaleStyle = {
   "--figma-44": "clamp(44px, 3.056vw, 58.667px)",
   "--figma-50": "clamp(50px, 3.472vw, 66.667px)",
   "--figma-55": "clamp(55px, 3.819vw, 73.333px)",
+  "--figma-82": "clamp(82px, 5.694vw, 109.333px)",
   "--figma-96": "clamp(96px, 6.667vw, 128px)",
   "--figma-110": "clamp(110px, 7.639vw, 146.667px)",
   "--figma-113": "clamp(113px, 7.847vw, 150.667px)",
   "--figma-152": "clamp(152px, 10.556vw, 202.667px)",
+  "--figma-185": "clamp(185px, 12.847vw, 246.667px)",
   "--figma-193": "clamp(193px, 13.403vw, 257.333px)",
   "--figma-256": "clamp(256px, 17.778vw, 341.333px)",
   "--figma-262": "clamp(262px, 18.194vw, 349.333px)",
   "--figma-379": "clamp(379px, 26.319vw, 505.333px)",
+  "--figma-462": "clamp(462px, 32.083vw, 616px)",
 } as CSSProperties;
 
 type KakaoPostcodeData = {
@@ -2688,11 +2692,11 @@ function PlacePanel({
 
   return (
     <SettingsPreviewLayout draft={draft} updatedAt={updatedAt}>
-      <div className="flex flex-col gap-[2.222vw]">
+      <div className="flex flex-col gap-[var(--figma-32)]">
         <DetailFormBlock>
           <div className="flex w-full flex-col gap-[var(--figma-14)]">
             <SettingsFieldLabel>프로그램 지역</SettingsFieldLabel>
-            <div className="grid grid-cols-2 gap-[var(--figma-22)]">
+            <div className="grid grid-cols-2 gap-[var(--figma-14)]">
               <FigmaTextInput
                 onChange={(region) => updateDraft({ region })}
                 placeholder="시 / 도 입력"
@@ -2707,12 +2711,13 @@ function PlacePanel({
           </div>
         </DetailFormBlock>
 
-        <DetailFormBlock>
-          <div className="flex w-full flex-col gap-[var(--figma-24)]">
+        <DetailFormBlock paddingClassName="px-[var(--figma-22)] pb-[var(--figma-14)] pt-0">
+          <div className="flex w-full flex-col gap-[var(--figma-12)]">
             <SettingsFieldLabel>집결지 안내</SettingsFieldLabel>
             <AddressSearchField
               address={draft.placeInfo.meetingAddress}
               addressDetail={draft.placeInfo.meetingAddressDetail}
+              label="주소"
               onAddressChange={(meetingAddress) => updatePlaceInfo({ meetingAddress })}
               onAddressDetailChange={(meetingAddressDetail) =>
                 updatePlaceInfo({ meetingAddressDetail })
@@ -2720,11 +2725,14 @@ function PlacePanel({
             />
             <MapPreviewBox address={draft.placeInfo.meetingAddress} />
             <FigmaTextarea
+              description="집결지 장소에 대해 추가 안내사항이 있다면 입력해주세요"
+              heightClass="h-[var(--figma-31)]"
               onChange={(meetingMemo) => updatePlaceInfo({ meetingMemo })}
               placeholder="예 : 00옆 00출구 앞 , 담당자 피켓 확인 장소 등"
               title="집결지 추가 안내 사항 (선택)"
               value={draft.placeInfo.meetingMemo}
             />
+            <SettingsFieldLabel>담당자 연락처 (선택)</SettingsFieldLabel>
             <div className="grid grid-cols-2 gap-[var(--figma-22)]">
               <FigmaTextInput
                 onChange={(phone) => updateDraft({ phone })}
@@ -2737,14 +2745,26 @@ function PlacePanel({
                 value={draft.sourceUrl}
               />
             </div>
+          </div>
+        </DetailFormBlock>
+
+        <DetailFormBlock paddingClassName="px-[var(--figma-22)] pb-[var(--figma-21)] pt-0">
+          <div className="flex w-full flex-col">
             <FigmaTextarea
+              heightClass="h-[var(--figma-31)]"
               onChange={(parkingGuide) => updatePlaceInfo({ parkingGuide })}
               placeholder="예 : 전용 주차장 주소, 인근 공영 주차장 주소, 행사장 내 주차 불가 안내 등"
               title="주차 안내"
               value={draft.placeInfo.parkingGuide}
             />
+          </div>
+        </DetailFormBlock>
+
+        <DetailFormBlock paddingClassName="px-[var(--figma-22)] pb-[var(--figma-19)] pt-0">
+          <div className="flex w-full flex-col">
             <FigmaTextarea
               description="자차 없이 도착할 수 있는 대중교통 방법을 안내해주세요"
+              heightClass="h-[var(--figma-31)]"
               onChange={(transportGuide) => updatePlaceInfo({ transportGuide })}
               placeholder="예 : 집결지 인근 정류장 과 버스 노선 , 지하철 후 오시는 길 등"
               title="교통 안내"
@@ -2753,8 +2773,8 @@ function PlacePanel({
           </div>
         </DetailFormBlock>
 
-        <DetailFormBlock>
-          <div className="flex w-full flex-col gap-[var(--figma-24)]">
+        <DetailFormBlock paddingClassName="px-[var(--figma-22)] pb-[var(--figma-16)] pt-0">
+          <div className="flex w-full flex-col gap-[var(--figma-12)]">
             <div className="flex items-center gap-[var(--figma-12)]">
               <div className="shrink-0 whitespace-nowrap">
                 <SettingsFieldLabel>숙소 안내</SettingsFieldLabel>
@@ -2769,16 +2789,26 @@ function PlacePanel({
             </div>
             {draft.placeInfo.accommodationEnabled ? (
               <>
-                <FigmaTextInput
-                  onChange={(accommodationName) =>
+                <label className="flex items-center gap-[var(--figma-8)] text-[length:var(--figma-14)] font-normal leading-[1.253] text-[#6D7A8A]">
+                  <input
+                    className="size-[var(--figma-18)] rounded-[4px] border border-[#6D7A8A] accent-[#FE701E]"
+                    type="checkbox"
+                  />
+                  집결지와 동일한 장소에요
+                </label>
+                <AddressSearchField
+                  address={draft.placeInfo.accommodationName}
+                  addressDetail=""
+                  label="주소"
+                  onAddressChange={(accommodationName) =>
                     updatePlaceInfo({ accommodationName })
                   }
-                  placeholder="숙소 이름 또는 주소를 입력해주세요"
-                  value={draft.placeInfo.accommodationName}
+                  onAddressDetailChange={() => undefined}
                 />
                 <MapPreviewBox address={draft.placeInfo.accommodationName} />
                 <FigmaTextarea
                   description="숙소에 대해 추가 안내사항이 있다면 입력해주세요"
+                  heightClass="h-[var(--figma-31)]"
                   onChange={(accommodationMemo) =>
                     updatePlaceInfo({ accommodationMemo })
                   }
@@ -2786,6 +2816,19 @@ function PlacePanel({
                   title="숙소 추가 안내 사항 (선택)"
                   value={draft.placeInfo.accommodationMemo}
                 />
+                <SettingsFieldLabel>담당자 연락처 (선택)</SettingsFieldLabel>
+                <div className="grid grid-cols-2 gap-[var(--figma-22)]">
+                  <FigmaTextInput
+                    onChange={(phone) => updateDraft({ phone })}
+                    placeholder="전화번호"
+                    value={draft.phone}
+                  />
+                  <FigmaTextInput
+                    onChange={(sourceUrl) => updateDraft({ sourceUrl })}
+                    placeholder="이메일 또는 문의 URL"
+                    value={draft.sourceUrl}
+                  />
+                </div>
               </>
             ) : (
               <p className="text-[length:var(--figma-14)] font-normal leading-[1.253] text-[#6D7A8A]">
@@ -2801,12 +2844,14 @@ function PlacePanel({
 
 function FigmaTextarea({
   description,
+  heightClass = "h-[var(--figma-50)]",
   onChange,
   placeholder,
   title,
   value,
 }: {
   description?: string;
+  heightClass?: string;
   onChange: (value: string) => void;
   placeholder: string;
   title: string;
@@ -2821,7 +2866,7 @@ function FigmaTextarea({
         </p>
       ) : null}
       <textarea
-        className="h-[var(--figma-50)] resize-none rounded-[var(--figma-7)] border-[0.5px] border-[#F7B267] bg-transparent px-[var(--figma-12)] py-[var(--figma-8)] text-[#0D0D0C] outline-none placeholder:text-[#D9D9D9] focus:border-[#FE701E]"
+        className={`${heightClass} resize-none rounded-[var(--figma-7)] border-[0.5px] border-[#F7B267] bg-transparent px-[var(--figma-12)] py-[var(--figma-8)] text-[#0D0D0C] outline-none placeholder:text-[#D9D9D9] focus:border-[#FE701E]`}
         onChange={(event) => onChange(event.target.value)}
         placeholder={placeholder}
         style={{ fontSize: "var(--figma-12)" }}
@@ -2833,7 +2878,7 @@ function FigmaTextarea({
 
 function MapPreviewBox({ address }: { address: string }) {
   return (
-    <div className="grid h-[12.5vw] max-h-[240px] min-h-[180px] place-items-center rounded-[var(--figma-7)] bg-[#D9D9D9] text-[length:var(--figma-14)] font-semibold leading-[1.253] text-[#7A8B52]">
+    <div className="grid h-[var(--figma-185)] place-items-center rounded-[var(--figma-7)] bg-[#CAC4BC] text-[length:var(--figma-14)] font-semibold leading-[1.253] text-white">
       {address ? "지도 API 연결 후 이 위치가 표시돼요" : "주소를 입력하면 지도가 표시돼요"}
     </div>
   );
@@ -3491,11 +3536,13 @@ function uniqueImages(images: string[]): string[] {
 function AddressSearchField({
   address,
   addressDetail,
+  label,
   onAddressChange,
   onAddressDetailChange,
 }: {
   address: string;
   addressDetail: string;
+  label?: string;
   onAddressChange: (value: string) => void;
   onAddressDetailChange: (value: string) => void;
 }) {
@@ -3583,15 +3630,16 @@ function AddressSearchField({
   }
 
   return (
-    <div className="space-y-3">
-      <div className="grid gap-2 sm:grid-cols-[minmax(0,1fr)_auto]">
+    <div className="flex flex-col gap-[var(--figma-12)]">
+      {label ? <SettingsFieldLabel>{label}</SettingsFieldLabel> : null}
+      <div className="grid grid-cols-[minmax(0,var(--figma-462))_var(--figma-82)] gap-[var(--figma-8)]">
         <FigmaTextInput
           onChange={onAddressChange}
           placeholder="집결지 주소를 검색해주세요."
           value={address}
         />
         <button
-          className="inline-flex h-[var(--figma-31)] items-center justify-center gap-2 rounded-[var(--figma-7)] border border-[#E6D6CA] bg-white px-[var(--figma-12)] text-[length:var(--figma-12)] font-semibold text-[#5B3A29] transition hover:border-[#FE701E] hover:text-[#FE701E]"
+          className="inline-flex h-[var(--figma-31)] items-center justify-center rounded-[var(--figma-7)] border border-[#6D7A8A] bg-white text-[length:var(--figma-12)] font-medium text-[#5B3A29] transition hover:border-[#FE701E] hover:text-[#FE701E]"
           onClick={() => {
             setAddressSearchError("");
             setPostcodeEmbedded(false);
@@ -3599,8 +3647,7 @@ function AddressSearchField({
           }}
           type="button"
         >
-          <Search size={16} />
-          주소검색
+          주소 검색
         </button>
       </div>
       <input
@@ -3734,21 +3781,21 @@ function ToggleRow({
   return (
     <button
       aria-pressed={checked}
-      className="flex w-full items-center justify-between gap-4 rounded-md border border-[#E6D6CA] bg-white px-4 py-3 text-left"
+      className="ml-auto flex h-[var(--figma-20)] flex-1 items-center justify-end gap-[var(--figma-8)] border-0 bg-transparent p-0 text-left"
       onClick={() => onChange(!checked)}
       type="button"
     >
-      <span className="text-base font-black text-[#28211D]">
-        {label} <span className="text-sm text-[#8F837B]">(on/off)</span>
+      <span className="text-[length:var(--figma-14)] font-normal leading-[1.253] text-[#6D7A8A]">
+        {label}
       </span>
       <span
-        className={`relative h-6 w-11 rounded-full transition ${
-          checked ? "bg-[#FE701E]" : "bg-[#D9D2CD]"
+        className={`relative h-[var(--figma-14)] w-[var(--figma-23)] rounded-full transition ${
+          checked ? "bg-[#FE701E]" : "bg-[#6D7A8A]"
         }`}
       >
         <span
-          className={`absolute top-1 size-4 rounded-full bg-white transition ${
-            checked ? "left-6" : "left-1"
+          className={`absolute top-1/2 size-[var(--figma-10)] -translate-y-1/2 rounded-full bg-white transition ${
+            checked ? "right-[var(--figma-2)]" : "left-[var(--figma-2)]"
           }`}
         />
       </span>
