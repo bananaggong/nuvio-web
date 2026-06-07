@@ -74,25 +74,55 @@ const hostMessageScaleStyle = {
   "--host-message-scale":
     "clamp(1, calc(min(100vw, 1920px) / 1440), 1.333333)",
   "--host-msg-2": scaledSize(2),
+  "--host-msg-3": scaledSize(3),
   "--host-msg-4": scaledSize(4),
+  "--host-msg-5": scaledSize(5),
   "--host-msg-6": scaledSize(6),
   "--host-msg-7": scaledSize(7),
   "--host-msg-8": scaledSize(8),
+  "--host-msg-9": scaledSize(9),
   "--host-msg-10": scaledSize(10),
   "--host-msg-11": scaledSize(11),
   "--host-msg-12": scaledSize(12),
   "--host-msg-13": scaledSize(13),
   "--host-msg-14": scaledSize(14),
+  "--host-msg-15": scaledSize(15),
   "--host-msg-16": scaledSize(16),
+  "--host-msg-17": scaledSize(17),
   "--host-msg-18": scaledSize(18),
+  "--host-msg-19": scaledSize(19),
+  "--host-msg-20": scaledSize(20),
   "--host-msg-21": scaledSize(21),
   "--host-msg-22": scaledSize(22),
   "--host-msg-23": scaledSize(23),
   "--host-msg-24": scaledSize(24),
   "--host-msg-26": scaledSize(26),
+  "--host-msg-28": scaledSize(28),
   "--host-msg-29": scaledSize(29),
+  "--host-msg-30": scaledSize(30),
   "--host-msg-31": scaledSize(31),
+  "--host-msg-32": scaledSize(32),
+  "--host-msg-33": scaledSize(33),
+  "--host-msg-34": scaledSize(34),
+  "--host-msg-35": scaledSize(35),
+  "--host-msg-37": scaledSize(37),
   "--host-msg-38": scaledSize(38),
+  "--host-msg-40": scaledSize(40),
+  "--host-msg-42": scaledSize(42),
+  "--host-msg-47": scaledSize(47),
+  "--host-msg-50": scaledSize(50),
+  "--host-msg-53": scaledSize(53),
+  "--host-msg-58": scaledSize(58),
+  "--host-msg-69": scaledSize(69),
+  "--host-msg-70": scaledSize(70),
+  "--host-msg-87": scaledSize(87),
+  "--host-msg-92": scaledSize(92),
+  "--host-msg-90": scaledSize(90),
+  "--host-msg-113": scaledSize(113),
+  "--host-msg-180": scaledSize(180),
+  "--host-msg-240": scaledSize(240),
+  "--host-msg-280": scaledSize(280),
+  "--host-msg-365": scaledSize(365),
   "--host-msg-603": scaledSize(603),
 } as CSSProperties;
 
@@ -100,6 +130,34 @@ function scaledSize(value: number): string {
   return `clamp(${value}px, ${((value / 1440) * 100).toFixed(3)}vw, ${Math.round(
     value * (4 / 3),
   )}px)`;
+}
+
+function HostMessageScaleOverrides() {
+  return (
+    <style>{`
+      [data-host-message-scale] .text-\\[length\\:var\\(--host-msg-12\\)\\] { font-size: var(--host-msg-12); }
+      [data-host-message-scale] .text-\\[length\\:var\\(--host-msg-13\\)\\] { font-size: var(--host-msg-13); }
+      [data-host-message-scale] .text-\\[length\\:var\\(--host-msg-14\\)\\] { font-size: var(--host-msg-14); }
+      [data-host-message-scale] .text-\\[length\\:var\\(--host-msg-16\\)\\] { font-size: var(--host-msg-16); }
+      [data-host-message-scale] .text-\\[length\\:var\\(--host-msg-20\\)\\] { font-size: var(--host-msg-20); }
+      [data-host-message-scale] .font-normal { font-weight: 400; }
+      [data-host-message-scale] .font-medium { font-weight: 500; }
+      [data-host-message-scale] .font-semibold { font-weight: 600; }
+      [data-host-message-scale] .font-bold { font-weight: 700; }
+      [data-host-message-scale] .leading-\\[1\\.253\\] { line-height: 1.253; }
+      [data-host-message-scale] .leading-\\[1\\.6\\] { line-height: 1.6; }
+      [data-host-message-scale] .text-\\[\\#0D0D0C\\] { color: #0D0D0C; }
+      [data-host-message-scale] .text-\\[\\#5B3A29\\] { color: #5B3A29; }
+      [data-host-message-scale] .text-\\[\\#6D7A8A\\] { color: #6D7A8A; }
+      [data-host-message-scale] .text-\\[\\#CAC4BC\\] { color: #CAC4BC; }
+      [data-host-message-scale] .text-\\[\\#D9D9D9\\] { color: #D9D9D9; }
+      [data-host-message-scale] .text-\\[\\#F3F3F3\\] { color: #F3F3F3; }
+      [data-host-message-scale] .text-\\[\\#F9F9F9\\] { color: #F9F9F9; }
+      [data-host-message-scale] .text-\\[\\#FCFCFC\\] { color: #FCFCFC; }
+      [data-host-message-scale] .text-\\[\\#FE701E\\] { color: #FE701E; }
+      [data-host-message-scale] .text-\\[\\#FFF6EC\\] { color: #FFF6EC; }
+    `}</style>
+  );
 }
 
 export function HostMessageInbox({ view }: { view: HostMessageInboxView }) {
@@ -216,30 +274,36 @@ export function HostMessageInbox({ view }: { view: HostMessageInboxView }) {
 
   if (view === "ended") {
     return (
-      <EndedMessagesView
+      <>
+        <HostMessageScaleOverrides />
+        <EndedMessagesView
+          isLoading={isLoadingInquiries}
+          loadError={loadError}
+          onSelectThread={setSelectedId}
+          selectedThread={selectedThread}
+          selectedThreadId={selectedThreadId}
+          threads={threads}
+        />
+      </>
+    );
+  }
+
+  return (
+    <>
+      <HostMessageScaleOverrides />
+      <OngoingMessagesView
+        actionError={actionError}
+        closedThreads={closedThreads}
+        closingThreadId={closingThreadId}
         isLoading={isLoadingInquiries}
         loadError={loadError}
+        onCloseThread={closeThread}
         onSelectThread={setSelectedId}
         selectedThread={selectedThread}
         selectedThreadId={selectedThreadId}
         threads={threads}
       />
-    );
-  }
-
-  return (
-    <OngoingMessagesView
-      actionError={actionError}
-      closedThreads={closedThreads}
-      closingThreadId={closingThreadId}
-      isLoading={isLoadingInquiries}
-      loadError={loadError}
-      onCloseThread={closeThread}
-      onSelectThread={setSelectedId}
-      selectedThread={selectedThread}
-      selectedThreadId={selectedThreadId}
-      threads={threads}
-    />
+    </>
   );
 }
 
@@ -281,32 +345,32 @@ function OngoingMessagesView({
         >
           <Link
             aria-label="호스트 홈으로 돌아가기"
-            className="inline-flex size-5 items-center justify-center text-[#6D7A8A] transition hover:text-[#FE701E]"
+            className="inline-flex size-[var(--host-msg-20)] items-center justify-center text-[#6D7A8A] transition hover:text-[#FE701E]"
             href="/host"
           >
             <ChevronLeft size={20} strokeWidth={1.8} />
           </Link>
-          <h1 className="shrink-0 text-[16px] font-medium leading-[1.253] text-[#6D7A8A]">
+          <h1 className="shrink-0 text-[length:var(--host-msg-16)] font-medium leading-[1.253] text-[#6D7A8A]">
             메세지함 ({formatTwoDigits(threads.length)})
           </h1>
           <label
-            className="relative h-[28px] min-w-[280px] flex-1 max-lg:max-w-none"
+            className="relative h-[var(--host-msg-28)] min-w-[var(--host-msg-280)] flex-1 max-lg:max-w-none"
             style={{ maxWidth: scaledSize(411), width: scaledSize(411) }}
           >
             <Search
               aria-hidden="true"
-              className="absolute left-[9px] top-1/2 size-[14px] -translate-y-1/2 text-[#6D7A8A]"
+              className="absolute left-[var(--host-msg-9)] top-1/2 size-[var(--host-msg-14)] -translate-y-1/2 text-[#6D7A8A]"
               strokeWidth={1.8}
             />
             <input
-              className="h-full w-full rounded-full border border-[#6D7A8A] bg-[#F9F9F9] pl-9 pr-3 text-[12px] font-semibold leading-[1.253] text-[#6D7A8A] outline-none placeholder:text-[#6D7A8A] focus:border-[#FE701E]"
+              className="h-full w-full rounded-full border border-[#6D7A8A] bg-[#F9F9F9] pl-[calc(var(--host-msg-9)+var(--host-msg-14)+var(--host-msg-12))] pr-[var(--host-msg-12)] text-[length:var(--host-msg-12)] font-semibold leading-[1.253] text-[#6D7A8A] outline-none placeholder:text-[#6D7A8A] focus:border-[#FE701E]"
               placeholder="검색"
               type="search"
             />
           </label>
           <div className="ml-auto flex items-center justify-end">
             <button
-              className="inline-flex h-[30px] items-center justify-center rounded-[6px] bg-[#6D7A8A] px-4 text-center text-[12px] font-bold leading-[1.6] text-[#F3F3F3] transition hover:bg-[#5D6876]"
+              className="inline-flex h-[var(--host-msg-30)] items-center justify-center rounded-[var(--host-msg-6)] bg-[#6D7A8A] px-[var(--host-msg-16)] text-center text-[length:var(--host-msg-12)] font-bold leading-[1.6] text-[#F3F3F3] transition hover:bg-[#5D6876]"
               onClick={() => setSettingsOpen(true)}
               type="button"
             >
@@ -345,7 +409,7 @@ function OngoingMessagesView({
                 </div>
               </div>
               <Link
-                className="flex min-h-[47px] items-center border-t-[0.5px] border-[#6D7A8A] px-[10px] text-[14px] font-semibold leading-[1.253] text-[#6D7A8A] transition hover:text-[#FE701E]"
+                className="flex min-h-[var(--host-msg-47)] items-center border-t-[0.5px] border-[#6D7A8A] px-[var(--host-msg-10)] text-[length:var(--host-msg-14)] font-semibold leading-[1.253] text-[#6D7A8A] transition hover:text-[#FE701E]"
                 href="/host/messages?view=ended"
               >
                 종료된 메세지
@@ -399,59 +463,59 @@ function EndedMessagesView({
           className="min-w-[430px] px-[1.389vw] pt-[1.667vw] max-lg:w-full max-lg:max-w-none max-lg:px-5"
           style={{ maxWidth: scaledSize(547), width: scaledSize(547) }}
         >
-          <div className="flex h-5 items-center gap-[14px]">
+          <div className="flex h-[var(--host-msg-20)] items-center gap-[var(--host-msg-14)]">
             <Link
               aria-label="진행 중인 메세지로 돌아가기"
-              className="inline-flex size-5 items-center justify-center text-[#6D7A8A] transition hover:text-[#FE701E]"
+              className="inline-flex size-[var(--host-msg-20)] items-center justify-center text-[#6D7A8A] transition hover:text-[#FE701E]"
               href="/host/messages"
             >
               <ChevronLeft size={20} strokeWidth={1.8} />
             </Link>
-            <h1 className="text-[16px] font-medium leading-[1.253] text-[#6D7A8A]">
+            <h1 className="text-[length:var(--host-msg-16)] font-medium leading-[1.253] text-[#6D7A8A]">
               종료된 메세지 ({formatTwoDigits(threads.length)})
             </h1>
           </div>
 
-          <div className="mt-[2.778vw] grid gap-[18px] max-lg:mt-8">
-            <div className="grid gap-2">
-              <label className="relative h-[28px] w-full">
+          <div className="mt-[2.778vw] grid gap-[var(--host-msg-18)] max-lg:mt-8">
+            <div className="grid gap-[var(--host-msg-8)]">
+              <label className="relative h-[var(--host-msg-28)] w-full">
                 <Search
                   aria-hidden="true"
-                  className="absolute left-[9px] top-1/2 size-[14px] -translate-y-1/2 text-[#6D7A8A]"
+                  className="absolute left-[var(--host-msg-9)] top-1/2 size-[var(--host-msg-14)] -translate-y-1/2 text-[#6D7A8A]"
                   strokeWidth={1.8}
                 />
                 <input
-                  className="h-full w-full rounded-full border border-[#6D7A8A] bg-[#F9F9F9] pl-9 pr-3 text-[12px] font-semibold leading-[1.253] text-[#6D7A8A] outline-none placeholder:text-[#6D7A8A] focus:border-[#FE701E]"
+                  className="h-full w-full rounded-full border border-[#6D7A8A] bg-[#F9F9F9] pl-[calc(var(--host-msg-9)+var(--host-msg-14)+var(--host-msg-12))] pr-[var(--host-msg-12)] text-[length:var(--host-msg-12)] font-semibold leading-[1.253] text-[#6D7A8A] outline-none placeholder:text-[#6D7A8A] focus:border-[#FE701E]"
                   placeholder="대화 내용 또는 게스트 검색"
                   type="search"
                 />
               </label>
 
-              <div className="flex h-[28px] items-center gap-[10px]">
-                <span className="text-[14px] font-medium leading-[1.253] text-[#0D0D0C]">
+              <div className="flex h-[var(--host-msg-28)] items-center gap-[var(--host-msg-10)]">
+                <span className="text-[length:var(--host-msg-14)] font-medium leading-[1.253] text-[#0D0D0C]">
                   프로그램
                 </span>
                 <button
-                  className="flex h-full flex-1 items-center rounded-[7px] border border-[#6D7A8A] pl-3 text-left text-[12px] font-medium leading-[1.253] text-[#D9D9D9]"
+                  className="flex h-full flex-1 items-center rounded-[var(--host-msg-7)] border border-[#6D7A8A] pl-[var(--host-msg-12)] text-left text-[length:var(--host-msg-12)] font-medium leading-[1.253] text-[#D9D9D9]"
                   type="button"
                 >
                   <span className="flex-1">전체</span>
                   <ChevronDown
                     aria-hidden="true"
-                    className="mr-2 size-4 text-[#6D7A8A]"
+                    className="mr-[var(--host-msg-8)] size-[var(--host-msg-16)] text-[#6D7A8A]"
                     strokeWidth={1.8}
                   />
                 </button>
               </div>
 
-              <div className="flex gap-[10px] border-b border-[#6D7A8A] pb-3 pl-[9px] pt-[6px]">
+              <div className="flex gap-[var(--host-msg-10)] border-b border-[#6D7A8A] pb-[var(--host-msg-12)] pl-[var(--host-msg-9)] pt-[var(--host-msg-6)]">
                 <FilterPill active>전체</FilterPill>
                 <FilterPill>최신순</FilterPill>
                 <FilterPill>종료순</FilterPill>
               </div>
             </div>
 
-            <div className="grid gap-3">
+            <div className="grid gap-[var(--host-msg-12)]">
               {isLoading ? (
                 <MessageListState label="문의를 불러오는 중입니다." />
               ) : loadError ? (
@@ -459,9 +523,9 @@ function EndedMessagesView({
               ) : threads.length > 0 ? (
                 threads.slice(0, 12).map((thread) => (
                 <button
-                  className={`grid min-h-[42px] grid-cols-[69px_minmax(0,1fr)_92px] items-center gap-[23px] rounded-[6px] border px-3 py-3 text-left text-[14px] leading-[1.253] text-[#6D7A8A] transition ${
+                  className={`grid min-h-[var(--host-msg-42)] grid-cols-[var(--host-msg-69)_minmax(0,1fr)_var(--host-msg-92)] items-center gap-[var(--host-msg-23)] rounded-[var(--host-msg-6)] border px-[var(--host-msg-12)] py-[var(--host-msg-12)] text-left text-[length:var(--host-msg-14)] leading-[1.253] text-[#6D7A8A] transition ${
                     thread.id === selectedThreadId
-                      ? "border-[3px] border-[#6D7A8A]"
+                      ? "border-[var(--host-msg-3)] border-[#6D7A8A]"
                       : "border-[#D9D9D9] hover:border-[#6D7A8A]"
                   }`}
                   key={thread.id}
@@ -501,13 +565,13 @@ function ThreadListButton({
 }) {
   return (
     <button
-      className={`flex h-[53px] w-full items-center gap-3 rounded-[12px] px-[6px] py-2 text-left transition ${
+      className={`flex h-[var(--host-msg-53)] w-full items-center gap-[var(--host-msg-12)] rounded-[var(--host-msg-12)] px-[var(--host-msg-6)] py-[var(--host-msg-8)] text-left transition ${
         active ? "bg-[#F3F3F3]" : "bg-[#F3F3F3]/85 hover:bg-[#F3F3F3]"
       }`}
       onClick={onClick}
       type="button"
     >
-      <span className="relative size-[35px] shrink-0 overflow-hidden rounded-full bg-[#D9D9D9]">
+      <span className="relative size-[var(--host-msg-35)] shrink-0 overflow-hidden rounded-full bg-[#D9D9D9]">
         {thread.imageUrl ? (
           <Image
             alt=""
@@ -520,21 +584,21 @@ function ThreadListButton({
       </span>
       <span className="min-w-0 flex-1">
         <span
-          className={`block truncate text-[14px] leading-[1.253] text-[#6D7A8A] ${
+          className={`block truncate text-[length:var(--host-msg-14)] leading-[1.253] text-[#6D7A8A] ${
             thread.unread ? "font-semibold" : "font-normal"
           }`}
         >
           {thread.programTitle}
         </span>
-        <span className="block truncate text-[12px] font-medium leading-[1.253] text-[#6D7A8A]">
+        <span className="block truncate text-[length:var(--host-msg-12)] font-medium leading-[1.253] text-[#6D7A8A]">
           {thread.guestName}
         </span>
       </span>
-      <span className="flex h-full w-[42px] shrink-0 flex-col items-end justify-center pr-[6px]">
+      <span className="flex h-full w-[var(--host-msg-42)] shrink-0 flex-col items-end justify-center pr-[var(--host-msg-6)]">
         {thread.unread ? (
-          <span className="mb-auto mt-1 size-[6px] rounded-full bg-[#FE701E]" />
+          <span className="mb-auto mt-[var(--host-msg-4)] size-[var(--host-msg-6)] rounded-full bg-[#FE701E]" />
         ) : null}
-        <span className="mt-auto whitespace-nowrap text-[12px] font-normal leading-[1.6] text-[#6D7A8A]">
+        <span className="mt-auto whitespace-nowrap text-[length:var(--host-msg-12)] font-normal leading-[1.6] text-[#6D7A8A]">
           {thread.timeLabel}
         </span>
       </span>
@@ -544,7 +608,7 @@ function ThreadListButton({
 
 function MessageListState({ label }: { label: string }) {
   return (
-    <div className="rounded-[12px] border border-dashed border-[#D9D9D9] px-4 py-5 text-center text-[12px] font-medium leading-[1.6] text-[#6D7A8A]">
+    <div className="rounded-[var(--host-msg-12)] border border-dashed border-[#D9D9D9] px-[var(--host-msg-16)] py-[var(--host-msg-20)] text-center text-[length:var(--host-msg-12)] font-medium leading-[1.6] text-[#6D7A8A]">
       {label}
     </div>
   );
@@ -552,9 +616,9 @@ function MessageListState({ label }: { label: string }) {
 
 function ChatConversationPanel({ thread }: { thread?: MessageThread }) {
   return (
-    <section className="flex min-h-full flex-col px-4 pt-[14px]">
+    <section className="flex min-h-full flex-col px-[var(--host-msg-16)] pt-[var(--host-msg-14)]">
       <div className="flex justify-end px-[10px] py-1">
-        <Search aria-hidden="true" className="size-5 text-[#CAC4BC]" strokeWidth={1.8} />
+        <Search aria-hidden="true" className="size-[var(--host-msg-20)] text-[#CAC4BC]" strokeWidth={1.8} />
       </div>
       <div className="flex flex-1 items-start justify-center pt-4">
         {thread ? (
@@ -563,15 +627,15 @@ function ChatConversationPanel({ thread }: { thread?: MessageThread }) {
           <EmptyConversation label="대화를 선택해주세요." />
         )}
       </div>
-      <div className="flex min-h-[58px] items-end pb-[11px] pr-[15px]">
-        <label className="flex h-[37px] w-full items-center gap-2 rounded-full border border-[#FF9A3D] bg-[#F9F9F9] p-[9px]">
+      <div className="flex min-h-[var(--host-msg-58)] items-end pb-[var(--host-msg-11)] pr-[var(--host-msg-15)]">
+        <label className="flex h-[var(--host-msg-37)] w-full items-center gap-[var(--host-msg-8)] rounded-full border border-[#FF9A3D] bg-[#F9F9F9] p-[var(--host-msg-9)]">
           <Plus
             aria-hidden="true"
-            className="size-3 rounded-full bg-[#FF9A3D] text-white"
+            className="size-[var(--host-msg-12)] rounded-full bg-[#FF9A3D] text-white"
             strokeWidth={3}
           />
           <input
-            className="min-w-0 flex-1 bg-transparent text-[12px] font-normal leading-[1.6] text-[#6D7A8A] outline-none placeholder:text-[#D9D9D9]"
+            className="min-w-0 flex-1 bg-transparent text-[length:var(--host-msg-12)] font-normal leading-[1.6] text-[#6D7A8A] outline-none placeholder:text-[#D9D9D9]"
             placeholder={thread ? "메세지 입력" : "대화를 선택해주세요"}
             type="text"
           />
@@ -583,7 +647,7 @@ function ChatConversationPanel({ thread }: { thread?: MessageThread }) {
 
 function EmptyConversation({ label }: { label: string }) {
   return (
-    <div className="grid min-h-[180px] w-full max-w-[365px] place-items-center rounded-[12px] border border-dashed border-[#D9D9D9] text-center text-[13px] font-medium leading-[1.6] text-[#6D7A8A]">
+    <div className="grid min-h-[var(--host-msg-180)] w-full max-w-[var(--host-msg-365)] place-items-center rounded-[var(--host-msg-12)] border border-dashed border-[#D9D9D9] text-center text-[length:var(--host-msg-13)] font-medium leading-[1.6] text-[#6D7A8A]">
       {label}
     </div>
   );
@@ -609,13 +673,13 @@ function ThreadDetailPanel({
   if (!thread) {
     return (
       <aside
-        className={`min-w-0 border-l border-[#6D7A8A] px-5 ${
+        className={`min-w-0 border-l border-[#6D7A8A] px-[var(--host-msg-20)] ${
           isEnded
-            ? "flex-1 pt-[50px]"
-            : "pt-[17px] shadow-[2px_5px_5.2px_rgba(0,0,0,0.23)]"
+            ? "flex-1 pt-[var(--host-msg-50)]"
+            : "pt-[var(--host-msg-17)] shadow-[2px_5px_5.2px_rgba(0,0,0,0.23)]"
         }`}
       >
-        <div className="grid min-h-[240px] place-items-center rounded-[8px] border border-dashed border-[#D9D9D9] p-5 text-center text-[13px] font-medium leading-[1.6] text-[#6D7A8A]">
+        <div className="grid min-h-[var(--host-msg-240)] place-items-center rounded-[var(--host-msg-8)] border border-dashed border-[#D9D9D9] p-[var(--host-msg-20)] text-center text-[length:var(--host-msg-13)] font-medium leading-[1.6] text-[#6D7A8A]">
           대화를 선택하면 상세 정보가 표시됩니다.
         </div>
       </aside>
@@ -624,16 +688,16 @@ function ThreadDetailPanel({
 
   return (
     <aside
-      className={`min-w-0 border-l border-[#6D7A8A] px-5 ${
-        isEnded ? "flex-1 pt-[50px]" : "pt-[17px] shadow-[2px_5px_5.2px_rgba(0,0,0,0.23)]"
+      className={`min-w-0 border-l border-[#6D7A8A] px-[var(--host-msg-20)] ${
+        isEnded ? "flex-1 pt-[var(--host-msg-50)]" : "pt-[var(--host-msg-17)] shadow-[2px_5px_5.2px_rgba(0,0,0,0.23)]"
       }`}
     >
       {isEnded ? (
-        <div className="pb-5">
+        <div className="pb-[var(--host-msg-20)]">
           <MiniProgramHeader thread={thread} />
-          <div className="mt-5 flex items-center gap-5 px-4">
-            <Avatar imageUrl={thread?.imageUrl} sizeClass="size-[42px]" />
-            <div className="grid gap-5 text-[14px] font-normal leading-[1.253] text-[#5B3A29]">
+          <div className="mt-[var(--host-msg-20)] flex items-center gap-[var(--host-msg-20)] px-[var(--host-msg-16)]">
+            <Avatar imageUrl={thread?.imageUrl} sizeClass="size-[var(--host-msg-42)]" />
+            <div className="grid gap-[var(--host-msg-20)] text-[length:var(--host-msg-14)] font-normal leading-[1.253] text-[#5B3A29]">
               <p>게스트명 : {thread?.guestName ?? ""}</p>
               <p>예약정보 : {thread?.bookingInfo ?? ""}</p>
             </div>
@@ -641,9 +705,9 @@ function ThreadDetailPanel({
         </div>
       ) : (
         <>
-          <div className="h-[113px] w-full rounded-[6px] bg-[#D9D9D9]" />
+          <div className="h-[var(--host-msg-113)] w-full rounded-[var(--host-msg-6)] bg-[#D9D9D9]" />
           <div className="mt-[13px] border-b-[0.8px] border-[#6D7A8A] px-3 pb-3">
-            <div className="flex gap-[6px] text-[14px] leading-[1.253]">
+            <div className="flex gap-[var(--host-msg-6)] text-[length:var(--host-msg-14)] leading-[1.253]">
               <p className="min-w-0 flex-1 truncate font-semibold text-[#5B3A29]">
                 {thread?.programTitle ?? "프로그램 제목"}
               </p>
@@ -652,26 +716,26 @@ function ThreadDetailPanel({
               </p>
             </div>
             <div className="mt-[3px] flex items-center gap-3 pl-[6px]">
-              <p className="min-w-0 flex-1 truncate text-[14px] font-normal leading-[1.253] text-[#6D7A8A]">
+              <p className="min-w-0 flex-1 truncate text-[length:var(--host-msg-14)] font-normal leading-[1.253] text-[#6D7A8A]">
                 오픈일 : {thread?.openDate ?? ""}
               </p>
-              <span className="inline-flex h-[19px] items-center justify-center rounded-[6px] bg-[#F7B267] px-[6px] text-[12px] font-normal leading-[1.6] text-[#FCFCFC]">
+              <span className="inline-flex h-[var(--host-msg-19)] items-center justify-center rounded-[var(--host-msg-6)] bg-[#F7B267] px-[var(--host-msg-6)] text-[length:var(--host-msg-12)] font-normal leading-[1.6] text-[#FCFCFC]">
                 오픈
               </span>
             </div>
-            <p className="mt-[3px] truncate text-[12px] font-medium leading-[1.253] text-[#6D7A8A]">
+            <p className="mt-[var(--host-msg-3)] truncate text-[length:var(--host-msg-12)] font-medium leading-[1.253] text-[#6D7A8A]">
               여행 기간 {thread?.periodLabel ?? "0000. 00. 00 - 0000. 00. 00"}
             </p>
           </div>
           <div className="mt-4">
-            <Avatar imageUrl={thread?.imageUrl} sizeClass="size-[42px]" />
-            <div className="mt-[13px] grid gap-[13px] text-[14px] font-normal leading-[1.253] text-[#5B3A29]">
+            <Avatar imageUrl={thread?.imageUrl} sizeClass="size-[var(--host-msg-42)]" />
+            <div className="mt-[var(--host-msg-13)] grid gap-[var(--host-msg-13)] text-[length:var(--host-msg-14)] font-normal leading-[1.253] text-[#5B3A29]">
               <p>게스트명 : {thread?.guestName ?? ""}</p>
               <p>예약정보 : {thread?.bookingInfo ?? ""}</p>
             </div>
           </div>
           <button
-            className="mt-4 inline-flex h-[30px] w-full items-center justify-center rounded-[6px] bg-[#CAC4BC] text-[12px] font-bold leading-[1.6] text-[#F3F3F3] disabled:cursor-wait disabled:opacity-70"
+            className="mt-[var(--host-msg-16)] inline-flex h-[var(--host-msg-30)] w-full items-center justify-center rounded-[var(--host-msg-6)] bg-[#CAC4BC] text-[length:var(--host-msg-12)] font-bold leading-[1.6] text-[#F3F3F3] disabled:cursor-wait disabled:opacity-70"
             disabled={!thread || closing}
             onClick={() => {
               if (thread && onCloseThread) onCloseThread(thread);
@@ -689,11 +753,11 @@ function ThreadDetailPanel({
       )}
 
       {isEnded ? (
-        <div className="mt-5 rounded-[8px] border border-[#6D7A8A] p-[18px]">
-          <div className="mb-[33px] flex justify-end px-[10px] py-1">
+        <div className="mt-[var(--host-msg-20)] rounded-[var(--host-msg-8)] border border-[#6D7A8A] p-[var(--host-msg-18)]">
+          <div className="mb-[var(--host-msg-33)] flex justify-end px-[var(--host-msg-10)] py-[var(--host-msg-4)]">
             <Minus
               aria-hidden="true"
-              className="h-[19px] w-[34px] rounded-full bg-[#A8AFB8] px-2 text-white"
+              className="h-[var(--host-msg-19)] w-[var(--host-msg-34)] rounded-full bg-[#A8AFB8] px-[var(--host-msg-8)] text-white"
               strokeWidth={2}
             />
           </div>
@@ -703,13 +767,13 @@ function ThreadDetailPanel({
 
       {!isEnded ? (
         <div className="mt-3 grid gap-[6px]">
-          <p className="text-[14px] font-semibold leading-[1.253] text-[#5B3A29]">
+          <p className="text-[length:var(--host-msg-14)] font-semibold leading-[1.253] text-[#5B3A29]">
             이전 상담 내역
           </p>
           {previousThreads.length > 0 ? (
             previousThreads.slice(0, 3).map((previousThread) => (
               <button
-                className="flex min-h-[32px] items-center gap-3 rounded-[6px] border border-[#6D7A8A] px-[10px] py-[7px] text-left text-[14px] leading-[1.253] text-[#6D7A8A]"
+                className="flex min-h-[var(--host-msg-32)] items-center gap-[var(--host-msg-12)] rounded-[var(--host-msg-6)] border border-[#6D7A8A] px-[var(--host-msg-10)] py-[var(--host-msg-7)] text-left text-[length:var(--host-msg-14)] leading-[1.253] text-[#6D7A8A]"
                 key={previousThread.id}
                 type="button"
               >
@@ -722,7 +786,7 @@ function ThreadDetailPanel({
               </button>
             ))
           ) : (
-            <p className="rounded-[6px] border border-[#D9D9D9] px-[10px] py-[7px] text-[12px] font-medium leading-[1.253] text-[#6D7A8A]">
+            <p className="rounded-[var(--host-msg-6)] border border-[#D9D9D9] px-[var(--host-msg-10)] py-[var(--host-msg-7)] text-[length:var(--host-msg-12)] font-medium leading-[1.253] text-[#6D7A8A]">
               이전 상담 내역이 없습니다.
             </p>
           )}
@@ -734,37 +798,37 @@ function ThreadDetailPanel({
 
 function MiniProgramHeader({ thread }: { thread?: MessageThread }) {
   return (
-    <div className="flex border-b border-[#D9D9D9] pb-2">
-      <div className="relative h-[90px] w-[87px] shrink-0 overflow-hidden rounded-[16px] bg-[#D9D9D9]">
+    <div className="flex border-b border-[#D9D9D9] pb-[var(--host-msg-8)]">
+      <div className="relative h-[var(--host-msg-90)] w-[var(--host-msg-87)] shrink-0 overflow-hidden rounded-[var(--host-msg-16)] bg-[#D9D9D9]">
         {thread?.imageUrl ? (
           <Image
             alt=""
             className="object-cover"
             fill
-            sizes="87px"
+            sizes="(min-width: 1920px) 116px, 87px"
             src={thread.imageUrl}
           />
         ) : null}
       </div>
-      <div className="min-w-0 flex-1 pl-[6px]">
-        <div className="flex gap-1">
-          <p className="min-w-0 flex-1 truncate text-[20px] font-semibold leading-[1.253] text-[#5B3A29]">
+      <div className="min-w-0 flex-1 pl-[var(--host-msg-6)]">
+        <div className="flex gap-[var(--host-msg-4)]">
+          <p className="min-w-0 flex-1 truncate text-[length:var(--host-msg-20)] font-semibold leading-[1.253] text-[#5B3A29]">
             {thread?.programTitle ?? "프로그램 제목 입력"}
           </p>
-          <p className="shrink-0 text-[12px] font-normal leading-[1.6] text-[#6D7A8A]">
+          <p className="shrink-0 text-[length:var(--host-msg-12)] font-normal leading-[1.6] text-[#6D7A8A]">
             {thread?.programNumber ?? "프로그램 넘버"}
           </p>
         </div>
-        <div className="mt-1 grid gap-[3px] pl-[6px]">
-          <div className="flex gap-3">
-            <p className="min-w-0 flex-1 truncate text-[14px] font-normal leading-[1.253] text-[#6D7A8A]">
+        <div className="mt-[var(--host-msg-4)] grid gap-[var(--host-msg-3)] pl-[var(--host-msg-6)]">
+          <div className="flex gap-[var(--host-msg-3)]">
+            <p className="min-w-0 flex-1 truncate text-[length:var(--host-msg-14)] font-normal leading-[1.253] text-[#6D7A8A]">
               오픈일 : {thread?.openDate ?? ""}
             </p>
-            <span className="inline-flex h-[19px] items-center justify-center rounded-[6px] bg-[#F7B267] px-[6px] text-[12px] font-normal leading-[1.6] text-[#FCFCFC]">
+            <span className="inline-flex h-[var(--host-msg-19)] w-[var(--host-msg-40)] items-center justify-center rounded-[var(--host-msg-6)] bg-[#F7B267] px-[var(--host-msg-6)] text-[length:var(--host-msg-12)] font-normal leading-[1.6] text-[#FCFCFC]">
               오픈
             </span>
           </div>
-          <p className="truncate text-[12px] font-medium leading-[1.253] text-[#6D7A8A]">
+          <p className="truncate text-[length:var(--host-msg-12)] font-medium leading-[1.253] text-[#6D7A8A]">
             여행 기간 {thread?.periodLabel ?? "0000. 00. 00 - 0000. 00. 00"}
           </p>
         </div>
@@ -776,15 +840,15 @@ function MiniProgramHeader({ thread }: { thread?: MessageThread }) {
 function AutoAnswerPreview() {
   return (
     <div
-      className="mx-auto w-full rounded-[12px] border border-[#D9D9D9] bg-[#F9F9F9] px-[18px] py-6"
+      className="mx-auto w-full rounded-[var(--host-msg-12)] border border-[#D9D9D9] bg-[#F9F9F9] px-[var(--host-msg-18)] py-[var(--host-msg-24)]"
       style={{ maxWidth: scaledSize(365) }}
     >
-      <p className="whitespace-pre-wrap text-[14px] font-medium leading-[1.253] text-[#0D0D0C]">
+      <p className="whitespace-pre-wrap text-[length:var(--host-msg-14)] font-medium leading-[1.253] text-[#0D0D0C]">
         호스트가 입력한 첫인사 텍스트가 쓰여질 공간 입니다{"\n"}
         ex) 안녕하세요 ㅇㅇㅇ에 관심 가져주셔서 감사해요.{"\n"}
         궁금한 점이 있으시면 아래 항목을 눌러보세요 :)
       </p>
-      <div className="mt-[6px] grid gap-[6px]">
+      <div className="mt-[var(--host-msg-6)] grid gap-[var(--host-msg-6)]">
         {[
           "집합 장소 및 시간 안내",
           "준비물과 복장 안내",
@@ -792,7 +856,7 @@ function AutoAnswerPreview() {
           "호스트와 직접 소통하기",
         ].map((label, index) => (
           <button
-            className={`flex min-h-[32px] items-center justify-center rounded-[7px] border border-[#F7B267] px-3 text-[12px] font-medium leading-[1.253] ${
+            className={`flex min-h-[var(--host-msg-32)] items-center justify-center rounded-[var(--host-msg-7)] border border-[#F7B267] px-[var(--host-msg-12)] text-[length:var(--host-msg-12)] font-medium leading-[1.253] ${
               index === 3 ? "text-[#FE701E]" : "text-[#6D7A8A]"
             }`}
             key={label}
@@ -963,7 +1027,7 @@ function FilterPill({
 }) {
   return (
     <button
-      className={`inline-flex h-[30px] min-w-[70px] items-center justify-center rounded-full px-5 text-[12px] font-bold leading-[1.6] ${
+      className={`inline-flex h-[var(--host-msg-30)] min-w-[var(--host-msg-70)] items-center justify-center rounded-full px-[var(--host-msg-20)] text-[length:var(--host-msg-12)] font-bold leading-[1.6] ${
         active ? "bg-[#FF9A3D] text-[#F9F9F9]" : "bg-[#CAC4BC] text-[#F3F3F3]"
       }`}
       type="button"
