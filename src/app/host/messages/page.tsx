@@ -12,11 +12,15 @@ export const metadata: Metadata = {
 export default async function HostMessagesPage({
   searchParams,
 }: {
-  searchParams?: Promise<{ panel?: string; view?: string }>;
+  searchParams?: Promise<{ panel?: string; status?: string; view?: string }>;
 }) {
   const params = await searchParams;
   const view: HostMessageInboxView =
-    params?.view === "ended" || params?.panel === "ended" || params?.panel === "end"
+    params?.view === "ended" ||
+    params?.status === "ended" ||
+    params?.status === "end" ||
+    params?.panel === "ended" ||
+    params?.panel === "end"
       ? "ended"
       : "ongoing";
 
