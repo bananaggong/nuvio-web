@@ -169,6 +169,7 @@ const figmaScaleStyle = {
   "--figma-88": "clamp(88px, 6.111vw, 117.333px)",
   "--figma-96": "clamp(96px, 6.667vw, 128px)",
   "--figma-110": "clamp(110px, 7.639vw, 146.667px)",
+  "--figma-111": "clamp(111px, 7.708vw, 148px)",
   "--figma-113": "clamp(113px, 7.847vw, 150.667px)",
   "--figma-152": "clamp(152px, 10.556vw, 202.667px)",
   "--figma-185": "clamp(185px, 12.847vw, 246.667px)",
@@ -3294,7 +3295,7 @@ function SchedulePhotoSlots({
         const image = images[index] ?? "";
         return (
           <label
-            className="flex h-[var(--figma-88)] w-[var(--figma-82)] cursor-pointer flex-col items-center justify-center gap-[var(--figma-6)] rounded-[var(--figma-7)] border-[0.5px] border-solid border-[#F7B267] bg-[#F9F9F9] bg-cover bg-center text-[length:var(--figma-10)] font-medium leading-[1.253] text-[#D9D9D9] transition hover:border-[#FE701E] hover:text-[#FE701E]"
+            className="flex h-[var(--figma-111)] w-[var(--figma-96)] cursor-pointer flex-col items-center justify-center gap-[var(--figma-7)] rounded-[var(--figma-7)] border-[0.5px] border-solid border-[#F7B267] bg-[#F9F9F9] bg-cover bg-center text-[length:var(--figma-12)] font-medium leading-[1.253] text-[#D9D9D9] transition hover:border-[#FE701E] hover:text-[#FE701E]"
             key={index}
             style={image ? { backgroundImage: `url("${image}")` } : undefined}
           >
