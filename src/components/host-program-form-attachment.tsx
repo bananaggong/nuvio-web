@@ -12,6 +12,7 @@ import { Loader2 } from "lucide-react";
 import {
   mergeApplicationFormTemplates,
   normalizeApplicationFormTemplateShape,
+  readApplicationFormTemplates,
   type ApplicationFormTemplate,
 } from "@/lib/application-form-builder";
 import {
@@ -19,6 +20,7 @@ import {
   hostProgramPath,
   hostStandaloneProgramPath,
 } from "@/lib/host-projects";
+import { readHostProgramDrafts } from "@/lib/host-program-studio";
 
 type HostProgramOption = {
   id: string;
@@ -76,8 +78,16 @@ export function HostProgramFormAttachment({
   programId: string;
   projectId?: string;
 }) {
-  const [templates, setTemplates] = useState<ApplicationFormTemplate[]>([]);
-  const [hostPrograms, setHostPrograms] = useState<HostProgramOption[]>([]);
+  const [templates, setTemplates] = useState<ApplicationFormTemplate[]>(
+    readApplicationFormTemplates,
+  );
+  const [hostPrograms, setHostPrograms] = useState<HostProgramOption[]>(() =>
+    readHostProgramDrafts().map((program) => ({
+      id: program.id,
+      slug: program.slug,
+      title: program.title,
+    })),
+  );
   const [selectedTemplateId, setSelectedTemplateId] = useState("");
   const [isAttaching, setIsAttaching] = useState(false);
   const [message, setMessage] = useState("");

@@ -99,6 +99,7 @@ export const seedApplicationFormTemplates: ApplicationFormTemplate[] = [
     name: "기본 프로그램 신청폼",
     description: "참여 동기, 가능 일정, 개인정보 동의를 확인합니다.",
     formKind: "application",
+    programId: "draft-gangneung-wave",
     programTitle: "",
     updatedAt: "2026-05-04T00:00:00+09:00",
     blocks: [
