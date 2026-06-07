@@ -346,10 +346,12 @@ export function HostFolderCard({
 
 export function HostProgramRow({
   actionLabel,
+  statusFilter,
   items,
   title,
 }: {
   actionLabel: string;
+  statusFilter: string;
   items: HostProgramListItem[];
   title: string;
 }) {
@@ -378,7 +380,7 @@ export function HostProgramRow({
           : null}
         <Link
           className="flex h-[var(--host-42)] w-[var(--host-42)] shrink-0 flex-col items-center justify-center gap-[var(--host-8)] text-center text-[var(--host-12)] font-normal leading-[1.253] text-[#6D7A8A]"
-          href={`/host?status=${encodeURIComponent(title)}`}
+          href={`/host?status=${encodeURIComponent(statusFilter)}`}
         >
           <span className="grid size-[var(--host-20)] place-items-center rounded-full bg-[#FF9A3D] text-white">
             <Plus className="size-[var(--host-14)]" strokeWidth={2.4} />

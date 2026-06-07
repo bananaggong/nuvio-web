@@ -320,6 +320,7 @@ export function HostCenterHome({
                   actionLabel={group.actionLabel}
                   items={group.items}
                   key={group.id}
+                  statusFilter={group.id}
                   title={group.title}
                 />
               ))}
