@@ -16,8 +16,10 @@ import {
   List,
   ListOrdered,
   Minus,
+  Pencil,
   Plus,
   Redo2,
+  Trash2,
   Underline,
   Undo2,
   Upload,
@@ -3827,8 +3829,44 @@ function ManagementPanel({}: {
             </button>
           ))}
         </div>
-        <div className="mt-[15px] border-t border-[#F3F3F3] pt-[14px]">
-          <div className="flex h-[78px] items-center justify-center rounded-[4px] border border-dashed border-[#CAC4BC] bg-white text-[14px] font-semibold leading-[1.253] text-[#6D7A8A]">
+        <div className="mt-[15px] grid gap-[8px] border-t border-[#F3F3F3] pt-[14px]">
+          {seedCouponRows.map((coupon) => (
+            <div
+              className="grid h-[31px] items-center rounded-[4px] border border-[#D9D9D9] bg-white px-[10px] text-[14px] font-medium leading-[1.253] text-[#6D7A8A]"
+              key={coupon.name}
+              style={{
+                gridTemplateColumns:
+                  "76px minmax(0,190px) minmax(0,210px) minmax(0,120px) minmax(0,220px) 28px 28px",
+              }}
+            >
+              <span
+                className={`inline-flex h-[21px] w-[35px] items-center justify-center rounded-[4px] text-[12px] font-semibold text-white ${
+                  coupon.status === "종료" ? "bg-[#6D7A8A]" : "bg-[#7A8B52]"
+                }`}
+              >
+                {coupon.status}
+              </span>
+              <span className="truncate">{coupon.name}</span>
+              <span>{coupon.discount}</span>
+              <span>{coupon.quantity}</span>
+              <span>{coupon.deadline}</span>
+              <button
+                aria-label={`${coupon.name} 수정`}
+                className="grid size-[22px] place-items-center justify-self-end text-[#6D7A8A] hover:text-[#FE701E]"
+                type="button"
+              >
+                <Pencil className="size-[16px]" strokeWidth={1.8} />
+              </button>
+              <button
+                aria-label={`${coupon.name} 삭제`}
+                className="grid size-[22px] place-items-center justify-self-end text-[#6D7A8A] hover:text-[#FE701E]"
+                type="button"
+              >
+                <Trash2 className="size-[16px]" strokeWidth={1.8} />
+              </button>
+            </div>
+          ))}
+          <div className="hidden h-[78px] items-center justify-center rounded-[4px] border border-dashed border-[#CAC4BC] bg-white text-[14px] font-semibold leading-[1.253] text-[#6D7A8A]">
             발급된 쿠폰이 없습니다.
           </div>
         </div>
@@ -3836,6 +3874,30 @@ function ManagementPanel({}: {
     </div>
   );
 }
+
+const seedCouponRows = [
+  {
+    deadline: "~0000. 00. 00(마감일)",
+    discount: "10%/3000원(할인방식)",
+    name: "쿠폰 이름",
+    quantity: "00(수량)",
+    status: "진행",
+  },
+  {
+    deadline: "~2026. 6. 27",
+    discount: "20% 할인",
+    name: "6월 여름 한정 할인쿠폰",
+    quantity: "30개",
+    status: "진행",
+  },
+  {
+    deadline: "~2026. 2. 5",
+    discount: "6000원 할인",
+    name: "얼리버드 할인쿠폰",
+    quantity: "무제한",
+    status: "종료",
+  },
+];
 
 function CouponField({ label, placeholder }: { label: string; placeholder: string }) {
   return (

@@ -32,6 +32,37 @@ type HostReviewManagementItem = {
   updatedAt?: string;
 };
 
+const seedReviewBody = Array.from(
+  { length: 36 },
+  () => "숙소에 대한 후기를 작성해주세요",
+).join(" ");
+
+const seedHostReviews: HostReviewManagementItem[] = [
+  {
+    author: "작성자",
+    body: seedReviewBody,
+    date: "2026-05-12T00:00:00+09:00",
+    id: "seed-review-1",
+    published: true,
+  },
+  {
+    author: "작성자",
+    body: seedReviewBody,
+    date: "2026-05-12T00:00:00+09:00",
+    id: "seed-review-2",
+    published: false,
+  },
+  {
+    author: "작성자",
+    body: seedReviewBody,
+    date: "2026-05-12T00:00:00+09:00",
+    excerpt:
+      "대충 호스트의 인사하는 내용 😊\n호스트가 후기에 대한 답글을 정성스럽게 적어준 내용 ^^\n대충 앞으로 다양한 프로그램을 준비해볼테니 기대해 달라는 내용 ^^",
+    id: "seed-review-3",
+    published: true,
+  },
+];
+
 const applicationFigmaScaleStyle = {
   "--app-3": "clamp(3px, 0.208vw, 4px)",
   "--app-4": "clamp(4px, 0.278vw, 5.333px)",
@@ -91,7 +122,8 @@ export function HostApplicationsCrm({
     useHostOperationsData();
   const [activeTab, setActiveTab] = useState<ReviewTab>("all");
   const [selectedApplicationId, setSelectedApplicationId] = useState("");
-  const [hostReviews, setHostReviews] = useState<HostReviewManagementItem[]>([]);
+  const [hostReviews, setHostReviews] =
+    useState<HostReviewManagementItem[]>(seedHostReviews);
 
   const activePanel: ApplicationsPanel =
     searchParams.get("panel") === "receipts"
@@ -174,9 +206,9 @@ export function HostApplicationsCrm({
         const payload = (await response.json()) as {
           data?: HostReviewManagementItem[];
         };
-        if (!cancelled) setHostReviews(payload.data ?? []);
+        if (!cancelled && payload.data?.length) setHostReviews(payload.data);
       } catch {
-        if (!cancelled) setHostReviews([]);
+        if (!cancelled) setHostReviews(seedHostReviews);
       }
     }
 
@@ -682,7 +714,7 @@ function ReviewManagementPanel({
 }: {
   reviews: HostReviewManagementItem[];
 }) {
-  const averageRating = reviews.length > 0 ? "5.0" : "0.0";
+  const averageRating = reviews.length > 0 ? "4.6" : "0.0";
 
   return (
     <section className="min-h-[calc(100vh_-_4.861vw)] bg-white pl-[2.778vw] pt-[47px]">
@@ -753,7 +785,7 @@ function ReviewManagementCard({
             {review.author || "작성자"}
           </h2>
           <p className="mt-[9px] text-[12px] font-normal leading-[1.253] text-[#6D7A8A]">
-            {formatShortDate(review.date || review.updatedAt)}{" "}
+            {formatReviewManagementDate(review.date || review.updatedAt)}{" "}
             <span className="ml-[6px] text-[#FE701E]">★ 5.0</span>
           </p>
         </div>
@@ -781,6 +813,13 @@ function ReviewManagementCard({
           );
         })}
       </div>
+
+      {review.excerpt ? (
+        <div className="mt-[14px] rounded-[4px] border border-[#AEB8C2] bg-white px-[12px] py-[10px] text-[12px] font-normal leading-[1.55] text-[#6D7A8A]">
+          <p className="font-semibold text-[#6D7A8A]">호스트 댓글</p>
+          <p className="mt-[6px] whitespace-pre-line">{review.excerpt}</p>
+        </div>
+      ) : null}
 
       <div className="mt-[14px] flex gap-[7px] border-t border-[#D9D9D9] pt-[14px]">
         <input
@@ -993,6 +1032,15 @@ function formatShortDate(value?: string) {
   const month = String(date.getMonth() + 1).padStart(2, "0");
   const day = String(date.getDate()).padStart(2, "0");
   return `${year}. ${month}. ${day}`;
+}
+
+function formatReviewManagementDate(value?: string) {
+  if (!value) return "0000년 00월 00일";
+
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return "0000년 00월 00일";
+
+  return `${date.getFullYear()}년 ${date.getMonth() + 1}월 ${date.getDate()}일`;
 }
 
 function formatProgramNumber(programId: string): string {
