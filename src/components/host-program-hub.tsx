@@ -772,7 +772,7 @@ export function HostProgramHub({
 
         <section className="flex min-w-0 flex-1 flex-col">
           {showUpdatedAtHeader ? (
-          <div className="ml-[2.778vw] flex h-[var(--figma-44)] w-[64.236vw] max-w-[1233px] items-start justify-end pt-[var(--figma-24)] text-[16px] font-normal leading-[1.253] text-[#6D7A8A]">
+          <div className="ml-[2.778vw] flex h-[var(--figma-96)] w-[64.236vw] max-w-[1233px] items-start justify-end pt-[var(--figma-44)] text-[length:var(--figma-16)] font-normal leading-[1.253] text-[#6D7A8A]">
             최근 수정일 : {formatDateTime(currentUpdatedAt)}
           </div>
           ) : null}
@@ -1716,9 +1716,11 @@ function BasicPanel({
               <FigmaTextInput
                 className="w-[21.944vw] max-w-[421px]"
                 inputMode="numeric"
-                onChange={(capacity) => updateDraft({ capacity })}
+                onChange={(capacity) =>
+                  updateDraft({ capacity: toUnitDraftValue(capacity, "명") })
+                }
                 placeholder="00."
-                value={draft.capacity}
+                value={getUnitInputValue(draft.capacity, "명")}
               />
               <span className="text-[length:var(--figma-14)] font-medium leading-[1.253] text-[#6D7A8A]">
                 명
@@ -1785,9 +1787,11 @@ function BasicPanel({
                   <FigmaTextInput
                     className="w-[21.944vw] max-w-[421px]"
                     inputMode="numeric"
-                    onChange={(fee) => updateDraft({ fee })}
+                    onChange={(fee) =>
+                      updateDraft({ fee: toUnitDraftValue(fee, "원") })
+                    }
                     placeholder="00."
-                    value={priceMode === "paid" ? draft.fee : ""}
+                    value={priceMode === "paid" ? getUnitInputValue(draft.fee, "원") : ""}
                   />
                   <span className="text-[length:var(--figma-14)] font-medium leading-[1.253] text-[#6D7A8A]">
                     원
@@ -1894,16 +1898,50 @@ function DateInputBox({
   onChange: (value: string) => void;
   value: string;
 }) {
+  const pickerRef = useRef<HTMLInputElement>(null);
+  const normalizedValue = normalizeDateInput(value);
+  const pickerValue = /^\d{4}-\d{2}-\d{2}$/u.test(normalizedValue)
+    ? normalizedValue
+    : "";
+
+  function openNativeDatePicker() {
+    const picker = pickerRef.current;
+    if (!picker) return;
+    if (typeof picker.showPicker === "function") {
+      picker.showPicker();
+      return;
+    }
+    picker.click();
+  }
+
   return (
     <label className="relative block w-[17.708vw] max-w-[340px]">
       <span className="sr-only">{label}</span>
       <input
-        className="h-[var(--figma-31)] w-full rounded-[var(--figma-7)] border-[0.5px] border-[#F7B267] bg-transparent px-[var(--figma-12)] text-[length:var(--figma-12)] font-medium leading-[1.253] text-[#0D0D0C] outline-none placeholder:text-[#D9D9D9] focus:border-[#FE701E]"
-        onChange={(event) => onChange(event.target.value)}
+        className="h-[var(--figma-31)] w-full rounded-[var(--figma-7)] border-[0.5px] border-[#F7B267] bg-transparent px-[var(--figma-12)] pr-[var(--figma-32)] text-[length:var(--figma-12)] font-medium leading-[1.253] text-[#0D0D0C] outline-none placeholder:text-[#D9D9D9] focus:border-[#FE701E]"
+        inputMode="numeric"
+        onChange={(event) => onChange(normalizeDateInput(event.target.value))}
         placeholder={label}
         style={{ fontSize: "var(--figma-12)" }}
+        type="text"
+        value={normalizedValue}
+      />
+      <button
+        aria-label={`${label} 선택`}
+        className="absolute right-[var(--figma-10)] top-1/2 grid size-[var(--figma-14)] -translate-y-1/2 place-items-center text-[#0D0D0C]"
+        onClick={openNativeDatePicker}
+        type="button"
+      >
+        <CalendarDays aria-hidden="true" className="size-[var(--figma-14)]" strokeWidth={2} />
+      </button>
+      <input
+        aria-hidden="true"
+        className="pointer-events-none absolute right-0 top-0 h-[1px] w-[1px] opacity-0"
+        onChange={(event) => onChange(normalizeDateInput(event.target.value))}
+        ref={pickerRef}
+        tabIndex={-1}
         type="date"
-        value={value}
+        value={pickerValue}
       />
     </label>
   );
@@ -5375,6 +5413,18 @@ function getBasicApplicationMethod(applyUrl: string): BasicApplicationMethod {
   if (url === hostScreeningApplyUrl) return "host";
 
   return "open";
+}
+
+function getUnitInputValue(value: string, unit: "명" | "원"): string {
+  return value.trim().replace(new RegExp(`\\s*${unit}$`, "u"), "");
+}
+
+function toUnitDraftValue(value: string, unit: "명" | "원"): string {
+  const trimmedValue = value.trim();
+  if (!trimmedValue) return "";
+  if (trimmedValue.endsWith(unit)) return trimmedValue;
+  if (/^[\d,]+$/u.test(trimmedValue)) return `${trimmedValue}${unit}`;
+  return trimmedValue;
 }
 
 function getPriceMode(fee: string): PriceMode {
