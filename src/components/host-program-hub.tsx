@@ -2005,7 +2005,7 @@ function DetailPanel({
   return (
     <section className="flex w-full max-w-[1563px] items-start gap-[1.706%] bg-white max-lg:flex-col max-lg:gap-[1.389vw]">
       <div className="w-[50.852%] max-w-[795px] shrink-0 max-lg:w-full max-lg:max-w-none">
-        <div className="flex h-[var(--figma-44)] items-start justify-end pt-[var(--figma-24)] text-[length:var(--figma-16)] font-normal leading-[1.253] text-[#6D7A8A]">
+        <div className="flex h-[var(--figma-96)] items-start justify-end pt-[var(--figma-44)] text-[length:var(--figma-16)] font-normal leading-[1.253] text-[#6D7A8A]">
           최근 수정일 : {formatDateTime(updatedAt)}
         </div>
 
