@@ -73,6 +73,27 @@ const defaultAutoAnswerItems: AutoAnswerItem[] = [
 const hostMessageScaleStyle = {
   "--host-message-scale":
     "clamp(1, calc(min(100vw, 1920px) / 1440), 1.333333)",
+  "--host-msg-2": scaledSize(2),
+  "--host-msg-4": scaledSize(4),
+  "--host-msg-6": scaledSize(6),
+  "--host-msg-7": scaledSize(7),
+  "--host-msg-8": scaledSize(8),
+  "--host-msg-10": scaledSize(10),
+  "--host-msg-11": scaledSize(11),
+  "--host-msg-12": scaledSize(12),
+  "--host-msg-13": scaledSize(13),
+  "--host-msg-14": scaledSize(14),
+  "--host-msg-16": scaledSize(16),
+  "--host-msg-18": scaledSize(18),
+  "--host-msg-21": scaledSize(21),
+  "--host-msg-22": scaledSize(22),
+  "--host-msg-23": scaledSize(23),
+  "--host-msg-24": scaledSize(24),
+  "--host-msg-26": scaledSize(26),
+  "--host-msg-29": scaledSize(29),
+  "--host-msg-31": scaledSize(31),
+  "--host-msg-38": scaledSize(38),
+  "--host-msg-603": scaledSize(603),
 } as CSSProperties;
 
 function scaledSize(value: number): string {
@@ -820,28 +841,28 @@ function AutoAnswerSettingsDialog({ onClose }: { onClose: () => void }) {
       <section
         aria-labelledby="auto-answer-settings-title"
         aria-modal="true"
-        className="max-h-[calc(100vh-64px)] w-full max-w-[603px] overflow-y-auto rounded-[12px] border border-[#D9D9D9] bg-[#F9F9F9] px-[18px] py-6 shadow-[0_18px_54px_rgba(13,13,12,0.16)]"
+        className="max-h-[calc(100vh-64px)] w-full max-w-[var(--host-msg-603)] overflow-y-auto rounded-[var(--host-msg-12)] border border-[#D9D9D9] bg-[#F9F9F9] px-[var(--host-msg-18)] py-[var(--host-msg-24)] shadow-[0_18px_54px_rgba(13,13,12,0.16)]"
         role="dialog"
       >
         <div className="flex justify-end">
           <button
             aria-label="자동응답 설정 닫기"
-            className="inline-flex size-6 items-center justify-center text-[#0D0D0C] transition hover:text-[#FE701E]"
+            className="inline-flex size-[var(--host-msg-24)] items-center justify-center text-[#0D0D0C] transition hover:text-[#FE701E]"
             onClick={onClose}
             type="button"
           >
-            <X size={22} strokeWidth={2} />
+            <X className="size-[var(--host-msg-22)]" strokeWidth={2} />
           </button>
         </div>
 
-        <div className="mt-[13px] flex items-end gap-[21px] pr-[38px]">
+        <div className="mt-[var(--host-msg-13)] flex items-end gap-[var(--host-msg-21)] pr-[var(--host-msg-38)]">
           <h2
-            className="shrink-0 text-[14px] font-medium leading-[1.253] text-[#0D0D0C]"
+            className="shrink-0 text-[length:var(--host-msg-14)] font-medium leading-[1.253] text-[#0D0D0C]"
             id="auto-answer-settings-title"
           >
             자동응답
           </h2>
-          <p className="min-w-0 flex-1 text-[12px] font-medium leading-[1.253] text-[#6D7A8A]">
+          <p className="min-w-0 flex-1 text-[length:var(--host-msg-12)] font-medium leading-[1.253] text-[#6D7A8A]">
             게스트가 처음 메시지창을 열면 버튼이 표시돼요.
           </p>
           <ToggleButton
@@ -852,31 +873,31 @@ function AutoAnswerSettingsDialog({ onClose }: { onClose: () => void }) {
         </div>
 
         <input
-          className="mt-[8px] h-[31px] w-full rounded-[7px] border border-[#F7B267] bg-transparent px-3 text-[12px] font-medium leading-[1.253] text-[#0D0D0C] outline-none placeholder:text-[#D9D9D9] focus:border-[#FE701E]"
+          className="mt-[var(--host-msg-8)] h-[var(--host-msg-31)] w-full rounded-[var(--host-msg-7)] border border-[#F7B267] bg-transparent px-[var(--host-msg-12)] text-[length:var(--host-msg-12)] font-medium leading-[1.253] text-[#0D0D0C] outline-none placeholder:text-[#D9D9D9] focus:border-[#FE701E]"
           onChange={(event) => setGreeting(event.target.value)}
           placeholder="게스트에게 첫 인사를 작성해주세요."
           value={greeting}
         />
 
-        <div className="py-4">
-          <p className="text-[14px] font-medium leading-[1.253] text-[#0D0D0C]">
+        <div className="py-[var(--host-msg-16)]">
+          <p className="text-[length:var(--host-msg-14)] font-medium leading-[1.253] text-[#0D0D0C]">
             자동응답 항목 선택
           </p>
-          <div className="mt-2 grid gap-2">
+          <div className="mt-[var(--host-msg-8)] grid gap-[var(--host-msg-8)]">
             {items.map((item, index) => (
-              <div className="grid gap-[6px]" key={item.label}>
-                <div className="flex items-center gap-[21px] pr-[38px] pt-[13px]">
+              <div className="grid gap-[var(--host-msg-6)]" key={item.label}>
+                <div className="flex items-center gap-[var(--host-msg-21)] pr-[var(--host-msg-38)] pt-[var(--host-msg-13)]">
                   <ToggleButton
                     active={item.enabled}
                     label={`${item.label} 사용`}
                     onClick={() => toggleItem(index)}
                   />
-                  <p className="text-[12px] font-medium leading-[1.253] text-[#6D7A8A]">
+                  <p className="text-[length:var(--host-msg-12)] font-medium leading-[1.253] text-[#6D7A8A]">
                     {item.label}
                   </p>
                 </div>
                 <input
-                  className="h-[31px] w-full rounded-[7px] border border-[#F7B267] bg-transparent px-3 text-[12px] font-medium leading-[1.253] text-[#0D0D0C] outline-none placeholder:text-[#D9D9D9] focus:border-[#FE701E] disabled:opacity-70"
+                  className="h-[var(--host-msg-31)] w-full rounded-[var(--host-msg-7)] border border-[#F7B267] bg-transparent px-[var(--host-msg-12)] text-[length:var(--host-msg-12)] font-medium leading-[1.253] text-[#0D0D0C] outline-none placeholder:text-[#D9D9D9] focus:border-[#FE701E] disabled:opacity-70"
                   disabled={!item.enabled}
                   onChange={(event) => updateItem(index, event.target.value)}
                   placeholder={item.placeholder}
@@ -887,9 +908,9 @@ function AutoAnswerSettingsDialog({ onClose }: { onClose: () => void }) {
           </div>
         </div>
 
-        <div className="mt-[26px] flex justify-end">
+        <div className="mt-[var(--host-msg-26)] flex justify-end">
           <button
-            className="inline-flex h-[29px] items-center justify-center rounded-[4px] bg-[#FE701E] px-[18px] text-[12px] font-medium leading-[1.253] text-[#FFF6EC] transition hover:bg-[#E85F13]"
+            className="inline-flex h-[var(--host-msg-29)] items-center justify-center rounded-[var(--host-msg-4)] bg-[#FE701E] px-[var(--host-msg-18)] text-[length:var(--host-msg-12)] font-medium leading-[1.253] text-[#FFF6EC] transition hover:bg-[#E85F13]"
             onClick={onClose}
             type="button"
           >
@@ -914,7 +935,7 @@ function ToggleButton({
     <button
       aria-label={label}
       aria-pressed={active}
-      className={`inline-flex h-3 w-[23px] items-center rounded-full border transition ${
+      className={`inline-flex h-[var(--host-msg-12)] w-[var(--host-msg-23)] items-center rounded-full border transition ${
         active
           ? "border-[#FF9A3D] bg-[#FF9A3D]"
           : "border-[#6D7A8A] bg-[#F9F9F9]"
@@ -923,8 +944,10 @@ function ToggleButton({
       type="button"
     >
       <span
-        className={`size-[10px] rounded-full bg-white transition ${
-          active ? "translate-x-[11px]" : "translate-x-0.5 bg-[#F9F9F9]"
+        className={`size-[var(--host-msg-10)] rounded-full bg-white transition ${
+          active
+            ? "translate-x-[var(--host-msg-11)]"
+            : "translate-x-[var(--host-msg-2)] bg-[#F9F9F9]"
         }`}
       />
       <span className="sr-only">{label}</span>
