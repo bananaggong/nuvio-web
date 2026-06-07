@@ -2003,17 +2003,19 @@ function DetailPanel({
 }
 
 function DetailFormBlock({
+  borderClassName = "border-b border-[#6D7A8A]",
   children,
   className = "",
   paddingClassName = "px-[var(--figma-22)] py-[var(--figma-24)]",
 }: {
+  borderClassName?: string;
   children: ReactNode;
   className?: string;
   paddingClassName?: string;
 }) {
   return (
     <section
-      className={`flex w-full border-b border-[#6D7A8A] ${paddingClassName} ${className}`}
+      className={`flex w-full ${borderClassName} ${paddingClassName} ${className}`}
     >
       {children}
     </section>
@@ -2967,16 +2969,21 @@ function ScheduleDayFigmaEditor({
 
   return (
     <DetailFormBlock
+      borderClassName={expanded ? "border-b border-[#6D7A8A]" : ""}
       paddingClassName={
         expanded
           ? "px-0 pb-[var(--figma-15)] pt-[var(--figma-6)]"
-          : "px-0 py-[var(--figma-6)]"
+          : "px-0 pb-0 pt-[var(--figma-6)]"
       }
     >
       <div className="flex w-full flex-col">
         <button
           aria-expanded={expanded}
-          className="flex w-full items-end justify-between rounded-tl-[var(--figma-8)] rounded-tr-[var(--figma-8)] bg-[#6D7A8A] px-[var(--figma-12)] py-[var(--figma-18)] text-left text-[#F9F9F9]"
+          className={`flex w-full items-end justify-between bg-[#6D7A8A] px-[var(--figma-12)] py-[var(--figma-18)] text-left text-[#F9F9F9] ${
+            expanded
+              ? "rounded-tl-[var(--figma-8)] rounded-tr-[var(--figma-8)]"
+              : "rounded-[var(--figma-8)]"
+          }`}
           onClick={onToggle}
           type="button"
         >
