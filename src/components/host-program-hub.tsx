@@ -152,9 +152,12 @@ const figmaScaleStyle = {
   "--figma-31": "clamp(31px, 2.153vw, 41.333px)",
   "--figma-32": "clamp(32px, 2.222vw, 42.667px)",
   "--figma-35": "clamp(35px, 2.431vw, 46.667px)",
+  "--figma-40": "clamp(40px, 2.778vw, 53.333px)",
   "--figma-44": "clamp(44px, 3.056vw, 58.667px)",
   "--figma-50": "clamp(50px, 3.472vw, 66.667px)",
   "--figma-55": "clamp(55px, 3.819vw, 73.333px)",
+  "--figma-63": "clamp(63px, 4.375vw, 84px)",
+  "--figma-72": "clamp(72px, 5vw, 96px)",
   "--figma-82": "clamp(82px, 5.694vw, 109.333px)",
   "--figma-96": "clamp(96px, 6.667vw, 128px)",
   "--figma-110": "clamp(110px, 7.639vw, 146.667px)",
@@ -162,6 +165,8 @@ const figmaScaleStyle = {
   "--figma-152": "clamp(152px, 10.556vw, 202.667px)",
   "--figma-185": "clamp(185px, 12.847vw, 246.667px)",
   "--figma-193": "clamp(193px, 13.403vw, 257.333px)",
+  "--figma-219": "clamp(219px, 15.208vw, 292px)",
+  "--figma-251": "clamp(251px, 17.431vw, 334.667px)",
   "--figma-256": "clamp(256px, 17.778vw, 341.333px)",
   "--figma-262": "clamp(262px, 18.194vw, 349.333px)",
   "--figma-379": "clamp(379px, 26.319vw, 505.333px)",
@@ -1766,10 +1771,10 @@ function DetailPreviewRail({ draft }: { draft: HostProgramDraft }) {
 
   return (
     <aside className="min-h-[120.962vw] w-[47.442%] max-w-[741px] shrink-0 border-l border-[#6D7A8A] bg-white max-lg:w-full max-lg:max-w-none">
-      <p className="pt-[var(--figma-44)] text-center text-[length:var(--figma-16)] font-medium leading-[1.253] text-[#6D7A8A]">
+      <p className="pt-[var(--figma-63)] text-center text-[length:var(--figma-16)] font-medium leading-[1.253] text-[#6D7A8A]">
         미리보기
       </p>
-      <div className="mt-[var(--figma-21)] grid gap-[1.667vw] px-[0.764vw]">
+      <div className="mt-[var(--figma-24)] grid gap-[1.667vw] px-[0.764vw]">
         <PreviewFrame
           collapsed={collapsed.thumbnail}
           onToggle={() =>
@@ -2904,23 +2909,26 @@ function GuidePanel({
 
   return (
     <SettingsPreviewLayout draft={draft} updatedAt={updatedAt}>
-      <div className="flex flex-col gap-[2.222vw]">
+      <div className="flex flex-col gap-[var(--figma-32)]">
         <GuideItemsBlock
           description="참가비에 포함된 항목을 입력해주세요"
           items={draft.guideInfo.includedItems}
           onChange={(includedItems) => updateGuideInfo({ includedItems })}
+          placeholders={["숙박 2박", "프로그램 체험비 전체"]}
           title="포함 사항"
         />
         <GuideItemsBlock
           description="참가비에 불포함된 항목을 입력해주세요"
           items={draft.guideInfo.excludedItems}
           onChange={(excludedItems) => updateGuideInfo({ excludedItems })}
+          placeholders={["개인 교통비", "점심 식사 비용"]}
           title="불포함 사항"
         />
         <GuideItemsBlock
           description="참가 전 준비물과 프로그램 진행 시 꼭 알아야 할 사항을 입력해주세요"
           items={draft.guideInfo.preparationItems}
           onChange={(preparationItems) => updateGuideInfo({ preparationItems })}
+          placeholders={["편한 복장, 개인 운동화", "음주 후 참가는 삼가주세요"]}
           title="준비물 및 참고사항"
         />
         <RefundRulesBlock
@@ -2936,11 +2944,13 @@ function GuideItemsBlock({
   description,
   items,
   onChange,
+  placeholders,
   title,
 }: {
   description: string;
   items: string[];
   onChange: (items: string[]) => void;
+  placeholders: string[];
   title: string;
 }) {
   function updateItem(index: number, value: string) {
@@ -2957,7 +2967,7 @@ function GuideItemsBlock({
   }
 
   return (
-    <DetailFormBlock className="min-h-[15.208vw] max-h-[292px]">
+    <DetailFormBlock className="h-[var(--figma-219)] shrink-0">
       <div className="flex w-full flex-col gap-[var(--figma-14)]">
         <SettingsFieldLabel>{title}</SettingsFieldLabel>
         <p className="text-[length:var(--figma-14)] font-normal leading-[1.253] text-[#6D7A8A]">
@@ -2965,28 +2975,39 @@ function GuideItemsBlock({
         </p>
         <div className="flex flex-col gap-[var(--figma-14)]">
           {items.map((item, index) => (
-            <div className="flex items-center gap-[var(--figma-8)]" key={index}>
+            <div className="flex h-[var(--figma-31)] items-center gap-[var(--figma-8)]" key={index}>
+              <span
+                aria-hidden="true"
+                className="size-[var(--figma-8)] shrink-0 rounded-full bg-[#CAC4BC]"
+              />
               <FigmaTextInput
+                className="min-w-0 flex-1 !border-[#CAC4BC]"
                 onChange={(value) => updateItem(index, value)}
-                placeholder={`예 : ${index === 0 ? "숙박 2박" : "프로그램 체험비 전체"}`}
+                placeholder={`예 : ${placeholders[index] ?? placeholders[0] ?? "항목"}`}
                 value={item}
               />
               <button
                 aria-label={`${title} 항목 삭제`}
-                className="shrink-0 text-[length:var(--figma-12)] font-medium text-[#6D7A8A] transition hover:text-red-600"
+                className="grid size-[var(--figma-12)] shrink-0 place-items-center rounded-full bg-[#CAC4BC] text-white transition hover:bg-[#6D7A8A]"
                 onClick={() => removeItem(index)}
                 type="button"
               >
-                삭제
+                <Minus aria-hidden="true" className="size-[var(--figma-6)]" strokeWidth={2} />
               </button>
             </div>
           ))}
         </div>
         <button
-          className="mx-auto text-[length:var(--figma-12)] font-normal leading-[1.253] text-[#6D7A8A] transition hover:text-[#FE701E]"
+          className="mx-auto flex h-[var(--figma-15)] items-center gap-[var(--figma-4)] text-[length:var(--figma-12)] font-normal leading-[1.253] text-[#6D7A8A] transition hover:text-[#FE701E]"
           onClick={addItem}
           type="button"
         >
+          <span
+            aria-hidden="true"
+            className="grid size-[var(--figma-12)] place-items-center rounded-full bg-[#6D7A8A] text-white"
+          >
+            <Plus className="size-[var(--figma-7)]" strokeWidth={2} />
+          </span>
           항목 추가
         </button>
       </div>
@@ -3020,8 +3041,23 @@ function RefundRulesBlock({
     ]);
   }
 
+  function removeRule(index: number) {
+    const nextRules = rules.filter((_, ruleIndex) => ruleIndex !== index);
+    onChange(
+      nextRules.length > 0
+        ? nextRules
+        : [
+            {
+              daysBefore: "",
+              id: `refund-${Date.now()}`,
+              refundRate: "",
+            },
+          ],
+    );
+  }
+
   return (
-    <DetailFormBlock className="min-h-[17.431vw] max-h-[335px]">
+    <DetailFormBlock className="h-[var(--figma-251)] shrink-0">
       <div className="flex w-full flex-col gap-[var(--figma-14)]">
         <SettingsFieldLabel>취소 / 환불 규정</SettingsFieldLabel>
         <p className="text-[length:var(--figma-14)] font-normal leading-[1.253] text-[#6D7A8A]">
@@ -3029,35 +3065,53 @@ function RefundRulesBlock({
         </p>
         <div className="flex flex-col gap-[var(--figma-14)]">
           {rules.map((rule, index) => (
-            <div className="flex items-center gap-[var(--figma-14)]" key={rule.id}>
+            <div className="flex h-[var(--figma-31)] items-center gap-[var(--figma-8)]" key={rule.id}>
+              <span
+                aria-hidden="true"
+                className="size-[var(--figma-8)] shrink-0 rounded-full bg-[#CAC4BC]"
+              />
               <FigmaTextInput
-                className="w-[4.167vw] max-w-[80px]"
+                className="w-[var(--figma-72)] shrink-0 !border-[#CAC4BC]"
                 inputMode="numeric"
                 onChange={(daysBefore) => updateRule(index, { daysBefore })}
                 placeholder="00"
                 value={rule.daysBefore}
               />
-              <span className="text-[length:var(--figma-14)] text-[#6D7A8A]">
+              <span className="w-[var(--figma-72)] shrink-0 text-[length:var(--figma-14)] font-normal leading-[1.253] text-[#6D7A8A]">
                 일 전 취소 시
               </span>
               <FigmaTextInput
-                className="w-[4.167vw] max-w-[80px]"
+                className="w-[var(--figma-72)] shrink-0 !border-[#CAC4BC]"
                 inputMode="numeric"
                 onChange={(refundRate) => updateRule(index, { refundRate })}
                 placeholder="00"
                 value={rule.refundRate}
               />
-              <span className="text-[length:var(--figma-14)] text-[#6D7A8A]">
+              <span className="w-[var(--figma-40)] shrink-0 text-[length:var(--figma-14)] font-normal leading-[1.253] text-[#6D7A8A]">
                 % 환불
               </span>
+              <button
+                aria-label="환불 규정 삭제"
+                className="grid size-[var(--figma-12)] shrink-0 place-items-center rounded-full bg-[#CAC4BC] text-white transition hover:bg-[#6D7A8A]"
+                onClick={() => removeRule(index)}
+                type="button"
+              >
+                <Minus aria-hidden="true" className="size-[var(--figma-6)]" strokeWidth={2} />
+              </button>
             </div>
           ))}
         </div>
         <button
-          className="w-fit text-[length:var(--figma-12)] font-normal leading-[1.253] text-[#6D7A8A] transition hover:text-[#FE701E]"
+          className="flex h-[var(--figma-15)] w-fit items-center gap-[var(--figma-4)] text-[length:var(--figma-12)] font-normal leading-[1.253] text-[#6D7A8A] transition hover:text-[#FE701E]"
           onClick={addRule}
           type="button"
         >
+          <span
+            aria-hidden="true"
+            className="grid size-[var(--figma-12)] place-items-center rounded-full bg-[#6D7A8A] text-white"
+          >
+            <Plus className="size-[var(--figma-7)]" strokeWidth={2} />
+          </span>
           항목 추가
         </button>
         <p className="text-[length:var(--figma-14)] font-normal leading-[1.253] text-[#6D7A8A]">
