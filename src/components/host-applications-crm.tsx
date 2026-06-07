@@ -688,13 +688,13 @@ function ReviewManagementPanel({
     <section className="min-h-[calc(100vh_-_4.861vw)] bg-white pl-[2.778vw] pt-[47px]">
       <div className="w-[61.042vw] max-w-[1172px]">
         <h1 className="text-[16px] font-semibold leading-[1.253] text-[#0D0D0C]">
-          전체 후기 {String(reviews.length).padStart(2, "0")}개 / 평균 ♟ {averageRating}
+          전체 후기 {String(reviews.length).padStart(2, "0")}개 / 평균 ★ {averageRating}
         </h1>
 
         <div className="mt-[26px] grid gap-[12px] text-[14px] font-normal leading-[1.253] text-[#6D7A8A]">
           <div className="flex items-center gap-[13px]">
             <span>평점</span>
-            {["전체", "5점 ♟♟♟♟♟", "4점 ♟♟♟♟", "3점 ♟♟♟", "2점 ♟♟", "1점 ♟"].map((label, index) => (
+            {["전체", "5점 ★★★★★", "4점 ★★★★", "3점 ★★★", "2점 ★★", "1점 ★"].map((label, index) => (
               <label className="inline-flex items-center gap-[4px]" key={label}>
                 <input defaultChecked={index === 0 || index === 1 || index === 2} className="size-[14px] accent-[#FE701E]" type="radio" />
                 {label}
@@ -754,7 +754,7 @@ function ReviewManagementCard({
           </h2>
           <p className="mt-[9px] text-[12px] font-normal leading-[1.253] text-[#6D7A8A]">
             {formatShortDate(review.date || review.updatedAt)}{" "}
-            <span className="ml-[6px] text-[#FE701E]">♟ 5.0</span>
+            <span className="ml-[6px] text-[#FE701E]">★ 5.0</span>
           </p>
         </div>
         <button

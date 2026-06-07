@@ -41,7 +41,6 @@ import {
   isQuestionBlock,
   mergeApplicationFormTemplates,
   normalizeApplicationFormTemplateShape,
-  readApplicationFormTemplates,
 } from "@/lib/application-form-builder";
 import {
   hostProgramId,
@@ -114,9 +113,7 @@ export function HostFormBuilder({
   projectId?: string;
 }) {
   const router = useRouter();
-  const [templates, setTemplates] = useState<ApplicationFormTemplate[]>(() =>
-    readApplicationFormTemplates().map(normalizeApplicationFormTemplateShape),
-  );
+  const [templates, setTemplates] = useState<ApplicationFormTemplate[]>([]);
   const [selectedId, setSelectedId] = useState(formId ?? templates[0]?.id);
   const [activeBlockId, setActiveBlockId] = useState<string | null>(null);
   const [settingsBlockId, setSettingsBlockId] = useState<string | null>(null);

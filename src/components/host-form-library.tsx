@@ -8,7 +8,6 @@ import {
   createEmptyTemplate,
   mergeApplicationFormTemplates,
   normalizeApplicationFormTemplateShape,
-  readApplicationFormTemplates,
 } from "@/lib/application-form-builder";
 import type { ApplicationFormTemplate } from "@/lib/application-form-builder";
 import type { ApplicationFormKind } from "@/lib/application-form-builder";
@@ -37,9 +36,7 @@ export function HostFormLibrary({
   initialKind?: ApplicationFormKind;
 }) {
   const router = useRouter();
-  const [templates, setTemplates] = useState<ApplicationFormTemplate[]>(() =>
-    readApplicationFormTemplates().map(normalizeApplicationFormTemplateShape),
-  );
+  const [templates, setTemplates] = useState<ApplicationFormTemplate[]>([]);
   const [activeKind, setActiveKind] = useState<ApplicationFormKind>(initialKind);
   const [isCreating, setIsCreating] = useState(false);
   const activeTemplates = useMemo(
@@ -72,7 +69,7 @@ export function HostFormLibrary({
           return nextTemplates;
         });
       } catch {
-        // Local fallback keeps the library usable in demo mode.
+        // Keep the library empty rather than showing seed data in host workflows.
       }
     }
 
