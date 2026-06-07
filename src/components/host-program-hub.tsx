@@ -3833,7 +3833,7 @@ function DeletePanel({
 
   return (
     <div className="pt-[var(--figma-47)]" style={figmaScaleStyle}>
-      <section className="w-[54.653vw] max-w-[1049px] rounded-[4px] border border-[#FE701E] bg-white px-[var(--figma-15)] py-[var(--figma-14)] text-[16px] font-semibold leading-[1.65] text-[#0D0D0C]">
+      <section className="w-[57.5vw] max-w-[1104px] rounded-[6px] border border-[#C75C36] bg-white px-[var(--figma-16)] py-[var(--figma-16)] text-[16px] font-semibold leading-[1.45] text-[#0D0D0C]">
         <p>
           프로그램을 삭제하면 상세페이지, 신청 기록, 입금 기록, 후기 등{" "}
           <span className="text-[#FE701E]">모든 데이터가 영구적으로 삭제돼요.</span>
@@ -3841,7 +3841,7 @@ function DeletePanel({
         <p className="text-[#FE701E]">삭제 후 데이터는 복구할 수 없어요</p>
       </section>
 
-      <div className="mt-[28px] grid w-[54.306vw] max-w-[1043px] grid-cols-3 gap-[2.778vw]">
+      <div className="ml-[var(--figma-6)] mt-[28px] grid w-[56.667vw] max-w-[1088px] grid-cols-3 gap-[2.778vw]">
         <DeleteMetric label="알람 신청자" value={alarmSubscriberLabel} />
         <DeleteMetric label="신청서 접수자" value={applicationPersonLabel} />
         <DeleteMetric highlight label="입금 완료자" value={paidApplicantLabel} />
@@ -3852,7 +3852,7 @@ function DeletePanel({
         삭제 시 위 인원에게 프로그램 취소 안내가 자동 발송돼요
       </label>
 
-      <div className="mt-[16px] flex h-[var(--figma-45)] w-[54.306vw] max-w-[1043px] items-center justify-between rounded-[4px] border border-[#0D0D0C] bg-[#F5E3D4] px-[var(--figma-18)] text-[16px] font-semibold leading-[1.253] text-[#0D0D0C]">
+      <div className="ml-[var(--figma-6)] mt-[16px] flex h-[var(--figma-45)] w-[56.667vw] max-w-[1088px] items-center justify-between rounded-[6px] border border-[#0D0D0C] bg-[#F5E1D3] px-[var(--figma-18)] text-[16px] font-semibold leading-[1.253] text-[#0D0D0C]">
         <span>
           입금 완료자 <span className="text-[#FE701E]">{paidApplicantLabel}</span>의 환불 처리가 필요해요
         </span>
@@ -3864,9 +3864,9 @@ function DeletePanel({
         </Link>
       </div>
 
-      <hr className="mt-[24px] w-[59.444vw] max-w-[1141px] border-[#6D7A8A]" />
+      <hr className="mt-[24px] w-[57.5vw] max-w-[1104px] border-[#6D7A8A]" />
 
-      <div className="mt-[29px] grid w-[54.722vw] max-w-[1051px] grid-cols-3 gap-[1.389vw]">
+      <div className="mt-[29px] grid w-[57.5vw] max-w-[1104px] grid-cols-3 gap-[1.458vw]">
         <DeleteCheckMetric label="삭제되는 후기" value={reviewLabel} />
         <DeleteCheckMetric label="삭제되는 신청 기록" value={applicationRecordLabel} />
         <DeleteCheckMetric label="삭제되는 결제 기록" value={paymentRecordLabel} />
@@ -3887,7 +3887,7 @@ function DeletePanel({
         <span className="text-[#FE701E]">&lt; 해당 프로그램 명 &gt;</span> 을 정확히 입력해 주세요.
       </p>
       <input
-        className="mt-[12px] h-[var(--figma-31)] w-[54.653vw] max-w-[1049px] rounded-[4px] border border-[#AEB8C2] bg-white px-[12px] text-[12px] font-normal leading-[1.253] text-[#0D0D0C] outline-none placeholder:text-[#D9D9D9]"
+        className="mt-[12px] h-[var(--figma-31)] w-[57.5vw] max-w-[1104px] rounded-[7px] border border-[#6D7A8A] bg-white px-[12px] text-[12px] font-normal leading-[1.253] text-[#0D0D0C] outline-none placeholder:text-[#D9D9D9]"
         onChange={(event) => setDeleteName(event.target.value)}
         placeholder="프로그램명을 입력하세요"
         value={deleteName}
@@ -3917,9 +3917,9 @@ function DeleteMetric({
   value: string;
 }) {
   return (
-    <div className="flex h-[var(--figma-45)] items-center justify-between rounded-[4px] border border-[#D9D9D9] bg-white px-[var(--figma-18)] text-[16px] font-semibold leading-[1.253]">
-      <span className="text-[#6D7A8A]">{label}</span>
-      <span className={highlight ? "text-[#FE701E]" : "text-[#0D0D0C]"}>
+    <div className="flex h-[var(--figma-45)] items-center justify-between rounded-[6px] border border-[#6D7A8A] bg-white px-[var(--figma-18)] text-[16px] leading-[1.253]">
+      <span className="font-medium text-[#6D7A8A]">{label}</span>
+      <span className={highlight ? "font-semibold text-[#FE701E]" : "font-semibold text-[#0D0D0C]"}>
         {value}
       </span>
     </div>
@@ -3934,9 +3934,12 @@ function DeleteCheckMetric({
   value: string;
 }) {
   return (
-    <div className="flex h-[var(--figma-45)] items-center justify-between rounded-[4px] border border-[#D9D9D9] bg-white px-[var(--figma-16)] text-[16px] font-semibold leading-[1.253]">
-      <span className="text-[#6D7A8A]">{label}</span>
-      <span className="text-[#0D0D0C]">{value}</span>
+    <div className="flex h-[var(--figma-45)] items-center justify-between rounded-[6px] border border-[#6D7A8A] bg-white px-[var(--figma-16)] text-[16px] leading-[1.253]">
+      <span className="flex items-center gap-[var(--figma-10)] font-medium text-[#6D7A8A]">
+        <span aria-hidden="true" className="size-[var(--figma-16)] rounded-[4px] border border-[#CAC4BC]" />
+        {label}
+      </span>
+      <span className="font-semibold text-[#0D0D0C]">{value}</span>
     </div>
   );
 }
