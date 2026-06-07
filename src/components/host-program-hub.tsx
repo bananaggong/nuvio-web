@@ -166,6 +166,7 @@ const figmaScaleStyle = {
   "--figma-69": "clamp(69px, 4.792vw, 92px)",
   "--figma-72": "clamp(72px, 5vw, 96px)",
   "--figma-82": "clamp(82px, 5.694vw, 109.333px)",
+  "--figma-88": "clamp(88px, 6.111vw, 117.333px)",
   "--figma-96": "clamp(96px, 6.667vw, 128px)",
   "--figma-110": "clamp(110px, 7.639vw, 146.667px)",
   "--figma-113": "clamp(113px, 7.847vw, 150.667px)",
@@ -771,7 +772,7 @@ export function HostProgramHub({
 
         <section className="flex min-w-0 flex-1 flex-col">
           {showUpdatedAtHeader ? (
-          <div className="ml-[2.778vw] flex h-[var(--figma-96)] w-[64.236vw] max-w-[1233px] items-start justify-end pt-[var(--figma-44)] text-[16px] font-normal leading-[1.253] text-[#6D7A8A]">
+          <div className="ml-[2.778vw] flex h-[var(--figma-44)] w-[64.236vw] max-w-[1233px] items-start justify-end pt-[var(--figma-24)] text-[16px] font-normal leading-[1.253] text-[#6D7A8A]">
             최근 수정일 : {formatDateTime(currentUpdatedAt)}
           </div>
           ) : null}
@@ -1966,7 +1967,7 @@ function DetailPanel({
   return (
     <section className="flex w-full max-w-[1563px] items-start gap-[1.706%] bg-white max-lg:flex-col max-lg:gap-[1.389vw]">
       <div className="w-[50.852%] max-w-[795px] shrink-0 max-lg:w-full max-lg:max-w-none">
-        <div className="flex h-[6.667vw] max-h-[128px] items-start justify-end pt-[3.056vw] text-[length:var(--figma-16)] font-normal leading-[1.253] text-[#6D7A8A]">
+        <div className="flex h-[var(--figma-44)] items-start justify-end pt-[var(--figma-24)] text-[length:var(--figma-16)] font-normal leading-[1.253] text-[#6D7A8A]">
           최근 수정일 : {formatDateTime(updatedAt)}
         </div>
 
@@ -3043,10 +3044,10 @@ function ScheduleDayFigmaEditor({
       <div className="flex w-full flex-col">
         <button
           aria-expanded={expanded}
-          className={`flex w-full items-end justify-between bg-[#6D7A8A] px-[var(--figma-12)] py-[var(--figma-18)] text-left text-[#F9F9F9] ${
+          className={`flex h-[var(--figma-44)] w-full items-center justify-between bg-[#6D7A8A] px-[var(--figma-12)] text-left text-[#F9F9F9] ${
             expanded
-              ? "rounded-tl-[var(--figma-8)] rounded-tr-[var(--figma-8)]"
-              : "rounded-[var(--figma-8)]"
+              ? "rounded-tl-[var(--figma-4)] rounded-tr-[var(--figma-4)]"
+              : "rounded-[var(--figma-4)]"
           }`}
           onClick={onToggle}
           type="button"
@@ -3255,7 +3256,7 @@ function SchedulePhotoSlots({
         const image = images[index] ?? "";
         return (
           <label
-            className="flex h-[var(--figma-110)] w-[var(--figma-96)] cursor-pointer flex-col items-center justify-center gap-[var(--figma-6)] rounded-[var(--figma-7)] border-[0.5px] border-solid border-[#F7B267] bg-[#F9F9F9] bg-cover bg-center text-[length:var(--figma-10)] font-medium leading-[1.253] text-[#D9D9D9] transition hover:border-[#FE701E] hover:text-[#FE701E]"
+            className="flex h-[var(--figma-88)] w-[var(--figma-82)] cursor-pointer flex-col items-center justify-center gap-[var(--figma-6)] rounded-[var(--figma-7)] border-[0.5px] border-solid border-[#F7B267] bg-[#F9F9F9] bg-cover bg-center text-[length:var(--figma-10)] font-medium leading-[1.253] text-[#D9D9D9] transition hover:border-[#FE701E] hover:text-[#FE701E]"
             key={index}
             style={image ? { backgroundImage: `url("${image}")` } : undefined}
           >
