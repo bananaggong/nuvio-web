@@ -620,9 +620,9 @@ function ChatConversationPanel({ thread }: { thread?: MessageThread }) {
       <div className="flex justify-end px-[10px] py-1">
         <Search aria-hidden="true" className="size-[var(--host-msg-20)] text-[#CAC4BC]" strokeWidth={1.8} />
       </div>
-      <div className="flex flex-1 items-start justify-center pt-4">
+      <div className="flex flex-1 items-start justify-end pr-[var(--host-msg-34)] pt-4">
         {thread ? (
-          <AutoAnswerPreview />
+          <AutoAnswerPreview align="right" />
         ) : (
           <EmptyConversation label="대화를 선택해주세요." />
         )}
@@ -837,10 +837,12 @@ function MiniProgramHeader({ thread }: { thread?: MessageThread }) {
   );
 }
 
-function AutoAnswerPreview() {
+function AutoAnswerPreview({ align = "center" }: { align?: "center" | "right" }) {
   return (
     <div
-      className="mx-auto w-full rounded-[var(--host-msg-12)] border border-[#D9D9D9] bg-[#F9F9F9] px-[var(--host-msg-18)] py-[var(--host-msg-24)]"
+      className={`w-full rounded-[var(--host-msg-12)] border border-[#D9D9D9] bg-[#F9F9F9] px-[var(--host-msg-18)] py-[var(--host-msg-24)] ${
+        align === "center" ? "mx-auto" : ""
+      }`}
       style={{ maxWidth: scaledSize(365) }}
     >
       <p className="whitespace-pre-wrap text-[length:var(--host-msg-14)] font-medium leading-[1.253] text-[#0D0D0C]">
