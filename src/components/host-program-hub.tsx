@@ -2773,7 +2773,7 @@ function DetailPagePreviewContent({ program }: { program: Program }) {
 }
 
 const detailPreviewCanvasWidth = 1440;
-const detailPreviewCanvasHeight = 2050;
+const detailPreviewCanvasHeight = 2800;
 const detailPreviewViewportHeight = "clamp(760px, 58vw, 1012px)";
 
 function usePreviewCanvasScale(baseWidth: number) {
