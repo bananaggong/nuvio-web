@@ -120,6 +120,7 @@ export function HostFormBuilder({
   const [insertAfterIndex, setInsertAfterIndex] = useState<number | null>(null);
   const [showPreview, setShowPreview] = useState(false);
   const [saved, setSaved] = useState(false);
+  const [hasLoadedTemplates, setHasLoadedTemplates] = useState(false);
   const [isSyncing, setIsSyncing] = useState(false);
   const [syncMessage, setSyncMessage] = useState("");
   const [syncError, setSyncError] = useState("");
@@ -199,23 +200,27 @@ export function HostFormBuilder({
         const databaseTemplates = Array.isArray(payload.data)
           ? payload.data.map(normalizeApplicationFormTemplateShape)
           : [];
-        if (!isMounted || databaseTemplates.length === 0) return;
+        if (!isMounted) return;
 
-        setTemplates((currentTemplates) => {
-          const nextTemplates = mergeApplicationFormTemplates(
-            databaseTemplates,
-            currentTemplates,
+        if (databaseTemplates.length > 0) {
+          setTemplates((currentTemplates) => {
+            const nextTemplates = mergeApplicationFormTemplates(
+              databaseTemplates,
+              currentTemplates,
+            );
+            return nextTemplates;
+          });
+          setSelectedId(
+            (currentId) =>
+              currentId ?? formId ?? (programId ? undefined : databaseTemplates[0]?.id),
           );
-          return nextTemplates;
-        });
-        setSelectedId(
-          (currentId) =>
-            currentId ?? formId ?? (programId ? undefined : databaseTemplates[0]?.id),
-        );
+        }
       } catch {
         if (isMounted) {
           setSyncError("신청폼을 불러오지 못했습니다.");
         }
+      } finally {
+        if (isMounted) setHasLoadedTemplates(true);
       }
     }
 
@@ -440,14 +445,45 @@ export function HostFormBuilder({
   if (!selectedTemplate) {
     return (
       <div className="mx-auto max-w-5xl px-4 py-8 md:px-8">
-        <button
-          className="inline-flex h-11 items-center gap-2 rounded-md bg-[var(--primary)] px-4 text-sm font-black text-white"
-          onClick={addTemplate}
-          type="button"
-        >
-          <FilePlus2 size={17} />
-          신청폼 만들기
-        </button>
+        <section className="rounded-md border border-dashed border-[#F5C7A8] bg-white px-6 py-12 text-center shadow-sm">
+          {hasLoadedTemplates ? (
+            <>
+              <div className="mx-auto grid size-12 place-items-center rounded-md bg-[#FFF1E8] text-[#FE701E]">
+                <FilePlus2 size={22} />
+              </div>
+              <h1 className="mt-5 text-xl font-black text-slate-950">
+                신청폼을 찾을 수 없습니다
+              </h1>
+              <p className="mt-2 text-sm font-bold leading-6 text-slate-500">
+                삭제되었거나 접근 권한이 없는 신청폼입니다. 목록에서 다른 폼을
+                선택하거나 새 신청폼을 만들어 주세요.
+              </p>
+              <div className="mt-6 flex flex-wrap justify-center gap-2">
+                <Link
+                  className="inline-flex h-11 items-center justify-center rounded-md border border-slate-200 bg-white px-4 text-sm font-black text-slate-700"
+                  href="/host/forms?kind=application"
+                >
+                  신청폼 목록
+                </Link>
+                <button
+                  className="inline-flex h-11 items-center gap-2 rounded-md bg-[var(--primary)] px-4 text-sm font-black text-white"
+                  onClick={addTemplate}
+                  type="button"
+                >
+                  <FilePlus2 size={17} />
+                  새 신청폼
+                </button>
+              </div>
+            </>
+          ) : (
+            <>
+              <Loader2 className="mx-auto animate-spin text-[#FE701E]" size={28} />
+              <p className="mt-4 text-sm font-black text-slate-600">
+                신청폼을 불러오는 중입니다.
+              </p>
+            </>
+          )}
+        </section>
       </div>
     );
   }
