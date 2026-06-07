@@ -588,7 +588,7 @@ function NewProgramDialog({
   return (
     <div className="fixed inset-0 z-[90] grid place-items-center overflow-y-auto bg-black/20 px-4 py-8">
       <form
-        className="flex w-[var(--host-457)] max-w-[calc(100vw-32px)] flex-col gap-[var(--host-6)] rounded-[12px] border border-[#D9D9D9] bg-[#F9F9F9] px-[var(--host-18)] py-[var(--host-24)] shadow-[0_18px_50px_rgba(0,0,0,0.12)] max-md:w-full max-md:min-w-0"
+        className="flex w-[var(--host-603)] max-w-[calc(100vw-32px)] flex-col gap-[var(--host-6)] rounded-[12px] border border-[#D9D9D9] bg-[#F9F9F9] px-[var(--host-18)] py-[var(--host-24)] shadow-[0_18px_50px_rgba(0,0,0,0.12)] max-md:w-full max-md:min-w-0 max-md:p-5"
         onSubmit={(event) => {
           event.preventDefault();
           if (canCreate) onCreate();
@@ -604,21 +604,31 @@ function NewProgramDialog({
             <X size={16} strokeWidth={2.2} />
           </button>
         </div>
-        <div className="mt-2 grid gap-[10px]">
+        <div className="mt-2 grid gap-[var(--host-21)]">
           <p className="text-[14px] font-medium leading-[1.253] text-[#0D0D0C]">
-            새 프로그램 이름을 입력해주세요.
+            새 프로그램
+          </p>
+          <p className="text-[var(--host-12)] font-medium leading-[1.6] text-[#6D7A8A]">
+            프로그램 이름을 입력하고 생성하면 대시보드에서 본격적으로 작성할 수 있습니다.
           </p>
           <input
             autoFocus
-            className="h-[40px] rounded-[6px] border border-[#CAC4BC] bg-white px-3 text-[14px] font-medium leading-[1.253] text-[#0D0D0C] outline-none transition placeholder:text-[#CAC4BC] focus:border-[#FF9A3D] focus:ring-2 focus:ring-[#FF9A3D]/15"
+            className="h-[var(--host-30)] rounded-[7px] border-[0.5px] border-[#F7B267] bg-transparent px-[var(--host-12)] text-[var(--host-12)] font-medium leading-[1.253] text-[#0D0D0C] outline-none placeholder:text-[#D9D9D9] focus:border-[#FE701E]"
             onChange={(event) => onTitleChange(event.target.value)}
-            placeholder="프로그램 이름"
+            placeholder="프로그램 이름을 입력해주세요."
             value={title}
           />
         </div>
-        <div className="mt-[1.111vw] flex justify-end">
+        <div className="mt-[1.111vw] flex justify-end gap-[var(--host-8)]">
           <button
-            className="inline-flex h-[29px] items-center justify-center rounded-[4px] bg-[#FE701E] px-[1.25vw] text-[12px] font-medium leading-[1.253] text-[#FFF6EC] disabled:opacity-45"
+            className="inline-flex h-[var(--host-29)] items-center justify-center rounded-[4px] border border-[#D9D9D9] bg-white px-[var(--host-18)] text-[var(--host-12)] font-medium leading-[1.253] text-[#6D7A8A]"
+            onClick={onClose}
+            type="button"
+          >
+            취소
+          </button>
+          <button
+            className="inline-flex h-[var(--host-29)] items-center justify-center rounded-[4px] bg-[#FE701E] px-[var(--host-18)] text-[var(--host-12)] font-medium leading-[1.253] text-[#FFF6EC] disabled:opacity-45"
             disabled={!canCreate}
             type="submit"
           >

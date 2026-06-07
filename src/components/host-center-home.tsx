@@ -449,7 +449,7 @@ export function HostCenterHome({
           <form
             aria-modal="true"
             aria-labelledby="new-program-title"
-            className="flex w-[var(--host-457)] max-w-[calc(100vw-32px)] flex-col gap-[var(--host-6)] rounded-[12px] border border-[#D9D9D9] bg-[#F9F9F9] px-[var(--host-18)] py-[var(--host-24)] shadow-[0_18px_48px_rgba(91,58,41,0.14)] max-md:w-full max-md:min-w-0 max-md:p-5"
+            className="flex w-[var(--host-603)] max-w-[calc(100vw-32px)] flex-col gap-[var(--host-6)] rounded-[12px] border border-[#D9D9D9] bg-[#F9F9F9] px-[var(--host-18)] py-[var(--host-24)] shadow-[0_18px_48px_rgba(91,58,41,0.14)] max-md:w-full max-md:min-w-0 max-md:p-5"
             onSubmit={(event) => {
               event.preventDefault();
               void createProgram();
@@ -472,21 +472,31 @@ export function HostCenterHome({
                 htmlFor="new-program-name"
                 id="new-program-title"
               >
-                새 프로그램 만들기
+                새 프로그램
               </label>
+              <p className="text-[var(--host-12)] font-medium leading-[1.6] text-[#6D7A8A]">
+                프로그램 이름을 입력하고 생성하면 대시보드에서 본격적으로 작성할 수 있습니다.
+              </p>
               <input
                 autoFocus
                 className="h-[var(--host-30)] w-full rounded-[7px] border-[0.5px] border-[#F7B267] bg-transparent px-[var(--host-12)] text-[var(--host-12)] font-medium leading-[1.253] text-[#0D0D0C] outline-none placeholder:text-[#D9D9D9] focus:border-[#FE701E]"
                 id="new-program-name"
                 onChange={(event) => setProgramName(event.target.value)}
-                placeholder="프로그램 이름을 입력하세요."
+                placeholder="프로그램 이름을 입력해주세요."
                 value={programName}
               />
             </div>
             {programError ? (
               <p className="text-[13px] font-bold text-red-600">{programError}</p>
             ) : null}
-            <div className="flex w-full justify-end pt-[var(--host-12)]">
+            <div className="flex w-full justify-end gap-[var(--host-8)] pt-[var(--host-12)]">
+              <button
+                className="inline-flex h-[var(--host-29)] items-center justify-center rounded-[4px] border border-[#D9D9D9] bg-white px-[var(--host-18)] text-[var(--host-12)] font-medium leading-[1.253] text-[#6D7A8A]"
+                onClick={closeProgramDialog}
+                type="button"
+              >
+                취소
+              </button>
               <button
                 className="inline-flex h-[var(--host-29)] items-center justify-center gap-[var(--host-6)] rounded-[4px] bg-[#FE701E] px-[var(--host-18)] text-[var(--host-12)] font-medium leading-[1.253] text-[#FFF6EC] disabled:opacity-40"
                 disabled={!trimmedProgramName || isProgramSaving}
@@ -495,7 +505,7 @@ export function HostCenterHome({
                 {isProgramSaving ? (
                   <Loader2 className="size-[var(--host-14)] animate-spin" />
                 ) : null}
-                생성
+                생성하기
               </button>
             </div>
           </form>
