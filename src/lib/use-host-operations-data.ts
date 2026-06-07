@@ -1,13 +1,19 @@
 "use client";
 
 import { useEffect, useState, type Dispatch, type SetStateAction } from "react";
-import { mergeHostApplications, type HostApplication } from "@/lib/host-operations";
+import {
+  mergeHostApplications,
+  readHostApplicationsFromStorage,
+  type HostApplication,
+} from "@/lib/host-operations";
 import {
   mergeReportProjects,
+  readReportProjects,
   type ReportProject,
 } from "@/lib/report-automation";
 import {
   mergeHostProgramDrafts,
+  readHostProgramDrafts,
   type HostProgramDraft,
 } from "@/lib/host-program-studio";
 
@@ -22,9 +28,13 @@ type HostOperationsData = {
 };
 
 export function useHostOperationsData(): HostOperationsData {
-  const [applications, setApplications] = useState<HostApplication[]>([]);
-  const [programs, setPrograms] = useState<HostProgramDraft[]>([]);
-  const [reportProjects, setReportProjects] = useState<ReportProject[]>([]);
+  const [applications, setApplications] = useState<HostApplication[]>(
+    readHostApplicationsFromStorage,
+  );
+  const [programs, setPrograms] =
+    useState<HostProgramDraft[]>(readHostProgramDrafts);
+  const [reportProjects, setReportProjects] =
+    useState<ReportProject[]>(readReportProjects);
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
