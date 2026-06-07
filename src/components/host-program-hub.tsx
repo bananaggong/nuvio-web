@@ -2260,10 +2260,16 @@ function RichToolbarButton({
   );
 }
 
-function DetailPreviewRail({ draft }: { draft: HostProgramDraft }) {
+function DetailPreviewRail({
+  draft,
+  thumbnailInitiallyCollapsed = false,
+}: {
+  draft: HostProgramDraft;
+  thumbnailInitiallyCollapsed?: boolean;
+}) {
   const [collapsed, setCollapsed] = useState({
     detail: false,
-    thumbnail: false,
+    thumbnail: thumbnailInitiallyCollapsed,
   });
   const previewProgram = useMemo(() => mapHostDraftToPreviewProgram(draft), [draft]);
 
@@ -2690,9 +2696,21 @@ function DesktopPreviewSection({
 
 function mapHostDraftToPreviewProgram(draft: HostProgramDraft): Program {
   const image = draft.image.trim();
-  const hashtags = draft.hashtags.map((tag) => tag.trim().replace(/^#/u, "")).filter(Boolean);
+  const rawHashtags = Array.isArray(draft.hashtags) ? draft.hashtags : [];
+  const rawItineraryDays = Array.isArray(draft.itineraryDays)
+    ? draft.itineraryDays
+    : [];
+  const rawDetailImages = Array.isArray(draft.detailImages)
+    ? draft.detailImages
+    : [];
+  const hashtags = rawHashtags
+    .map((tag) => tag.trim().replace(/^#/u, ""))
+    .filter(Boolean);
   const itineraryImages = uniqueImages(
-    draft.itineraryDays.flatMap((day) => [day.image, ...day.images]),
+    rawItineraryDays.flatMap((day) => [
+      day.image,
+      ...(Array.isArray(day.images) ? day.images : []),
+    ]),
   );
   const body = [draft.description.trim() || draft.summary.trim()].filter(Boolean);
 
@@ -2709,12 +2727,12 @@ function mapHostDraftToPreviewProgram(draft: HostProgramDraft): Program {
     city: draft.city.trim() || "입력하기",
     description: draft.description.trim() || draft.summary.trim(),
     fee: draft.fee.trim() || "무료",
-    gallery: uniqueImages([image, ...draft.detailImages, ...itineraryImages]),
+    gallery: uniqueImages([image, ...rawDetailImages, ...itineraryImages]),
     guideInfo: draft.guideInfo,
     hashtags,
     id: draft.id,
     image,
-    itineraryDays: draft.itineraryDays,
+    itineraryDays: rawItineraryDays,
     periodKey: draft.periodKey,
     phone: draft.phone.trim() || "000-0000-0000",
     placeInfo: draft.placeInfo,
@@ -2859,7 +2877,7 @@ function SettingsPreviewLayout({
         </div>
         {children}
       </div>
-      <DetailPreviewRail draft={draft} />
+      <DetailPreviewRail draft={draft} thumbnailInitiallyCollapsed />
     </section>
   );
 }
