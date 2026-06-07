@@ -136,6 +136,7 @@ const figmaScaleStyle = {
   "--figma-10": "clamp(10px, 0.694vw, 13.333px)",
   "--figma-12": "clamp(12px, 0.833vw, 16px)",
   "--figma-14": "clamp(14px, 0.972vw, 18.667px)",
+  "--figma-15": "clamp(15px, 1.042vw, 20px)",
   "--figma-16": "clamp(16px, 1.111vw, 21.333px)",
   "--figma-18": "clamp(18px, 1.25vw, 24px)",
   "--figma-19": "clamp(19px, 1.319vw, 25.333px)",
@@ -143,6 +144,7 @@ const figmaScaleStyle = {
   "--figma-22": "clamp(22px, 1.528vw, 29.333px)",
   "--figma-23": "clamp(23px, 1.597vw, 30.667px)",
   "--figma-24": "clamp(24px, 1.667vw, 32px)",
+  "--figma-26": "clamp(26px, 1.806vw, 34.667px)",
   "--figma-27": "clamp(27px, 1.875vw, 36px)",
   "--figma-28": "clamp(28px, 1.944vw, 37.333px)",
   "--figma-30": "clamp(30px, 2.083vw, 40px)",
@@ -151,6 +153,7 @@ const figmaScaleStyle = {
   "--figma-35": "clamp(35px, 2.431vw, 46.667px)",
   "--figma-44": "clamp(44px, 3.056vw, 58.667px)",
   "--figma-50": "clamp(50px, 3.472vw, 66.667px)",
+  "--figma-55": "clamp(55px, 3.819vw, 73.333px)",
   "--figma-96": "clamp(96px, 6.667vw, 128px)",
   "--figma-110": "clamp(110px, 7.639vw, 146.667px)",
   "--figma-113": "clamp(113px, 7.847vw, 150.667px)",
@@ -158,6 +161,7 @@ const figmaScaleStyle = {
   "--figma-193": "clamp(193px, 13.403vw, 257.333px)",
   "--figma-256": "clamp(256px, 17.778vw, 341.333px)",
   "--figma-262": "clamp(262px, 18.194vw, 349.333px)",
+  "--figma-379": "clamp(379px, 26.319vw, 505.333px)",
 } as CSSProperties;
 
 type KakaoPostcodeData = {
@@ -2301,7 +2305,7 @@ function SchedulePanel({
 
   return (
     <SettingsPreviewLayout draft={draft} updatedAt={updatedAt}>
-      <div className="flex flex-col gap-[var(--figma-21)]">
+      <div className="flex flex-col gap-[var(--figma-26)]">
         {draft.itineraryDays.map((day, index) => (
           <ScheduleDayFigmaEditor
             day={day}
@@ -2313,7 +2317,7 @@ function SchedulePanel({
             programId={draft.id}
           />
         ))}
-        <div className="flex flex-col items-center gap-[var(--figma-8)] py-[var(--figma-8)]">
+        <div className="flex flex-col items-center gap-[var(--figma-8)] pb-[var(--figma-8)]">
           <p className="text-[length:var(--figma-12)] font-medium leading-[1.253] text-[#6D7A8A]">
             아래의 버튼을 눌러 일정을 추가해 주세요
           </p>
@@ -2419,7 +2423,7 @@ function ScheduleDayFigmaEditor({
     <DetailFormBlock
       paddingClassName={
         expanded
-          ? "px-0 pb-[var(--figma-27)] pt-[var(--figma-6)]"
+          ? "px-0 pb-[var(--figma-15)] pt-[var(--figma-6)]"
           : "px-0 py-[var(--figma-6)]"
       }
     >
@@ -2470,7 +2474,7 @@ function ScheduleDayFigmaEditor({
               해당 일차의 활동이나 장소가 담긴 사진을 올려주세요
             </p>
 
-            <div className="mt-[var(--figma-21)] flex flex-col gap-[var(--figma-10)]">
+            <div className="mt-[var(--figma-26)] flex flex-col gap-[var(--figma-10)]">
               <SettingsFieldLabel>일정 소개</SettingsFieldLabel>
               <textarea
                 className="h-[var(--figma-31)] resize-none rounded-[var(--figma-7)] border-[0.5px] border-[#F7B267] bg-transparent px-[var(--figma-8)] py-[var(--figma-6)] text-[#0D0D0C] outline-none placeholder:text-[#D9D9D9] focus:border-[#FE701E]"
@@ -2490,7 +2494,7 @@ function ScheduleDayFigmaEditor({
               <div className="grid gap-[var(--figma-6)]">
                 {timetableRows.map((row, index) => (
                   <div
-                    className="flex items-center gap-[var(--figma-6)]"
+                    className="flex items-center pl-[var(--figma-22)]"
                     key={`${index}-${timetableRows.length}`}
                   >
                     <input
@@ -2500,7 +2504,7 @@ function ScheduleDayFigmaEditor({
                     />
                     <input
                       aria-label={`${dayNumber}일차 ${index + 1}번째 일정 시간`}
-                      className="h-[var(--figma-24)] w-[3.056vw] min-w-[44px] max-w-[59px] rounded-[var(--figma-7)] border-[0.5px] border-[#D9D9D9] bg-white px-[var(--figma-4)] text-center text-[length:var(--figma-10)] font-medium leading-[1.253] text-[#6D7A8A] outline-none placeholder:text-[#D9D9D9] focus:border-[#FE701E]"
+                      className="ml-[var(--figma-12)] h-[var(--figma-31)] w-[var(--figma-55)] rounded-[var(--figma-7)] border-[0.5px] border-[#D9D9D9] bg-white px-[var(--figma-4)] text-center text-[length:var(--figma-10)] font-medium leading-[1.253] text-[#6D7A8A] outline-none placeholder:text-[#D9D9D9] focus:border-[#FE701E]"
                       inputMode="numeric"
                       onChange={(event) =>
                         updateTimetableRow(index, {
@@ -2512,7 +2516,7 @@ function ScheduleDayFigmaEditor({
                     />
                     <input
                       aria-label={`${dayNumber}일차 ${index + 1}번째 일정 내용`}
-                      className="h-[var(--figma-24)] min-w-0 flex-1 rounded-[var(--figma-7)] border-[0.5px] border-[#D9D9D9] bg-white px-[var(--figma-8)] text-[length:var(--figma-10)] font-medium leading-[1.253] text-[#0D0D0C] outline-none placeholder:text-[#D9D9D9] focus:border-[#FE701E]"
+                      className="ml-[var(--figma-8)] h-[var(--figma-31)] w-[var(--figma-379)] rounded-[var(--figma-7)] border-[0.5px] border-[#D9D9D9] bg-white px-[var(--figma-8)] text-[length:var(--figma-10)] font-medium leading-[1.253] text-[#0D0D0C] outline-none placeholder:text-[#D9D9D9] focus:border-[#FE701E]"
                       onChange={(event) =>
                         updateTimetableRow(index, { text: event.target.value })
                       }
@@ -2521,7 +2525,7 @@ function ScheduleDayFigmaEditor({
                     />
                     <button
                       aria-label={`${dayNumber}일차 ${index + 1}번째 일정 삭제`}
-                      className="grid size-[var(--figma-10)] shrink-0 place-items-center rounded-full bg-[#CAC4BC] text-white transition hover:bg-[#AEB8C2] disabled:cursor-not-allowed disabled:opacity-40"
+                      className="ml-[var(--figma-8)] grid size-[var(--figma-12)] shrink-0 place-items-center rounded-full bg-[#CAC4BC] text-white transition hover:bg-[#AEB8C2] disabled:cursor-not-allowed disabled:opacity-40"
                       disabled={timetableRows.length <= 1}
                       onClick={() => removeTimetableRow(index)}
                       type="button"
