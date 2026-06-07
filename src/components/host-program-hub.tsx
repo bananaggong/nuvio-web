@@ -16,10 +16,8 @@ import {
   List,
   ListOrdered,
   Minus,
-  Pencil,
   Plus,
   Redo2,
-  Trash2,
   Underline,
   Undo2,
   Upload,
@@ -3745,10 +3743,10 @@ function ManagementPanel({}: {
             </button>
           ))}
         </div>
-        <div className="mt-[15px] grid gap-[7px] border-t border-[#F3F3F3] pt-[14px]">
-          <CouponListRow status="진행" title="쿠폰 이름" value="10%/3000원(할인방식)" quantity="00(수량)" date="~0000. 00. 00(마감일)" />
-          <CouponListRow status="진행" title="6월 여름 한정 할인쿠폰" value="20% 할인" quantity="30개" date="~2026. 6. 27" />
-          <CouponListRow muted status="종료" title="얼리버드 할인쿠폰" value="6000원 할인" quantity="무제한" date="~2026. 2. 5" />
+        <div className="mt-[15px] border-t border-[#F3F3F3] pt-[14px]">
+          <div className="flex h-[78px] items-center justify-center rounded-[4px] border border-dashed border-[#CAC4BC] bg-white text-[14px] font-semibold leading-[1.253] text-[#6D7A8A]">
+            발급된 쿠폰이 없습니다.
+          </div>
         </div>
       </section>
     </div>
@@ -3776,40 +3774,6 @@ function CouponDateInput({ placeholder }: { placeholder: string }) {
         {placeholder}
       </span>
       <CalendarDays className="absolute right-[12px] top-1/2 size-[18px] -translate-y-1/2 text-[#6D7A8A]" />
-    </div>
-  );
-}
-
-function CouponListRow({
-  date,
-  muted = false,
-  quantity,
-  status,
-  title,
-  value,
-}: {
-  date: string;
-  muted?: boolean;
-  quantity: string;
-  status: string;
-  title: string;
-  value: string;
-}) {
-  return (
-    <div className="grid h-[31px] grid-cols-[76px_1fr_190px_120px_220px_28px_28px] items-center rounded-[3px] border border-[#D9D9D9] bg-white px-[8px] text-[14px] font-normal leading-[1.253] text-[#6D7A8A]">
-      <span
-        className={`inline-flex h-[21px] w-[34px] items-center justify-center rounded-[4px] text-[12px] font-semibold text-white ${
-          muted ? "bg-[#6D7A8A]" : "bg-[#7A8B52]"
-        }`}
-      >
-        {status}
-      </span>
-      <span>{title}</span>
-      <span>{value}</span>
-      <span>{quantity}</span>
-      <span>{date}</span>
-      <Pencil className="size-[18px] text-[#6D7A8A]" />
-      <Trash2 className="size-[18px] text-[#6D7A8A]" />
     </div>
   );
 }
