@@ -91,10 +91,18 @@ export function HostWorkspaceLayout({
 function HostWorkspaceSidebar({ sidebarHeight }: { sidebarHeight: string }) {
   const pathname = usePathname();
   const searchParams = useSearchParams();
+  const messagePanel = searchParams.get("panel");
+  const messageStatus = searchParams.get("status");
   const messageView = searchParams.get("view");
   const onMessagesPage = pathname === "/host/messages";
-  const ongoingMessagesActive = onMessagesPage && messageView !== "ended";
-  const endedMessagesActive = onMessagesPage && messageView === "ended";
+  const endedMessagesRequested =
+    messageView === "ended" ||
+    messageStatus === "ended" ||
+    messageStatus === "end" ||
+    messagePanel === "ended" ||
+    messagePanel === "end";
+  const ongoingMessagesActive = onMessagesPage && !endedMessagesRequested;
+  const endedMessagesActive = onMessagesPage && endedMessagesRequested;
 
   return (
     <aside
