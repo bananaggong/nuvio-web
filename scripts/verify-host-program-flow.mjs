@@ -61,7 +61,7 @@ assertIncludes(hostProgramHub, "canDelete={canDeleteBeforeOnboarding}", "dashboa
 assertIncludes(hostProgramHub, "disabled={!canDelete}", "dashboard delete disabled guard");
 assertIncludes(hostProgramHub, "allowCompleted ? \"?mode=management\" : \"\"", "managed delete API mode");
 assertIncludes(hostProgramHub, "onDelete={() => void deleteProgram({ allowCompleted: true })}", "side tab managed delete");
-assertIncludes(hostProgramHub, "프로그램 데이터와 폴더 연결을 삭제하는 것을 확인했습니다.", "side tab delete confirmation");
+assertIncludes(hostProgramHub, "해당 프로그램에 대한 모든 데이터는 영구적으로 삭제 후 복구할 수 없어요", "side tab delete confirmation");
 
 for (const checklistId of [
   "basic",

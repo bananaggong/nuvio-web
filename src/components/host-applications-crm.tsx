@@ -1,7 +1,8 @@
 "use client";
 
 import Link from "next/link";
-import { useMemo, useState, type CSSProperties } from "react";
+import { useSearchParams } from "next/navigation";
+import { useEffect, useMemo, useState, type CSSProperties } from "react";
 import {
   findHostProgramOverview,
   findHostProjectOverview,
@@ -17,6 +18,19 @@ import type {
 import { useHostOperationsData } from "@/lib/use-host-operations-data";
 
 type ReviewTab = "all" | "pending" | "accepted" | "rejected";
+type ApplicationsPanel = "applications" | "receipts" | "reviews";
+
+type HostReviewManagementItem = {
+  id: number | string;
+  author: string;
+  body: string;
+  date: string;
+  excerpt?: string;
+  images?: string[];
+  published?: boolean;
+  title?: string;
+  updatedAt?: string;
+};
 
 const applicationFigmaScaleStyle = {
   "--app-3": "clamp(3px, 0.208vw, 4px)",
@@ -72,10 +86,19 @@ export function HostApplicationsCrm({
   programId?: string;
   projectId?: string;
 }) {
+  const searchParams = useSearchParams();
   const { applications, programs: hostPrograms, reportProjects, setApplications } =
     useHostOperationsData();
   const [activeTab, setActiveTab] = useState<ReviewTab>("all");
   const [selectedApplicationId, setSelectedApplicationId] = useState("");
+  const [hostReviews, setHostReviews] = useState<HostReviewManagementItem[]>([]);
+
+  const activePanel: ApplicationsPanel =
+    searchParams.get("panel") === "receipts"
+      ? "receipts"
+      : searchParams.get("panel") === "reviews"
+        ? "reviews"
+        : "applications";
 
   const project = useMemo(() => {
     if (!projectId) return undefined;
@@ -129,6 +152,9 @@ export function HostApplicationsCrm({
     filteredApplications.find((application) => application.id === selectedApplicationId) ??
     filteredApplications[0] ??
     scopedApplications[0];
+  const selectedScopedApplication =
+    scopedApplications.find((application) => application.id === selectedApplicationId) ??
+    scopedApplications[0];
   const resolvedProgramBasePath = programBasePath ?? projectBasePath ?? "/host/programs";
   const applicationsHref = `${resolvedProgramBasePath}/applications`;
   const formsHref = `${resolvedProgramBasePath}/forms`;
@@ -136,6 +162,30 @@ export function HostApplicationsCrm({
   const sidebarTitle =
     program?.title ?? selectedApplication?.programTitle ?? project?.title ?? "프로그램 제목";
   const sidebarProgramId = program?.id ?? programId ?? selectedApplication?.programId ?? "";
+
+  useEffect(() => {
+    let cancelled = false;
+
+    async function loadHostReviews() {
+      try {
+        const response = await fetch("/api/host/reviews", { cache: "no-store" });
+        if (!response.ok) return;
+
+        const payload = (await response.json()) as {
+          data?: HostReviewManagementItem[];
+        };
+        if (!cancelled) setHostReviews(payload.data ?? []);
+      } catch {
+        if (!cancelled) setHostReviews([]);
+      }
+    }
+
+    if (activePanel === "reviews") void loadHostReviews();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [activePanel]);
 
   function updateApplicationStatus(
     applicationId: string,
@@ -156,7 +206,7 @@ export function HostApplicationsCrm({
     >
       <div className="flex min-h-[calc(100vh_-_4.861vw)] max-md:flex-col">
         <ApplicationSidebar
-          activeItem="applications"
+          activeItem={activePanel}
           applicationsHref={applicationsHref}
           formsHref={formsHref}
           messagesHref={messagesHref}
@@ -167,21 +217,43 @@ export function HostApplicationsCrm({
         />
 
         <section className="flex min-w-0 flex-1 flex-col">
-          <main className="flex min-h-[calc(100vh_-_4.861vw_-_var(--app-69))] flex-1 bg-white">
-            <ApplicationListPanel
-              activeTab={activeTab}
-              applications={filteredApplications}
-              onSelect={(applicationId) => setSelectedApplicationId(applicationId)}
-              onTabChange={setActiveTab}
-              selectedApplicationId={selectedApplication?.id ?? ""}
-            />
-            <ApplicationDetailPanel
-              application={selectedApplication}
-              programTitle={sidebarTitle}
-              onStatusChange={updateApplicationStatus}
-            />
+          <main
+            className={
+              activePanel === "applications"
+                ? "flex min-h-[calc(100vh_-_4.861vw_-_var(--app-69))] flex-1 bg-white"
+                : "min-h-[calc(100vh_-_4.861vw)] flex-1 bg-white"
+            }
+          >
+            {activePanel === "receipts" ? (
+              <PaymentManagementPanel
+                applications={scopedApplications}
+                messagesHref={messagesHref}
+                selectedApplication={selectedScopedApplication}
+                onSelect={(applicationId) => setSelectedApplicationId(applicationId)}
+              />
+            ) : null}
+            {activePanel === "reviews" ? (
+              <ReviewManagementPanel reviews={hostReviews} />
+            ) : null}
+            {activePanel === "applications" ? (
+              <>
+                <ApplicationListPanel
+                  activeTab={activeTab}
+                  applications={filteredApplications}
+                  onSelect={(applicationId) => setSelectedApplicationId(applicationId)}
+                  onTabChange={setActiveTab}
+                  selectedApplicationId={selectedApplication?.id ?? ""}
+                />
+                <ApplicationDetailPanel
+                  application={selectedApplication}
+                  programTitle={sidebarTitle}
+                  onStatusChange={updateApplicationStatus}
+                />
+              </>
+            ) : null}
           </main>
 
+          {activePanel === "applications" ? (
           <div className="flex h-[var(--app-69)] shrink-0 border-t border-[#6D7A8A] bg-white pl-[var(--app-29)] pt-[var(--app-20)]">
             <button
               className="inline-flex h-[var(--app-29)] w-[var(--app-91)] items-center justify-center rounded-[4px] border border-[#FE701E] bg-white text-[12px] font-normal leading-[1.253] text-[#FE701E]"
@@ -190,6 +262,7 @@ export function HostApplicationsCrm({
               메시지 전송
             </button>
           </div>
+          ) : null}
         </section>
       </div>
     </div>
@@ -458,6 +531,273 @@ function ApplicationSelectPreview() {
   );
 }
 
+function PaymentManagementPanel({
+  applications,
+  messagesHref,
+  onSelect,
+  selectedApplication,
+}: {
+  applications: HostApplication[];
+  messagesHref: string;
+  onSelect: (applicationId: string) => void;
+  selectedApplication?: HostApplication;
+}) {
+  const paidApplications = applications.filter((application) => application.paymentAmount > 0);
+  const endedApplications = applications.filter((application) =>
+    ["completed", "rejected"].includes(application.status),
+  );
+
+  return (
+    <section className="grid min-h-[calc(100vh_-_4.861vw)] grid-cols-[16.042vw_minmax(0,1fr)_21.944vw] bg-white">
+      <aside className="border-r border-[#6D7A8A] px-[1.389vw] pt-[1.25vw]">
+        <div className="flex h-[23px] gap-[6px]">
+          {[
+            ["전체", applications.length],
+            ["진행", paidApplications.length],
+            ["종료", endedApplications.length],
+          ].map(([label], index) => (
+            <button
+              className={`h-[20px] rounded-[999px] px-[13px] text-[12px] font-semibold leading-[1.253] text-white ${
+                index === 0 ? "bg-[#FF9A3D]" : "bg-[#CAC4BC]"
+              }`}
+              key={label}
+              type="button"
+            >
+              {label}
+            </button>
+          ))}
+        </div>
+
+        <div className="mt-[8px] grid gap-[7px]">
+          {applications.length > 0 ? (
+            applications.slice(0, 8).map((application, index) => (
+              <button
+                className={`grid h-[50px] grid-cols-[40px_minmax(0,1fr)_48px] items-center rounded-[10px] border px-[6px] text-left ${
+                  application.id === selectedApplication?.id
+                    ? "border-[#FE701E] bg-white"
+                    : "border-transparent bg-[#F3F3F3]"
+                }`}
+                key={application.id}
+                onClick={() => onSelect(application.id)}
+                type="button"
+              >
+                <span className="size-[36px] rounded-full bg-[#D9D9D9]" />
+                <span className="min-w-0 pl-[8px]">
+                  <span className="block truncate text-[14px] font-semibold leading-[1.253] text-[#6D7A8A]">
+                    {application.applicantName || "게스트명"}
+                  </span>
+                  <span className="mt-[2px] block truncate text-[12px] font-normal leading-[1.253] text-[#6D7A8A]">
+                    {application.receiptCount > 0 ? "증빙 확인" : "결제 확인"}
+                  </span>
+                </span>
+                <span className="justify-self-end text-[12px] font-normal leading-[1.253] text-[#6D7A8A]">
+                  {index === 0 ? "3분전" : application.paymentAmount > 0 ? "진행" : "대기"}
+                </span>
+              </button>
+            ))
+          ) : (
+            <div className="flex h-[50px] items-center rounded-[10px] bg-[#F3F3F3] px-[10px] text-[12px] font-semibold text-[#6D7A8A]">
+              결제 상담 내역이 없습니다.
+            </div>
+          )}
+        </div>
+      </aside>
+
+      <section className="relative border-r border-[#6D7A8A] bg-white">
+        <Link
+          className="absolute right-[28px] top-[17px] text-[16px] font-semibold leading-[1.253] text-[#6D7A8A]"
+          href={messagesHref}
+        >
+          전체 메시지함 -&gt;
+        </Link>
+        <span className="absolute right-[52px] top-[52px] size-[18px] rounded-full border-[2px] border-[#CAC4BC]" />
+
+        <div className="mx-auto mt-[96px] w-[25.347vw] max-w-[487px] rounded-[12px] border border-[#D9D9D9] bg-[#FCFCFC] px-[18px] py-[21px]">
+          <p className="text-[14px] font-semibold leading-[1.45] text-[#0D0D0C]">
+            호스트가 입력한 첫인사 텍스트가 쓰여질 공간 입니다
+            <br />
+            ex) 안녕하세요 ㅇㅇㅇ에 관심 가져주셔서 감사해요.
+            <br />
+            궁금한 점이 있으시면 아래 항목을 눌러보세요 :)
+          </p>
+          <div className="mt-[18px] grid gap-[7px]">
+            {["집합 장소 및 시간 안내", "준비물과 복장 안내", "취소 및 환불 규정 안내", "호스트와 직접 소통하기"].map((label, index) => (
+              <button
+                className={`h-[30px] rounded-[6px] border border-[#FF9A3D] bg-white text-[14px] font-normal leading-[1.253] ${
+                  index === 3 ? "text-[#FE701E]" : "text-[#6D7A8A]"
+                }`}
+                key={label}
+                type="button"
+              >
+                {label}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        <div className="absolute bottom-[10px] left-[17px] right-[34px] flex h-[36px] items-center rounded-[999px] border border-[#FE701E] bg-white px-[10px] text-[14px] font-normal leading-[1.253] text-[#D9D9D9]">
+          <span className="mr-[8px] flex size-[12px] items-center justify-center rounded-full bg-[#FF9A3D] text-[10px] font-semibold text-white">
+            +
+          </span>
+          메시지 입력
+        </div>
+      </section>
+
+      <aside className="px-[1.25vw] pt-[1.25vw]">
+        <div className="mx-auto size-[42px] rounded-full bg-[#D9D9D9]" />
+        <div className="mt-[26px] grid gap-[18px] text-[14px] font-semibold leading-[1.253] text-[#5B3A29]">
+          <p>게스트명 : {selectedApplication?.applicantName ?? ""}</p>
+          <p>예약정보 : {selectedApplication ? "예약 확정" : ""}</p>
+        </div>
+        <button
+          className="mt-[20px] h-[30px] w-full rounded-[4px] bg-[#CAC4BC] text-[14px] font-semibold leading-[1.253] text-white"
+          type="button"
+        >
+          상담 종료
+        </button>
+
+        <h2 className="mt-[17px] text-[14px] font-semibold leading-[1.253] text-[#5B3A29]">
+          이전 상담 내역
+        </h2>
+        <div className="mt-[9px] grid gap-[7px]">
+          {applications.slice(0, 3).map((application) => (
+            <div
+              className="flex h-[32px] items-center justify-between rounded-[4px] border border-[#6D7A8A] px-[10px] text-[14px] font-semibold leading-[1.253] text-[#6D7A8A]"
+              key={application.id}
+            >
+              <span className="max-w-[170px] truncate">
+                {application.programTitle || "문의한 프로그램"}
+              </span>
+              <span>{formatShortDate(application.submittedAt)}</span>
+            </div>
+          ))}
+        </div>
+      </aside>
+    </section>
+  );
+}
+
+function ReviewManagementPanel({
+  reviews,
+}: {
+  reviews: HostReviewManagementItem[];
+}) {
+  const averageRating = reviews.length > 0 ? "5.0" : "0.0";
+
+  return (
+    <section className="min-h-[calc(100vh_-_4.861vw)] bg-white pl-[2.778vw] pt-[47px]">
+      <div className="w-[61.042vw] max-w-[1172px]">
+        <h1 className="text-[16px] font-semibold leading-[1.253] text-[#0D0D0C]">
+          전체 후기 {String(reviews.length).padStart(2, "0")}개 / 평균 ♟ {averageRating}
+        </h1>
+
+        <div className="mt-[26px] grid gap-[12px] text-[14px] font-normal leading-[1.253] text-[#6D7A8A]">
+          <div className="flex items-center gap-[13px]">
+            <span>평점</span>
+            {["전체", "5점 ♟♟♟♟♟", "4점 ♟♟♟♟", "3점 ♟♟♟", "2점 ♟♟", "1점 ♟"].map((label, index) => (
+              <label className="inline-flex items-center gap-[4px]" key={label}>
+                <input defaultChecked={index === 0 || index === 1 || index === 2} className="size-[14px] accent-[#FE701E]" type="radio" />
+                {label}
+              </label>
+            ))}
+          </div>
+          <div className="flex items-center gap-[20px]">
+            <span>순서</span>
+            <label className="inline-flex items-center gap-[4px]">
+              <input defaultChecked className="size-[14px] accent-[#FE701E]" type="radio" />
+              최신순
+            </label>
+            <label className="inline-flex items-center gap-[4px]">
+              <input className="size-[14px] accent-[#FE701E]" type="radio" />
+              오래된순
+            </label>
+          </div>
+          <div className="flex items-center gap-[14px]">
+            <span className="font-semibold text-[#0D0D0C]">전체 후기</span>
+            <span className="text-[#CAC4BC]">답글 미작성 후기</span>
+            <span className="text-[#CAC4BC]">숨김처리된 후기</span>
+          </div>
+        </div>
+
+        <hr className="mt-[13px] border-[#CAC4BC]" />
+
+        <div className="mt-[28px] grid w-[54.792vw] max-w-[1052px] gap-[14px] pb-[40px]">
+          {reviews.length > 0 ? (
+            reviews.map((review) => (
+              <ReviewManagementCard key={review.id} review={review} />
+            ))
+          ) : (
+            <div className="flex h-[160px] items-center justify-center rounded-[6px] border border-[#6D7A8A] text-[14px] font-semibold text-[#6D7A8A]">
+              등록된 후기가 없습니다.
+            </div>
+          )}
+        </div>
+      </div>
+    </section>
+  );
+}
+
+function ReviewManagementCard({
+  review,
+}: {
+  review: HostReviewManagementItem;
+}) {
+  const body = review.body || review.excerpt || "후기 내용이 없습니다.";
+  const images = review.images ?? [];
+
+  return (
+    <article className="rounded-[6px] border border-[#6D7A8A] bg-white px-[34px] py-[29px]">
+      <div className="flex items-start justify-between">
+        <div>
+          <h2 className="text-[14px] font-semibold leading-[1.253] text-[#0D0D0C]">
+            {review.author || "작성자"}
+          </h2>
+          <p className="mt-[9px] text-[12px] font-normal leading-[1.253] text-[#6D7A8A]">
+            {formatShortDate(review.date || review.updatedAt)}{" "}
+            <span className="ml-[6px] text-[#FE701E]">♟ 5.0</span>
+          </p>
+        </div>
+        <button
+          className="h-[21px] rounded-[999px] border border-[#6D7A8A] px-[10px] text-[12px] font-normal leading-[1.253] text-[#6D7A8A]"
+          type="button"
+        >
+          {review.published === false ? "숨김해제" : "숨김처리"}
+        </button>
+      </div>
+
+      <p className="mt-[18px] text-[12px] font-normal leading-[1.55] text-[#0D0D0C]">
+        {body}
+      </p>
+
+      <div className="mt-[10px] flex gap-[6px]">
+        {Array.from({ length: 5 }).map((_, imageIndex) => {
+          const image = images[imageIndex];
+          return (
+            <div
+              className="h-[78px] w-[78px] rounded-[6px] bg-[#D9D9D9] bg-cover bg-center"
+              key={`${review.id}-image-${imageIndex}`}
+              style={image ? { backgroundImage: `url("${image}")` } : undefined}
+            />
+          );
+        })}
+      </div>
+
+      <div className="mt-[14px] flex gap-[7px] border-t border-[#D9D9D9] pt-[14px]">
+        <input
+          className="h-[31px] flex-1 rounded-[4px] border border-[#AEB8C2] bg-white px-[12px] text-[12px] font-normal leading-[1.253] outline-none placeholder:text-[#CAC4BC]"
+          placeholder="댓글을 입력해 주세요"
+        />
+        <button
+          className="h-[31px] w-[58px] rounded-[4px] border border-[#6D7A8A] bg-white text-[12px] font-normal leading-[1.253] text-[#6D7A8A]"
+          type="button"
+        >
+          등록
+        </button>
+      </div>
+    </article>
+  );
+}
+
 function ApplicationSidebar({
   activeItem,
   applicationsHref,
@@ -468,7 +808,7 @@ function ApplicationSidebar({
   status,
   title,
 }: {
-  activeItem: "applications";
+  activeItem: ApplicationsPanel;
   applicationsHref: string;
   formsHref: string;
   messagesHref: string;
@@ -534,8 +874,8 @@ function ApplicationSidebar({
 
           <ApplicationNavLink className="absolute left-[var(--app-12)] top-[var(--app-296)]" href={`${programPath}?panel=management`} label="쿠폰 / 프로모션" />
           <ApplicationNavLink className="absolute left-[var(--app-12)] top-[var(--app-327)]" href={messagesHref} label="메세지함" />
-          <ApplicationNavLink className="absolute left-[var(--app-12)] top-[var(--app-358)]" href={`${applicationsHref}?panel=receipts`} label="결제 관리" />
-          <ApplicationNavLink className="absolute left-[var(--app-12)] top-[var(--app-389)]" href={`${applicationsHref}?panel=reviews`} label="후기 관리" />
+          <ApplicationNavLink active={activeItem === "receipts"} className="absolute left-[var(--app-12)] top-[var(--app-358)]" href={`${applicationsHref}?panel=receipts`} label="결제 관리" />
+          <ApplicationNavLink active={activeItem === "reviews"} className="absolute left-[var(--app-12)] top-[var(--app-389)]" href={`${applicationsHref}?panel=reviews`} label="후기 관리" />
           <ApplicationNavLink className="absolute left-[var(--app-12)] top-[var(--app-420)]" href={`${programPath}?panel=delete`} label="프로그램 삭제" />
         </nav>
       </div>
@@ -544,17 +884,21 @@ function ApplicationSidebar({
 }
 
 function ApplicationNavLink({
+  active = false,
   className = "",
   href,
   label,
 }: {
+  active?: boolean;
   className?: string;
   href: string;
   label: string;
 }) {
   return (
     <Link
-      className={`text-[14px] font-normal leading-[1.253] text-[#5B3A29] ${className}`}
+      className={`text-[14px] leading-[1.253] text-[#5B3A29] ${
+        active ? "font-semibold" : "font-normal"
+      } ${className}`}
       href={href}
     >
       {label}

@@ -9,15 +9,16 @@ import UnderlineExtension from "@tiptap/extension-underline";
 import {
   ArrowLeft,
   Bold,
+  CalendarDays,
   Heading1,
   Heading2,
   Italic,
   List,
   ListOrdered,
   Minus,
+  Pencil,
   Plus,
   Redo2,
-  Settings,
   Trash2,
   Underline,
   Undo2,
@@ -83,17 +84,6 @@ type ProgramPanel =
   | "management"
   | "delete";
 
-const panelLabels: Record<ProgramPanel, string> = {
-  basic: "기본정보",
-  dashboard: "대시보드",
-  delete: "프로그램 삭제",
-  detail: "상세 정보",
-  guide: "안내사항",
-  management: "프로그램 관리",
-  place: "장소 정보",
-  schedule: "일정 안내",
-};
-
 const statusOptions: Array<{ label: string; value: ProgramStatus }> = [
   { label: "모집예정", value: "upcoming" },
   { label: "모집중", value: "open" },
@@ -152,11 +142,16 @@ const figmaScaleStyle = {
   "--figma-31": "clamp(31px, 2.153vw, 41.333px)",
   "--figma-32": "clamp(32px, 2.222vw, 42.667px)",
   "--figma-35": "clamp(35px, 2.431vw, 46.667px)",
+  "--figma-36": "clamp(36px, 2.5vw, 48px)",
   "--figma-40": "clamp(40px, 2.778vw, 53.333px)",
   "--figma-44": "clamp(44px, 3.056vw, 58.667px)",
+  "--figma-45": "clamp(45px, 3.125vw, 60px)",
+  "--figma-47": "clamp(47px, 3.264vw, 62.667px)",
   "--figma-50": "clamp(50px, 3.472vw, 66.667px)",
   "--figma-55": "clamp(55px, 3.819vw, 73.333px)",
+  "--figma-57": "clamp(57px, 3.958vw, 76px)",
   "--figma-63": "clamp(63px, 4.375vw, 84px)",
+  "--figma-69": "clamp(69px, 4.792vw, 92px)",
   "--figma-72": "clamp(72px, 5vw, 96px)",
   "--figma-82": "clamp(82px, 5.694vw, 109.333px)",
   "--figma-96": "clamp(96px, 6.667vw, 128px)",
@@ -166,6 +161,7 @@ const figmaScaleStyle = {
   "--figma-185": "clamp(185px, 12.847vw, 246.667px)",
   "--figma-193": "clamp(193px, 13.403vw, 257.333px)",
   "--figma-219": "clamp(219px, 15.208vw, 292px)",
+  "--figma-228": "clamp(228px, 15.833vw, 304px)",
   "--figma-251": "clamp(251px, 17.431vw, 334.667px)",
   "--figma-256": "clamp(256px, 17.778vw, 341.333px)",
   "--figma-262": "clamp(262px, 18.194vw, 349.333px)",
@@ -547,6 +543,7 @@ export function HostProgramHub({
     activePanel === "schedule" ||
     activePanel === "place" ||
     activePanel === "guide";
+  const showUpdatedAtHeader = activePanel === "basic";
   const showPreviewRail = false;
   const dashboardPanelActive = activePanel === "dashboard";
 
@@ -582,7 +579,7 @@ export function HostProgramHub({
         />
 
         <section className="flex min-w-0 flex-1 flex-col">
-          {!dashboardPanelActive && !embeddedPreviewPanel ? (
+          {showUpdatedAtHeader ? (
           <div className="ml-[2.778vw] flex h-[var(--figma-96)] w-[64.236vw] max-w-[1233px] items-start justify-end pt-[var(--figma-44)] text-[16px] font-normal leading-[1.253] text-[#6D7A8A]">
             최근 수정일 : {formatDateTime(currentUpdatedAt)}
           </div>
@@ -698,7 +695,7 @@ export function HostProgramHub({
               onDelete={() => setDashboardDialog("delete")}
               onOpenSchedule={openScheduleDialog}
             />
-          ) : (
+          ) : activePanel === "delete" || activePanel === "management" ? null : (
           <div className="flex w-full border-t border-[#6D7A8A] bg-white px-[1.944vw] py-[1.389vw]">
             <button
               className="inline-flex h-[29px] items-center justify-center rounded-[4px] bg-[#FE701E] px-[19px] text-[12px] font-medium leading-[1.253] text-[#FFF6EC] transition hover:bg-[#E85F13] disabled:cursor-not-allowed disabled:opacity-40"
@@ -3122,77 +3119,179 @@ function RefundRulesBlock({
   );
 }
 
-function ManagementPanel({
-  draft,
-  publishBlockers,
-  readyToPublish,
-  updateDraft,
-}: {
+function ManagementPanel({}: {
   draft: HostProgramDraft;
   publishBlockers: ProgramDraftChecklistItem[];
   readyToPublish: boolean;
   updateDraft: (patch: Partial<HostProgramDraft>) => void;
 }) {
   return (
-    <PanelCard icon={<Settings size={19} />} title={panelLabels.management}>
-      <div className="grid gap-4">
-        {!readyToPublish ? (
-          <div className="rounded-md border border-[#F3CBB3] bg-[#FFF8F2] p-4">
-            <p className="text-sm font-black text-[#0D0D0C]">
-              아직 공개할 수 없습니다.
-            </p>
-            <p className="mt-1 text-sm font-bold leading-6 text-[#8B7A6E]">
-              아래 항목을 완료하면 공개 상태를 켤 수 있습니다.
-            </p>
-            <div className="mt-3 grid gap-2 sm:grid-cols-2">
-              {publishBlockers.map((item) => (
-                <div
-                  className="rounded-md border border-[#F3E2D5] bg-white px-3 py-2"
-                  key={item.id}
-                >
-                  <p className="text-sm font-black text-[#5B3A29]">
-                    {item.label}
-                  </p>
-                  <p className="mt-1 text-xs font-bold leading-5 text-[#8B7A6E]">
-                    {item.helper}
-                  </p>
-                </div>
-              ))}
-            </div>
-          </div>
-        ) : null}
-
-        <div className="grid gap-4 md:grid-cols-2">
-        <label className="flex min-h-20 items-center justify-between gap-4 rounded-md border border-[#F3E2D5] bg-[#FFFDFB] p-4">
-          <span>
-            <span className="block text-sm font-black text-[#0D0D0C]">
-              공개 상태
-            </span>
-            <span className="mt-1 block text-sm font-bold text-[#8B7A6E]">
-              체크리스트가 완료되면 공개 프로그램으로 발행할 수 있습니다.
-            </span>
-          </span>
-          <input
-            checked={draft.published}
-            className="size-5 accent-[#FE701E]"
-            disabled={!readyToPublish && !draft.published}
-            onChange={(event) =>
-              updateDraft({
-                published: event.target.checked ? readyToPublish : false,
-              })
-            }
-            type="checkbox"
-          />
-        </label>
-        <div className="rounded-md border border-[#F3E2D5] bg-[#FFFDFB] p-4">
-          <p className="text-sm font-black text-[#0D0D0C]">최근 수정</p>
-          <p className="mt-2 text-sm font-bold text-[#8B7A6E]">
-            {formatDateTime(draft.updatedAt)}
-          </p>
-        </div>
+    <div className="pt-[var(--figma-47,47px)]" style={figmaScaleStyle}>
+      <div className="w-[62.708vw] max-w-[1204px] border-b border-[#CAC4BC]">
+        <div className="flex h-[27px] items-start gap-[12px] text-[14px] leading-[1.253]">
+          <button
+            className="relative h-[27px] font-semibold text-[#5B3A29] after:absolute after:bottom-0 after:left-0 after:h-[1px] after:w-full after:bg-[#FE701E]"
+            type="button"
+          >
+            쿠폰
+          </button>
+          <button className="h-[27px] font-normal text-[#CAC4BC]" type="button">
+            프로모션
+          </button>
         </div>
       </div>
-    </PanelCard>
+
+      <section className="mt-[24px] h-[33.819vw] min-h-[487px] max-h-[649px] w-[62.708vw] max-w-[1204px] rounded-[6px] border border-[#6D7A8A] bg-white px-[var(--figma-57)] py-[var(--figma-32)]">
+        <div className="grid w-[54.583vw] max-w-[1048px] gap-[var(--figma-20)] text-[#5B3A29]">
+          <CouponField label="쿠폰명" placeholder="발급할 쿠폰의 이름을 적어주세요" />
+          <CouponField label="사용 안내사항" placeholder="쿠폰 사용시 적용 범위 또는 안내사항을 적어주세요" />
+
+          <div>
+            <p className="text-[14px] font-semibold leading-[1.253] text-[#0D0D0C]">
+              할인 방식
+            </p>
+            <div className="mt-[10px] flex items-center gap-[16px] text-[14px] font-normal leading-[1.253] text-[#6D7A8A]">
+              <label className="inline-flex items-center gap-[6px]">
+                <input className="size-[14px]" name="coupon-discount" type="radio" />
+                정률 (%)
+              </label>
+              <label className="inline-flex items-center gap-[6px]">
+                <input className="size-[14px]" name="coupon-discount" type="radio" />
+                정액 (원)
+              </label>
+            </div>
+            <input
+              className="mt-[8px] h-[var(--figma-30)] w-[33.611vw] max-w-[645px] rounded-[4px] border border-[#FF9A3D] bg-white px-[12px] text-[12px] text-[#6D7A8A] outline-none"
+              placeholder="00"
+            />
+          </div>
+
+          <div>
+            <p className="text-[14px] font-semibold leading-[1.253] text-[#0D0D0C]">
+              수량
+            </p>
+            <div className="mt-[10px] flex items-center gap-[16px] text-[14px] font-normal leading-[1.253] text-[#6D7A8A]">
+              <label className="inline-flex items-center gap-[6px]">
+                <input className="size-[14px]" name="coupon-quantity" type="radio" />
+                무제한
+              </label>
+              <label className="inline-flex items-center gap-[6px]">
+                <input className="size-[14px]" name="coupon-quantity" type="radio" />
+                수량 제한
+              </label>
+              <input
+                className="h-[var(--figma-30)] w-[22.222vw] max-w-[427px] rounded-[4px] border border-[#FF9A3D] bg-white px-[12px] text-[12px] text-[#6D7A8A] outline-none"
+                placeholder="00"
+              />
+            </div>
+          </div>
+
+          <div>
+            <p className="text-[14px] font-semibold leading-[1.253] text-[#0D0D0C]">
+              사용 기간
+            </p>
+            <div
+              className="mt-[10px] grid w-[51.875vw] max-w-[996px] items-center"
+              style={{
+                gridTemplateColumns:
+                  "minmax(0,1fr) var(--figma-26) minmax(0,1fr)",
+              }}
+            >
+              <CouponDateInput placeholder="시작일" />
+              <span className="h-[5px] w-[var(--figma-22)] justify-self-center bg-[#6D7A8A]" />
+              <CouponDateInput placeholder="종료일" />
+            </div>
+          </div>
+
+          <button
+            className="h-[29px] w-[82px] rounded-[4px] border border-[#FE701E] bg-white text-[12px] font-normal leading-[1.253] text-[#FE701E]"
+            type="button"
+          >
+            쿠폰 저장
+          </button>
+        </div>
+      </section>
+
+      <section className="mt-[30px] w-[62.708vw] max-w-[1204px]">
+        <div className="flex gap-[10px]">
+          {["전체", "진행", "종료"].map((label, index) => (
+            <button
+              className={`h-[29px] w-[70px] rounded-[999px] text-[12px] font-semibold leading-[1.253] ${
+                index === 0 ? "bg-[#FF9A3D] text-white" : "bg-[#CAC4BC] text-white"
+              }`}
+              key={label}
+              type="button"
+            >
+              {label}
+            </button>
+          ))}
+        </div>
+        <div className="mt-[15px] grid gap-[7px] border-t border-[#F3F3F3] pt-[14px]">
+          <CouponListRow status="진행" title="쿠폰 이름" value="10%/3000원(할인방식)" quantity="00(수량)" date="~0000. 00. 00(마감일)" />
+          <CouponListRow status="진행" title="6월 여름 한정 할인쿠폰" value="20% 할인" quantity="30개" date="~2026. 6. 27" />
+          <CouponListRow muted status="종료" title="얼리버드 할인쿠폰" value="6000원 할인" quantity="무제한" date="~2026. 2. 5" />
+        </div>
+      </section>
+    </div>
+  );
+}
+
+function CouponField({ label, placeholder }: { label: string; placeholder: string }) {
+  return (
+    <label className="grid gap-[10px]">
+      <span className="text-[14px] font-semibold leading-[1.253] text-[#0D0D0C]">
+        {label}
+      </span>
+      <input
+        className="h-[var(--figma-30)] w-full rounded-[4px] border border-[#FF9A3D] bg-white px-[12px] text-[12px] font-normal leading-[1.253] text-[#6D7A8A] outline-none placeholder:text-[#D9D9D9]"
+        placeholder={placeholder}
+      />
+    </label>
+  );
+}
+
+function CouponDateInput({ placeholder }: { placeholder: string }) {
+  return (
+    <div className="relative h-[var(--figma-36)] rounded-[4px] border border-[#FF9A3D] bg-white">
+      <span className="absolute left-[12px] top-1/2 -translate-y-1/2 text-[12px] font-normal leading-[1.253] text-[#D9D9D9]">
+        {placeholder}
+      </span>
+      <CalendarDays className="absolute right-[12px] top-1/2 size-[18px] -translate-y-1/2 text-[#6D7A8A]" />
+    </div>
+  );
+}
+
+function CouponListRow({
+  date,
+  muted = false,
+  quantity,
+  status,
+  title,
+  value,
+}: {
+  date: string;
+  muted?: boolean;
+  quantity: string;
+  status: string;
+  title: string;
+  value: string;
+}) {
+  return (
+    <div className="grid h-[31px] grid-cols-[76px_1fr_190px_120px_220px_28px_28px] items-center rounded-[3px] border border-[#D9D9D9] bg-white px-[8px] text-[14px] font-normal leading-[1.253] text-[#6D7A8A]">
+      <span
+        className={`inline-flex h-[21px] w-[34px] items-center justify-center rounded-[4px] text-[12px] font-semibold text-white ${
+          muted ? "bg-[#6D7A8A]" : "bg-[#7A8B52]"
+        }`}
+      >
+        {status}
+      </span>
+      <span>{title}</span>
+      <span>{value}</span>
+      <span>{quantity}</span>
+      <span>{date}</span>
+      <Pencil className="size-[18px] text-[#6D7A8A]" />
+      <Trash2 className="size-[18px] text-[#6D7A8A]" />
+    </div>
   );
 }
 
@@ -3200,7 +3299,6 @@ function DeletePanel({
   draft,
   isDeleting,
   onDelete,
-  readyToPublish,
 }: {
   draft: HostProgramDraft;
   isDeleting: boolean;
@@ -3208,41 +3306,116 @@ function DeletePanel({
   readyToPublish: boolean;
 }) {
   const [confirmed, setConfirmed] = useState(false);
+  const [deleteName, setDeleteName] = useState("");
+  const canDelete = confirmed && deleteName.trim() === draft.title.trim();
 
   return (
-    <PanelCard icon={<Trash2 size={19} />} title={panelLabels.delete}>
-      <div className="rounded-md border border-red-100 bg-red-50 p-4">
-        <h2 className="text-lg font-black text-red-700">
-          {draft.title} 프로그램을 삭제할 수 있습니다.
-        </h2>
-        <p className="mt-2 text-sm font-bold leading-6 text-red-700/80">
-          {readyToPublish
-            ? "온보딩이 완료된 프로그램이므로 대시보드의 빠른 삭제 버튼은 비활성화됩니다. 이 사이드탭에서 별도 확인 후 삭제할 수 있습니다."
-            : "아직 온보딩이 완료되지 않은 프로그램입니다. 대시보드의 프로젝트 삭제 버튼 또는 이 화면에서 삭제할 수 있습니다."}
+    <div className="pt-[var(--figma-47)]" style={figmaScaleStyle}>
+      <section className="w-[54.653vw] max-w-[1049px] rounded-[4px] border border-[#FE701E] bg-white px-[var(--figma-15)] py-[var(--figma-14)] text-[16px] font-semibold leading-[1.65] text-[#0D0D0C]">
+        <p>
+          프로그램을 삭제하면 상세페이지, 신청 기록, 입금 기록, 후기 등{" "}
+          <span className="text-[#FE701E]">모든 데이터가 영구적으로 삭제돼요.</span>
         </p>
-        <label className="mt-5 flex items-start gap-3 rounded-md border border-red-200 bg-white px-4 py-3">
-          <input
-            checked={confirmed}
-            className="mt-1 size-4 accent-red-600"
-            onChange={(event) => setConfirmed(event.target.checked)}
-            type="checkbox"
-          />
-          <span className="text-sm font-bold leading-6 text-red-700">
-            프로그램 데이터와 폴더 연결을 삭제하는 것을 확인했습니다.
-          </span>
-        </label>
-        <div className="mt-5 flex justify-end">
-          <button
-            className="inline-flex h-10 items-center justify-center rounded-md bg-red-600 px-5 text-sm font-black text-white transition hover:bg-red-700 disabled:cursor-not-allowed disabled:opacity-40"
-            disabled={!confirmed || isDeleting}
-            onClick={onDelete}
-            type="button"
-          >
-            {isDeleting ? "삭제 중" : "프로그램 삭제"}
-          </button>
-        </div>
+        <p className="text-[#FE701E]">삭제 후 데이터는 복구할 수 없어요</p>
+      </section>
+
+      <div className="mt-[28px] grid w-[54.306vw] max-w-[1043px] grid-cols-3 gap-[2.778vw]">
+        <DeleteMetric label="알람 신청자" value="00 명" />
+        <DeleteMetric label="신청서 접수자" value="00 명" />
+        <DeleteMetric highlight label="입금 완료자" value="00 명" />
       </div>
-    </PanelCard>
+
+      <label className="mt-[14px] flex h-[20px] items-center gap-[10px] text-[14px] font-normal leading-[1.253] text-[#6D7A8A]">
+        <input className="size-[16px]" type="checkbox" />
+        삭제 시 위 인원에게 프로그램 취소 안내가 자동 발송돼요
+      </label>
+
+      <div className="mt-[16px] flex h-[var(--figma-45)] w-[54.306vw] max-w-[1043px] items-center justify-between rounded-[4px] border border-[#0D0D0C] bg-[#F5E3D4] px-[var(--figma-18)] text-[16px] font-semibold leading-[1.253] text-[#0D0D0C]">
+        <span>
+          입금 완료자 <span className="text-[#FE701E]">00 명</span>의 환불 처리가 필요해요
+        </span>
+        <Link
+          className="text-[16px] font-semibold leading-[1.253] text-[#D75A2B] underline-offset-2"
+          href="#"
+        >
+          결제 관리로 이동 -&gt;
+        </Link>
+      </div>
+
+      <hr className="mt-[24px] w-[59.444vw] max-w-[1141px] border-[#6D7A8A]" />
+
+      <div className="mt-[29px] grid w-[54.722vw] max-w-[1051px] grid-cols-3 gap-[1.389vw]">
+        <DeleteCheckMetric label="삭제되는 후기" value="00 건" />
+        <DeleteCheckMetric label="삭제되는 신청 기록" value="00 건" />
+        <DeleteCheckMetric label="삭제되는 결제 기록" value="00 건" />
+      </div>
+
+      <label className="mt-[30px] flex items-center gap-[10px] text-[14px] font-normal leading-[1.253] text-[#6D7A8A]">
+        <input
+          checked={confirmed}
+          className="size-[16px]"
+          onChange={(event) => setConfirmed(event.target.checked)}
+          type="checkbox"
+        />
+        해당 프로그램에 대한 모든 데이터는 영구적으로 삭제 후 복구할 수 없어요
+      </label>
+
+      <p className="mt-[28px] text-[16px] font-semibold leading-[1.253] text-[#6D7A8A]">
+        프로그램 삭제를 진행하려면{" "}
+        <span className="text-[#FE701E]">&lt; 해당 프로그램 명 &gt;</span> 을 정확히 입력해 주세요.
+      </p>
+      <input
+        className="mt-[12px] h-[var(--figma-31)] w-[54.653vw] max-w-[1049px] rounded-[4px] border border-[#AEB8C2] bg-white px-[12px] text-[12px] font-normal leading-[1.253] text-[#0D0D0C] outline-none placeholder:text-[#D9D9D9]"
+        onChange={(event) => setDeleteName(event.target.value)}
+        placeholder="프로그램명을 입력하세요"
+        value={deleteName}
+      />
+
+      <div className="mt-[13px] -ml-[var(--figma-40)] flex h-[var(--figma-69,69px)] w-[calc(100vw-var(--figma-228))] items-center border-t border-[#6D7A8A] bg-white pl-[var(--figma-28)]">
+        <button
+          className="h-[29px] w-[122px] rounded-[4px] border border-[#D9D9D9] bg-[#F9F9F9] text-[12px] font-normal leading-[1.253] text-[#CAC4BC] disabled:cursor-not-allowed"
+          disabled={!canDelete || isDeleting}
+          onClick={onDelete}
+          type="button"
+        >
+          {isDeleting ? "삭제 중" : "프로그램 삭제하기"}
+        </button>
+      </div>
+    </div>
+  );
+}
+
+function DeleteMetric({
+  highlight = false,
+  label,
+  value,
+}: {
+  highlight?: boolean;
+  label: string;
+  value: string;
+}) {
+  return (
+    <div className="flex h-[var(--figma-45)] items-center justify-between rounded-[4px] border border-[#D9D9D9] bg-white px-[var(--figma-18)] text-[16px] font-semibold leading-[1.253]">
+      <span className="text-[#6D7A8A]">{label}</span>
+      <span className={highlight ? "text-[#FE701E]" : "text-[#0D0D0C]"}>
+        {value}
+      </span>
+    </div>
+  );
+}
+
+function DeleteCheckMetric({
+  label,
+  value,
+}: {
+  label: string;
+  value: string;
+}) {
+  return (
+    <div className="flex h-[var(--figma-45)] items-center justify-between rounded-[4px] border border-[#D9D9D9] bg-white px-[var(--figma-16)] text-[16px] font-semibold leading-[1.253]">
+      <span className="text-[#6D7A8A]">{label}</span>
+      <span className="text-[#0D0D0C]">{value}</span>
+    </div>
   );
 }
 
@@ -3534,26 +3707,6 @@ function ProgramDashboardModal({
         <div className="mt-2">{children}</div>
       </div>
     </div>
-  );
-}
-
-function PanelCard({
-  children,
-  icon,
-  title,
-}: {
-  children: ReactNode;
-  icon: ReactNode;
-  title: string;
-}) {
-  return (
-    <section className="bg-white pt-[1.528vw]">
-      <h2 className="flex items-center gap-2 text-[16px] font-black leading-6 text-[#0D0D0C]">
-        <span className="text-[#FE701E]">{icon}</span>
-        {title}
-      </h2>
-      <div className="mt-[1.389vw] space-y-4">{children}</div>
-    </section>
   );
 }
 
