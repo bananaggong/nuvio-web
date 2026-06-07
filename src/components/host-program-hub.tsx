@@ -304,6 +304,24 @@ export function HostProgramHub({
   const applicationsHref = `${programPath}/applications`;
   const formsHref = `${programPath}/forms`;
   const messagesHref = `${programPath}/messages`;
+  const deletePanelMetrics = useMemo(() => {
+    const programApplications = program?.applications ?? [];
+    const paidApplications = programApplications.filter(
+      (application) => application.paymentAmount > 0,
+    );
+    const paymentRecords = programApplications.filter(
+      (application) => application.paymentAmount > 0 || application.receiptCount > 0,
+    );
+
+    return {
+      alarmSubscriberCount: 0,
+      applicationCount: programApplications.length,
+      paidApplicantCount: paidApplications.length,
+      paymentRecordCount: paymentRecords.length,
+      reviewCount: programApplications.filter((application) => application.reviewSubmitted)
+        .length,
+    };
+  }, [program?.applications]);
   const linkedApplicationForm = useMemo(() => {
     if (!draft) return undefined;
 
@@ -786,10 +804,15 @@ export function HostProgramHub({
                 ) : null}
                 {draft && activePanel === "delete" ? (
                   <DeletePanel
+                    applicationCount={deletePanelMetrics.applicationCount}
                     draft={draft}
+                    alarmSubscriberCount={deletePanelMetrics.alarmSubscriberCount}
                     isDeleting={isDeleting}
                     onDelete={() => void deleteProgram({ allowCompleted: true })}
-                    readyToPublish={readyToPublish}
+                    paidApplicantCount={deletePanelMetrics.paidApplicantCount}
+                    paymentRecordCount={deletePanelMetrics.paymentRecordCount}
+                    receiptsHref={`${applicationsHref}?panel=receipts`}
+                    reviewCount={deletePanelMetrics.reviewCount}
                   />
                 ) : null}
               </div>
@@ -3779,18 +3802,35 @@ function CouponDateInput({ placeholder }: { placeholder: string }) {
 }
 
 function DeletePanel({
+  alarmSubscriberCount,
+  applicationCount,
   draft,
   isDeleting,
   onDelete,
+  paidApplicantCount,
+  paymentRecordCount,
+  receiptsHref,
+  reviewCount,
 }: {
+  alarmSubscriberCount: number;
+  applicationCount: number;
   draft: HostProgramDraft;
   isDeleting: boolean;
   onDelete: () => void;
-  readyToPublish: boolean;
+  paidApplicantCount: number;
+  paymentRecordCount: number;
+  receiptsHref: string;
+  reviewCount: number;
 }) {
   const [confirmed, setConfirmed] = useState(false);
   const [deleteName, setDeleteName] = useState("");
   const canDelete = confirmed && deleteName.trim() === draft.title.trim();
+  const alarmSubscriberLabel = formatDeletePersonCount(alarmSubscriberCount);
+  const applicationPersonLabel = formatDeletePersonCount(applicationCount);
+  const applicationRecordLabel = formatDeleteRecordCount(applicationCount);
+  const paidApplicantLabel = formatDeletePersonCount(paidApplicantCount);
+  const paymentRecordLabel = formatDeleteRecordCount(paymentRecordCount);
+  const reviewLabel = formatDeleteRecordCount(reviewCount);
 
   return (
     <div className="pt-[var(--figma-47)]" style={figmaScaleStyle}>
@@ -3803,9 +3843,9 @@ function DeletePanel({
       </section>
 
       <div className="mt-[28px] grid w-[54.306vw] max-w-[1043px] grid-cols-3 gap-[2.778vw]">
-        <DeleteMetric label="알람 신청자" value="00 명" />
-        <DeleteMetric label="신청서 접수자" value="00 명" />
-        <DeleteMetric highlight label="입금 완료자" value="00 명" />
+        <DeleteMetric label="알람 신청자" value={alarmSubscriberLabel} />
+        <DeleteMetric label="신청서 접수자" value={applicationPersonLabel} />
+        <DeleteMetric highlight label="입금 완료자" value={paidApplicantLabel} />
       </div>
 
       <label className="mt-[14px] flex h-[20px] items-center gap-[10px] text-[14px] font-normal leading-[1.253] text-[#6D7A8A]">
@@ -3815,11 +3855,11 @@ function DeletePanel({
 
       <div className="mt-[16px] flex h-[var(--figma-45)] w-[54.306vw] max-w-[1043px] items-center justify-between rounded-[4px] border border-[#0D0D0C] bg-[#F5E3D4] px-[var(--figma-18)] text-[16px] font-semibold leading-[1.253] text-[#0D0D0C]">
         <span>
-          입금 완료자 <span className="text-[#FE701E]">00 명</span>의 환불 처리가 필요해요
+          입금 완료자 <span className="text-[#FE701E]">{paidApplicantLabel}</span>의 환불 처리가 필요해요
         </span>
         <Link
           className="text-[16px] font-semibold leading-[1.253] text-[#D75A2B] underline-offset-2"
-          href="#"
+          href={receiptsHref}
         >
           결제 관리로 이동 -&gt;
         </Link>
@@ -3828,9 +3868,9 @@ function DeletePanel({
       <hr className="mt-[24px] w-[59.444vw] max-w-[1141px] border-[#6D7A8A]" />
 
       <div className="mt-[29px] grid w-[54.722vw] max-w-[1051px] grid-cols-3 gap-[1.389vw]">
-        <DeleteCheckMetric label="삭제되는 후기" value="00 건" />
-        <DeleteCheckMetric label="삭제되는 신청 기록" value="00 건" />
-        <DeleteCheckMetric label="삭제되는 결제 기록" value="00 건" />
+        <DeleteCheckMetric label="삭제되는 후기" value={reviewLabel} />
+        <DeleteCheckMetric label="삭제되는 신청 기록" value={applicationRecordLabel} />
+        <DeleteCheckMetric label="삭제되는 결제 기록" value={paymentRecordLabel} />
       </div>
 
       <label className="mt-[30px] flex items-center gap-[10px] text-[14px] font-normal leading-[1.253] text-[#6D7A8A]">
@@ -3900,6 +3940,18 @@ function DeleteCheckMetric({
       <span className="text-[#0D0D0C]">{value}</span>
     </div>
   );
+}
+
+function formatDeletePersonCount(value: number): string {
+  return `${formatDeleteCount(value)} 명`;
+}
+
+function formatDeleteRecordCount(value: number): string {
+  return `${formatDeleteCount(value)} 건`;
+}
+
+function formatDeleteCount(value: number): string {
+  return Math.max(0, value).toLocaleString("ko-KR");
 }
 
 type DashboardOnboardingStep = {
