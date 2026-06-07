@@ -137,10 +137,13 @@ const figmaScaleStyle = {
   "--figma-12": "clamp(12px, 0.833vw, 16px)",
   "--figma-14": "clamp(14px, 0.972vw, 18.667px)",
   "--figma-16": "clamp(16px, 1.111vw, 21.333px)",
+  "--figma-18": "clamp(18px, 1.25vw, 24px)",
+  "--figma-19": "clamp(19px, 1.319vw, 25.333px)",
   "--figma-21": "clamp(21px, 1.458vw, 28px)",
   "--figma-22": "clamp(22px, 1.528vw, 29.333px)",
   "--figma-23": "clamp(23px, 1.597vw, 30.667px)",
   "--figma-24": "clamp(24px, 1.667vw, 32px)",
+  "--figma-27": "clamp(27px, 1.875vw, 36px)",
   "--figma-28": "clamp(28px, 1.944vw, 37.333px)",
   "--figma-30": "clamp(30px, 2.083vw, 40px)",
   "--figma-31": "clamp(31px, 2.153vw, 41.333px)",
@@ -148,6 +151,8 @@ const figmaScaleStyle = {
   "--figma-35": "clamp(35px, 2.431vw, 46.667px)",
   "--figma-44": "clamp(44px, 3.056vw, 58.667px)",
   "--figma-50": "clamp(50px, 3.472vw, 66.667px)",
+  "--figma-96": "clamp(96px, 6.667vw, 128px)",
+  "--figma-110": "clamp(110px, 7.639vw, 146.667px)",
 } as CSSProperties;
 
 type KakaoPostcodeData = {
@@ -1459,13 +1464,15 @@ function DetailPanel({
 function DetailFormBlock({
   children,
   className = "",
+  paddingClassName = "px-[var(--figma-22)] py-[var(--figma-24)]",
 }: {
   children: ReactNode;
   className?: string;
+  paddingClassName?: string;
 }) {
   return (
     <section
-      className={`flex w-full border-b border-[#6D7A8A] px-[var(--figma-22)] py-[var(--figma-24)] ${className}`}
+      className={`flex w-full border-b border-[#6D7A8A] ${paddingClassName} ${className}`}
     >
       {children}
     </section>
@@ -2403,26 +2410,34 @@ function ScheduleDayFigmaEditor({
   const toggleIcon = expanded ? nuvioIcons.dropup : nuvioIcons.dropdown;
 
   return (
-    <DetailFormBlock className={expanded ? "" : "py-[var(--figma-14)]"}>
+    <DetailFormBlock
+      paddingClassName={
+        expanded
+          ? "px-0 pb-[var(--figma-27)] pt-[var(--figma-6)]"
+          : "px-0 py-[var(--figma-6)]"
+      }
+    >
       <div className="flex w-full flex-col">
         <button
           aria-expanded={expanded}
-          className="flex h-[var(--figma-35)] w-full items-center justify-between rounded-[var(--figma-7)] bg-[#6D7A8A] px-[var(--figma-12)] text-left text-[#F9F9F9]"
+          className="flex w-full items-end justify-between rounded-tl-[var(--figma-8)] rounded-tr-[var(--figma-8)] bg-[#6D7A8A] px-[var(--figma-12)] py-[var(--figma-18)] text-left text-[#F9F9F9]"
           onClick={onToggle}
           type="button"
         >
           <span className="flex min-w-0 items-center gap-[var(--figma-14)]">
-            <span className="text-[length:var(--figma-14)] font-semibold leading-[1.253]">
+            <span className="text-[length:var(--figma-16)] font-semibold leading-[1.253]">
               {dayNumber}일차
             </span>
-            <span className="truncate text-[length:var(--figma-12)] font-medium leading-[1.253]">
+            <span className="truncate text-[length:var(--figma-14)] font-medium leading-[1.253]">
               타임 테이블 ({timeTableCount.toString().padStart(2, "0")}개)
             </span>
           </span>
           <Image
             alt=""
             aria-hidden="true"
-            className="size-[var(--figma-16)] shrink-0 brightness-0 invert"
+            className={`h-[var(--figma-18)] w-[var(--figma-19)] shrink-0 ${
+              expanded ? "" : "brightness-0 invert"
+            }`}
             height={16}
             src={toggleIcon}
             width={16}
@@ -2430,20 +2445,22 @@ function ScheduleDayFigmaEditor({
         </button>
 
         {expanded ? (
-          <div className="px-[var(--figma-14)] pt-[var(--figma-10)]">
-            <p className="text-[length:var(--figma-12)] font-normal leading-[1.253] text-[#6D7A8A]">
-              JPG, PNG, WebP, GIF 파일을 5MB 이하로 업로드 할 수 있어요
+          <div className="px-[var(--figma-22)] pt-[var(--figma-12)]">
+            <p className="text-[length:var(--figma-14)] font-normal leading-[1.253] text-[#6D7A8A]">
+              JPG, PNG, WebP, GIF 파일을 5MB 이하로 업로드할 수 있어요
             </p>
-            <p className="mt-[var(--figma-8)] text-[length:var(--figma-12)] font-medium leading-[1.253] text-[#6D7A8A]">
-              활동 사진 (최대 5장)
-            </p>
+            <div className="mt-[var(--figma-12)] px-[var(--figma-8)]">
+              <p className="text-[length:var(--figma-16)] font-semibold leading-[1.253] text-[#6D7A8A]">
+                활동 사진 (최대 5장)
+              </p>
+            </div>
             <SchedulePhotoSlots
               day={day}
               onChange={onChange}
               programId={programId}
             />
 
-            <p className="mt-[var(--figma-10)] text-[length:var(--figma-12)] font-semibold leading-[1.253] text-[#7A8B52]">
+            <p className="mt-[var(--figma-16)] text-[length:var(--figma-12)] font-semibold leading-[1.253] text-[#7A8B52]">
               해당 일차의 활동이나 장소가 담긴 사진을 올려주세요
             </p>
 
@@ -2606,12 +2623,12 @@ function SchedulePhotoSlots({
   }
 
   return (
-    <div className="mt-[var(--figma-8)] flex gap-[var(--figma-10)]">
+    <div className="mt-[var(--figma-8)] flex gap-[var(--figma-12)]">
       {Array.from({ length: 5 }).map((_, index) => {
         const image = images[index] ?? "";
         return (
           <label
-            className="flex h-[5.347vw] min-h-[77px] max-h-[103px] w-[5.347vw] min-w-[77px] max-w-[103px] cursor-pointer flex-col items-center justify-center gap-[var(--figma-6)] rounded-[var(--figma-7)] border border-dashed border-[#F7B267] bg-[#F9F9F9] bg-cover bg-center text-[length:var(--figma-10)] font-medium leading-[1.253] text-[#D9D9D9] transition hover:border-[#FE701E] hover:text-[#FE701E]"
+            className="flex h-[var(--figma-110)] w-[var(--figma-96)] cursor-pointer flex-col items-center justify-center gap-[var(--figma-6)] rounded-[var(--figma-7)] border border-dashed border-[#F7B267] bg-[#F9F9F9] bg-cover bg-center text-[length:var(--figma-10)] font-medium leading-[1.253] text-[#D9D9D9] transition hover:border-[#FE701E] hover:text-[#FE701E]"
             key={index}
             style={image ? { backgroundImage: `url("${image}")` } : undefined}
           >

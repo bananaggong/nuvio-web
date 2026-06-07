@@ -887,7 +887,7 @@ function AutoAnswerSettingsDialog({ onClose }: { onClose: () => void }) {
           </div>
         </div>
 
-        <div className="flex justify-end">
+        <div className="mt-[26px] flex justify-end">
           <button
             className="inline-flex h-[29px] items-center justify-center rounded-[4px] bg-[#FE701E] px-[18px] text-[12px] font-medium leading-[1.253] text-[#FFF6EC] transition hover:bg-[#E85F13]"
             onClick={onClose}
