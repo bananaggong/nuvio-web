@@ -95,6 +95,7 @@ function HostWorkspaceSidebar({ sidebarHeight }: { sidebarHeight: string }) {
   const messageStatus = searchParams.get("status");
   const messageView = searchParams.get("view");
   const onMessagesPage = pathname === "/host/messages";
+  const onSettingsPage = pathname === "/host/settings";
   const endedMessagesRequested =
     messageView === "ended" ||
     messageStatus === "ended" ||
@@ -188,7 +189,11 @@ function HostWorkspaceSidebar({ sidebarHeight }: { sidebarHeight: string }) {
                 신청서 양식
               </Link>
               <Link
-                className="text-[var(--host-14)] font-normal leading-[1.253] text-[#5B3A29] hover:text-[#FE701E]"
+                className={`w-fit rounded-[4px] px-[0.556vw] py-[0.139vw] text-[var(--host-14)] leading-[1.253] transition ${
+                  onSettingsPage
+                    ? "bg-[#FF9A3D] font-semibold text-[#F9F9F9]"
+                    : "font-normal text-[#5B3A29] hover:text-[#FE701E]"
+                }`}
                 href="/host/settings"
               >
                 설정

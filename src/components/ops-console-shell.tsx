@@ -181,6 +181,7 @@ export function OpsConsoleShell({
     (pathname === "/host" ||
       pathname === "/host/messages" ||
       pathname === "/host/programs" ||
+      pathname === "/host/settings" ||
       /^\/host\/projects\/[^/]+\/?$/u.test(pathname));
 
   if (programBuilderPath || isProgramBuilderCreate || isHostWorkspacePage) {
