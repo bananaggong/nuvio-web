@@ -1058,7 +1058,7 @@ function resolveThreadImage(programTitle: string): string {
   if (programTitle.includes("남해")) {
     return "https://images.unsplash.com/photo-1500534314209-a25ddb2bd429?auto=format&fit=crop&w=480&q=80";
   }
-  return "/brand/nuvio-logo-combined.svg";
+  return "";
 }
 
 function normalizeTitle(value: string): string {
