@@ -32,37 +32,6 @@ type HostReviewManagementItem = {
   updatedAt?: string;
 };
 
-const seedReviewBody = Array.from(
-  { length: 36 },
-  () => "숙소에 대한 후기를 작성해주세요",
-).join(" ");
-
-const seedHostReviews: HostReviewManagementItem[] = [
-  {
-    author: "작성자",
-    body: seedReviewBody,
-    date: "2026-05-12T00:00:00+09:00",
-    id: "seed-review-1",
-    published: true,
-  },
-  {
-    author: "작성자",
-    body: seedReviewBody,
-    date: "2026-05-12T00:00:00+09:00",
-    id: "seed-review-2",
-    published: false,
-  },
-  {
-    author: "작성자",
-    body: seedReviewBody,
-    date: "2026-05-12T00:00:00+09:00",
-    excerpt:
-      "대충 호스트의 인사하는 내용 😊\n호스트가 후기에 대한 답글을 정성스럽게 적어준 내용 ^^\n대충 앞으로 다양한 프로그램을 준비해볼테니 기대해 달라는 내용 ^^",
-    id: "seed-review-3",
-    published: true,
-  },
-];
-
 const applicationFigmaScaleStyle = {
   "--app-3": "clamp(3px, 0.208vw, 4px)",
   "--app-4": "clamp(4px, 0.278vw, 5.333px)",
@@ -123,7 +92,7 @@ export function HostApplicationsCrm({
   const [activeTab, setActiveTab] = useState<ReviewTab>("all");
   const [selectedApplicationId, setSelectedApplicationId] = useState("");
   const [hostReviews, setHostReviews] =
-    useState<HostReviewManagementItem[]>(seedHostReviews);
+    useState<HostReviewManagementItem[]>([]);
 
   const activePanel: ApplicationsPanel =
     searchParams.get("panel") === "receipts"
@@ -201,14 +170,17 @@ export function HostApplicationsCrm({
     async function loadHostReviews() {
       try {
         const response = await fetch("/api/host/reviews", { cache: "no-store" });
-        if (!response.ok) return;
+        if (!response.ok) {
+          if (!cancelled) setHostReviews([]);
+          return;
+        }
 
         const payload = (await response.json()) as {
           data?: HostReviewManagementItem[];
         };
-        if (!cancelled && payload.data?.length) setHostReviews(payload.data);
+        if (!cancelled) setHostReviews(Array.isArray(payload.data) ? payload.data : []);
       } catch {
-        if (!cancelled) setHostReviews(seedHostReviews);
+        if (!cancelled) setHostReviews([]);
       }
     }
 
