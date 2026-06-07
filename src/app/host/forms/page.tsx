@@ -1,5 +1,13 @@
 import type { Metadata } from "next";
 import { HostFormLibrary } from "@/components/host-form-library";
+import {
+  buildHostRouteNextPath,
+  type HostRouteSearchParams,
+  requireHostConsoleAccess,
+} from "@/lib/host-route-guards";
+
+export const dynamic = "force-dynamic";
+export const runtime = "nodejs";
 
 export const metadata: Metadata = {
   title: "신청폼 관리 | 누비오 호스트",
@@ -10,9 +18,11 @@ export const metadata: Metadata = {
 export default async function HostFormsPage({
   searchParams,
 }: {
-  searchParams?: Promise<{ kind?: string }>;
+  searchParams?: Promise<HostRouteSearchParams>;
 }) {
-  const kind = (await searchParams)?.kind === "inquiry" ? "inquiry" : "application";
+  const params = await searchParams;
+  await requireHostConsoleAccess(buildHostRouteNextPath("/host/forms", params));
+  const kind = params?.kind === "inquiry" ? "inquiry" : "application";
 
   return (
     <>

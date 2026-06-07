@@ -1,5 +1,9 @@
 import type { Metadata } from "next";
 import { HostApplicationDetail } from "@/components/host-application-detail";
+import { requireHostConsoleAccess } from "@/lib/host-route-guards";
+
+export const dynamic = "force-dynamic";
+export const runtime = "nodejs";
 
 export const metadata: Metadata = {
   title: "프로그램 신청서 상세 | 누비오",
@@ -13,13 +17,19 @@ export default async function HostProgramApplicationDetailPage({
   params: Promise<{ applicationId: string; programId: string; projectId: string }>;
 }) {
   const { applicationId, programId, projectId } = await params;
+  const decodedApplicationId = decodeURIComponent(applicationId);
+  const decodedProgramId = decodeURIComponent(programId);
+  const decodedProjectId = decodeURIComponent(projectId);
+  await requireHostConsoleAccess(
+    `/host/projects/${encodeURIComponent(decodedProjectId)}/programs/${encodeURIComponent(decodedProgramId)}/applications/${encodeURIComponent(decodedApplicationId)}`,
+  );
 
   return (
     <>
       <HostApplicationDetail
-        applicationId={decodeURIComponent(applicationId)}
-        programId={decodeURIComponent(programId)}
-        projectId={decodeURIComponent(projectId)}
+        applicationId={decodedApplicationId}
+        programId={decodedProgramId}
+        projectId={decodedProjectId}
       />
     </>
   );

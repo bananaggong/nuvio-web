@@ -3,6 +3,14 @@ import {
   HostMessageInbox,
   type HostMessageInboxView,
 } from "@/components/host-message-inbox";
+import {
+  buildHostRouteNextPath,
+  type HostRouteSearchParams,
+  requireHostConsoleAccess,
+} from "@/lib/host-route-guards";
+
+export const dynamic = "force-dynamic";
+export const runtime = "nodejs";
 
 export const metadata: Metadata = {
   title: "메세지함 | 누비오",
@@ -12,9 +20,12 @@ export const metadata: Metadata = {
 export default async function HostMessagesPage({
   searchParams,
 }: {
-  searchParams?: Promise<{ panel?: string; status?: string; view?: string }>;
+  searchParams?: Promise<HostRouteSearchParams>;
 }) {
   const params = await searchParams;
+  await requireHostConsoleAccess(
+    buildHostRouteNextPath("/host/messages", params),
+  );
   const view: HostMessageInboxView =
     params?.view === "ended" ||
     params?.status === "ended" ||

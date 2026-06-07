@@ -1,5 +1,9 @@
 import type { Metadata } from "next";
 import { HostProgramFormAttachment } from "@/components/host-program-form-attachment";
+import { requireHostConsoleAccess } from "@/lib/host-route-guards";
+
+export const dynamic = "force-dynamic";
+export const runtime = "nodejs";
 
 export const metadata: Metadata = {
   title: "프로그램 신청 폼 | 누비오",
@@ -12,6 +16,10 @@ export default async function StandaloneProgramFormsPage({
   params: Promise<{ programId: string }>;
 }) {
   const { programId } = await params;
+  const decodedProgramId = decodeURIComponent(programId);
+  await requireHostConsoleAccess(
+    `/host/programs/${encodeURIComponent(decodedProgramId)}/forms`,
+  );
 
-  return <HostProgramFormAttachment programId={decodeURIComponent(programId)} />;
+  return <HostProgramFormAttachment programId={decodedProgramId} />;
 }

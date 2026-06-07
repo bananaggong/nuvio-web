@@ -1,5 +1,9 @@
 import type { Metadata } from "next";
 import { HostApplicationDetail } from "@/components/host-application-detail";
+import { requireHostConsoleAccess } from "@/lib/host-route-guards";
+
+export const dynamic = "force-dynamic";
+export const runtime = "nodejs";
 
 type HostApplicationDetailPageProps = {
   params: Promise<{ id: string }>;
@@ -14,10 +18,14 @@ export default async function HostApplicationDetailPage({
   params,
 }: HostApplicationDetailPageProps) {
   const { id } = await params;
+  const decodedId = decodeURIComponent(id);
+  await requireHostConsoleAccess(
+    `/host/applications/${encodeURIComponent(decodedId)}`,
+  );
 
   return (
     <>
-      <HostApplicationDetail applicationId={id} />
+      <HostApplicationDetail applicationId={decodedId} />
     </>
   );
 }

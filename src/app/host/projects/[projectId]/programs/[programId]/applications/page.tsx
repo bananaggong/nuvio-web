@@ -1,5 +1,9 @@
 import type { Metadata } from "next";
 import { HostApplicationsCrm } from "@/components/host-applications-crm";
+import { requireHostConsoleAccess } from "@/lib/host-route-guards";
+
+export const dynamic = "force-dynamic";
+export const runtime = "nodejs";
 
 export const metadata: Metadata = {
   title: "프로그램 신청자 CRM | 누비오",
@@ -13,12 +17,17 @@ export default async function HostProgramApplicationsPage({
   params: Promise<{ programId: string; projectId: string }>;
 }) {
   const { programId, projectId } = await params;
+  const decodedProgramId = decodeURIComponent(programId);
+  const decodedProjectId = decodeURIComponent(projectId);
+  await requireHostConsoleAccess(
+    `/host/projects/${encodeURIComponent(decodedProjectId)}/programs/${encodeURIComponent(decodedProgramId)}/applications`,
+  );
 
   return (
     <>
       <HostApplicationsCrm
-        programId={decodeURIComponent(programId)}
-        projectId={decodeURIComponent(projectId)}
+        programId={decodedProgramId}
+        projectId={decodedProjectId}
       />
     </>
   );
