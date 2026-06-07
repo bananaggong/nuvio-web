@@ -126,11 +126,15 @@ const figmaScaleStyle = {
     "clamp(1, calc(min(100vw, 1920px) / 1440), 1.333333)",
   "--figma-2": "clamp(2px, 0.139vw, 2.667px)",
   "--figma-4": "clamp(4px, 0.278vw, 5.333px)",
+  "--figma-4-3": "clamp(4.3px, 0.299vw, 5.733px)",
+  "--figma-5-7": "clamp(5.7px, 0.396vw, 7.6px)",
   "--figma-6": "clamp(6px, 0.417vw, 8px)",
   "--figma-7": "clamp(7px, 0.486vw, 9.333px)",
   "--figma-8": "clamp(8px, 0.556vw, 10.667px)",
+  "--figma-9": "clamp(9px, 0.625vw, 12px)",
   "--figma-10": "clamp(10px, 0.694vw, 13.333px)",
   "--figma-12": "clamp(12px, 0.833vw, 16px)",
+  "--figma-13": "clamp(13px, 0.903vw, 17.333px)",
   "--figma-14": "clamp(14px, 0.972vw, 18.667px)",
   "--figma-15": "clamp(15px, 1.042vw, 20px)",
   "--figma-16": "clamp(16px, 1.111vw, 21.333px)",
@@ -178,14 +182,14 @@ const figmaScaleStyle = {
 function HostProgramFigmaScaleOverrides() {
   return (
     <style>{`
-      [data-host-program-scale] .text-\\[7px\\] { font-size: calc(7px * var(--figma-scale)); }
-      [data-host-program-scale] .text-\\[8px\\] { font-size: calc(8px * var(--figma-scale)); }
-      [data-host-program-scale] .text-\\[9px\\] { font-size: calc(9px * var(--figma-scale)); }
+      [data-host-program-scale] .text-\\[7px\\] { font-size: var(--figma-7); }
+      [data-host-program-scale] .text-\\[8px\\] { font-size: var(--figma-8); }
+      [data-host-program-scale] .text-\\[9px\\] { font-size: var(--figma-9); }
       [data-host-program-scale] .text-\\[10px\\],
       [data-host-program-scale] .text-\\[length\\:var\\(--figma-10\\)\\] { font-size: var(--figma-10); }
       [data-host-program-scale] .text-\\[12px\\],
       [data-host-program-scale] .text-\\[length\\:var\\(--figma-12\\)\\] { font-size: var(--figma-12); }
-      [data-host-program-scale] .text-\\[13px\\] { font-size: calc(13px * var(--figma-scale)); }
+      [data-host-program-scale] .text-\\[13px\\] { font-size: var(--figma-13); }
       [data-host-program-scale] .text-\\[14px\\],
       [data-host-program-scale] .text-\\[length\\:var\\(--figma-14\\)\\] { font-size: var(--figma-14); }
       [data-host-program-scale] .text-\\[16px\\],
@@ -211,6 +215,22 @@ function HostProgramFigmaScaleOverrides() {
       [data-host-program-scale] .leading-\\[1\\.46\\] { line-height: 1.46; }
       [data-host-program-scale] .leading-\\[1\\.6\\] { line-height: 1.6; }
       [data-host-program-scale] .leading-\\[1\\.7\\] { line-height: 1.7; }
+      [data-host-program-scale] .preview-thumbnail-meta {
+        font-size: var(--figma-8);
+        line-height: 1.35;
+      }
+      [data-host-program-scale] .preview-thumbnail-meta img {
+        height: var(--figma-9);
+        width: var(--figma-9);
+      }
+      [data-host-program-scale] .preview-thumbnail-small-copy {
+        font-size: var(--figma-4-3);
+        line-height: 1.6;
+      }
+      [data-host-program-scale] .preview-thumbnail-small-title {
+        font-size: var(--figma-5-7);
+        line-height: 1.253;
+      }
     `}</style>
   );
 }
@@ -2426,23 +2446,23 @@ function ThumbnailPreviewContent({ program }: { program: Program }) {
     : undefined;
 
   return (
-    <div className="flex min-h-[29.216vw] items-center justify-center gap-[1.389vw] px-[1.25vw] py-[1.667vw]">
-      <article className="w-[13.403vw] min-w-[192px] max-w-[257px] overflow-hidden">
+    <div className="flex min-h-[var(--figma-262)] items-center justify-center gap-[var(--figma-20)] px-[var(--figma-12)] py-[var(--figma-14)]">
+      <article className="w-[var(--figma-193)] overflow-hidden">
         <div
           aria-label={`${program.title} 썸네일 이미지`}
-          className="aspect-[0.79] w-full overflow-hidden rounded-[6px] bg-[#D9D9D9] bg-cover bg-center shadow-sm ring-1 ring-[#E6D6CA]"
+          className="h-[var(--figma-185)] w-full overflow-hidden rounded-[6px] bg-[#D9D9D9] bg-cover bg-center shadow-sm ring-1 ring-[#E6D6CA]"
           role="img"
           style={mainImageStyle}
         />
         <div className="mt-[10px] flex items-start justify-between gap-3">
-          <h3 className="line-clamp-2 min-w-0 text-[12px] font-bold leading-[1.25] text-[#2B1E17]">
+          <h3 className="line-clamp-2 min-w-0 text-[10px] font-bold leading-[1.25] text-[#2B1E17]">
             {program.title}
           </h3>
-          <strong className="shrink-0 text-[12px] font-bold leading-[1.25] text-[#2B1E17]">
+          <strong className="shrink-0 text-[10px] font-bold leading-[1.25] text-[#2B1E17]">
             {deadline}
           </strong>
         </div>
-        <div className="mt-[8px] grid gap-[5px] text-[8px] font-medium leading-[1.35] text-[#6D7A8A]">
+        <div className="preview-thumbnail-meta mt-[var(--figma-8)] grid gap-[var(--figma-4)] font-medium text-[#6D7A8A]">
           <PreviewMetaLine icon={nuvioIcons.place} text={program.sourceName} />
           <PreviewMetaLine icon={nuvioIcons.map} text={location} />
           <PreviewMetaLine
@@ -2459,16 +2479,16 @@ function ThumbnailPreviewContent({ program }: { program: Program }) {
           role="img"
           style={mainImageStyle}
         />
-        <p className="mt-[8px] truncate text-[7px] font-medium leading-[1.3] text-[#6D7A8A]">
+        <p className="preview-thumbnail-small-copy mt-[var(--figma-8)] truncate font-normal text-[#6D7A8A]">
           {location || "프로그램 지역 위치"}
         </p>
-        <h4 className="mt-[5px] line-clamp-2 text-[9px] font-bold leading-[1.28] text-[#5B3A29]">
+        <h4 className="preview-thumbnail-small-title mt-[5px] line-clamp-2 font-medium text-[#5B3A29]">
           {program.title}
         </h4>
-        <p className="mt-[6px] line-clamp-3 text-[7px] font-normal leading-[1.45] text-[#C9C4BD]">
+        <p className="preview-thumbnail-small-copy mt-[var(--figma-6)] line-clamp-3 font-normal text-[#C9C4BD]">
           {summary}
         </p>
-        <p className="mt-[8px] truncate text-[7px] font-medium leading-[1.3] text-[#6D7A8A]">
+        <p className="preview-thumbnail-small-copy mt-[var(--figma-8)] truncate font-normal text-[#6D7A8A]">
           {program.sourceName}
         </p>
       </article>
