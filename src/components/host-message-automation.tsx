@@ -6,6 +6,7 @@ import {
   CircleHelp,
   Inbox,
   Loader2,
+  Plus,
 } from "lucide-react";
 import { useEffect, useMemo, useState, type CSSProperties } from "react";
 import {
@@ -557,11 +558,11 @@ function MessageCampaignDetailPanel({
           </h2>
           <button
             aria-label="템플릿 추가"
-            className="ml-auto size-[18px] rounded-[4px] border border-[#6D7A8A] text-[12px] text-[#6D7A8A]"
+            className="ml-auto grid size-[18px] place-items-center rounded-[4px] border border-[#6D7A8A] text-[#6D7A8A]"
             onClick={addCampaign}
             type="button"
           >
-            +
+            <Plus aria-hidden="true" className="size-[12px]" strokeWidth={1.8} />
           </button>
         </div>
         <div className="mt-[13px] h-[var(--msg-188)] w-full rounded-[4px] border border-[#6D7A8A] bg-white">
@@ -587,11 +588,11 @@ function MessageCampaignDetailPanel({
           </h2>
           <button
             aria-label="수신자 추가"
-            className="ml-auto size-[12px] rounded-full bg-[#6D7A8A] text-[10px] leading-none text-white"
+            className="ml-auto grid size-[12px] place-items-center rounded-full bg-[#6D7A8A] text-white"
             onClick={addCampaign}
             type="button"
           >
-            +
+            <Plus aria-hidden="true" className="size-[8px]" strokeWidth={2.4} />
           </button>
         </div>
         <div className="mt-[13px] h-[var(--msg-188)] w-full overflow-hidden rounded-[4px] border border-[#AEB8C2] bg-white">
