@@ -53,9 +53,7 @@ export function useHostOperationsData(): HostOperationsData {
             data?: HostApplication[];
           };
           if (payload.data && !cancelled) {
-            setApplications((current) =>
-              mergeHostApplications(payload.data ?? [], current),
-            );
+            setApplications(mergeHostApplications(payload.data, []));
           }
         }
 
@@ -64,9 +62,7 @@ export function useHostOperationsData(): HostOperationsData {
             data?: ReportProject[];
           };
           if (payload.data && !cancelled) {
-            setReportProjects((current) =>
-              mergeReportProjects(payload.data ?? [], current),
-            );
+            setReportProjects(mergeReportProjects(payload.data, []));
           }
         }
 
@@ -75,9 +71,7 @@ export function useHostOperationsData(): HostOperationsData {
             data?: HostProgramDraft[];
           };
           if (payload.data && !cancelled) {
-            setPrograms((current) =>
-              mergeHostProgramDrafts(payload.data ?? [], current),
-            );
+            setPrograms(mergeHostProgramDrafts(payload.data, []));
           }
         }
       } finally {
