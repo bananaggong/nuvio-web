@@ -317,7 +317,7 @@ function OngoingMessagesView({
 
         <div className="flex-1 overflow-auto">
           <div
-            className="mx-auto grid min-h-[608px] min-w-[1060px] max-w-[1920px]"
+            className="mx-auto grid h-full min-h-[608px] min-w-[1060px] max-w-[1920px]"
             data-host-message-grid="ongoing"
             style={{
               gridTemplateColumns: `${scaledSize(360)} minmax(${scaledSize(620)}, 1fr) ${scaledSize(390)}`,
@@ -688,14 +688,8 @@ function ThreadDetailPanel({
         </>
       )}
 
-      <div
-        className={
-          isEnded
-            ? "mt-5 rounded-[8px] border border-[#6D7A8A] p-[18px]"
-            : "mt-3"
-        }
-      >
-        {isEnded ? (
+      {isEnded ? (
+        <div className="mt-5 rounded-[8px] border border-[#6D7A8A] p-[18px]">
           <div className="mb-[33px] flex justify-end px-[10px] py-1">
             <Minus
               aria-hidden="true"
@@ -703,9 +697,9 @@ function ThreadDetailPanel({
               strokeWidth={2}
             />
           </div>
-        ) : null}
-        <AutoAnswerPreview />
-      </div>
+          <AutoAnswerPreview />
+        </div>
+      ) : null}
 
       {!isEnded ? (
         <div className="mt-3 grid gap-[6px]">
