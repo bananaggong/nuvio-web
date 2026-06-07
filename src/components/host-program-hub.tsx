@@ -3336,54 +3336,46 @@ function PlacePanel({
                 }
               />
             </div>
-            {draft.placeInfo.accommodationEnabled ? (
-              <>
-                <label className="flex items-center gap-[var(--figma-8)] text-[length:var(--figma-14)] font-normal leading-[1.253] text-[#6D7A8A]">
-                  <input
-                    className="size-[var(--figma-18)] rounded-[4px] border border-[#6D7A8A] accent-[#FE701E]"
-                    type="checkbox"
-                  />
-                  집결지와 동일한 장소에요
-                </label>
-                <AddressSearchField
-                  address={draft.placeInfo.accommodationName}
-                  addressDetail=""
-                  label="주소"
-                  onAddressChange={(accommodationName) =>
-                    updatePlaceInfo({ accommodationName })
-                  }
-                  onAddressDetailChange={() => undefined}
-                />
-                <MapPreviewBox address={draft.placeInfo.accommodationName} />
-                <FigmaTextarea
-                  description="숙소에 대해 추가 안내사항이 있다면 입력해주세요"
-                  heightClass="h-[var(--figma-31)]"
-                  onChange={(accommodationMemo) =>
-                    updatePlaceInfo({ accommodationMemo })
-                  }
-                  placeholder="예 : 체크인 시간, 준비물, 방 배정 방식 등"
-                  title="숙소 추가 안내 사항 (선택)"
-                  value={draft.placeInfo.accommodationMemo}
-                />
-                <SettingsFieldLabel>담당자 연락처 (선택)</SettingsFieldLabel>
-                <div className="grid grid-cols-2 gap-[var(--figma-22)]">
-                  <FigmaTextInput
-                    onChange={(phone) => updateDraft({ phone })}
-                    placeholder="전화번호"
-                    value={draft.phone}
-                  />
-                  <FigmaTextInput
-                    onChange={(sourceUrl) => updateDraft({ sourceUrl })}
-                    placeholder="이메일 또는 문의 URL"
-                    value={draft.sourceUrl}
-                  />
-                </div>
-              </>
-            ) : (
-              <p className="text-[length:var(--figma-14)] font-normal leading-[1.253] text-[#6D7A8A]">
-                집결지와 동일한 장소예요
-              </p>
-            )}
+            <label className="flex items-center gap-[var(--figma-8)] text-[length:var(--figma-14)] font-normal leading-[1.253] text-[#6D7A8A]">
+              <input
+                className="size-[var(--figma-18)] rounded-[4px] border border-[#6D7A8A] accent-[#FE701E]"
+                type="checkbox"
+              />
+              집결지와 동일한 장소에요
+            </label>
+            <AddressSearchField
+              address={draft.placeInfo.accommodationName}
+              addressDetail=""
+              label="주소"
+              onAddressChange={(accommodationName) =>
+                updatePlaceInfo({ accommodationName })
+              }
+              onAddressDetailChange={() => undefined}
+            />
+            <MapPreviewBox address={draft.placeInfo.accommodationName} />
+            <FigmaTextarea
+              description="숙소에 대해 추가 안내사항이 있다면 입력해주세요"
+              heightClass="h-[var(--figma-31)]"
+              onChange={(accommodationMemo) =>
+                updatePlaceInfo({ accommodationMemo })
+              }
+              placeholder="예 : 체크인 시간, 준비물, 방 배정 방식 등"
+              title="숙소 추가 안내 사항 (선택)"
+              value={draft.placeInfo.accommodationMemo}
+            />
+            <SettingsFieldLabel>담당자 연락처 (선택)</SettingsFieldLabel>
+            <div className="grid grid-cols-2 gap-[var(--figma-22)]">
+              <FigmaTextInput
+                onChange={(phone) => updateDraft({ phone })}
+                placeholder="전화번호"
+                value={draft.phone}
+              />
+              <FigmaTextInput
+                onChange={(sourceUrl) => updateDraft({ sourceUrl })}
+                placeholder="이메일 또는 문의 URL"
+                value={draft.sourceUrl}
+              />
+            </div>
           </div>
         </DetailFormBlock>
       </div>
