@@ -36,12 +36,14 @@ const hostSources = [
 assertNotIncludes(hostSources, "프로그램추가", "host program action label");
 assertIncludes(
   hostCenterHome,
-  "HostSmallButton onClick={openProgramDialog}>새 프로그램</HostSmallButton>",
+  "HostSmallButton onClick={openProgramDialog}>새 프로그램 +</HostSmallButton>",
   "host home new program button",
 );
 assertIncludes(hostCenterHome, "function buildStandaloneNewProgramDraft", "host home create draft");
 assertIncludes(hostCenterHome, "hostStandaloneProgramPath(savedProgram.id)}?panel=dashboard&created=1", "host home redirect");
 assertIncludes(hostProjectHub, "function NewProgramDialog", "folder new program popup");
+assertIncludes(hostProjectHub, "function AddFileDialog", "folder add file popup");
+assertIncludes(hostProjectHub, "addSelectedProgramsToFolder", "folder add file persistence");
 assertIncludes(hostProjectHub, "생성하기", "folder new program submit");
 assertIncludes(hostProjectHub, "hostProgramPath(activeProject.id, savedProgram.id)}?panel=dashboard&created=1", "folder redirect");
 

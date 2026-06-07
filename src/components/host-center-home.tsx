@@ -39,6 +39,8 @@ type ProgramGroup = {
   title: string;
 };
 
+type FolderProgramFilter = "open" | "upcoming" | "closed";
+
 export function HostCenterHome({
   workspace,
 }: {
@@ -58,6 +60,11 @@ export function HostCenterHome({
   const [programName, setProgramName] = useState("");
   const [folderError, setFolderError] = useState("");
   const [programError, setProgramError] = useState("");
+  const [folderProgramFilter, setFolderProgramFilter] =
+    useState<FolderProgramFilter>("open");
+  const [selectedFolderProgramIds, setSelectedFolderProgramIds] = useState<string[]>(
+    [],
+  );
   const [isFolderSaving, setIsFolderSaving] = useState(false);
   const [isProgramSaving, setIsProgramSaving] = useState(false);
 
@@ -100,12 +107,48 @@ export function HostCenterHome({
     [programItems],
   );
   const groups = useMemo(() => buildProgramGroups(programItems), [programItems]);
+  const folderDialogCounts = useMemo(() => {
+    return programItems.reduce<Record<FolderProgramFilter, number>>(
+      (acc, program) => {
+        const status = normalizeProgramStatus(program);
+        if (status === "closed" || status === "earlyClosed") {
+          acc.closed += 1;
+        } else if (status === "upcoming") {
+          acc.upcoming += 1;
+        } else {
+          acc.open += 1;
+        }
+
+        return acc;
+      },
+      { closed: 0, open: 0, upcoming: 0 },
+    );
+  }, [programItems]);
+  const folderDialogPrograms = useMemo(
+    () =>
+      programItems.filter((program) => {
+        const status = normalizeProgramStatus(program);
+        if (folderProgramFilter === "closed") {
+          return status === "closed" || status === "earlyClosed";
+        }
+
+        return status === folderProgramFilter;
+      }),
+    [folderProgramFilter, programItems],
+  );
+  const selectedFolderPrograms = useMemo(
+    () =>
+      programItems.filter((program) => selectedFolderProgramIds.includes(program.id)),
+    [programItems, selectedFolderProgramIds],
+  );
   const trimmedFolderName = folderName.trim();
   const trimmedProgramName = programName.trim();
 
   function openFolderDialog() {
     setFolderError("");
     setFolderName("");
+    setFolderProgramFilter("open");
+    setSelectedFolderProgramIds([]);
     setIsFolderDialogOpen(true);
   }
 
@@ -114,6 +157,8 @@ export function HostCenterHome({
     setIsFolderDialogOpen(false);
     setFolderError("");
     setFolderName("");
+    setFolderProgramFilter("open");
+    setSelectedFolderProgramIds([]);
   }
 
   function openProgramDialog() {
@@ -129,16 +174,29 @@ export function HostCenterHome({
     setProgramName("");
   }
 
+  function toggleFolderProgram(programId: string) {
+    setSelectedFolderProgramIds((current) =>
+      current.includes(programId)
+        ? current.filter((id) => id !== programId)
+        : [...current, programId],
+    );
+  }
+
   async function createFolder() {
     if (!trimmedFolderName || isFolderSaving) return;
 
     const now = new Date().toISOString();
+    const primaryProgram = selectedFolderPrograms[0];
     const nextFolder: ReportProject = {
       ...createReportProject(),
       agencyName: workspace.title || "운영 조직명",
-      connectedProgramTitles: [],
+      connectedProgramIds: selectedFolderPrograms.map((program) => program.id),
+      connectedProgramTitles: selectedFolderPrograms.map((program) => program.title),
+      imageUrl: primaryProgram?.imageUrl || workspace.heroImage,
       ownerName: "운영 담당자",
       periodLabel: "운영 기간 미정",
+      programId: primaryProgram?.id ?? "",
+      programTitle: primaryProgram?.title ?? trimmedFolderName,
       title: trimmedFolderName,
       updatedAt: now,
       villageName: workspace.title,
@@ -167,6 +225,7 @@ export function HostCenterHome({
       );
       setIsFolderDialogOpen(false);
       setFolderName("");
+      setSelectedFolderProgramIds([]);
     } catch (error) {
       setFolderError(
         error instanceof Error ? error.message : "폴더 저장에 실패했습니다.",
@@ -218,7 +277,7 @@ export function HostCenterHome({
   return (
     <HostWorkspaceLayout>
       <HostWorkspaceContent>
-        <div className="w-full max-w-[77.639vw] pt-[1.667vw] max-md:max-w-none max-md:pt-5">
+        <div className="w-[var(--host-1118)] max-w-full pt-[var(--host-24)] max-md:w-full max-md:pt-5">
           <section className="w-fit">
             <HostSectionTitle
               action={
@@ -228,7 +287,7 @@ export function HostCenterHome({
               }
               title="프로그램 폴더"
             />
-            <div className="mt-[0.833vw] flex flex-wrap gap-[1.111vw] max-md:mt-4">
+            <div className="mt-[var(--host-12)] flex flex-wrap gap-[var(--host-16)] max-md:mt-4">
               {folders.length > 0 ? (
                 folders.map((folder) => (
                   <HostFolderCard
@@ -240,7 +299,7 @@ export function HostCenterHome({
                 ))
               ) : (
                 <button
-                  className="grid h-[24.375vw] min-h-[351px] w-[20vw] min-w-[288px] place-items-center rounded-[5px] border border-dashed border-[#F3C3A5] bg-white text-[13px] font-black text-[#FE701E] max-md:w-full"
+                  className="grid h-[var(--host-351)] w-[var(--host-288)] min-w-[288px] place-items-center rounded-[8px] border border-dashed border-[#F3C3A5] bg-white text-[var(--host-14)] font-medium text-[#FE701E] max-md:w-full"
                   onClick={openFolderDialog}
                   type="button"
                 >
@@ -250,12 +309,12 @@ export function HostCenterHome({
             </div>
           </section>
 
-          <section className="mt-[2.222vw] max-md:mt-8">
+          <section className="mt-[var(--host-32)] max-md:mt-8">
             <HostSectionTitle
-              action={<HostSmallButton onClick={openProgramDialog}>새 프로그램</HostSmallButton>}
+              action={<HostSmallButton onClick={openProgramDialog}>새 프로그램 +</HostSmallButton>}
               title="프로그램 현황"
             />
-            <div className="mt-[0.833vw] grid gap-[1.111vw] max-md:mt-5">
+            <div className="mt-[var(--host-12)] grid gap-[var(--host-16)] max-md:mt-5">
               {groups.map((group) => (
                 <HostProgramRow
                   actionLabel={group.actionLabel}
@@ -277,51 +336,106 @@ export function HostCenterHome({
           <form
             aria-modal="true"
             aria-labelledby="new-folder-title"
-            className="w-[41.875vw] min-w-[360px] max-w-[804px] rounded-[5px] border border-[#F3E2D5] bg-white p-[1.111vw] shadow-[0_18px_48px_rgba(91,58,41,0.14)] max-md:w-full max-md:min-w-0 max-md:p-5"
+            className="flex w-[var(--host-603)] max-w-[calc(100vw-32px)] flex-col gap-[var(--host-6)] rounded-[12px] border border-[#D9D9D9] bg-[#F9F9F9] px-[var(--host-18)] py-[var(--host-24)] shadow-[0_18px_48px_rgba(91,58,41,0.14)] max-md:w-full max-md:min-w-0 max-md:p-5"
             onSubmit={(event) => {
               event.preventDefault();
               void createFolder();
             }}
             role="dialog"
           >
-            <div className="flex items-center justify-between">
-              <h2 className="text-[15px] font-black text-[#33241C]" id="new-folder-title">
-                폴더명
-              </h2>
+            <div className="flex w-full justify-end">
               <button
                 aria-label="닫기"
-                className="inline-flex size-8 items-center justify-center text-[#33241C] hover:text-[#FE701E]"
+                className="inline-flex size-[var(--host-16)] items-center justify-center text-[#0D0D0C] hover:text-[#FE701E]"
                 onClick={closeFolderDialog}
                 type="button"
               >
-                <X size={18} />
+                <X className="size-[var(--host-16)]" strokeWidth={2.2} />
               </button>
             </div>
-            <input
-              autoFocus
-              className="mt-[0.833vw] h-[38px] w-full rounded-[4px] border border-[#F3E2D5] px-3 text-[13px] font-bold text-[#33241C] outline-none placeholder:text-[#C8BDB5] focus:border-[#FE701E]"
-              onChange={(event) => setFolderName(event.target.value)}
-              placeholder="폴더명을 입력해주세요."
-              value={folderName}
-            />
-            {folderError ? (
-              <p className="mt-3 text-[13px] font-bold text-red-600">{folderError}</p>
-            ) : null}
-            <div className="mt-[1.111vw] flex justify-end gap-2">
-              <button
-                className="h-[32px] rounded-[4px] border border-[#F3E2D5] px-4 text-[12px] font-black text-[#6D7A8A]"
-                onClick={closeFolderDialog}
-                type="button"
+            <div className="flex w-full flex-col gap-[var(--host-21)]">
+              <label
+                className="text-[var(--host-14)] font-medium leading-[1.253] text-[#0D0D0C]"
+                htmlFor="new-folder-name"
+                id="new-folder-title"
               >
-                취소
-              </button>
+                폴더명
+              </label>
+              <input
+                autoFocus
+                className="h-[var(--host-30)] w-full rounded-[7px] border-[0.5px] border-[#F7B267] bg-transparent px-[var(--host-12)] text-[var(--host-12)] font-medium leading-[1.253] text-[#0D0D0C] outline-none placeholder:text-[#D9D9D9] focus:border-[#FE701E]"
+                id="new-folder-name"
+                onChange={(event) => setFolderName(event.target.value)}
+                placeholder="폴더명을 입력하세요."
+                value={folderName}
+              />
+            </div>
+            <div className="flex w-full flex-col gap-[var(--host-8)] py-[var(--host-16)]">
+              <p className="text-[var(--host-14)] font-medium leading-[1.253] text-[#0D0D0C]">
+                추가할 프로그램을 선택하세요.
+              </p>
+              <div className="flex w-full items-center gap-[9px]">
+                {(["open", "upcoming", "closed"] as const).map((filter) => {
+                  const isActive = folderProgramFilter === filter;
+                  const label =
+                    filter === "open"
+                      ? `오픈 (${String(folderDialogCounts.open).padStart(2, "0")})`
+                      : filter === "upcoming"
+                        ? "예정"
+                        : "마감";
+
+                  return (
+                    <button
+                      className={`flex h-[var(--host-30)] w-[var(--host-110)] items-center justify-center rounded-[20px] text-[var(--host-12)] font-bold leading-[1.253] ${
+                        isActive
+                          ? "bg-[#FF9A3D] text-[#F9F9F9]"
+                          : "bg-[#CAC4BC] text-[#F3F3F3]"
+                      }`}
+                      key={filter}
+                      onClick={() => setFolderProgramFilter(filter)}
+                      type="button"
+                    >
+                      {label}
+                    </button>
+                  );
+                })}
+              </div>
+              <div className="grid w-full grid-cols-3 gap-x-[var(--host-27)] gap-y-[var(--host-12)] p-[var(--host-8)] max-md:grid-cols-1">
+                {folderDialogPrograms.length > 0 ? (
+                  folderDialogPrograms.slice(0, 6).map((program) => (
+                    <label
+                      className="flex min-w-0 items-center gap-[var(--host-8)] text-[var(--host-14)] font-medium leading-[1.253] text-[#0D0D0C]"
+                      key={program.id}
+                    >
+                      <input
+                        checked={selectedFolderProgramIds.includes(program.id)}
+                        className="size-[var(--host-14)] shrink-0 appearance-none border border-[#6D7A8A] bg-transparent checked:border-[#FE701E] checked:bg-[#FE701E]"
+                        onChange={() => toggleFolderProgram(program.id)}
+                        type="checkbox"
+                      />
+                      <span className="truncate">{program.title}</span>
+                    </label>
+                  ))
+                ) : (
+                  <p className="col-span-3 text-[var(--host-12)] font-medium leading-[1.6] text-[#6D7A8A] max-md:col-span-1">
+                    선택할 프로그램이 없습니다.
+                  </p>
+                )}
+              </div>
+            </div>
+            {folderError ? (
+              <p className="text-[13px] font-bold text-red-600">{folderError}</p>
+            ) : null}
+            <div className="flex w-full justify-end">
               <button
-                className="inline-flex h-[32px] items-center gap-2 rounded-[4px] bg-[#FE701E] px-4 text-[12px] font-black text-white disabled:opacity-40"
+                className="inline-flex h-[var(--host-29)] items-center justify-center gap-[var(--host-6)] rounded-[4px] bg-[#FE701E] px-[var(--host-18)] text-[var(--host-12)] font-medium leading-[1.253] text-[#FFF6EC] disabled:opacity-40"
                 disabled={!trimmedFolderName || isFolderSaving}
                 type="submit"
               >
-                {isFolderSaving ? <Loader2 className="animate-spin" size={14} /> : null}
-                저장
+                {isFolderSaving ? (
+                  <Loader2 className="size-[var(--host-14)] animate-spin" />
+                ) : null}
+                생성
               </button>
             </div>
           </form>
@@ -335,57 +449,53 @@ export function HostCenterHome({
           <form
             aria-modal="true"
             aria-labelledby="new-program-title"
-            className="w-[41.875vw] min-w-[360px] max-w-[804px] rounded-[5px] border border-[#F3E2D5] bg-white p-[1.111vw] shadow-[0_18px_48px_rgba(91,58,41,0.14)] max-md:w-full max-md:min-w-0 max-md:p-5"
+            className="flex w-[var(--host-457)] max-w-[calc(100vw-32px)] flex-col gap-[var(--host-6)] rounded-[12px] border border-[#D9D9D9] bg-[#F9F9F9] px-[var(--host-18)] py-[var(--host-24)] shadow-[0_18px_48px_rgba(91,58,41,0.14)] max-md:w-full max-md:min-w-0 max-md:p-5"
             onSubmit={(event) => {
               event.preventDefault();
               void createProgram();
             }}
             role="dialog"
           >
-            <div className="flex items-center justify-between">
-              <h2
-                className="text-[15px] font-black text-[#33241C]"
-                id="new-program-title"
-              >
-                새 프로그램
-              </h2>
+            <div className="flex w-full justify-end">
               <button
                 aria-label="닫기"
-                className="inline-flex size-8 items-center justify-center text-[#33241C] hover:text-[#FE701E]"
+                className="inline-flex size-[var(--host-16)] items-center justify-center text-[#0D0D0C] hover:text-[#FE701E]"
                 onClick={closeProgramDialog}
                 type="button"
               >
-                <X size={18} />
+                <X className="size-[var(--host-16)]" strokeWidth={2.2} />
               </button>
             </div>
-            <p className="mt-[0.556vw] text-[13px] font-bold leading-5 text-[#8B7A6E]">
-              프로그램 이름을 입력하고 생성하면 대시보드에서 본격적으로 작성할 수 있습니다.
-            </p>
-            <input
-              autoFocus
-              className="mt-[0.833vw] h-[38px] w-full rounded-[4px] border border-[#F3E2D5] px-3 text-[13px] font-bold text-[#33241C] outline-none placeholder:text-[#C8BDB5] focus:border-[#FE701E]"
-              onChange={(event) => setProgramName(event.target.value)}
-              placeholder="프로그램 이름을 입력해주세요."
-              value={programName}
-            />
-            {programError ? (
-              <p className="mt-3 text-[13px] font-bold text-red-600">{programError}</p>
-            ) : null}
-            <div className="mt-[1.111vw] flex justify-end gap-2">
-              <button
-                className="h-[32px] rounded-[4px] border border-[#F3E2D5] px-4 text-[12px] font-black text-[#6D7A8A]"
-                onClick={closeProgramDialog}
-                type="button"
+            <div className="flex w-full flex-col gap-[var(--host-21)]">
+              <label
+                className="text-[var(--host-14)] font-medium leading-[1.253] text-[#0D0D0C]"
+                htmlFor="new-program-name"
+                id="new-program-title"
               >
-                취소
-              </button>
+                새 프로그램 만들기
+              </label>
+              <input
+                autoFocus
+                className="h-[var(--host-30)] w-full rounded-[7px] border-[0.5px] border-[#F7B267] bg-transparent px-[var(--host-12)] text-[var(--host-12)] font-medium leading-[1.253] text-[#0D0D0C] outline-none placeholder:text-[#D9D9D9] focus:border-[#FE701E]"
+                id="new-program-name"
+                onChange={(event) => setProgramName(event.target.value)}
+                placeholder="프로그램 이름을 입력하세요."
+                value={programName}
+              />
+            </div>
+            {programError ? (
+              <p className="text-[13px] font-bold text-red-600">{programError}</p>
+            ) : null}
+            <div className="flex w-full justify-end pt-[var(--host-12)]">
               <button
-                className="inline-flex h-[32px] items-center gap-2 rounded-[4px] bg-[#FE701E] px-4 text-[12px] font-black text-white disabled:opacity-40"
+                className="inline-flex h-[var(--host-29)] items-center justify-center gap-[var(--host-6)] rounded-[4px] bg-[#FE701E] px-[var(--host-18)] text-[var(--host-12)] font-medium leading-[1.253] text-[#FFF6EC] disabled:opacity-40"
                 disabled={!trimmedProgramName || isProgramSaving}
                 type="submit"
               >
-                {isProgramSaving ? <Loader2 className="animate-spin" size={14} /> : null}
-                생성하기
+                {isProgramSaving ? (
+                  <Loader2 className="size-[var(--host-14)] animate-spin" />
+                ) : null}
+                생성
               </button>
             </div>
           </form>
