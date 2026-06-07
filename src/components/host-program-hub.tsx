@@ -154,6 +154,7 @@ const figmaScaleStyle = {
   "--figma-96": "clamp(96px, 6.667vw, 128px)",
   "--figma-110": "clamp(110px, 7.639vw, 146.667px)",
   "--figma-113": "clamp(113px, 7.847vw, 150.667px)",
+  "--figma-152": "clamp(152px, 10.556vw, 202.667px)",
   "--figma-193": "clamp(193px, 13.403vw, 257.333px)",
   "--figma-256": "clamp(256px, 17.778vw, 341.333px)",
   "--figma-262": "clamp(262px, 18.194vw, 349.333px)",
@@ -1395,7 +1396,7 @@ function DetailPanel({
 
               <div className="mt-[2.778vw] flex items-start gap-[3.056vw]">
                 <DetailImageUploadSlot
-                  heightClass="h-[12.778vw] max-h-[245px]"
+                  heightClass="h-[var(--figma-152)]"
                   image={draft.image}
                   label="썸네일"
                   onChange={(image) => updateDraft({ image })}
@@ -1404,7 +1405,7 @@ function DetailPanel({
                   widthClass="w-[8.472vw] max-w-[163px]"
                 />
                 <DetailImageUploadSlot
-                  heightClass="h-[12.778vw] max-h-[245px]"
+                  heightClass="h-[var(--figma-152)]"
                   images={detailImages}
                   label="메인 슬라이드 (최대 20장)"
                   multiple
@@ -1431,17 +1432,19 @@ function DetailPanel({
                   썸네일 카드에 표시돼요 (최대 60자)
                 </p>
               </div>
-              <textarea
-                className="h-[var(--figma-50)] resize-none rounded-[var(--figma-7)] border-[0.5px] border-[#F7B267] bg-transparent px-[var(--figma-12)] py-[var(--figma-8)] text-[#0D0D0C] outline-none placeholder:text-[#D9D9D9] focus:border-[#FE701E]"
-                maxLength={60}
-                onChange={(event) => updateDraft({ summary: event.target.value })}
-                placeholder="프로그램을 한눈에 설명하는 짧은 소개글을 작성해 주세요"
-                style={{ fontSize: "var(--figma-12)" }}
-                value={draft.summary}
-              />
-              <p className="text-right text-[length:var(--figma-12)] font-normal leading-[1.253] text-[#D9D9D9]">
-                {draft.summary.length} / 60
-              </p>
+              <div className="relative h-[var(--figma-50)]">
+                <textarea
+                  className="h-[var(--figma-31)] w-full resize-none rounded-[var(--figma-7)] border-[0.5px] border-[#F7B267] bg-transparent px-[var(--figma-12)] py-[var(--figma-8)] text-[#0D0D0C] outline-none placeholder:text-[#D9D9D9] focus:border-[#FE701E]"
+                  maxLength={60}
+                  onChange={(event) => updateDraft({ summary: event.target.value })}
+                  placeholder="프로그램을 한눈에 설명하는 짧은 소개글을 작성해 주세요"
+                  style={{ fontSize: "var(--figma-12)" }}
+                  value={draft.summary}
+                />
+                <p className="absolute bottom-0 right-0 w-full text-right text-[length:var(--figma-12)] font-normal leading-[1.253] text-[#D9D9D9]">
+                  {draft.summary.length} / 60
+                </p>
+              </div>
             </div>
           </DetailFormBlock>
 
@@ -2175,7 +2178,7 @@ function DesktopPreviewSection({
 }
 
 function mapHostDraftToPreviewProgram(draft: HostProgramDraft): Program {
-  const image = draft.image.trim() || previewFallbackImage;
+  const image = draft.image.trim();
   const hashtags = draft.hashtags.map((tag) => tag.trim().replace(/^#/u, "")).filter(Boolean);
   const itineraryImages = uniqueImages(
     draft.itineraryDays.flatMap((day) => [day.image, ...day.images]),
@@ -2221,9 +2224,6 @@ function mapHostDraftToPreviewProgram(draft: HostProgramDraft): Program {
     title: draft.title.trim() || "여행 프로그램 이름 입력",
   };
 }
-
-const previewFallbackImage =
-  "https://images.unsplash.com/photo-1500534314209-a25ddb2bd429?auto=format&fit=crop&w=1200&q=80";
 
 function normalizeEditorHtml(value: string): string {
   const trimmedValue = value.trim();
