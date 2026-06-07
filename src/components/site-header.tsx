@@ -45,8 +45,9 @@ export function SiteHeader() {
   const [profileMenuOpen, setProfileMenuOpen] = useState(false);
   const profileMenuRef = useRef<HTMLDivElement>(null);
   const signedIn = session !== "loading" && Boolean(session.user);
+  const isHostRoute = pathname === "/host" || pathname.startsWith("/host/");
   const isMypageRoute = pathname === "/mypage" || pathname.startsWith("/mypage/");
-  const showAccountActions = signedIn || isMypageRoute;
+  const showAccountActions = signedIn || isHostRoute || isMypageRoute;
   const profileName =
     session !== "loading"
       ? session.profile?.displayName?.trim() ||

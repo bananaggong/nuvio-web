@@ -1102,7 +1102,7 @@ function ProgramBuilderSidebar({
             쿠폰 / 프로모션
           </Link>
           <Link className="text-[14px] font-normal leading-[1.253]" href={messagesHref}>
-            문의
+            메세지함
           </Link>
           <Link className="text-[14px] font-normal leading-[1.253]" href={`${applicationsHref}?panel=receipts`}>
             결제 관리
