@@ -3,22 +3,11 @@
 import Link from "next/link";
 import {
   ArrowLeft,
-  Check,
   CircleHelp,
-  Clock3,
-  Database,
-  Download,
   Inbox,
   Loader2,
-  MailCheck,
-  MessageSquareText,
-  Plus,
-  Save,
-  Send,
-  Sparkles,
-  Users,
 } from "lucide-react";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, type CSSProperties } from "react";
 import {
   findHostProgramOverview,
   findHostProjectOverview,
@@ -28,22 +17,15 @@ import {
   hostStandaloneProgramPath,
 } from "@/lib/host-projects";
 import {
-  buildMessageExportCsv,
   buildMessageRecipientPreview,
-  campaignStatusLabels,
-  channelLabels,
   createMessageCampaign,
   mergeMessageCampaigns,
   readMessageCampaigns,
   readMessageTemplates,
-  targetStatusLabels,
-  targetStatusOptions,
 } from "@/lib/message-automation";
 import type {
   MessageCampaign,
   MessageCampaignStatus,
-  MessageChannel,
-  MessageTargetStatus,
 } from "@/lib/message-automation";
 import {
   hostInquiryStatusLabels,
@@ -53,12 +35,46 @@ import {
 } from "@/lib/host-inquiries";
 import { useHostOperationsData } from "@/lib/use-host-operations-data";
 
-const channelOptions: MessageChannel[] = ["email", "sms", "kakao"];
-const campaignStatusOptions: MessageCampaignStatus[] = [
-  "draft",
-  "scheduled",
-  "sent",
-];
+type MessageListTab = "all" | "scheduled" | "sent";
+
+const messageFigmaScaleStyle = {
+  "--msg-3": "clamp(3px, 0.208vw, 4px)",
+  "--msg-4": "clamp(4px, 0.278vw, 5.333px)",
+  "--msg-6": "clamp(6px, 0.417vw, 8px)",
+  "--msg-8": "clamp(8px, 0.556vw, 10.667px)",
+  "--msg-12": "clamp(12px, 0.833vw, 16px)",
+  "--msg-16": "clamp(16px, 1.111vw, 21.333px)",
+  "--msg-18": "clamp(18px, 1.25vw, 24px)",
+  "--msg-20": "clamp(20px, 1.389vw, 26.667px)",
+  "--msg-22": "clamp(22px, 1.528vw, 29.333px)",
+  "--msg-24": "clamp(24px, 1.667vw, 32px)",
+  "--msg-28": "clamp(28px, 1.944vw, 37.333px)",
+  "--msg-29": "clamp(29px, 2.014vw, 38.667px)",
+  "--msg-34": "clamp(34px, 2.361vw, 45.333px)",
+  "--msg-40": "clamp(40px, 2.778vw, 53.333px)",
+  "--msg-47": "clamp(47px, 3.264vw, 62.667px)",
+  "--msg-52": "clamp(52px, 3.611vw, 69.333px)",
+  "--msg-65": "clamp(65px, 4.514vw, 86.667px)",
+  "--msg-68": "clamp(68px, 4.722vw, 90.667px)",
+  "--msg-69": "clamp(69px, 4.792vw, 92px)",
+  "--msg-77": "clamp(77px, 5.347vw, 102.667px)",
+  "--msg-91": "clamp(91px, 6.319vw, 121.333px)",
+  "--msg-167": "clamp(167px, 11.597vw, 222.667px)",
+  "--msg-180": "clamp(180px, 12.5vw, 240px)",
+  "--msg-188": "clamp(188px, 13.056vw, 250.667px)",
+  "--msg-192": "clamp(192px, 13.333vw, 256px)",
+  "--msg-216": "clamp(216px, 15vw, 288px)",
+  "--msg-228": "clamp(228px, 15.833vw, 304px)",
+  "--msg-296": "clamp(296px, 20.556vw, 394.667px)",
+  "--msg-327": "clamp(327px, 22.708vw, 436px)",
+  "--msg-358": "clamp(358px, 24.861vw, 477.333px)",
+  "--msg-389": "clamp(389px, 27.014vw, 518.667px)",
+  "--msg-420": "clamp(420px, 29.167vw, 560px)",
+  "--msg-438": "clamp(438px, 30.417vw, 584px)",
+  "--msg-513": "clamp(513px, 35.625vw, 684px)",
+  "--msg-577": "clamp(577px, 40.069vw, 769.333px)",
+  "--msg-625": "clamp(625px, 43.403vw, 833.333px)",
+} as CSSProperties;
 
 export function HostMessageAutomation({
   panel,
@@ -75,6 +91,7 @@ export function HostMessageAutomation({
     readMessageCampaigns,
   );
   const [selectedId, setSelectedId] = useState(campaigns[0]?.id);
+  const [messageListTab, setMessageListTab] = useState<MessageListTab>("all");
   const [saved, setSaved] = useState(false);
   const [isSyncing, setIsSyncing] = useState(false);
   const [syncMessage, setSyncMessage] = useState("");
@@ -128,6 +145,13 @@ export function HostMessageAutomation({
       projectApplications,
     );
   }, [projectApplications, selectedCampaign, templates]);
+  const visibleCampaigns = useMemo(() => {
+    if (messageListTab === "all") return campaigns;
+    if (messageListTab === "sent") {
+      return campaigns.filter((campaign) => campaign.status === "sent");
+    }
+    return campaigns.filter((campaign) => campaign.status !== "sent");
+  }, [campaigns, messageListTab]);
   const shouldShowInquiries =
     panel === "inquiry" || (!programId && !projectId && !panel);
 
@@ -149,14 +173,12 @@ export function HostMessageAutomation({
           const databaseCampaigns = Array.isArray(payload.data) ? payload.data : [];
 
           if (isMounted && databaseCampaigns.length > 0) {
-            setCampaigns((currentCampaigns) => {
-              const nextCampaigns = mergeMessageCampaigns(
-                databaseCampaigns,
-                currentCampaigns,
-              );
-              return nextCampaigns;
-            });
-            setSelectedId((currentId) => currentId ?? databaseCampaigns[0]?.id);
+            setCampaigns(databaseCampaigns);
+            setSelectedId((currentId) =>
+              databaseCampaigns.some((campaign) => campaign.id === currentId)
+                ? currentId
+                : databaseCampaigns[0]?.id,
+            );
           }
         }
       } catch {
@@ -211,6 +233,18 @@ export function HostMessageAutomation({
     setSelectedId(nextCampaign.id);
   }
 
+  function deleteSelectedCampaign() {
+    if (!selectedCampaign) return;
+
+    const nextCampaigns = campaigns.filter(
+      (campaign) => campaign.id !== selectedCampaign.id,
+    );
+    saveCampaigns(nextCampaigns);
+    setSelectedId(nextCampaigns[0]?.id);
+    setSyncMessage("");
+    setSyncError("");
+  }
+
   async function syncSelectedCampaign() {
     if (!selectedCampaign) return;
 
@@ -258,324 +292,507 @@ export function HostMessageAutomation({
     updateCampaign({ status: "sent" });
   }
 
-  function downloadCampaignCsv() {
-    if (!selectedCampaign) return;
-    downloadTextFile(
-      "nuvio-message-queue.csv",
-      buildMessageExportCsv(selectedCampaign, templates, projectApplications),
-      "text/csv",
-    );
-  }
-
-  if (!selectedCampaign) {
-    return (
-      <div className="mx-auto max-w-5xl px-4 py-8 md:px-8">
-        <button
-          className="inline-flex h-11 items-center gap-2 rounded-md bg-[var(--primary)] px-4 text-sm font-black text-white"
-          onClick={addCampaign}
-          type="button"
-        >
-          <Plus size={17} />
-          캠페인 만들기
-        </button>
-      </div>
-    );
-  }
+  const resolvedProgramBasePath =
+    programBasePath ??
+    projectBasePath ??
+    (programId
+      ? projectId
+        ? hostProgramPath(projectId, programId)
+        : hostStandaloneProgramPath(programId)
+      : "/host/programs");
+  const applicationsHref = `${resolvedProgramBasePath}/applications`;
+  const formsHref = `${resolvedProgramBasePath}/forms`;
+  const messagesHref = `${resolvedProgramBasePath}/messages`;
+  const sidebarTitle = program?.title ?? project?.title ?? "프로그램 제목";
+  const sidebarProgramId = program?.id ?? programId ?? "";
 
   return (
-    <div className="mx-auto min-w-0 max-w-6xl px-4 py-8 md:px-8">
-      <div className="mb-5 grid gap-3 sm:grid-cols-[1fr_auto_auto_auto]">
-        <Link
-          className="inline-flex h-10 items-center justify-center gap-2 rounded-md border border-slate-200 bg-white px-3 text-sm font-black text-slate-700"
-          href={programBasePath ?? projectBasePath ?? "/host"}
-        >
-          <ArrowLeft size={16} />
-          {programBasePath ? "프로그램 허브" : projectBasePath ? "폴더" : "운영 콘솔"}
-        </Link>
-        <button
-          className="inline-flex h-10 items-center justify-center gap-2 rounded-md border border-slate-200 bg-white px-3 text-sm font-black text-slate-700"
-          onClick={addCampaign}
-          type="button"
-        >
-          <Plus size={16} />
-          새 캠페인
-        </button>
-        <button
-          className="inline-flex h-10 items-center justify-center gap-2 rounded-md bg-[var(--primary)] px-3 text-sm font-black text-white disabled:cursor-wait disabled:opacity-70"
-          disabled={isSyncing}
-          onClick={syncSelectedCampaign}
-          type="button"
-        >
-          {isSyncing ? (
-            <Loader2 className="animate-spin" size={16} />
-          ) : (
-            <Database size={16} />
-          )}
-          DB 저장
-        </button>
-        <button
-          className="inline-flex h-10 items-center justify-center gap-2 rounded-md bg-slate-950 px-3 text-sm font-black text-white"
-          onClick={downloadCampaignCsv}
-          type="button"
-        >
-          <Download size={16} />
-          큐 내보내기
-        </button>
-      </div>
+    <div
+      className="font-pretendard min-h-[calc(100vh_-_4.861vw)] bg-white text-[#5B3A29]"
+      style={messageFigmaScaleStyle}
+    >
+      <div className="flex min-h-[calc(100vh_-_4.861vw)] max-md:flex-col">
+        <MessageSidebar
+          activeItem="result"
+          applicationsHref={applicationsHref}
+          formsHref={formsHref}
+          messagesHref={messagesHref}
+          programId={sidebarProgramId}
+          programPath={resolvedProgramBasePath}
+          status="모집 진행중"
+          title={sidebarTitle}
+        />
 
+        <section className="flex min-w-0 flex-1 flex-col">
+          <main className="flex min-h-[calc(100vh_-_4.861vw_-_var(--msg-69))] flex-1 bg-white">
+            <MessageCampaignListPanel
+              activeTab={messageListTab}
+              campaigns={visibleCampaigns}
+              onSelect={setSelectedId}
+              onTabChange={setMessageListTab}
+              projectApplications={projectApplications}
+              selectedCampaignId={selectedCampaign?.id}
+              templates={templates}
+            />
+            <MessageCampaignDetailPanel
+              addCampaign={addCampaign}
+              campaign={selectedCampaign}
+              isSyncing={isSyncing}
+              markSent={markSent}
+              recipients={recipients}
+              saved={saved}
+              syncError={syncError}
+              syncMessage={syncMessage}
+              syncSelectedCampaign={syncSelectedCampaign}
+              templates={templates}
+              updateCampaign={updateCampaign}
+            />
+          </main>
 
-      <div className="mt-6 grid min-w-0 gap-6 lg:grid-cols-[280px_minmax(0,1fr)]">
-        <aside className="min-w-0 space-y-2">
-          {campaigns.map((campaign) => (
+          <div className="flex h-[var(--msg-69)] shrink-0 border-t border-[#6D7A8A] bg-white pl-[var(--msg-29)] pt-[var(--msg-20)]">
             <button
-              className={`w-full rounded-md border p-3 text-left ${
-                campaign.id === selectedCampaign.id
-                  ? "border-[var(--primary)] bg-teal-50"
-                  : "border-slate-200 bg-white"
-              }`}
-              key={campaign.id}
-              onClick={() => setSelectedId(campaign.id)}
+              className="inline-flex h-[var(--msg-29)] w-[var(--msg-91)] items-center justify-center rounded-[4px] border border-[#FE701E] bg-white text-[12px] font-normal leading-[1.253] text-[#FE701E] disabled:cursor-not-allowed disabled:opacity-40"
+              disabled={!selectedCampaign}
+              onClick={deleteSelectedCampaign}
               type="button"
             >
-              <p className="break-words font-black text-slate-950">
-                {campaign.name}
-              </p>
-              <p className="mt-1 text-xs font-bold text-slate-500">
-                {channelLabels[campaign.channel]} ·{" "}
-                {campaignStatusLabels[campaign.status]}
-              </p>
+              메시지 삭제
             </button>
-          ))}
-        </aside>
-
-        <main className="grid min-w-0 gap-6 xl:grid-cols-[minmax(0,1fr)_360px]">
-          <section className="min-w-0 rounded-md border border-slate-200 bg-white p-5">
-            <h2 className="flex items-center gap-2 text-xl font-black text-slate-950">
-              <MessageSquareText className="text-[var(--primary)]" size={20} />
-              캠페인 설정
-            </h2>
-            <div className="mt-5 grid gap-4">
-              <label className="grid gap-2">
-                <span className="text-sm font-black text-slate-700">캠페인명</span>
-                <input
-                  className="h-11 w-full min-w-0 rounded-md border border-slate-200 px-3 text-sm outline-none focus:border-[var(--primary)]"
-                  onChange={(event) => updateCampaign({ name: event.target.value })}
-                  value={selectedCampaign.name}
-                />
-              </label>
-              <div className="grid gap-4 md:grid-cols-2">
-                <label className="grid gap-2">
-                  <span className="text-sm font-black text-slate-700">템플릿</span>
-                  <select
-                    className="h-11 w-full min-w-0 rounded-md border border-slate-200 px-3 text-sm outline-none focus:border-[var(--primary)]"
-                    onChange={(event) =>
-                      updateCampaign({ templateId: event.target.value })
-                    }
-                    value={selectedCampaign.templateId}
-                  >
-                    {templates.map((template) => (
-                      <option key={template.id} value={template.id}>
-                        {template.name}
-                      </option>
-                    ))}
-                  </select>
-                </label>
-                <label className="grid gap-2">
-                  <span className="text-sm font-black text-slate-700">발송 채널</span>
-                  <select
-                    className="h-11 w-full min-w-0 rounded-md border border-slate-200 px-3 text-sm outline-none focus:border-[var(--primary)]"
-                    onChange={(event) =>
-                      updateCampaign({
-                        channel: event.target.value as MessageChannel,
-                      })
-                    }
-                    value={selectedCampaign.channel}
-                  >
-                    {channelOptions.map((channel) => (
-                      <option key={channel} value={channel}>
-                        {channelLabels[channel]}
-                      </option>
-                    ))}
-                  </select>
-                </label>
-              </div>
-              <div className="grid gap-4 md:grid-cols-2">
-                <label className="grid gap-2">
-                  <span className="text-sm font-black text-slate-700">대상 상태</span>
-                  <select
-                    className="h-11 w-full min-w-0 rounded-md border border-slate-200 px-3 text-sm outline-none focus:border-[var(--primary)]"
-                    onChange={(event) =>
-                      updateCampaign({
-                        targetStatus: event.target.value as MessageTargetStatus,
-                      })
-                    }
-                    value={selectedCampaign.targetStatus}
-                  >
-                    {targetStatusOptions.map((status) => (
-                      <option key={status} value={status}>
-                        {targetStatusLabels[status]}
-                      </option>
-                    ))}
-                  </select>
-                </label>
-                <label className="grid gap-2">
-                  <span className="text-sm font-black text-slate-700">예약 시간</span>
-                  <input
-                    className="h-11 w-full min-w-0 rounded-md border border-slate-200 px-3 text-sm outline-none focus:border-[var(--primary)]"
-                    onChange={(event) =>
-                      updateCampaign({ scheduledAt: event.target.value })
-                    }
-                    type="datetime-local"
-                    value={selectedCampaign.scheduledAt}
-                  />
-                </label>
-              </div>
-              <label className="grid gap-2">
-                <span className="text-sm font-black text-slate-700">상태</span>
-                <select
-                  className="h-11 w-full min-w-0 rounded-md border border-slate-200 px-3 text-sm outline-none focus:border-[var(--primary)]"
-                  onChange={(event) =>
-                    updateCampaign({
-                      status: event.target.value as MessageCampaignStatus,
-                    })
-                  }
-                  value={selectedCampaign.status}
-                >
-                  {campaignStatusOptions.map((status) => (
-                    <option key={status} value={status}>
-                      {campaignStatusLabels[status]}
-                    </option>
-                  ))}
-                </select>
-              </label>
-            </div>
-
-            <div className="mt-5 flex flex-col gap-2 sm:flex-row">
-              <button
-                className="inline-flex h-10 items-center justify-center gap-2 rounded-md bg-[var(--primary)] px-3 text-sm font-black text-white"
-                onClick={() => updateCampaign({ status: "scheduled" })}
-                type="button"
-              >
-                <Clock3 size={16} />
-                예약 처리
-              </button>
-              <button
-                className="inline-flex h-10 items-center justify-center gap-2 rounded-md border border-slate-200 px-3 text-sm font-black text-slate-700"
-                onClick={markSent}
-                type="button"
-              >
-                <Send size={16} />
-                발송 완료
-              </button>
-              <button
-                className="inline-flex h-10 items-center justify-center gap-2 rounded-md bg-slate-950 px-3 text-sm font-black text-white disabled:cursor-wait disabled:opacity-70"
-                disabled={isSyncing}
-                onClick={syncSelectedCampaign}
-                type="button"
-              >
-                {isSyncing ? (
-                  <Loader2 className="animate-spin" size={16} />
-                ) : (
-                  <Database size={16} />
-                )}
-                Supabase
-              </button>
-            </div>
-
-            <div
-              aria-live="polite"
-              className="mt-5 flex flex-wrap items-center gap-2 text-sm font-bold text-slate-500"
-            >
-              {saved ? <Check size={16} className="text-[var(--primary)]" /> : <Save size={16} />}
-              {saved ? "저장됨" : "변경 사항 자동 저장"}
-              {syncMessage ? (
-                <span className="rounded-md bg-teal-50 px-2 py-1 text-xs font-black text-teal-700">
-                  {syncMessage}
-                </span>
-              ) : null}
-              {syncError ? (
-                <span className="rounded-md bg-red-50 px-2 py-1 text-xs font-black text-red-700">
-                  {syncError}
-                </span>
-              ) : null}
-            </div>
-          </section>
-
-          <aside className="min-w-0 space-y-4">
-            <section className="rounded-md border border-slate-200 bg-white p-5">
-              <h2 className="flex items-center gap-2 text-lg font-black text-slate-950">
-                <Users className="text-[var(--primary)]" size={19} />
-                수신자 큐
-              </h2>
-              <div className="mt-4 grid gap-2">
-                {recipients.length > 0 ? (
-                  recipients.map((recipient) => (
-                    <div
-                      className="rounded-md bg-[var(--surface-muted)] p-3"
-                      key={recipient.applicationId}
-                    >
-                      <p className="font-black text-slate-950">
-                        {recipient.applicantName}
-                      </p>
-                      <p className="mt-1 break-words text-xs font-bold text-slate-500">
-                        {recipient.contact} · {targetStatusLabels[recipient.status]}
-                      </p>
-                    </div>
-                  ))
-                ) : (
-                  <p className="rounded-md bg-[var(--surface-muted)] p-3 text-sm font-bold text-slate-500">
-                    현재 조건에 맞는 수신자가 없습니다.
-                  </p>
-                )}
-              </div>
-            </section>
-
-            <section className="rounded-md border border-slate-200 bg-white p-5">
-              <h2 className="flex items-center gap-2 text-lg font-black text-slate-950">
-                <MailCheck className="text-[var(--primary)]" size={19} />
-                발송 파일
-              </h2>
-              <button
-                className="mt-4 inline-flex h-10 w-full items-center justify-center gap-2 rounded-md bg-slate-950 px-3 text-sm font-black text-white"
-                onClick={downloadCampaignCsv}
-                type="button"
-              >
-                <Download size={16} />
-                CSV 다운로드
-              </button>
-            </section>
-          </aside>
-
-          <section className="min-w-0 rounded-md border border-slate-200 bg-white p-5 xl:col-span-2">
-            <h2 className="flex items-center gap-2 text-xl font-black text-slate-950">
-              <Sparkles className="text-[var(--primary)]" size={20} />
-              메시지 미리보기
-            </h2>
-            <div className="mt-4 grid gap-3">
-              {recipients.slice(0, 5).map((recipient) => (
-                <article
-                  className="rounded-md bg-[var(--surface-muted)] p-4"
-                  key={recipient.applicationId}
-                >
-                  <p className="text-sm font-black text-[var(--primary)]">
-                    {recipient.applicantName} · {recipient.programTitle}
-                  </p>
-                  <p className="mt-2 break-words text-sm leading-7 text-slate-700">
-                    {recipient.body}
-                  </p>
-                </article>
-              ))}
-              {recipients.length === 0 ? (
-                <p className="rounded-md bg-[var(--surface-muted)] p-4 text-sm font-bold text-slate-500">
-                  대상 상태를 바꾸면 메시지 미리보기가 생성됩니다.
-                </p>
-              ) : null}
-            </div>
-          </section>
-        </main>
+          </div>
+        </section>
       </div>
     </div>
   );
+}
+
+function MessageCampaignListPanel({
+  activeTab,
+  campaigns,
+  onSelect,
+  onTabChange,
+  projectApplications,
+  selectedCampaignId,
+  templates,
+}: {
+  activeTab: MessageListTab;
+  campaigns: MessageCampaign[];
+  onSelect: (campaignId: string) => void;
+  onTabChange: (tab: MessageListTab) => void;
+  projectApplications: ReturnType<typeof useHostOperationsData>["applications"];
+  selectedCampaignId?: string;
+  templates: ReturnType<typeof readMessageTemplates>;
+}) {
+  const tabs: Array<{ label: string; value: MessageListTab }> = [
+    { label: "전체", value: "all" },
+    { label: "발송예약", value: "scheduled" },
+    { label: "발송완료", value: "sent" },
+  ];
+
+  return (
+    <section className="w-[var(--msg-625)] shrink-0 border-r border-[#6D7A8A] bg-white">
+      <div className="ml-[var(--msg-40)] mt-[var(--msg-47)] w-[var(--msg-577)] border-b border-[#CAC4BC]">
+        <div className="flex h-[27px] items-start gap-[12px]">
+          {tabs.map((tab) => (
+            <button
+              className={`relative h-[27px] text-[14px] leading-[1.253] ${
+                activeTab === tab.value
+                  ? "font-semibold text-[#5B3A29] after:absolute after:bottom-0 after:left-0 after:h-[1px] after:w-full after:bg-[#FE701E]"
+                  : "font-normal text-[#CAC4BC]"
+              }`}
+              key={tab.value}
+              onClick={() => onTabChange(tab.value)}
+              type="button"
+            >
+              {tab.label}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      <div className="ml-[var(--msg-40)] mt-[23px] grid w-[var(--msg-577)] gap-[9px]">
+        {campaigns.length > 0 ? (
+          campaigns.map((campaign) => (
+            <MessageCampaignRow
+              campaign={campaign}
+              key={campaign.id}
+              onSelect={onSelect}
+              projectApplications={projectApplications}
+              selected={campaign.id === selectedCampaignId}
+              templates={templates}
+            />
+          ))
+        ) : (
+          <div className="flex h-[34px] items-center text-[12px] font-semibold leading-[1.253] text-[#6D7A8A]">
+            표시할 메시지가 없습니다.
+          </div>
+        )}
+      </div>
+    </section>
+  );
+}
+
+function MessageCampaignRow({
+  campaign,
+  onSelect,
+  projectApplications,
+  selected,
+  templates,
+}: {
+  campaign: MessageCampaign;
+  onSelect: (campaignId: string) => void;
+  projectApplications: ReturnType<typeof useHostOperationsData>["applications"];
+  selected: boolean;
+  templates: ReturnType<typeof readMessageTemplates>;
+}) {
+  const status = getCampaignDisplayStatus(campaign.status);
+  const dateTime = formatCampaignDateTime(campaign.scheduledAt);
+  const recipientCount = buildMessageRecipientPreview(
+    campaign,
+    templates,
+    projectApplications,
+  ).length;
+  const templateTitle =
+    templates.find((template) => template.id === campaign.templateId)?.name ??
+    campaign.name ??
+    "발송된 템플릿 제목";
+
+  return (
+    <button
+      className={`grid h-[34px] w-full grid-cols-[22px_86px_106px_63px_89px_minmax(0,1fr)] items-center text-left text-[14px] font-normal leading-[1.253] text-[#6D7A8A] ${
+        selected ? "bg-[#F3F3F3]" : "bg-white"
+      }`}
+      onClick={() => onSelect(campaign.id)}
+      type="button"
+    >
+      <span className="ml-[6px] size-[14px] border border-[#6D7A8A] bg-white" />
+      <span className="flex items-center gap-[4px]">
+        <span className={`size-[4px] rounded-full ${status.dotClassName}`} />
+        {status.label}
+      </span>
+      <span>{dateTime.date}</span>
+      <span>{dateTime.time}</span>
+      <span>수신자 ({String(recipientCount).padStart(2, "0")})</span>
+      <span className="truncate">{templateTitle}</span>
+    </button>
+  );
+}
+
+function MessageCampaignDetailPanel({
+  addCampaign,
+  campaign,
+  isSyncing,
+  markSent,
+  recipients,
+  saved,
+  syncError,
+  syncMessage,
+  syncSelectedCampaign,
+  templates,
+  updateCampaign,
+}: {
+  addCampaign: () => void;
+  campaign?: MessageCampaign;
+  isSyncing: boolean;
+  markSent: () => void;
+  recipients: ReturnType<typeof buildMessageRecipientPreview>;
+  saved: boolean;
+  syncError: string;
+  syncMessage: string;
+  syncSelectedCampaign: () => Promise<void>;
+  templates: ReturnType<typeof readMessageTemplates>;
+  updateCampaign: (patch: Partial<MessageCampaign>) => void;
+}) {
+  const selectedTemplate = campaign
+    ? templates.find((template) => template.id === campaign.templateId)
+    : undefined;
+  const dateTime = formatCampaignDateTime(campaign?.scheduledAt);
+
+  return (
+    <section className="min-w-0 flex-1 bg-white pl-[var(--msg-20)] pr-[28px] pt-[var(--msg-52)]">
+      <div className="flex items-start">
+        <div>
+          <h1 className="text-[16px] font-semibold leading-[1.253] text-[#0D0D0C]">
+            발송 예약 정보
+          </h1>
+          <p className="mt-[22px] text-[14px] font-normal leading-[1.253] text-[#6D7A8A]">
+            발송 전 메세지는 수정이 가능해요
+          </p>
+        </div>
+        <button
+          className="ml-auto inline-flex h-[34px] w-[var(--msg-68)] items-center justify-center rounded-[16px] bg-[#1D70D6] text-[13px] font-semibold leading-[1.253] text-white disabled:opacity-40"
+          disabled={isSyncing}
+          onClick={() => {
+            if (!campaign) {
+              addCampaign();
+              return;
+            }
+            updateCampaign({ status: "scheduled" });
+            void syncSelectedCampaign();
+          }}
+          type="button"
+        >
+          {campaign ? "발송예약" : "새 예약"}
+        </button>
+      </div>
+
+      <div className="ml-[8px] mt-[22px] flex h-[40px] w-[var(--msg-513)] items-center border-b border-[#6D7A8A] pb-[20px] text-[16px] font-semibold leading-[1.253] text-[#0D0D0C]">
+        <span>발송예정:</span>
+        <span className="ml-[26px]">{dateTime.date}</span>
+        <span className="ml-[28px]">{dateTime.time}</span>
+        <button
+          aria-label="발송 완료로 변경"
+          className="ml-auto size-[20px] rounded-[4px] border border-[#6D7A8A] text-[10px] text-[#6D7A8A]"
+          disabled={!campaign}
+          onClick={markSent}
+          type="button"
+        >
+          /
+        </button>
+      </div>
+
+      <section className="ml-[8px] mt-[34px] w-[var(--msg-513)]">
+        <div className="flex items-center">
+          <h2 className="text-[16px] font-semibold leading-[1.253] text-[#0D0D0C]">
+            메시지 템플릿
+          </h2>
+          <button
+            aria-label="템플릿 추가"
+            className="ml-auto size-[18px] rounded-[4px] border border-[#6D7A8A] text-[12px] text-[#6D7A8A]"
+            onClick={addCampaign}
+            type="button"
+          >
+            +
+          </button>
+        </div>
+        <div className="mt-[13px] h-[var(--msg-188)] w-full rounded-[4px] border border-[#6D7A8A] bg-white">
+          <input
+            className="h-[34px] w-full border-b border-[#6D7A8A] bg-white px-[12px] text-[12px] font-normal leading-[1.253] text-[#6D7A8A] outline-none"
+            onChange={(event) => updateCampaign({ name: event.target.value })}
+            readOnly={!campaign}
+            value={campaign?.name ?? ""}
+            placeholder="템플릿 제목"
+          />
+          <textarea
+            className="h-[calc(var(--msg-188)-34px)] w-full resize-none bg-white px-[12px] py-[12px] text-[12px] font-normal leading-[1.6] text-[#6D7A8A] outline-none"
+            readOnly
+            value={selectedTemplate?.body ?? "템플릿 메시지 내용 보여지는 중"}
+          />
+        </div>
+      </section>
+
+      <section className="ml-[8px] mt-[20px] w-[var(--msg-513)] border-t border-[#6D7A8A] pt-[15px]">
+        <div className="flex items-center">
+          <h2 className="text-[16px] font-semibold leading-[1.253] text-[#0D0D0C]">
+            수신자 ( {String(recipients.length).padStart(2, "0")} )
+          </h2>
+          <button
+            aria-label="수신자 추가"
+            className="ml-auto size-[12px] rounded-full bg-[#6D7A8A] text-[10px] leading-none text-white"
+            onClick={addCampaign}
+            type="button"
+          >
+            +
+          </button>
+        </div>
+        <div className="mt-[13px] h-[var(--msg-188)] w-full overflow-hidden rounded-[4px] border border-[#AEB8C2] bg-white">
+          {recipients.length > 0
+            ? recipients.slice(0, 5).map((recipient) => (
+              <div
+                className="grid h-[36px] grid-cols-[64px_54px_1fr_20px] items-center border-b border-[#D9D9D9] px-[22px] text-[12px] font-normal leading-[1.253] text-[#6D7A8A] last:border-b-0"
+                key={recipient.applicationId}
+              >
+                <span>{recipient.applicantName}</span>
+                <span>성별</span>
+                <span>접수일 {formatRecipientDate()}</span>
+                <span className="ml-auto size-[10px] rounded-full bg-[#CAC4BC]" />
+              </div>
+            ))
+            : Array.from({ length: 5 }).map((_, index) => (
+                <div
+                  className="grid h-[36px] grid-cols-[64px_54px_1fr_20px] items-center border-b border-[#D9D9D9] px-[22px] text-[12px] font-normal leading-[1.253] text-[#6D7A8A] last:border-b-0"
+                  key={`empty-${index}`}
+                >
+                  <span>신청자</span>
+                  <span>성별</span>
+                  <span>접수일 0000. 00. 00</span>
+                  <span className="ml-auto size-[10px] rounded-full bg-[#CAC4BC]" />
+                </div>
+              ))}
+        </div>
+      </section>
+
+      <p aria-live="polite" className="sr-only">
+        {saved ? "저장됨" : ""}
+        {syncMessage}
+        {syncError}
+      </p>
+    </section>
+  );
+}
+
+function MessageSidebar({
+  activeItem,
+  applicationsHref,
+  formsHref,
+  messagesHref,
+  programId,
+  programPath,
+  status,
+  title,
+}: {
+  activeItem: "result";
+  applicationsHref: string;
+  formsHref: string;
+  messagesHref: string;
+  programId: string;
+  programPath: string;
+  status: string;
+  title: string;
+}) {
+  return (
+    <aside className="w-[var(--msg-228)] shrink-0 border-r border-[#6D7A8A] bg-white shadow-[2px_5px_5.2px_rgba(0,0,0,0.23)] max-md:w-full">
+      <div className="relative h-[calc(var(--msg-438)+var(--msg-77))] min-h-[515px]">
+        <section className="absolute left-[var(--msg-6)] top-0 h-[var(--msg-65)] w-[var(--msg-216)]">
+          <div className="flex h-[33px] w-full items-end px-[var(--msg-12)] pb-[1px]">
+            <p className="min-w-0 flex-1 truncate text-[16px] font-semibold leading-[1.253] text-[#5B3A29]">
+              {title}
+            </p>
+            <span className="shrink-0 rounded-[6px] bg-[#FFB45F] px-[6px] py-[3px] text-[12px] font-semibold leading-[1.253] text-white">
+              {status}
+            </span>
+          </div>
+          <div className="flex h-[28px] w-full items-start border-b border-[#D9D9D9] px-[var(--msg-12)] pt-[2px]">
+            <p className="text-[14px] font-semibold leading-[1.253] text-[#5B3A29]">
+              프로그램 넘버 :{" "}
+              <span className="text-[#FE701E]">{formatProgramNumber(programId)}</span>
+            </p>
+          </div>
+        </section>
+
+        <nav className="absolute left-[var(--msg-6)] top-[var(--msg-77)] h-[var(--msg-438)] w-[var(--msg-216)] text-[#5B3A29]">
+          <section className="absolute left-[var(--msg-12)] top-0 h-[var(--msg-167)] w-[var(--msg-192)]">
+            <MessageNavLink className="absolute left-0 top-0" href={`${programPath}?panel=dashboard`} label="대시보드" />
+            <p className="absolute left-0 top-[24px] text-[14px] font-normal leading-[1.253]">
+              프로그램 설정
+            </p>
+            <div className="absolute left-0 top-[48px] h-[119px] w-full border-b-[0.8px] border-[#6D7A8A]">
+              <MessageSubLink className="absolute left-[var(--msg-6)] top-0" href={`${programPath}?panel=basic`} label="기본정보" />
+              <MessageSubLink className="absolute left-[var(--msg-6)] top-[22px]" href={`${programPath}?panel=detail`} label="상세정보" />
+              <MessageSubLink className="absolute left-[var(--msg-6)] top-[44px]" href={`${programPath}?panel=schedule`} label="일정안내" />
+              <MessageSubLink className="absolute left-[var(--msg-6)] top-[66px]" href={`${programPath}?panel=place`} label="장소안내" />
+              <MessageSubLink className="absolute left-[var(--msg-6)] top-[88px]" href={`${programPath}?panel=guide`} label="안내사항" />
+            </div>
+          </section>
+
+          <section className="absolute left-[var(--msg-12)] top-[var(--msg-180)] h-[103px] w-[var(--msg-192)]">
+            <p className="absolute left-0 top-0 text-[14px] font-normal leading-[1.253]">
+              신청폼 현황
+            </p>
+            <div className="absolute left-0 top-[24px] h-[79px] w-full border-b-[0.8px] border-[#6D7A8A]">
+              <MessageSubLink className="absolute left-[var(--msg-6)] top-0" href={formsHref} label="신청폼 연결" />
+              <MessageSubLink className="absolute left-[var(--msg-6)] top-[26px]" href={applicationsHref} label="신청 관리" />
+              <MessageSubLink
+                active={activeItem === "result"}
+                className="absolute left-[var(--msg-6)] top-[48px]"
+                href={messagesHref}
+                label="결과 메세지 관리"
+              />
+            </div>
+          </section>
+
+          <MessageNavLink className="absolute left-[var(--msg-12)] top-[var(--msg-296)]" href={`${programPath}?panel=management`} label="쿠폰 / 프로모션" />
+          <MessageNavLink className="absolute left-[var(--msg-12)] top-[var(--msg-327)]" href={messagesHref} label="메세지함" />
+          <MessageNavLink className="absolute left-[var(--msg-12)] top-[var(--msg-358)]" href={`${applicationsHref}?panel=receipts`} label="결제 관리" />
+          <MessageNavLink className="absolute left-[var(--msg-12)] top-[var(--msg-389)]" href={`${applicationsHref}?panel=reviews`} label="후기 관리" />
+          <MessageNavLink className="absolute left-[var(--msg-12)] top-[var(--msg-420)]" href={`${programPath}?panel=delete`} label="프로그램 삭제" />
+        </nav>
+      </div>
+    </aside>
+  );
+}
+
+function MessageNavLink({
+  className = "",
+  href,
+  label,
+}: {
+  className?: string;
+  href: string;
+  label: string;
+}) {
+  return (
+    <Link
+      className={`text-[14px] font-normal leading-[1.253] text-[#5B3A29] ${className}`}
+      href={href}
+    >
+      {label}
+    </Link>
+  );
+}
+
+function MessageSubLink({
+  active = false,
+  className = "",
+  href,
+  label,
+}: {
+  active?: boolean;
+  className?: string;
+  href: string;
+  label: string;
+}) {
+  return (
+    <Link
+      className={`inline-flex h-[19px] w-fit items-center rounded-[4px] px-[5px] text-[12px] leading-[1.253] ${
+        active
+          ? "bg-[#FF9A3D] font-semibold text-[#F9F9F9]"
+          : "font-normal text-[#5B3A29]"
+      } ${className}`}
+      href={href}
+    >
+      {label}
+    </Link>
+  );
+}
+
+function getCampaignDisplayStatus(status: MessageCampaignStatus) {
+  if (status === "sent") {
+    return { dotClassName: "bg-[#FF9A3D]", label: "발송완료" };
+  }
+
+  return { dotClassName: "bg-[#1D70D6]", label: "발송예약" };
+}
+
+function formatCampaignDateTime(value?: string) {
+  if (!value) return { date: "0000. 00. 00", time: "00:00" };
+
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) {
+    const [datePart = "0000. 00. 00", timePart = "00:00"] = value.split("T");
+    return {
+      date: datePart.replaceAll("-", ". "),
+      time: timePart.slice(0, 5) || "00:00",
+    };
+  }
+
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
+  const hour = String(date.getHours()).padStart(2, "0");
+  const minute = String(date.getMinutes()).padStart(2, "0");
+
+  return { date: `${year}. ${month}. ${day}`, time: `${hour}:${minute}` };
+}
+
+function formatRecipientDate(value?: string) {
+  return formatCampaignDateTime(value).date;
+}
+
+function formatProgramNumber(programId: string): string {
+  const normalizedId = programId.trim();
+  if (!normalizedId) return "0000000000";
+
+  return normalizedId.length > 12 ? normalizedId.slice(0, 12) : normalizedId;
 }
 
 function HostInquiryInbox({
@@ -790,14 +1007,4 @@ function formatDate(value: string): string {
     dateStyle: "medium",
     timeStyle: "short",
   }).format(date);
-}
-
-function downloadTextFile(fileName: string, content: string, mimeType: string) {
-  const blob = new Blob([content], { type: `${mimeType};charset=utf-8` });
-  const url = window.URL.createObjectURL(blob);
-  const link = document.createElement("a");
-  link.href = url;
-  link.download = fileName;
-  link.click();
-  window.URL.revokeObjectURL(url);
 }
