@@ -95,6 +95,7 @@ function HostWorkspaceSidebar({ sidebarHeight }: { sidebarHeight: string }) {
   const messageStatus = searchParams.get("status");
   const messageView = searchParams.get("view");
   const onMessagesPage = pathname === "/host/messages";
+  const onFormsPage = pathname === "/host/forms" || pathname.startsWith("/host/forms/");
   const onSettingsPage = pathname === "/host/settings";
   const endedMessagesRequested =
     messageView === "ended" ||
@@ -182,27 +183,44 @@ function HostWorkspaceSidebar({ sidebarHeight }: { sidebarHeight: string }) {
                   />
                 </div>
               </section>
-              <Link
-                className="text-[var(--host-14)] font-normal leading-[1.253] text-[#5B3A29] hover:text-[#FE701E]"
+              <HostSidebarRootLink
+                active={onFormsPage}
                 href="/host/forms"
-              >
-                신청서 양식
-              </Link>
-              <Link
-                className={`w-fit rounded-[4px] px-[0.556vw] py-[0.139vw] text-[var(--host-14)] leading-[1.253] transition ${
-                  onSettingsPage
-                    ? "bg-[#FF9A3D] font-semibold text-[#F9F9F9]"
-                    : "font-normal text-[#5B3A29] hover:text-[#FE701E]"
-                }`}
+                label="신청서 양식"
+              />
+              <HostSidebarRootLink
+                active={onSettingsPage}
                 href="/host/settings"
-              >
-                설정
-              </Link>
+                label="설정"
+              />
             </div>
           </nav>
         </div>
       </div>
     </aside>
+  );
+}
+
+function HostSidebarRootLink({
+  active = false,
+  href,
+  label,
+}: {
+  active?: boolean;
+  href: string;
+  label: string;
+}) {
+  return (
+    <Link
+      className={`block w-fit rounded-[4px] py-[0.139vw] text-[var(--host-14)] leading-[1.253] transition ${
+        active
+          ? "-ml-[0.556vw] bg-[#FF9A3D] px-[0.556vw] font-semibold text-[#F9F9F9]"
+          : "font-normal text-[#5B3A29] hover:text-[#FE701E]"
+      }`}
+      href={href}
+    >
+      {label}
+    </Link>
   );
 }
 
