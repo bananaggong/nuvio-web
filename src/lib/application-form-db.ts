@@ -110,6 +110,27 @@ export async function upsertApplicationFormTemplate(
   return mapFormRowToTemplate(row);
 }
 
+export async function deleteApplicationFormTemplate(
+  templateId: string,
+  options: { ownerId?: string; restrictToOwner?: boolean } = {},
+): Promise<boolean> {
+  if (!isUuid(templateId)) return false;
+
+  const [deletedRow] = await getDb()
+    .delete(programApplicationForms)
+    .where(
+      options.ownerId && options.restrictToOwner
+        ? and(
+            eq(programApplicationForms.id, templateId),
+            eq(programApplicationForms.createdBy, options.ownerId),
+          )
+        : eq(programApplicationForms.id, templateId),
+    )
+    .returning({ id: programApplicationForms.id });
+
+  return Boolean(deletedRow);
+}
+
 export function normalizeApplicationFormTemplate(
   input: unknown,
 ): ApplicationFormTemplate {

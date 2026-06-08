@@ -43,6 +43,25 @@ a {
   -webkit-tap-highlight-color: transparent;
 }
 
+.host-form-input {
+  width: 100%;
+  min-width: 0;
+  height: calc(var(--host-scale, 1) * 31px);
+  border: 0.5px solid #f7b267;
+  border-radius: 7px;
+  background: transparent;
+  padding: 0 calc(var(--host-scale, 1) * 12px);
+  color: #0d0d0c;
+  font-size: var(--host-12, 12px);
+  font-weight: 500;
+  line-height: 1.253;
+  outline: none;
+}
+
+.host-form-input::placeholder {
+  color: #d9d9d9;
+}
+
 ::selection {
   background: rgba(254, 112, 30, 0.18);
 }

@@ -214,7 +214,7 @@ function HostSidebarRootLink({
     <Link
       className={`block w-fit rounded-[4px] py-[0.139vw] text-[var(--host-14)] leading-[1.253] transition ${
         active
-          ? "-ml-[0.556vw] bg-[#FF9A3D] px-[0.556vw] font-semibold text-[#F9F9F9]"
+          ? "font-semibold text-[#5B3A29]"
           : "font-normal text-[#5B3A29] hover:text-[#FE701E]"
       }`}
       href={href}

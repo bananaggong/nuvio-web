@@ -1,101 +1,32 @@
 "use client";
 
 import Link from "next/link";
-import { useRouter } from "next/navigation";
 import {
-  AlignLeft,
-  ArrowDown,
-  ArrowLeft,
-  ArrowUp,
-  CalendarDays,
-  Check,
-  CheckSquare,
-  CircleDot,
+  ChevronDown,
+  ChevronLeft,
   Copy,
-  Eye,
-  FilePlus2,
-  GitBranch,
-  GripVertical,
-  ImagePlus,
-  ListChecks,
-  Loader2,
-  Mail,
-  Minus,
-  Phone,
   Plus,
-  Save,
   Search,
-  SlidersHorizontal,
   Trash2,
-  Type,
-  X,
+  Upload,
 } from "lucide-react";
-import type { LucideIcon } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
-import type { ReactNode } from "react";
 import {
   blocksToFields,
-  cloneApplicationFormTemplate,
   createEmptyBlock,
-  createEmptyTemplate,
   isQuestionBlock,
   mergeApplicationFormTemplates,
   normalizeApplicationFormTemplateShape,
 } from "@/lib/application-form-builder";
-import {
-  hostProgramId,
-  hostProgramPath,
-  hostProjectPath,
-  hostStandaloneProgramPath,
-} from "@/lib/host-projects";
 import type {
   ApplicationFormBlock,
   ApplicationFormBlockType,
-  ApplicationFormBranch,
-  ApplicationFormKind,
   ApplicationFormTemplate,
 } from "@/lib/application-form-builder";
-
-const formKindLabels: Record<ApplicationFormKind, string> = {
-  application: "신청폼",
-  inquiry: "문의 양식",
-};
-
-const blockTypeLabels: Record<ApplicationFormBlockType, string> = {
-  checkbox: "동의 체크",
-  date: "날짜",
-  description: "설명",
-  divider: "구분선",
-  image: "이미지",
-  email: "이메일",
-  longText: "긴 답변",
-  multiSelect: "복수 선택",
-  pageBreak: "페이지 나누기",
-  phone: "연락처",
-  shortText: "짧은 답변",
-  singleSelect: "단일 선택",
-  title: "제목",
-};
-
-const blockPaletteItems: Array<{
-  description: string;
-  icon: LucideIcon;
-  type: ApplicationFormBlockType;
-}> = [
-  { description: "큰 제목을 넣습니다.", icon: Type, type: "title" },
-  { description: "안내 문구를 적습니다.", icon: AlignLeft, type: "description" },
-  { description: "영역을 나눕니다.", icon: Minus, type: "divider" },
-  { description: "안내 이미지를 넣습니다.", icon: ImagePlus, type: "image" },
-  { description: "한 줄 답변을 받습니다.", icon: Type, type: "shortText" },
-  { description: "긴 서술형 답변을 받습니다.", icon: AlignLeft, type: "longText" },
-  { description: "하나의 선택지를 받습니다.", icon: CircleDot, type: "singleSelect" },
-  { description: "여러 선택지를 받습니다.", icon: ListChecks, type: "multiSelect" },
-  { description: "동의 여부를 받습니다.", icon: CheckSquare, type: "checkbox" },
-  { description: "날짜를 받습니다.", icon: CalendarDays, type: "date" },
-  { description: "이메일을 받습니다.", icon: Mail, type: "email" },
-  { description: "연락처를 받습니다.", icon: Phone, type: "phone" },
-  { description: "긴 폼을 다음 페이지로 나눕니다.", icon: FilePlus2, type: "pageBreak" },
-];
+import {
+  HostWorkspaceContent,
+  HostWorkspaceLayout,
+} from "@/components/host-workspace-ui";
 
 type HostProgramOption = {
   id: string;
@@ -103,95 +34,48 @@ type HostProgramOption = {
   title: string;
 };
 
+const editableBlockTypes: Array<{
+  label: string;
+  type: ApplicationFormBlockType;
+}> = [
+  { label: "텍스트", type: "shortText" },
+  { label: "숫자", type: "phone" },
+  { label: "선택박스", type: "singleSelect" },
+  { label: "드롭다운", type: "multiSelect" },
+  { label: "파일 요청", type: "image" },
+  { label: "파일 첨부", type: "description" },
+  { label: "동의 항목", type: "checkbox" },
+];
+
 export function HostFormBuilder({
   formId,
-  programId,
-  projectId,
 }: {
   formId?: string;
   programId?: string;
   projectId?: string;
 }) {
-  const router = useRouter();
   const [templates, setTemplates] = useState<ApplicationFormTemplate[]>([]);
-  const [selectedId, setSelectedId] = useState(formId ?? templates[0]?.id);
-  const [activeBlockId, setActiveBlockId] = useState<string | null>(null);
-  const [settingsBlockId, setSettingsBlockId] = useState<string | null>(null);
-  const [insertAfterIndex, setInsertAfterIndex] = useState<number | null>(null);
-  const [showPreview, setShowPreview] = useState(false);
-  const [saved, setSaved] = useState(false);
-  const [hasLoadedTemplates, setHasLoadedTemplates] = useState(false);
-  const [isSyncing, setIsSyncing] = useState(false);
-  const [syncMessage, setSyncMessage] = useState("");
-  const [syncError, setSyncError] = useState("");
   const [hostPrograms, setHostPrograms] = useState<HostProgramOption[]>([]);
-  const routeProgram = useMemo(() => {
-    if (!programId) return undefined;
+  const [hasLoadedTemplates, setHasLoadedTemplates] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
+  const [message, setMessage] = useState("");
+  const [error, setError] = useState("");
 
-    return hostPrograms.find((program) => {
-      const identifiers = [
-        program.id,
-        program.slug ?? "",
-        hostProgramId(program.title),
-      ];
-      return identifiers.includes(programId);
-    });
-  }, [hostPrograms, programId]);
   const selectedTemplate = useMemo(
     () =>
-      templates.find((template) => template.id === selectedId) ??
-      (!formId && routeProgram
-        ? templates.find(
-            (template) =>
-              template.programId === routeProgram.id ||
-              normalizeText(template.programTitle) ===
-                normalizeText(routeProgram.title),
-          )
-        : undefined) ??
-      templates[0],
-    [formId, routeProgram, selectedId, templates],
+      templates.find((template) => template.id === formId) ??
+      (!formId ? templates[0] : undefined),
+    [formId, templates],
   );
-  const activeBlock = useMemo(
-    () =>
-      selectedTemplate?.blocks.find((block) => block.id === activeBlockId) ??
-      selectedTemplate?.blocks[0] ??
-      null,
-    [activeBlockId, selectedTemplate],
-  );
-  const settingsBlock = useMemo(
-    () =>
-      selectedTemplate?.blocks.find((block) => block.id === settingsBlockId) ??
-      null,
-    [selectedTemplate, settingsBlockId],
-  );
-  const projectBasePath = projectId ? hostProjectPath(projectId) : undefined;
-  const programBasePath =
-    projectId && programId
-      ? hostProgramPath(projectId, programId)
-      : programId && routeProgram
-        ? hostStandaloneProgramPath(routeProgram.id)
-        : undefined;
-  const selectedProgram = useMemo(() => {
-    if (!selectedTemplate) return undefined;
-
-    return (
-      hostPrograms.find(
-        (program) => program.id === (selectedTemplate.programId ?? ""),
-      ) ??
-      hostPrograms.find(
-        (program) =>
-          normalizeText(program.title) ===
-          normalizeText(selectedTemplate.programTitle),
-      )
-    );
-  }, [hostPrograms, selectedTemplate]);
 
   useEffect(() => {
     let isMounted = true;
 
-    async function loadDatabaseTemplates() {
+    async function loadForms() {
       try {
-        const response = await fetch("/api/host/forms", { cache: "no-store" });
+        const response = await fetch("/api/host/forms?kind=application", {
+          cache: "no-store",
+        });
         if (!response.ok) return;
 
         const payload = (await response.json()) as {
@@ -200,41 +84,30 @@ export function HostFormBuilder({
         const databaseTemplates = Array.isArray(payload.data)
           ? payload.data.map(normalizeApplicationFormTemplateShape)
           : [];
-        if (!isMounted) return;
 
-        if (databaseTemplates.length > 0) {
-          setTemplates((currentTemplates) => {
-            const nextTemplates = mergeApplicationFormTemplates(
-              databaseTemplates,
-              currentTemplates,
-            );
-            return nextTemplates;
-          });
-          setSelectedId(
-            (currentId) =>
-              currentId ?? formId ?? (programId ? undefined : databaseTemplates[0]?.id),
+        if (isMounted) {
+          setTemplates((currentTemplates) =>
+            mergeApplicationFormTemplates(databaseTemplates, currentTemplates),
           );
         }
       } catch {
-        if (isMounted) {
-          setSyncError("신청폼을 불러오지 못했습니다.");
-        }
+        if (isMounted) setError("신청서 양식을 불러오지 못했습니다.");
       } finally {
         if (isMounted) setHasLoadedTemplates(true);
       }
     }
 
-    void loadDatabaseTemplates();
+    void loadForms();
 
     return () => {
       isMounted = false;
     };
-  }, [formId, programId]);
+  }, []);
 
   useEffect(() => {
     let isMounted = true;
 
-    async function loadHostPrograms() {
+    async function loadPrograms() {
       try {
         const response = await fetch("/api/host/programs", { cache: "no-store" });
         if (!response.ok) return;
@@ -254,44 +127,41 @@ export function HostFormBuilder({
 
         if (isMounted) setHostPrograms(programs);
       } catch {
-        if (isMounted) {
-          setSyncError("연결할 프로그램 목록을 불러오지 못했습니다.");
-        }
+        if (isMounted) setError("연결할 프로그램 목록을 불러오지 못했습니다.");
       }
     }
 
-    void loadHostPrograms();
+    void loadPrograms();
 
     return () => {
       isMounted = false;
     };
   }, []);
 
-  function saveTemplates(nextTemplates: ApplicationFormTemplate[]) {
-    const normalizedTemplates = nextTemplates.map(normalizeApplicationFormTemplateShape);
-    setTemplates(normalizedTemplates);
-    setSaved(true);
-    window.setTimeout(() => setSaved(false), 1400);
-  }
-
   function updateTemplate(patch: Partial<ApplicationFormTemplate>) {
     if (!selectedTemplate) return;
-    setSyncMessage("");
-    setSyncError("");
-    const nextTemplates = templates.map((template) => {
-      if (template.id !== selectedTemplate.id) return template;
-      return normalizeApplicationFormTemplateShape({
-        ...template,
-        ...patch,
-        fields: patch.blocks ? blocksToFields(patch.blocks) : template.fields,
-        updatedAt: new Date().toISOString(),
-      });
-    });
-    saveTemplates(nextTemplates);
+    setMessage("");
+    setError("");
+
+    setTemplates((currentTemplates) =>
+      currentTemplates.map((template) => {
+        if (template.id !== selectedTemplate.id) return template;
+        const blocks = patch.blocks ?? template.blocks;
+
+        return normalizeApplicationFormTemplateShape({
+          ...template,
+          ...patch,
+          blocks,
+          fields: blocksToFields(blocks),
+          updatedAt: new Date().toISOString(),
+        });
+      }),
+    );
   }
 
   function updateBlock(blockId: string, patch: Partial<ApplicationFormBlock>) {
     if (!selectedTemplate) return;
+
     updateTemplate({
       blocks: selectedTemplate.blocks.map((block) =>
         block.id === blockId ? { ...block, ...patch } : block,
@@ -299,52 +169,38 @@ export function HostFormBuilder({
     });
   }
 
-  function addTemplate() {
-    const formKind = programId
-      ? "application"
-      : selectedTemplate?.formKind ?? "application";
-    const nextTemplate = routeProgram
-      ? normalizeApplicationFormTemplateShape({
-          ...createEmptyTemplate("application"),
-          name: `${routeProgram.title} 신청폼`,
-          programId: routeProgram.id,
-          programTitle: routeProgram.title,
-        })
-      : createEmptyTemplate(formKind);
-    setSyncMessage("");
-    setSyncError("");
-    saveTemplates([nextTemplate, ...templates]);
-    setSelectedId(nextTemplate.id);
-    setActiveBlockId(null);
-    setSettingsBlockId(null);
-    setInsertAfterIndex(-1);
-    if (!projectId && !programId) {
-      router.push(`/host/forms/${encodeURIComponent(nextTemplate.id)}`);
-    }
-  }
-
-  function duplicateTemplate(template = selectedTemplate) {
-    if (!template) return;
-    const copiedTemplate = cloneApplicationFormTemplate(template, {
-      formKind: template.formKind,
-      name: `${template.name} 복사본`,
-      programId: template.programId,
-      programTitle: template.programTitle,
-    });
-    saveTemplates([copiedTemplate, ...templates]);
-    setSelectedId(copiedTemplate.id);
-    setSettingsBlockId(null);
-    if (!projectId && !programId) {
-      router.push(`/host/forms/${encodeURIComponent(copiedTemplate.id)}`);
-    }
-  }
-
-  async function syncSelectedTemplate() {
+  function addBlock() {
     if (!selectedTemplate) return;
+    updateTemplate({
+      blocks: [...selectedTemplate.blocks, createEmptyBlock("shortText")],
+    });
+  }
 
-    setIsSyncing(true);
-    setSyncMessage("");
-    setSyncError("");
+  function duplicateBlock(block: ApplicationFormBlock) {
+    if (!selectedTemplate) return;
+    const index = selectedTemplate.blocks.findIndex((item) => item.id === block.id);
+    const copiedBlock = {
+      ...block,
+      id: createEmptyBlock(block.type).id,
+      label: `${block.label} 복사본`,
+    };
+    const nextBlocks = [...selectedTemplate.blocks];
+    nextBlocks.splice(index + 1, 0, copiedBlock);
+    updateTemplate({ blocks: nextBlocks });
+  }
+
+  function removeBlock(blockId: string) {
+    if (!selectedTemplate) return;
+    updateTemplate({
+      blocks: selectedTemplate.blocks.filter((block) => block.id !== blockId),
+    });
+  }
+
+  async function saveTemplate() {
+    if (!selectedTemplate || isSaving) return;
+    setIsSaving(true);
+    setMessage("");
+    setError("");
 
     try {
       const response = await fetch("/api/host/forms", {
@@ -358,1179 +214,475 @@ export function HostFormBuilder({
       };
 
       if (!response.ok || !payload.data) {
-        throw new Error(payload.error ?? "저장에 실패했습니다.");
+        throw new Error(payload.error ?? "저장하지 못했습니다.");
       }
 
       const savedTemplate = normalizeApplicationFormTemplateShape(payload.data);
-      const nextTemplates = mergeApplicationFormTemplates(
-        [savedTemplate],
-        templates.filter(
-          (template) =>
-            template.id !== selectedTemplate.id &&
-            template.id !== savedTemplate.id,
+      setTemplates((currentTemplates) =>
+        mergeApplicationFormTemplates(
+          [savedTemplate],
+          currentTemplates.filter((template) => template.id !== selectedTemplate.id),
         ),
       );
-
-      saveTemplates(nextTemplates);
-      setSelectedId(savedTemplate.id);
-      setSyncMessage("저장되었습니다.");
-    } catch (error) {
-      setSyncError(error instanceof Error ? error.message : "저장에 실패했습니다.");
+      setMessage("저장되었습니다.");
+    } catch (saveError) {
+      setError(saveError instanceof Error ? saveError.message : "저장하지 못했습니다.");
     } finally {
-      setIsSyncing(false);
+      setIsSaving(false);
     }
-  }
-
-  function insertBlock(type: ApplicationFormBlockType, afterIndex: number) {
-    if (!selectedTemplate) return;
-    const nextBlock = createEmptyBlock(type);
-    const nextBlocks = [...selectedTemplate.blocks];
-    nextBlocks.splice(afterIndex + 1, 0, nextBlock);
-    updateTemplate({ blocks: nextBlocks });
-    setActiveBlockId(nextBlock.id);
-    setInsertAfterIndex(null);
-    setShowPreview(false);
-  }
-
-  function removeBlock(blockId: string) {
-    if (!selectedTemplate) return;
-    const blockIndex = selectedTemplate.blocks.findIndex(
-      (block) => block.id === blockId,
-    );
-    const nextBlocks = selectedTemplate.blocks.filter(
-      (block) => block.id !== blockId,
-    );
-    updateTemplate({ blocks: nextBlocks });
-    setActiveBlockId(
-      nextBlocks[Math.max(0, blockIndex - 1)]?.id ?? nextBlocks[0]?.id ?? null,
-    );
-    if (settingsBlockId === blockId) {
-      setSettingsBlockId(null);
-    }
-  }
-
-  function duplicateBlock(blockId: string) {
-    if (!selectedTemplate) return;
-    const blockIndex = selectedTemplate.blocks.findIndex(
-      (block) => block.id === blockId,
-    );
-    const originalBlock = selectedTemplate.blocks[blockIndex];
-    if (!originalBlock) return;
-
-    const copiedBlock: ApplicationFormBlock = {
-      ...originalBlock,
-      branches: [],
-      id: createEmptyBlock(originalBlock.type).id,
-      label: `${originalBlock.label} 복사본`,
-    };
-    const nextBlocks = [...selectedTemplate.blocks];
-    nextBlocks.splice(blockIndex + 1, 0, copiedBlock);
-    updateTemplate({ blocks: nextBlocks });
-    setActiveBlockId(copiedBlock.id);
-  }
-
-  function moveBlock(blockId: string, direction: -1 | 1) {
-    if (!selectedTemplate) return;
-    const index = selectedTemplate.blocks.findIndex((block) => block.id === blockId);
-    const nextIndex = index + direction;
-    if (index < 0 || nextIndex < 0 || nextIndex >= selectedTemplate.blocks.length) {
-      return;
-    }
-    const nextBlocks = [...selectedTemplate.blocks];
-    const [movedBlock] = nextBlocks.splice(index, 1);
-    nextBlocks.splice(nextIndex, 0, movedBlock);
-    updateTemplate({ blocks: nextBlocks });
   }
 
   if (!selectedTemplate) {
     return (
-      <div className="mx-auto max-w-5xl px-4 py-8 md:px-8">
-        <section className="rounded-md border border-dashed border-[#F5C7A8] bg-white px-6 py-12 text-center shadow-sm">
-          {hasLoadedTemplates ? (
-            <>
-              <div className="mx-auto grid size-12 place-items-center rounded-md bg-[#FFF1E8] text-[#FE701E]">
-                <FilePlus2 size={22} />
-              </div>
-              <h1 className="mt-5 text-xl font-black text-slate-950">
-                신청폼을 찾을 수 없습니다
-              </h1>
-              <p className="mt-2 text-sm font-bold leading-6 text-slate-500">
-                삭제되었거나 접근 권한이 없는 신청폼입니다. 목록에서 다른 폼을
-                선택하거나 새 신청폼을 만들어 주세요.
+      <HostWorkspaceLayout>
+        <HostWorkspaceContent insideFolder>
+          <div className="pt-[var(--host-24)]">
+            <div className="rounded-[8px] border border-dashed border-[#6D7A8A] px-[var(--host-18)] py-[var(--host-40)] text-center">
+              <p className="text-[var(--host-14)] font-medium leading-[1.6] text-[#6D7A8A]">
+                {hasLoadedTemplates
+                  ? "신청서 양식을 찾을 수 없습니다."
+                  : "신청서 양식을 불러오는 중입니다."}
               </p>
-              <div className="mt-6 flex flex-wrap justify-center gap-2">
-                <Link
-                  className="inline-flex h-11 items-center justify-center rounded-md border border-slate-200 bg-white px-4 text-sm font-black text-slate-700"
-                  href="/host/forms?kind=application"
-                >
-                  신청폼 목록
-                </Link>
+              <Link
+                className="mt-[var(--host-16)] inline-flex h-[var(--host-29)] items-center justify-center rounded-[4px] bg-[#6D7A8A] px-[var(--host-12)] text-[var(--host-12)] font-medium leading-[1.253] text-[#FFF6EC]"
+                href="/host/forms"
+              >
+                목록으로
+              </Link>
+            </div>
+          </div>
+        </HostWorkspaceContent>
+      </HostWorkspaceLayout>
+    );
+  }
+
+  return (
+    <HostWorkspaceLayout sidebarHeight="min-h-[calc(var(--host-scale)*1864px)]">
+      <HostWorkspaceContent insideFolder>
+        <div className="grid grid-cols-[calc(var(--host-scale)*586px)_minmax(0,1fr)] gap-[calc(var(--host-scale)*28px)] max-xl:grid-cols-1">
+          <section className="min-h-[calc(var(--host-scale)*1864px)] border-r border-[#6D7A8A] pr-[calc(var(--host-scale)*30px)] max-xl:min-h-0 max-xl:border-r-0 max-xl:pr-0">
+            <div className="flex flex-col gap-[calc(var(--host-scale)*46px)] pb-[var(--host-24)]">
+              <div className="pt-[var(--host-24)]">
+                <div className="flex h-[var(--host-29)] items-center gap-[14px]">
+                  <Link
+                    aria-label="목록으로"
+                    className="inline-flex h-[18px] w-[12px] items-center justify-center text-[#6D7A8A] hover:text-[#FE701E]"
+                    href="/host/forms"
+                  >
+                    <ChevronLeft size={20} strokeWidth={1.8} />
+                  </Link>
+                  <h1 className="whitespace-nowrap text-[var(--host-16)] font-medium leading-[1.253] text-[#6D7A8A]">
+                    신청서 양식 편집
+                  </h1>
+                  <button
+                    className="inline-flex h-[var(--host-29)] items-center justify-center rounded-[4px] bg-[#FE701E] px-[var(--host-12)] py-[var(--host-4)] text-[var(--host-12)] font-medium leading-[1.253] text-[#FFF6EC] disabled:opacity-50"
+                    disabled={isSaving}
+                    onClick={() => void saveTemplate()}
+                    type="button"
+                  >
+                    {isSaving ? "저장중" : "저장하기"}
+                  </button>
+                </div>
+              </div>
+
+              <section className="flex w-[calc(var(--host-scale)*511px)] max-w-full flex-col gap-[calc(var(--host-scale)*33px)] rounded-[8px] border border-[#6D7A8A] p-[var(--host-18)]">
+                <EditorField label="신청서 제목">
+                  <input
+                    className="host-form-input"
+                    onChange={(event) => updateTemplate({ name: event.target.value })}
+                    placeholder="신청서의 제목을 입력해 주세요."
+                    value={selectedTemplate.name}
+                  />
+                </EditorField>
+                <EditorField label="안내 사항">
+                  <input
+                    className="host-form-input"
+                    onChange={(event) =>
+                      updateTemplate({ description: event.target.value })
+                    }
+                    placeholder="게스트에게 전달할 안내사항을 입력해주세요. (예: 신청 전 유의사항, 준비물 안내 등)"
+                    value={selectedTemplate.description}
+                  />
+                </EditorField>
+                <EditorField label="프로그램 연결">
+                  <label className="relative block">
+                    <select
+                      className="host-form-input appearance-none pr-[var(--host-34)]"
+                      onChange={(event) => {
+                        const program = hostPrograms.find(
+                          (item) => item.id === event.target.value,
+                        );
+                        updateTemplate({
+                          programId: program?.id ?? "",
+                          programTitle: program?.title ?? "",
+                        });
+                      }}
+                      value={selectedTemplate.programId || ""}
+                    >
+                      <option value="">연결할 프로그램을 선택해 주세요.</option>
+                      {hostPrograms.map((program) => (
+                        <option key={program.id} value={program.id}>
+                          {program.title}
+                        </option>
+                      ))}
+                    </select>
+                    <ChevronDown
+                      className="pointer-events-none absolute right-[var(--host-12)] top-1/2 -translate-y-1/2 text-[#FF9A3D]"
+                      size={20}
+                    />
+                  </label>
+                </EditorField>
+              </section>
+
+              <section className="flex w-[calc(var(--host-scale)*511px)] max-w-full flex-col gap-[var(--host-14)] px-[var(--host-18)] pb-[var(--host-18)]">
+                <h2 className="text-[var(--host-14)] font-medium leading-[1.253] text-[#0D0D0C]">
+                  항목 추가
+                </h2>
+                <div className="flex flex-col gap-[calc(var(--host-scale)*28px)]">
+                  {selectedTemplate.blocks.map((block) => (
+                    <EditableBlockCard
+                      block={block}
+                      key={block.id}
+                      onDuplicate={() => duplicateBlock(block)}
+                      onRemove={() => removeBlock(block.id)}
+                      onUpdate={(patch) => updateBlock(block.id, patch)}
+                    />
+                  ))}
+                </div>
                 <button
-                  className="inline-flex h-11 items-center gap-2 rounded-md bg-[var(--primary)] px-4 text-sm font-black text-white"
-                  onClick={addTemplate}
+                  className="flex w-full flex-col items-center justify-center gap-[var(--host-8)] py-[var(--host-16)]"
+                  onClick={addBlock}
                   type="button"
                 >
-                  <FilePlus2 size={17} />
-                  새 신청폼
+                  <span className="text-center text-[var(--host-12)] font-medium leading-[1.253] text-[#6D7A8A]">
+                    아래의 버튼을 눌러 항목을 추가해 주세요.
+                  </span>
+                  <span className="grid size-[calc(var(--host-scale)*28px)] place-items-center rounded-full bg-[#FF9A3D] text-white">
+                    <Plus size={18} strokeWidth={2.3} />
+                  </span>
                 </button>
-              </div>
-            </>
-          ) : (
-            <>
-              <Loader2 className="mx-auto animate-spin text-[#FE701E]" size={28} />
-              <p className="mt-4 text-sm font-black text-slate-600">
-                신청폼을 불러오는 중입니다.
-              </p>
-            </>
-          )}
-        </section>
-      </div>
-    );
-  }
+              </section>
 
-  return (
-    <div className="mx-auto min-w-0 max-w-[1500px] px-4 py-6 md:px-8">
-      <div className="mb-5 flex flex-col items-stretch gap-3 sm:flex-row sm:items-center sm:justify-between">
-        <Link
-          className="inline-flex h-10 items-center justify-center gap-2 rounded-md border border-slate-200 bg-white px-3 text-sm font-black text-slate-700"
-          href={
-            programBasePath ??
-            projectBasePath ??
-            `/host/forms?kind=${selectedTemplate.formKind}`
-          }
-        >
-          <ArrowLeft size={16} />
-          {programBasePath
-            ? "프로그램 허브"
-              : projectBasePath
-                ? "폴더"
-                : `${formKindLabels[selectedTemplate.formKind]} 목록`}
-        </Link>
-        <div className="flex flex-col gap-2 sm:flex-row">
-          <button
-            className="inline-flex h-10 items-center justify-center gap-2 rounded-md border border-slate-200 bg-white px-3 text-sm font-black text-slate-700"
-            onClick={() => setShowPreview(true)}
-            type="button"
-          >
-            <Eye size={16} />
-            미리보기
-          </button>
-          <button
-            className="inline-flex h-10 items-center justify-center gap-2 rounded-md border border-slate-200 bg-white px-3 text-sm font-black text-slate-700"
-            onClick={() => duplicateTemplate()}
-            type="button"
-          >
-            <Copy size={16} />
-            복제
-          </button>
-          <button
-            className="inline-flex h-10 items-center justify-center gap-2 rounded-md bg-[var(--primary)] px-3 text-sm font-black text-white disabled:cursor-wait disabled:opacity-70"
-            disabled={isSyncing}
-            onClick={syncSelectedTemplate}
-            type="button"
-          >
-            {isSyncing ? (
-              <Loader2 className="animate-spin" size={16} />
-            ) : (
-              <Save size={16} />
-            )}
-            저장
-          </button>
-        </div>
-      </div>
-
-      <div className="grid min-w-0 justify-center">
-        <main className="w-[min(920px,calc(100vw-32px))] min-w-0">
-          <section className="min-h-[720px] rounded-md border border-slate-200 bg-white px-5 py-6 shadow-sm md:px-10 md:py-9">
-            <div className="mx-auto max-w-2xl">
-              <input
-                aria-label="신청폼명"
-                className="w-full min-w-0 border-none bg-transparent text-3xl font-black leading-tight text-slate-950 outline-none placeholder:text-slate-300"
-                onChange={(event) => updateTemplate({ name: event.target.value })}
-                placeholder={`${formKindLabels[selectedTemplate.formKind]} 제목`}
-                value={selectedTemplate.name}
-              />
-              <textarea
-                aria-label="신청폼 설명"
-                className="mt-3 min-h-12 w-full resize-none border-none bg-transparent text-sm font-bold leading-7 text-slate-500 outline-none placeholder:text-slate-300"
-                onChange={(event) =>
-                  updateTemplate({ description: event.target.value })
-                }
-                placeholder={
-                  selectedTemplate.formKind === "inquiry"
-                    ? "문의자에게 보여줄 간단한 안내를 적어주세요."
-                    : "신청자에게 보여줄 간단한 안내를 적어주세요."
-                }
-                value={selectedTemplate.description}
-              />
-
-              <div className="mt-3 flex flex-wrap items-center gap-2 text-xs font-bold text-slate-500">
-                <span className="rounded-full bg-[var(--surface-muted)] px-3 py-1">
-                  {selectedProgram?.title ||
-                    selectedTemplate.programTitle ||
-                    "라이브러리 폼"}
-                </span>
-                <span className="rounded-full bg-[var(--surface-muted)] px-3 py-1">
-                  {selectedTemplate.blocks.length}개 블록
-                </span>
-                <span className="inline-flex items-center gap-1">
-                  {saved ? (
-                    <Check className="text-[var(--primary)]" size={14} />
-                  ) : (
-                    <Save size={14} />
-                  )}
-                  {saved ? "저장됨" : "자동 저장"}
-                </span>
-              </div>
-
-              {hostPrograms.length > 0 ? (
-                <label className="mt-4 grid gap-2 rounded-md border border-slate-200 bg-[var(--surface-muted)] p-3">
-                  <span className="text-sm font-black text-slate-700">
-                    연결 프로그램
-                  </span>
-                  <select
-                    className="h-10 rounded-md border border-slate-200 bg-white px-3 text-sm font-bold text-slate-800 outline-none focus:border-[var(--primary)]"
-                    onChange={(event) => {
-                      const nextProgram = hostPrograms.find(
-                        (program) => program.id === event.target.value,
-                      );
-                      updateTemplate({
-                        programId: nextProgram?.id ?? "",
-                        programTitle: nextProgram?.title ?? "",
-                      });
-                    }}
-                    value={selectedTemplate.programId || selectedProgram?.id || ""}
-                  >
-                    <option value="">라이브러리 폼으로 두기</option>
-                    {hostPrograms.map((program) => (
-                      <option key={program.id} value={program.id}>
-                        {program.title}
-                      </option>
-                    ))}
-                  </select>
-                  <span className="text-xs font-bold leading-5 text-slate-500">
-                    선택 후 DB 저장을 누르면 해당 프로그램 신청 페이지에 이 폼이 표시됩니다.
-                  </span>
-                </label>
-              ) : null}
-
-              {syncMessage || syncError ? (
-                <div className="mt-4 flex flex-wrap gap-2 text-xs font-black">
-                  {syncMessage ? (
-                    <span className="rounded-md bg-teal-50 px-2 py-1 text-teal-700">
-                      {syncMessage}
-                    </span>
-                  ) : null}
-                  {syncError ? (
-                    <span className="rounded-md bg-red-50 px-2 py-1 text-red-700">
-                      {syncError}
-                    </span>
-                  ) : null}
+              {message || error ? (
+                <div className="px-[var(--host-18)] text-[var(--host-12)] font-medium leading-[1.6]">
+                  {message ? <p className="text-[#6D7A8A]">{message}</p> : null}
+                  {error ? <p className="text-[#FE701E]">{error}</p> : null}
                 </div>
               ) : null}
-
-              <div className="mt-8">
-                {selectedTemplate.blocks.length === 0 ? (
-                  <EmptyCanvas
-                    isOpen={insertAfterIndex === -1}
-                    onAdd={(type) => insertBlock(type, -1)}
-                    onToggle={() =>
-                      setInsertAfterIndex(insertAfterIndex === -1 ? null : -1)
-                    }
-                  />
-                ) : (
-                  <>
-                    <InsertButton
-                      isOpen={insertAfterIndex === -1}
-                      onAdd={(type) => insertBlock(type, -1)}
-                      onToggle={() =>
-                        setInsertAfterIndex(insertAfterIndex === -1 ? null : -1)
-                      }
-                    />
-                    <div className="grid gap-1">
-                      {selectedTemplate.blocks.map((block, index) => (
-                        <div key={block.id}>
-                          <CanvasBlock
-                            block={block}
-                            canMoveDown={index < selectedTemplate.blocks.length - 1}
-                            canMoveUp={index > 0}
-                            isActive={block.id === activeBlock?.id && !showPreview}
-                            onDuplicate={() => duplicateBlock(block.id)}
-                            onMoveDown={() => moveBlock(block.id, 1)}
-                            onMoveUp={() => moveBlock(block.id, -1)}
-                            onOpenSettings={() => {
-                              setActiveBlockId(block.id);
-                              setSettingsBlockId(block.id);
-                              setShowPreview(false);
-                            }}
-                            onRemove={() => removeBlock(block.id)}
-                            onSelect={() => {
-                              setActiveBlockId(block.id);
-                              setShowPreview(false);
-                            }}
-                            onUpdate={(patch) => updateBlock(block.id, patch)}
-                          />
-                          <InsertButton
-                            isOpen={insertAfterIndex === index}
-                            onAdd={(type) => insertBlock(type, index)}
-                            onToggle={() =>
-                              setInsertAfterIndex(
-                                insertAfterIndex === index ? null : index,
-                              )
-                            }
-                          />
-                        </div>
-                      ))}
-                    </div>
-                  </>
-                )}
-              </div>
             </div>
           </section>
-        </main>
 
-      </div>
-      {settingsBlock ? (
-        <Modal onClose={() => setSettingsBlockId(null)}>
-          <SettingsPanel
-            block={settingsBlock}
-            blocks={selectedTemplate.blocks}
-            onClose={() => setSettingsBlockId(null)}
-            onUpdate={(patch) => updateBlock(settingsBlock.id, patch)}
-          />
-        </Modal>
-      ) : null}
-      {showPreview ? (
-        <Modal onClose={() => setShowPreview(false)}>
-          <PreviewPanel
-            onClose={() => setShowPreview(false)}
-            template={selectedTemplate}
-          />
-        </Modal>
-      ) : null}
-    </div>
+          <FormPreview template={selectedTemplate} />
+        </div>
+      </HostWorkspaceContent>
+    </HostWorkspaceLayout>
   );
 }
 
-function normalizeText(value: string): string {
-  return value.trim().toLowerCase().replace(/\s+/gu, " ");
-}
-
-function Modal({
+function EditorField({
   children,
-  onClose,
+  label,
 }: {
-  children: ReactNode;
-  onClose: () => void;
+  children: React.ReactNode;
+  label: string;
 }) {
   return (
-    <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/35 p-4"
-      onClick={onClose}
-    >
-      <div
-        className="max-h-[calc(100vh-48px)] w-[min(560px,calc(100vw-32px))] overflow-y-auto"
-        onClick={(event) => event.stopPropagation()}
-      >
-        {children}
-      </div>
-    </div>
-  );
-}
-
-function EmptyCanvas({
-  isOpen,
-  onAdd,
-  onToggle,
-}: {
-  isOpen: boolean;
-  onAdd: (type: ApplicationFormBlockType) => void;
-  onToggle: () => void;
-}) {
-  return (
-    <div className="relative grid min-h-[360px] place-items-center rounded-md border border-dashed border-slate-200 bg-slate-50/70 p-8 text-center">
-      <button
-        className="grid gap-3 text-center"
-        onClick={onToggle}
-        type="button"
-      >
-        <span className="mx-auto grid size-12 place-items-center rounded-full bg-white text-[var(--primary)] shadow-sm ring-1 ring-slate-200">
-          <Plus size={22} />
-        </span>
-        <span className="text-lg font-black text-slate-950">
-          첫 질문을 추가하세요
-        </span>
-        <span className="max-w-xs text-sm font-bold leading-6 text-slate-500">
-          제목, 설명, 질문, 페이지 구분을 필요한 순서대로 쌓아 신청폼을 만듭니다.
-        </span>
-      </button>
-      {isOpen ? <BlockInsertMenu onAdd={onAdd} onClose={onToggle} /> : null}
-    </div>
-  );
-}
-
-function InsertButton({
-  isOpen,
-  onAdd,
-  onToggle,
-}: {
-  isOpen: boolean;
-  onAdd: (type: ApplicationFormBlockType) => void;
-  onToggle: () => void;
-}) {
-  return (
-    <div className="group/insert relative py-2">
-      <div className="absolute left-0 right-0 top-1/2 hidden border-t border-slate-100 group-hover/insert:block" />
-      <button
-        aria-label="블록 추가"
-        className="relative z-10 mx-auto grid size-8 place-items-center rounded-full border border-slate-200 bg-white text-slate-400 opacity-70 shadow-sm transition hover:border-[var(--primary)] hover:text-[var(--primary)] group-hover/insert:opacity-100"
-        onClick={onToggle}
-        type="button"
-      >
-        <Plus size={16} />
-      </button>
-      {isOpen ? <BlockInsertMenu onAdd={onAdd} onClose={onToggle} /> : null}
-    </div>
-  );
-}
-
-function BlockInsertMenu({
-  onAdd,
-  onClose,
-}: {
-  onAdd: (type: ApplicationFormBlockType) => void;
-  onClose: () => void;
-}) {
-  const [query, setQuery] = useState("");
-  const normalizedQuery = query.trim().toLowerCase();
-  const filteredItems = blockPaletteItems.filter((item) => {
-    const label = blockTypeLabels[item.type].toLowerCase();
-    return (
-      !normalizedQuery ||
-      label.includes(normalizedQuery) ||
-      item.description.toLowerCase().includes(normalizedQuery)
-    );
-  });
-
-  return (
-    <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/35 p-4"
-      onClick={onClose}
-    >
-      <div
-        className="w-[min(520px,calc(100vw-32px))] overflow-hidden rounded-md border border-slate-200 bg-white text-left shadow-2xl"
-        onClick={(event) => event.stopPropagation()}
-      >
-        <div className="flex items-center justify-between gap-3 border-b border-slate-100 px-4 py-3">
-          <label className="flex h-10 min-w-0 flex-1 items-center gap-2 rounded-md bg-slate-50 px-3 text-slate-400">
-            <Search size={16} />
-            <input
-              autoFocus
-              className="h-full min-w-0 flex-1 border-none bg-transparent text-sm font-bold text-slate-700 outline-none placeholder:text-slate-300"
-              onChange={(event) => setQuery(event.target.value)}
-              placeholder="질문, 입력 방식, 레이아웃 검색"
-              value={query}
-            />
-          </label>
-          <button
-            aria-label="닫기"
-            className="grid size-10 place-items-center rounded-md text-slate-500 hover:bg-slate-50"
-            onClick={onClose}
-            type="button"
-          >
-            <X size={17} />
-          </button>
-        </div>
-        <div className="max-h-[460px] overflow-y-auto p-2">
-          {filteredItems.map((item) => {
-            const Icon = item.icon;
-
-            return (
-              <button
-                className="grid w-full grid-cols-[40px_minmax(0,1fr)] gap-3 rounded-md p-3 text-left hover:bg-slate-50"
-                key={item.type}
-                onClick={() => {
-                  onAdd(item.type);
-                  onClose();
-                }}
-                type="button"
-              >
-                <span className="grid size-10 place-items-center rounded-md bg-teal-50 text-[var(--primary)]">
-                  <Icon size={18} />
-                </span>
-                <span className="min-w-0">
-                  <span className="block text-sm font-black text-slate-950">
-                    {blockTypeLabels[item.type]}
-                  </span>
-                  <span className="mt-0.5 block text-xs font-bold text-slate-500">
-                    {item.description}
-                  </span>
-                </span>
-              </button>
-            );
-          })}
-          {filteredItems.length === 0 ? (
-            <p className="p-4 text-center text-sm font-bold text-slate-400">
-              찾는 블록이 없습니다.
-            </p>
-          ) : null}
-        </div>
-      </div>
-    </div>
-  );
-}
-
-function CanvasBlock({
-  block,
-  canMoveDown,
-  canMoveUp,
-  isActive,
-  onDuplicate,
-  onMoveDown,
-  onMoveUp,
-  onOpenSettings,
-  onRemove,
-  onSelect,
-  onUpdate,
-}: {
-  block: ApplicationFormBlock;
-  canMoveDown: boolean;
-  canMoveUp: boolean;
-  isActive: boolean;
-  onDuplicate: () => void;
-  onMoveDown: () => void;
-  onMoveUp: () => void;
-  onOpenSettings: () => void;
-  onRemove: () => void;
-  onSelect: () => void;
-  onUpdate: (patch: Partial<ApplicationFormBlock>) => void;
-}) {
-  return (
-    <article
-      className={`group/block relative rounded-md border p-4 transition ${
-        isActive
-          ? "border-[var(--primary)] bg-teal-50/60 shadow-sm"
-          : "border-transparent bg-white hover:border-slate-200 hover:bg-slate-50"
-      }`}
-      onClick={onSelect}
-    >
-      <div className="absolute -left-10 top-3 hidden items-center gap-1 opacity-0 transition group-hover/block:flex group-hover/block:opacity-100 md:flex">
-        <span className="grid size-8 place-items-center rounded-md text-slate-300">
-          <GripVertical size={17} />
-        </span>
-      </div>
-      <BlockInlineEditor block={block} onUpdate={onUpdate} />
-      <div
-        className={`absolute right-3 top-3 flex gap-1 rounded-md border border-slate-200 bg-white p-1 shadow-sm transition ${
-          isActive ? "opacity-100" : "opacity-0 group-hover/block:opacity-100"
-        }`}
-      >
-        <button
-          aria-label="블록 설정"
-          className="grid size-7 place-items-center rounded text-slate-500 hover:bg-slate-50"
-          onClick={(event) => {
-            event.stopPropagation();
-            onOpenSettings();
-          }}
-          type="button"
-        >
-          <SlidersHorizontal size={14} />
-        </button>
-        <button
-          aria-label="위로 이동"
-          className="grid size-7 place-items-center rounded text-slate-500 hover:bg-slate-50 disabled:opacity-30"
-          disabled={!canMoveUp}
-          onClick={(event) => {
-            event.stopPropagation();
-            onMoveUp();
-          }}
-          type="button"
-        >
-          <ArrowUp size={14} />
-        </button>
-        <button
-          aria-label="아래로 이동"
-          className="grid size-7 place-items-center rounded text-slate-500 hover:bg-slate-50 disabled:opacity-30"
-          disabled={!canMoveDown}
-          onClick={(event) => {
-            event.stopPropagation();
-            onMoveDown();
-          }}
-          type="button"
-        >
-          <ArrowDown size={14} />
-        </button>
-        <button
-          aria-label="복제"
-          className="grid size-7 place-items-center rounded text-slate-500 hover:bg-slate-50"
-          onClick={(event) => {
-            event.stopPropagation();
-            onDuplicate();
-          }}
-          type="button"
-        >
-          <Copy size={14} />
-        </button>
-        <button
-          aria-label="삭제"
-          className="grid size-7 place-items-center rounded text-slate-500 hover:bg-rose-50 hover:text-rose-600"
-          onClick={(event) => {
-            event.stopPropagation();
-            onRemove();
-          }}
-          type="button"
-        >
-          <Trash2 size={14} />
-        </button>
-      </div>
-    </article>
-  );
-}
-
-function BlockInlineEditor({
-  block,
-  onUpdate,
-}: {
-  block: ApplicationFormBlock;
-  onUpdate: (patch: Partial<ApplicationFormBlock>) => void;
-}) {
-  if (block.type === "title") {
-    return (
-      <input
-        className="w-full min-w-0 border-none bg-transparent pr-28 text-2xl font-black leading-tight text-slate-950 outline-none placeholder:text-slate-300"
-        onChange={(event) => onUpdate({ label: event.target.value })}
-        placeholder="제목을 입력하세요"
-        value={block.label}
-      />
-    );
-  }
-
-  if (block.type === "description") {
-    return (
-      <textarea
-        className="min-h-24 w-full resize-none border-none bg-transparent pr-28 text-sm font-bold leading-7 text-slate-600 outline-none placeholder:text-slate-300"
-        onChange={(event) =>
-          onUpdate({ body: event.target.value, label: event.target.value })
-        }
-        placeholder="설명 문구를 입력하세요"
-        value={block.body || block.label}
-      />
-    );
-  }
-
-  if (block.type === "divider") {
-    return (
-      <div className="flex items-center gap-3 pr-28">
-        <hr className="min-w-0 flex-1 border-slate-200" />
-        <input
-          className="w-32 border-none bg-transparent text-center text-xs font-black text-slate-400 outline-none"
-          onChange={(event) => onUpdate({ label: event.target.value })}
-          value={block.label}
-        />
-        <hr className="min-w-0 flex-1 border-slate-200" />
-      </div>
-    );
-  }
-
-  if (block.type === "image") {
-    return (
-      <div className="grid gap-3 pr-28">
-        <input
-          className="w-full min-w-0 border-none bg-transparent text-lg font-black text-slate-950 outline-none placeholder:text-slate-300"
-          onChange={(event) => onUpdate({ label: event.target.value })}
-          placeholder="이미지 설명"
-          value={block.label}
-        />
-        <input
-          className="h-10 w-full min-w-0 rounded-md border border-slate-200 px-3 text-sm font-bold outline-none focus:border-[var(--primary)]"
-          onChange={(event) => onUpdate({ imageUrl: event.target.value })}
-          placeholder="이미지 URL을 붙여넣으세요"
-          value={block.imageUrl ?? ""}
-        />
-        <label className="grid gap-2 text-xs font-black text-slate-500">
-          이미지 크기 {block.imageWidth ?? 100}%
-          <input
-            max={100}
-            min={25}
-            onChange={(event) =>
-              onUpdate({ imageWidth: Number(event.target.value) })
-            }
-            step={5}
-            type="range"
-            value={block.imageWidth ?? 100}
-          />
-        </label>
-        {block.imageUrl ? (
-          // eslint-disable-next-line @next/next/no-img-element
-          <img
-            alt={block.imageAlt || block.label}
-            className="rounded-md object-cover"
-            src={block.imageUrl}
-            style={{ width: `${block.imageWidth ?? 100}%` }}
-          />
-        ) : (
-          <div className="grid min-h-36 place-items-center rounded-md border border-dashed border-slate-200 bg-slate-50 text-sm font-bold text-slate-400">
-            이미지를 삽입할 공간
-          </div>
-        )}
-      </div>
-    );
-  }
-
-  if (block.type === "pageBreak") {
-    return (
-      <div className="rounded-md bg-slate-100 p-3 pr-28">
-        <p className="text-xs font-black text-slate-500">다음 페이지</p>
-        <input
-          className="mt-1 w-full border-none bg-transparent text-sm font-black text-slate-800 outline-none"
-          onChange={(event) => onUpdate({ label: event.target.value })}
-          value={block.label}
-        />
-      </div>
-    );
-  }
-
-  return (
-    <div className="grid gap-2 pr-28">
-      <input
-        className="w-full min-w-0 border-none bg-transparent text-lg font-black text-slate-950 outline-none placeholder:text-slate-300"
-        onChange={(event) => onUpdate({ label: event.target.value })}
-        placeholder="질문을 입력하세요"
-        value={block.label}
-      />
-      <input
-        className="w-full min-w-0 border-none bg-transparent text-sm font-bold text-slate-400 outline-none placeholder:text-slate-300"
-        onChange={(event) => onUpdate({ helper: event.target.value })}
-        placeholder="설명 또는 힌트 추가"
-        value={block.helper ?? ""}
-      />
-      <QuestionPreview block={block} />
-    </div>
-  );
-}
-
-function QuestionPreview({ block }: { block: ApplicationFormBlock }) {
-  if (block.type === "longText") {
-    return <div className="mt-2 h-24 rounded-md border border-slate-200 bg-white" />;
-  }
-  if (block.type === "singleSelect" || block.type === "multiSelect") {
-    return (
-      <div className="mt-2 flex flex-wrap gap-2">
-        {(block.options ?? []).map((option) => (
-          <span
-            className="rounded-full border border-slate-200 bg-white px-3 py-1 text-xs font-bold text-slate-500"
-            key={option}
-          >
-            {option}
-          </span>
-        ))}
-      </div>
-    );
-  }
-  if (block.type === "checkbox") {
-    return (
-      <span className="mt-2 inline-flex w-fit items-center gap-2 rounded-md bg-white px-3 py-2 text-sm font-bold text-slate-500 ring-1 ring-slate-200">
-        <input type="checkbox" />
-        동의합니다
+    <label className="flex w-full flex-col gap-[var(--host-10)]">
+      <span className="text-[var(--host-14)] font-medium leading-[1.253] text-[#0D0D0C]">
+        {label}
       </span>
-    );
-  }
-  return <div className="mt-2 h-10 rounded-md border border-slate-200 bg-white" />;
+      {children}
+    </label>
+  );
 }
 
-function SettingsPanel({
+function EditableBlockCard({
   block,
-  blocks,
-  onClose,
+  onDuplicate,
+  onRemove,
   onUpdate,
 }: {
-  block: ApplicationFormBlock | null;
-  blocks: ApplicationFormBlock[];
-  onClose: () => void;
+  block: ApplicationFormBlock;
+  onDuplicate: () => void;
+  onRemove: () => void;
   onUpdate: (patch: Partial<ApplicationFormBlock>) => void;
 }) {
-  if (!block) {
-    return (
-      <section className="rounded-md border border-slate-200 bg-white p-5">
-        <h2 className="text-lg font-black text-slate-950">블록 설정</h2>
-        <p className="mt-2 text-sm font-bold leading-6 text-slate-500">
-          캔버스에서 블록을 선택하면 필수 여부, 선택지, 분기 설정을 조정할 수 있습니다.
-        </p>
-      </section>
-    );
-  }
-
-  const canBranch =
-    block.type === "singleSelect" ||
-    block.type === "multiSelect" ||
-    block.type === "checkbox";
-
-  function updateOptions(value: string) {
-    onUpdate({
-      options: value
-        .split("\n")
-        .map((option) => option.trim())
-        .filter(Boolean),
-    });
-  }
-
-  function changeType(type: ApplicationFormBlockType) {
-    if (!block) return;
-    const defaults = createEmptyBlock(type);
-    onUpdate({
-      body: type === "description" ? block.body || defaults.body : block.body,
-      imageAlt: type === "image" ? block.imageAlt || defaults.imageAlt : "",
-      imageUrl: type === "image" ? block.imageUrl || defaults.imageUrl : "",
-      imageWidth:
-        type === "image" ? block.imageWidth || defaults.imageWidth : undefined,
-      options:
-        type === "singleSelect" || type === "multiSelect"
-          ? block.options?.length
-            ? block.options
-            : defaults.options
-          : [],
-      required: isQuestionBlock({ ...block, type }) ? block.required : false,
-      type,
-    });
-  }
-
-  function addBranch() {
-    if (!block) return;
-    const firstOption = block.options?.[0] ?? "true";
-    const targetBlock = blocks.find((item) => item.id !== block.id);
-    onUpdate({
-      branches: [
-        ...(block.branches ?? []),
-        {
-          id: `branch-${Date.now()}`,
-          targetBlockId: targetBlock?.id ?? "",
-          value: firstOption,
-        },
-      ],
-    });
-  }
-
-  function updateBranch(branchId: string, patch: Partial<ApplicationFormBranch>) {
-    if (!block) return;
-    onUpdate({
-      branches: (block.branches ?? []).map((branch) =>
-        branch.id === branchId ? { ...branch, ...patch } : branch,
-      ),
-    });
-  }
-
-  function removeBranch(branchId: string) {
-    if (!block) return;
-    onUpdate({
-      branches: (block.branches ?? []).filter((branch) => branch.id !== branchId),
-    });
-  }
+  const options = block.options ?? [];
 
   return (
-    <section className="rounded-md border border-slate-200 bg-white p-5 shadow-2xl">
-      <div className="flex items-start justify-between gap-3">
-        <div>
-          <p className="text-xs font-black uppercase tracking-[0.14em] text-slate-400">
-            Selected Block
-          </p>
-          <h2 className="mt-1 text-lg font-black text-slate-950">
-            {blockTypeLabels[block.type]}
-          </h2>
-        </div>
-        <button
-          aria-label="닫기"
-          className="grid size-10 place-items-center rounded-md bg-slate-50 text-slate-500 hover:bg-slate-100"
-          onClick={onClose}
-          type="button"
+    <article className="flex w-full flex-col gap-[var(--host-6)] border-b border-[#F3F3F3] py-[var(--host-16)]">
+      <div className="flex items-center gap-[var(--host-10)] px-[var(--host-12)]">
+        <select
+          className="h-[calc(var(--host-scale)*24px)] rounded-[19px] bg-[#6D7A8A] px-[var(--host-12)] text-[var(--host-12)] font-medium leading-[1.253] text-[#FFF6EC] outline-none"
+          onChange={(event) =>
+            onUpdate({
+              options:
+                event.target.value === "singleSelect" ||
+                event.target.value === "multiSelect"
+                  ? options.length > 0
+                    ? options
+                    : ["선택지 항목1", "선택지 항목2"]
+                  : [],
+              type: event.target.value as ApplicationFormBlockType,
+            })
+          }
+          value={block.type}
         >
-          <X size={18} />
-        </button>
-      </div>
-
-      <div className="mt-5 grid gap-4">
-        <label className="grid gap-2">
-          <span className="text-sm font-black text-slate-700">블록 타입</span>
-          <select
-            className="h-10 rounded-md border border-slate-200 px-3 text-sm font-bold outline-none focus:border-[var(--primary)]"
-            onChange={(event) =>
-              changeType(event.target.value as ApplicationFormBlockType)
-            }
-            value={block.type}
-          >
-            {Object.entries(blockTypeLabels).map(([type, label]) => (
-              <option key={type} value={type}>
-                {label}
-              </option>
-            ))}
-          </select>
-        </label>
-
+          {editableBlockTypes.map((item) => (
+            <option key={item.type} value={item.type}>
+              {item.label}
+            </option>
+          ))}
+        </select>
         {isQuestionBlock(block) ? (
-          <label className="flex items-center justify-between gap-3 rounded-md bg-[var(--surface-muted)] px-3 py-2 text-sm font-black text-slate-700">
-            필수 질문
+          <label className="flex items-center gap-[var(--host-8)] text-[var(--host-12)] font-medium leading-[1.253] text-[#0D0D0C]">
+            필수항목
             <input
               checked={block.required}
+              className="accent-[#FF9A3D]"
               onChange={(event) => onUpdate({ required: event.target.checked })}
               type="checkbox"
             />
           </label>
         ) : null}
-
-        {block.type === "singleSelect" || block.type === "multiSelect" ? (
-          <label className="grid gap-2">
-            <span className="text-sm font-black text-slate-700">
-              선택지
-            </span>
-            <textarea
-              className="min-h-28 rounded-md border border-slate-200 p-3 text-sm font-bold leading-6 outline-none focus:border-[var(--primary)]"
-              onChange={(event) => updateOptions(event.target.value)}
-              placeholder={"선택지 1\n선택지 2"}
-              value={(block.options ?? []).join("\n")}
-            />
-          </label>
-        ) : null}
-
-        {block.type === "image" ? (
-          <div className="grid gap-4 rounded-md border border-slate-200 p-3">
-            <label className="grid gap-2">
-              <span className="text-sm font-black text-slate-700">
-                이미지 URL
-              </span>
-              <input
-                className="h-10 rounded-md border border-slate-200 px-3 text-sm font-bold outline-none focus:border-[var(--primary)]"
-                onChange={(event) => onUpdate({ imageUrl: event.target.value })}
-                placeholder="https://..."
-                value={block.imageUrl ?? ""}
-              />
-            </label>
-            <label className="grid gap-2">
-              <span className="text-sm font-black text-slate-700">
-                대체 텍스트
-              </span>
-              <input
-                className="h-10 rounded-md border border-slate-200 px-3 text-sm font-bold outline-none focus:border-[var(--primary)]"
-                onChange={(event) => onUpdate({ imageAlt: event.target.value })}
-                placeholder="이미지를 설명하는 문장"
-                value={block.imageAlt ?? ""}
-              />
-            </label>
-            <label className="grid gap-2">
-              <span className="text-sm font-black text-slate-700">
-                이미지 크기 {block.imageWidth ?? 100}%
-              </span>
-              <input
-                max={100}
-                min={25}
-                onChange={(event) =>
-                  onUpdate({ imageWidth: Number(event.target.value) })
-                }
-                step={5}
-                type="range"
-                value={block.imageWidth ?? 100}
-              />
-            </label>
-          </div>
-        ) : null}
-
-        {canBranch ? (
-          <div className="rounded-md border border-slate-200 p-3">
-            <div className="flex items-center justify-between gap-2">
-              <p className="flex items-center gap-2 text-sm font-black text-slate-800">
-                <GitBranch size={15} />
-                분기
-              </p>
-              <button
-                className="h-8 rounded-md border border-slate-200 px-2 text-xs font-black text-slate-600"
-                onClick={addBranch}
-                type="button"
-              >
-                추가
-              </button>
-            </div>
-            <div className="mt-3 grid gap-2">
-              {(block.branches ?? []).map((branch) => (
-                <div className="grid gap-2" key={branch.id}>
-                  <select
-                    className="h-9 rounded-md border border-slate-200 px-2 text-xs font-bold"
-                    onChange={(event) =>
-                      updateBranch(branch.id, { value: event.target.value })
-                    }
-                    value={branch.value}
-                  >
-                    {(block.type === "checkbox" ? ["true", "false"] : block.options ?? []).map(
-                      (option) => (
-                        <option key={option} value={option}>
-                          {option}
-                        </option>
-                      ),
-                    )}
-                  </select>
-                  <div className="grid grid-cols-[1fr_34px] gap-2">
-                    <select
-                      className="h-9 rounded-md border border-slate-200 px-2 text-xs font-bold"
-                      onChange={(event) =>
-                        updateBranch(branch.id, {
-                          targetBlockId: event.target.value,
-                        })
-                      }
-                      value={branch.targetBlockId}
-                    >
-                      {blocks
-                        .filter((item) => item.id !== block.id)
-                        .map((item) => (
-                          <option key={item.id} value={item.id}>
-                            {item.label}
-                          </option>
-                        ))}
-                    </select>
-                    <button
-                      aria-label="분기 삭제"
-                      className="grid size-9 place-items-center rounded-md bg-slate-50 text-slate-500 hover:text-rose-600"
-                      onClick={() => removeBranch(branch.id)}
-                      type="button"
-                    >
-                      <Trash2 size={14} />
-                    </button>
-                  </div>
-                </div>
-              ))}
-              {(block.branches ?? []).length === 0 ? (
-                <p className="rounded-md bg-[var(--surface-muted)] p-3 text-xs font-bold leading-5 text-slate-500">
-                  선택값에 따라 뒤쪽 질문으로 이동시키고 싶을 때 추가합니다.
-                </p>
-              ) : null}
-            </div>
-          </div>
-        ) : null}
+        <div className="ml-auto flex items-center gap-[var(--host-12)] text-[#6D7A8A]">
+          <button aria-label="복제" onClick={onDuplicate} type="button">
+            <Copy size={18} strokeWidth={1.8} />
+          </button>
+          <button aria-label="찾기" type="button">
+            <Search size={18} strokeWidth={1.8} />
+          </button>
+          <button aria-label="삭제" onClick={onRemove} type="button">
+            <Trash2 size={18} strokeWidth={1.8} />
+          </button>
+        </div>
       </div>
-    </section>
+
+      <input
+        className="host-form-input"
+        onChange={(event) => onUpdate({ label: event.target.value })}
+        placeholder="질문을 입력해주세요"
+        value={block.label}
+      />
+
+      {block.type === "singleSelect" || block.type === "multiSelect" ? (
+        <div className="flex flex-col gap-[var(--host-8)]">
+          {options.map((option, index) => (
+            <div
+              className="flex items-center gap-[var(--host-8)] pl-[var(--host-12)]"
+              key={`${block.id}-${index}`}
+            >
+              <input
+                className="size-[var(--host-14)] accent-[#FF9A3D]"
+                type={block.type === "singleSelect" ? "radio" : "checkbox"}
+              />
+              <input
+                className="host-form-input h-[var(--host-30)]"
+                onChange={(event) => {
+                  const nextOptions = [...options];
+                  nextOptions[index] = event.target.value;
+                  onUpdate({ options: nextOptions });
+                }}
+                placeholder="선택항목을 입력해주세요"
+                value={option}
+              />
+            </div>
+          ))}
+          <button
+            className="w-fit text-[var(--host-12)] font-medium leading-[1.253] text-[#FF9A3D]"
+            onClick={() =>
+              onUpdate({ options: [...options, `선택지 항목${options.length + 1}`] })
+            }
+            type="button"
+          >
+            + 선택지 추가
+          </button>
+        </div>
+      ) : null}
+
+      {block.type === "checkbox" || block.type === "description" ? (
+        <textarea
+          className="min-h-[calc(var(--host-scale)*69px)] rounded-[7px] border border-[#CAC4BC] px-[var(--host-8)] py-[var(--host-10)] text-[var(--host-12)] font-medium leading-[1.253] text-[#0D0D0C] outline-none placeholder:text-[#D9D9D9]"
+          onChange={(event) => onUpdate({ body: event.target.value })}
+          placeholder="게스트에게 안내할 내용을 입력해주세요"
+          value={block.body ?? ""}
+        />
+      ) : null}
+
+      {block.type === "image" ? (
+        <div className="flex flex-col gap-[var(--host-10)]">
+          <input
+            className="host-form-input"
+            onChange={(event) => onUpdate({ helper: event.target.value })}
+            placeholder="게스트에게 선택 내용에 대해 적어 주세요"
+            value={block.helper ?? ""}
+          />
+          <div className="grid h-[calc(var(--host-scale)*69px)] place-items-center rounded-[7px] border border-[#F7B267] text-center text-[var(--host-12)] font-medium leading-[1.253] text-[#D9D9D9]">
+            <span>파일 업로드</span>
+            <Upload className="text-[#FF9A3D]" size={16} />
+          </div>
+        </div>
+      ) : null}
+    </article>
   );
 }
 
-function PreviewPanel({
-  onClose,
-  template,
-}: {
-  onClose: () => void;
-  template: ApplicationFormTemplate;
-}) {
+function FormPreview({ template }: { template: ApplicationFormTemplate }) {
   return (
-    <section className="rounded-md border border-slate-200 bg-white p-5 shadow-2xl">
-      <div className="flex items-start justify-between gap-3">
-        <h2 className="flex items-center gap-2 text-lg font-black text-slate-950">
-          <Eye className="text-[var(--primary)]" size={18} />
-          미리보기
-        </h2>
-        <button
-          aria-label="닫기"
-          className="grid size-10 place-items-center rounded-md bg-slate-50 text-slate-500 hover:bg-slate-100"
-          onClick={onClose}
-          type="button"
-        >
-          <X size={18} />
-        </button>
-      </div>
-      <p className="mt-1 break-words text-sm text-slate-500">
-        {template.description}
+    <aside className="flex min-w-0 flex-col gap-[var(--host-8)] pt-[calc(var(--host-scale)*50px)] max-xl:pb-[var(--host-32)]">
+      <h2 className="text-[var(--host-16)] font-medium leading-[1.253] text-black">
+        게스트 신청서 폼 미리보기
+      </h2>
+      <p className="text-[var(--host-14)] font-medium leading-[1.253] text-[#6D7A8A]">
+        항목을 추가하면 여기에 미리보기가 표시돼요
       </p>
-      <div className="mt-5 grid gap-4">
-        {template.blocks.map((block) => (
-          <PreviewBlock block={block} key={block.id} />
-        ))}
-        {template.blocks.length === 0 ? (
-          <p className="rounded-md bg-[var(--surface-muted)] p-4 text-sm font-bold text-slate-500">
-            아직 추가된 질문이 없습니다.
+      <div className="flex w-[calc(var(--host-scale)*557px)] max-w-full flex-col gap-[calc(var(--host-scale)*33px)] rounded-[8px] border border-[#6D7A8A] p-[var(--host-18)]">
+        <div className="flex flex-col gap-[var(--host-20)] border-b border-[#F7B267] px-[var(--host-6)] pb-[var(--host-20)]">
+          <div className="flex items-center">
+            <div className="h-[calc(var(--host-scale)*90px)] w-[calc(var(--host-scale)*87px)] shrink-0 rounded-[16px] bg-[#D9D9D9]" />
+            <div className="flex w-[calc(var(--host-scale)*179px)] shrink-0 flex-col gap-[var(--host-4)] pl-[var(--host-6)]">
+              <p className="text-[calc(var(--host-scale)*20px)] font-semibold leading-[1.253] text-[#5B3A29]">
+                프로그램 제목 입력
+              </p>
+              <p className="text-[var(--host-12)] font-normal leading-[1.6] text-[#6D7A8A]">
+                프로그램 지역 위치
+              </p>
+              <p className="text-[var(--host-12)] font-normal leading-[1.6] text-[#6D7A8A]">
+                호스트명
+              </p>
+            </div>
+            <div className="flex flex-1 items-center gap-[calc(var(--host-scale)*33px)] pl-[var(--host-6)] text-[var(--host-12)] text-[#6D7A8A]">
+              <DateSummary label="시작일" />
+              <DateSummary label="종료일" />
+            </div>
+          </div>
+          <p className="text-[var(--host-16)] font-medium leading-[1.253] text-[#5B3A29]">
+            {template.name || "프로그램 신청서 폼 제목"}
           </p>
-        ) : null}
+          <p className="text-[var(--host-14)] font-medium leading-[1.253] text-[#6D7A8A]">
+            {template.description || "신청서를 작성전 안내사항을 꼭 읽어주세요"}
+          </p>
+        </div>
+
+        <div className="flex flex-col gap-[var(--host-12)]">
+          {template.blocks.length > 0 ? (
+            template.blocks.map((block) => (
+              <PreviewBlock block={block} key={block.id} />
+            ))
+          ) : (
+            <PreviewBlock
+              block={{
+                id: "placeholder",
+                label: "질문내용입니다.",
+                options: [],
+                required: true,
+                type: "shortText",
+              }}
+            />
+          )}
+        </div>
       </div>
-    </section>
+    </aside>
+  );
+}
+
+function DateSummary({ label }: { label: string }) {
+  return (
+    <div className="flex flex-col gap-[calc(var(--host-scale)*13px)]">
+      <p className="text-[var(--host-12)] font-normal leading-[1.6]">{label}</p>
+      <p className="whitespace-nowrap text-[var(--host-12)] font-semibold leading-[1.253]">
+        0000년 00년 00일
+      </p>
+    </div>
   );
 }
 
 function PreviewBlock({ block }: { block: ApplicationFormBlock }) {
-  if (block.type === "title") {
-    return <h3 className="text-xl font-black text-slate-950">{block.label}</h3>;
-  }
-  if (block.type === "description") {
-    return (
-      <p className="whitespace-pre-wrap text-sm leading-6 text-slate-600">
-        {block.body || block.label}
-      </p>
-    );
-  }
-  if (block.type === "divider") {
-    return <hr className="border-slate-200" />;
-  }
-  if (block.type === "image") {
-    if (!block.imageUrl) {
-      return (
-        <div className="grid min-h-32 place-items-center rounded-md border border-dashed border-slate-200 bg-slate-50 text-sm font-bold text-slate-400">
-          이미지 없음
-        </div>
-      );
-    }
+  return (
+    <div className="flex w-full flex-col gap-[var(--host-10)] border-b border-dashed border-[#F5E1D3] pb-[var(--host-20)]">
+      <div className="flex items-center gap-[var(--host-10)] text-[var(--host-14)] font-medium leading-[1.253]">
+        <p className="text-[#5B3A29]">{block.label || "질문내용입니다."}</p>
+        {block.required ? (
+          <p className="text-[var(--host-12)] text-[#FE701E]">*필수항목</p>
+        ) : null}
+      </div>
+      <PreviewControl block={block} />
+    </div>
+  );
+}
+
+function PreviewControl({ block }: { block: ApplicationFormBlock }) {
+  if (block.type === "multiSelect" || block.type === "singleSelect") {
+    const options =
+      block.options && block.options.length > 0
+        ? block.options
+        : ["선택지 항목1", "선택지 항목1", "선택지 항목1", "선택지 항목1"];
 
     return (
-      <figure
-        className="mx-auto"
-        style={{ width: `${block.imageWidth ?? 100}%` }}
-      >
-        {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img
-          alt={block.imageAlt || block.label}
-          className="w-full rounded-md object-cover"
-          src={block.imageUrl}
-        />
-        {block.label ? (
-          <figcaption className="mt-2 text-center text-xs font-bold text-slate-500">
-            {block.label}
-          </figcaption>
-        ) : null}
-      </figure>
-    );
-  }
-  if (block.type === "pageBreak") {
-    return (
-      <div className="rounded-md bg-slate-100 px-3 py-2 text-xs font-black text-slate-500">
-        다음 페이지: {block.label}
+      <div className="grid grid-cols-2 gap-x-[var(--host-16)] gap-y-[var(--host-12)] px-[var(--host-14)]">
+        {options.slice(0, 6).map((option, index) => (
+          <label
+            className="flex h-[var(--host-18)] items-center gap-[var(--host-8)] text-[var(--host-14)] font-medium leading-[1.253] text-[#5B3A29]"
+            key={`${option}-${index}`}
+          >
+            <input
+              className="size-[var(--host-14)]"
+              type={block.type === "singleSelect" ? "radio" : "checkbox"}
+            />
+            <span>{option}</span>
+          </label>
+        ))}
       </div>
     );
   }
 
+  if (block.type === "checkbox") {
+    return (
+      <div className="flex flex-col gap-[calc(var(--host-scale)*25px)] px-[var(--host-14)] text-[var(--host-12)] font-medium leading-[1.253] text-[#6D7A8A]">
+        <p>{block.body || "<호스트가 게스트에게 동의를 받는 내용에 대한 안내 사항 내용입니다.>"}</p>
+        <label className="flex items-center gap-[var(--host-4)] text-[#5B3A29]">
+          <input className="size-[var(--host-14)]" type="radio" />
+          동의함
+        </label>
+      </div>
+    );
+  }
+
+  if (block.type === "description") {
+    return (
+      <p className="px-[var(--host-14)] text-[var(--host-12)] font-medium leading-[1.6] text-[#6D7A8A]">
+        {block.body || "<호스트가 업로드한 파일에 대한 안내 사항 내용입니다.>"}
+      </p>
+    );
+  }
+
+  if (block.type === "image") {
+    return (
+      <div className="flex flex-col gap-[var(--host-10)] px-[var(--host-14)]">
+        <p className="text-[var(--host-12)] font-medium leading-[1.253] text-[#6D7A8A]">
+          {block.helper || "<파일요청에 대한 안내 사항 내용입니다.>"}
+        </p>
+        <div className="flex w-fit flex-col items-center justify-center gap-[var(--host-10)] rounded-[6px] border border-[#F7B267] p-[var(--host-8)] text-[var(--host-12)] font-medium leading-[1.253] text-[#D9D9D9]">
+          파일 업로드
+          <Upload className="text-[#FF9A3D]" size={18} />
+        </div>
+      </div>
+    );
+  }
+
+  if (block.type === "longText") {
+    return (
+      <textarea
+        className="min-h-[calc(var(--host-scale)*90px)] rounded-[7px] border border-[#F7B267] px-[var(--host-12)] py-[var(--host-8)] text-[var(--host-12)] font-medium leading-[1.253] outline-none placeholder:text-[#D9D9D9]"
+        placeholder="텍스트 입력"
+      />
+    );
+  }
+
   return (
-    <label className="grid min-w-0 gap-2">
-      <span className="break-words text-sm font-black text-slate-700">
-        {block.label}
-        {block.required ? <span className="text-[var(--accent)]"> *</span> : null}
-      </span>
-      {block.helper ? (
-        <span className="break-words text-xs text-slate-500">{block.helper}</span>
-      ) : null}
-      {block.type === "longText" ? (
-        <textarea className="min-h-24 w-full min-w-0 rounded-md border border-slate-200 p-3" />
-      ) : null}
-      {block.type === "singleSelect" || block.type === "multiSelect" ? (
-        <select
-          className="h-10 w-full min-w-0 rounded-md border border-slate-200 px-3"
-          multiple={block.type === "multiSelect"}
-        >
-          {(block.options ?? []).map((option) => (
-            <option key={option}>{option}</option>
-          ))}
-        </select>
-      ) : null}
-      {block.type === "checkbox" ? (
-        <span className="inline-flex w-full min-w-0 items-center gap-2 rounded-md bg-[var(--surface-muted)] p-3 text-sm font-bold text-slate-600 [overflow-wrap:anywhere]">
-          <input type="checkbox" />
-          동의합니다
-        </span>
-      ) : null}
-      {["shortText", "email", "phone", "date"].includes(block.type) ? (
-        <input
-          className="h-10 w-full min-w-0 rounded-md border border-slate-200 px-3"
-          type={block.type === "date" ? "date" : block.type === "email" ? "email" : "text"}
-        />
-      ) : null}
-    </label>
+    <input
+      className="h-[calc(var(--host-scale)*31px)] rounded-[7px] border border-[#F7B267] px-[var(--host-12)] text-[var(--host-12)] font-medium leading-[1.253] outline-none placeholder:text-[#D9D9D9]"
+      placeholder={block.type === "phone" ? "숫자 입력" : "텍스트 입력"}
+    />
   );
 }
