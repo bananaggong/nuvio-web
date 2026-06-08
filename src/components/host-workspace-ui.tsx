@@ -308,7 +308,7 @@ export function HostFolderCard({
       className="group block h-[var(--host-351)] w-[var(--host-288)] min-w-[288px] rounded-[8px] border border-[#D9D9D9] bg-white p-[var(--host-12)] transition hover:border-[#FE701E] max-md:h-auto max-md:w-full"
       href={hostProjectPath(folder.id)}
     >
-      <div className="grid h-[var(--host-270)] w-full grid-cols-2 gap-[var(--host-6)]">
+      <div className="grid h-[var(--host-270)] w-full grid-cols-2 grid-rows-[repeat(2,minmax(0,1fr))] gap-[var(--host-6)]">
         {[0, 1, 2].map((index) => (
           <div
             className="relative overflow-hidden rounded-[16px] bg-[#D9D9D9]"
@@ -360,7 +360,7 @@ export function HostFolderPlaceholderCard({
       onClick={onClick}
       type="button"
     >
-      <div className="grid h-[var(--host-270)] w-full grid-cols-2 gap-[var(--host-6)]">
+      <div className="grid h-[var(--host-270)] w-full grid-cols-2 grid-rows-[repeat(2,minmax(0,1fr))] gap-[var(--host-6)]">
         {[0, 1, 2].map((index) => (
           <div
             className="relative overflow-hidden rounded-[16px] bg-[#D9D9D9]"
