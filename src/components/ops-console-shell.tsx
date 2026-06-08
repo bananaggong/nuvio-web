@@ -180,6 +180,8 @@ export function OpsConsoleShell({
   const isHostWorkspacePage =
     area === "host" &&
     (pathname === "/host" ||
+      pathname === "/host/forms" ||
+      pathname.startsWith("/host/forms/") ||
       pathname === "/host/messages" ||
       pathname === "/host/programs" ||
       pathname === "/host/settings" ||
