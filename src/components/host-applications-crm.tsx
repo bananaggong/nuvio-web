@@ -15,6 +15,7 @@ import type {
   HostApplication,
   HostApplicationStatus,
 } from "@/lib/host-operations";
+import { launchFeatureFlags } from "@/lib/launch-feature-flags";
 import { useHostOperationsData } from "@/lib/use-host-operations-data";
 
 type ReviewTab = "all" | "pending" | "accepted" | "rejected";
@@ -97,7 +98,7 @@ export function HostApplicationsCrm({
   const activePanel: ApplicationsPanel =
     searchParams.get("panel") === "receipts"
       ? "receipts"
-      : searchParams.get("panel") === "reviews"
+      : launchFeatureFlags.reviews && searchParams.get("panel") === "reviews"
         ? "reviews"
         : "applications";
 
@@ -883,10 +884,14 @@ function ApplicationSidebar({
             </div>
           </section>
 
-          <ApplicationNavLink className="absolute left-[var(--app-12)] top-[var(--app-296)]" href={`${programPath}?panel=management`} label="쿠폰 / 프로모션" />
+          {launchFeatureFlags.coupons || launchFeatureFlags.promotions ? (
+            <ApplicationNavLink className="absolute left-[var(--app-12)] top-[var(--app-296)]" href={`${programPath}?panel=management`} label="쿠폰 / 프로모션" />
+          ) : null}
           <ApplicationNavLink className="absolute left-[var(--app-12)] top-[var(--app-327)]" href={messagesHref} label="메세지함" />
           <ApplicationNavLink active={activeItem === "receipts"} className="absolute left-[var(--app-12)] top-[var(--app-358)]" href={`${applicationsHref}?panel=receipts`} label="결제 관리" />
-          <ApplicationNavLink active={activeItem === "reviews"} className="absolute left-[var(--app-12)] top-[var(--app-389)]" href={`${applicationsHref}?panel=reviews`} label="후기 관리" />
+          {launchFeatureFlags.reviews ? (
+            <ApplicationNavLink active={activeItem === "reviews"} className="absolute left-[var(--app-12)] top-[var(--app-389)]" href={`${applicationsHref}?panel=reviews`} label="후기 관리" />
+          ) : null}
           <ApplicationNavLink className="absolute left-[var(--app-12)] top-[var(--app-420)]" href={`${programPath}?panel=delete`} label="프로그램 삭제" />
         </nav>
       </div>

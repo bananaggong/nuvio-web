@@ -70,6 +70,7 @@ import {
 } from "@/lib/program-detail-view-model";
 import type { ApplicationFormTemplate } from "@/lib/application-form-builder";
 import { getDday } from "@/lib/format";
+import { launchFeatureFlags } from "@/lib/launch-feature-flags";
 import { mergeReportProjects } from "@/lib/report-automation";
 import type { Program, ProgramStatus, ThemeKey } from "@/lib/types";
 import { useHostOperationsData } from "@/lib/use-host-operations-data";
@@ -1099,18 +1100,22 @@ function ProgramBuilderSidebar({
             </div>
           </section>
 
-          <Link className="text-[14px] font-normal leading-[1.253]" href={`${programPath}?panel=management`}>
-            쿠폰 / 프로모션
-          </Link>
+          {launchFeatureFlags.coupons || launchFeatureFlags.promotions ? (
+            <Link className="text-[14px] font-normal leading-[1.253]" href={`${programPath}?panel=management`}>
+              쿠폰 / 프로모션
+            </Link>
+          ) : null}
           <Link className="text-[14px] font-normal leading-[1.253]" href={messagesHref}>
             메세지함
           </Link>
           <Link className="text-[14px] font-normal leading-[1.253]" href={`${applicationsHref}?panel=receipts`}>
             결제 관리
           </Link>
-          <Link className="text-[14px] font-normal leading-[1.253]" href={`${applicationsHref}?panel=reviews`}>
-            후기 관리
-          </Link>
+          {launchFeatureFlags.reviews ? (
+            <Link className="text-[14px] font-normal leading-[1.253]" href={`${applicationsHref}?panel=reviews`}>
+              후기 관리
+            </Link>
+          ) : null}
           <Link className="text-[14px] font-normal leading-[1.253]" href={`${programPath}?panel=delete`}>
             프로그램 삭제
           </Link>
@@ -1488,16 +1493,18 @@ function DashboardStatusPanel({
           }))}
           title={`받은 신청서 (${padDashboardCount(program.applicationCount)})`}
         />
-        <DashboardListCard
-          emptyText="아직 받은 후기가 없어요"
-          rows={reviewRows.map((application, index) => ({
-            badge: index === 0 ? "새로뜬 후기" : undefined,
-            badgeTone: "red",
-            date: formatDashboardDate(application.submittedAt),
-            title: application.applicantName,
-          }))}
-          title={`받은 후기 (${padDashboardCount(reviewRows.length)})`}
-        />
+        {launchFeatureFlags.reviews ? (
+          <DashboardListCard
+            emptyText="아직 받은 후기가 없어요"
+            rows={reviewRows.map((application, index) => ({
+              badge: index === 0 ? "새로뜬 후기" : undefined,
+              badgeTone: "red",
+              date: formatDashboardDate(application.submittedAt),
+              title: application.applicantName,
+            }))}
+            title={`받은 후기 (${padDashboardCount(reviewRows.length)})`}
+          />
+        ) : null}
       </section>
     </div>
   );
@@ -2634,7 +2641,9 @@ function DetailPagePreviewContent({ program }: { program: Program }) {
                 여행 소개
               </span>
               <span className="h-[27px] text-[#CAC4BC]">일정 안내</span>
-              <span className="h-[27px] text-[#CAC4BC]">후기</span>
+              {launchFeatureFlags.reviews ? (
+                <span className="h-[27px] text-[#CAC4BC]">후기</span>
+              ) : null}
               <span className="h-[27px] text-[#CAC4BC]">집결지 정보</span>
               <span className="h-[27px] text-[#CAC4BC]">안내사항</span>
             </nav>
@@ -4005,7 +4014,7 @@ function DeletePanel({
     <div className="pt-[var(--figma-47)]" style={figmaScaleStyle}>
       <section className="w-[57.5vw] max-w-[1104px] rounded-[6px] border border-[#C75C36] bg-white px-[var(--figma-16)] py-[var(--figma-16)] text-[16px] font-semibold leading-[1.45] text-[#0D0D0C]">
         <p>
-          프로그램을 삭제하면 상세페이지, 신청 기록, 입금 기록, 후기 등{" "}
+          프로그램을 삭제하면 상세페이지, 신청 기록, 입금 기록 등{" "}
           <span className="text-[#FE701E]">모든 데이터가 영구적으로 삭제돼요.</span>
         </p>
         <p className="text-[#FE701E]">삭제 후 데이터는 복구할 수 없어요</p>
@@ -4037,7 +4046,9 @@ function DeletePanel({
       <hr className="mt-[24px] w-[57.5vw] max-w-[1104px] border-[#6D7A8A]" />
 
       <div className="mt-[29px] grid w-[57.5vw] max-w-[1104px] grid-cols-3 gap-[1.458vw]">
-        <DeleteCheckMetric label="삭제되는 후기" value={reviewLabel} />
+        {launchFeatureFlags.reviews ? (
+          <DeleteCheckMetric label="삭제되는 후기" value={reviewLabel} />
+        ) : null}
         <DeleteCheckMetric label="삭제되는 신청 기록" value={applicationRecordLabel} />
         <DeleteCheckMetric label="삭제되는 결제 기록" value={paymentRecordLabel} />
       </div>
@@ -4552,7 +4563,7 @@ function NextRoundDialog({
           <h2 className="font-medium text-[#0D0D0C]">다음 기수 모집</h2>
           <div className="font-normal text-[#6D7A8A]">
             <p>이 프로그램 페이지를 그대로 유지하며 다음 기수를 오픈해요</p>
-            <p>후기, 저장 등 기존 정보는 모두 이어지고, 다음 기수 알림 신청자에게</p>
+            <p>저장 등 기존 정보는 모두 이어지고, 다음 기수 알림 신청자에게</p>
             <p>오픈 알림이 발송돼요</p>
           </div>
           <div className="flex items-center gap-[6px]">
@@ -5249,13 +5260,16 @@ function formatShortDateParts(parts: { day: number; month: number; year: string 
 }
 
 function normalizePanel(value: string | null): ProgramPanel {
+  const managementEnabled =
+    launchFeatureFlags.coupons || launchFeatureFlags.promotions;
+
   if (
     value === "basic" ||
     value === "detail" ||
     value === "schedule" ||
     value === "place" ||
     value === "guide" ||
-    value === "management" ||
+    (managementEnabled && value === "management") ||
     value === "delete"
   ) {
     return value;

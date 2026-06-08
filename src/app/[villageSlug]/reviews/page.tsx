@@ -7,6 +7,7 @@ import {
   getVillageReviews,
 } from "@/lib/village-db";
 import { listPublicVillagePageSections } from "@/lib/village-page-cms";
+import { launchFeatureFlags } from "@/lib/launch-feature-flags";
 import { createSeoMetadata } from "@/lib/seo";
 import { isReservedVillageSlug } from "@/lib/village-routing";
 
@@ -18,6 +19,8 @@ export async function generateMetadata({
 }: {
   params: Promise<{ villageSlug: string }>;
 }): Promise<Metadata> {
+  if (!launchFeatureFlags.reviews) return {};
+
   const { villageSlug } = await params;
   if (isReservedVillageSlug(villageSlug)) return {};
 
@@ -39,6 +42,8 @@ export default async function VillageReviewsRoute({
   params: Promise<{ villageSlug: string }>;
   searchParams?: Promise<Record<string, string | string[] | undefined>>;
 }) {
+  if (!launchFeatureFlags.reviews) notFound();
+
   const { villageSlug } = await params;
   const query = (await searchParams) ?? {};
   const programFilter = Array.isArray(query.program) ? query.program[0] : query.program;

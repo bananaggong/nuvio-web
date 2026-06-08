@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { apiError, isApiAuthError, requireHostRole } from "@/lib/api-security";
 import { canManageHostVillage } from "@/lib/host-village-access";
+import { launchFeatureFlags } from "@/lib/launch-feature-flags";
 import {
   listHostVillagePageSections,
   normalizeVillagePageSectionDraft,
@@ -21,7 +22,12 @@ export async function GET(request: Request) {
       return apiError("You do not have permission to manage this village.", 403);
     }
 
-    const pageKey = normalizePageKey(searchParams.get("pageKey"));
+    const requestedPageKey = searchParams.get("pageKey");
+    if (requestedPageKey === "reviews" && !launchFeatureFlags.reviews) {
+      return NextResponse.json({ error: "Reviews are disabled." }, { status: 404 });
+    }
+
+    const pageKey = normalizePageKey(requestedPageKey);
     const sections = await listHostVillagePageSections(villageSlug, pageKey);
 
     return NextResponse.json({ data: sections });
@@ -45,6 +51,10 @@ export async function POST(request: Request) {
   try {
     const body = await request.json();
     const draft = normalizeVillagePageSectionDraft(body);
+    if (draft.pageKey === "reviews" && !launchFeatureFlags.reviews) {
+      return NextResponse.json({ error: "Reviews are disabled." }, { status: 404 });
+    }
+
     if (!(await canManageHostVillage(auth, draft.villageSlug))) {
       return apiError("You do not have permission to manage this village.", 403);
     }
@@ -70,7 +80,7 @@ function normalizePageKey(value: string | null): VillagePageKey {
     value === "about" ||
     value === "media" ||
     value === "programs" ||
-    value === "reviews" ||
+    (launchFeatureFlags.reviews && value === "reviews") ||
     value === "notice"
   ) {
     return value;

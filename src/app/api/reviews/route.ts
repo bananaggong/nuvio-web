@@ -5,6 +5,7 @@ import {
 } from "@/lib/api-security";
 import { reviews } from "@/lib/data";
 import { isDemoModeEnabled } from "@/lib/demo-mode";
+import { launchFeatureFlags } from "@/lib/launch-feature-flags";
 import {
   listPublicReviewsFromDb,
   normalizeHostReviewDraft,
@@ -14,6 +15,10 @@ import {
 export const runtime = "nodejs";
 
 export async function GET() {
+  if (!launchFeatureFlags.reviews) {
+    return NextResponse.json({ error: "Reviews are disabled." }, { status: 404 });
+  }
+
   const fallbackReviews = isDemoModeEnabled() ? reviews : [];
 
   try {
@@ -25,6 +30,10 @@ export async function GET() {
 }
 
 export async function POST(request: Request) {
+  if (!launchFeatureFlags.reviews) {
+    return NextResponse.json({ error: "Reviews are disabled." }, { status: 404 });
+  }
+
   const payloadTooLarge = enforceContentLength(request, 32 * 1024);
   if (payloadTooLarge) return payloadTooLarge;
 

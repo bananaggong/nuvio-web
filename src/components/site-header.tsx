@@ -14,6 +14,7 @@ import {
 } from "lucide-react";
 import { useEffect, useRef, useState, type RefObject } from "react";
 import { nuvioIcons } from "@/components/icons/nuvio-icons";
+import { launchFeatureFlags } from "@/lib/launch-feature-flags";
 
 const navItems = [
   { href: "/magazine", label: "매거진", match: ["/magazine"] },
@@ -333,9 +334,13 @@ function ProfileMenu({
       <div className="mt-[1.111vw] flex items-center justify-between text-[0.833vw] leading-[1.253] max-[1100px]:text-xs">
         <span className="font-medium text-[#7A8B52]">포인트</span>
         <span className="font-semibold text-[#FF9A3D]">0 P</span>
-        <span className="h-[1.563vw] min-h-[22px] w-px bg-[#7A8B52]" />
-        <span className="font-medium text-[#7A8B52]">쿠폰</span>
-        <span className="font-semibold text-[#FF9A3D]">0 개</span>
+        {launchFeatureFlags.coupons ? (
+          <>
+            <span className="h-[1.563vw] min-h-[22px] w-px bg-[#7A8B52]" />
+            <span className="font-medium text-[#7A8B52]">쿠폰</span>
+            <span className="font-semibold text-[#FF9A3D]">0 개</span>
+          </>
+        ) : null}
       </div>
 
       <div className="mt-[1.111vw] flex items-center justify-between">

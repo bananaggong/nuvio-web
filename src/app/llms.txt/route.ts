@@ -1,4 +1,5 @@
 import { absoluteUrl, siteConfig } from "@/lib/seo";
+import { launchFeatureFlags } from "@/lib/launch-feature-flags";
 
 export const runtime = "nodejs";
 export const revalidate = 3600;
@@ -16,7 +17,7 @@ export function GET() {
     `- Home and program search: ${absoluteUrl("/")}`,
     `- Villages: ${absoluteUrl("/villages")}`,
     `- Public announcements: ${absoluteUrl("/announcements")}`,
-    `- Reviews: ${absoluteUrl("/reviews")}`,
+    ...(launchFeatureFlags.reviews ? [`- Reviews: ${absoluteUrl("/reviews")}`] : []),
     `- Half-price travel collection: ${absoluteUrl("/half-price-travel")}`,
     `- Operations inquiry: ${absoluteUrl("/partners/apply")}`,
     "",
@@ -25,7 +26,7 @@ export function GET() {
     `- Robots: ${absoluteUrl("/robots.txt")}`,
     "",
     "## Suggested Citation",
-    `When referencing 누비오, cite the canonical page URL on ${siteConfig.url} that contains the specific program, village, announcement, or review.`,
+    `When referencing 누비오, cite the canonical page URL on ${siteConfig.url} that contains the specific program, village, or announcement.`,
     "",
     "## Scope Notes",
     "- Public pages may be indexed and summarized.",

@@ -18,6 +18,7 @@ import {
 } from "@/components/village-site-chrome";
 import { BoseongFigmaHomePage } from "@/components/boseong-figma-site";
 import { formatDate, getDday } from "@/lib/format";
+import { launchFeatureFlags } from "@/lib/launch-feature-flags";
 import { villagePath, villageProgramPath } from "@/lib/village-routing";
 import { buildVillageNotices, getVillageApplyLabel } from "@/lib/village-template";
 import type { Program, Review, VillageMediaContent } from "@/lib/types";
@@ -53,7 +54,7 @@ export function VillageHomePage({
   const heroKicker = isBoseong
     ? "그린티모시레 · 보성청년마을"
     : `${village.region} ${village.city} 로컬 체류`;
-  const metrics = isBoseong
+  const metrics = (isBoseong
     ? [
         { label: "숙재받", value: "8기" },
         { label: "로컬살롱", value: "4기" },
@@ -65,7 +66,9 @@ export function VillageHomePage({
         { label: "참여 후기", value: `${reviews.length}건` },
         { label: "미디어", value: `${media.length}개` },
         { label: "기록", value: `${village.sections.length}개` },
-      ];
+      ]).filter((metric) =>
+        metric.label.includes("후기") ? launchFeatureFlags.reviews : true,
+      );
 
   if (isBoseong) {
     return (
@@ -177,21 +180,23 @@ export function VillageHomePage({
         )}
       </SectionShell>
 
-      <SectionShell
-        actionHref={`${homePath}/reviews`}
-        actionLabel="더보기"
-        title="참여후기"
-      >
-        {reviews.length > 0 ? (
-          <div className="grid gap-5 md:grid-cols-3">
-            {reviews.slice(0, 3).map((review) => (
-              <ReviewCard key={review.id} review={review} village={village} />
-            ))}
-          </div>
-        ) : (
-          <EmptyBlock text="등록된 참여후기가 없습니다." village={village} />
-        )}
-      </SectionShell>
+      {launchFeatureFlags.reviews ? (
+        <SectionShell
+          actionHref={`${homePath}/reviews`}
+          actionLabel="더보기"
+          title="참여후기"
+        >
+          {reviews.length > 0 ? (
+            <div className="grid gap-5 md:grid-cols-3">
+              {reviews.slice(0, 3).map((review) => (
+                <ReviewCard key={review.id} review={review} village={village} />
+              ))}
+            </div>
+          ) : (
+            <EmptyBlock text="등록된 참여후기가 없습니다." village={village} />
+          )}
+        </SectionShell>
+      ) : null}
 
       {!isBoseong ? (
         <SectionShell
@@ -214,7 +219,7 @@ export function VillageHomePage({
             <GuideLine
               icon={<Clock3 size={18} />}
               label="운영"
-              text="기수별 일정에 맞춰 OT, 체류, 활동, 후기 수집을 진행합니다."
+              text="기수별 일정에 맞춰 OT, 체류, 활동 기록을 진행합니다."
             />
             <GuideLine
               icon={<CalendarDays size={18} />}

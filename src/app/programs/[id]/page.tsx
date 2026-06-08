@@ -26,6 +26,7 @@ import {
 } from "@/components/program-schedule-popover";
 import { programs } from "@/lib/data";
 import { isDemoModeEnabled } from "@/lib/demo-mode";
+import { launchFeatureFlags } from "@/lib/launch-feature-flags";
 import {
   escapeCssUrl,
   floatingScheduleItems,
@@ -91,7 +92,7 @@ const dummyProgram: Program = {
   badges: ["자유신청", "로컬체험", "여행지원"],
   body: [
     "지역의 일상과 자연을 천천히 경험하며 머무르는 여행 프로그램입니다.",
-    "일정, 신청 방식, 후기 영역을 실제 콘텐츠로 교체하기 전까지 화면 구조를 확인할 수 있습니다.",
+    "일정, 신청 방식, 안내 영역을 실제 콘텐츠로 교체하기 전까지 화면 구조를 확인할 수 있습니다.",
   ],
   itineraryDays: [
     {
@@ -130,7 +131,15 @@ const dummyProgram: Program = {
   dataSource: "seed",
 };
 
-const detailTabs = ["여행 소개", "일정 안내", "후기", "집결지 정보", "안내사항"];
+const detailTabs = [
+  { href: "#detail-section-intro", label: "여행 소개" },
+  { href: "#detail-section-schedule", label: "일정 안내" },
+  ...(launchFeatureFlags.reviews
+    ? [{ href: "#detail-section-reviews", label: "후기" }]
+    : []),
+  { href: "#detail-section-place", label: "집결지 정보" },
+  { href: "#detail-section-guide", label: "안내사항" },
+];
 
 const boseongProgramReviewHrefs: Record<string, string> = {
   "1013": "/boseong/reviews?program=talent-for-stay",
@@ -190,8 +199,12 @@ export default async function ProgramDetailPage({
   const canonicalPath = programPath(program);
   const locationLabel = `${program.region}, ${program.city}`;
   const applyHref = program.applyUrl || `${canonicalPath}/apply`;
-  const programReviews = await getProgramReviewsForDetail(program);
-  const reviewListHref = getProgramReviewListHref(program);
+  const programReviews = launchFeatureFlags.reviews
+    ? await getProgramReviewsForDetail(program)
+    : [];
+  const reviewListHref = launchFeatureFlags.reviews
+    ? getProgramReviewListHref(program)
+    : "";
   const galleryImages = getProgramGalleryImages(program);
   const introImage = galleryImages[0] ?? "";
   const introParagraphs = getProgramIntroParagraphs(program);
@@ -264,17 +277,17 @@ export default async function ProgramDetailPage({
                     ? "pb-3 font-semibold leading-[1.253] text-[#5B3A29] after:absolute after:bottom-[-1px] after:left-0 after:h-0.5 after:w-full after:bg-[#FE701E]"
                     : "pb-2 font-normal leading-[1.6] text-[#CAC4BC]"
                 }`}
-                href={`#detail-section-${index}`}
-                key={tab}
+                href={tab.href}
+                key={tab.label}
               >
-                {tab}
+                {tab.label}
               </a>
             ))}
           </nav>
 
           <section
             className="flex h-[886px] w-full scroll-mt-[calc(max(56px,4.861vw)+42px)] flex-col pb-[30px] min-[1440px]:h-[61.528vw] min-[1440px]:pb-[2.083vw] max-md:h-[118vw] max-md:min-h-[420px] max-md:scroll-mt-[104px] max-md:pb-0"
-            id="detail-section-0"
+            id="detail-section-intro"
           >
             <div
               aria-label="여행 소개 이미지 영역"
@@ -308,7 +321,7 @@ export default async function ProgramDetailPage({
 
           <section
             className="flex min-h-[496px] w-full scroll-mt-[calc(max(56px,4.861vw)+42px)] flex-col gap-[18px] pb-10 max-md:scroll-mt-[104px]"
-            id="detail-section-1"
+            id="detail-section-schedule"
           >
             <SectionTitle title="여행 일정" />
             <ProgramScheduleCards
@@ -317,14 +330,16 @@ export default async function ProgramDetailPage({
             />
           </section>
 
-          <ParticipantReviewSection
-            reviewListHref={reviewListHref}
-            reviews={programReviews}
-          />
+          {launchFeatureFlags.reviews ? (
+            <ParticipantReviewSection
+              reviewListHref={reviewListHref}
+              reviews={programReviews}
+            />
+          ) : null}
 
           <section
             className="flex min-h-[932px] w-full scroll-mt-[calc(max(56px,4.861vw)+42px)] flex-col items-center gap-7 pb-10 min-[1440px]:min-h-[64.722vw] max-md:w-full max-md:scroll-mt-[104px]"
-            id="detail-section-3"
+            id="detail-section-place"
           >
             <SectionTitle title="집결지 정보" />
 
@@ -390,7 +405,7 @@ export default async function ProgramDetailPage({
 
             <section
               className="flex w-full scroll-mt-[calc(max(56px,4.861vw)+42px)] flex-col items-center gap-7 max-md:w-full max-md:scroll-mt-[104px]"
-              id="detail-section-4"
+              id="detail-section-guide"
             >
               <SectionTitle title="안내사항" />
               <div className="flex w-full flex-col">
@@ -503,14 +518,24 @@ export default async function ProgramDetailPage({
             </a>
           </section>
 
-          <div className="flex w-full flex-col gap-[9px] min-[1440px]:gap-[0.625vw] max-md:w-full">
-            <BenefitRow icon={<Ticket aria-hidden="true" className="size-3.5" />} label="쿠폰" value="받기" />
-            <BenefitRow
-              icon={<Tag aria-hidden="true" className="size-[13px]" />}
-              label="프로모션"
-              value="확인하기"
-            />
-          </div>
+          {launchFeatureFlags.coupons || launchFeatureFlags.promotions ? (
+            <div className="flex w-full flex-col gap-[9px] min-[1440px]:gap-[0.625vw] max-md:w-full">
+              {launchFeatureFlags.coupons ? (
+                <BenefitRow
+                  icon={<Ticket aria-hidden="true" className="size-3.5" />}
+                  label="쿠폰"
+                  value="받기"
+                />
+              ) : null}
+              {launchFeatureFlags.promotions ? (
+                <BenefitRow
+                  icon={<Tag aria-hidden="true" className="size-[13px]" />}
+                  label="프로모션"
+                  value="확인하기"
+                />
+              ) : null}
+            </div>
+          ) : null}
         </aside>
 
       </div>
@@ -548,7 +573,7 @@ function ParticipantReviewSection({
   return (
     <section
       className="flex min-h-[1076px] w-full scroll-mt-[calc(max(56px,4.861vw)+42px)] flex-col items-center gap-4 pb-10 max-md:scroll-mt-[104px]"
-      id="detail-section-2"
+      id="detail-section-reviews"
     >
       <SectionTitle title="누비어 후기" />
 

@@ -21,6 +21,7 @@ import {
   implementationStatus,
   summarizeImplementationStatus,
 } from "@/lib/implementation-status";
+import { launchFeatureFlags } from "@/lib/launch-feature-flags";
 import type { Program, ProgramLead, ProgramStatus } from "@/lib/types";
 import { AdminHomeHeroPanel } from "./admin-home-hero-panel";
 import { AnnouncementSourceMonitor } from "./announcement-source-monitor";
@@ -138,13 +139,17 @@ export function AdminDashboard() {
       icon: CheckCircle2,
       tone: "bg-emerald-50 text-emerald-700",
     },
-    {
-      label: "커뮤니티",
-      value: `${reviews.length}건`,
-      helper: "후기와 경험 기록",
-      icon: MessageSquareText,
-      tone: "bg-violet-50 text-violet-700",
-    },
+    ...(launchFeatureFlags.reviews
+      ? [
+          {
+            label: "커뮤니티",
+            value: `${reviews.length}건`,
+            helper: "후기와 경험 기록",
+            icon: MessageSquareText,
+            tone: "bg-violet-50 text-violet-700",
+          },
+        ]
+      : []),
     {
       label: "PRD 구현",
       value: `${implementationSummary.implemented}/${implementationSummary.total}`,
@@ -686,7 +691,7 @@ function ProgramDraftForm({
 function AdminLinks() {
   const links = [
     ["/", "공개 프로그램 목록"],
-    ["/reviews", "후기 게시판"],
+    ...(launchFeatureFlags.reviews ? [["/reviews", "후기 게시판"]] : []),
     ["/announcements", "실시간 공고"],
     ["/partners/apply", "운영 문의"],
     ["/host", "호스트 운영 콘솔"],

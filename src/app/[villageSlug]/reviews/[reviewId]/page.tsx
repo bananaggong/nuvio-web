@@ -7,6 +7,7 @@ import {
   getVillagePrograms,
   getVillageReviews,
 } from "@/lib/village-db";
+import { launchFeatureFlags } from "@/lib/launch-feature-flags";
 import {
   breadcrumbJsonLd,
   createSeoMetadata,
@@ -22,6 +23,8 @@ export async function generateMetadata({
 }: {
   params: Promise<{ villageSlug: string; reviewId: string }>;
 }): Promise<Metadata> {
+  if (!launchFeatureFlags.reviews) return {};
+
   const { villageSlug, reviewId } = await params;
   if (isReservedVillageSlug(villageSlug)) return {};
 
@@ -48,6 +51,8 @@ export default async function VillageReviewDetailRoute({
 }: {
   params: Promise<{ villageSlug: string; reviewId: string }>;
 }) {
+  if (!launchFeatureFlags.reviews) notFound();
+
   const { villageSlug, reviewId } = await params;
   if (isReservedVillageSlug(villageSlug)) notFound();
 

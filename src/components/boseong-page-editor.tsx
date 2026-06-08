@@ -32,6 +32,7 @@ import type {
   VillagePageKey,
   VillagePageSectionDraft,
 } from "@/lib/village-page-content";
+import { launchFeatureFlags } from "@/lib/launch-feature-flags";
 import type { Village } from "@/lib/village-types";
 
 type EditablePageKey = Extract<
@@ -78,6 +79,10 @@ const editablePages: Array<{
   { key: "notice", label: "소식", publicHref: "/boseong/notice" },
 ];
 
+const visibleEditablePages = editablePages.filter((page) =>
+  page.key === "reviews" ? launchFeatureFlags.reviews : true,
+);
+
 const defaultSectionKeyByPage: Record<EditablePageKey, string> = {
   about: "about_header",
   home: "home_hero",
@@ -118,14 +123,18 @@ export function BoseongPageEditor({
   sectionsByPage: SectionsByPage;
   village: Village;
 }) {
+  const safeInitialPageKey =
+    initialPageKey === "reviews" && !launchFeatureFlags.reviews
+      ? "home"
+      : initialPageKey;
   const [sectionsByPage, setSectionsByPage] = useState(() =>
     normalizeSectionsByPage(initialSectionsByPage),
   );
   const [assets, setAssets] = useState(initialAssets);
   const [activePageKey, setActivePageKey] =
-    useState<EditablePageKey>(initialPageKey);
+    useState<EditablePageKey>(safeInitialPageKey);
   const [activeSectionKey, setActiveSectionKey] = useState(
-    getInitialSectionKey(initialPageKey, initialSectionsByPage),
+    getInitialSectionKey(safeInitialPageKey, initialSectionsByPage),
   );
   const [dirtyKeys, setDirtyKeys] = useState<Set<string>>(new Set());
   const [saving, setSaving] = useState(false);
@@ -154,7 +163,9 @@ export function BoseongPageEditor({
     () => buildVillageNotices(village, programs),
     [programs, village],
   );
-  const activePage = editablePages.find((page) => page.key === activePageKey) ?? editablePages[0];
+  const activePage =
+    visibleEditablePages.find((page) => page.key === activePageKey) ??
+    visibleEditablePages[0];
 
   function switchPage(pageKey: EditablePageKey) {
     setActivePageKey(pageKey);
@@ -240,7 +251,9 @@ export function BoseongPageEditor({
   }
 
   async function saveDrafts() {
-    const allSections = editablePages.flatMap((page) => sectionsByPage[page.key] ?? []);
+    const allSections = visibleEditablePages.flatMap(
+      (page) => sectionsByPage[page.key] ?? [],
+    );
     const targets = dirtyKeys.size
       ? allSections.filter((section) => dirtyKeys.has(dirtyKey(section.pageKey as EditablePageKey, section.sectionKey)))
       : activeSection
@@ -454,7 +467,7 @@ export function BoseongPageEditor({
         </div>
 
         <div className="mt-3 flex flex-wrap gap-2">
-          {editablePages.map((page) => (
+          {visibleEditablePages.map((page) => (
             <button
               className={`inline-flex h-9 items-center rounded-md border px-3 text-sm font-black ${
                 page.key === activePageKey

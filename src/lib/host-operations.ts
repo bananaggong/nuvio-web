@@ -109,7 +109,7 @@ export const seedHostApplications: HostApplication[] = [
     receiptCount: 5,
     signatureCompleted: true,
     reviewSubmitted: true,
-    memo: "환급 서류와 후기 모두 완료",
+    memo: "환급 서류와 증빙 모두 완료",
   },
   {
     id: "app-005",
@@ -220,7 +220,7 @@ export function buildReportMetrics(applications: HostApplication[]): ReportMetri
     {
       label: "보고 준비율",
       value: `${summary.reportReadiness}%`,
-      helper: "서명, 증빙, 후기 충족률",
+      helper: "서명, 증빙 충족률",
     },
   ];
 }

@@ -34,6 +34,7 @@ import {
   type HostInquiry,
   type HostInquiryStatus,
 } from "@/lib/host-inquiries";
+import { launchFeatureFlags } from "@/lib/launch-feature-flags";
 import { useHostOperationsData } from "@/lib/use-host-operations-data";
 
 type MessageListTab = "all" | "scheduled" | "sent";
@@ -701,10 +702,14 @@ function MessageSidebar({
             </div>
           </section>
 
-          <MessageNavLink className="absolute left-[var(--msg-12)] top-[var(--msg-296)]" href={`${programPath}?panel=management`} label="쿠폰 / 프로모션" />
+          {launchFeatureFlags.coupons || launchFeatureFlags.promotions ? (
+            <MessageNavLink className="absolute left-[var(--msg-12)] top-[var(--msg-296)]" href={`${programPath}?panel=management`} label="쿠폰 / 프로모션" />
+          ) : null}
           <MessageNavLink className="absolute left-[var(--msg-12)] top-[var(--msg-327)]" href={messagesHref} label="메세지함" />
           <MessageNavLink className="absolute left-[var(--msg-12)] top-[var(--msg-358)]" href={`${applicationsHref}?panel=receipts`} label="결제 관리" />
-          <MessageNavLink className="absolute left-[var(--msg-12)] top-[var(--msg-389)]" href={`${applicationsHref}?panel=reviews`} label="후기 관리" />
+          {launchFeatureFlags.reviews ? (
+            <MessageNavLink className="absolute left-[var(--msg-12)] top-[var(--msg-389)]" href={`${applicationsHref}?panel=reviews`} label="후기 관리" />
+          ) : null}
           <MessageNavLink className="absolute left-[var(--msg-12)] top-[var(--msg-420)]" href={`${programPath}?panel=delete`} label="프로그램 삭제" />
         </nav>
       </div>

@@ -1,5 +1,7 @@
 import type { Metadata } from "next";
+import { notFound } from "next/navigation";
 import { ReviewFeed } from "@/components/review-feed";
+import { launchFeatureFlags } from "@/lib/launch-feature-flags";
 import { createSeoMetadata } from "@/lib/seo";
 
 export const metadata: Metadata = createSeoMetadata({
@@ -10,5 +12,7 @@ export const metadata: Metadata = createSeoMetadata({
 });
 
 export default function ReviewsPage() {
+  if (!launchFeatureFlags.reviews) notFound();
+
   return <ReviewFeed />;
 }

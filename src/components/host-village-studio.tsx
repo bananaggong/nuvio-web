@@ -540,8 +540,8 @@ function createDefaultSections(villageName: string): VillageSection[] {
       id: "story",
       type: "story",
       title: `${villageName} 소개`,
-      body: `${villageName}의 프로그램, 공지, 후기 흐름을 한곳에서 관리합니다.`,
-      items: ["로컬페이지 소개", "프로그램 안내", "후기 수집"],
+      body: `${villageName}의 프로그램, 공지, 활동 기록을 한곳에서 관리합니다.`,
+      items: ["로컬페이지 소개", "프로그램 안내", "공지 관리"],
     },
   ];
 }
@@ -558,7 +558,7 @@ function createNewVillageDraft(): Village {
     region: "전국",
     city: "로컬",
     tagline: "우리 로컬페이지의 프로그램과 소식을 소개합니다.",
-    summary: "로컬페이지 소개, 프로그램 안내, 참여 후기와 공지를 한곳에서 관리합니다.",
+    summary: "로컬페이지 소개, 프로그램 안내와 공지를 한곳에서 관리합니다.",
     description:
       "호스트가 직접 로컬페이지 소개, 프로그램, 문의 채널, 활동 기록을 구성할 수 있는 공개 페이지입니다.",
     heroImage:

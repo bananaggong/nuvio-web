@@ -19,6 +19,7 @@ import {
 } from "@/lib/boseong-review-seeds";
 import { BoseongPageManager } from "@/components/boseong-page-manager";
 import { HostSocialConnectionPanel } from "@/components/host-social-connection-panel";
+import { launchFeatureFlags } from "@/lib/launch-feature-flags";
 import { boseongMediaSeeds } from "@/lib/village-media-seeds";
 import {
   createHostProgramGuideInfo,
@@ -272,23 +273,26 @@ export function BoseongAdminConsole() {
               보성청년마을 관리자
             </h1>
             <p className="mt-3 max-w-3xl text-sm leading-7 text-slate-600">
-              프로그램과 참여 후기를 등록하고, 공개 보성 사이트에 반영될 데이터를
-              확인합니다. DOCX 후기 {boseongReviewImportSource.totalCount}건은
-              작성자명 마스킹 후 시드 데이터로 반영되어 있습니다.
+              프로그램과 미디어를 등록하고, 공개 보성 사이트에 반영될 데이터를
+              확인합니다.
             </p>
           </div>
           <div className="flex flex-wrap gap-2">
             <LinkButton href="/boseong" label="보성 사이트" />
             <LinkButton href="/boseong/programs" label="프로그램" />
             <LinkButton href="/boseong/media" label="미디어" />
-            <LinkButton href="/boseong/reviews" label="참여 후기" />
+            {launchFeatureFlags.reviews ? (
+              <LinkButton href="/boseong/reviews" label="참여 후기" />
+            ) : null}
           </div>
         </div>
       </section>
 
       <section className="mt-5 grid gap-3 md:grid-cols-4">
         <Metric label="등록 프로그램" value="3개" />
-        <Metric label="DOCX 후기" value={`${boseongReviewImportSource.totalCount}건`} />
+        {launchFeatureFlags.reviews ? (
+          <Metric label="DOCX 후기" value={`${boseongReviewImportSource.totalCount}건`} />
+        ) : null}
         <Metric label="미디어" value={`${boseongMediaSeeds.length + localMedia.length}개`} />
         <Metric label="개인정보 처리" value="이름 마스킹" />
       </section>
@@ -381,6 +385,7 @@ export function BoseongAdminConsole() {
           <StatusMessage message={programMessage} />
         </Panel>
 
+        {launchFeatureFlags.reviews ? (
         <Panel icon={<PencilLine size={20} />} title="참여 후기 업로드">
           <div className="grid gap-4">
             <label className="grid gap-2">
@@ -455,6 +460,7 @@ export function BoseongAdminConsole() {
           />
           <StatusMessage message={reviewMessage} />
         </Panel>
+        ) : null}
 
         <Panel icon={<FileVideo2 size={20} />} title="미디어 업로드">
           <div className="grid gap-4">
@@ -564,6 +570,7 @@ export function BoseongAdminConsole() {
         </Panel>
       </section>
 
+      {launchFeatureFlags.reviews ? (
       <section className="mt-6 border border-slate-200 bg-white p-5">
         <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
           <div>
@@ -656,6 +663,7 @@ export function BoseongAdminConsole() {
           ))}
         </div>
       </section>
+      ) : null}
     </main>
   );
 }

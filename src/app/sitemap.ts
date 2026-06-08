@@ -1,5 +1,6 @@
 import type { MetadataRoute } from "next";
 import { announcements, reviews } from "@/lib/data";
+import { launchFeatureFlags } from "@/lib/launch-feature-flags";
 import { programPath } from "@/lib/program-routing";
 import { listPublicPrograms } from "@/lib/public-program-db";
 import { absoluteUrl } from "@/lib/seo";
@@ -24,7 +25,9 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     route("/half-price-travel", "weekly", 0.8, now),
     route("/villages", "daily", 0.8, now),
     route("/announcements", "hourly", 0.7, now),
-    route("/reviews", "daily", 0.7, now),
+    ...(launchFeatureFlags.reviews
+      ? [route("/reviews", "daily", 0.7, now)]
+      : []),
     route("/partners/apply", "monthly", 0.5, now),
     route("/terms", "yearly", 0.2, now),
     route("/privacy", "yearly", 0.2, now),
@@ -48,7 +51,16 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     route(`${villagePath(village.slug)}/programs`, "daily", 0.65, village.updatedAt),
     route(`${villagePath(village.slug)}/media`, "weekly", 0.55, village.updatedAt),
     route(`${villagePath(village.slug)}/notice`, "weekly", 0.45, village.updatedAt),
-    route(`${villagePath(village.slug)}/reviews`, "weekly", 0.55, village.updatedAt),
+    ...(launchFeatureFlags.reviews
+      ? [
+          route(
+            `${villagePath(village.slug)}/reviews`,
+            "weekly",
+            0.55,
+            village.updatedAt,
+          ),
+        ]
+      : []),
   ]);
 
   const villageProgramRouteGroups = await Promise.all(
@@ -79,27 +91,29 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     }),
   );
 
-  const villageReviewRouteGroups = await Promise.all(
-    villages.map(async (village) => {
-      const villagePrograms = await getVillagePrograms(village);
-      const villageReviews = await getVillageReviews(village, villagePrograms);
-      return villageReviews.map((review) =>
-        route(
-          `${villagePath(village.slug)}/reviews/${review.id}`,
-          "weekly",
-          0.45,
-          dateOrNow(review.date),
-        ),
-      );
-    }),
-  );
+  const villageReviewRouteGroups = launchFeatureFlags.reviews
+    ? await Promise.all(
+        villages.map(async (village) => {
+          const villagePrograms = await getVillagePrograms(village);
+          const villageReviews = await getVillageReviews(village, villagePrograms);
+          return villageReviews.map((review) =>
+            route(
+              `${villagePath(village.slug)}/reviews/${review.id}`,
+              "weekly",
+              0.45,
+              dateOrNow(review.date),
+            ),
+          );
+        }),
+      )
+    : [];
 
   const announcementRoutes = announcements.map((announcement) =>
     route(`/announcements/${announcement.id}`, "weekly", 0.45, announcement.date),
   );
-  const reviewRoutes = reviews.map((review) =>
-    route(`/reviews/${review.id}`, "weekly", 0.45, review.date),
-  );
+  const reviewRoutes = launchFeatureFlags.reviews
+    ? reviews.map((review) => route(`/reviews/${review.id}`, "weekly", 0.45, review.date))
+    : [];
 
   return uniqueRoutes([
     ...staticRoutes,

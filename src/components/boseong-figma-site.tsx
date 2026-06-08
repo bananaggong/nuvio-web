@@ -14,6 +14,7 @@ import {
   type BoseongOriginalSlide,
 } from "@/components/boseong-original-carousel";
 import { formatDate } from "@/lib/format";
+import { launchFeatureFlags } from "@/lib/launch-feature-flags";
 import {
   getSectionContent,
   type PublishedVillagePageSection,
@@ -44,6 +45,10 @@ const boseongNav = [
   { label: "전체차 후기", href: "/boseong/reviews", width: 119 },
   { label: "전체차 소식", href: "/boseong/notice", width: 119 },
 ];
+
+const visibleBoseongNav = boseongNav.filter((item) =>
+  item.href.includes("/reviews") ? launchFeatureFlags.reviews : true,
+);
 
 const mediaCategoryLabels: Record<VillageMediaContent["category"], string> = {
   original: "자체 콘텐츠",
@@ -179,7 +184,7 @@ export function BoseongFigmaHeader({
         </Link>
 
         <nav className="hidden items-end justify-end gap-[30px] text-xl font-semibold leading-[1.10696] tracking-normal text-[#393939] lg:absolute lg:left-[270px] lg:right-[26px] lg:top-[28px] lg:flex">
-          {boseongNav.map((item) => (
+          {visibleBoseongNav.map((item) => (
             <Link
               className={`text-center hover:text-[#4c8244] ${
                 activeHref === item.href ? "text-[#4c8244]" : ""
@@ -445,7 +450,7 @@ export function BoseongFigmaHomePage({
       );
     }
 
-    if (sectionKey === "reviews_preview") {
+    if (sectionKey === "reviews_preview" && launchFeatureFlags.reviews) {
       return renderHomeSection(
         sectionKey,
         <BoseongHomeSection

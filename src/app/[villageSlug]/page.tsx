@@ -8,6 +8,7 @@ import {
   getVillageReviews,
   listPublicVillages,
 } from "@/lib/village-db";
+import { launchFeatureFlags } from "@/lib/launch-feature-flags";
 import { listPublicVillageMedia } from "@/lib/village-media-db";
 import { listPublicVillagePageSections } from "@/lib/village-page-cms";
 import {
@@ -58,7 +59,9 @@ export default async function ShortVillagePage({
   if (!village) notFound();
 
   const programs = await getVillagePrograms(village);
-  const reviews = await getVillageReviews(village, programs, { limit: 8 });
+  const reviews = launchFeatureFlags.reviews
+    ? await getVillageReviews(village, programs, { limit: 8 })
+    : [];
   const media = await listPublicVillageMedia(village.slug, { limit: 6 });
   const pageSections =
     village.slug === "boseong"

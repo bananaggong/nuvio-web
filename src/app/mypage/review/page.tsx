@@ -1,5 +1,5 @@
 import { redirect } from "next/navigation";
 
 export default function MypageReviewAliasRoute() {
-  redirect("/mypage/reviews");
+  redirect("/mypage");
 }

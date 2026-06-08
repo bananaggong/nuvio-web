@@ -9,6 +9,7 @@ import {
   getVillagePrograms,
   getVillageReviews,
 } from "@/lib/village-db";
+import { launchFeatureFlags } from "@/lib/launch-feature-flags";
 import { listVillageAssets } from "@/lib/village-assets-db";
 import { listPublicVillageMedia } from "@/lib/village-media-db";
 import { listHostVillagePageSections } from "@/lib/village-page-cms";
@@ -64,13 +65,15 @@ export default async function HostVillageEditorPage({
     noticeSections,
     assets,
   ] = await Promise.all([
-    getVillageReviews(village, programs),
+    launchFeatureFlags.reviews ? getVillageReviews(village, programs) : [],
     listPublicVillageMedia(village.slug, { limit: 12 }),
     listHostVillagePageSections(village.slug, "home"),
     listHostVillagePageSections(village.slug, "about"),
     listHostVillagePageSections(village.slug, "media"),
     listHostVillagePageSections(village.slug, "programs"),
-    listHostVillagePageSections(village.slug, "reviews"),
+    launchFeatureFlags.reviews
+      ? listHostVillagePageSections(village.slug, "reviews")
+      : [],
     listHostVillagePageSections(village.slug, "notice"),
     safeListVillageAssets(village.slug),
   ]);
@@ -88,7 +91,7 @@ export default async function HostVillageEditorPage({
         media: mediaSections,
         notice: noticeSections,
         programs: programsSections,
-        reviews: reviewsSections,
+        reviews: launchFeatureFlags.reviews ? reviewsSections : [],
       }}
       village={village}
     />
@@ -108,7 +111,7 @@ function normalizeEditorPageKey(value?: string) {
     value === "about" ||
     value === "media" ||
     value === "programs" ||
-    value === "reviews" ||
+    (launchFeatureFlags.reviews && value === "reviews") ||
     value === "notice"
   ) {
     return value;

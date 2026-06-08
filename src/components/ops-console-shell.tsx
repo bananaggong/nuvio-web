@@ -24,6 +24,7 @@ import {
 import type { LucideIcon } from "lucide-react";
 import { useState } from "react";
 import { SiteHeader } from "@/components/site-header";
+import { launchFeatureFlags } from "@/lib/launch-feature-flags";
 
 type ConsoleArea = "host" | "admin";
 
@@ -427,7 +428,9 @@ function buildProgramNavigation(programBasePath: string): NavigationItem[] {
         { name: "관심도, 찜, 즐겨찾기 관련", href: scopedHref("/applications", "saved") },
         { name: "신청자 목록", href: scopedHref("/applications") },
         { name: "영수증 관리", href: scopedHref("/applications", "receipts") },
-        { name: "후기 관리", href: scopedHref("/applications", "reviews") },
+        ...(launchFeatureFlags.reviews
+          ? [{ name: "후기 관리", href: scopedHref("/applications", "reviews") }]
+          : []),
       ],
     },
     {

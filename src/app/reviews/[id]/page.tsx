@@ -6,6 +6,7 @@ import { Heart, MessageCircle, Share2 } from "lucide-react";
 import { JsonLdScript } from "@/components/json-ld";
 import { getProgramById, getReviewById, reviewCategories, reviews } from "@/lib/data";
 import { formatDateTime } from "@/lib/format";
+import { launchFeatureFlags } from "@/lib/launch-feature-flags";
 import { programPath } from "@/lib/program-routing";
 import {
   breadcrumbJsonLd,
@@ -14,6 +15,8 @@ import {
 } from "@/lib/seo";
 
 export function generateStaticParams() {
+  if (!launchFeatureFlags.reviews) return [];
+
   return reviews.map((review) => ({ id: String(review.id) }));
 }
 
@@ -22,6 +25,8 @@ export async function generateMetadata({
 }: {
   params: Promise<{ id: string }>;
 }): Promise<Metadata> {
+  if (!launchFeatureFlags.reviews) return {};
+
   const { id } = await params;
   const review = getReviewById(id);
   if (!review) return {};
@@ -38,6 +43,8 @@ export default async function ReviewDetailPage({
 }: {
   params: Promise<{ id: string }>;
 }) {
+  if (!launchFeatureFlags.reviews) notFound();
+
   const { id } = await params;
   const review = getReviewById(id);
   if (!review) notFound();

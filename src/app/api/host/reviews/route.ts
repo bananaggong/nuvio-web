@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { apiError, isApiAuthError, requireHostRole } from "@/lib/api-security";
 import { canManageHostVillage } from "@/lib/host-village-access";
+import { launchFeatureFlags } from "@/lib/launch-feature-flags";
 import {
   listHostReviewDraftsFromDb,
   normalizeHostReviewDraft,
@@ -10,6 +11,10 @@ import {
 export const runtime = "nodejs";
 
 export async function GET() {
+  if (!launchFeatureFlags.reviews) {
+    return NextResponse.json({ error: "Reviews are disabled." }, { status: 404 });
+  }
+
   const auth = await requireHostRole();
   if (isApiAuthError(auth)) return auth.response;
 
@@ -30,6 +35,10 @@ export async function GET() {
 }
 
 export async function POST(request: Request) {
+  if (!launchFeatureFlags.reviews) {
+    return NextResponse.json({ error: "Reviews are disabled." }, { status: 404 });
+  }
+
   const auth = await requireHostRole();
   if (isApiAuthError(auth)) return auth.response;
 

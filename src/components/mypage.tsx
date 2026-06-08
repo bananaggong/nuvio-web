@@ -34,6 +34,7 @@ import { getProgramById } from "@/lib/data";
 import { NuvioEmptyState } from "@/components/nuvio-empty-state";
 import { SupportContactForm } from "@/components/support-contact-form";
 import type { HostApplication } from "@/lib/host-operations";
+import { launchFeatureFlags } from "@/lib/launch-feature-flags";
 import { programPath } from "@/lib/program-routing";
 import type { Program, Review } from "@/lib/types";
 
@@ -271,6 +272,12 @@ const sideMenuItems: Array<{
   { href: "/mypage/settings", label: "설정", icon: Settings, section: "settings" },
 ];
 
+const visibleSideMenuItems = sideMenuItems.filter((item) => {
+  if (item.section === "reviews") return launchFeatureFlags.reviews;
+  if (item.section === "coupons") return launchFeatureFlags.coupons;
+  return true;
+});
+
 export function Mypage() {
   return (
     <MypageFrame activeSection="home" showOverview>
@@ -427,10 +434,9 @@ function MypageOverview({ context }: { context: MypageContext }) {
           bookmarkCount={context.bookmarkedPrograms.length}
           messageCount={context.unreadMessageCount}
           nickname={context.nickname}
-          reviewCount={context.reviewCount}
           tripCount={context.visibleTrips.length}
         />
-        <WalletSummaryCard couponCount={0} pointCount={0} />
+        <WalletSummaryCard pointCount={0} />
       </section>
     </>
   );
@@ -511,7 +517,7 @@ function TripsContent({ context }: { context: MypageContext }) {
         ) : filteredApplications.length > 0 ? (
           filteredApplications.map((application) => {
             const reviewAction =
-              tab === "completed"
+              launchFeatureFlags.reviews && tab === "completed"
                 ? getCompletedTripReviewAction(application)
                 : undefined;
 
@@ -1870,14 +1876,12 @@ function ProfileSummaryCard({
   bookmarkCount,
   messageCount,
   nickname,
-  reviewCount,
   tripCount,
 }: {
   avatarUrl?: string | null;
   bookmarkCount: number;
   messageCount: number;
   nickname: string;
-  reviewCount: number;
   tripCount: number;
 }) {
   return (
@@ -1898,10 +1902,9 @@ function ProfileSummaryCard({
           </span>
         </div>
 
-        <div className="grid flex-1 grid-cols-2 gap-y-5 sm:grid-cols-4">
+        <div className="grid flex-1 grid-cols-2 gap-y-5 sm:grid-cols-3">
           <SummaryMetric icon={CalendarDays} label="내 여행" value={tripCount} />
           <SummaryMetric icon={Bookmark} label="저장" value={bookmarkCount} />
-          <SummaryMetric icon={Star} label="후기" value={reviewCount} />
           <SummaryMetric icon={MessageCircle} label="메시지" value={messageCount} />
         </div>
       </div>
@@ -1909,19 +1912,17 @@ function ProfileSummaryCard({
   );
 }
 
-function WalletSummaryCard({
-  couponCount,
-  pointCount,
-}: {
-  couponCount: number;
-  pointCount: number;
-}) {
+function WalletSummaryCard({ pointCount }: { pointCount: number }) {
   return (
     <section className="rounded-[6px] border border-[#d9d9d9] bg-white px-6 py-6">
       <div className="grid h-full min-h-[96px] content-center gap-5">
         <WalletLine label="포인트" unit="P" value={pointCount} />
-        <div className="h-px bg-[#d9d9d9]" />
-        <WalletLine label="쿠폰" unit="개" value={couponCount} />
+        {launchFeatureFlags.coupons ? (
+          <>
+            <div className="h-px bg-[#d9d9d9]" />
+            <WalletLine label="쿠폰" unit="개" value={0} />
+          </>
+        ) : null}
       </div>
     </section>
   );
@@ -1978,7 +1979,7 @@ function MypageSideMenu({
 
   return (
     <aside className="flex gap-3 overflow-x-auto pb-2 lg:block lg:space-y-[13px] lg:overflow-visible lg:pb-0">
-      {sideMenuItems.map((item) => (
+      {visibleSideMenuItems.map((item) => (
         <SideMenuLink
           active={item.section === activeSection || pathname === item.href}
           href={item.href}
@@ -2518,16 +2519,18 @@ function useMypageData(): MypageData {
           await Promise.all([
             fetch("/api/auth/session", { cache: "no-store" }),
             fetch("/api/programs", { cache: "no-store" }),
-            fetch("/api/reviews", { cache: "no-store" }),
+            launchFeatureFlags.reviews
+              ? fetch("/api/reviews", { cache: "no-store" })
+              : undefined,
           ]);
         const sessionPayload =
           (await sessionResponse.json()) as AuthSessionResponse;
         const programPayload = (await programsResponse.json()) as {
           data?: Program[];
         };
-        const reviewPayload = (await reviewsResponse.json()) as {
-          data?: Review[];
-        };
+        const reviewPayload = reviewsResponse
+          ? ((await reviewsResponse.json()) as { data?: Review[] })
+          : { data: [] };
         const nextSession = sessionPayload.data ?? {
           profile: null,
           user: null,
@@ -2629,8 +2632,9 @@ function useMypageContext(data: MypageData): MypageContext {
     nickname,
     profileName,
     recentlyViewedPrograms,
-    reviewCount: data.applications.filter((application) => application.reviewSubmitted)
-      .length,
+    reviewCount: launchFeatureFlags.reviews
+      ? data.applications.filter((application) => application.reviewSubmitted).length
+      : 0,
     unreadMessageCount: data.notifications.filter((item) => !item.readAt).length,
     visibleTrips,
   };

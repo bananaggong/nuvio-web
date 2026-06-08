@@ -34,7 +34,7 @@ export function HostLocalPageCreate() {
   const [name, setName] = useState("새 로컬페이지");
   const [location, setLocation] = useState("전국 로컬");
   const [summary, setSummary] = useState(
-    "로컬페이지 소개, 프로그램 안내, 참여 후기와 공지를 한곳에서 관리합니다.",
+    "로컬페이지 소개, 프로그램 안내와 공지를 한곳에서 관리합니다.",
   );
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [imagePreviewUrl, setImagePreviewUrl] = useState("");
@@ -47,7 +47,7 @@ export function HostLocalPageCreate() {
   const trimmedLocation = location.trim() || "전국 로컬";
   const trimmedSummary =
     summary.trim() ||
-    "로컬페이지 소개, 프로그램 안내, 참여 후기와 공지를 한곳에서 관리합니다.";
+    "로컬페이지 소개, 프로그램 안내와 공지를 한곳에서 관리합니다.";
   const previewImage = imagePreviewUrl || fallbackHeroImage;
 
   const locationParts = useMemo(
@@ -214,7 +214,7 @@ export function HostLocalPageCreate() {
               <textarea
                 className="min-h-28 w-full rounded-md border border-slate-200 p-3 text-sm leading-6 text-slate-800 outline-none focus:border-[var(--primary)]"
                 onChange={(event) => setSummary(event.target.value)}
-                placeholder="로컬페이지 소개, 프로그램 안내, 참여 후기와 공지를 한곳에서 관리합니다."
+                placeholder="로컬페이지 소개, 프로그램 안내와 공지를 한곳에서 관리합니다."
                 value={summary}
               />
             </label>

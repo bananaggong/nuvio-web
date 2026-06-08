@@ -14,6 +14,7 @@ import {
 } from "@/components/boseong-figma-site";
 import { villagePath } from "@/lib/village-routing";
 import { greentmosireLogoImage } from "@/lib/village-media-seeds";
+import { launchFeatureFlags } from "@/lib/launch-feature-flags";
 import type { Program } from "@/lib/types";
 import type { Village } from "@/lib/village-types";
 
@@ -62,7 +63,9 @@ export function VillageSiteHeader({
           <HeaderNavLink href={`${homePath}/about`} label="소개" />
           <HeaderNavLink href={`${homePath}/programs`} label="체험활동" />
           <HeaderNavLink href={`${homePath}/media`} label="미디어" />
-          <HeaderNavLink href={`${homePath}/reviews`} label="참여후기" />
+          {launchFeatureFlags.reviews ? (
+            <HeaderNavLink href={`${homePath}/reviews`} label="참여후기" />
+          ) : null}
           <HeaderNavLink href={`${homePath}/notice`} label="공지" />
         </nav>
 

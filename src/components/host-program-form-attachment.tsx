@@ -20,6 +20,7 @@ import {
   hostProgramPath,
   hostStandaloneProgramPath,
 } from "@/lib/host-projects";
+import { launchFeatureFlags } from "@/lib/launch-feature-flags";
 import { readHostProgramDrafts } from "@/lib/host-program-studio";
 
 type HostProgramOption = {
@@ -528,11 +529,13 @@ function ProgramFormSidebar({
             </div>
           </section>
 
-          <ProgramFormNavLink
-            className="absolute left-[var(--form-12)] top-[var(--form-296)]"
-            href={`${programPath}?panel=management`}
-            label="쿠폰 / 프로모션"
-          />
+          {launchFeatureFlags.coupons || launchFeatureFlags.promotions ? (
+            <ProgramFormNavLink
+              className="absolute left-[var(--form-12)] top-[var(--form-296)]"
+              href={`${programPath}?panel=management`}
+              label="쿠폰 / 프로모션"
+            />
+          ) : null}
           <ProgramFormNavLink
             className="absolute left-[var(--form-12)] top-[var(--form-327)]"
             href={messagesHref}
@@ -543,11 +546,13 @@ function ProgramFormSidebar({
             href={`${applicationsHref}?panel=receipts`}
             label="결제 관리"
           />
-          <ProgramFormNavLink
-            className="absolute left-[var(--form-12)] top-[var(--form-389)]"
-            href={`${applicationsHref}?panel=reviews`}
-            label="후기 관리"
-          />
+          {launchFeatureFlags.reviews ? (
+            <ProgramFormNavLink
+              className="absolute left-[var(--form-12)] top-[var(--form-389)]"
+              href={`${applicationsHref}?panel=reviews`}
+              label="후기 관리"
+            />
+          ) : null}
           <ProgramFormNavLink
             className="absolute left-[var(--form-12)] top-[var(--form-420)]"
             href={`${programPath}?panel=delete`}

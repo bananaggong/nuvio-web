@@ -5,6 +5,7 @@ import {
   seedMessageTemplates,
 } from "@/lib/host-operations";
 import { isDemoModeEnabled } from "@/lib/demo-mode";
+import { launchFeatureFlags } from "@/lib/launch-feature-flags";
 import type {
   HostApplication,
   HostApplicationStatus,
@@ -82,11 +83,17 @@ export const seedMessageCampaigns: MessageCampaign[] = [
 ];
 
 export function readMessageTemplates(): MessageTemplate[] {
-  return seedMessageTemplates;
+  return seedMessageTemplates.filter((template) =>
+    template.id === "msg-review" ? launchFeatureFlags.reviews : true,
+  );
 }
 
 export function readMessageCampaigns(): MessageCampaign[] {
-  return isDemoModeEnabled() ? seedMessageCampaigns : [];
+  return isDemoModeEnabled()
+    ? seedMessageCampaigns.filter((campaign) =>
+        campaign.templateId === "msg-review" ? launchFeatureFlags.reviews : true,
+      )
+    : [];
 }
 
 export function mergeMessageCampaigns(
