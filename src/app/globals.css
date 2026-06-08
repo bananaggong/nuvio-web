@@ -106,7 +106,8 @@ a {
 
 .magazine-content p,
 .magazine-editor-content .ProseMirror p {
-  margin: 1rem 0;
+  line-height: 1.65;
+  margin: 0 0 1em;
 }
 
 .magazine-content a,
@@ -118,7 +119,12 @@ a {
 }
 
 .magazine-content {
+  line-height: 1.65;
   overflow-x: auto;
+}
+
+.magazine-editor-content .ProseMirror {
+  line-height: 1.65;
 }
 
 .magazine-content blockquote,
