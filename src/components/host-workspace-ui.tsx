@@ -297,7 +297,7 @@ export function HostFolderCard({
   programCount,
   programs,
 }: {
-  folder: { applicationCount: number; id: string; title: string };
+  folder: { id: string; title: string };
   programCount: number;
   programs: HostProgramListItem[];
 }) {
@@ -335,14 +335,11 @@ export function HostFolderCard({
         </div>
       </div>
       <div className="mt-[var(--host-10)] flex w-full flex-col gap-[var(--host-8)]">
+        <p className="text-[var(--host-12)] font-normal leading-[1.6] text-[#6D7A8A]">
+          저장된 프로그램 ({String(programCount).padStart(2, "0")})
+        </p>
         <p className="line-clamp-2 text-[var(--host-16)] font-normal leading-[1.253] text-[#5B3A29]">
           {folder.title}
-        </p>
-        <p className="text-[var(--host-12)] font-normal leading-[1.6] text-[#6D7A8A]">
-          저장된 프로그램 {programCount}개
-        </p>
-        <p className="text-[var(--host-12)] font-normal leading-[1.6] text-[#6D7A8A]">
-          신청 {folder.applicationCount}명
         </p>
       </div>
     </Link>
