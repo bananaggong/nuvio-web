@@ -258,7 +258,10 @@ export function HostSectionTitle({
 }) {
   return (
     <div className="flex h-[var(--host-29)] items-center gap-[var(--host-34)]">
-      <h2 className="text-[var(--host-16)] font-medium leading-[1.253] text-[#6D7A8A]">
+      <h2
+        className="text-[var(--host-16)] font-medium leading-[1.253] text-[#6d7a8a]"
+        style={{ color: "#6D7A8A" }}
+      >
         {title}
       </h2>
       {action}
@@ -276,8 +279,9 @@ export function HostSmallButton({
   if (onClick) {
     return (
       <button
-        className="inline-flex h-[var(--host-29)] items-center justify-center rounded-[4px] bg-[#6D7A8A] px-[var(--host-12)] py-[var(--host-4)] text-[var(--host-12)] font-medium leading-[1.253] text-[#FFF6EC] transition hover:bg-[#5F6B79]"
+        className="inline-flex h-[var(--host-29)] items-center justify-center rounded-[4px] bg-[#6d7a8a] px-[var(--host-12)] py-[var(--host-4)] text-[var(--host-12)] font-medium leading-[1.253] text-[#fff6ec] transition hover:bg-[#5f6b79]"
         onClick={onClick}
+        style={{ backgroundColor: "#6D7A8A", color: "#FFF6EC" }}
         type="button"
       >
         {children}
@@ -286,7 +290,10 @@ export function HostSmallButton({
   }
 
   return (
-    <span className="inline-flex h-[var(--host-29)] items-center justify-center rounded-[4px] bg-[#6D7A8A] px-[var(--host-12)] py-[var(--host-4)] text-[var(--host-12)] font-medium leading-[1.253] text-[#FFF6EC]">
+    <span
+      className="inline-flex h-[var(--host-29)] items-center justify-center rounded-[4px] bg-[#6d7a8a] px-[var(--host-12)] py-[var(--host-4)] text-[var(--host-12)] font-medium leading-[1.253] text-[#fff6ec]"
+      style={{ backgroundColor: "#6D7A8A", color: "#FFF6EC" }}
+    >
       {children}
     </span>
   );
