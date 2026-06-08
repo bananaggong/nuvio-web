@@ -5,6 +5,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { useMemo, useState } from "react";
 import {
   HostFolderCard,
+  HostFolderPlaceholderCard,
   HostProgramRow,
   HostSectionTitle,
   HostSmallButton,
@@ -282,7 +283,7 @@ export function HostCenterHome({
     <HostWorkspaceLayout>
       <HostWorkspaceContent>
         <div className="w-[var(--host-1118)] max-w-full pt-[var(--host-24)] max-md:w-full max-md:pt-5">
-          <section className="w-fit">
+          <section className="w-full">
             <HostSectionTitle
               action={
                 <HostSmallButton onClick={openFolderDialog}>
@@ -291,7 +292,7 @@ export function HostCenterHome({
               }
               title="프로그램 폴더"
             />
-            <div className="mt-[var(--host-12)] flex flex-wrap gap-[var(--host-16)] max-md:mt-4">
+            <div className="mt-[var(--host-12)] grid grid-cols-[repeat(auto-fill,minmax(var(--host-288),var(--host-288)))] gap-[var(--host-16)] max-md:mt-4 max-md:grid-cols-1">
               {folders.length > 0 ? (
                 folders.map((folder) => (
                   <HostFolderCard
@@ -302,13 +303,7 @@ export function HostCenterHome({
                   />
                 ))
               ) : (
-                <button
-                  className="grid h-[var(--host-351)] w-[var(--host-288)] min-w-[288px] place-items-center rounded-[8px] border border-dashed border-[#F3C3A5] bg-white text-[var(--host-14)] font-medium text-[#FE701E] max-md:w-full"
-                  onClick={openFolderDialog}
-                  type="button"
-                >
-                  새 폴더 만들기
-                </button>
+                <HostFolderPlaceholderCard onClick={openFolderDialog} />
               )}
             </div>
           </section>

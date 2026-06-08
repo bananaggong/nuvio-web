@@ -349,6 +349,45 @@ export function HostFolderCard({
   );
 }
 
+export function HostFolderPlaceholderCard({
+  onClick,
+}: {
+  onClick: () => void;
+}) {
+  return (
+    <button
+      className="group block h-[var(--host-351)] w-[var(--host-288)] min-w-[288px] rounded-[8px] border border-[#D9D9D9] bg-white p-[var(--host-12)] text-left transition hover:border-[#FE701E] max-md:h-auto max-md:w-full"
+      onClick={onClick}
+      type="button"
+    >
+      <div className="grid h-[var(--host-270)] w-full grid-cols-2 gap-[var(--host-6)]">
+        {[0, 1, 2].map((index) => (
+          <div
+            className="relative overflow-hidden rounded-[16px] bg-[#D9D9D9]"
+            key={index}
+          />
+        ))}
+        <div className="flex flex-col items-center justify-center gap-[var(--host-8)] rounded-[16px] bg-white">
+          <span className="grid size-[var(--host-20)] place-items-center rounded-full bg-[#FF9A3D] text-white">
+            <Plus className="size-[var(--host-14)]" strokeWidth={2.4} />
+          </span>
+          <span className="text-[var(--host-12)] font-normal leading-[1.253] text-[#6D7A8A]">
+            전체보기
+          </span>
+        </div>
+      </div>
+      <div className="mt-[var(--host-10)] flex w-full flex-col gap-[var(--host-8)]">
+        <p className="text-[var(--host-12)] font-normal leading-[1.6] text-[#6D7A8A]">
+          저장된 프로그램 (00)
+        </p>
+        <p className="text-[var(--host-16)] font-normal leading-[1.253] text-[#5B3A29]">
+          폴더명
+        </p>
+      </div>
+    </button>
+  );
+}
+
 export function HostProgramRow({
   actionLabel,
   expanded = false,
