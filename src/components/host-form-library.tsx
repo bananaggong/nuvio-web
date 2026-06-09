@@ -157,7 +157,7 @@ export function HostFormLibrary({
     <HostWorkspaceLayout>
       <HostWorkspaceContent insideFolder>
         <div className="pt-[var(--host-24)] max-md:pt-5">
-          <div className="flex w-full flex-col items-start gap-[calc(var(--host-scale)*46px)] pr-[calc(var(--host-scale)*52px)] max-md:pr-0">
+          <div className="flex w-full flex-col items-start gap-[var(--host-46)] pr-[var(--host-52)] max-md:pr-0">
             <div className="flex h-[var(--host-29)] items-center gap-[14px]">
               <Link
                 aria-label="뒤로"
@@ -174,7 +174,7 @@ export function HostFormLibrary({
               </HostSmallButton>
             </div>
 
-            <section className="flex w-[calc(var(--host-scale)*959px)] max-w-full flex-col gap-[calc(var(--host-scale)*18px)]">
+            <section className="flex w-[var(--host-959)] max-w-full flex-col gap-[var(--host-18)]">
               {applicationForms.length > 0 ? (
                 applicationForms.map((template) => (
                   <FormRow
@@ -186,7 +186,7 @@ export function HostFormLibrary({
                   />
                 ))
               ) : (
-                <div className="flex h-[calc(var(--host-scale)*38px)] w-full items-center rounded-[4px] border border-dashed border-[#6D7A8A] px-[var(--host-16)] text-[var(--host-14)] font-medium leading-[1.253] text-[#6D7A8A]">
+                <div className="flex h-[var(--host-38)] w-full items-center rounded-[4px] border border-dashed border-[#6D7A8A] px-[var(--host-16)] text-[var(--host-14)] font-medium leading-[1.253] text-[#6D7A8A]">
                   저장된 신청서 양식이 없습니다. 새양식 + 를 눌러 만들어 주세요.
                 </div>
               )}
@@ -210,7 +210,7 @@ function FormRow({
   template: ApplicationFormTemplate;
 }) {
   return (
-    <div className="flex h-[calc(var(--host-scale)*38px)] w-full items-center gap-[12px] rounded-[4px] border border-[#6D7A8A] px-[var(--host-16)] py-[var(--host-8)]">
+    <div className="flex h-[var(--host-38)] w-full items-center gap-[12px] rounded-[4px] border border-[#6D7A8A] px-[var(--host-16)] py-[var(--host-8)]">
       <Link
         className="min-w-0 flex-1 truncate text-[var(--host-14)] font-medium leading-[1.253] text-[#0D0D0C]"
         href={`/host/forms/${encodeURIComponent(template.id)}`}

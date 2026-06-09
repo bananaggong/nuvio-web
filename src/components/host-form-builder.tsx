@@ -312,7 +312,7 @@ export function HostFormBuilder({
                 <EditorField label="프로그램 연결">
                   <label className="relative block">
                     <select
-                      className="host-form-input appearance-none pr-[var(--host-34)]"
+                      className="host-form-input host-form-input--tall appearance-none pr-[var(--host-34)]"
                       onChange={(event) => {
                         const program = hostPrograms.find(
                           (item) => item.id === event.target.value,
@@ -439,6 +439,29 @@ function FormItemIconButton({
   );
 }
 
+function getEditableBlockTypeLabel(type: ApplicationFormBlockType) {
+  return editableBlockTypes.find((item) => item.type === type)?.label ?? "텍스트";
+}
+
+function getQuestionPlaceholder(type: ApplicationFormBlockType) {
+  switch (type) {
+    case "phone":
+      return "질문을 입력해주세요 *답변은 숫자 입력만 가능해요.";
+    case "singleSelect":
+      return "질문을 입력해주세요 *답변은 하나만 선택 가능해요.";
+    case "multiSelect":
+      return "질문을 입력해주세요 *답변은 여러 개 선택 가능해요.";
+    case "image":
+      return "질문을 입력해주세요 *답변은 파일 업로드만 가능해요.";
+    case "description":
+      return "안내할 내용을 입력해주세요.";
+    case "checkbox":
+      return "동의 항목의 제목을 입력해주세요.";
+    default:
+      return "질문을 입력해주세요 *답변은 텍스트 입력만 가능해요.";
+  }
+}
+
 function EditableBlockCard({
   block,
   onDuplicate,
@@ -451,33 +474,38 @@ function EditableBlockCard({
   onUpdate: (patch: Partial<ApplicationFormBlock>) => void;
 }) {
   const options = block.options ?? [];
+  const blockTypeLabel = getEditableBlockTypeLabel(block.type);
 
   return (
     <article className="flex w-full flex-col gap-[var(--host-6)] border-b border-[#F3F3F3] py-[var(--host-16)]">
-      <div className="flex items-center gap-[var(--host-10)] px-[var(--host-12)]">
-        <select
-          className="h-[var(--host-24)] rounded-[19px] bg-[#6D7A8A] px-[var(--host-12)] text-[var(--host-12)] font-medium leading-[1.253] text-[#FFF6EC] outline-none"
-          onChange={(event) =>
-            onUpdate({
-              options:
-                event.target.value === "singleSelect" ||
-                event.target.value === "multiSelect"
-                  ? options.length > 0
-                    ? options
-                    : ["선택지 항목1", "선택지 항목2"]
-                  : [],
-              type: event.target.value as ApplicationFormBlockType,
-            })
-          }
-          style={{ backgroundColor: "#6D7A8A", color: "#FFF6EC" }}
-          value={block.type}
-        >
-          {editableBlockTypes.map((item) => (
-            <option key={item.type} value={item.type}>
-              {item.label}
-            </option>
-          ))}
-        </select>
+      <div className="flex h-[var(--host-20)] items-center gap-[var(--host-11)] px-[var(--host-12)]">
+        <label className="relative inline-flex h-[var(--host-19)] shrink-0 items-center rounded-[19px] bg-[#6D7A8A] px-[var(--host-12)] text-[var(--host-12)] font-semibold leading-[1.253]">
+          <span className="relative z-10 text-[#F9F9F9]">{blockTypeLabel}</span>
+          <select
+            aria-label="항목 유형"
+            className="absolute inset-0 z-20 h-full w-full cursor-pointer"
+            onChange={(event) =>
+              onUpdate({
+                options:
+                  event.target.value === "singleSelect" ||
+                  event.target.value === "multiSelect"
+                    ? options.length > 0
+                      ? options
+                      : ["선택지 항목1", "선택지 항목2"]
+                    : [],
+                type: event.target.value as ApplicationFormBlockType,
+              })
+            }
+            style={{ opacity: 0 }}
+            value={block.type}
+          >
+            {editableBlockTypes.map((item) => (
+              <option key={item.type} value={item.type}>
+                {item.label}
+              </option>
+            ))}
+          </select>
+        </label>
         {isQuestionBlock(block) ? (
           <RequiredToggle
             checked={block.required}
@@ -512,9 +540,9 @@ function EditableBlockCard({
       </div>
 
       <input
-        className="host-form-input"
+        className="host-form-input host-form-input--tall"
         onChange={(event) => onUpdate({ label: event.target.value })}
-        placeholder="질문을 입력해주세요"
+        placeholder={getQuestionPlaceholder(block.type)}
         value={block.label}
       />
 
@@ -530,7 +558,7 @@ function EditableBlockCard({
                 type={block.type === "singleSelect" ? "radio" : "checkbox"}
               />
               <input
-                className="host-form-input h-[var(--host-30)]"
+                className="host-form-input host-form-input--compact"
                 onChange={(event) => {
                   const nextOptions = [...options];
                   nextOptions[index] = event.target.value;
@@ -590,24 +618,23 @@ function RequiredToggle({
   return (
     <button
       aria-pressed={checked}
-      className="flex items-center gap-[var(--host-8)] text-[var(--host-12)] font-medium leading-[1.253] text-[#0D0D0C]"
+      className="flex h-[var(--host-20)] items-center gap-[var(--host-7)] text-[var(--host-12)] font-normal leading-[1.253] text-[#0D0D0C]"
       onClick={() => onChange(!checked)}
       type="button"
     >
       <span>필수항목</span>
-      <span
-        className={`relative h-[var(--host-9)] w-[var(--host-18)] rounded-full border border-[#6D7A8A] transition ${
-          checked ? "bg-[#FF9A3D] border-[#FF9A3D]" : "bg-white"
-        }`}
-      >
-        <span
-          className={`absolute top-1/2 size-[var(--host-7)] -translate-y-1/2 rounded-full transition ${
-            checked
-              ? "left-[var(--host-10)] bg-white"
-              : "left-px bg-[#6D7A8A]"
-          }`}
-        />
-      </span>
+      <Image
+        alt=""
+        aria-hidden
+        className="h-[var(--host-20)] w-[var(--host-23)]"
+        height={20}
+        src={
+          checked
+            ? nuvioIcons.formRequiredToggleOn
+            : nuvioIcons.formRequiredToggleOff
+        }
+        width={23}
+      />
     </button>
   );
 }

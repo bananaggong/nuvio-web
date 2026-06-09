@@ -11,6 +11,8 @@ export const nuvioIcons = {
   formItemCondition: "/icons/nuvio/form-item-condition.svg",
   formItemCopy: "/icons/nuvio/form-item-copy.svg",
   formItemTrash: "/icons/nuvio/form-item-trash.svg",
+  formRequiredToggleOff: "/icons/nuvio/form-required-toggle-off.svg",
+  formRequiredToggleOn: "/icons/nuvio/form-required-toggle-on.svg",
   formSelectDropdown: "/icons/nuvio/form-select-dropdown.svg",
   headerActionFrame: "/icons/nuvio/header-action-frame.svg",
   login: "/icons/nuvio/login.svg",
