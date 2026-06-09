@@ -11,8 +11,11 @@ import {
 import { useEffect, useMemo, useState, type CSSProperties } from "react";
 import {
   findHostProgramOverview,
+  findHostProgramDraft,
+  findHostProgramDraftOverview,
   findHostProjectOverview,
   findStandaloneHostProgramOverview,
+  getHostProgramSidebarStatus,
   hostProgramPath,
   hostProjectPath,
   hostStandaloneProgramPath,
@@ -109,20 +112,24 @@ export function HostMessageAutomation({
   }, [applications, hostPrograms, projectId, reportProjects]);
   const program = useMemo(() => {
     if (projectId && programId) {
-      return findHostProgramOverview(
+      const projectProgram = findHostProgramOverview(
         projectId,
         programId,
         applications,
         reportProjects,
         hostPrograms,
       );
+      if (projectProgram) return projectProgram;
     }
     if (programId) {
-      return findStandaloneHostProgramOverview(
-        programId,
-        applications,
-        reportProjects,
-        hostPrograms,
+      return (
+        findStandaloneHostProgramOverview(
+          programId,
+          applications,
+          reportProjects,
+          hostPrograms,
+        ) ??
+        findHostProgramDraftOverview(programId, applications, hostPrograms)
       );
     }
     return undefined;
@@ -307,6 +314,10 @@ export function HostMessageAutomation({
   const messagesHref = `${resolvedProgramBasePath}/messages`;
   const sidebarTitle = program?.title ?? project?.title ?? "프로그램 제목";
   const sidebarProgramId = program?.id ?? programId ?? "";
+  const sidebarDraft = sidebarProgramId
+    ? findHostProgramDraft(sidebarProgramId, hostPrograms)
+    : undefined;
+  const sidebarStatus = getHostProgramSidebarStatus(program, sidebarDraft);
 
   return (
     <div
@@ -321,7 +332,7 @@ export function HostMessageAutomation({
           messagesHref={messagesHref}
           programId={sidebarProgramId}
           programPath={resolvedProgramBasePath}
-          status="모집 진행중"
+          status={sidebarStatus}
           title={sidebarTitle}
         />
 

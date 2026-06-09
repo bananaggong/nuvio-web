@@ -186,6 +186,48 @@ export function findStandaloneHostProgramOverview(
   );
 }
 
+export function findHostProgramDraftOverview(
+  programId: string,
+  applications: HostApplication[],
+  programDrafts: HostProgramDraft[] = [],
+): HostProgramOverview | undefined {
+  const program = findHostProgramDraft(programId, programDrafts);
+
+  return program
+    ? buildStandaloneProgramOverviewFromDraft(program, applications)
+    : undefined;
+}
+
+export function findHostProgramDraft(
+  programId: string,
+  programDrafts: HostProgramDraft[] = [],
+): HostProgramDraft | undefined {
+  return programDrafts.find((draft) => {
+    const identifiers = [draft.id, draft.slug ?? "", hostProgramId(draft.title)];
+    return identifiers.includes(programId);
+  });
+}
+
+export function getHostProgramSidebarStatus(
+  program?: Pick<HostProgramOverview, "status">,
+  draft?: { published?: boolean; status?: ProgramStatus },
+): string {
+  if (draft && !draft.published) return "프로그램 작성중";
+
+  switch (draft?.status ?? program?.status) {
+    case "upcoming":
+      return "모집예정";
+    case "open":
+      return "모집 진행중";
+    case "closed":
+      return "마감";
+    case "earlyClosed":
+      return "조기마감";
+    default:
+      return "프로그램 작성중";
+  }
+}
+
 export function hostProgramId(programTitle: string): string {
   const slug = programTitle
     .normalize("NFKC")

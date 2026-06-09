@@ -6,8 +6,11 @@ import { useEffect, useMemo, useState, type CSSProperties } from "react";
 import { HostProgramSidebar } from "@/components/host-program-sidebar";
 import {
   findHostProgramOverview,
+  findHostProgramDraft,
+  findHostProgramDraftOverview,
   findHostProjectOverview,
   findStandaloneHostProgramOverview,
+  getHostProgramSidebarStatus,
   hostProgramPath,
   hostProjectPath,
   hostStandaloneProgramPath,
@@ -109,20 +112,24 @@ export function HostApplicationsCrm({
   }, [applications, hostPrograms, projectId, reportProjects]);
   const program = useMemo(() => {
     if (projectId && programId) {
-      return findHostProgramOverview(
+      const projectProgram = findHostProgramOverview(
         projectId,
         programId,
         applications,
         reportProjects,
         hostPrograms,
       );
+      if (projectProgram) return projectProgram;
     }
     if (programId) {
-      return findStandaloneHostProgramOverview(
-        programId,
-        applications,
-        reportProjects,
-        hostPrograms,
+      return (
+        findStandaloneHostProgramOverview(
+          programId,
+          applications,
+          reportProjects,
+          hostPrograms,
+        ) ??
+        findHostProgramDraftOverview(programId, applications, hostPrograms)
       );
     }
     return undefined;
@@ -165,6 +172,14 @@ export function HostApplicationsCrm({
   const sidebarTitle =
     program?.title ?? selectedApplication?.programTitle ?? project?.title ?? "프로그램 제목";
   const sidebarProgramId = program?.id ?? programId ?? selectedApplication?.programId ?? "";
+  const sidebarDraft = useMemo(
+    () =>
+      sidebarProgramId
+        ? findHostProgramDraft(sidebarProgramId, hostPrograms)
+        : undefined,
+    [hostPrograms, sidebarProgramId],
+  );
+  const sidebarStatus = getHostProgramSidebarStatus(program, sidebarDraft);
 
   useEffect(() => {
     let cancelled = false;
@@ -218,7 +233,7 @@ export function HostApplicationsCrm({
           messagesHref={messagesHref}
           programId={sidebarProgramId}
           programPath={resolvedProgramBasePath}
-          status="모집 진행중"
+          status={sidebarStatus}
           title={sidebarTitle}
         />
 

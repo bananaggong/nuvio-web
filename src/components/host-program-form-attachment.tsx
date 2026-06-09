@@ -16,16 +16,20 @@ import {
   type ApplicationFormTemplate,
 } from "@/lib/application-form-builder";
 import {
+  getHostProgramSidebarStatus,
   hostProgramId,
   hostProgramPath,
   hostStandaloneProgramPath,
 } from "@/lib/host-projects";
 import { HostProgramSidebar } from "@/components/host-program-sidebar";
 import { readHostProgramDrafts } from "@/lib/host-program-studio";
+import type { ProgramStatus } from "@/lib/types";
 
 type HostProgramOption = {
   id: string;
+  published?: boolean;
   slug?: string;
+  status?: ProgramStatus;
   title: string;
 };
 
@@ -94,7 +98,9 @@ export function HostProgramFormAttachment({
   const [hostPrograms, setHostPrograms] = useState<HostProgramOption[]>(() =>
     readHostProgramDrafts().map((program) => ({
       id: program.id,
+      published: program.published,
       slug: program.slug,
+      status: program.status,
       title: program.title,
     })),
   );
@@ -146,6 +152,10 @@ export function HostProgramFormAttachment({
   const applicationsHref = `${programBasePath}/applications`;
   const messagesHref = `${programBasePath}/messages`;
   const formsLibraryHref = "/host/forms?kind=application";
+  const sidebarStatus = getHostProgramSidebarStatus(
+    routeProgram ? { status: routeProgram.status } : undefined,
+    routeProgram,
+  );
 
   useEffect(() => {
     let isMounted = true;
@@ -195,7 +205,12 @@ export function HostProgramFormAttachment({
           ? payload.data
               .map((item) => ({
                 id: String(item.id ?? "").trim(),
+                published:
+                  typeof item.published === "boolean"
+                    ? item.published
+                    : undefined,
                 slug: item.slug?.trim() || undefined,
+                status: item.status,
                 title: String(item.title ?? "").trim(),
               }))
               .filter((item) => item.id && item.title)
@@ -391,7 +406,7 @@ export function HostProgramFormAttachment({
           messagesHref={messagesHref}
           programId={resolvedProgramId}
           programPath={programBasePath}
-          status="프로그램 작성중"
+          status={sidebarStatus}
           title={resolvedProgramTitle || "프로그램 제목"}
         />
 

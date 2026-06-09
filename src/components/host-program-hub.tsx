@@ -40,8 +40,10 @@ import {
 } from "react";
 import {
   findHostProgramOverview,
+  findHostProgramDraftOverview,
   findHostProjectOverview,
   findStandaloneHostProgramOverview,
+  getHostProgramSidebarStatus,
   hostProgramId,
   hostProgramPath,
   hostProjectPath,
@@ -85,13 +87,6 @@ type ProgramPanel =
   | "guide"
   | "management"
   | "delete";
-
-const statusOptions: Array<{ label: string; value: ProgramStatus }> = [
-  { label: "모집예정", value: "upcoming" },
-  { label: "모집중", value: "open" },
-  { label: "마감", value: "closed" },
-  { label: "조기마감", value: "earlyClosed" },
-];
 
 const themeOptions: Array<{ label: string; value: ThemeKey }> = [
   { label: "워케이션", value: "workation" },
@@ -188,52 +183,52 @@ const figmaScaleStyle = {
 function HostProgramFigmaScaleOverrides() {
   return (
     <style>{`
-      [data-host-program-scale] .text-\\[7px\\] { font-size: var(--figma-7); }
-      [data-host-program-scale] .text-\\[8px\\] { font-size: var(--figma-8); }
-      [data-host-program-scale] .text-\\[9px\\] { font-size: var(--figma-9); }
-      [data-host-program-scale] .text-\\[10px\\],
-      [data-host-program-scale] .text-\\[length\\:var\\(--figma-10\\)\\] { font-size: var(--figma-10); }
-      [data-host-program-scale] .text-\\[12px\\],
-      [data-host-program-scale] .text-\\[length\\:var\\(--figma-12\\)\\] { font-size: var(--figma-12); }
-      [data-host-program-scale] .text-\\[13px\\] { font-size: var(--figma-13); }
-      [data-host-program-scale] .text-\\[14px\\],
-      [data-host-program-scale] .text-\\[length\\:var\\(--figma-14\\)\\] { font-size: var(--figma-14); }
-      [data-host-program-scale] .text-\\[16px\\],
-      [data-host-program-scale] .text-\\[length\\:var\\(--figma-16\\)\\] { font-size: var(--figma-16); }
-      [data-host-program-scale] .text-\\[18px\\],
-      [data-host-program-scale] .text-\\[length\\:var\\(--figma-18\\)\\] { font-size: var(--figma-18); }
-      [data-host-program-scale] .text-\\[20px\\],
-      [data-host-program-scale] .text-\\[length\\:var\\(--figma-20\\)\\] { font-size: var(--figma-20); }
-      [data-host-program-scale] .text-\\[24px\\],
-      [data-host-program-scale] .text-\\[length\\:var\\(--figma-24\\)\\] { font-size: var(--figma-24); }
-      [data-host-program-scale] .font-normal { font-weight: 400; }
-      [data-host-program-scale] .font-medium { font-weight: 500; }
-      [data-host-program-scale] .font-semibold { font-weight: 600; }
-      [data-host-program-scale] .font-bold { font-weight: 700; }
-      [data-host-program-scale] .font-black { font-weight: 900; }
-      [data-host-program-scale] .leading-none { line-height: 1; }
-      [data-host-program-scale] .leading-\\[1\\.25\\] { line-height: 1.25; }
-      [data-host-program-scale] .leading-\\[1\\.253\\] { line-height: 1.253; }
-      [data-host-program-scale] .leading-\\[1\\.28\\] { line-height: 1.28; }
-      [data-host-program-scale] .leading-\\[1\\.3\\] { line-height: 1.3; }
-      [data-host-program-scale] .leading-\\[1\\.35\\] { line-height: 1.35; }
-      [data-host-program-scale] .leading-\\[1\\.45\\] { line-height: 1.45; }
-      [data-host-program-scale] .leading-\\[1\\.46\\] { line-height: 1.46; }
-      [data-host-program-scale] .leading-\\[1\\.6\\] { line-height: 1.6; }
-      [data-host-program-scale] .leading-\\[1\\.7\\] { line-height: 1.7; }
-      [data-host-program-scale] .preview-thumbnail-meta {
+      [data-host-program-content-scale] .text-\\[7px\\] { font-size: var(--figma-7); }
+      [data-host-program-content-scale] .text-\\[8px\\] { font-size: var(--figma-8); }
+      [data-host-program-content-scale] .text-\\[9px\\] { font-size: var(--figma-9); }
+      [data-host-program-content-scale] .text-\\[10px\\],
+      [data-host-program-content-scale] .text-\\[length\\:var\\(--figma-10\\)\\] { font-size: var(--figma-10); }
+      [data-host-program-content-scale] .text-\\[12px\\],
+      [data-host-program-content-scale] .text-\\[length\\:var\\(--figma-12\\)\\] { font-size: var(--figma-12); }
+      [data-host-program-content-scale] .text-\\[13px\\] { font-size: var(--figma-13); }
+      [data-host-program-content-scale] .text-\\[14px\\],
+      [data-host-program-content-scale] .text-\\[length\\:var\\(--figma-14\\)\\] { font-size: var(--figma-14); }
+      [data-host-program-content-scale] .text-\\[16px\\],
+      [data-host-program-content-scale] .text-\\[length\\:var\\(--figma-16\\)\\] { font-size: var(--figma-16); }
+      [data-host-program-content-scale] .text-\\[18px\\],
+      [data-host-program-content-scale] .text-\\[length\\:var\\(--figma-18\\)\\] { font-size: var(--figma-18); }
+      [data-host-program-content-scale] .text-\\[20px\\],
+      [data-host-program-content-scale] .text-\\[length\\:var\\(--figma-20\\)\\] { font-size: var(--figma-20); }
+      [data-host-program-content-scale] .text-\\[24px\\],
+      [data-host-program-content-scale] .text-\\[length\\:var\\(--figma-24\\)\\] { font-size: var(--figma-24); }
+      [data-host-program-content-scale] .font-normal { font-weight: 400; }
+      [data-host-program-content-scale] .font-medium { font-weight: 500; }
+      [data-host-program-content-scale] .font-semibold { font-weight: 600; }
+      [data-host-program-content-scale] .font-bold { font-weight: 700; }
+      [data-host-program-content-scale] .font-black { font-weight: 900; }
+      [data-host-program-content-scale] .leading-none { line-height: 1; }
+      [data-host-program-content-scale] .leading-\\[1\\.25\\] { line-height: 1.25; }
+      [data-host-program-content-scale] .leading-\\[1\\.253\\] { line-height: 1.253; }
+      [data-host-program-content-scale] .leading-\\[1\\.28\\] { line-height: 1.28; }
+      [data-host-program-content-scale] .leading-\\[1\\.3\\] { line-height: 1.3; }
+      [data-host-program-content-scale] .leading-\\[1\\.35\\] { line-height: 1.35; }
+      [data-host-program-content-scale] .leading-\\[1\\.45\\] { line-height: 1.45; }
+      [data-host-program-content-scale] .leading-\\[1\\.46\\] { line-height: 1.46; }
+      [data-host-program-content-scale] .leading-\\[1\\.6\\] { line-height: 1.6; }
+      [data-host-program-content-scale] .leading-\\[1\\.7\\] { line-height: 1.7; }
+      [data-host-program-content-scale] .preview-thumbnail-meta {
         font-size: var(--figma-8);
         line-height: 1.35;
       }
-      [data-host-program-scale] .preview-thumbnail-meta img {
+      [data-host-program-content-scale] .preview-thumbnail-meta img {
         height: var(--figma-9);
         width: var(--figma-9);
       }
-      [data-host-program-scale] .preview-thumbnail-small-copy {
+      [data-host-program-content-scale] .preview-thumbnail-small-copy {
         font-size: var(--figma-4-3);
         line-height: 1.6;
       }
-      [data-host-program-scale] .preview-thumbnail-small-title {
+      [data-host-program-content-scale] .preview-thumbnail-small-title {
         font-size: var(--figma-5-7);
         line-height: 1.253;
       }
@@ -341,21 +336,32 @@ export function HostProgramHub({
     [applications, hostPrograms, projectId, reportProjects],
   );
   const program = useMemo(
-    () =>
-      projectId
-        ? findHostProgramOverview(
-            projectId,
-            programId,
-            applications,
-            reportProjects,
-            hostPrograms,
-          )
-        : findStandaloneHostProgramOverview(
-            programId,
-            applications,
-            reportProjects,
-            hostPrograms,
-          ),
+    () => {
+      if (projectId) {
+        const projectProgram = findHostProgramOverview(
+          projectId,
+          programId,
+          applications,
+          reportProjects,
+          hostPrograms,
+        );
+        if (projectProgram) return projectProgram;
+      }
+
+      return (
+        findStandaloneHostProgramOverview(
+          programId,
+          applications,
+          reportProjects,
+          hostPrograms,
+        ) ??
+        findHostProgramDraftOverview(
+          programId,
+          applications,
+          hostPrograms,
+        )
+      );
+    },
     [applications, hostPrograms, programId, projectId, reportProjects],
   );
   const draft = useMemo(
@@ -450,7 +456,7 @@ export function HostProgramHub({
     );
   }
 
-  if ((projectId && !project) || !program) {
+  if (!program) {
     return (
       <div className="mx-auto max-w-5xl px-4 py-8 md:px-8">
         <Link
@@ -765,15 +771,14 @@ export function HostProgramHub({
           messagesHref={messagesHref}
           programId={program.id}
           programPath={programPath}
-          status={
-            dashboardState === "creating"
-              ? "프로그램 작성중"
-              : statusLabel(draft?.status ?? program.status)
-          }
+          status={getHostProgramSidebarStatus(program, draft)}
           title={draft?.title || program.title}
         />
 
-        <section className="flex min-w-0 flex-1 flex-col">
+        <section
+          className="flex min-w-0 flex-1 flex-col"
+          data-host-program-content-scale
+        >
           {showUpdatedAtHeader ? (
           <div className="ml-[2.778vw] flex h-[var(--figma-96)] w-[64.236vw] max-w-[1233px] items-start justify-end pt-[var(--figma-44)] text-[length:var(--figma-16)] font-normal leading-[1.253] text-[#6D7A8A]">
             최근 수정일 : {formatDateTime(currentUpdatedAt)}
@@ -5125,10 +5130,6 @@ function normalizePanel(value: string | null): ProgramPanel {
 
 function normalizeIdentifier(value: string | undefined): string {
   return (value ?? "").trim().toLowerCase();
-}
-
-function statusLabel(status?: ProgramStatus): string {
-  return statusOptions.find((option) => option.value === status)?.label ?? "상태 미정";
 }
 
 function getProgramDashboardState(
