@@ -100,6 +100,7 @@ export function HostProgramFormAttachment({
   );
   const [selectedTemplateId, setSelectedTemplateId] = useState("");
   const [isAttaching, setIsAttaching] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
   const [isConnectionDialogOpen, setIsConnectionDialogOpen] = useState(false);
   const [message, setMessage] = useState("");
   const [error, setError] = useState("");
@@ -112,24 +113,30 @@ export function HostProgramFormAttachment({
   }, [hostPrograms, programId]);
   const resolvedProgramId = routeProgram?.id ?? programId;
   const resolvedProgramTitle = routeProgram?.title ?? "";
-  const linkedTemplate = useMemo(
+  const linkedTemplates = useMemo(
     () =>
-      templates.find((template) => template.programId === resolvedProgramId) ??
-      templates.find(
-        (template) =>
-          resolvedProgramTitle &&
-          normalizeText(template.programTitle) === normalizeText(resolvedProgramTitle),
+      templates.filter((template) =>
+        isTemplateLinkedToProgram(
+          template,
+          resolvedProgramId,
+          resolvedProgramTitle,
+        ),
       ),
     [resolvedProgramId, resolvedProgramTitle, templates],
   );
+  const linkedTemplate = linkedTemplates[0];
   const selectableTemplates = useMemo(
     () =>
-      templates.filter((template) => template.id !== linkedTemplate?.id),
-    [linkedTemplate?.id, templates],
+      templates.filter(
+        (template) =>
+          !linkedTemplates.some((linkedItem) => linkedItem.id === template.id),
+      ),
+    [linkedTemplates, templates],
   );
   const selectedTemplate =
     templates.find((template) => template.id === selectedTemplateId) ??
     selectableTemplates[0];
+  const isBusy = isAttaching || isSaving;
   const programBasePath =
     projectId && programId
       ? hostProgramPath(projectId, programId)
@@ -208,7 +215,7 @@ export function HostProgramFormAttachment({
   }, []);
 
   async function attachTemplate() {
-    if (!selectedTemplate || isAttaching) return false;
+    if (!selectedTemplate || isBusy) return false;
 
     setIsAttaching(true);
     setMessage("");
@@ -243,7 +250,7 @@ export function HostProgramFormAttachment({
         ),
       );
       setSelectedTemplateId("");
-      setMessage("신청폼을 가져왔습니다.");
+      setMessage("신청폼 연결을 저장했습니다.");
       return true;
     } catch (attachError) {
       setError(
@@ -265,40 +272,48 @@ export function HostProgramFormAttachment({
   }
 
   async function detachTemplate() {
-    if (!linkedTemplate || isAttaching) return;
+    if (linkedTemplates.length === 0 || isBusy) return;
 
     setIsAttaching(true);
     setMessage("");
     setError("");
 
     try {
-      const detachedTemplate = normalizeApplicationFormTemplateShape({
-        ...linkedTemplate,
-        programId: "",
-        programTitle: "",
-      });
-      const response = await fetch("/api/host/forms", {
-        body: JSON.stringify(detachedTemplate),
-        headers: { "Content-Type": "application/json" },
-        method: "POST",
-      });
-      const payload = (await response.json()) as {
-        data?: ApplicationFormTemplate;
-        error?: string;
-      };
+      const savedTemplates: ApplicationFormTemplate[] = [];
 
-      if (!response.ok || !payload.data) {
-        throw new Error(payload.error ?? "신청폼 연결을 해제하지 못했습니다.");
+      for (const template of linkedTemplates) {
+        const detachedTemplate = normalizeApplicationFormTemplateShape({
+          ...template,
+          programId: "",
+          programTitle: "",
+        });
+        const response = await fetch("/api/host/forms", {
+          body: JSON.stringify(detachedTemplate),
+          headers: { "Content-Type": "application/json" },
+          method: "POST",
+        });
+        const payload = (await response.json()) as {
+          data?: ApplicationFormTemplate;
+          error?: string;
+        };
+
+        if (!response.ok || !payload.data) {
+          throw new Error(payload.error ?? "신청폼 연결을 해제하지 못했습니다.");
+        }
+
+        savedTemplates.push(normalizeApplicationFormTemplateShape(payload.data));
       }
 
-      const savedTemplate = normalizeApplicationFormTemplateShape(payload.data);
       setTemplates((currentTemplates) =>
         mergeApplicationFormTemplates(
-          [savedTemplate],
-          currentTemplates.filter((template) => template.id !== savedTemplate.id),
+          savedTemplates,
+          currentTemplates.filter(
+            (template) =>
+              !savedTemplates.some((savedTemplate) => savedTemplate.id === template.id),
+          ),
         ),
       );
-      setSelectedTemplateId(savedTemplate.id);
+      setSelectedTemplateId(savedTemplates[0]?.id ?? "");
       setMessage("신청폼 연결을 해제했습니다.");
     } catch (detachError) {
       setError(
@@ -308,6 +323,58 @@ export function HostProgramFormAttachment({
       );
     } finally {
       setIsAttaching(false);
+    }
+  }
+
+  async function saveConnection() {
+    if (isBusy) return;
+
+    setIsSaving(true);
+    setMessage("");
+    setError("");
+
+    try {
+      if (!linkedTemplate) {
+        setMessage("연결된 신청폼 없이 저장했습니다.");
+        return;
+      }
+
+      const templateToSave = normalizeApplicationFormTemplateShape({
+        ...linkedTemplate,
+        formKind: "application",
+        programId: resolvedProgramId,
+        programTitle: resolvedProgramTitle || linkedTemplate.programTitle,
+      });
+      const response = await fetch("/api/host/forms", {
+        body: JSON.stringify(templateToSave),
+        headers: { "Content-Type": "application/json" },
+        method: "POST",
+      });
+      const payload = (await response.json()) as {
+        data?: ApplicationFormTemplate;
+        error?: string;
+      };
+
+      if (!response.ok || !payload.data) {
+        throw new Error(payload.error ?? "신청폼 연결을 저장하지 못했습니다.");
+      }
+
+      const savedTemplate = normalizeApplicationFormTemplateShape(payload.data);
+      setTemplates((currentTemplates) =>
+        mergeApplicationFormTemplates(
+          [savedTemplate],
+          currentTemplates.filter((template) => template.id !== savedTemplate.id),
+        ),
+      );
+      setMessage("저장했습니다.");
+    } catch (saveError) {
+      setError(
+        saveError instanceof Error
+          ? saveError.message
+          : "신청폼 연결을 저장하지 못했습니다.",
+      );
+    } finally {
+      setIsSaving(false);
     }
   }
 
@@ -336,7 +403,7 @@ export function HostProgramFormAttachment({
                   <button
                     className="inline-flex h-[var(--form-29)] w-[var(--form-92)] items-center justify-center rounded-[4px] border border-[#FE701E] bg-white text-[12px] font-normal leading-[1.253] text-[#FE701E] disabled:cursor-not-allowed disabled:opacity-40"
                     data-host-form-connect-open
-                    disabled={isAttaching}
+                    disabled={isBusy}
                     onClick={() => setIsConnectionDialogOpen(true)}
                     type="button"
                   >
@@ -377,7 +444,7 @@ export function HostProgramFormAttachment({
                 <div className="mt-[var(--form-24)] flex h-[var(--form-29)] items-center gap-[var(--form-24)] pl-[var(--form-28)]">
                   <button
                     className="inline-flex h-[var(--form-29)] w-[var(--form-58)] items-center justify-center rounded-[4px] border border-[#FE701E] bg-white text-[12px] font-normal leading-[1.253] text-[#FE701E] disabled:cursor-not-allowed disabled:opacity-40"
-                    disabled={isAttaching}
+                    disabled={isBusy}
                     onClick={() => setIsConnectionDialogOpen(true)}
                     type="button"
                   >
@@ -385,10 +452,13 @@ export function HostProgramFormAttachment({
                   </button>
                   <button
                     className="inline-flex h-[var(--form-29)] w-[var(--form-79)] items-center justify-center rounded-[4px] border border-[#6D7A8A] bg-white text-[12px] font-normal leading-[1.253] text-[#6D7A8A] disabled:cursor-not-allowed disabled:opacity-40"
-                    disabled={!linkedTemplate || isAttaching}
+                    disabled={!linkedTemplate || isBusy}
                     onClick={() => void detachTemplate()}
                     type="button"
                   >
+                    {isAttaching && linkedTemplate ? (
+                      <Loader2 aria-hidden="true" className="mr-1 size-3 animate-spin" />
+                    ) : null}
                     연결해제
                   </button>
                 </div>
@@ -397,7 +467,7 @@ export function HostProgramFormAttachment({
               <select
                 aria-label="연결할 신청폼 선택"
                 className="sr-only"
-                disabled={selectableTemplates.length === 0 || isAttaching}
+                disabled={selectableTemplates.length === 0 || isBusy}
                 onChange={(event) => setSelectedTemplateId(event.target.value)}
                 value={selectedTemplateId || selectableTemplates[0]?.id || ""}
               >
@@ -416,20 +486,34 @@ export function HostProgramFormAttachment({
             </div>
           </main>
 
-          <div className="flex h-[var(--form-69)] shrink-0 border-t border-[#6D7A8A] bg-white pl-[var(--form-28)] pt-[var(--form-20)]">
+          <div className="flex h-[var(--form-69)] shrink-0 items-start border-t border-[#6D7A8A] bg-white pl-[var(--form-28)] pt-[var(--form-20)]">
             <button
-              className="inline-flex h-[var(--form-29)] w-[var(--form-79)] items-center justify-center rounded-[4px] bg-[#FE701E] text-[12px] font-medium leading-[1.253] text-[#FFF6EC]"
+              className="inline-flex h-[var(--form-29)] w-[var(--form-79)] items-center justify-center rounded-[4px] bg-[#FE701E] text-[12px] font-medium leading-[1.253] text-[#FFF6EC] disabled:cursor-not-allowed disabled:opacity-50"
+              disabled={isBusy}
+              onClick={() => void saveConnection()}
               type="button"
             >
+              {isSaving ? (
+                <Loader2 aria-hidden="true" className="mr-1 size-3 animate-spin" />
+              ) : null}
               저장하기
             </button>
+            {message || error ? (
+              <p
+                className={`ml-[var(--form-16)] mt-[7px] text-[12px] font-normal leading-[1.253] ${
+                  error ? "text-[#FE701E]" : "text-[#6D7A8A]"
+                }`}
+              >
+                {error || message}
+              </p>
+            ) : null}
           </div>
         </section>
       </div>
       {isConnectionDialogOpen ? (
         <FormConnectionDialog
           formsLibraryHref={formsLibraryHref}
-          isAttaching={isAttaching}
+          isAttaching={isBusy}
           onClose={() => setIsConnectionDialogOpen(false)}
           onConnect={() => void confirmTemplateConnection()}
           onSelect={setSelectedTemplateId}
@@ -780,6 +864,20 @@ function formatProgramNumber(programId: string): string {
   if (!normalizedId) return "0000000000";
 
   return normalizedId.length > 12 ? normalizedId.slice(0, 12) : normalizedId;
+}
+
+function isTemplateLinkedToProgram(
+  template: ApplicationFormTemplate,
+  programId: string,
+  programTitle: string,
+): boolean {
+  if (template.programId === programId) return true;
+
+  return Boolean(
+    programTitle &&
+      template.programTitle &&
+      normalizeText(template.programTitle) === normalizeText(programTitle),
+  );
 }
 
 function normalizeText(value: string): string {
