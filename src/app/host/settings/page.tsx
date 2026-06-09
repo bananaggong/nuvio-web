@@ -1,5 +1,9 @@
 import type { Metadata } from "next";
+import Image from "next/image";
 import Link from "next/link";
+import { Pencil } from "lucide-react";
+import type { ReactNode } from "react";
+import { nuvioIcons } from "@/components/icons/nuvio-icons";
 import {
   HostWorkspaceContent,
   HostWorkspaceLayout,
@@ -20,16 +24,135 @@ export const metadata: Metadata = {
 };
 
 type SettingsPanel = "data" | "general" | "notifications" | "team";
+type OpenSettingsPanel = Exclude<SettingsPanel, "general">;
 
-const panelTabs: Array<{ href: string; key: SettingsPanel; label: string }> = [
-  { href: "/host/settings", key: "general", label: "전체" },
-  { href: "/host/settings?panel=team", key: "team", label: "팀" },
+const settingSections: Array<{
+  description: string;
+  href: string;
+  key: OpenSettingsPanel;
+  title: string;
+}> = [
   {
+    description: "호스트 초대, 역할 및 접근 범위 관리",
+    href: "/host/settings?panel=team",
+    key: "team",
+    title: "팀 / 권한",
+  },
+  {
+    description: "알람 수신 설정 및 메세지 템플릿 관리",
     href: "/host/settings?panel=notifications",
     key: "notifications",
-    label: "알림",
+    title: "알람 / 안내 메세지",
   },
-  { href: "/host/settings?panel=data", key: "data", label: "데이터" },
+  {
+    description: "프로그램 운영 데이터 백업 및 내보내기",
+    href: "/host/settings?panel=data",
+    key: "data",
+    title: "데이터 관리",
+  },
+];
+
+const members = [
+  {
+    email: "intume0b@gmail.com",
+    name: "로컬 호스트",
+    role: "호스트",
+    tone: "host",
+  },
+  {
+    email: "aaaa@gmail.com",
+    name: "이르음",
+    role: "운영진",
+    tone: "manager",
+  },
+  {
+    email: "aaaa@gmail.com",
+    name: "이르음",
+    role: "스태프",
+    tone: "staff",
+  },
+  {
+    email: "aaaa@gmail.com",
+    name: "이르음",
+    role: "수락 대기",
+    tone: "pending",
+  },
+] as const;
+
+const channelToggles = [
+  ["브라우저 알람", "off"],
+  ["이메일 알람", "off"],
+  ["앱푸시 알람", "ready"],
+] as const;
+
+const notificationToggles = [
+  "새 신청 접수",
+  "새 메세지",
+  "예약 취소",
+  "후기 등록",
+];
+
+const templates = [
+  {
+    body: (
+      <>
+        <TemplateToken>{"{게스트명}"}</TemplateToken>님,{" "}
+        <TemplateToken>{"{프로그램명}"}</TemplateToken> 신청을 해주셔서
+        감사합니다. 검토 후 결과를 안내드릴게요.
+      </>
+    ),
+    description: (
+      <>
+        프로그램 신청시 <strong>자동 발송</strong>되는 메세지 입니다.
+      </>
+    ),
+    title: "신청 완료 템플릿",
+  },
+  {
+    body: (
+      <>
+        <TemplateToken>{"{게스트명}"}</TemplateToken>님,{" "}
+        <TemplateToken>{"{프로그램명}"}</TemplateToken> 예약이 확정되었습니다.
+      </>
+    ),
+    description: (
+      <>
+        프로그램 예약 확정시 <strong>자동 발송</strong>되는 메세지 입니다.
+      </>
+    ),
+    title: "예약 확정 템플릿",
+  },
+  {
+    body: (
+      <>
+        <TemplateToken>{"{게스트명}"}</TemplateToken>님, 이번
+        <TemplateToken>{"{프로그램명}"}</TemplateToken>에 선정되셨습니다! 🎉
+      </>
+    ),
+    description: (
+      <>
+        프로그램 선정된 게스트에게 <strong>버튼 발송</strong>되는 메세지
+        입니다.
+      </>
+    ),
+    title: "선정 안내 템플릿",
+  },
+  {
+    body: (
+      <>
+        <TemplateToken>{"{게스트명}"}</TemplateToken>님, 아쉽게도 이번
+        <TemplateToken>{"{프로그램명}"}</TemplateToken>에 선정되지
+        못하셨습니다.
+      </>
+    ),
+    description: (
+      <>
+        프로그램 탈락된 게스트에게 <strong>버튼 발송</strong>되는 메세지
+        입니다.
+      </>
+    ),
+    title: "탈락 안내 템플릿",
+  },
 ];
 
 export default async function HostSettingsPage({
@@ -43,33 +166,44 @@ export default async function HostSettingsPage({
   const activePanel = normalizePanel(params?.panel);
 
   return (
-    <HostWorkspaceLayout>
-      <HostWorkspaceContent>
-        <div className="w-[77.639vw] max-w-[1491px] pt-[var(--host-24)]">
-          <div className="flex h-[var(--host-29)] items-center border-b border-[#D9D9D9]">
-            <nav className="flex items-center gap-[var(--host-18)] text-[var(--host-14)] leading-[1.253]">
-              {panelTabs.map((tab) => (
-                <Link
-                  aria-current={activePanel === tab.key ? "page" : undefined}
-                  className={`h-[var(--host-29)] border-b-2 px-[4px] transition ${
-                    activePanel === tab.key
-                      ? "border-[#FE701E] font-semibold text-[#0D0D0C]"
-                      : "border-transparent font-medium text-[#CAC4BC] hover:text-[#FE701E]"
-                  }`}
-                  href={tab.href}
-                  key={tab.key}
-                >
-                  {tab.label}
-                </Link>
-              ))}
-            </nav>
-          </div>
+    <HostWorkspaceLayout
+      sidebarHeight={
+        activePanel === "notifications"
+          ? "min-h-[calc(1302px*var(--host-scale))]"
+          : undefined
+      }
+    >
+      <HostWorkspaceContent insideFolder>
+        <div className="w-[var(--host-959)] max-w-full pt-[var(--host-24)]">
+          <Link
+            className="flex h-[var(--host-20)] w-fit items-center gap-[var(--host-14)] text-[var(--host-16)] font-medium leading-[1.253] text-[#6D7A8A] transition hover:text-[#FE701E]"
+            href="/host"
+          >
+            <Image
+              alt=""
+              aria-hidden
+              className="h-[var(--host-17)] w-[var(--host-11)]"
+              height={17}
+              src={nuvioIcons.formEditorBack}
+              width={11}
+            />
+            <span>설정</span>
+          </Link>
 
-          <div className="pt-[var(--host-24)]">
-            {activePanel === "general" ? <GeneralSettingsPanel /> : null}
-            {activePanel === "team" ? <TeamSettingsPanel /> : null}
-            {activePanel === "notifications" ? <NotificationSettingsPanel /> : null}
-            {activePanel === "data" ? <DataSettingsPanel /> : null}
+          <div className="mt-[var(--host-46)] flex w-[var(--host-959)] max-w-full flex-col gap-[var(--host-18)]">
+            {settingSections.map((section) => (
+              <SettingsAccordion
+                key={section.key}
+                open={activePanel === section.key}
+                section={section}
+              >
+                {section.key === "team" ? <TeamSettingsContent /> : null}
+                {section.key === "notifications" ? (
+                  <NotificationSettingsContent />
+                ) : null}
+                {section.key === "data" ? <DataSettingsContent /> : null}
+              </SettingsAccordion>
+            ))}
           </div>
         </div>
       </HostWorkspaceContent>
@@ -77,291 +211,420 @@ export default async function HostSettingsPage({
   );
 }
 
-function GeneralSettingsPanel() {
-  return (
-    <section className="w-[64.236vw] max-w-[1233px]">
-      <SettingsHeader
-        description="로컬페이지 운영에 필요한 기본 설정을 확인하고 세부 설정으로 이동합니다."
-        title="설정"
-      />
-      <div className="mt-[var(--host-24)] grid border-y border-[#6D7A8A]">
-        <SettingsLinkRow
-          description="호스트 초대, 역할 권한, 초대 링크를 관리합니다."
-          href="/host/settings?panel=team"
-          label="팀/권한"
-          meta="호스트 계정 01명"
-        />
-        <SettingsLinkRow
-          description="신청, 선정, 변경 안내에 사용할 알림 채널을 관리합니다."
-          href="/host/settings?panel=notifications"
-          label="알림/메시지"
-          meta="기본 채널 사용"
-        />
-        <SettingsLinkRow
-          description="프로그램 신청 기록과 운영 데이터를 내보내고 보존 기준을 확인합니다."
-          href="/host/settings?panel=data"
-          label="데이터"
-          meta="CSV 내보내기"
-        />
-      </div>
-      <div className="mt-[var(--host-24)] flex gap-[var(--host-12)]">
-        <HostSettingsButton tone="orange">저장하기</HostSettingsButton>
-        <HostSettingsButton tone="slate">변경 이력</HostSettingsButton>
-      </div>
-    </section>
-  );
-}
-
-function TeamSettingsPanel() {
-  return (
-    <section className="w-[64.236vw] max-w-[1233px]">
-      <SettingsHeader
-        description="팀원이 맡을 수 있는 역할과 접근 범위를 확인합니다."
-        title="팀/권한"
-      />
-      <div className="mt-[var(--host-24)] border-y border-[#6D7A8A]">
-        <div className="grid grid-cols-[1.15fr_0.75fr_0.7fr_0.5fr] border-b border-[#D9D9D9] px-[var(--host-16)] py-[var(--host-10)] text-[var(--host-12)] font-semibold leading-[1.253] text-[#6D7A8A]">
-          <span>계정</span>
-          <span>역할</span>
-          <span>상태</span>
-          <span className="text-right">관리</span>
-        </div>
-        <TeamMemberRow email="host@nuvio.kr" role="소유자" status="활성" />
-        <TeamMemberRow email="manager@nuvio.kr" role="매니저" status="초대 대기" />
-      </div>
-      <div className="mt-[var(--host-24)] flex w-[38.125vw] max-w-[732px] flex-col gap-[var(--host-12)] border-b border-[#6D7A8A] pb-[var(--host-24)]">
-        <SettingsField label="초대 이메일" placeholder="이메일을 입력해주세요." />
-        <div className="grid grid-cols-[1fr_123px] gap-[var(--host-12)]">
-          <select className="h-[var(--host-31)] rounded-[var(--host-7)] border-[0.5px] border-[#F7B267] bg-white px-[var(--host-12)] text-[var(--host-12)] font-medium text-[#0D0D0C] outline-none">
-            <option>매니저</option>
-            <option>편집자</option>
-            <option>뷰어</option>
-          </select>
-          <HostSettingsButton tone="orange">초대하기</HostSettingsButton>
-        </div>
-      </div>
-    </section>
-  );
-}
-
-function NotificationSettingsPanel() {
-  return (
-    <section className="w-[64.236vw] max-w-[1233px]">
-      <SettingsHeader
-        description="신청 접수, 선정 결과, 문의 메시지 알림 기준을 설정합니다."
-        title="알림/메시지"
-      />
-      <div className="mt-[var(--host-24)] grid border-y border-[#6D7A8A]">
-        <ToggleSettingRow
-          description="새 신청서가 접수되면 호스트 알림으로 알려줍니다."
-          label="신청 접수 알림"
-          on
-        />
-        <ToggleSettingRow
-          description="선정 결과 메시지 발송 예약 전 확인 알림을 표시합니다."
-          label="결과 메시지 예약 알림"
-          on
-        />
-        <ToggleSettingRow
-          description="게스트가 문의를 남기면 메세지함에 새 알림을 표시합니다."
-          label="문의 메시지 알림"
-          on
-        />
-        <ToggleSettingRow
-          description="프로그램 모집 마감 하루 전 알림을 받습니다."
-          label="마감 예정 알림"
-        />
-      </div>
-      <div className="mt-[var(--host-24)] grid w-[38.125vw] max-w-[732px] gap-[var(--host-12)]">
-        <SettingsField label="기본 수신 이메일" placeholder="host@nuvio.kr" />
-        <SettingsField label="예비 알림 문구" placeholder="알림 문구를 입력해주세요." />
-      </div>
-    </section>
-  );
-}
-
-function DataSettingsPanel() {
-  return (
-    <section className="w-[64.236vw] max-w-[1233px]">
-      <SettingsHeader
-        description="신청 기록, 메시지 기록, 결제 기록을 필요한 형식으로 관리합니다."
-        title="데이터"
-      />
-      <div className="mt-[var(--host-24)] grid border-y border-[#6D7A8A]">
-        <DataExportRow count="00건" label="신청 기록" />
-        <DataExportRow count="00건" label="메시지 기록" />
-        <DataExportRow count="00건" label="결제 기록" />
-      </div>
-      <p className="mt-[var(--host-18)] text-[var(--host-12)] font-medium leading-[1.6] text-[#7A8B52]">
-        내보내기 파일은 개인정보 보호를 위해 생성 후 일정 시간이 지나면 만료됩니다.
-      </p>
-    </section>
-  );
-}
-
-function SettingsHeader({
-  description,
-  title,
+function SettingsAccordion({
+  children,
+  open,
+  section,
 }: {
-  description: string;
-  title: string;
+  children: ReactNode;
+  open: boolean;
+  section: (typeof settingSections)[number];
+}) {
+  if (!open) {
+    return (
+      <Link
+        className="flex h-[var(--host-36)] w-[var(--host-782)] max-w-full items-center gap-[var(--host-12)] rounded-[var(--host-4)] border border-[#6D7A8A] px-[var(--host-16)] py-[var(--host-8)] transition hover:border-[#FE701E]"
+        href={section.href}
+      >
+        <AccordionHeaderText section={section} />
+        <AccordionIcon open={false} />
+      </Link>
+    );
+  }
+
+  return (
+    <section className="flex w-[var(--host-782)] max-w-full flex-col items-center gap-[var(--host-22)] rounded-[var(--host-4)] border border-[#6D7A8A] px-[var(--host-16)] pb-[var(--host-18)] pt-[var(--host-12)]">
+      <Link
+        className="flex h-[var(--host-44)] w-full items-center gap-[var(--host-12)] border-b border-[#6D7A8A] py-[var(--host-12)] transition hover:text-[#FE701E]"
+        href="/host/settings"
+      >
+        <AccordionHeaderText section={section} />
+        <AccordionIcon open />
+      </Link>
+      {children}
+    </section>
+  );
+}
+
+function AccordionHeaderText({
+  section,
+}: {
+  section: (typeof settingSections)[number];
 }) {
   return (
-    <header className="border-b border-[#6D7A8A] pb-[var(--host-24)]">
-      <h1 className="text-[var(--host-16)] font-semibold leading-[1.253] text-[#0D0D0C]">
-        {title}
-      </h1>
-      <p className="mt-[var(--host-10)] text-[var(--host-14)] font-normal leading-[1.253] text-[#6D7A8A]">
-        {description}
-      </p>
-    </header>
+    <>
+      <span className="shrink-0 text-[var(--host-16)] font-medium leading-[1.253] text-[#0D0D0C]">
+        {section.title}
+      </span>
+      <span className="shrink-0 text-[var(--host-14)] font-medium leading-[1.253] text-[#6D7A8A]">
+        {section.description}
+      </span>
+    </>
   );
 }
 
-function SettingsLinkRow({
-  description,
-  href,
-  label,
-  meta,
-}: {
-  description: string;
-  href: string;
-  label: string;
-  meta: string;
-}) {
+function AccordionIcon({ open }: { open: boolean }) {
   return (
-    <Link
-      className="grid min-h-[var(--host-58)] grid-cols-[176px_minmax(0,1fr)_176px] items-center gap-[var(--host-16)] border-b border-[#D9D9D9] px-[var(--host-16)] py-[var(--host-12)] last:border-b-0"
-      href={href}
-    >
-      <span className="text-[var(--host-14)] font-semibold leading-[1.253] text-[#0D0D0C]">
-        {label}
-      </span>
-      <span className="min-w-0 truncate text-[var(--host-12)] font-medium leading-[1.253] text-[#6D7A8A]">
-        {description}
-      </span>
-      <span className="text-right text-[var(--host-12)] font-semibold leading-[1.253] text-[#FE701E]">
-        {meta}
-      </span>
-    </Link>
+    <span className="ml-auto grid size-[var(--host-21)] shrink-0 place-items-center">
+      <Image
+        alt=""
+        aria-hidden
+        className="size-full"
+        height={21}
+        src={open ? nuvioIcons.dropup : nuvioIcons.dropdown}
+        width={21}
+      />
+    </span>
+  );
+}
+
+function TeamSettingsContent() {
+  return (
+    <>
+      <div className="flex w-[var(--host-547)] max-w-full flex-col gap-[var(--host-33)]">
+        <div className="flex items-start gap-[var(--host-22)]">
+          <h2 className="text-[var(--host-16)] font-medium leading-[1.253] text-[#0D0D0C]">
+            멤버
+          </h2>
+          <span className="rounded-[var(--host-12)] bg-[#F3F3F3] px-[var(--host-8)] py-[2px] text-[var(--host-12)] font-medium leading-[1.253] text-[#6D7A8A]">
+            역할 권한 범위 확인
+          </span>
+        </div>
+        <div className="flex w-full flex-col gap-[var(--host-8)]">
+          {members.map((member) => (
+            <TeamMemberRow key={`${member.role}-${member.email}`} member={member} />
+          ))}
+        </div>
+      </div>
+
+      <div className="flex w-[var(--host-546)] max-w-full flex-col gap-[var(--host-5)]">
+        <h2 className="text-[var(--host-16)] font-medium leading-[1.253] text-[#0D0D0C]">
+          멤버초대
+        </h2>
+        <p className="text-[var(--host-12)] font-normal leading-[1.6] text-[#6D7A8A]">
+          초대 메일을 수락하면 선택한 역할로 팀에 합류돼요. 역할 변경은 대표
+          호스트만 가능해요.
+        </p>
+        <div className="flex w-full items-center gap-[var(--host-28)]">
+          <input
+            className="h-[var(--host-31)] w-[var(--host-245)] rounded-[var(--host-7)] border border-[#F7B267] bg-white px-[var(--host-12)] text-[var(--host-12)] font-medium leading-[1.253] text-[#0D0D0C] outline-none placeholder:text-[#D9D9D9]"
+            placeholder="초대할 멤버의 이메일 입력"
+            type="email"
+          />
+          <div className="relative h-[var(--host-31)] w-[var(--host-166)]">
+            <select
+              className="h-full w-full appearance-none rounded-[var(--host-7)] border border-[#CAC4BC] bg-white px-[var(--host-8)] text-[var(--host-12)] font-medium leading-[1.253] text-[#D9D9D9] outline-none"
+              defaultValue=""
+            >
+              <option disabled value="">
+                초대 역할 선택
+              </option>
+              <option>운영진</option>
+              <option>스태프</option>
+            </select>
+            <Image
+              alt=""
+              aria-hidden
+              className="pointer-events-none absolute right-[var(--host-8)] top-1/2 h-[10px] w-[10px] -translate-y-1/2"
+              height={10}
+              src={nuvioIcons.formSelectDropdown}
+              width={10}
+            />
+          </div>
+          <button
+            className="h-[var(--host-30)] w-[var(--host-77)] rounded-[var(--host-6)] bg-[#CAC4BC] text-center text-[var(--host-12)] font-bold leading-[1.6] text-[#F3F3F3]"
+            type="button"
+          >
+            초대장 발송
+          </button>
+        </div>
+      </div>
+    </>
   );
 }
 
 function TeamMemberRow({
-  email,
-  role,
-  status,
+  member,
 }: {
-  email: string;
-  role: string;
-  status: string;
+  member: (typeof members)[number];
 }) {
   return (
-    <div className="grid min-h-[var(--host-40)] grid-cols-[1.15fr_0.75fr_0.7fr_0.5fr] items-center border-b border-[#D9D9D9] px-[var(--host-16)] text-[var(--host-12)] font-medium leading-[1.253] last:border-b-0">
-      <span className="truncate text-[#0D0D0C]">{email}</span>
-      <span className="text-[#6D7A8A]">{role}</span>
-      <span className="text-[#7A8B52]">{status}</span>
-      <button
-        className="justify-self-end rounded-[var(--host-4)] border border-[#6D7A8A] px-[var(--host-10)] py-[var(--host-4)] text-[#6D7A8A]"
-        type="button"
-      >
-        변경
-      </button>
+    <div className="flex min-h-[var(--host-31)] w-full items-center border-b border-[#D9D9D9] py-[var(--host-6)]">
+      <RoleBadge tone={member.tone}>{member.role}</RoleBadge>
+      <span className="pl-[var(--host-6)] pr-[var(--host-22)] text-[var(--host-14)] font-normal leading-[1.253] text-[#0D0D0C]">
+        {member.name}
+      </span>
+      <span className="min-w-0 flex-1 truncate text-[var(--host-14)] font-normal leading-[1.253] text-[#6D7A8A]">
+        {member.email}
+      </span>
+      {member.tone === "host" ? null : (
+        <span className="flex items-center gap-[var(--host-4)] pl-[var(--host-4)]">
+          <IconButton alt="권한 복사" src={nuvioIcons.formItemCopy} />
+          <IconButton alt="멤버 삭제" src={nuvioIcons.formItemTrash} />
+        </span>
+      )}
     </div>
   );
 }
 
-function ToggleSettingRow({
-  description,
-  label,
-  on = false,
-}: {
-  description: string;
-  label: string;
-  on?: boolean;
-}) {
-  return (
-    <div className="grid min-h-[var(--host-58)] grid-cols-[176px_minmax(0,1fr)_64px] items-center gap-[var(--host-16)] border-b border-[#D9D9D9] px-[var(--host-16)] py-[var(--host-12)] last:border-b-0">
-      <span className="text-[var(--host-14)] font-semibold leading-[1.253] text-[#0D0D0C]">
-        {label}
-      </span>
-      <span className="min-w-0 truncate text-[var(--host-12)] font-medium leading-[1.253] text-[#6D7A8A]">
-        {description}
-      </span>
-      <button
-        aria-pressed={on}
-        className={`flex h-[var(--host-24)] w-[var(--host-42)] items-center rounded-full border px-[2px] ${
-          on ? "justify-end border-[#FF9A3D] bg-[#FF9A3D]" : "justify-start border-[#6D7A8A] bg-white"
-        }`}
-        type="button"
-      >
-        <span className="size-[var(--host-18)] rounded-full bg-[#F9F9F9]" />
-      </button>
-    </div>
-  );
-}
-
-function DataExportRow({ count, label }: { count: string; label: string }) {
-  return (
-    <div className="grid min-h-[var(--host-58)] grid-cols-[176px_minmax(0,1fr)_123px] items-center gap-[var(--host-16)] border-b border-[#D9D9D9] px-[var(--host-16)] py-[var(--host-12)] last:border-b-0">
-      <span className="text-[var(--host-14)] font-semibold leading-[1.253] text-[#0D0D0C]">
-        {label}
-      </span>
-      <span className="text-[var(--host-12)] font-medium leading-[1.253] text-[#6D7A8A]">
-        현재 저장된 데이터 {count}
-      </span>
-      <HostSettingsButton tone="outline">CSV 내보내기</HostSettingsButton>
-    </div>
-  );
-}
-
-function SettingsField({
-  label,
-  placeholder,
-}: {
-  label: string;
-  placeholder: string;
-}) {
-  return (
-    <label className="grid gap-[var(--host-8)]">
-      <span className="text-[var(--host-14)] font-semibold leading-[1.253] text-[#0D0D0C]">
-        {label}
-      </span>
-      <input
-        className="h-[var(--host-31)] rounded-[var(--host-7)] border-[0.5px] border-[#F7B267] bg-white px-[var(--host-12)] text-[var(--host-12)] font-medium leading-[1.253] text-[#0D0D0C] outline-none placeholder:text-[#D9D9D9]"
-        placeholder={placeholder}
-      />
-    </label>
-  );
-}
-
-function HostSettingsButton({
+function RoleBadge({
   children,
   tone,
 }: {
-  children: string;
-  tone: "orange" | "outline" | "slate";
+  children: ReactNode;
+  tone: (typeof members)[number]["tone"];
 }) {
-  const className =
-    tone === "orange"
-      ? "border-[#FE701E] bg-[#FE701E] text-[#FFF6EC]"
-      : tone === "outline"
-        ? "border-[#FE701E] bg-white text-[#FE701E]"
-        : "border-[#6D7A8A] bg-[#6D7A8A] text-[#FFF6EC]";
+  const palette = {
+    host: "bg-[#C75C36] text-[#FCFCFC]",
+    manager: "bg-[#F7B267] text-[#FCFCFC]",
+    pending: "bg-[#6D7A8A] text-[#D9D9D9]",
+    staff: "bg-[#7A8B52] text-[#FCFCFC]",
+  }[tone];
 
   return (
-    <button
-      className={`inline-flex h-[var(--host-29)] items-center justify-center rounded-[var(--host-4)] border px-[var(--host-18)] text-[var(--host-12)] font-medium leading-[1.253] ${className}`}
-      type="button"
+    <span
+      className={`inline-flex shrink-0 items-center justify-center rounded-[var(--host-6)] px-[var(--host-6)] py-[var(--host-3)] text-[var(--host-12)] font-semibold leading-[1.253] ${palette}`}
     >
       {children}
+    </span>
+  );
+}
+
+function NotificationSettingsContent() {
+  return (
+    <>
+      <SettingsSubSection title="알람 수신 채널">
+        {channelToggles.map(([label, state]) => (
+          <ToggleLine key={label} label={label} state={state} />
+        ))}
+      </SettingsSubSection>
+
+      <SettingsSubSection title="알람 수신 항목">
+        {notificationToggles.map((label) => (
+          <ToggleLine key={label} label={label} state="off" />
+        ))}
+      </SettingsSubSection>
+
+      <div className="flex w-[var(--host-546)] max-w-full flex-col gap-[var(--host-14)]">
+        <h2 className="text-[var(--host-16)] font-medium leading-[1.253] text-[#0D0D0C]">
+          메세지 템플릿
+        </h2>
+        <p className="text-[var(--host-14)] font-medium leading-[1.253] text-[#6D7A8A]">
+          발송될 메세지의 내용 수정이 가능해요.
+        </p>
+        <div className="flex w-[var(--host-427)] max-w-full flex-col gap-[var(--host-28)]">
+          {templates.map((template) => (
+            <MessageTemplateCard key={template.title} template={template} />
+          ))}
+          <NewTemplateCard />
+          <button
+            className="flex w-fit items-center gap-[var(--host-4)] text-[var(--host-12)] font-normal leading-[1.253] text-[#FF9A3D]"
+            type="button"
+          >
+            <span className="grid size-[var(--host-12)] place-items-center rounded-full bg-[#FF9A3D] text-[10px] font-semibold leading-none text-white">
+              +
+            </span>
+            <span>템플릿 추가</span>
+          </button>
+        </div>
+      </div>
+    </>
+  );
+}
+
+function SettingsSubSection({
+  children,
+  title,
+}: {
+  children: ReactNode;
+  title: string;
+}) {
+  return (
+    <div className="flex w-[var(--host-547)] max-w-full flex-col gap-[var(--host-14)] border-b border-[#D9D9D9] pb-[var(--host-20)]">
+      <h2 className="text-[var(--host-16)] font-medium leading-[1.253] text-[#0D0D0C]">
+        {title}
+      </h2>
+      <div className="flex w-full flex-col gap-[var(--host-7)] px-[var(--host-10)]">
+        {children}
+      </div>
+    </div>
+  );
+}
+
+function ToggleLine({
+  label,
+  state,
+}: {
+  label: string;
+  state: "off" | "on" | "ready";
+}) {
+  return (
+    <div className="flex h-[var(--host-20)] w-[var(--host-281)] items-center gap-[var(--host-7)] text-[var(--host-12)] font-normal leading-[1.253] text-[#0D0D0C]">
+      <span className="min-w-0 flex-1">{label}</span>
+      {state === "ready" ? (
+        <span>준비중</span>
+      ) : (
+        <button aria-pressed={state === "on"} type="button">
+          <Image
+            alt=""
+            aria-hidden
+            className="h-[var(--host-20)] w-[var(--host-23)]"
+            height={20}
+            src={
+              state === "on"
+                ? nuvioIcons.formRequiredToggleOn
+                : nuvioIcons.formRequiredToggleOff
+            }
+            width={23}
+          />
+        </button>
+      )}
+    </div>
+  );
+}
+
+function MessageTemplateCard({
+  template,
+}: {
+  template: (typeof templates)[number];
+}) {
+  return (
+    <article className="flex w-full flex-col items-start justify-center rounded-[var(--host-7)] border border-[#F7B267] pb-[var(--host-6)]">
+      <div className="flex w-full flex-col items-start justify-center rounded-t-[var(--host-7)] bg-[#F3F3F3] px-[var(--host-12)] py-[var(--host-8)]">
+        <div className="flex w-full items-center gap-[var(--host-8)]">
+          <h3 className="shrink-0 text-[var(--host-14)] font-semibold leading-[1.253] text-[#0D0D0C]">
+            {template.title}
+          </h3>
+          <span className="flex flex-1 justify-end">
+            <Pencil
+              aria-hidden
+              className="size-[var(--host-13)] text-[#FE701E]"
+              strokeWidth={1.8}
+            />
+          </span>
+        </div>
+        <p className="mt-[var(--host-4)] text-[var(--host-12)] font-normal leading-[1.253] text-[#6D7A8A]">
+          {template.description}
+        </p>
+      </div>
+      <p className="max-w-full overflow-hidden text-ellipsis whitespace-nowrap px-[var(--host-12)] py-[var(--host-8)] text-[var(--host-12)] font-medium leading-[1.253] text-[#6D7A8A]">
+        {template.body}
+      </p>
+    </article>
+  );
+}
+
+function NewTemplateCard() {
+  return (
+    <article className="flex w-full flex-col items-start justify-center rounded-[var(--host-7)] border border-[#F7B267] pb-[var(--host-6)] opacity-60">
+      <div className="flex w-full flex-col gap-[var(--host-4)] rounded-t-[var(--host-7)] bg-[#F3F3F3] px-[var(--host-12)] py-[var(--host-8)]">
+        <div className="flex w-full items-center gap-[var(--host-8)]">
+          <div className="w-[var(--host-254)] max-w-[60%] border-b-[0.8px] border-[#CAC4BC] px-[var(--host-4)] py-[var(--host-4)] text-[var(--host-14)] font-normal leading-[1.253] text-[#D9D9D9]">
+            신규 템플릿 제목
+          </div>
+          <span className="flex flex-1 justify-end gap-[var(--host-8)]">
+            <Pencil
+              aria-hidden
+              className="size-[var(--host-13)] text-[#FE701E]"
+              strokeWidth={1.8}
+            />
+            <IconButton alt="템플릿 삭제" src={nuvioIcons.formItemTrash} />
+          </span>
+        </div>
+        <div className="w-full border-b-[0.8px] border-[#CAC4BC] px-[var(--host-4)] py-[var(--host-4)] text-[var(--host-12)] font-normal leading-[1.253] text-[#D9D9D9]">
+          메세지 사용에 대한 설명 작성
+        </div>
+      </div>
+      <p className="px-[var(--host-12)] py-[var(--host-8)] text-[var(--host-12)] font-normal leading-[1.253] text-[#D9D9D9]">
+        템플릿 메세지 내용 작성
+      </p>
+    </article>
+  );
+}
+
+function TemplateToken({ children }: { children: ReactNode }) {
+  return <span className="text-[#FE701E]">{children}</span>;
+}
+
+function DataSettingsContent() {
+  return (
+    <>
+      <div className="flex w-[var(--host-546)] max-w-full flex-col gap-[var(--host-5)]">
+        <h2 className="text-[var(--host-16)] font-medium leading-[1.253] text-[#0D0D0C]">
+          CSV 내보내기
+        </h2>
+        <p className="text-[var(--host-12)] font-normal leading-[1.6] text-[#6D7A8A]">
+          신청 기록과 운영 데이터를 엑셀에서 열 수 있는 CSV 파일로 내보낼 수
+          있어요
+        </p>
+        <div className="flex w-full items-center gap-[var(--host-28)]">
+          <SelectShell label="프로그램 선택" widthClass="w-[var(--host-222)]" />
+          <SelectShell label="기간 선택" widthClass="w-[var(--host-194)]" />
+          <button
+            className="h-[var(--host-30)] w-[var(--host-77)] rounded-[var(--host-6)] bg-[#CAC4BC] text-center text-[var(--host-12)] font-bold leading-[1.6] text-[#F3F3F3]"
+            type="button"
+          >
+            내보내기
+          </button>
+        </div>
+      </div>
+      <p className="w-[calc(518px*var(--host-scale))] max-w-full text-[var(--host-12)] font-normal leading-[1.6] text-[#6D7A8A]">
+        탈퇴 후 신청 기록 및 운영 데이터는 30일간 보관 후 삭제돼요.
+        <br />
+        필요한 경우 탈퇴 전 CSV 내보내기를 권장해요.
+      </p>
+    </>
+  );
+}
+
+function SelectShell({
+  label,
+  widthClass,
+}: {
+  label: string;
+  widthClass: string;
+}) {
+  return (
+    <div className={`relative h-[var(--host-31)] ${widthClass}`}>
+      <select
+        className="h-full w-full appearance-none rounded-[var(--host-7)] border border-[#CAC4BC] bg-white px-[var(--host-8)] text-[var(--host-12)] font-medium leading-[1.253] text-[#D9D9D9] outline-none"
+        defaultValue=""
+      >
+        <option disabled value="">
+          {label}
+        </option>
+      </select>
+      <Image
+        alt=""
+        aria-hidden
+        className="pointer-events-none absolute right-[var(--host-8)] top-1/2 h-[10px] w-[10px] -translate-y-1/2"
+        height={10}
+        src={nuvioIcons.formSelectDropdown}
+        width={10}
+      />
+    </div>
+  );
+}
+
+function IconButton({ alt, src }: { alt: string; src: string }) {
+  return (
+    <button
+      aria-label={alt}
+      className="grid size-[var(--host-16)] place-items-center"
+      type="button"
+    >
+      <Image alt="" aria-hidden className="size-full" height={16} src={src} width={16} />
     </button>
   );
 }
 
 function normalizePanel(value: HostRouteSearchParams[string]): SettingsPanel {
   const rawValue = Array.isArray(value) ? value[0] : value;
-  if (rawValue === "team" || rawValue === "notifications" || rawValue === "data") {
+  if (
+    rawValue === "team" ||
+    rawValue === "notifications" ||
+    rawValue === "data"
+  ) {
     return rawValue;
   }
   return "general";
