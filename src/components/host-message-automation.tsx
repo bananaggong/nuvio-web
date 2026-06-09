@@ -653,64 +653,63 @@ function MessageSidebar({
 }) {
   return (
     <aside className="w-[var(--msg-228)] shrink-0 border-r border-[#6D7A8A] bg-white shadow-[2px_5px_5.2px_rgba(0,0,0,0.23)] max-md:w-full">
-      <div className="relative h-[calc(var(--msg-438)+var(--msg-77))] min-h-[515px]">
-        <section className="absolute left-[var(--msg-6)] top-0 h-[var(--msg-65)] w-[var(--msg-216)]">
-          <div className="flex h-[33px] w-full items-end px-[var(--msg-12)] pb-[1px]">
-            <p className="min-w-0 flex-1 truncate text-[16px] font-semibold leading-[1.253] text-[#5B3A29]">
+      <div className="min-h-[515px] px-[var(--msg-18)] pt-[var(--msg-24)]">
+        <section className="border-b border-[#D9D9D9] pb-[var(--msg-12)]">
+          <div className="flex items-start gap-[var(--msg-8)]">
+            <p className="min-w-0 flex-1 break-keep text-[16px] font-semibold leading-[1.253] text-[#5B3A29]">
               {title}
             </p>
-            <span className="shrink-0 rounded-[6px] bg-[#FFB45F] px-[6px] py-[3px] text-[12px] font-semibold leading-[1.253] text-white">
+            <span className="mt-[1px] shrink-0 rounded-[6px] bg-[#7A8B52] px-[6px] py-[3px] text-[12px] font-semibold leading-[1.253] text-[#F3F3F3]">
               {status}
             </span>
           </div>
-          <div className="flex h-[28px] w-full items-start border-b border-[#D9D9D9] px-[var(--msg-12)] pt-[2px]">
-            <p className="text-[14px] font-semibold leading-[1.253] text-[#5B3A29]">
-              프로그램 넘버 :{" "}
-              <span className="text-[#FE701E]">{formatProgramNumber(programId)}</span>
-            </p>
-          </div>
+          <p className="mt-[var(--msg-8)] text-[14px] font-semibold leading-[1.253] text-[#5B3A29]">
+            프로그램 넘버 :{" "}
+            <span className="text-[#FE701E]">{formatProgramNumber(programId)}</span>
+          </p>
         </section>
 
-        <nav className="absolute left-[var(--msg-6)] top-[var(--msg-77)] h-[var(--msg-438)] w-[var(--msg-216)] text-[#5B3A29]">
-          <section className="absolute left-[var(--msg-12)] top-0 h-[var(--msg-167)] w-[var(--msg-192)]">
-            <MessageNavLink className="absolute left-0 top-0" href={`${programPath}?panel=dashboard`} label="대시보드" />
-            <p className="absolute left-0 top-[24px] text-[14px] font-normal leading-[1.253]">
+        <nav className="pt-[var(--msg-24)] text-[#5B3A29]">
+          <section className="border-b-[0.8px] border-[#6D7A8A] pb-[var(--msg-16)]">
+            <MessageNavLink href={`${programPath}?panel=dashboard`} label="대시보드" />
+            <p className="mt-[var(--msg-18)] text-[14px] font-normal leading-[1.253]">
               프로그램 설정
             </p>
-            <div className="absolute left-0 top-[48px] h-[119px] w-full border-b-[0.8px] border-[#6D7A8A]">
-              <MessageSubLink className="absolute left-[var(--msg-6)] top-0" href={`${programPath}?panel=basic`} label="기본정보" />
-              <MessageSubLink className="absolute left-[var(--msg-6)] top-[22px]" href={`${programPath}?panel=detail`} label="상세정보" />
-              <MessageSubLink className="absolute left-[var(--msg-6)] top-[44px]" href={`${programPath}?panel=schedule`} label="일정안내" />
-              <MessageSubLink className="absolute left-[var(--msg-6)] top-[66px]" href={`${programPath}?panel=place`} label="장소안내" />
-              <MessageSubLink className="absolute left-[var(--msg-6)] top-[88px]" href={`${programPath}?panel=guide`} label="안내사항" />
+            <div className="mt-[var(--msg-8)] flex flex-col gap-[var(--msg-8)] pl-[var(--msg-18)]">
+              <MessageSubLink href={`${programPath}?panel=basic`} label="기본정보" />
+              <MessageSubLink href={`${programPath}?panel=detail`} label="상세정보" />
+              <MessageSubLink href={`${programPath}?panel=schedule`} label="일정안내" />
+              <MessageSubLink href={`${programPath}?panel=place`} label="장소안내" />
+              <MessageSubLink href={`${programPath}?panel=guide`} label="안내사항" />
             </div>
           </section>
 
-          <section className="absolute left-[var(--msg-12)] top-[var(--msg-180)] h-[103px] w-[var(--msg-192)]">
-            <p className="absolute left-0 top-0 text-[14px] font-normal leading-[1.253]">
+          <section className="mt-[var(--msg-28)] border-b-[0.8px] border-[#6D7A8A] pb-[var(--msg-16)]">
+            <p className="text-[14px] font-normal leading-[1.253]">
               신청폼 현황
             </p>
-            <div className="absolute left-0 top-[24px] h-[79px] w-full border-b-[0.8px] border-[#6D7A8A]">
-              <MessageSubLink className="absolute left-[var(--msg-6)] top-0" href={formsHref} label="신청폼 연결" />
-              <MessageSubLink className="absolute left-[var(--msg-6)] top-[26px]" href={applicationsHref} label="신청 관리" />
+            <div className="mt-[var(--msg-8)] flex flex-col gap-[var(--msg-8)] pl-[var(--msg-18)]">
+              <MessageSubLink href={formsHref} label="신청폼 연결" />
+              <MessageSubLink href={applicationsHref} label="신청 관리" />
               <MessageSubLink
                 active={activeItem === "result"}
-                className="absolute left-[var(--msg-6)] top-[48px]"
                 href={messagesHref}
                 label="결과 메세지 관리"
               />
             </div>
           </section>
 
-          {launchFeatureFlags.coupons || launchFeatureFlags.promotions ? (
-            <MessageNavLink className="absolute left-[var(--msg-12)] top-[var(--msg-296)]" href={`${programPath}?panel=management`} label="쿠폰 / 프로모션" />
-          ) : null}
-          <MessageNavLink className="absolute left-[var(--msg-12)] top-[var(--msg-327)]" href={messagesHref} label="메세지함" />
-          <MessageNavLink className="absolute left-[var(--msg-12)] top-[var(--msg-358)]" href={`${applicationsHref}?panel=receipts`} label="결제 관리" />
-          {launchFeatureFlags.reviews ? (
-            <MessageNavLink className="absolute left-[var(--msg-12)] top-[var(--msg-389)]" href={`${applicationsHref}?panel=reviews`} label="후기 관리" />
-          ) : null}
-          <MessageNavLink className="absolute left-[var(--msg-12)] top-[var(--msg-420)]" href={`${programPath}?panel=delete`} label="프로그램 삭제" />
+          <div className="mt-[var(--msg-22)] flex flex-col gap-[var(--msg-22)]">
+            {launchFeatureFlags.coupons || launchFeatureFlags.promotions ? (
+              <MessageNavLink href={`${programPath}?panel=management`} label="쿠폰 / 프로모션" />
+            ) : null}
+            <MessageNavLink href={messagesHref} label="메세지함" />
+            <MessageNavLink href={`${applicationsHref}?panel=receipts`} label="결제 관리" />
+            {launchFeatureFlags.reviews ? (
+              <MessageNavLink href={`${applicationsHref}?panel=reviews`} label="후기 관리" />
+            ) : null}
+            <MessageNavLink href={`${programPath}?panel=delete`} label="프로그램 삭제" />
+          </div>
         </nav>
       </div>
     </aside>
@@ -728,7 +727,7 @@ function MessageNavLink({
 }) {
   return (
     <Link
-      className={`text-[14px] font-normal leading-[1.253] text-[#5B3A29] ${className}`}
+      className={`block text-[14px] font-normal leading-[1.253] text-[#5B3A29] ${className}`}
       href={href}
     >
       {label}
@@ -749,7 +748,7 @@ function MessageSubLink({
 }) {
   return (
     <Link
-      className={`inline-flex h-[19px] w-fit items-center rounded-[4px] px-[5px] text-[12px] leading-[1.253] ${
+      className={`flex h-[19px] w-fit items-center rounded-[4px] px-[5px] text-[12px] leading-[1.253] ${
         active
           ? "bg-[#FF9A3D] font-semibold text-[#F9F9F9]"
           : "font-normal text-[#5B3A29]"

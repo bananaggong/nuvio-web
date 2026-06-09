@@ -33,12 +33,18 @@ const formFigmaScaleStyle = {
   "--form-scale": "clamp(1, calc(min(100vw, 1920px) / 1440), 1.333333)",
   "--form-3": "clamp(3px, 0.208vw, 4px)",
   "--form-4": "clamp(4px, 0.278vw, 5.333px)",
+  "--form-5": "clamp(5px, 0.347vw, 6.667px)",
   "--form-6": "clamp(6px, 0.417vw, 8px)",
+  "--form-7": "clamp(7px, 0.486vw, 9.333px)",
   "--form-8": "clamp(8px, 0.556vw, 10.667px)",
+  "--form-9": "clamp(9px, 0.625vw, 12px)",
+  "--form-10": "clamp(10px, 0.694vw, 13.333px)",
   "--form-12": "clamp(12px, 0.833vw, 16px)",
   "--form-16": "clamp(16px, 1.111vw, 21.333px)",
+  "--form-17": "clamp(17px, 1.181vw, 22.667px)",
   "--form-18": "clamp(18px, 1.25vw, 24px)",
   "--form-20": "clamp(20px, 1.389vw, 26.667px)",
+  "--form-21": "clamp(21px, 1.458vw, 28px)",
   "--form-22": "clamp(22px, 1.528vw, 29.333px)",
   "--form-24": "clamp(24px, 1.667vw, 32px)",
   "--form-28": "clamp(28px, 1.944vw, 37.333px)",
@@ -46,7 +52,9 @@ const formFigmaScaleStyle = {
   "--form-32": "clamp(32px, 2.222vw, 42.667px)",
   "--form-34": "clamp(34px, 2.361vw, 45.333px)",
   "--form-40": "clamp(40px, 2.778vw, 53.333px)",
+  "--form-42": "clamp(42px, 2.917vw, 56px)",
   "--form-44": "clamp(44px, 3.056vw, 58.667px)",
+  "--form-45": "clamp(45px, 3.125vw, 60px)",
   "--form-58": "clamp(58px, 4.028vw, 77.333px)",
   "--form-65": "clamp(65px, 4.514vw, 86.667px)",
   "--form-69": "clamp(69px, 4.792vw, 92px)",
@@ -65,6 +73,7 @@ const formFigmaScaleStyle = {
   "--form-296": "clamp(296px, 20.556vw, 394.667px)",
   "--form-327": "clamp(327px, 22.708vw, 436px)",
   "--form-358": "clamp(358px, 24.861vw, 477.333px)",
+  "--form-384": "clamp(384px, 26.667vw, 512px)",
   "--form-389": "clamp(389px, 27.014vw, 518.667px)",
   "--form-420": "clamp(420px, 29.167vw, 560px)",
   "--form-438": "clamp(438px, 30.417vw, 584px)",
@@ -91,6 +100,7 @@ export function HostProgramFormAttachment({
   );
   const [selectedTemplateId, setSelectedTemplateId] = useState("");
   const [isAttaching, setIsAttaching] = useState(false);
+  const [isConnectionDialogOpen, setIsConnectionDialogOpen] = useState(false);
   const [message, setMessage] = useState("");
   const [error, setError] = useState("");
 
@@ -198,7 +208,7 @@ export function HostProgramFormAttachment({
   }, []);
 
   async function attachTemplate() {
-    if (!selectedTemplate || isAttaching) return;
+    if (!selectedTemplate || isAttaching) return false;
 
     setIsAttaching(true);
     setMessage("");
@@ -234,14 +244,23 @@ export function HostProgramFormAttachment({
       );
       setSelectedTemplateId("");
       setMessage("신청폼을 가져왔습니다.");
+      return true;
     } catch (attachError) {
       setError(
         attachError instanceof Error
           ? attachError.message
           : "신청폼을 연결하지 못했습니다.",
       );
+      return false;
     } finally {
       setIsAttaching(false);
+    }
+  }
+
+  async function confirmTemplateConnection() {
+    const didAttach = await attachTemplate();
+    if (didAttach) {
+      setIsConnectionDialogOpen(false);
     }
   }
 
@@ -314,26 +333,15 @@ export function HostProgramFormAttachment({
             <div className="w-[var(--form-562)] pl-[var(--form-40)] pt-[var(--form-44)]">
               <FormConnectionBlock
                 action={
-                  selectedTemplate ? (
-                    <button
-                      className="inline-flex h-[var(--form-29)] w-[var(--form-92)] items-center justify-center rounded-[4px] border border-[#FE701E] bg-white text-[12px] font-normal leading-[1.253] text-[#FE701E] disabled:cursor-not-allowed disabled:opacity-40"
-                      disabled={isAttaching}
-                      onClick={() => void attachTemplate()}
-                      type="button"
-                    >
-                      {isAttaching && !linkedTemplate ? (
-                        <Loader2 className="mr-1 size-3 animate-spin" />
-                      ) : null}
-                      폼 연결하기
-                    </button>
-                  ) : (
-                    <Link
-                      className="inline-flex h-[var(--form-29)] w-[var(--form-92)] items-center justify-center rounded-[4px] border border-[#FE701E] bg-white text-[12px] font-normal leading-[1.253] text-[#FE701E]"
-                      href={formsLibraryHref}
-                    >
-                      폼 연결하기
-                    </Link>
-                  )
+                  <button
+                    className="inline-flex h-[var(--form-29)] w-[var(--form-92)] items-center justify-center rounded-[4px] border border-[#FE701E] bg-white text-[12px] font-normal leading-[1.253] text-[#FE701E] disabled:cursor-not-allowed disabled:opacity-40"
+                    data-host-form-connect-open
+                    disabled={isAttaching}
+                    onClick={() => setIsConnectionDialogOpen(true)}
+                    type="button"
+                  >
+                    폼 연결하기
+                  </button>
                 }
                 helper="신청폼이 연결되지 않으면 게스트가 신청할 수 없어요"
                 title="신청폼 연결"
@@ -367,23 +375,14 @@ export function HostProgramFormAttachment({
                   </div>
                 </div>
                 <div className="mt-[var(--form-24)] flex h-[var(--form-29)] items-center gap-[var(--form-24)] pl-[var(--form-28)]">
-                  {selectedTemplate ? (
-                    <button
-                      className="inline-flex h-[var(--form-29)] w-[var(--form-58)] items-center justify-center rounded-[4px] border border-[#FE701E] bg-white text-[12px] font-normal leading-[1.253] text-[#FE701E] disabled:cursor-not-allowed disabled:opacity-40"
-                      disabled={isAttaching}
-                      onClick={() => void attachTemplate()}
-                      type="button"
-                    >
-                      변경
-                    </button>
-                  ) : (
-                    <Link
-                      className="inline-flex h-[var(--form-29)] w-[var(--form-58)] items-center justify-center rounded-[4px] border border-[#FE701E] bg-white text-[12px] font-normal leading-[1.253] text-[#FE701E]"
-                      href={formsLibraryHref}
-                    >
-                      변경
-                    </Link>
-                  )}
+                  <button
+                    className="inline-flex h-[var(--form-29)] w-[var(--form-58)] items-center justify-center rounded-[4px] border border-[#FE701E] bg-white text-[12px] font-normal leading-[1.253] text-[#FE701E] disabled:cursor-not-allowed disabled:opacity-40"
+                    disabled={isAttaching}
+                    onClick={() => setIsConnectionDialogOpen(true)}
+                    type="button"
+                  >
+                    변경
+                  </button>
                   <button
                     className="inline-flex h-[var(--form-29)] w-[var(--form-79)] items-center justify-center rounded-[4px] border border-[#6D7A8A] bg-white text-[12px] font-normal leading-[1.253] text-[#6D7A8A] disabled:cursor-not-allowed disabled:opacity-40"
                     disabled={!linkedTemplate || isAttaching}
@@ -427,6 +426,17 @@ export function HostProgramFormAttachment({
           </div>
         </section>
       </div>
+      {isConnectionDialogOpen ? (
+        <FormConnectionDialog
+          formsLibraryHref={formsLibraryHref}
+          isAttaching={isAttaching}
+          onClose={() => setIsConnectionDialogOpen(false)}
+          onConnect={() => void confirmTemplateConnection()}
+          onSelect={setSelectedTemplateId}
+          selectedTemplateId={selectedTemplate?.id ?? ""}
+          templates={selectableTemplates}
+        />
+      ) : null}
     </div>
   );
 }
@@ -452,112 +462,96 @@ function ProgramFormSidebar({
 }) {
   return (
     <aside className="w-[var(--form-228)] shrink-0 border-r border-[#6D7A8A] bg-white shadow-[2px_5px_5.2px_rgba(0,0,0,0.23)] max-md:w-full">
-      <div className="relative h-[calc(var(--form-438)+var(--form-77))] min-h-[515px]">
-        <section className="absolute left-[var(--form-6)] top-0 h-[var(--form-65)] w-[var(--form-216)]">
-          <div className="flex h-[33px] w-full items-end px-[var(--form-12)] pb-[1px]">
-            <p className="min-w-0 flex-1 truncate text-[16px] font-semibold leading-[1.253] text-[#5B3A29]">
+      <div className="min-h-[515px] px-[var(--form-18)] pt-[var(--form-24)]">
+        <section className="border-b border-[#D9D9D9] pb-[var(--form-12)]">
+          <div className="flex items-start gap-[var(--form-8)]">
+            <p className="min-w-0 flex-1 break-keep text-[16px] font-semibold leading-[1.253] text-[#5B3A29]">
               {title}
             </p>
-            <span className="shrink-0 rounded-[6px] bg-[#7A8B52] px-[6px] py-[3px] text-[12px] font-semibold leading-[1.253] text-[#F3F3F3]">
+            <span className="mt-[1px] shrink-0 rounded-[6px] bg-[#7A8B52] px-[6px] py-[3px] text-[12px] font-semibold leading-[1.253] text-[#F3F3F3]">
               {status}
             </span>
           </div>
-          <div className="flex h-[28px] w-full items-start border-b border-[#D9D9D9] px-[var(--form-12)] pt-[2px]">
-            <p className="text-[14px] font-semibold leading-[1.253] text-[#5B3A29]">
-              프로그램 넘버 :{" "}
-              <span className="text-[#FE701E]">{formatProgramNumber(programId)}</span>
-            </p>
-          </div>
+          <p className="mt-[var(--form-8)] text-[14px] font-semibold leading-[1.253] text-[#5B3A29]">
+            프로그램 넘버 :{" "}
+            <span className="text-[#FE701E]">{formatProgramNumber(programId)}</span>
+          </p>
         </section>
 
-        <nav className="absolute left-[var(--form-6)] top-[var(--form-77)] h-[var(--form-438)] w-[var(--form-216)] text-[#5B3A29]">
-          <section className="absolute left-[var(--form-12)] top-0 h-[var(--form-167)] w-[var(--form-192)]">
-            <ProgramFormNavLink className="absolute left-0 top-0" href={`${programPath}?panel=dashboard`} label="대시보드" />
-            <p className="absolute left-0 top-[24px] text-[14px] font-normal leading-[1.253]">
+        <nav className="pt-[var(--form-24)] text-[#5B3A29]">
+          <section className="border-b-[0.8px] border-[#6D7A8A] pb-[var(--form-16)]">
+            <ProgramFormNavLink href={`${programPath}?panel=dashboard`} label="대시보드" />
+            <p className="mt-[var(--form-18)] text-[14px] font-normal leading-[1.253]">
               프로그램 설정
             </p>
-            <div className="absolute left-0 top-[48px] h-[119px] w-full border-b-[0.8px] border-[#6D7A8A]">
+            <div className="mt-[var(--form-8)] flex flex-col gap-[var(--form-8)] pl-[var(--form-18)]">
               <ProgramFormSubLink
-                className="absolute left-[var(--form-6)] top-0"
                 href={`${programPath}?panel=basic`}
                 label="기본정보"
               />
               <ProgramFormSubLink
-                className="absolute left-[var(--form-6)] top-[22px]"
                 href={`${programPath}?panel=detail`}
                 label="상세정보"
               />
               <ProgramFormSubLink
-                className="absolute left-[var(--form-6)] top-[44px]"
                 href={`${programPath}?panel=schedule`}
                 label="일정안내"
               />
               <ProgramFormSubLink
-                className="absolute left-[var(--form-6)] top-[66px]"
                 href={`${programPath}?panel=place`}
                 label="장소안내"
               />
               <ProgramFormSubLink
-                className="absolute left-[var(--form-6)] top-[88px]"
                 href={`${programPath}?panel=guide`}
                 label="안내사항"
               />
             </div>
           </section>
 
-          <section className="absolute left-[var(--form-12)] top-[var(--form-180)] h-[103px] w-[var(--form-192)]">
-            <p className="absolute left-0 top-0 text-[14px] font-normal leading-[1.253]">
+          <section className="mt-[var(--form-28)] border-b-[0.8px] border-[#6D7A8A] pb-[var(--form-16)]">
+            <p className="text-[14px] font-normal leading-[1.253]">
               신청폼 현황
             </p>
-            <div className="absolute left-0 top-[24px] h-[79px] w-full border-b-[0.8px] border-[#6D7A8A]">
+            <div className="mt-[var(--form-8)] flex flex-col gap-[var(--form-8)] pl-[var(--form-18)]">
               <ProgramFormSubLink
                 active={activeItem === "forms"}
-                className="absolute left-[var(--form-6)] top-0"
                 href={formsHref}
                 label="신청폼 연결"
               />
               <ProgramFormSubLink
-                className="absolute left-[var(--form-6)] top-[26px]"
                 href={applicationsHref}
                 label="신청 관리"
               />
               <ProgramFormSubLink
-                className="absolute left-[var(--form-6)] top-[48px]"
                 href={messagesHref}
                 label="결과 메세지 관리"
               />
             </div>
           </section>
 
-          {launchFeatureFlags.coupons || launchFeatureFlags.promotions ? (
+          <div className="mt-[var(--form-22)] flex flex-col gap-[var(--form-22)]">
+            {launchFeatureFlags.coupons || launchFeatureFlags.promotions ? (
+              <ProgramFormNavLink
+                href={`${programPath}?panel=management`}
+                label="쿠폰 / 프로모션"
+              />
+            ) : null}
+            <ProgramFormNavLink href={messagesHref} label="메세지함" />
             <ProgramFormNavLink
-              className="absolute left-[var(--form-12)] top-[var(--form-296)]"
-              href={`${programPath}?panel=management`}
-              label="쿠폰 / 프로모션"
+              href={`${applicationsHref}?panel=receipts`}
+              label="결제 관리"
             />
-          ) : null}
-          <ProgramFormNavLink
-            className="absolute left-[var(--form-12)] top-[var(--form-327)]"
-            href={messagesHref}
-            label="메세지함"
-          />
-          <ProgramFormNavLink
-            className="absolute left-[var(--form-12)] top-[var(--form-358)]"
-            href={`${applicationsHref}?panel=receipts`}
-            label="결제 관리"
-          />
-          {launchFeatureFlags.reviews ? (
+            {launchFeatureFlags.reviews ? (
+              <ProgramFormNavLink
+                href={`${applicationsHref}?panel=reviews`}
+                label="후기 관리"
+              />
+            ) : null}
             <ProgramFormNavLink
-              className="absolute left-[var(--form-12)] top-[var(--form-389)]"
-              href={`${applicationsHref}?panel=reviews`}
-              label="후기 관리"
+              href={`${programPath}?panel=delete`}
+              label="프로그램 삭제"
             />
-          ) : null}
-          <ProgramFormNavLink
-            className="absolute left-[var(--form-12)] top-[var(--form-420)]"
-            href={`${programPath}?panel=delete`}
-            label="프로그램 삭제"
-          />
+          </div>
         </nav>
       </div>
     </aside>
@@ -575,7 +569,7 @@ function ProgramFormNavLink({
 }) {
   return (
     <Link
-      className={`text-[14px] font-normal leading-[1.253] text-[#5B3A29] ${className}`}
+      className={`block text-[14px] font-normal leading-[1.253] text-[#5B3A29] ${className}`}
       href={href}
     >
       {label}
@@ -596,7 +590,7 @@ function ProgramFormSubLink({
 }) {
   return (
     <Link
-      className={`inline-flex h-[19px] w-fit items-center rounded-[4px] px-[5px] text-[12px] leading-[1.253] ${
+      className={`flex h-[19px] w-fit items-center rounded-[4px] px-[5px] text-[12px] leading-[1.253] ${
         active
           ? "bg-[#FF9A3D] font-semibold text-[#F9F9F9]"
           : "font-normal text-[#5B3A29]"
@@ -636,6 +630,131 @@ function FormConnectionBlock({
   );
 }
 
+function FormConnectionDialog({
+  formsLibraryHref,
+  isAttaching,
+  onClose,
+  onConnect,
+  onSelect,
+  selectedTemplateId,
+  templates,
+}: {
+  formsLibraryHref: string;
+  isAttaching: boolean;
+  onClose: () => void;
+  onConnect: () => void;
+  onSelect: (templateId: string) => void;
+  selectedTemplateId: string;
+  templates: ApplicationFormTemplate[];
+}) {
+  return (
+    <div
+      aria-labelledby="form-connection-dialog-title"
+      aria-modal="true"
+      className="fixed inset-0 z-50 flex items-center justify-center bg-transparent"
+      data-host-form-connection-dialog
+      role="dialog"
+    >
+      <div className="w-[var(--form-384)] rounded-[8px] border border-[#D9D9D9] bg-white px-[var(--form-17)] pb-[var(--form-18)] pt-[var(--form-16)] shadow-[0_8px_20px_rgba(0,0,0,0.08)]">
+        <div className="flex items-start">
+          <h2
+            className="text-[length:var(--form-12)] font-semibold leading-[1.253] text-[#0D0D0C]"
+            id="form-connection-dialog-title"
+          >
+            신청폼 연결하기
+          </h2>
+          <button
+            aria-label="닫기"
+            className="ml-auto grid size-[var(--form-18)] place-items-center text-[length:var(--form-20)] font-normal leading-none text-[#0D0D0C]"
+            onClick={onClose}
+            type="button"
+          >
+            ×
+          </button>
+        </div>
+        <p className="mt-[var(--form-10)] text-[length:var(--form-10)] font-normal leading-[1.253] text-[#6D7A8A]">
+          미리 작성된 신청폼 목록 중 선택해 주세요.
+        </p>
+
+        <div className="mt-[var(--form-6)] flex flex-col gap-[var(--form-5)]">
+          {templates.length > 0 ? (
+            templates.slice(0, 4).map((template) => {
+              const checked = selectedTemplateId === template.id;
+
+              return (
+                <label
+                  className="flex h-[var(--form-21)] cursor-pointer items-center gap-[var(--form-6)]"
+                  key={template.id}
+                >
+                  <input
+                    checked={checked}
+                    className="peer sr-only"
+                    name="form-template-connection"
+                    onChange={() => onSelect(template.id)}
+                    type="radio"
+                    value={template.id}
+                  />
+                  <span
+                    aria-hidden="true"
+                    className={`grid size-[var(--form-10)] shrink-0 place-items-center rounded-full border ${
+                      checked ? "border-[#FE701E]" : "border-[#AEB8C2]"
+                    }`}
+                  >
+                    <span
+                      className={`size-[var(--form-5)] rounded-full ${
+                        checked ? "bg-[#FE701E]" : "bg-transparent"
+                      }`}
+                    />
+                  </span>
+                  <span className="flex h-full min-w-0 flex-1 items-center rounded-[3px] border border-[#AEB8C2] px-[var(--form-8)] text-[length:var(--form-9)] font-normal leading-[1.253] text-[#6D7A8A]">
+                    <span className="min-w-0 flex-1 truncate">
+                      {template.name || "신청서 제목"}
+                    </span>
+                    <span className="ml-[var(--form-8)] shrink-0">
+                      작성일 {formatFormDateDots(template.updatedAt)}
+                    </span>
+                  </span>
+                </label>
+              );
+            })
+          ) : (
+            <div className="flex h-[var(--form-45)] items-center justify-center rounded-[3px] border border-[#AEB8C2] text-[length:var(--form-10)] text-[#6D7A8A]">
+              작성된 신청폼이 없습니다.
+            </div>
+          )}
+        </div>
+
+        <div className="mt-[var(--form-7)] flex items-center">
+          <Link
+            className="inline-flex items-center gap-[var(--form-4)] text-[length:var(--form-10)] font-normal leading-[1.253] text-[#FE701E]"
+            href={formsLibraryHref}
+          >
+            <span
+              aria-hidden="true"
+              className="grid size-[var(--form-8)] place-items-center rounded-full bg-[#FE701E] text-[length:var(--form-8)] leading-none text-white"
+            >
+              +
+            </span>
+            새 신청폼 만들기
+          </Link>
+          <button
+            className="ml-auto inline-flex h-[var(--form-24)] w-[var(--form-42)] items-center justify-center rounded-[3px] bg-[#FE701E] text-[length:var(--form-10)] font-semibold leading-[1.253] text-white disabled:cursor-not-allowed disabled:opacity-50"
+            disabled={templates.length === 0 || isAttaching}
+            onClick={onConnect}
+            type="button"
+          >
+            {isAttaching ? (
+              <Loader2 aria-hidden="true" className="size-[var(--form-12)] animate-spin" />
+            ) : (
+              "연결"
+            )}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 function formatFormDate(value: string): string {
   const date = new Date(value);
   if (Number.isNaN(date.getTime())) return "0000/00/00";
@@ -644,6 +763,16 @@ function formatFormDate(value: string): string {
   const month = String(date.getMonth() + 1).padStart(2, "0");
   const day = String(date.getDate()).padStart(2, "0");
   return `${year}/${month}/${day}`;
+}
+
+function formatFormDateDots(value: string): string {
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return "0000. 00. 00";
+
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
+  return `${year}. ${month}. ${day}`;
 }
 
 function formatProgramNumber(programId: string): string {
