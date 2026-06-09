@@ -385,35 +385,51 @@ export function HostFolderCard({
   const previews = programs.slice(0, 3);
 
   return (
-    <Link
-      className="group block h-[var(--host-351)] w-[var(--host-288)] min-w-[288px] rounded-[8px] border border-[#D9D9D9] bg-white p-[var(--host-12)] transition hover:border-[#FE701E] max-md:h-auto max-md:w-full"
-      href={hostProjectPath(folder.id)}
-    >
+    <article className="block h-[var(--host-351)] w-[var(--host-288)] min-w-[288px] rounded-[8px] border border-[#D9D9D9] bg-white p-[var(--host-12)] transition max-md:h-auto max-md:w-full">
       <div className="grid h-[var(--host-270)] w-full grid-cols-2 grid-rows-[repeat(2,minmax(0,1fr))] gap-[var(--host-6)]">
-        {[0, 1, 2].map((index) => (
-          <div
-            className="relative overflow-hidden rounded-[16px] bg-[#D9D9D9]"
-            key={index}
-          >
-            {previews[index]?.imageUrl ? (
-              <Image
-                alt=""
-                className="object-cover"
-                fill
-                sizes="(min-width: 1920px) 176px, 132px"
-                src={previews[index].imageUrl}
+        {[0, 1, 2].map((index) => {
+          const preview = previews[index];
+
+          if (!preview) {
+            return (
+              <div
+                className="relative overflow-hidden rounded-[16px] bg-[#D9D9D9]"
+                key={index}
               />
-            ) : null}
-          </div>
-        ))}
-        <div className="flex flex-col items-center justify-center gap-[var(--host-8)] rounded-[16px] bg-white">
+            );
+          }
+
+          return (
+            <Link
+              aria-label={`${preview.title} 프로그램으로 이동`}
+              className="relative overflow-hidden rounded-[16px] bg-[#D9D9D9] transition hover:ring-2 hover:ring-[#FE701E] hover:ring-offset-1"
+              href={hostProgramHref(preview)}
+              key={preview.id}
+            >
+              {preview.imageUrl ? (
+                <Image
+                  alt=""
+                  className="object-cover transition duration-200 hover:scale-[1.03]"
+                  fill
+                  sizes="(min-width: 1920px) 176px, 132px"
+                  src={preview.imageUrl}
+                />
+              ) : null}
+            </Link>
+          );
+        })}
+        <Link
+          aria-label={`${folder.title} 폴더 전체보기`}
+          className="group/view flex flex-col items-center justify-center gap-[var(--host-8)] rounded-[16px] bg-white transition hover:text-[#FE701E]"
+          href={hostProjectPath(folder.id)}
+        >
           <span className="grid size-[var(--host-20)] place-items-center rounded-full bg-[#FF9A3D] text-white">
             <Plus className="size-[var(--host-14)]" strokeWidth={2.4} />
           </span>
-          <span className="text-[var(--host-12)] font-normal leading-[1.253] text-[#6D7A8A]">
+          <span className="text-[var(--host-12)] font-normal leading-[1.253] text-[#6D7A8A] transition group-hover/view:text-[#FE701E]">
             전체보기
           </span>
-        </div>
+        </Link>
       </div>
       <div className="mt-[var(--host-10)] flex w-full flex-col gap-[var(--host-8)]">
         <p className="text-[var(--host-12)] font-normal leading-[1.6] text-[#6D7A8A]">
@@ -423,7 +439,7 @@ export function HostFolderCard({
           {folder.title}
         </p>
       </div>
-    </Link>
+    </article>
   );
 }
 
@@ -535,9 +551,7 @@ export function HostMiniProgramCard({
   actionLabel: string;
   program: HostProgramListItem;
 }) {
-  const href = program.projectId
-    ? `/host/projects/${encodeURIComponent(program.projectId)}/programs/${encodeURIComponent(program.id)}`
-    : `/host/programs/${encodeURIComponent(program.id)}`;
+  const href = hostProgramHref(program);
 
   return (
     <article className="h-[var(--host-142)] w-[var(--host-235)] shrink-0 rounded-[8px] border border-[#D9D9D9] bg-white p-[var(--host-12)]">
@@ -579,6 +593,12 @@ export function HostMiniProgramCard({
       </Link>
     </article>
   );
+}
+
+function hostProgramHref(program: HostProgramListItem): string {
+  return program.projectId
+    ? `/host/projects/${encodeURIComponent(program.projectId)}/programs/${encodeURIComponent(program.id)}`
+    : `/host/programs/${encodeURIComponent(program.id)}`;
 }
 
 function HostMiniProgramCardPlaceholder() {
