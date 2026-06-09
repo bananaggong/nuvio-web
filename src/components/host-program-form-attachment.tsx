@@ -20,7 +20,7 @@ import {
   hostProgramPath,
   hostStandaloneProgramPath,
 } from "@/lib/host-projects";
-import { launchFeatureFlags } from "@/lib/launch-feature-flags";
+import { HostProgramSidebar } from "@/components/host-program-sidebar";
 import { readHostProgramDrafts } from "@/lib/host-program-studio";
 
 type HostProgramOption = {
@@ -384,7 +384,7 @@ export function HostProgramFormAttachment({
       style={formFigmaScaleStyle}
     >
       <div className="flex min-h-[calc(100vh-4.861vw)] max-md:flex-col">
-        <ProgramFormSidebar
+        <HostProgramSidebar
           activeItem="forms"
           applicationsHref={applicationsHref}
           formsHref={`${programBasePath}/forms`}
@@ -522,167 +522,6 @@ export function HostProgramFormAttachment({
         />
       ) : null}
     </div>
-  );
-}
-
-function ProgramFormSidebar({
-  activeItem,
-  applicationsHref,
-  formsHref,
-  messagesHref,
-  programId,
-  programPath,
-  status,
-  title,
-}: {
-  activeItem: "forms";
-  applicationsHref: string;
-  formsHref: string;
-  messagesHref: string;
-  programId: string;
-  programPath: string;
-  status: string;
-  title: string;
-}) {
-  return (
-    <aside className="w-[var(--form-228)] shrink-0 border-r border-[#6D7A8A] bg-white shadow-[2px_5px_5.2px_rgba(0,0,0,0.23)] max-md:w-full">
-      <div className="min-h-[515px] px-[var(--form-18)] pt-[var(--form-24)]">
-        <section className="border-b border-[#D9D9D9] pb-[var(--form-12)]">
-          <div className="flex items-start gap-[var(--form-8)]">
-            <p className="min-w-0 flex-1 break-keep text-[16px] font-semibold leading-[1.253] text-[#5B3A29]">
-              {title}
-            </p>
-            <span className="mt-[1px] shrink-0 rounded-[6px] bg-[#7A8B52] px-[6px] py-[3px] text-[12px] font-semibold leading-[1.253] text-[#F3F3F3]">
-              {status}
-            </span>
-          </div>
-          <p className="mt-[var(--form-8)] text-[14px] font-semibold leading-[1.253] text-[#5B3A29]">
-            프로그램 넘버 :{" "}
-            <span className="text-[#FE701E]">{formatProgramNumber(programId)}</span>
-          </p>
-        </section>
-
-        <nav className="pt-[var(--form-24)] text-[#5B3A29]">
-          <section className="border-b-[0.8px] border-[#6D7A8A] pb-[var(--form-16)]">
-            <ProgramFormNavLink href={`${programPath}?panel=dashboard`} label="대시보드" />
-            <p className="mt-[var(--form-18)] text-[14px] font-normal leading-[1.253]">
-              프로그램 설정
-            </p>
-            <div className="mt-[var(--form-8)] flex flex-col gap-[var(--form-8)] pl-[var(--form-18)]">
-              <ProgramFormSubLink
-                href={`${programPath}?panel=basic`}
-                label="기본정보"
-              />
-              <ProgramFormSubLink
-                href={`${programPath}?panel=detail`}
-                label="상세정보"
-              />
-              <ProgramFormSubLink
-                href={`${programPath}?panel=schedule`}
-                label="일정안내"
-              />
-              <ProgramFormSubLink
-                href={`${programPath}?panel=place`}
-                label="장소안내"
-              />
-              <ProgramFormSubLink
-                href={`${programPath}?panel=guide`}
-                label="안내사항"
-              />
-            </div>
-          </section>
-
-          <section className="mt-[var(--form-28)] border-b-[0.8px] border-[#6D7A8A] pb-[var(--form-16)]">
-            <p className="text-[14px] font-normal leading-[1.253]">
-              신청폼 현황
-            </p>
-            <div className="mt-[var(--form-8)] flex flex-col gap-[var(--form-8)] pl-[var(--form-18)]">
-              <ProgramFormSubLink
-                active={activeItem === "forms"}
-                href={formsHref}
-                label="신청폼 연결"
-              />
-              <ProgramFormSubLink
-                href={applicationsHref}
-                label="신청 관리"
-              />
-              <ProgramFormSubLink
-                href={messagesHref}
-                label="결과 메세지 관리"
-              />
-            </div>
-          </section>
-
-          <div className="mt-[var(--form-22)] flex flex-col gap-[var(--form-22)]">
-            {launchFeatureFlags.coupons || launchFeatureFlags.promotions ? (
-              <ProgramFormNavLink
-                href={`${programPath}?panel=management`}
-                label="쿠폰 / 프로모션"
-              />
-            ) : null}
-            <ProgramFormNavLink href={messagesHref} label="메세지함" />
-            <ProgramFormNavLink
-              href={`${applicationsHref}?panel=receipts`}
-              label="결제 관리"
-            />
-            {launchFeatureFlags.reviews ? (
-              <ProgramFormNavLink
-                href={`${applicationsHref}?panel=reviews`}
-                label="후기 관리"
-              />
-            ) : null}
-            <ProgramFormNavLink
-              href={`${programPath}?panel=delete`}
-              label="프로그램 삭제"
-            />
-          </div>
-        </nav>
-      </div>
-    </aside>
-  );
-}
-
-function ProgramFormNavLink({
-  className = "",
-  href,
-  label,
-}: {
-  className?: string;
-  href: string;
-  label: string;
-}) {
-  return (
-    <Link
-      className={`block text-[14px] font-normal leading-[1.253] text-[#5B3A29] ${className}`}
-      href={href}
-    >
-      {label}
-    </Link>
-  );
-}
-
-function ProgramFormSubLink({
-  active = false,
-  className = "",
-  href,
-  label,
-}: {
-  active?: boolean;
-  className?: string;
-  href: string;
-  label: string;
-}) {
-  return (
-    <Link
-      className={`flex h-[19px] w-fit items-center rounded-[4px] px-[5px] text-[12px] leading-[1.253] ${
-        active
-          ? "bg-[#FF9A3D] font-semibold text-[#F9F9F9]"
-          : "font-normal text-[#5B3A29]"
-      } ${className}`}
-      href={href}
-    >
-      {label}
-    </Link>
   );
 }
 
@@ -857,13 +696,6 @@ function formatFormDateDots(value: string): string {
   const month = String(date.getMonth() + 1).padStart(2, "0");
   const day = String(date.getDate()).padStart(2, "0");
   return `${year}. ${month}. ${day}`;
-}
-
-function formatProgramNumber(programId: string): string {
-  const normalizedId = programId.trim();
-  if (!normalizedId) return "0000000000";
-
-  return normalizedId.length > 12 ? normalizedId.slice(0, 12) : normalizedId;
 }
 
 function isTemplateLinkedToProgram(

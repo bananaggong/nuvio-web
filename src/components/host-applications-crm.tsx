@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { useEffect, useMemo, useState, type CSSProperties } from "react";
+import { HostProgramSidebar } from "@/components/host-program-sidebar";
 import {
   findHostProgramOverview,
   findHostProjectOverview,
@@ -210,7 +211,7 @@ export function HostApplicationsCrm({
       style={applicationFigmaScaleStyle}
     >
       <div className="flex min-h-[calc(100vh_-_4.861vw)] max-md:flex-col">
-        <ApplicationSidebar
+        <HostProgramSidebar
           activeItem={activePanel}
           applicationsHref={applicationsHref}
           formsHref={formsHref}
@@ -810,143 +811,6 @@ function ReviewManagementCard({
   );
 }
 
-function ApplicationSidebar({
-  activeItem,
-  applicationsHref,
-  formsHref,
-  messagesHref,
-  programId,
-  programPath,
-  status,
-  title,
-}: {
-  activeItem: ApplicationsPanel;
-  applicationsHref: string;
-  formsHref: string;
-  messagesHref: string;
-  programId: string;
-  programPath: string;
-  status: string;
-  title: string;
-}) {
-  return (
-    <aside className="w-[var(--app-228)] shrink-0 border-r border-[#6D7A8A] bg-white shadow-[2px_5px_5.2px_rgba(0,0,0,0.23)] max-md:w-full">
-      <div className="relative h-[calc(var(--app-438)+var(--app-77))] min-h-[515px]">
-        <section className="absolute left-[var(--app-6)] top-0 h-[var(--app-65)] w-[var(--app-216)]">
-          <div className="flex h-[33px] w-full items-end px-[var(--app-12)] pb-[1px]">
-            <p className="min-w-0 flex-1 truncate text-[16px] font-semibold leading-[1.253] text-[#5B3A29]">
-              {title}
-            </p>
-            <span className="shrink-0 rounded-[6px] bg-[#FFB45F] px-[6px] py-[3px] text-[12px] font-semibold leading-[1.253] text-white">
-              {status}
-            </span>
-          </div>
-          <div className="flex h-[28px] w-full items-start border-b border-[#D9D9D9] px-[var(--app-12)] pt-[2px]">
-            <p className="text-[14px] font-semibold leading-[1.253] text-[#5B3A29]">
-              프로그램 넘버 :{" "}
-              <span className="text-[#FE701E]">{formatProgramNumber(programId)}</span>
-            </p>
-          </div>
-        </section>
-
-        <nav className="absolute left-[var(--app-6)] top-[var(--app-77)] h-[var(--app-438)] w-[var(--app-216)] text-[#5B3A29]">
-          <section className="absolute left-[var(--app-12)] top-0 h-[var(--app-167)] w-[var(--app-192)]">
-            <ApplicationNavLink
-              className="absolute left-0 top-0"
-              href={`${programPath}?panel=dashboard`}
-              label="대시보드"
-            />
-            <p className="absolute left-0 top-[24px] text-[14px] font-normal leading-[1.253]">
-              프로그램 설정
-            </p>
-            <div className="absolute left-0 top-[48px] h-[119px] w-full border-b-[0.8px] border-[#6D7A8A]">
-              <ApplicationSubLink className="absolute left-[var(--app-6)] top-0" href={`${programPath}?panel=basic`} label="기본정보" />
-              <ApplicationSubLink className="absolute left-[var(--app-6)] top-[22px]" href={`${programPath}?panel=detail`} label="상세정보" />
-              <ApplicationSubLink className="absolute left-[var(--app-6)] top-[44px]" href={`${programPath}?panel=schedule`} label="일정안내" />
-              <ApplicationSubLink className="absolute left-[var(--app-6)] top-[66px]" href={`${programPath}?panel=place`} label="장소안내" />
-              <ApplicationSubLink className="absolute left-[var(--app-6)] top-[88px]" href={`${programPath}?panel=guide`} label="안내사항" />
-            </div>
-          </section>
-
-          <section className="absolute left-[var(--app-12)] top-[var(--app-180)] h-[103px] w-[var(--app-192)]">
-            <p className="absolute left-0 top-0 text-[14px] font-normal leading-[1.253]">
-              신청폼 현황
-            </p>
-            <div className="absolute left-0 top-[24px] h-[79px] w-full border-b-[0.8px] border-[#6D7A8A]">
-              <ApplicationSubLink className="absolute left-[var(--app-6)] top-0" href={formsHref} label="신청폼 연결" />
-              <ApplicationSubLink
-                active={activeItem === "applications"}
-                className="absolute left-[var(--app-6)] top-[26px]"
-                href={applicationsHref}
-                label="신청 관리"
-              />
-              <ApplicationSubLink className="absolute left-[var(--app-6)] top-[48px]" href={messagesHref} label="결과 메세지 관리" />
-            </div>
-          </section>
-
-          {launchFeatureFlags.coupons || launchFeatureFlags.promotions ? (
-            <ApplicationNavLink className="absolute left-[var(--app-12)] top-[var(--app-296)]" href={`${programPath}?panel=management`} label="쿠폰 / 프로모션" />
-          ) : null}
-          <ApplicationNavLink className="absolute left-[var(--app-12)] top-[var(--app-327)]" href={messagesHref} label="메세지함" />
-          <ApplicationNavLink active={activeItem === "receipts"} className="absolute left-[var(--app-12)] top-[var(--app-358)]" href={`${applicationsHref}?panel=receipts`} label="결제 관리" />
-          {launchFeatureFlags.reviews ? (
-            <ApplicationNavLink active={activeItem === "reviews"} className="absolute left-[var(--app-12)] top-[var(--app-389)]" href={`${applicationsHref}?panel=reviews`} label="후기 관리" />
-          ) : null}
-          <ApplicationNavLink className="absolute left-[var(--app-12)] top-[var(--app-420)]" href={`${programPath}?panel=delete`} label="프로그램 삭제" />
-        </nav>
-      </div>
-    </aside>
-  );
-}
-
-function ApplicationNavLink({
-  active = false,
-  className = "",
-  href,
-  label,
-}: {
-  active?: boolean;
-  className?: string;
-  href: string;
-  label: string;
-}) {
-  return (
-    <Link
-      className={`text-[14px] leading-[1.253] text-[#5B3A29] ${
-        active ? "font-semibold" : "font-normal"
-      } ${className}`}
-      href={href}
-    >
-      {label}
-    </Link>
-  );
-}
-
-function ApplicationSubLink({
-  active = false,
-  className = "",
-  href,
-  label,
-}: {
-  active?: boolean;
-  className?: string;
-  href: string;
-  label: string;
-}) {
-  return (
-    <Link
-      className={`inline-flex h-[19px] w-fit items-center rounded-[4px] px-[5px] text-[12px] leading-[1.253] ${
-        active
-          ? "bg-[#FF9A3D] font-semibold text-[#F9F9F9]"
-          : "font-normal text-[#5B3A29]"
-      } ${className}`}
-      href={href}
-    >
-      {label}
-    </Link>
-  );
-}
-
 async function persistApplicationStatus(
   applicationId: string,
   status: HostApplicationStatus,
@@ -1018,13 +882,6 @@ function formatReviewManagementDate(value?: string) {
   if (Number.isNaN(date.getTime())) return "0000년 00월 00일";
 
   return `${date.getFullYear()}년 ${date.getMonth() + 1}월 ${date.getDate()}일`;
-}
-
-function formatProgramNumber(programId: string): string {
-  const normalizedId = programId.trim();
-  if (!normalizedId) return "0000000000";
-
-  return normalizedId.length > 12 ? normalizedId.slice(0, 12) : normalizedId;
 }
 
 function normalizeIdentifier(value: string): string {

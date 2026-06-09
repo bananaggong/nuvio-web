@@ -34,7 +34,7 @@ import {
   type HostInquiry,
   type HostInquiryStatus,
 } from "@/lib/host-inquiries";
-import { launchFeatureFlags } from "@/lib/launch-feature-flags";
+import { HostProgramSidebar } from "@/components/host-program-sidebar";
 import { useHostOperationsData } from "@/lib/use-host-operations-data";
 
 type MessageListTab = "all" | "scheduled" | "sent";
@@ -314,7 +314,7 @@ export function HostMessageAutomation({
       style={messageFigmaScaleStyle}
     >
       <div className="flex min-h-[calc(100vh_-_4.861vw)] max-md:flex-col">
-        <MessageSidebar
+        <HostProgramSidebar
           activeItem="result"
           applicationsHref={applicationsHref}
           formsHref={formsHref}
@@ -632,134 +632,6 @@ function MessageCampaignDetailPanel({
   );
 }
 
-function MessageSidebar({
-  activeItem,
-  applicationsHref,
-  formsHref,
-  messagesHref,
-  programId,
-  programPath,
-  status,
-  title,
-}: {
-  activeItem: "result";
-  applicationsHref: string;
-  formsHref: string;
-  messagesHref: string;
-  programId: string;
-  programPath: string;
-  status: string;
-  title: string;
-}) {
-  return (
-    <aside className="w-[var(--msg-228)] shrink-0 border-r border-[#6D7A8A] bg-white shadow-[2px_5px_5.2px_rgba(0,0,0,0.23)] max-md:w-full">
-      <div className="min-h-[515px] px-[var(--msg-18)] pt-[var(--msg-24)]">
-        <section className="border-b border-[#D9D9D9] pb-[var(--msg-12)]">
-          <div className="flex items-start gap-[var(--msg-8)]">
-            <p className="min-w-0 flex-1 break-keep text-[16px] font-semibold leading-[1.253] text-[#5B3A29]">
-              {title}
-            </p>
-            <span className="mt-[1px] shrink-0 rounded-[6px] bg-[#7A8B52] px-[6px] py-[3px] text-[12px] font-semibold leading-[1.253] text-[#F3F3F3]">
-              {status}
-            </span>
-          </div>
-          <p className="mt-[var(--msg-8)] text-[14px] font-semibold leading-[1.253] text-[#5B3A29]">
-            프로그램 넘버 :{" "}
-            <span className="text-[#FE701E]">{formatProgramNumber(programId)}</span>
-          </p>
-        </section>
-
-        <nav className="pt-[var(--msg-24)] text-[#5B3A29]">
-          <section className="border-b-[0.8px] border-[#6D7A8A] pb-[var(--msg-16)]">
-            <MessageNavLink href={`${programPath}?panel=dashboard`} label="대시보드" />
-            <p className="mt-[var(--msg-18)] text-[14px] font-normal leading-[1.253]">
-              프로그램 설정
-            </p>
-            <div className="mt-[var(--msg-8)] flex flex-col gap-[var(--msg-8)] pl-[var(--msg-18)]">
-              <MessageSubLink href={`${programPath}?panel=basic`} label="기본정보" />
-              <MessageSubLink href={`${programPath}?panel=detail`} label="상세정보" />
-              <MessageSubLink href={`${programPath}?panel=schedule`} label="일정안내" />
-              <MessageSubLink href={`${programPath}?panel=place`} label="장소안내" />
-              <MessageSubLink href={`${programPath}?panel=guide`} label="안내사항" />
-            </div>
-          </section>
-
-          <section className="mt-[var(--msg-28)] border-b-[0.8px] border-[#6D7A8A] pb-[var(--msg-16)]">
-            <p className="text-[14px] font-normal leading-[1.253]">
-              신청폼 현황
-            </p>
-            <div className="mt-[var(--msg-8)] flex flex-col gap-[var(--msg-8)] pl-[var(--msg-18)]">
-              <MessageSubLink href={formsHref} label="신청폼 연결" />
-              <MessageSubLink href={applicationsHref} label="신청 관리" />
-              <MessageSubLink
-                active={activeItem === "result"}
-                href={messagesHref}
-                label="결과 메세지 관리"
-              />
-            </div>
-          </section>
-
-          <div className="mt-[var(--msg-22)] flex flex-col gap-[var(--msg-22)]">
-            {launchFeatureFlags.coupons || launchFeatureFlags.promotions ? (
-              <MessageNavLink href={`${programPath}?panel=management`} label="쿠폰 / 프로모션" />
-            ) : null}
-            <MessageNavLink href={messagesHref} label="메세지함" />
-            <MessageNavLink href={`${applicationsHref}?panel=receipts`} label="결제 관리" />
-            {launchFeatureFlags.reviews ? (
-              <MessageNavLink href={`${applicationsHref}?panel=reviews`} label="후기 관리" />
-            ) : null}
-            <MessageNavLink href={`${programPath}?panel=delete`} label="프로그램 삭제" />
-          </div>
-        </nav>
-      </div>
-    </aside>
-  );
-}
-
-function MessageNavLink({
-  className = "",
-  href,
-  label,
-}: {
-  className?: string;
-  href: string;
-  label: string;
-}) {
-  return (
-    <Link
-      className={`block text-[14px] font-normal leading-[1.253] text-[#5B3A29] ${className}`}
-      href={href}
-    >
-      {label}
-    </Link>
-  );
-}
-
-function MessageSubLink({
-  active = false,
-  className = "",
-  href,
-  label,
-}: {
-  active?: boolean;
-  className?: string;
-  href: string;
-  label: string;
-}) {
-  return (
-    <Link
-      className={`flex h-[19px] w-fit items-center rounded-[4px] px-[5px] text-[12px] leading-[1.253] ${
-        active
-          ? "bg-[#FF9A3D] font-semibold text-[#F9F9F9]"
-          : "font-normal text-[#5B3A29]"
-      } ${className}`}
-      href={href}
-    >
-      {label}
-    </Link>
-  );
-}
-
 function getCampaignDisplayStatus(status: MessageCampaignStatus) {
   if (status === "sent") {
     return { dotClassName: "bg-[#FF9A3D]", label: "발송완료" };
@@ -791,13 +663,6 @@ function formatCampaignDateTime(value?: string) {
 
 function formatRecipientDate(value?: string) {
   return formatCampaignDateTime(value).date;
-}
-
-function formatProgramNumber(programId: string): string {
-  const normalizedId = programId.trim();
-  if (!normalizedId) return "0000000000";
-
-  return normalizedId.length > 12 ? normalizedId.slice(0, 12) : normalizedId;
 }
 
 function HostInquiryInbox({

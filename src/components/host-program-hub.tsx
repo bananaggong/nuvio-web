@@ -26,6 +26,7 @@ import {
   X,
 } from "lucide-react";
 import { nuvioIcons } from "@/components/icons/nuvio-icons";
+import { HostProgramSidebar } from "@/components/host-program-sidebar";
 import {
   useEffect,
   useMemo,
@@ -757,8 +758,8 @@ export function HostProgramHub({
     >
       <HostProgramFigmaScaleOverrides />
       <div className="flex min-h-[calc(100vh-4.861vw)] max-md:flex-col">
-        <ProgramBuilderSidebar
-          activePanel={activePanel}
+        <HostProgramSidebar
+          activeItem={activePanel}
           applicationsHref={applicationsHref}
           formsHref={formsHref}
           messagesHref={messagesHref}
@@ -989,162 +990,6 @@ export function HostProgramHub({
         />
       ) : null}
     </div>
-  );
-}
-
-type ProgramBuilderSidebarProps = {
-  activePanel: ProgramPanel;
-  applicationsHref: string;
-  formsHref: string;
-  messagesHref: string;
-  programId: string;
-  programPath: string;
-  status: string;
-  title: string;
-};
-
-function ProgramBuilderSidebar({
-  activePanel,
-  applicationsHref,
-  formsHref,
-  messagesHref,
-  programId,
-  programPath,
-  status,
-  title,
-}: ProgramBuilderSidebarProps) {
-  const settingsPanels = new Set<ProgramPanel>([
-    "basic",
-    "detail",
-    "schedule",
-    "place",
-    "guide",
-  ]);
-  const settingsActive = settingsPanels.has(activePanel);
-
-  return (
-    <aside
-      className="w-[15.833vw] min-w-[228px] shrink-0 border-r border-[#6D7A8A] bg-white shadow-[2px_5px_5.2px_rgba(0,0,0,0.23)] max-md:w-full"
-      style={figmaScaleStyle}
-    >
-      <div className="flex h-full flex-col gap-[0.833vw] px-[0.417vw] max-md:px-5">
-        <section className="flex w-full flex-col gap-[0.278vw]">
-          <div className="flex w-full items-center justify-center px-[0.833vw] pt-[0.833vw]">
-            <p className="min-w-0 flex-1 text-[16px] font-semibold leading-[1.253] text-[#5B3A29]">
-              {title || "프로그램 제목"}
-            </p>
-            <span className="shrink-0 rounded-[6px] bg-[#7A8B52] px-[6px] py-[3px] text-[12px] font-semibold leading-[1.253] text-[#F3F3F3]">
-              {status}
-            </span>
-          </div>
-          <div className="flex w-full items-center justify-center border-b border-[#D9D9D9] pb-[0.556vw] pt-[0.139vw]">
-            <p className="h-[18px] w-[13.333vw] min-w-[192px] text-[14px] font-semibold leading-[1.253] text-[#5B3A29]">
-              프로그램 넘버 :{" "}
-              <span className="text-[#FE701E]">{formatProgramNumber(programId)}</span>
-            </p>
-          </div>
-        </section>
-
-        <nav className="flex w-full flex-col gap-[0.903vw] px-[0.833vw] text-[#5B3A29]">
-          <section className="flex flex-col gap-[0.417vw]">
-            <Link
-              className={`text-[14px] leading-[1.253] ${
-                activePanel === "dashboard" ? "font-semibold" : "font-normal"
-              }`}
-              href={`${programPath}?panel=dashboard`}
-            >
-              대시보드
-            </Link>
-            <p className="text-[14px] font-normal leading-[1.253]">
-              <span className={settingsActive ? "font-semibold" : "font-normal"}>
-                프로그램 설정
-              </span>
-            </p>
-            <div className="flex flex-col gap-[3px] border-b-[0.8px] border-[#6D7A8A] pb-[0.833vw] pl-[0.417vw]">
-              <ProgramSidebarTextLink
-                active={activePanel === "basic"}
-                href={`${programPath}?panel=basic`}
-                label="기본정보"
-              />
-              <ProgramSidebarTextLink
-                active={activePanel === "detail"}
-                href={`${programPath}?panel=detail`}
-                label="상세정보"
-              />
-              <ProgramSidebarTextLink
-                active={activePanel === "schedule"}
-                href={`${programPath}?panel=schedule`}
-                label="일정안내"
-              />
-              <ProgramSidebarTextLink
-                active={activePanel === "place"}
-                href={`${programPath}?panel=place`}
-                label="장소안내"
-              />
-              <ProgramSidebarTextLink
-                active={activePanel === "guide"}
-                href={`${programPath}?panel=guide`}
-                label="안내사항"
-              />
-            </div>
-          </section>
-
-          <section className="flex flex-col gap-[0.417vw]">
-            <p className="text-[14px] font-normal leading-[1.253]">
-              신청폼 현황
-            </p>
-            <div className="flex flex-col gap-[3px] border-b-[0.8px] border-[#6D7A8A] pb-[0.833vw] pl-[0.417vw]">
-              <ProgramSidebarTextLink href={formsHref} label="신청폼 연결" />
-              <ProgramSidebarTextLink href={applicationsHref} label="신청 관리" />
-              <ProgramSidebarTextLink href={messagesHref} label="결과 메세지 관리" />
-            </div>
-          </section>
-
-          {launchFeatureFlags.coupons || launchFeatureFlags.promotions ? (
-            <Link className="text-[14px] font-normal leading-[1.253]" href={`${programPath}?panel=management`}>
-              쿠폰 / 프로모션
-            </Link>
-          ) : null}
-          <Link className="text-[14px] font-normal leading-[1.253]" href={messagesHref}>
-            메세지함
-          </Link>
-          <Link className="text-[14px] font-normal leading-[1.253]" href={`${applicationsHref}?panel=receipts`}>
-            결제 관리
-          </Link>
-          {launchFeatureFlags.reviews ? (
-            <Link className="text-[14px] font-normal leading-[1.253]" href={`${applicationsHref}?panel=reviews`}>
-              후기 관리
-            </Link>
-          ) : null}
-          <Link className="text-[14px] font-normal leading-[1.253]" href={`${programPath}?panel=delete`}>
-            프로그램 삭제
-          </Link>
-        </nav>
-      </div>
-    </aside>
-  );
-}
-
-function ProgramSidebarTextLink({
-  active = false,
-  href,
-  label,
-}: {
-  active?: boolean;
-  href: string;
-  label: string;
-}) {
-  return (
-    <Link
-      className={`w-fit rounded-[4px] px-[0.556vw] py-[0.139vw] text-[12px] leading-[1.253] ${
-        active
-          ? "bg-[#FF9A3D] font-semibold text-[#F9F9F9]"
-          : "font-normal text-[#5B3A29]"
-      }`}
-      href={href}
-    >
-      {label}
-    </Link>
   );
 }
 
