@@ -4,7 +4,6 @@ import Image from "next/image";
 import Link from "next/link";
 import {
   ChevronDown,
-  ChevronLeft,
   Plus,
   Upload,
 } from "lucide-react";
@@ -262,22 +261,28 @@ export function HostFormBuilder({
           <section className="min-h-[var(--host-1864)] border-r border-[#6D7A8A] pr-[var(--host-30)] max-md:min-h-0 max-md:border-r-0 max-md:pr-0">
             <div className="flex flex-col gap-[var(--host-46)] pb-[var(--host-24)]">
               <div className="pt-[var(--host-24)]">
-                <div className="flex h-[var(--host-29)] items-center gap-[14px]">
+                <div className="flex h-[var(--host-29)] items-center gap-[var(--host-14)]">
                   <Link
                     aria-label="목록으로"
-                    className="inline-flex h-[18px] w-[12px] items-center justify-center text-[#6D7A8A] hover:text-[#FE701E]"
+                    className="inline-flex h-[var(--host-29)] w-[var(--host-11)] items-center justify-center"
                     href="/host/forms"
                   >
-                    <ChevronLeft size={20} strokeWidth={1.8} />
+                    <Image
+                      alt=""
+                      aria-hidden
+                      className="h-[var(--host-17)] w-[var(--host-11)]"
+                      height={17}
+                      src={nuvioIcons.formEditorBack}
+                      width={11}
+                    />
                   </Link>
                   <h1 className="whitespace-nowrap text-[var(--host-16)] font-medium leading-[1.253] text-[#6D7A8A]">
                     신청서 양식 편집
                   </h1>
                   <button
-                    className="inline-flex h-[var(--host-29)] items-center justify-center rounded-[4px] bg-[#6D7A8A] px-[var(--host-12)] py-[var(--host-4)] text-[var(--host-12)] font-medium leading-[1.253] text-[#FFF6EC] transition hover:bg-[#5F6B79] disabled:opacity-50"
+                    className="inline-flex h-[var(--host-29)] w-[var(--host-66)] items-center justify-center rounded-[4px] bg-[#FE701E] p-0 text-[var(--host-12)] font-medium leading-[1.253] text-[#FFF6EC] disabled:opacity-50"
                     disabled={isSaving}
                     onClick={() => void saveTemplate()}
-                    style={{ backgroundColor: "#6D7A8A", color: "#FFF6EC" }}
                     type="button"
                   >
                     {isSaving ? "저장중" : "저장하기"}
@@ -285,7 +290,7 @@ export function HostFormBuilder({
                 </div>
               </div>
 
-              <section className="flex w-[var(--host-547)] max-w-full flex-col gap-[var(--host-33)] rounded-[8px] border border-[#6D7A8A] p-[var(--host-18)]">
+              <section className="flex w-[var(--host-547)] max-w-full flex-col gap-[var(--host-33)] rounded-[8px] p-[var(--host-18)] ring-1 ring-inset ring-[#6D7A8A]">
                 <EditorField label="신청서 제목">
                   <input
                     className="host-form-input"
@@ -326,9 +331,13 @@ export function HostFormBuilder({
                         </option>
                       ))}
                     </select>
-                    <ChevronDown
-                      className="pointer-events-none absolute right-[var(--host-12)] top-1/2 -translate-y-1/2 text-[#FF9A3D]"
-                      size={20}
+                    <Image
+                      alt=""
+                      aria-hidden
+                      className="pointer-events-none absolute right-[var(--host-14)] top-1/2 h-[var(--host-19)] w-[var(--host-19)] -translate-y-1/2"
+                      height={20}
+                      src={nuvioIcons.formSelectDropdown}
+                      width={19}
                     />
                   </label>
                 </EditorField>
