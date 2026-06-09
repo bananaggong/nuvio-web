@@ -462,6 +462,21 @@ function getQuestionPlaceholder(type: ApplicationFormBlockType) {
   }
 }
 
+function getBlockTypeChangePatch(
+  nextType: ApplicationFormBlockType,
+  currentOptions: string[],
+): Partial<ApplicationFormBlock> {
+  return {
+    options:
+      nextType === "singleSelect" || nextType === "multiSelect"
+        ? currentOptions.length > 0
+          ? currentOptions
+          : ["선택지 항목1", "선택지 항목2"]
+        : [],
+    type: nextType,
+  };
+}
+
 function EditableBlockCard({
   block,
   onDuplicate,
@@ -475,37 +490,14 @@ function EditableBlockCard({
 }) {
   const options = block.options ?? [];
   const blockTypeLabel = getEditableBlockTypeLabel(block.type);
+  const [typeMenuOpen, setTypeMenuOpen] = useState(false);
 
   return (
     <article className="flex w-full flex-col gap-[var(--host-6)] border-b border-[#F3F3F3] py-[var(--host-16)]">
       <div className="flex h-[var(--host-20)] items-center gap-[var(--host-11)] px-[var(--host-12)]">
-        <label className="relative inline-flex h-[var(--host-19)] shrink-0 items-center rounded-[19px] bg-[#6D7A8A] px-[var(--host-12)] text-[var(--host-12)] font-semibold leading-[1.253]">
-          <span className="relative z-10 text-[#F9F9F9]">{blockTypeLabel}</span>
-          <select
-            aria-label="항목 유형"
-            className="absolute inset-0 z-20 h-full w-full cursor-pointer"
-            onChange={(event) =>
-              onUpdate({
-                options:
-                  event.target.value === "singleSelect" ||
-                  event.target.value === "multiSelect"
-                    ? options.length > 0
-                      ? options
-                      : ["선택지 항목1", "선택지 항목2"]
-                    : [],
-                type: event.target.value as ApplicationFormBlockType,
-              })
-            }
-            style={{ opacity: 0 }}
-            value={block.type}
-          >
-            {editableBlockTypes.map((item) => (
-              <option key={item.type} value={item.type}>
-                {item.label}
-              </option>
-            ))}
-          </select>
-        </label>
+        <span className="inline-flex h-[var(--host-19)] shrink-0 items-center rounded-[19px] bg-[#6D7A8A] px-[var(--host-12)] text-[var(--host-12)] font-semibold leading-[1.253] text-[#F9F9F9]">
+          {blockTypeLabel}
+        </span>
         {isQuestionBlock(block) ? (
           <RequiredToggle
             checked={block.required}
@@ -521,13 +513,37 @@ function EditableBlockCard({
             src={nuvioIcons.formItemCopy}
             width={20}
           />
-          <FormItemIconButton
-            ariaLabel="조건 설정"
-            className="h-[var(--host-14)] w-[var(--host-14)]"
-            height={16}
-            src={nuvioIcons.formItemCondition}
-            width={16}
-          />
+          <div className="relative">
+            <FormItemIconButton
+              ariaLabel="항목 유형 변경"
+              className="h-[var(--host-14)] w-[var(--host-14)]"
+              height={16}
+              onClick={() => setTypeMenuOpen((open) => !open)}
+              src={nuvioIcons.formItemCondition}
+              width={16}
+            />
+            {typeMenuOpen ? (
+              <div className="absolute right-0 top-[calc(100%+var(--host-8))] z-20 flex w-[var(--host-110)] flex-col overflow-hidden rounded-[var(--host-7)] border border-[#6D7A8A] bg-white shadow-[0_8px_18px_rgba(0,0,0,0.14)]">
+                {editableBlockTypes.map((item) => (
+                  <button
+                    className={`h-[var(--host-29)] px-[var(--host-10)] text-left text-[var(--host-12)] font-medium leading-[1.253] transition hover:bg-[#FFF6EC] ${
+                      item.type === block.type
+                        ? "bg-[#F3F3F3] text-[#FE701E]"
+                        : "text-[#6D7A8A]"
+                    }`}
+                    key={item.type}
+                    onClick={() => {
+                      onUpdate(getBlockTypeChangePatch(item.type, options));
+                      setTypeMenuOpen(false);
+                    }}
+                    type="button"
+                  >
+                    {item.label}
+                  </button>
+                ))}
+              </div>
+            ) : null}
+          </div>
           <FormItemIconButton
             ariaLabel="삭제"
             className="h-[var(--host-16)] w-[var(--host-14)]"

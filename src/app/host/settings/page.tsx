@@ -4,6 +4,7 @@ import Link from "next/link";
 import { Pencil } from "lucide-react";
 import type { ReactNode } from "react";
 import { nuvioIcons } from "@/components/icons/nuvio-icons";
+import { HostTeamSettingsContent } from "@/components/host-team-permission-settings";
 import {
   HostWorkspaceContent,
   HostWorkspaceLayout,
@@ -51,33 +52,6 @@ const settingSections: Array<{
     title: "데이터 관리",
   },
 ];
-
-const members = [
-  {
-    email: "intume0b@gmail.com",
-    name: "로컬 호스트",
-    role: "호스트",
-    tone: "host",
-  },
-  {
-    email: "aaaa@gmail.com",
-    name: "이르음",
-    role: "운영진",
-    tone: "manager",
-  },
-  {
-    email: "aaaa@gmail.com",
-    name: "이르음",
-    role: "스태프",
-    tone: "staff",
-  },
-  {
-    email: "aaaa@gmail.com",
-    name: "이르음",
-    role: "수락 대기",
-    tone: "pending",
-  },
-] as const;
 
 const channelToggles = [
   ["브라우저 알람", "off"],
@@ -161,9 +135,14 @@ export default async function HostSettingsPage({
   searchParams?: Promise<HostRouteSearchParams>;
 }) {
   const params = await searchParams;
-  await requireHostConsoleAccess(buildHostRouteNextPath("/host/settings", params));
+  const overview = await requireHostConsoleAccess(
+    buildHostRouteNextPath("/host/settings", params),
+  );
 
   const activePanel = normalizePanel(params?.panel);
+  const canManageRolePermissions =
+    overview.isAdmin ||
+    overview.workspaces.some((workspace) => workspace.role === "owner");
 
   return (
     <HostWorkspaceLayout
@@ -197,7 +176,11 @@ export default async function HostSettingsPage({
                 open={activePanel === section.key}
                 section={section}
               >
-                {section.key === "team" ? <TeamSettingsContent /> : null}
+                {section.key === "team" ? (
+                  <HostTeamSettingsContent
+                    canManageRolePermissions={canManageRolePermissions}
+                  />
+                ) : null}
                 {section.key === "notifications" ? (
                   <NotificationSettingsContent />
                 ) : null}
@@ -274,118 +257,6 @@ function AccordionIcon({ open }: { open: boolean }) {
         src={open ? nuvioIcons.dropup : nuvioIcons.dropdown}
         width={21}
       />
-    </span>
-  );
-}
-
-function TeamSettingsContent() {
-  return (
-    <>
-      <div className="flex w-[var(--host-547)] max-w-full flex-col gap-[var(--host-33)]">
-        <div className="flex items-start gap-[var(--host-22)]">
-          <h2 className="text-[var(--host-16)] font-medium leading-[1.253] text-[#0D0D0C]">
-            멤버
-          </h2>
-          <span className="rounded-[var(--host-12)] bg-[#F3F3F3] px-[var(--host-8)] py-[2px] text-[var(--host-12)] font-medium leading-[1.253] text-[#6D7A8A]">
-            역할 권한 범위 확인
-          </span>
-        </div>
-        <div className="flex w-full flex-col gap-[var(--host-8)]">
-          {members.map((member) => (
-            <TeamMemberRow key={`${member.role}-${member.email}`} member={member} />
-          ))}
-        </div>
-      </div>
-
-      <div className="flex w-[var(--host-546)] max-w-full flex-col gap-[var(--host-5)]">
-        <h2 className="text-[var(--host-16)] font-medium leading-[1.253] text-[#0D0D0C]">
-          멤버초대
-        </h2>
-        <p className="text-[var(--host-12)] font-normal leading-[1.6] text-[#6D7A8A]">
-          초대 메일을 수락하면 선택한 역할로 팀에 합류돼요. 역할 변경은 대표
-          호스트만 가능해요.
-        </p>
-        <div className="flex w-full items-center gap-[var(--host-28)]">
-          <input
-            className="h-[var(--host-31)] w-[var(--host-245)] rounded-[var(--host-7)] border border-[#F7B267] bg-white px-[var(--host-12)] text-[var(--host-12)] font-medium leading-[1.253] text-[#0D0D0C] outline-none placeholder:text-[#D9D9D9]"
-            placeholder="초대할 멤버의 이메일 입력"
-            type="email"
-          />
-          <div className="relative h-[var(--host-31)] w-[var(--host-166)]">
-            <select
-              className="h-full w-full appearance-none rounded-[var(--host-7)] border border-[#CAC4BC] bg-white px-[var(--host-8)] text-[var(--host-12)] font-medium leading-[1.253] text-[#D9D9D9] outline-none"
-              defaultValue=""
-            >
-              <option disabled value="">
-                초대 역할 선택
-              </option>
-              <option>운영진</option>
-              <option>스태프</option>
-            </select>
-            <Image
-              alt=""
-              aria-hidden
-              className="pointer-events-none absolute right-[var(--host-8)] top-1/2 h-[10px] w-[10px] -translate-y-1/2"
-              height={10}
-              src={nuvioIcons.formSelectDropdown}
-              width={10}
-            />
-          </div>
-          <button
-            className="h-[var(--host-30)] w-[var(--host-77)] rounded-[var(--host-6)] bg-[#CAC4BC] text-center text-[var(--host-12)] font-bold leading-[1.6] text-[#F3F3F3]"
-            type="button"
-          >
-            초대장 발송
-          </button>
-        </div>
-      </div>
-    </>
-  );
-}
-
-function TeamMemberRow({
-  member,
-}: {
-  member: (typeof members)[number];
-}) {
-  return (
-    <div className="flex min-h-[var(--host-31)] w-full items-center border-b border-[#D9D9D9] py-[var(--host-6)]">
-      <RoleBadge tone={member.tone}>{member.role}</RoleBadge>
-      <span className="pl-[var(--host-6)] pr-[var(--host-22)] text-[var(--host-14)] font-normal leading-[1.253] text-[#0D0D0C]">
-        {member.name}
-      </span>
-      <span className="min-w-0 flex-1 truncate text-[var(--host-14)] font-normal leading-[1.253] text-[#6D7A8A]">
-        {member.email}
-      </span>
-      {member.tone === "host" ? null : (
-        <span className="flex items-center gap-[var(--host-4)] pl-[var(--host-4)]">
-          <IconButton alt="권한 복사" src={nuvioIcons.formItemCopy} />
-          <IconButton alt="멤버 삭제" src={nuvioIcons.formItemTrash} />
-        </span>
-      )}
-    </div>
-  );
-}
-
-function RoleBadge({
-  children,
-  tone,
-}: {
-  children: ReactNode;
-  tone: (typeof members)[number]["tone"];
-}) {
-  const palette = {
-    host: "bg-[#C75C36] text-[#FCFCFC]",
-    manager: "bg-[#F7B267] text-[#FCFCFC]",
-    pending: "bg-[#6D7A8A] text-[#D9D9D9]",
-    staff: "bg-[#7A8B52] text-[#FCFCFC]",
-  }[tone];
-
-  return (
-    <span
-      className={`inline-flex shrink-0 items-center justify-center rounded-[var(--host-6)] px-[var(--host-6)] py-[var(--host-3)] text-[var(--host-12)] font-semibold leading-[1.253] ${palette}`}
-    >
-      {children}
     </span>
   );
 }
