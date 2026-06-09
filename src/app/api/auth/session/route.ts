@@ -1,11 +1,27 @@
 import { NextResponse } from "next/server";
 import { ensureUserProfile, getUserProfile } from "@/lib/auth-profile-db";
+import { getLocalDevAuthContext } from "@/lib/local-dev-auth";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 
 export const runtime = "nodejs";
 
 export async function GET() {
   try {
+    const localDevAuth = await getLocalDevAuthContext();
+    if (localDevAuth) {
+      return NextResponse.json({
+        data: {
+          user: {
+            id: localDevAuth.user.id,
+            email: localDevAuth.user.email,
+            appMetadata: localDevAuth.user.app_metadata,
+            userMetadata: localDevAuth.user.user_metadata,
+          },
+          profile: localDevAuth.profile,
+        },
+      });
+    }
+
     const supabase = await createSupabaseServerClient();
     const {
       data: { user },

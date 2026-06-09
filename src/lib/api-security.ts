@@ -5,6 +5,7 @@ import {
   getUserProfile,
   type AuthProfile,
 } from "@/lib/auth-profile-db";
+import { getLocalDevAuthContext } from "@/lib/local-dev-auth";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 
 export type ApiRole = AuthProfile["role"];
@@ -45,6 +46,13 @@ export async function requireApiRole(
   allowedRoles: ApiRole[],
 ): Promise<ApiAuthResult> {
   try {
+    const localDevAuth = await getLocalDevAuthContext();
+    if (localDevAuth) {
+      return allowedRoles.includes(localDevAuth.profile.role)
+        ? localDevAuth
+        : { response: apiError("Forbidden.", 403) };
+    }
+
     const supabase = await createSupabaseServerClient();
     const {
       data: { user },

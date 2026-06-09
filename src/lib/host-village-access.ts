@@ -11,6 +11,7 @@ import {
   type AuthProfile,
 } from "@/lib/auth-profile-db";
 import type { ApiAuthContext } from "@/lib/api-security";
+import { getLocalDevAuthContext } from "@/lib/local-dev-auth";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 
 export type HostVillageWorkspace = {
@@ -81,6 +82,15 @@ export async function getHostConsoleOverview(): Promise<HostConsoleOverview> {
 
 export async function getCurrentHostSession(): Promise<ApiAuthContext | null> {
   try {
+    const localDevAuth = await getLocalDevAuthContext();
+    if (localDevAuth) {
+      await activatePendingHostVillageMemberships(
+        localDevAuth.profile.id,
+        localDevAuth.profile.email,
+      );
+      return localDevAuth;
+    }
+
     const supabase = await createSupabaseServerClient();
     const {
       data: { user },

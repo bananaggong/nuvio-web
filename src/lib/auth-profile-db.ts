@@ -148,6 +148,21 @@ export async function getUserProfile(
   return row ? mapProfileRow(row) : undefined;
 }
 
+export async function getUserProfileByEmail(
+  email: string,
+): Promise<AuthProfile | undefined> {
+  const normalizedEmail = email.trim().toLowerCase();
+  if (!normalizedEmail) return undefined;
+
+  const [row] = await getDb()
+    .select()
+    .from(profiles)
+    .where(sql`lower(${profiles.email}) = ${normalizedEmail}`)
+    .limit(1);
+
+  return row ? mapProfileRow(row) : undefined;
+}
+
 export async function updateUserProfile(
   userId: string,
   patch: ProfilePatch,
