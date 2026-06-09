@@ -1,13 +1,11 @@
 "use client";
 
+import Image from "next/image";
 import Link from "next/link";
 import {
   ChevronDown,
   ChevronLeft,
-  Copy,
   Plus,
-  Search,
-  Trash2,
   Upload,
 } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
@@ -27,6 +25,7 @@ import {
   HostWorkspaceContent,
   HostWorkspaceLayout,
 } from "@/components/host-workspace-ui";
+import { nuvioIcons } from "@/components/icons/nuvio-icons";
 
 type HostProgramOption = {
   id: string;
@@ -397,6 +396,40 @@ function EditorField({
   );
 }
 
+function FormItemIconButton({
+  ariaLabel,
+  className,
+  height,
+  onClick,
+  src,
+  width,
+}: {
+  ariaLabel: string;
+  className: string;
+  height: number;
+  onClick?: () => void;
+  src: string;
+  width: number;
+}) {
+  return (
+    <button
+      aria-label={ariaLabel}
+      className="inline-flex shrink-0 items-center justify-center p-0 transition-opacity hover:opacity-70"
+      onClick={onClick}
+      type="button"
+    >
+      <Image
+        alt=""
+        aria-hidden
+        className={className}
+        height={height}
+        src={src}
+        width={width}
+      />
+    </button>
+  );
+}
+
 function EditableBlockCard({
   block,
   onDuplicate,
@@ -442,16 +475,30 @@ function EditableBlockCard({
             onChange={(checked) => onUpdate({ required: checked })}
           />
         ) : null}
-        <div className="ml-auto flex items-center gap-[var(--host-12)] text-[#6D7A8A]">
-          <button aria-label="복제" onClick={onDuplicate} type="button">
-            <Copy size={18} strokeWidth={1.8} />
-          </button>
-          <button aria-label="찾기" type="button">
-            <Search size={18} strokeWidth={1.8} />
-          </button>
-          <button aria-label="삭제" onClick={onRemove} type="button">
-            <Trash2 size={18} strokeWidth={1.8} />
-          </button>
+        <div className="ml-auto flex items-center gap-[var(--host-15)]">
+          <FormItemIconButton
+            ariaLabel="복제"
+            className="h-[var(--host-19)] w-[var(--host-19)]"
+            height={20}
+            onClick={onDuplicate}
+            src={nuvioIcons.formItemCopy}
+            width={20}
+          />
+          <FormItemIconButton
+            ariaLabel="조건 설정"
+            className="h-[var(--host-14)] w-[var(--host-14)]"
+            height={16}
+            src={nuvioIcons.formItemCondition}
+            width={16}
+          />
+          <FormItemIconButton
+            ariaLabel="삭제"
+            className="h-[var(--host-16)] w-[var(--host-14)]"
+            height={18}
+            onClick={onRemove}
+            src={nuvioIcons.formItemTrash}
+            width={16}
+          />
         </div>
       </div>
 
