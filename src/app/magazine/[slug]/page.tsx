@@ -4,7 +4,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { ArrowLeft } from "lucide-react";
 import { JsonLdScript } from "@/components/json-ld";
-import { formatDateTime } from "@/lib/format";
+import { formatDate } from "@/lib/format";
 import { getPublicMagazinePostBySlug } from "@/lib/magazine-db";
 import { getMagazineCategoryLabel } from "@/lib/magazine-types";
 import {
@@ -41,6 +41,7 @@ export default async function MagazineDetailPage({
   const post = await getPublicMagazinePostBySlug(decodeURIComponent(slug));
   if (!post) notFound();
   const canonicalPath = `/magazine/${post.slug}`;
+  const authorName = post.authorName || "누비오";
 
   return (
     <div className="font-pretendard min-h-screen bg-white text-[#2B1E17]">
@@ -84,8 +85,11 @@ export default async function MagazineDetailPage({
             </p>
           ) : null}
           <time className="mt-6 block text-[13px] font-bold text-[#9A8579]">
-            {formatDateTime(post.publishedAt ?? post.createdAt)}
+            {formatDate(post.publishedAt ?? post.createdAt)}
           </time>
+          <p className="mt-2 text-[13px] font-bold text-[#9A8579]">
+            by.{authorName}
+          </p>
         </header>
 
         {post.coverImageUrl ? (

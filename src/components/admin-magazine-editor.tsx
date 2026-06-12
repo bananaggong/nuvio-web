@@ -13,6 +13,7 @@ import {
   Columns3,
   Heading1,
   Heading2,
+  Heading3,
   ImageIcon,
   Italic,
   Link as LinkIcon,
@@ -634,6 +635,9 @@ function EditorToolbar({
       </ToolbarButton>
       <ToolbarButton active={editor.isActive("heading", { level: 2 })} onClick={() => editor.chain().focus().toggleHeading({ level: 2 }).run()} title="중간 제목">
         <Heading2 size={16} />
+      </ToolbarButton>
+      <ToolbarButton active={editor.isActive("heading", { level: 3 })} onClick={() => editor.chain().focus().toggleHeading({ level: 3 }).run()} title="Q 질문 헤더">
+        <Heading3 size={16} />
       </ToolbarButton>
       <ToolbarButton active={editor.isActive("blockquote")} onClick={() => editor.chain().focus().toggleBlockquote().run()} title="인용">
         <Quote size={16} />

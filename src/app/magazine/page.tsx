@@ -41,16 +41,13 @@ export default async function MagazinePage() {
                     alt={post.coverImageAlt || post.title}
                     src={post.coverImageUrl}
                   />
-                  <h2 className="mt-[1.25vw] line-clamp-2 text-[0.694vw] font-semibold leading-tight text-[#2B1E17] transition group-hover:text-[#fe701e] max-md:text-[10px]">
+                  <h2 className="mt-[1.25vw] line-clamp-2 text-[0.833vw] font-semibold leading-tight text-[#2B1E17] transition group-hover:text-[#fe701e] max-md:text-[12px]">
                     {post.title}
                   </h2>
-                  <p className="mt-[0.764vw] line-clamp-2 text-[0.625vw] font-medium leading-normal text-[#2B1E17] max-md:text-[9px]">
+                  <p className="mt-[0.764vw] line-clamp-2 text-[0.729vw] font-medium leading-normal text-[#2B1E17] max-md:text-[11px]">
                     {post.subtitle ||
                       post.excerpt ||
                       "누비어에게 전하는 프로그램과 지역 소식을 모았어요."}
-                  </p>
-                  <p className="mt-[1.875vw] text-[0.625vw] font-semibold leading-none text-[#2B1E17] max-md:text-[9px]">
-                    누비오
                   </p>
                 </Link>
               </article>
