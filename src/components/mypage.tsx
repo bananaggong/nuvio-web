@@ -39,6 +39,12 @@ import type {
   HostInquiry,
   ProgramInquiryMessage,
 } from "@/lib/host-inquiries";
+import {
+  createDefaultProgramAutoReplyConfig,
+  normalizeProgramAutoReplyConfig,
+  type ProgramAutoReplyConfig,
+  type ProgramAutoReplyItem,
+} from "@/lib/program-auto-replies";
 import { launchFeatureFlags } from "@/lib/launch-feature-flags";
 import { programPath } from "@/lib/program-routing";
 import type { Program, Review } from "@/lib/types";
@@ -851,6 +857,49 @@ function MessagesContent({ context }: { context: MypageContext }) {
     }));
   }
 
+  async function sendAutoReply(
+    thread: MessageThread,
+    item: ProgramAutoReplyItem,
+  ) {
+    if (!item.response.trim()) return;
+
+    let savedMessage: ProgramInquiryMessage | undefined;
+
+    if (thread.inquiryId) {
+      const response = await fetch(
+        `/api/me/inquiries/${thread.inquiryId}/auto-replies`,
+        {
+          body: JSON.stringify({ itemId: item.id }),
+          headers: { "Content-Type": "application/json" },
+          method: "POST",
+        },
+      );
+      const payload = (await response.json().catch(() => ({}))) as {
+        data?: ProgramInquiryMessage;
+        error?: string;
+      };
+
+      if (!response.ok || !payload.data) {
+        throw new Error(payload.error || "자동응답을 불러오지 못했습니다.");
+      }
+
+      savedMessage = payload.data;
+    }
+
+    const replyMessage =
+      createMessageBubbleFromInquiryMessage(savedMessage) ?? {
+        body: item.response,
+        id: `auto-reply-${thread.id}-${item.id}-${Date.now()}`,
+        sender: "host" as const,
+        timeLabel: "방금 전",
+      };
+
+    setLocalMessagesByThread((current) => ({
+      ...current,
+      [thread.id]: [...(current[thread.id] ?? []), replyMessage],
+    }));
+  }
+
   return (
     <section className="font-pretendard min-h-[calc(100vh-70px)] bg-white pb-24 pt-3 text-[#5B3A29]">
       <div className="mx-auto w-full max-w-[1025px] px-5 lg:px-0 min-[1440px]:w-[71.181vw] min-[1440px]:max-w-none">
@@ -891,6 +940,7 @@ function MessagesContent({ context }: { context: MypageContext }) {
             thread={activeThread}
             onCloseSearch={() => setConversationSearchOpen(false)}
             onOpenSearch={() => setConversationSearchOpen(true)}
+            onSendAutoReply={sendAutoReply}
             onSendMessage={sendMessage}
           />
         </div>
@@ -971,19 +1021,83 @@ function MessageThreadRow({
 function MessageConversationPanel({
   onCloseSearch,
   onOpenSearch,
+  onSendAutoReply,
   onSendMessage,
   searchOpen,
   thread,
 }: {
   onCloseSearch: () => void;
   onOpenSearch: () => void;
+  onSendAutoReply: (
+    thread: MessageThread,
+    item: ProgramAutoReplyItem,
+  ) => Promise<void>;
   onSendMessage: (thread: MessageThread, message: string) => Promise<void>;
   searchOpen: boolean;
   thread: MessageThread | null;
 }) {
   const [draftMessage, setDraftMessage] = useState("");
+  const [autoReplyConfig, setAutoReplyConfig] =
+    useState<ProgramAutoReplyConfig | null>(null);
+  const [autoReplyError, setAutoReplyError] = useState("");
+  const [autoReplyMenuOpen, setAutoReplyMenuOpen] = useState(false);
+  const [autoReplySendingId, setAutoReplySendingId] = useState("");
   const [sendError, setSendError] = useState("");
   const [sending, setSending] = useState(false);
+  const messageInputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    let active = true;
+
+    async function loadAutoReplies() {
+      if (!thread?.programId) {
+        setAutoReplyConfig(null);
+        setAutoReplyMenuOpen(false);
+        return;
+      }
+
+      setAutoReplyConfig(createDefaultProgramAutoReplyConfig(thread.programId));
+      setAutoReplyError("");
+      setAutoReplyMenuOpen(true);
+
+      try {
+        const response = await fetch(
+          `/api/program-auto-replies?programId=${encodeURIComponent(
+            thread.programId,
+          )}`,
+          { cache: "no-store" },
+        );
+        const payload = (await response.json().catch(() => ({}))) as {
+          data?: ProgramAutoReplyConfig;
+          error?: string;
+        };
+
+        if (!response.ok || !payload.data) {
+          throw new Error(payload.error ?? "자동응답을 불러오지 못했습니다.");
+        }
+
+        if (active) {
+          const config = normalizeProgramAutoReplyConfig(payload.data);
+          setAutoReplyConfig(config);
+          setAutoReplyMenuOpen(config.enabled);
+        }
+      } catch (error) {
+        if (active) {
+          setAutoReplyError(
+            error instanceof Error
+              ? error.message
+              : "자동응답을 불러오지 못했습니다.",
+          );
+        }
+      }
+    }
+
+    void loadAutoReplies();
+
+    return () => {
+      active = false;
+    };
+  }, [thread?.id, thread?.programId]);
 
   if (!thread) {
     return (
@@ -1017,6 +1131,33 @@ function MessageConversationPanel({
       setSending(false);
     }
   }
+
+  async function selectAutoReply(item: ProgramAutoReplyItem) {
+    if (autoReplySendingId) return;
+
+    setAutoReplySendingId(item.id);
+    setSendError("");
+    try {
+      await onSendAutoReply(activeThread, item);
+      setAutoReplyMenuOpen(false);
+    } catch (error) {
+      setSendError(
+        error instanceof Error ? error.message : "자동응답을 불러오지 못했습니다.",
+      );
+    } finally {
+      setAutoReplySendingId("");
+    }
+  }
+
+  function openDirectMessage() {
+    setAutoReplyMenuOpen(false);
+    window.setTimeout(() => messageInputRef.current?.focus(), 0);
+  }
+
+  const availableAutoReplyItems =
+    autoReplyConfig?.enabled === false
+      ? []
+      : (autoReplyConfig?.items ?? []).filter((item) => item.enabled);
 
   return (
     <div className="flex h-[503px] min-w-0 flex-1 flex-col items-center gap-3 rounded-[22px] bg-[#F9F9F9] px-[6px] py-2 max-lg:w-full min-[1440px]:h-[34.931vw] min-[1440px]:gap-[0.833vw] min-[1440px]:rounded-[1.528vw] min-[1440px]:px-[0.417vw] min-[1440px]:py-[0.556vw]">
@@ -1111,6 +1252,40 @@ function MessageConversationPanel({
             </div>
           </div>
         ))}
+        {autoReplyMenuOpen && availableAutoReplyItems.length > 0 ? (
+          <div className="flex w-full justify-start">
+            <div className="max-w-[78%] rounded-[18px] rounded-bl-[6px] bg-white px-4 py-3 text-[#5B3A29] shadow-sm">
+              <p className="whitespace-pre-line text-[13px] font-medium leading-[1.65]">
+                {autoReplyConfig?.greeting}
+              </p>
+              <div className="mt-3 grid gap-2">
+                {availableAutoReplyItems.map((item) => (
+                  <button
+                    className="min-h-9 rounded-[10px] border border-[#F7B267] px-3 text-left text-[12px] font-semibold leading-[1.35] text-[#5B3A29] transition hover:border-[#FE701E] hover:text-[#FE701E] disabled:cursor-wait disabled:opacity-60"
+                    disabled={Boolean(autoReplySendingId)}
+                    key={item.id}
+                    onClick={() => void selectAutoReply(item)}
+                    type="button"
+                  >
+                    {autoReplySendingId === item.id ? "불러오는 중" : item.label}
+                  </button>
+                ))}
+                <button
+                  className="min-h-9 rounded-[10px] border border-[#FE701E] px-3 text-left text-[12px] font-semibold leading-[1.35] text-[#FE701E] transition hover:bg-[#FFF6EC]"
+                  onClick={openDirectMessage}
+                  type="button"
+                >
+                  호스트에게 직접 문의하기
+                </button>
+              </div>
+            </div>
+          </div>
+        ) : null}
+        {autoReplyError ? (
+          <p className="px-2 text-[12px] font-medium text-[#C75300]">
+            {autoReplyError}
+          </p>
+        ) : null}
       </div>
 
       <form
@@ -1119,21 +1294,31 @@ function MessageConversationPanel({
       >
         <label className="flex h-[37px] w-[593px] max-w-full items-center gap-2 rounded-[40px] border border-[#FF9A3D] bg-[#F9F9F9] p-[9px] min-[1440px]:h-[2.569vw] min-[1440px]:w-[41.181vw] min-[1440px]:gap-[0.556vw] min-[1440px]:p-[0.625vw]">
           <button
-            aria-label="메시지 보내기"
+            aria-label="자동응답 메뉴 열기"
+            aria-pressed={autoReplyMenuOpen}
             className="inline-flex size-3 shrink-0 items-center justify-center rounded-full bg-[#FF9A3D] text-white disabled:cursor-not-allowed disabled:opacity-50"
-            disabled={!draftMessage.trim() || sending}
-            type="submit"
+            disabled={!availableAutoReplyItems.length}
+            onClick={() => setAutoReplyMenuOpen((open) => !open)}
+            type="button"
           >
             <Plus aria-hidden="true" className="size-2" strokeWidth={2.4} />
           </button>
           <input
             aria-label="메세지 입력"
+            ref={messageInputRef}
             className="min-w-0 flex-1 bg-transparent pl-[3px] pr-[6px] text-[12px] font-normal leading-[1.6] text-[#6D7A8A] outline-none placeholder:text-[#D9D9D9]"
             disabled={sending}
             onChange={(event) => setDraftMessage(event.target.value)}
             placeholder={sending ? "메세지 전송 중" : "메세지 입력"}
             value={draftMessage}
           />
+          <button
+            className="inline-flex h-6 shrink-0 items-center justify-center rounded-full bg-[#FE701E] px-3 text-[11px] font-semibold text-white disabled:cursor-not-allowed disabled:opacity-40"
+            disabled={!draftMessage.trim() || sending}
+            type="submit"
+          >
+            전송
+          </button>
         </label>
         {sendError ? (
           <p className="w-[593px] max-w-full px-3 text-left text-[12px] font-medium text-[#C75300]">

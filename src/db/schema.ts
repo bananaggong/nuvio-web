@@ -795,6 +795,32 @@ export const programInquiryMessages = pgTable(
   ],
 );
 
+export const programAutoReplies = pgTable(
+  "program_auto_replies",
+  {
+    id: uuid("id").defaultRandom().primaryKey(),
+    programId: uuid("program_id")
+      .references(() => programs.id, { onDelete: "cascade" })
+      .notNull(),
+    villageId: uuid("village_id").references(() => villages.id, {
+      onDelete: "set null",
+    }),
+    enabled: boolean("enabled").default(true).notNull(),
+    greeting: text("greeting").notNull(),
+    items: jsonb("items")
+      .$type<Array<Record<string, unknown>>>()
+      .default(emptyArray)
+      .notNull(),
+    createdBy: uuid("created_by"),
+    createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+    updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
+  },
+  (table) => [
+    uniqueIndex("program_auto_replies_program_id_idx").on(table.programId),
+    index("program_auto_replies_village_id_idx").on(table.villageId),
+  ],
+);
+
 export const programApplications = pgTable(
   "program_applications",
   {

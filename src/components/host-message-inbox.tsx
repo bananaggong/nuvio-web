@@ -29,6 +29,13 @@ import {
   type HostInquiryStatus,
   type ProgramInquiryMessage,
 } from "@/lib/host-inquiries";
+import {
+  createDefaultProgramAutoReplyConfig,
+  defaultProgramAutoReplyItems,
+  normalizeProgramAutoReplyConfig,
+  type ProgramAutoReplyConfig,
+  type ProgramAutoReplyItem,
+} from "@/lib/program-auto-replies";
 import { useHostOperationsData } from "@/lib/use-host-operations-data";
 
 export type HostMessageInboxView = "ended" | "ongoing";
@@ -43,6 +50,7 @@ type MessageThread = {
   messages: HostThreadMessage[];
   openDate: string;
   periodLabel: string;
+  programId: string;
   programNumber: string;
   programTitle: string;
   sourceId: string;
@@ -59,34 +67,6 @@ type HostThreadMessage = {
   senderName?: string;
   timeLabel: string;
 };
-
-type AutoAnswerItem = {
-  enabled: boolean;
-  label: string;
-  placeholder: string;
-  value: string;
-};
-
-const defaultAutoAnswerItems: AutoAnswerItem[] = [
-  {
-    enabled: true,
-    label: "집합 장소 및 시간",
-    placeholder: "활성화 버튼을 클릭 후 내용을 입력해주세요.",
-    value: "",
-  },
-  {
-    enabled: false,
-    label: "준비물 / 복장",
-    placeholder: "활성화 버튼을 클릭 후 내용을 입력해주세요.",
-    value: "",
-  },
-  {
-    enabled: false,
-    label: "취소 / 환불 규정",
-    placeholder: "활성화 버튼을 클릭 후 내용을 입력해주세요.",
-    value: "",
-  },
-];
 
 const hostMessageScaleStyle = {
   "--host-message-scale":
@@ -512,7 +492,11 @@ function OngoingMessagesView({
       </section>
 
       {settingsOpen ? (
-        <AutoAnswerSettingsDialog onClose={() => setSettingsOpen(false)} />
+        <AutoAnswerSettingsDialog
+          programId={selectedThread?.programId}
+          programTitle={selectedThread?.programTitle}
+          onClose={() => setSettingsOpen(false)}
+        />
       ) : null}
     </div>
   );
@@ -1012,10 +996,80 @@ function AutoAnswerPreview({ align = "center" }: { align?: "center" | "right" })
   );
 }
 
-function AutoAnswerSettingsDialog({ onClose }: { onClose: () => void }) {
+function AutoAnswerSettingsDialog({
+  onClose,
+  programId,
+  programTitle,
+}: {
+  onClose: () => void;
+  programId?: string;
+  programTitle?: string;
+}) {
   const [enabled, setEnabled] = useState(true);
-  const [greeting, setGreeting] = useState("");
-  const [items, setItems] = useState(defaultAutoAnswerItems);
+  const [greeting, setGreeting] = useState(
+    createDefaultProgramAutoReplyConfig(programId).greeting,
+  );
+  const [items, setItems] = useState<ProgramAutoReplyItem[]>(
+    defaultProgramAutoReplyItems,
+  );
+  const [isLoading, setIsLoading] = useState(Boolean(programId));
+  const [isSaving, setIsSaving] = useState(false);
+  const [statusMessage, setStatusMessage] = useState("");
+  const [error, setError] = useState("");
+
+  useEffect(() => {
+    let active = true;
+
+    async function loadSettings() {
+      if (!programId) {
+        setIsLoading(false);
+        return;
+      }
+
+      setIsLoading(true);
+      setError("");
+
+      try {
+        const response = await fetch(
+          `/api/host/program-auto-replies?programId=${encodeURIComponent(
+            programId,
+          )}`,
+          { cache: "no-store" },
+        );
+        const payload = (await response.json().catch(() => ({}))) as {
+          data?: ProgramAutoReplyConfig;
+          error?: string;
+        };
+
+        if (!response.ok || !payload.data) {
+          throw new Error(payload.error ?? "자동응답 설정을 불러오지 못했습니다.");
+        }
+
+        const config = normalizeProgramAutoReplyConfig(payload.data);
+        if (!active) return;
+
+        setEnabled(config.enabled);
+        setGreeting(config.greeting);
+        setItems(config.items);
+      } catch (loadError) {
+        if (active) {
+          setError(
+            loadError instanceof Error
+              ? loadError.message
+              : "자동응답 설정을 불러오지 못했습니다.",
+          );
+        }
+      } finally {
+        if (active) setIsLoading(false);
+      }
+    }
+
+    void loadSettings();
+
+    return () => {
+      active = false;
+    };
+  }, [programId]);
 
   function toggleItem(index: number) {
     setItems((current) =>
@@ -1025,12 +1079,55 @@ function AutoAnswerSettingsDialog({ onClose }: { onClose: () => void }) {
     );
   }
 
-  function updateItem(index: number, value: string) {
+  function updateItem(index: number, response: string) {
     setItems((current) =>
       current.map((item, itemIndex) =>
-        itemIndex === index ? { ...item, value } : item,
+        itemIndex === index ? { ...item, response } : item,
       ),
     );
+  }
+
+  async function saveSettings() {
+    if (!programId || isSaving) return;
+
+    setIsSaving(true);
+    setError("");
+    setStatusMessage("");
+
+    try {
+      const response = await fetch("/api/host/program-auto-replies", {
+        body: JSON.stringify({
+          enabled,
+          greeting,
+          items,
+          programId,
+        }),
+        headers: { "Content-Type": "application/json" },
+        method: "PUT",
+      });
+      const payload = (await response.json().catch(() => ({}))) as {
+        data?: ProgramAutoReplyConfig;
+        error?: string;
+      };
+
+      if (!response.ok || !payload.data) {
+        throw new Error(payload.error ?? "자동응답 설정을 저장하지 못했습니다.");
+      }
+
+      const config = normalizeProgramAutoReplyConfig(payload.data);
+      setEnabled(config.enabled);
+      setGreeting(config.greeting);
+      setItems(config.items);
+      setStatusMessage("저장되었습니다.");
+    } catch (saveError) {
+      setError(
+        saveError instanceof Error
+          ? saveError.message
+          : "자동응답 설정을 저장하지 못했습니다.",
+      );
+    } finally {
+      setIsSaving(false);
+    }
   }
 
   return (
@@ -1063,7 +1160,9 @@ function AutoAnswerSettingsDialog({ onClose }: { onClose: () => void }) {
             자동응답
           </h2>
           <p className="min-w-0 flex-1 text-[length:var(--host-msg-12)] font-medium leading-[1.253] text-[#6D7A8A]">
-            게스트가 처음 메시지창을 열면 버튼이 표시돼요.
+            {programTitle
+              ? `${programTitle} 메시지창에 표시됩니다.`
+              : "대화를 선택한 뒤 설정할 수 있습니다."}
           </p>
           <ToggleButton
             active={enabled}
@@ -1074,10 +1173,32 @@ function AutoAnswerSettingsDialog({ onClose }: { onClose: () => void }) {
 
         <input
           className="mt-[var(--host-msg-8)] h-[var(--host-msg-31)] w-full rounded-[var(--host-msg-7)] border border-[#F7B267] bg-transparent px-[var(--host-msg-12)] text-[length:var(--host-msg-12)] font-medium leading-[1.253] text-[#0D0D0C] outline-none placeholder:text-[#D9D9D9] focus:border-[#FE701E]"
+          disabled={!programId || isLoading}
           onChange={(event) => setGreeting(event.target.value)}
           placeholder="게스트에게 첫 인사를 작성해주세요."
           value={greeting}
         />
+
+        {!programId ? (
+          <p className="mt-[var(--host-msg-8)] rounded-[var(--host-msg-6)] bg-white px-[var(--host-msg-12)] py-[var(--host-msg-8)] text-[length:var(--host-msg-12)] font-medium leading-[1.6] text-[#C75300]">
+            먼저 왼쪽에서 프로그램 문의 대화를 선택해주세요.
+          </p>
+        ) : null}
+        {isLoading ? (
+          <p className="mt-[var(--host-msg-8)] text-[length:var(--host-msg-12)] font-medium leading-[1.6] text-[#6D7A8A]">
+            자동응답 설정을 불러오는 중입니다.
+          </p>
+        ) : null}
+        {error ? (
+          <p className="mt-[var(--host-msg-8)] rounded-[var(--host-msg-6)] bg-white px-[var(--host-msg-12)] py-[var(--host-msg-8)] text-[length:var(--host-msg-12)] font-medium leading-[1.6] text-[#C75300]">
+            {error}
+          </p>
+        ) : null}
+        {statusMessage ? (
+          <p className="mt-[var(--host-msg-8)] rounded-[var(--host-msg-6)] bg-white px-[var(--host-msg-12)] py-[var(--host-msg-8)] text-[length:var(--host-msg-12)] font-medium leading-[1.6] text-[#008577]">
+            {statusMessage}
+          </p>
+        ) : null}
 
         <div className="py-[var(--host-msg-16)]">
           <p className="text-[length:var(--host-msg-14)] font-medium leading-[1.253] text-[#0D0D0C]">
@@ -1098,10 +1219,10 @@ function AutoAnswerSettingsDialog({ onClose }: { onClose: () => void }) {
                 </div>
                 <input
                   className="h-[var(--host-msg-31)] w-full rounded-[var(--host-msg-7)] border border-[#F7B267] bg-transparent px-[var(--host-msg-12)] text-[length:var(--host-msg-12)] font-medium leading-[1.253] text-[#0D0D0C] outline-none placeholder:text-[#D9D9D9] focus:border-[#FE701E] disabled:opacity-70"
-                  disabled={!item.enabled}
+                  disabled={!programId || !item.enabled || isLoading}
                   onChange={(event) => updateItem(index, event.target.value)}
-                  placeholder={item.placeholder}
-                  value={item.value}
+                  placeholder="버튼을 눌렀을 때 보여줄 답변을 입력해주세요."
+                  value={item.response}
                 />
               </div>
             ))}
@@ -1111,10 +1232,11 @@ function AutoAnswerSettingsDialog({ onClose }: { onClose: () => void }) {
         <div className="mt-[var(--host-msg-26)] flex justify-end">
           <button
             className="inline-flex h-[var(--host-msg-29)] items-center justify-center rounded-[var(--host-msg-4)] bg-[#FE701E] px-[var(--host-msg-18)] text-[length:var(--host-msg-12)] font-medium leading-[1.253] text-[#FFF6EC] transition hover:bg-[#E85F13]"
-            onClick={onClose}
+            disabled={!programId || isLoading || isSaving}
+            onClick={() => void saveSettings()}
             type="button"
           >
-            저장
+            {isSaving ? "저장 중" : "저장"}
           </button>
         </div>
       </section>
@@ -1244,6 +1366,7 @@ function buildMessageThreads(
       messages,
       openDate: dateLabel,
       periodLabel: "0000. 00. 00 - 0000. 00. 00",
+      programId: inquiry.programId ?? "",
       programNumber: inquiry.programId
         ? `P-${inquiry.programId.slice(0, 4).toUpperCase()}`
         : `P-${String(index + 1).padStart(4, "0")}`,
