@@ -1,5 +1,17 @@
 export type HostInquiryStatus = "new" | "inReview" | "answered" | "closed";
 
+export type ProgramInquiryMessageSenderRole = "host" | "user";
+
+export type ProgramInquiryMessage = {
+  id: string;
+  inquiryId: string;
+  senderRole: ProgramInquiryMessageSenderRole;
+  senderId?: string;
+  senderName?: string;
+  message: string;
+  createdAt: string;
+};
+
 export type HostInquiry = {
   id: string;
   villageId?: string;
@@ -14,6 +26,8 @@ export type HostInquiry = {
   status: HostInquiryStatus;
   answers: Record<string, unknown>;
   source: string;
+  submittedBy?: string;
+  messages: ProgramInquiryMessage[];
   submittedAt: string;
   updatedAt: string;
 };
@@ -47,15 +61,48 @@ export function normalizeHostInquiry(input: unknown): HostInquiry {
     formId: asString(value.formId),
     id: asString(value.id) || `inquiry-${Date.now()}`,
     message: asString(value.message),
+    messages: normalizeProgramInquiryMessages(value.messages),
     programId: asString(value.programId),
     programTitle: asString(value.programTitle),
     source: asString(value.source) || "program",
     status: normalizeHostInquiryStatus(value.status),
+    submittedBy: asString(value.submittedBy),
     submittedAt: asString(value.submittedAt) || new Date().toISOString(),
     title: asString(value.title) || "문의",
     updatedAt: asString(value.updatedAt) || new Date().toISOString(),
     villageId: asString(value.villageId),
   };
+}
+
+export function normalizeProgramInquiryMessage(
+  input: unknown,
+): ProgramInquiryMessage {
+  const value =
+    input && typeof input === "object" && !Array.isArray(input)
+      ? (input as Record<string, unknown>)
+      : {};
+
+  return {
+    createdAt: asString(value.createdAt) || new Date().toISOString(),
+    id: asString(value.id) || `message-${Date.now()}`,
+    inquiryId: asString(value.inquiryId),
+    message: asString(value.message),
+    senderId: asString(value.senderId),
+    senderName: asString(value.senderName),
+    senderRole: normalizeProgramInquiryMessageSenderRole(value.senderRole),
+  };
+}
+
+function normalizeProgramInquiryMessages(value: unknown): ProgramInquiryMessage[] {
+  return Array.isArray(value)
+    ? value.map(normalizeProgramInquiryMessage).filter((message) => message.message)
+    : [];
+}
+
+function normalizeProgramInquiryMessageSenderRole(
+  value: unknown,
+): ProgramInquiryMessageSenderRole {
+  return value === "host" ? "host" : "user";
 }
 
 function asString(value: unknown): string {

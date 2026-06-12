@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { getOptionalAuthenticatedUser } from "@/lib/api-security";
 import { createProgramInquiry } from "@/lib/host-inquiry-db";
 import { normalizeHostInquiry } from "@/lib/host-inquiries";
 import { getProgramRecordByIdentifier } from "@/lib/program-db";
@@ -10,6 +11,7 @@ export async function POST(request: Request) {
   try {
     const body = await request.json();
     const inquiry = normalizeHostInquiry(body);
+    const auth = await getOptionalAuthenticatedUser();
 
     if (!inquiry.programId) {
       return NextResponse.json(
@@ -34,6 +36,7 @@ export async function POST(request: Request) {
       programId: programRecord?.id ?? String(publicProgram?.id ?? inquiry.programId),
       programTitle:
         inquiry.programTitle || programRecord?.title || publicProgram?.title || "",
+      submittedBy: auth?.user.id ?? inquiry.submittedBy,
       villageId: programRecord?.villageId ?? "",
     });
 

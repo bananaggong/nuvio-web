@@ -63,6 +63,7 @@ export async function POST(request: Request) {
       formId: "",
       id: "",
       message: validation.values.message,
+      messages: [],
       programId: "",
       programTitle: "고객센터",
       source: "support",

@@ -775,6 +775,26 @@ export const programInquiries = pgTable(
   ],
 );
 
+export const programInquiryMessages = pgTable(
+  "program_inquiry_messages",
+  {
+    id: uuid("id").defaultRandom().primaryKey(),
+    inquiryId: uuid("inquiry_id")
+      .references(() => programInquiries.id, { onDelete: "cascade" })
+      .notNull(),
+    senderRole: text("sender_role").notNull(),
+    senderId: uuid("sender_id"),
+    senderName: text("sender_name"),
+    message: text("message").notNull(),
+    createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+  },
+  (table) => [
+    index("program_inquiry_messages_inquiry_id_idx").on(table.inquiryId),
+    index("program_inquiry_messages_created_at_idx").on(table.createdAt),
+    index("program_inquiry_messages_sender_role_idx").on(table.senderRole),
+  ],
+);
+
 export const programApplications = pgTable(
   "program_applications",
   {

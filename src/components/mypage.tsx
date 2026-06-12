@@ -26,6 +26,7 @@ import {
   useRef,
   useState,
   type ComponentType,
+  type FormEvent,
   type MouseEvent as ReactMouseEvent,
   type Ref,
   type ReactNode,
@@ -34,6 +35,10 @@ import { getProgramById } from "@/lib/data";
 import { NuvioEmptyState } from "@/components/nuvio-empty-state";
 import { SupportContactForm } from "@/components/support-contact-form";
 import type { HostApplication } from "@/lib/host-operations";
+import type {
+  HostInquiry,
+  ProgramInquiryMessage,
+} from "@/lib/host-inquiries";
 import { launchFeatureFlags } from "@/lib/launch-feature-flags";
 import { programPath } from "@/lib/program-routing";
 import type { Program, Review } from "@/lib/types";
@@ -147,6 +152,7 @@ declare global {
 type MypageData = {
   authSession: AuthSessionPayload;
   applications: HostApplication[];
+  inquiries: HostInquiry[];
   loading: boolean;
   notifications: UserNotification[];
   programState: ProgramStateMaps;
@@ -673,9 +679,12 @@ function BookmarksContent({ context }: { context: MypageContext }) {
 type MessageThread = {
   hostName: string;
   id: string;
+  inquiryId?: string;
   location: string;
   messages: MessageBubble[];
   period: string;
+  programId: string;
+  programTitle: string;
   statusLabel: string;
   statusTone: "closed" | "open";
   timeLabel: string;
@@ -704,6 +713,12 @@ function MessagesContent({ context }: { context: MypageContext }) {
   const [threadQuery, setThreadQuery] = useState("");
   const [conversationSearchOpen, setConversationSearchOpen] = useState(false);
   const [activeThreadId, setActiveThreadId] = useState<string | null>(null);
+  const [localMessagesByThread, setLocalMessagesByThread] = useState<
+    Record<string, MessageBubble[]>
+  >({});
+  const [localInquiryIdsByThread, setLocalInquiryIdsByThread] = useState<
+    Record<string, string>
+  >({});
   const requestedProgramThread = useMemo<RequestedProgramMessageThread | null>(() => {
     if (!requestedProgramId && !requestedProgramTitle) return null;
 
@@ -717,6 +732,7 @@ function MessagesContent({ context }: { context: MypageContext }) {
     () =>
       buildMessageThreads({
         applications: context.applications,
+        inquiries: context.inquiries,
         notifications: context.notifications,
         publicPrograms: context.publicPrograms,
         requestedProgramThread,
@@ -724,27 +740,116 @@ function MessagesContent({ context }: { context: MypageContext }) {
       }),
     [
       context.applications,
+      context.inquiries,
       context.notifications,
       context.publicPrograms,
       requestedProgramThread,
       context.visibleTrips,
     ],
   );
+  const threadsWithLocalMessages = useMemo(
+    () =>
+      threads.map((thread) => ({
+        ...thread,
+        inquiryId: localInquiryIdsByThread[thread.id] ?? thread.inquiryId,
+        messages: [
+          ...thread.messages,
+          ...(localMessagesByThread[thread.id] ?? []),
+        ],
+      })),
+    [localInquiryIdsByThread, localMessagesByThread, threads],
+  );
   const visibleThreads = useMemo(() => {
     const query = threadQuery.trim().toLowerCase();
-    if (!query) return threads;
+    if (!query) return threadsWithLocalMessages;
 
-    return threads.filter((thread) =>
+    return threadsWithLocalMessages.filter((thread) =>
       [thread.title, thread.hostName, thread.location]
         .join(" ")
         .toLowerCase()
         .includes(query),
     );
-  }, [threadQuery, threads]);
+  }, [threadQuery, threadsWithLocalMessages]);
   const activeThread =
     visibleThreads.find((thread) => thread.id === activeThreadId) ??
     visibleThreads[0] ??
     null;
+
+  async function sendMessage(thread: MessageThread, message: string) {
+    const trimmedMessage = message.trim();
+    if (!trimmedMessage) return;
+
+    if (!thread.programId && !thread.programTitle) {
+      throw new Error("연결된 프로그램 정보를 찾지 못했습니다.");
+    }
+
+    const profile = context.authSession.profile;
+    const response = await fetch(
+      thread.inquiryId
+        ? `/api/me/inquiries/${thread.inquiryId}/messages`
+        : "/api/program-inquiries",
+      {
+        body: JSON.stringify(
+          thread.inquiryId
+            ? { message: trimmedMessage }
+            : {
+                contactEmail:
+                  profile?.contactEmail ?? context.authSession.user?.email ?? "",
+                contactName: context.profileName,
+                contactPhone: profile?.phone ?? "",
+                message: trimmedMessage,
+                programId: thread.programId || thread.programTitle,
+                programTitle: thread.programTitle || thread.title,
+                source: "mypage-message",
+                title: `${thread.title} 문의`,
+              },
+        ),
+        headers: { "Content-Type": "application/json" },
+        method: "POST",
+      },
+    );
+    const payload = (await response.json().catch(() => ({}))) as {
+      data?: HostInquiry | ProgramInquiryMessage;
+      error?: string;
+    };
+
+    if (!response.ok) {
+      throw new Error(payload.error || "메시지를 보내지 못했습니다.");
+    }
+
+    let savedInquiryId = thread.inquiryId;
+    let savedMessage: ProgramInquiryMessage | undefined;
+
+    if (isProgramInquiryMessagePayload(payload.data)) {
+      savedMessage = payload.data;
+      savedInquiryId = payload.data.inquiryId;
+    } else if (isHostInquiryPayload(payload.data)) {
+      savedInquiryId = payload.data.id;
+      savedMessage = [...payload.data.messages]
+        .reverse()
+        .find((item) => item.senderRole === "user");
+    }
+
+    if (savedInquiryId && savedInquiryId !== thread.inquiryId) {
+      setLocalInquiryIdsByThread((current) => ({
+        ...current,
+        [thread.id]: savedInquiryId,
+      }));
+    }
+
+    const sentMessage =
+      createMessageBubbleFromInquiryMessage(savedMessage) ?? {
+        body: trimmedMessage,
+        id: `sent-${thread.id}-${Date.now()}`,
+        sender: "user" as const,
+        timeLabel: "방금 전",
+      };
+
+    setLocalMessagesByThread((current) => ({
+      ...current,
+      [thread.id]: [...(current[thread.id] ?? []), sentMessage],
+    }));
+  }
 
   return (
     <section className="font-pretendard min-h-[calc(100vh-70px)] bg-white pb-24 pt-3 text-[#5B3A29]">
@@ -781,10 +886,12 @@ function MessagesContent({ context }: { context: MypageContext }) {
           </aside>
 
           <MessageConversationPanel
+            key={activeThread?.id ?? "empty"}
             searchOpen={conversationSearchOpen}
             thread={activeThread}
             onCloseSearch={() => setConversationSearchOpen(false)}
             onOpenSearch={() => setConversationSearchOpen(true)}
+            onSendMessage={sendMessage}
           />
         </div>
       </div>
@@ -864,14 +971,20 @@ function MessageThreadRow({
 function MessageConversationPanel({
   onCloseSearch,
   onOpenSearch,
+  onSendMessage,
   searchOpen,
   thread,
 }: {
   onCloseSearch: () => void;
   onOpenSearch: () => void;
+  onSendMessage: (thread: MessageThread, message: string) => Promise<void>;
   searchOpen: boolean;
   thread: MessageThread | null;
 }) {
+  const [draftMessage, setDraftMessage] = useState("");
+  const [sendError, setSendError] = useState("");
+  const [sending, setSending] = useState(false);
+
   if (!thread) {
     return (
       <div className="flex h-[503px] min-w-0 flex-1 flex-col items-center justify-center rounded-[22px] bg-[#F9F9F9] px-[6px] py-2 max-lg:w-full min-[1440px]:h-[34.931vw] min-[1440px]:rounded-[1.528vw] min-[1440px]:px-[0.417vw] min-[1440px]:py-[0.556vw]">
@@ -882,6 +995,27 @@ function MessageConversationPanel({
         />
       </div>
     );
+  }
+
+  const activeThread = thread;
+
+  async function submitMessage(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    const message = draftMessage.trim();
+    if (!message || sending) return;
+
+    setSending(true);
+    setSendError("");
+    try {
+      await onSendMessage(activeThread, message);
+      setDraftMessage("");
+    } catch (error) {
+      setSendError(
+        error instanceof Error ? error.message : "메시지를 보내지 못했습니다.",
+      );
+    } finally {
+      setSending(false);
+    }
   }
 
   return (
@@ -979,18 +1113,34 @@ function MessageConversationPanel({
         ))}
       </div>
 
-      <div className="flex w-full shrink-0 flex-col items-center pb-[11px] min-[1440px]:pb-[0.764vw]">
+      <form
+        className="flex w-full shrink-0 flex-col items-center gap-2 pb-[11px] min-[1440px]:pb-[0.764vw]"
+        onSubmit={(event) => void submitMessage(event)}
+      >
         <label className="flex h-[37px] w-[593px] max-w-full items-center gap-2 rounded-[40px] border border-[#FF9A3D] bg-[#F9F9F9] p-[9px] min-[1440px]:h-[2.569vw] min-[1440px]:w-[41.181vw] min-[1440px]:gap-[0.556vw] min-[1440px]:p-[0.625vw]">
-          <span className="inline-flex size-3 shrink-0 items-center justify-center rounded-full bg-[#FF9A3D] text-white">
+          <button
+            aria-label="메시지 보내기"
+            className="inline-flex size-3 shrink-0 items-center justify-center rounded-full bg-[#FF9A3D] text-white disabled:cursor-not-allowed disabled:opacity-50"
+            disabled={!draftMessage.trim() || sending}
+            type="submit"
+          >
             <Plus aria-hidden="true" className="size-2" strokeWidth={2.4} />
-          </span>
+          </button>
           <input
             aria-label="메세지 입력"
             className="min-w-0 flex-1 bg-transparent pl-[3px] pr-[6px] text-[12px] font-normal leading-[1.6] text-[#6D7A8A] outline-none placeholder:text-[#D9D9D9]"
-            placeholder="메세지 입력"
+            disabled={sending}
+            onChange={(event) => setDraftMessage(event.target.value)}
+            placeholder={sending ? "메세지 전송 중" : "메세지 입력"}
+            value={draftMessage}
           />
         </label>
-      </div>
+        {sendError ? (
+          <p className="w-[593px] max-w-full px-3 text-left text-[12px] font-medium text-[#C75300]">
+            {sendError}
+          </p>
+        ) : null}
+      </form>
     </div>
   );
 }
@@ -1014,18 +1164,86 @@ function MessageListSkeleton() {
   );
 }
 
+function isProgramInquiryMessagePayload(
+  value: unknown,
+): value is ProgramInquiryMessage {
+  return (
+    Boolean(value) &&
+    typeof value === "object" &&
+    !Array.isArray(value) &&
+    typeof (value as ProgramInquiryMessage).inquiryId === "string" &&
+    typeof (value as ProgramInquiryMessage).message === "string"
+  );
+}
+
+function isHostInquiryPayload(value: unknown): value is HostInquiry {
+  return (
+    Boolean(value) &&
+    typeof value === "object" &&
+    !Array.isArray(value) &&
+    typeof (value as HostInquiry).id === "string" &&
+    Array.isArray((value as HostInquiry).messages)
+  );
+}
+
+function createMessageBubbleFromInquiryMessage(
+  message?: ProgramInquiryMessage,
+): MessageBubble | null {
+  if (!message?.message) return null;
+
+  return {
+    body: message.message,
+    id: message.id,
+    sender: message.senderRole === "host" ? "host" : "user",
+    timeLabel: formatMessageRelativeTime(message.createdAt),
+  };
+}
+
+function createMessageBubblesFromInquiry(inquiry: HostInquiry): MessageBubble[] {
+  const messages = [...inquiry.messages].sort(
+    (a, b) => Date.parse(a.createdAt) - Date.parse(b.createdAt),
+  );
+
+  if (messages.length > 0) {
+    return messages
+      .map(createMessageBubbleFromInquiryMessage)
+      .filter((message): message is MessageBubble => Boolean(message));
+  }
+
+  return [
+    {
+      body: inquiry.message,
+      id: inquiry.id,
+      sender: "user",
+      timeLabel: formatMessageRelativeTime(inquiry.submittedAt),
+    },
+  ];
+}
+
+function getLatestInquiryMessageCreatedAt(inquiries: HostInquiry[]): string {
+  const messages = inquiries
+    .flatMap((inquiry) => inquiry.messages)
+    .sort((a, b) => Date.parse(a.createdAt) - Date.parse(b.createdAt));
+  const latestMessage = messages[messages.length - 1];
+  if (latestMessage) return latestMessage.createdAt;
+
+  return inquiries[inquiries.length - 1]?.submittedAt ?? new Date().toISOString();
+}
+
 function buildMessageThreads({
   applications,
+  inquiries,
   notifications,
   publicPrograms,
   requestedProgramThread,
   visibleTrips,
 }: Pick<
   MypageContext,
-  "applications" | "notifications" | "publicPrograms" | "visibleTrips"
+  "applications" | "inquiries" | "notifications" | "publicPrograms" | "visibleTrips"
 > & {
   requestedProgramThread: RequestedProgramMessageThread | null;
 }): MessageThread[] {
+  const inquiryThreads = buildInquiryMessageThreads(inquiries, publicPrograms);
   const notificationThreads = notifications.map((notification) => {
     const application = findApplicationForMessageNotification(
       notification,
@@ -1062,18 +1280,76 @@ function buildMessageThreads({
   });
 
   const baseThreads =
-    notificationThreads.length > 0 ? notificationThreads : tripThreads;
+    notificationThreads.length > 0
+      ? [...inquiryThreads, ...notificationThreads]
+      : [...inquiryThreads, ...tripThreads];
 
   if (!requestedProgramThread) return baseThreads;
 
   const channelThread = createRequestedProgramMessageThread(
     requestedProgramThread,
     publicPrograms,
+    inquiries,
   );
   return [
     channelThread,
     ...baseThreads.filter((thread) => thread.id !== channelThread.id),
   ];
+}
+
+function buildInquiryMessageThreads(
+  inquiries: HostInquiry[],
+  programs: Program[],
+): MessageThread[] {
+  const grouped = new Map<string, HostInquiry[]>();
+
+  for (const inquiry of inquiries) {
+    const key = inquiry.programId || inquiry.programTitle || inquiry.id;
+    grouped.set(key, [...(grouped.get(key) ?? []), inquiry]);
+  }
+
+  return Array.from(grouped.values()).flatMap((items): MessageThread[] => {
+    const sortedItems = [...items].sort(
+      (a, b) => Date.parse(a.submittedAt) - Date.parse(b.submittedAt),
+    );
+    const latest = sortedItems[sortedItems.length - 1];
+    if (!latest) return [];
+
+    const program = findProgramForInquiry(latest, programs);
+    const title = program?.title || latest.programTitle || latest.title;
+    const hostName = program?.sourceName || "프로그램 관리자";
+    const closed = program?.status === "closed" || program?.status === "earlyClosed";
+    const inquiryMessages = sortedItems.flatMap(createMessageBubblesFromInquiry);
+    const latestMessageCreatedAt = getLatestInquiryMessageCreatedAt(sortedItems);
+
+    return [{
+      hostName,
+      id: `program-channel-${latest.programId || latest.programTitle || latest.id}`,
+      inquiryId: latest.id,
+      location: program ? `${program.region} ${program.city}` : "프로그램 문의 채널",
+      messages: [
+        {
+          body: `안녕하세요, ${hostName}입니다.\n${title} 관련 문의는 이 메시지함에서 이어갈 수 있습니다.`,
+          id: `${latest.id}-welcome`,
+          sender: "host",
+          timeLabel: formatMessageRelativeTime(sortedItems[0].submittedAt),
+        },
+        ...inquiryMessages,
+      ],
+      period: program
+        ? `${formatMessageDate(program.activityStart)} - ${formatMessageDate(
+            program.activityEnd,
+          )}`
+        : "메시지함에서 연결됨",
+      programId: latest.programId ?? "",
+      programTitle: latest.programTitle || title,
+      statusLabel: closed ? "마감" : "문의 가능",
+      statusTone: closed ? "closed" : "open",
+      timeLabel: formatMessageRelativeTime(latestMessageCreatedAt),
+      title,
+      unread: false,
+    }];
+  });
 }
 
 function createMessageThread({
@@ -1118,6 +1394,10 @@ function createMessageThread({
           program.activityEnd,
         )}`
       : "0000. 00. 00 - 0000. 00. 00",
+    programId:
+      application?.programId ??
+      (program ? String(program.id || program.slug || "") : ""),
+    programTitle: title || program?.title || application?.programTitle || "",
     statusLabel: closed ? "마감" : "모집중",
     statusTone: closed ? "closed" : "open",
     timeLabel: formatMessageRelativeTime(createdAt),
@@ -1129,15 +1409,22 @@ function createMessageThread({
 function createRequestedProgramMessageThread(
   requested: RequestedProgramMessageThread,
   programs: Program[],
+  inquiries: HostInquiry[] = [],
 ): MessageThread {
   const program = findProgramForRequestedMessage(requested, programs);
   const title = program?.title || requested.programTitle || "프로그램";
   const hostName = requested.hostName || program?.sourceName || "프로그램 관리자";
+  const matchingInquiries = inquiries
+    .filter((inquiry) => inquiryMatchesRequestedProgram(inquiry, requested, program))
+    .sort((a, b) => Date.parse(a.submittedAt) - Date.parse(b.submittedAt));
+  const latestInquiry = matchingInquiries[matchingInquiries.length - 1];
+  const inquiryMessages = matchingInquiries.flatMap(createMessageBubblesFromInquiry);
   const now = new Date().toISOString();
 
   return {
     hostName,
     id: `program-channel-${requested.programId || title}`,
+    inquiryId: latestInquiry?.id,
     location: program ? `${program.region} ${program.city}` : "프로그램 문의 채널",
     messages: [
       {
@@ -1146,12 +1433,15 @@ function createRequestedProgramMessageThread(
         sender: "host",
         timeLabel: "방금 전",
       },
+      ...inquiryMessages,
     ],
     period: program
       ? `${formatMessageDate(program.activityStart)} - ${formatMessageDate(
           program.activityEnd,
         )}`
       : "상세 페이지에서 연결됨",
+    programId: requested.programId || (program ? String(program.id) : ""),
+    programTitle: title,
     statusLabel:
       program?.status === "closed" || program?.status === "earlyClosed"
         ? "마감"
@@ -1164,6 +1454,36 @@ function createRequestedProgramMessageThread(
     title,
     unread: true,
   };
+}
+
+function inquiryMatchesRequestedProgram(
+  inquiry: HostInquiry,
+  requested: RequestedProgramMessageThread,
+  program?: Program,
+) {
+  const programId = program ? String(program.id) : "";
+  const programSlug = program?.slug ?? "";
+  const requestedId = requested.programId;
+  const requestedTitle = requested.programTitle;
+
+  return (
+    Boolean(inquiry.programId) &&
+    (inquiry.programId === requestedId ||
+      inquiry.programId === programId ||
+      inquiry.programId === programSlug)
+  ) || (Boolean(requestedTitle) && inquiry.programTitle === requestedTitle);
+}
+
+function findProgramForInquiry(
+  inquiry: HostInquiry,
+  programs: Program[],
+): Program | undefined {
+  return programs.find(
+    (program) =>
+      String(program.id) === inquiry.programId ||
+      program.slug === inquiry.programId ||
+      program.title === inquiry.programTitle,
+  );
 }
 
 function findProgramForRequestedMessage(
@@ -2647,6 +2967,7 @@ function useMypageData(): MypageData {
   const [programState, setProgramState] =
     useState<ProgramStateMaps>(EMPTY_PROGRAM_STATE);
   const [applications, setApplications] = useState<HostApplication[]>([]);
+  const [inquiries, setInquiries] = useState<HostInquiry[]>([]);
   const [notifications, setNotifications] = useState<UserNotification[]>([]);
   const [publicPrograms, setPublicPrograms] = useState<Program[]>([]);
   const [reviews, setReviews] = useState<Review[]>([]);
@@ -2686,6 +3007,7 @@ function useMypageData(): MypageData {
 
         if (!nextSession.user) {
           setApplications([]);
+          setInquiries([]);
           setNotifications([]);
           setProgramState(EMPTY_PROGRAM_STATE);
           return;
@@ -2695,10 +3017,12 @@ function useMypageData(): MypageData {
           notificationsResponse,
           programStateResponse,
           applicationsResponse,
+          inquiriesResponse,
         ] = await Promise.all([
           fetch("/api/me/notifications", { cache: "no-store" }),
           fetch("/api/me/program-state", { cache: "no-store" }),
           fetch("/api/me/applications", { cache: "no-store" }),
+          fetch("/api/me/inquiries", { cache: "no-store" }),
         ]);
         const notificationsPayload = (await notificationsResponse.json()) as {
           data?: UserNotification[];
@@ -2709,12 +3033,16 @@ function useMypageData(): MypageData {
         const applicationPayload = (await applicationsResponse.json()) as {
           data?: HostApplication[];
         };
+        const inquiryPayload = (await inquiriesResponse.json()) as {
+          data?: HostInquiry[];
+        };
 
         if (!active) return;
 
         setNotifications(notificationsPayload.data ?? []);
         setProgramState(programStatePayload.data ?? EMPTY_PROGRAM_STATE);
         setApplications(applicationPayload.data ?? []);
+        setInquiries(inquiryPayload.data ?? []);
       } finally {
         if (active) setLoading(false);
       }
@@ -2730,6 +3058,7 @@ function useMypageData(): MypageData {
   return {
     applications,
     authSession,
+    inquiries,
     loading,
     notifications,
     programState,

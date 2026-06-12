@@ -34,6 +34,26 @@ export async function requireAuthenticatedUser(): Promise<ApiAuthResult> {
   return requireApiRole(["user", "partner", "admin"]);
 }
 
+export async function getOptionalAuthenticatedUser(): Promise<ApiAuthContext | null> {
+  try {
+    const localDevAuth = await getLocalDevAuthContext();
+    if (localDevAuth) return localDevAuth;
+
+    const supabase = await createSupabaseServerClient();
+    const {
+      data: { user },
+      error,
+    } = await supabase.auth.getUser();
+
+    if (error || !user) return null;
+
+    const profile = (await getUserProfile(user.id)) ?? (await ensureUserProfile(user));
+    return { profile, user };
+  } catch {
+    return null;
+  }
+}
+
 export async function requireHostRole(): Promise<ApiAuthResult> {
   return requireAuthenticatedUser();
 }

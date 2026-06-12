@@ -13,13 +13,21 @@ import {
   ToggleRight,
   X,
 } from "lucide-react";
-import { useEffect, useMemo, useState, type CSSProperties } from "react";
+import {
+  useEffect,
+  useMemo,
+  useState,
+  type CSSProperties,
+  type FormEvent,
+} from "react";
 import { HostWorkspaceLayout } from "@/components/host-workspace-ui";
 import { type HostApplication } from "@/lib/host-operations";
 import {
   normalizeHostInquiry,
+  normalizeProgramInquiryMessage,
   type HostInquiry,
   type HostInquiryStatus,
+  type ProgramInquiryMessage,
 } from "@/lib/host-inquiries";
 import { useHostOperationsData } from "@/lib/use-host-operations-data";
 
@@ -32,6 +40,7 @@ type MessageThread = {
   id: string;
   imageUrl: string;
   lastMessage: string;
+  messages: HostThreadMessage[];
   openDate: string;
   periodLabel: string;
   programNumber: string;
@@ -40,6 +49,15 @@ type MessageThread = {
   status: HostInquiryStatus;
   timeLabel: string;
   unread: boolean;
+};
+
+type HostThreadMessage = {
+  body: string;
+  createdAt: string;
+  id: string;
+  sender: "host" | "user";
+  senderName?: string;
+  timeLabel: string;
 };
 
 type AutoAnswerItem = {
@@ -167,6 +185,8 @@ export function HostMessageInbox({ view }: { view: HostMessageInboxView }) {
   const [loadError, setLoadError] = useState("");
   const [actionError, setActionError] = useState("");
   const [closingThreadId, setClosingThreadId] = useState("");
+  const [replyError, setReplyError] = useState("");
+  const [replyingThreadId, setReplyingThreadId] = useState("");
   const allThreads = useMemo(
     () => buildMessageThreads(inquiries, applications),
     [applications, inquiries],
@@ -272,6 +292,53 @@ export function HostMessageInbox({ view }: { view: HostMessageInboxView }) {
     }
   }
 
+  async function sendReply(thread: MessageThread, message: string) {
+    const trimmedMessage = message.trim();
+    if (!trimmedMessage || replyingThreadId) return;
+
+    setReplyingThreadId(thread.id);
+    setReplyError("");
+
+    try {
+      const response = await fetch(
+        `/api/host/inquiries/${thread.sourceId}/messages`,
+        {
+          body: JSON.stringify({ message: trimmedMessage }),
+          headers: { "Content-Type": "application/json" },
+          method: "POST",
+        },
+      );
+      const payload = (await response.json().catch(() => ({}))) as {
+        data?: ProgramInquiryMessage;
+        error?: string;
+      };
+
+      if (!response.ok || !payload.data) {
+        throw new Error(payload.error ?? "답장을 보내지 못했습니다.");
+      }
+
+      const savedMessage = normalizeProgramInquiryMessage(payload.data);
+      setInquiries((current) =>
+        current.map((inquiry) =>
+          inquiry.id === thread.sourceId
+            ? normalizeHostInquiry({
+                ...inquiry,
+                messages: [...inquiry.messages, savedMessage],
+                status: inquiry.status === "closed" ? "closed" : "answered",
+                updatedAt: savedMessage.createdAt,
+              })
+            : inquiry,
+        ),
+      );
+    } catch (error) {
+      setReplyError(
+        error instanceof Error ? error.message : "답장을 보내지 못했습니다.",
+      );
+    } finally {
+      setReplyingThreadId("");
+    }
+  }
+
   if (view === "ended") {
     return (
       <>
@@ -298,7 +365,10 @@ export function HostMessageInbox({ view }: { view: HostMessageInboxView }) {
         isLoading={isLoadingInquiries}
         loadError={loadError}
         onCloseThread={closeThread}
+        onSendReply={sendReply}
         onSelectThread={setSelectedId}
+        replyError={replyError}
+        replyingThreadId={replyingThreadId}
         selectedThread={selectedThread}
         selectedThreadId={selectedThreadId}
         threads={threads}
@@ -314,7 +384,10 @@ function OngoingMessagesView({
   isLoading,
   loadError,
   onCloseThread,
+  onSendReply,
   onSelectThread,
+  replyError,
+  replyingThreadId,
   selectedThread,
   selectedThreadId,
   threads,
@@ -325,7 +398,10 @@ function OngoingMessagesView({
   isLoading: boolean;
   loadError: string;
   onCloseThread: (thread: MessageThread) => void;
+  onSendReply: (thread: MessageThread, message: string) => Promise<void>;
   onSelectThread: (threadId: string) => void;
+  replyError: string;
+  replyingThreadId: string;
   selectedThread?: MessageThread;
   selectedThreadId?: string;
   threads: MessageThread[];
@@ -416,7 +492,12 @@ function OngoingMessagesView({
               </Link>
             </aside>
 
-            <ChatConversationPanel thread={selectedThread} />
+            <ChatConversationPanel
+              replyError={replyError}
+              replying={selectedThread ? replyingThreadId === selectedThread.id : false}
+              thread={selectedThread}
+              onSendReply={onSendReply}
+            />
 
             <ThreadDetailPanel
               actionError={actionError}
@@ -614,33 +695,92 @@ function MessageListState({ label }: { label: string }) {
   );
 }
 
-function ChatConversationPanel({ thread }: { thread?: MessageThread }) {
+function ChatConversationPanel({
+  onSendReply,
+  replyError,
+  replying,
+  thread,
+}: {
+  onSendReply: (thread: MessageThread, message: string) => Promise<void>;
+  replyError: string;
+  replying: boolean;
+  thread?: MessageThread;
+}) {
+  const [draftReply, setDraftReply] = useState("");
+
+  async function submitReply(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    const message = draftReply.trim();
+    if (!thread || !message || replying) return;
+
+    await onSendReply(thread, message);
+    setDraftReply("");
+  }
+
   return (
     <section className="flex min-h-full flex-col px-[var(--host-msg-16)] pt-[var(--host-msg-14)]">
       <div className="flex justify-end px-[10px] py-1">
         <Search aria-hidden="true" className="size-[var(--host-msg-20)] text-[#CAC4BC]" strokeWidth={1.8} />
       </div>
-      <div className="flex flex-1 items-start justify-end pr-[var(--host-msg-34)] pt-4">
+      <div className="flex min-h-0 flex-1 flex-col gap-[var(--host-msg-12)] overflow-y-auto px-[var(--host-msg-8)] py-[var(--host-msg-16)]">
         {thread ? (
-          <AutoAnswerPreview align="right" />
+          thread.messages.map((message) => (
+            <div
+              className={`flex w-full ${
+                message.sender === "host" ? "justify-end" : "justify-start"
+              }`}
+              key={message.id}
+            >
+              <div
+                className={`max-w-[72%] rounded-[var(--host-msg-16)] px-[var(--host-msg-16)] py-[var(--host-msg-12)] text-[length:var(--host-msg-13)] font-normal leading-[1.6] shadow-sm ${
+                  message.sender === "host"
+                    ? "rounded-br-[var(--host-msg-5)] bg-[#FE701E] text-white"
+                    : "rounded-bl-[var(--host-msg-5)] bg-[#F9F9F9] text-[#5B3A29]"
+                }`}
+              >
+                <p className="whitespace-pre-line break-keep">{message.body}</p>
+                <p
+                  className={`mt-[var(--host-msg-4)] text-right text-[length:var(--host-msg-11)] ${
+                    message.sender === "host" ? "text-white/70" : "text-[#A8AFB8]"
+                  }`}
+                >
+                  {message.timeLabel}
+                </p>
+              </div>
+            </div>
+          ))
         ) : (
           <EmptyConversation label="대화를 선택해주세요." />
         )}
       </div>
-      <div className="flex min-h-[var(--host-msg-58)] items-end pb-[var(--host-msg-11)] pr-[var(--host-msg-15)]">
+      <form
+        className="flex min-h-[var(--host-msg-58)] flex-col items-stretch justify-end gap-[var(--host-msg-6)] pb-[var(--host-msg-11)] pr-[var(--host-msg-15)]"
+        onSubmit={(event) => void submitReply(event)}
+      >
         <label className="flex h-[var(--host-msg-37)] w-full items-center gap-[var(--host-msg-8)] rounded-full border border-[#FF9A3D] bg-[#F9F9F9] p-[var(--host-msg-9)]">
-          <Plus
-            aria-hidden="true"
+          <button
+            aria-label="답장 보내기"
             className="size-[var(--host-msg-12)] rounded-full bg-[#FF9A3D] text-white"
-            strokeWidth={3}
-          />
+            disabled={!thread || !draftReply.trim() || replying}
+            type="submit"
+          >
+            <Plus aria-hidden="true" className="size-full" strokeWidth={3} />
+          </button>
           <input
             className="min-w-0 flex-1 bg-transparent text-[length:var(--host-msg-12)] font-normal leading-[1.6] text-[#6D7A8A] outline-none placeholder:text-[#D9D9D9]"
+            disabled={!thread || replying}
+            onChange={(event) => setDraftReply(event.target.value)}
             placeholder={thread ? "메세지 입력" : "대화를 선택해주세요"}
             type="text"
+            value={draftReply}
           />
         </label>
-      </div>
+        {replyError ? (
+          <p className="px-[var(--host-msg-12)] text-[length:var(--host-msg-12)] font-medium leading-[1.6] text-[#C75300]">
+            {replyError}
+          </p>
+        ) : null}
+      </form>
     </section>
   );
 }
@@ -1076,6 +1216,8 @@ function buildMessageThreads(
     const relatedApplication =
       applicationByProgramId.get(inquiry.programId) ??
       applicationByProgramTitle.get(normalizeTitle(inquiry.programTitle));
+    const messages = createHostThreadMessages(inquiry);
+    const latestMessage = messages[messages.length - 1];
     const submitted = new Date(inquiry.submittedAt);
     const dateLabel = Number.isNaN(submitted.getTime())
       ? "0000. 00. 00"
@@ -1098,7 +1240,8 @@ function buildMessageThreads(
       guestName: inquiry.contactName || "게스트명",
       id: inquiry.id || `message-thread-${index}`,
       imageUrl: resolveThreadImage(inquiry.programTitle),
-      lastMessage: inquiry.message,
+      lastMessage: latestMessage?.body ?? inquiry.message,
+      messages,
       openDate: dateLabel,
       periodLabel: "0000. 00. 00 - 0000. 00. 00",
       programNumber: inquiry.programId
@@ -1108,10 +1251,41 @@ function buildMessageThreads(
         inquiry.programTitle || inquiry.title || "문의한 프로그램 명 또는 호스트 문의",
       sourceId: inquiry.id,
       status: inquiry.status,
-      timeLabel: formatRelativeTime(inquiry.submittedAt, dateLabel),
+      timeLabel: formatRelativeTime(
+        latestMessage?.createdAt ?? inquiry.updatedAt ?? inquiry.submittedAt,
+        dateLabel,
+      ),
       unread: inquiry.status === "new",
     };
   });
+}
+
+function createHostThreadMessages(inquiry: HostInquiry): HostThreadMessage[] {
+  const messages = [...inquiry.messages].sort(
+    (a, b) => Date.parse(a.createdAt) - Date.parse(b.createdAt),
+  );
+
+  if (messages.length > 0) {
+    return messages.map((message) => ({
+      body: message.message,
+      createdAt: message.createdAt,
+      id: message.id,
+      sender: message.senderRole === "host" ? "host" : "user",
+      senderName: message.senderName,
+      timeLabel: formatRelativeTime(message.createdAt, "방금 전"),
+    }));
+  }
+
+  return [
+    {
+      body: inquiry.message,
+      createdAt: inquiry.submittedAt,
+      id: `${inquiry.id}-legacy-message`,
+      sender: "user",
+      senderName: inquiry.contactName,
+      timeLabel: formatRelativeTime(inquiry.submittedAt, "방금 전"),
+    },
+  ];
 }
 
 function resolveThreadImage(programTitle: string): string {
