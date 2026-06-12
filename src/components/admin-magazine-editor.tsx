@@ -421,6 +421,7 @@ export function AdminMagazineEditor({ postId }: AdminMagazineEditorProps) {
             onImageClick={() => bodyImageInputRef.current?.click()}
             uploading={uploading}
           />
+          <div aria-hidden="true" className="h-[44px]" />
           <input
             accept="image/gif,image/jpeg,image/png,image/webp"
             className="hidden"
@@ -616,7 +617,7 @@ function EditorToolbar({
   }
 
   return (
-    <div className="sticky top-[56px] z-[70] flex flex-wrap items-center gap-1 border-b border-slate-200 bg-[#4a4a4a] px-3 py-2 text-white shadow-sm">
+    <div className="fixed left-0 right-0 top-[56px] z-[90] flex flex-wrap items-center gap-1 border-b border-slate-200 bg-[#4a4a4a] px-3 py-2 text-white shadow-sm md:left-64 xl:right-[340px]">
       <ToolbarButton active={editor.isActive("bold")} onClick={() => editor.chain().focus().toggleBold().run()} title="굵게">
         <Bold size={16} />
       </ToolbarButton>
