@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { createProgramInquiry } from "@/lib/host-inquiry-db";
 import { normalizeHostInquiry } from "@/lib/host-inquiries";
 import { getProgramRecordByIdentifier } from "@/lib/program-db";
+import { getPublicProgramByIdentifier } from "@/lib/public-program-db";
 
 export const runtime = "nodejs";
 
@@ -17,8 +18,11 @@ export async function POST(request: Request) {
       );
     }
 
-    const program = await getProgramRecordByIdentifier(inquiry.programId);
-    if (!program) {
+    const programRecord = await getProgramRecordByIdentifier(inquiry.programId);
+    const publicProgram = programRecord
+      ? null
+      : await getPublicProgramByIdentifier(inquiry.programId);
+    if (!programRecord && !publicProgram) {
       return NextResponse.json(
         { error: "Program was not found." },
         { status: 404 },
@@ -27,9 +31,10 @@ export async function POST(request: Request) {
 
     const savedInquiry = await createProgramInquiry({
       ...inquiry,
-      programId: program.id,
-      programTitle: inquiry.programTitle || program.title,
-      villageId: program.villageId ?? "",
+      programId: programRecord?.id ?? String(publicProgram?.id ?? inquiry.programId),
+      programTitle:
+        inquiry.programTitle || programRecord?.title || publicProgram?.title || "",
+      villageId: programRecord?.villageId ?? "",
     });
 
     return NextResponse.json({ data: savedInquiry }, { status: 201 });

@@ -18,8 +18,8 @@ import {
   Ticket,
 } from "lucide-react";
 import { JsonLdScript } from "@/components/json-ld";
-import { nuvioIcons } from "@/components/icons/nuvio-icons";
 import { NuvioEmptyState } from "@/components/nuvio-empty-state";
+import { ProgramDetailActions } from "@/components/program-detail-actions";
 import { ProgramGalleryCarousel } from "@/components/program-gallery-carousel";
 import {
   ProgramScheduleCards,
@@ -241,28 +241,10 @@ export default async function ProgramDetailPage({
                 {program.badges[0] ?? "자유신청"}
               </span>
             </div>
-            <div className="flex w-[65px] items-center justify-between text-[#CAC4BC]">
-              <IconButton ariaLabel="공유하기">
-                <Image
-                  alt=""
-                  aria-hidden="true"
-                  className="size-5"
-                  height={21}
-                  src={nuvioIcons.share}
-                  width={21}
-                />
-              </IconButton>
-              <IconButton ariaLabel="저장하기">
-                <Image
-                  alt=""
-                  aria-hidden="true"
-                  className="h-5 w-[17px]"
-                  height={20}
-                  src={nuvioIcons.bookmark}
-                  width={17}
-                />
-              </IconButton>
-            </div>
+            <ProgramDetailActions
+              programId={program.id}
+              title={program.title}
+            />
           </header>
 
           <nav
@@ -729,24 +711,6 @@ function ReviewCard({
         </div>
       ) : null}
     </section>
-  );
-}
-
-function IconButton({
-  ariaLabel,
-  children,
-}: {
-  ariaLabel: string;
-  children: React.ReactNode;
-}) {
-  return (
-    <button
-      aria-label={ariaLabel}
-      className="inline-flex size-[21px] items-center justify-center border-0 bg-transparent p-0"
-      type="button"
-    >
-      {children}
-    </button>
   );
 }
 
