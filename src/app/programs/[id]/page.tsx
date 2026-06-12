@@ -242,6 +242,7 @@ export default async function ProgramDetailPage({
               </span>
             </div>
             <ProgramDetailActions
+              hostName={program.sourceName}
               programId={program.id}
               title={program.title}
             />

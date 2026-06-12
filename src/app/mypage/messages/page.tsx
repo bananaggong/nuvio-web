@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { Suspense } from "react";
 import { MypageMessages } from "@/components/mypage";
 import { createSeoMetadata } from "@/lib/seo";
 
@@ -9,5 +10,9 @@ export const metadata: Metadata = createSeoMetadata({
 });
 
 export default function MypageMessagesRoute() {
-  return <MypageMessages />;
+  return (
+    <Suspense fallback={null}>
+      <MypageMessages />
+    </Suspense>
+  );
 }

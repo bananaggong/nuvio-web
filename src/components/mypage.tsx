@@ -2,7 +2,7 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useSearchParams } from "next/navigation";
 import {
   Bookmark,
   CalendarDays,
@@ -674,6 +674,7 @@ type MessageThread = {
   hostName: string;
   id: string;
   location: string;
+  messages: MessageBubble[];
   period: string;
   statusLabel: string;
   statusTone: "closed" | "open";
@@ -682,22 +683,50 @@ type MessageThread = {
   unread: boolean;
 };
 
+type MessageBubble = {
+  body: string;
+  id: string;
+  sender: "host" | "user";
+  timeLabel: string;
+};
+
+type RequestedProgramMessageThread = {
+  hostName: string;
+  programId: string;
+  programTitle: string;
+};
+
 function MessagesContent({ context }: { context: MypageContext }) {
+  const searchParams = useSearchParams();
+  const requestedProgramId = searchParams.get("programId") ?? "";
+  const requestedProgramTitle = searchParams.get("programTitle") ?? "";
+  const requestedHostName = searchParams.get("hostName") ?? "";
   const [threadQuery, setThreadQuery] = useState("");
   const [conversationSearchOpen, setConversationSearchOpen] = useState(false);
   const [activeThreadId, setActiveThreadId] = useState<string | null>(null);
+  const requestedProgramThread = useMemo<RequestedProgramMessageThread | null>(() => {
+    if (!requestedProgramId && !requestedProgramTitle) return null;
+
+    return {
+      hostName: requestedHostName.trim(),
+      programId: requestedProgramId.trim(),
+      programTitle: requestedProgramTitle.trim(),
+    };
+  }, [requestedHostName, requestedProgramId, requestedProgramTitle]);
   const threads = useMemo(
     () =>
       buildMessageThreads({
         applications: context.applications,
         notifications: context.notifications,
         publicPrograms: context.publicPrograms,
+        requestedProgramThread,
         visibleTrips: context.visibleTrips,
       }),
     [
       context.applications,
       context.notifications,
       context.publicPrograms,
+      requestedProgramThread,
       context.visibleTrips,
     ],
   );
@@ -922,7 +951,35 @@ function MessageConversationPanel({
         </button>
       </div>
 
-      <div className="flex min-h-0 w-full flex-1 flex-col items-center justify-end pb-[11px] min-[1440px]:pb-[0.764vw]">
+      <div className="flex min-h-0 w-full flex-1 flex-col gap-3 overflow-y-auto px-2.5 py-3 min-[1440px]:gap-[0.833vw] min-[1440px]:px-[0.694vw] min-[1440px]:py-[0.833vw]">
+        {thread.messages.map((message) => (
+          <div
+            className={`flex w-full ${
+              message.sender === "user" ? "justify-end" : "justify-start"
+            }`}
+            key={message.id}
+          >
+            <div
+              className={`max-w-[72%] rounded-[18px] px-4 py-3 text-[13px] leading-[1.65] shadow-sm ${
+                message.sender === "user"
+                  ? "rounded-br-[6px] bg-[#FE701E] text-white"
+                  : "rounded-bl-[6px] bg-white text-[#5B3A29]"
+              }`}
+            >
+              <p className="whitespace-pre-line break-keep">{message.body}</p>
+              <p
+                className={`mt-1 text-right text-[11px] ${
+                  message.sender === "user" ? "text-white/70" : "text-[#CAC4BC]"
+                }`}
+              >
+                {message.timeLabel}
+              </p>
+            </div>
+          </div>
+        ))}
+      </div>
+
+      <div className="flex w-full shrink-0 flex-col items-center pb-[11px] min-[1440px]:pb-[0.764vw]">
         <label className="flex h-[37px] w-[593px] max-w-full items-center gap-2 rounded-[40px] border border-[#FF9A3D] bg-[#F9F9F9] p-[9px] min-[1440px]:h-[2.569vw] min-[1440px]:w-[41.181vw] min-[1440px]:gap-[0.556vw] min-[1440px]:p-[0.625vw]">
           <span className="inline-flex size-3 shrink-0 items-center justify-center rounded-full bg-[#FF9A3D] text-white">
             <Plus aria-hidden="true" className="size-2" strokeWidth={2.4} />
@@ -961,11 +1018,14 @@ function buildMessageThreads({
   applications,
   notifications,
   publicPrograms,
+  requestedProgramThread,
   visibleTrips,
 }: Pick<
   MypageContext,
   "applications" | "notifications" | "publicPrograms" | "visibleTrips"
->): MessageThread[] {
+> & {
+  requestedProgramThread: RequestedProgramMessageThread | null;
+}): MessageThread[] {
   const notificationThreads = notifications.map((notification) => {
     const application = findApplicationForMessageNotification(
       notification,
@@ -981,15 +1041,14 @@ function buildMessageThreads({
       application,
       createdAt: notification.createdAt,
       id: `notification-${notification.id}`,
+      messageBody: notification.body,
       program,
       title: program?.title ?? application?.programTitle ?? notification.title,
       unread: !notification.readAt,
     });
   });
 
-  if (notificationThreads.length > 0) return notificationThreads;
-
-  return visibleTrips.slice(0, 6).map((application) => {
+  const tripThreads = visibleTrips.slice(0, 6).map((application) => {
     const program = findProgramForApplication(application, publicPrograms);
 
     return createMessageThread({
@@ -1001,12 +1060,27 @@ function buildMessageThreads({
       unread: false,
     });
   });
+
+  const baseThreads =
+    notificationThreads.length > 0 ? notificationThreads : tripThreads;
+
+  if (!requestedProgramThread) return baseThreads;
+
+  const channelThread = createRequestedProgramMessageThread(
+    requestedProgramThread,
+    publicPrograms,
+  );
+  return [
+    channelThread,
+    ...baseThreads.filter((thread) => thread.id !== channelThread.id),
+  ];
 }
 
 function createMessageThread({
   application,
   createdAt,
   id,
+  messageBody,
   program,
   title,
   unread,
@@ -1014,6 +1088,7 @@ function createMessageThread({
   application?: HostApplication;
   createdAt: string;
   id: string;
+  messageBody?: string;
   program?: Program;
   title: string;
   unread: boolean;
@@ -1028,6 +1103,16 @@ function createMessageThread({
     hostName: program?.sourceName || "호스트명",
     id,
     location: program ? `${program.region} ${program.city}` : "프로그램 지역 위치",
+    messages: [
+      {
+        body:
+          messageBody ||
+          `${program?.sourceName || "프로그램 관리자"}입니다.\n${title} 관련 안내와 문의를 이 메시지함에서 확인할 수 있습니다.`,
+        id: `${id}-host-message`,
+        sender: "host",
+        timeLabel: formatMessageRelativeTime(createdAt),
+      },
+    ],
     period: program
       ? `${formatMessageDate(program.activityStart)} - ${formatMessageDate(
           program.activityEnd,
@@ -1039,6 +1124,63 @@ function createMessageThread({
     title: title || "프로그램 제목",
     unread,
   };
+}
+
+function createRequestedProgramMessageThread(
+  requested: RequestedProgramMessageThread,
+  programs: Program[],
+): MessageThread {
+  const program = findProgramForRequestedMessage(requested, programs);
+  const title = program?.title || requested.programTitle || "프로그램";
+  const hostName = requested.hostName || program?.sourceName || "프로그램 관리자";
+  const now = new Date().toISOString();
+
+  return {
+    hostName,
+    id: `program-channel-${requested.programId || title}`,
+    location: program ? `${program.region} ${program.city}` : "프로그램 문의 채널",
+    messages: [
+      {
+        body: `안녕하세요, ${hostName}입니다.\n${title} 관련 문의는 이 메시지함에서 남겨주세요. 신청 일정, 준비물, 참여 조건처럼 확인이 필요한 내용을 보내주시면 담당자가 이어서 안내드릴게요.`,
+        id: `program-channel-${requested.programId || title}-welcome`,
+        sender: "host",
+        timeLabel: "방금 전",
+      },
+    ],
+    period: program
+      ? `${formatMessageDate(program.activityStart)} - ${formatMessageDate(
+          program.activityEnd,
+        )}`
+      : "상세 페이지에서 연결됨",
+    statusLabel:
+      program?.status === "closed" || program?.status === "earlyClosed"
+        ? "마감"
+        : "문의 가능",
+    statusTone:
+      program?.status === "closed" || program?.status === "earlyClosed"
+        ? "closed"
+        : "open",
+    timeLabel: formatMessageRelativeTime(now),
+    title,
+    unread: true,
+  };
+}
+
+function findProgramForRequestedMessage(
+  requested: RequestedProgramMessageThread,
+  programs: Program[],
+): Program | undefined {
+  const id = requested.programId;
+  const title = requested.programTitle;
+  const program =
+    programs.find(
+      (item) =>
+        String(item.id) === id ||
+        item.slug === id ||
+        (title ? item.title === title : false),
+    ) ?? (Number.isInteger(Number(id)) ? getProgramById(Number(id)) : undefined);
+
+  return program;
 }
 
 function findApplicationForMessageNotification(
