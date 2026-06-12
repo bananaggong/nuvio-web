@@ -616,7 +616,7 @@ function EditorToolbar({
   }
 
   return (
-    <div className="sticky top-0 z-30 flex flex-wrap items-center gap-1 border-b border-slate-200 bg-[#4a4a4a] px-3 py-2 text-white shadow-sm">
+    <div className="sticky top-14 z-50 flex flex-wrap items-center gap-1 border-b border-slate-200 bg-[#4a4a4a] px-3 py-2 text-white shadow-sm">
       <ToolbarButton active={editor.isActive("bold")} onClick={() => editor.chain().focus().toggleBold().run()} title="굵게">
         <Bold size={16} />
       </ToolbarButton>
