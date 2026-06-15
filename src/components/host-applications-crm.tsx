@@ -19,14 +19,17 @@ import {
   findHostProjectOverview,
   findStandaloneHostProgramOverview,
   getHostProgramSidebarStatus,
+  hostProgramId,
   hostProgramPath,
   hostProjectPath,
   hostStandaloneProgramPath,
+  type HostProgramOverview,
 } from "@/lib/host-projects";
 import type {
   HostApplication,
   HostApplicationStatus,
 } from "@/lib/host-operations";
+import type { HostProgramDraft } from "@/lib/host-program-studio";
 import { launchFeatureFlags } from "@/lib/launch-feature-flags";
 import { useHostOperationsData } from "@/lib/use-host-operations-data";
 
@@ -218,13 +221,23 @@ export function HostApplicationsCrm({
   const sidebarTitle =
     program?.title ?? selectedApplication?.programTitle ?? project?.title ?? "프로그램 제목";
   const sidebarProgramId = program?.id ?? programId ?? selectedApplication?.programId ?? "";
-  const sidebarDraft = useMemo(
-    () =>
-      sidebarProgramId
-        ? findHostProgramDraft(sidebarProgramId, hostPrograms)
-        : undefined,
-    [hostPrograms, sidebarProgramId],
-  );
+  const sidebarDraft = useMemo(() => {
+    const identifiers = [
+      sidebarProgramId,
+      selectedApplication?.programId,
+      selectedApplication?.programTitle
+        ? hostProgramId(selectedApplication.programTitle)
+        : "",
+      sidebarTitle ? hostProgramId(sidebarTitle) : "",
+    ].filter((identifier): identifier is string => Boolean(identifier));
+
+    for (const identifier of identifiers) {
+      const draft = findHostProgramDraft(identifier, hostPrograms);
+      if (draft) return draft;
+    }
+
+    return undefined;
+  }, [hostPrograms, selectedApplication, sidebarProgramId, sidebarTitle]);
   const sidebarStatus = getHostProgramSidebarStatus(program, sidebarDraft);
   const selectedApplicationTemplate = useMemo(
     () =>
@@ -393,6 +406,8 @@ export function HostApplicationsCrm({
                 <ApplicationDetailPanel
                   application={selectedApplication}
                   formTemplate={selectedApplicationTemplate}
+                  program={program}
+                  programDraft={sidebarDraft}
                   programTitle={sidebarTitle}
                 />
               </>
@@ -571,10 +586,14 @@ function ApplicationRow({
 function ApplicationDetailPanel({
   application,
   formTemplate,
+  program,
+  programDraft,
   programTitle,
 }: {
   application?: HostApplication;
   formTemplate?: ApplicationFormTemplate;
+  program?: HostProgramOverview;
+  programDraft?: HostProgramDraft;
   programTitle: string;
 }) {
   const statusMeta = application ? getApplicationStatusMeta(application.status) : undefined;
@@ -594,12 +613,21 @@ function ApplicationDetailPanel({
     (previewBlocks.length > 0
       ? "신청자가 제출한 실제 응답을 연결된 신청폼 구조로 보여줍니다."
       : "신청서 응답이 아직 없습니다.");
+  const applicantGender =
+    findAnswerTextByLabels(answerMap, ["성별", "gender"]) || "성별 미입력";
+  const programImageUrl = programDraft?.image || program?.imageUrl || "";
+  const programLocation =
+    [programDraft?.region, programDraft?.city].filter(Boolean).join(" ") ||
+    "지역 정보 미입력";
+  const hostName = programDraft?.sourceName || "호스트명 미입력";
+  const startDate = formatApplicationPanelDate(programDraft?.activityStart);
+  const endDate = formatApplicationPanelDate(programDraft?.activityEnd);
 
   return (
     <section className="min-w-0 flex-1 bg-white pl-[var(--app-20)] pr-[11px] pt-[var(--app-52)]">
       <div className="flex h-[28px] items-start text-[16px] font-semibold leading-[1.253] text-[#0D0D0C]">
         <span>{application?.applicantName ?? "신청자이름"}</span>
-        <span className="ml-[28px]">성별</span>
+        <span className="ml-[28px]">{applicantGender}</span>
         <span className="ml-[28px]">{application?.phone || "010 - 0000 - 0000"}</span>
         {statusMeta ? (
           <div className="ml-auto flex items-center gap-[8px] pr-[8px] text-[14px] font-normal">
@@ -617,26 +645,35 @@ function ApplicationDetailPanel({
       </p>
 
       <article className="mt-[13px] h-[calc(100vh_-_4.861vw_-_var(--app-69)_-_107px)] min-h-[705px] w-[var(--app-555)] overflow-y-auto rounded-[6px] border border-[#6D7A8A] bg-[#F9F9F9] px-[24px] py-[18px]">
-        <div className="grid grid-cols-[88px_minmax(0,1fr)_112px_112px] gap-x-[16px]">
-          <div className="h-[var(--app-88)] w-[var(--app-88)] rounded-[16px] bg-[#D9D9D9]" />
-          <div className="pt-[14px]">
-            <h2 className="text-[20px] font-semibold leading-[1.253] text-[#5B3A29]">
+        <div className="grid grid-cols-[96px_minmax(0,1fr)_92px_92px] gap-x-[14px] border-b border-[#FE701E] pb-[22px]">
+          <div className="h-[96px] w-[96px] overflow-hidden rounded-[16px] bg-[#D9D9D9]">
+            {programImageUrl ? (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img
+                alt={`${programTitle || "프로그램"} 대표 이미지`}
+                className="h-full w-full object-cover"
+                src={programImageUrl}
+              />
+            ) : null}
+          </div>
+          <div className="pt-[10px]">
+            <h2 className="line-clamp-2 text-[18px] font-semibold leading-[1.35] text-[#5B3A29]">
               {programTitle || "프로그램 제목 입력"}
             </h2>
             <p className="mt-[12px] text-[12px] font-normal leading-[1.253] text-[#6D7A8A]">
-              프로그램 지역 위치
+              {programLocation}
             </p>
             <p className="mt-[8px] text-[12px] font-normal leading-[1.253] text-[#6D7A8A]">
-              호스트명
+              {hostName}
             </p>
           </div>
-          <div className="pt-[22px] text-[12px] font-normal leading-[1.253] text-[#6D7A8A]">
+          <div className="pt-[17px] text-[12px] font-normal leading-[1.253] text-[#6D7A8A]">
             <p>시작일</p>
-            <p className="mt-[18px] font-semibold">0000년 00월 00일</p>
+            <p className="mt-[18px] font-semibold">{startDate}</p>
           </div>
-          <div className="pt-[22px] text-[12px] font-normal leading-[1.253] text-[#6D7A8A]">
+          <div className="pt-[17px] text-[12px] font-normal leading-[1.253] text-[#6D7A8A]">
             <p>종료일</p>
-            <p className="mt-[18px] font-semibold">0000년 00월 00일</p>
+            <p className="mt-[18px] font-semibold">{endDate}</p>
           </div>
         </div>
 
@@ -1341,6 +1378,19 @@ function getAnswerForBlock(
   return answerMap.get(block.id) ?? answerMap.get(block.label);
 }
 
+function findAnswerTextByLabels(
+  answerMap: Map<string, SubmittedAnswer>,
+  labels: string[],
+): string {
+  for (const label of labels) {
+    const answer = answerMap.get(label);
+    const value = answer ? formatApplicationAnswer(answer.value).trim() : "";
+    if (value) return value;
+  }
+
+  return "";
+}
+
 function submittedAnswerTypeToBlockType(
   type: string,
   value: unknown,
@@ -1509,6 +1559,18 @@ function formatReviewManagementDate(value?: string) {
   if (Number.isNaN(date.getTime())) return "0000년 00월 00일";
 
   return `${date.getFullYear()}년 ${date.getMonth() + 1}월 ${date.getDate()}일`;
+}
+
+function formatApplicationPanelDate(value?: string) {
+  if (!value) return "날짜 미입력";
+
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return "날짜 미입력";
+
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
+  return `${year}년 ${month}월 ${day}일`;
 }
 
 function normalizeIdentifier(value: string): string {
