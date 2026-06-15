@@ -657,43 +657,45 @@ function RequiredToggle({
 
 function FormPreview({ template }: { template: ApplicationFormTemplate }) {
   return (
-    <aside className="flex w-[var(--host-557)] shrink-0 flex-col gap-[var(--host-8)] pt-[var(--host-50)] max-md:w-full max-md:pb-[var(--host-32)]">
-      <h2 className="text-[var(--host-16)] font-medium leading-[1.253] text-black">
+    <aside className="flex w-[var(--host-557)] shrink-0 flex-col gap-[8px] pt-[var(--host-50)] max-md:w-full max-md:pb-[var(--host-32)]">
+      <h2 className="text-[16px] font-semibold leading-[1.35] text-[#0D0D0C]">
         게스트 신청서 폼 미리보기
       </h2>
-      <p className="text-[var(--host-14)] font-medium leading-[1.253] text-[#6D7A8A]">
+      <p className="text-[13px] font-normal leading-[1.55] text-[#6D7A8A]">
         항목을 추가하면 여기에 미리보기가 표시돼요
       </p>
-      <div className="min-h-[var(--host-1261)] w-full rounded-[8px] border border-[#6D7A8A] p-[var(--host-18)]">
-        <div className="w-[var(--host-521)] max-w-full">
-          <div className="flex h-[var(--host-188)] flex-col border-b border-[#F7B267] px-[var(--host-6)]">
-            <div className="flex h-[var(--host-90)] w-[var(--host-509)] max-w-full">
-              <div className="h-[var(--host-90)] w-[var(--host-87)] shrink-0 rounded-[16px] bg-[#D9D9D9]" />
-              <div className="flex h-[var(--host-71)] w-[var(--host-179)] shrink-0 flex-col justify-start gap-[var(--host-4)] px-[var(--host-6)] pt-[var(--host-10)]">
-                <p className="truncate text-[var(--host-20)] font-semibold leading-[1.253] text-[#5B3A29]">
+      <div className="min-h-[720px] w-full overflow-hidden rounded-[2px] border border-[#6D7A8A] bg-[#F9F9F9] px-[24px] py-[18px]">
+        <div className="w-full">
+          <div className="border-b border-[#FE701E] pb-[22px]">
+            <div className="grid grid-cols-[118px_minmax(0,1fr)_94px_94px] gap-x-[16px]">
+              <div className="h-[118px] w-[118px] shrink-0 rounded-[16px] bg-[#D9D9D9]" />
+              <div className="pt-[13px]">
+                <p className="line-clamp-2 text-[20px] font-semibold leading-[1.32] text-[#5B3A29]">
                   {template.programTitle || "프로그램 제목 입력"}
                 </p>
-                <p className="truncate text-[var(--host-12)] font-normal leading-[1.6] text-[#6D7A8A]">
+                <p className="mt-[12px] text-[12px] font-normal leading-[1.55] text-[#6D7A8A]">
                   프로그램 지역 위치
                 </p>
-                <p className="truncate text-[var(--host-12)] font-normal leading-[1.6] text-[#6D7A8A]">
+                <p className="mt-[8px] text-[12px] font-normal leading-[1.55] text-[#6D7A8A]">
                   호스트명
                 </p>
               </div>
-              <div className="flex h-[var(--host-90)] w-[var(--host-243)] shrink-0 items-center justify-between text-[#6D7A8A]">
+              <div className="pt-[20px]">
                 <DateSummary label="시작일" />
+              </div>
+              <div className="pt-[20px]">
                 <DateSummary label="종료일" />
               </div>
             </div>
-            <p className="mt-[var(--host-20)] truncate text-[var(--host-16)] font-medium leading-[1.253] text-[#5B3A29]">
+            <p className="mt-[24px] text-[16px] font-semibold leading-[1.35] text-[#5B3A29]">
               {template.name || "프로그램 신청서 폼 제목"}
             </p>
-            <p className="mt-[var(--host-20)] line-clamp-2 text-[var(--host-14)] font-medium leading-[1.253] text-[#6D7A8A]">
+            <p className="mt-[20px] text-[14px] font-normal leading-[1.65] text-[#6D7A8A]">
               {template.description || "신청서를 작성전 안내사항을 꼭 읽어주세요"}
             </p>
           </div>
 
-          <div className="mt-[var(--host-33)] flex flex-col">
+          <div className="flex flex-col">
             {template.blocks.length > 0 ? (
               template.blocks.map((block) => (
                 <PreviewBlock block={block} key={block.id} />
@@ -718,24 +720,46 @@ function FormPreview({ template }: { template: ApplicationFormTemplate }) {
 
 function DateSummary({ label }: { label: string }) {
   return (
-    <div className="flex w-[var(--host-105)] flex-col gap-[var(--host-13)]">
-      <p className="text-[var(--host-12)] font-normal leading-[1.6] text-[#6D7A8A]">
+    <div className="flex flex-col gap-[16px]">
+      <p className="text-[12px] font-normal leading-[1.45] text-[#6D7A8A]">
         {label}
       </p>
-      <p className="whitespace-nowrap text-[var(--host-12)] font-semibold leading-[1.253] text-[#6D7A8A]">
-        0000년 00년 00일
+      <p className="whitespace-nowrap text-[12px] font-semibold leading-[1.35] text-[#6D7A8A]">
+        0000년 00월 00일
       </p>
     </div>
   );
 }
 
 function PreviewBlock({ block }: { block: ApplicationFormBlock }) {
+  if (block.type === "title") {
+    return (
+      <div className="border-b border-dashed border-[#F3D7C4] py-[18px]">
+        <h3 className="text-[14px] font-semibold leading-[1.45] text-[#5B3A29]">
+          {block.label || "섹션 제목"}
+        </h3>
+      </div>
+    );
+  }
+
+  if (block.type === "divider") {
+    return <hr className="my-[18px] border-dashed border-[#F3D7C4]" />;
+  }
+
+  if (block.type === "pageBreak") {
+    return (
+      <div className="border-b border-dashed border-[#F3D7C4] py-[18px] text-[12px] font-semibold leading-[1.45] text-[#FE701E]">
+        다음 페이지: {block.label}
+      </div>
+    );
+  }
+
   return (
-    <div className="flex w-full flex-col gap-[var(--host-10)] border-b border-dashed border-[#F5E1D3] py-[var(--host-12)]">
-      <div className="flex h-[var(--host-18)] items-center gap-[var(--host-10)] text-[var(--host-14)] font-medium leading-[1.253]">
+    <div className="flex w-full flex-col gap-[14px] border-b border-dashed border-[#F3D7C4] py-[18px]">
+      <div className="flex items-baseline gap-[8px] text-[14px] font-semibold leading-[1.45]">
         <p className="text-[#5B3A29]">{block.label || "질문내용입니다."}</p>
         {block.required ? (
-          <p className="text-[var(--host-12)] text-[#FE701E]">*필수항목</p>
+          <p className="text-[12px] text-[#FE701E]">*필수항목</p>
         ) : null}
       </div>
       <PreviewControl block={block} />
@@ -752,11 +776,11 @@ function PreviewControl({ block }: { block: ApplicationFormBlock }) {
 
     if (block.type === "singleSelect") {
       return (
-        <div className="relative h-[var(--host-31)] w-[var(--host-514)] max-w-full rounded-[7px] border border-[#F7B267] px-[var(--host-12)] text-[var(--host-12)] font-medium leading-[var(--host-31)] text-[#D9D9D9]">
+        <div className="relative h-[34px] w-full rounded-[4px] border border-[#FF9A3D] bg-white px-[12px] text-[12px] font-normal leading-[34px] text-[#CAC4BC]">
           선택해 주세요.
           <ChevronDown
             aria-hidden="true"
-            className="absolute right-[var(--host-8)] top-1/2 -translate-y-1/2 rounded-full bg-[#FF9A3D] text-white"
+            className="absolute right-[10px] top-1/2 -translate-y-1/2 rounded-full bg-[#FF9A3D] text-white"
             size={18}
             strokeWidth={2.2}
           />
@@ -765,14 +789,14 @@ function PreviewControl({ block }: { block: ApplicationFormBlock }) {
     }
 
     return (
-      <div className="grid w-[var(--host-386)] grid-cols-2 gap-x-[var(--host-48)] gap-y-[var(--host-12)] px-[var(--host-14)]">
+      <div className="grid max-w-[420px] grid-cols-2 gap-x-[48px] gap-y-[12px] px-[14px]">
         {options.slice(0, 6).map((option, index) => (
           <label
-            className="flex h-[var(--host-18)] items-center gap-[var(--host-8)] whitespace-nowrap text-[var(--host-14)] font-medium leading-[1.253] text-[#5B3A29]"
+            className="flex h-[20px] items-center gap-[8px] whitespace-nowrap text-[14px] font-normal leading-[1.35] text-[#5B3A29]"
             key={`${option}-${index}`}
           >
             <input
-              className="size-[var(--host-14)]"
+              className="size-[14px]"
               type={block.type === "singleSelect" ? "radio" : "checkbox"}
             />
             <span>{option}</span>
@@ -784,10 +808,10 @@ function PreviewControl({ block }: { block: ApplicationFormBlock }) {
 
   if (block.type === "checkbox") {
     return (
-      <div className="flex flex-col gap-[var(--host-25)] px-[var(--host-14)] text-[var(--host-12)] font-medium leading-[1.253] text-[#6D7A8A]">
+      <div className="flex flex-col gap-[16px] px-[14px] text-[12px] font-normal leading-[1.6] text-[#6D7A8A]">
         <p>{block.body || "<호스트가 게스트에게 동의를 받는 내용에 대한 안내 사항 내용입니다.>"}</p>
-        <label className="flex items-center gap-[var(--host-4)] text-[#5B3A29]">
-          <input className="size-[var(--host-14)]" type="radio" />
+        <label className="flex items-center gap-[6px] text-[14px] text-[#5B3A29]">
+          <input className="size-[14px]" type="checkbox" />
           동의함
         </label>
       </div>
@@ -796,10 +820,9 @@ function PreviewControl({ block }: { block: ApplicationFormBlock }) {
 
   if (block.type === "description") {
     return (
-      <div className="px-[var(--host-14)]">
-        <div className="h-[var(--host-150)] w-[var(--host-354)] max-w-full bg-[#D9D9D9]" />
-        <p className="mt-[var(--host-10)] text-[var(--host-12)] font-medium leading-[1.6] text-[#6D7A8A]">
-          {block.body || "<호스트가 업로드한 파일에 대한 안내 사항 내용입니다.>"}
+      <div className="px-[14px]">
+        <p className="whitespace-pre-line text-[12px] font-normal leading-[1.75] text-[#6D7A8A]">
+          {block.body || block.helper || "안내 내용이 없습니다."}
         </p>
       </div>
     );
@@ -807,14 +830,26 @@ function PreviewControl({ block }: { block: ApplicationFormBlock }) {
 
   if (block.type === "image") {
     return (
-      <div className="flex flex-col gap-[var(--host-10)] px-[var(--host-14)]">
-        <p className="text-[var(--host-12)] font-medium leading-[1.253] text-[#6D7A8A]">
-          {block.helper || "<파일요청에 대한 안내 사항 내용입니다.>"}
-        </p>
-        <div className="flex h-[var(--host-52)] w-[var(--host-52)] flex-col items-center justify-center gap-[var(--host-4)] rounded-[6px] border border-[#F7B267] text-[var(--host-10)] font-medium leading-[1.253] text-[#D9D9D9]">
-          파일 업로드
-          <Upload className="text-[#FF9A3D]" size={18} />
-        </div>
+      <div className="px-[14px]">
+        {block.imageUrl ? (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img
+            alt={block.imageAlt || block.label}
+            className="max-h-[260px] rounded-[4px] border border-[#F7B267] bg-white object-contain"
+            src={block.imageUrl}
+            style={{ width: `${block.imageWidth ?? 100}%` }}
+          />
+        ) : (
+          <div className="flex h-[52px] w-[52px] flex-col items-center justify-center gap-[4px] rounded-[6px] border border-[#F7B267] bg-white text-[10px] font-medium leading-[1.253] text-[#D9D9D9]">
+            이미지
+            <Upload className="text-[#FF9A3D]" size={18} />
+          </div>
+        )}
+        {block.helper ? (
+          <p className="mt-[10px] text-[12px] font-normal leading-[1.65] text-[#6D7A8A]">
+            {block.helper}
+          </p>
+        ) : null}
       </div>
     );
   }
@@ -822,7 +857,7 @@ function PreviewControl({ block }: { block: ApplicationFormBlock }) {
   if (block.type === "longText") {
     return (
       <textarea
-        className="min-h-[var(--host-70)] w-[var(--host-514)] max-w-full rounded-[7px] border border-[#F7B267] px-[var(--host-12)] py-[var(--host-8)] text-[var(--host-12)] font-medium leading-[1.253] outline-none placeholder:text-[#D9D9D9]"
+        className="min-h-[86px] w-full resize-none rounded-[4px] border border-[#FF9A3D] bg-white px-[12px] py-[10px] text-[12px] font-normal leading-[1.6] outline-none placeholder:text-[#CAC4BC]"
         placeholder="텍스트 입력"
       />
     );
@@ -830,7 +865,7 @@ function PreviewControl({ block }: { block: ApplicationFormBlock }) {
 
   return (
     <input
-      className="h-[var(--host-31)] w-[var(--host-514)] max-w-full rounded-[7px] border border-[#F7B267] px-[var(--host-12)] text-[var(--host-12)] font-medium leading-[1.253] outline-none placeholder:text-[#D9D9D9]"
+      className="h-[34px] w-full rounded-[4px] border border-[#FF9A3D] bg-white px-[12px] text-[12px] font-normal leading-[1.253] outline-none placeholder:text-[#CAC4BC]"
       placeholder={block.type === "phone" ? "숫자 입력" : "텍스트 입력"}
     />
   );
