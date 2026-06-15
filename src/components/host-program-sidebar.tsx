@@ -36,6 +36,7 @@ type HostProgramSidebarProps = {
 const hostProgramSidebarScaleStyle = {
   "--host-program-sidebar-8": "clamp(8px, 0.556vw, 10.667px)",
   "--host-program-sidebar-12": "clamp(12px, 0.833vw, 16px)",
+  "--host-program-sidebar-14": "clamp(14px, 0.972vw, 18.667px)",
   "--host-program-sidebar-16": "clamp(16px, 1.111vw, 21.333px)",
   "--host-program-sidebar-18": "clamp(18px, 1.25vw, 24px)",
   "--host-program-sidebar-22": "clamp(22px, 1.528vw, 29.333px)",
@@ -43,6 +44,10 @@ const hostProgramSidebarScaleStyle = {
   "--host-program-sidebar-28": "clamp(28px, 1.944vw, 37.333px)",
   "--host-program-sidebar-34": "clamp(34px, 2.361vw, 45.333px)",
   "--host-program-sidebar-40": "clamp(40px, 2.778vw, 53.333px)",
+  "--host-program-sidebar-46": "clamp(46px, 3.194vw, 61.333px)",
+  "--host-program-sidebar-86": "clamp(86px, 5.972vw, 114.667px)",
+  "--host-program-sidebar-176": "clamp(176px, 12.222vw, 234.667px)",
+  "--host-program-sidebar-216": "clamp(216px, 15vw, 288px)",
   "--host-program-sidebar-228": "clamp(228px, 15.833vw, 304px)",
 } as CSSProperties;
 
@@ -71,45 +76,46 @@ export function HostProgramSidebar({
 }: HostProgramSidebarProps) {
   return (
     <aside
-      className="w-[var(--host-program-sidebar-228)] shrink-0 border-r border-[#6D7A8A] bg-white shadow-[2px_5px_5.2px_rgba(0,0,0,0.23)] max-md:w-full"
+      className="w-[var(--host-program-sidebar-228)] min-w-[228px] shrink-0 border-r border-[#6D7A8A] bg-white shadow-[2px_5px_5.2px_rgba(0,0,0,0.23)] max-md:w-full max-md:min-h-0 max-md:border-r-0 max-md:shadow-none"
       style={hostProgramSidebarScaleStyle}
     >
-      <div className="min-h-[650px] px-[6px]">
-        <section className="w-full">
-          <div className="flex min-h-[var(--host-program-sidebar-40)] items-center justify-center pb-[8px] pt-[12px]">
-            <Link
-              className="min-w-0 flex-1 truncate text-[16px] font-semibold leading-[1.253] text-[#5B3A29] transition hover:text-[#FE701E]"
-              href="/host"
-            >
-              {hostName}
-            </Link>
-            <Link
-              aria-label="호스트 알림 보기"
-              className="grid size-8 shrink-0 place-items-center rounded-full text-[#FF9A3D] transition hover:bg-[#FFF6EC]"
-              href="/host/settings?panel=notifications"
-            >
-              <Bell aria-hidden="true" className="size-5" strokeWidth={1.8} />
-            </Link>
-          </div>
-          <div className="flex min-h-[46px] items-end border-b border-[#D9D9D9] pt-[12px] text-center">
-            <HostSwitchTab active href="/host" label="호스트" />
-            <span className="mb-[6px] h-[22px] w-px bg-[#D9D9D9]" />
-            <HostSwitchTab href="/host/villages" label="로컬" />
-            <span className="mb-[6px] h-[22px] w-px bg-[#D9D9D9]" />
-            <HostSwitchTab href="/admin" label="관리자" />
-          </div>
-        </section>
+      <div className="min-h-[650px] px-[0.417vw] max-md:px-5">
+        <div className="w-[var(--host-program-sidebar-216)] min-w-[216px] max-md:w-full">
+          <section className="h-[var(--host-program-sidebar-86)] min-h-[86px]">
+            <div className="flex h-[var(--host-program-sidebar-40)] min-h-10 items-center justify-center pb-[0.556vw] pt-[0.833vw]">
+              <Link
+                className="w-[var(--host-program-sidebar-176)] min-w-[176px] truncate text-[var(--host-program-sidebar-16)] font-semibold leading-[1.253] text-[#5B3A29] transition hover:text-[#FE701E]"
+                href="/host"
+              >
+                {hostName}
+              </Link>
+              <Link
+                aria-label="호스트 알림 보기"
+                className="flex size-5 shrink-0 items-center justify-center text-[#FF9A3D] transition hover:text-[#FE701E]"
+                href="/host/settings?panel=notifications"
+              >
+                <Bell aria-hidden="true" className="size-5" strokeWidth={1.8} />
+              </Link>
+            </div>
+            <div className="flex h-[var(--host-program-sidebar-46)] min-h-[46px] items-end border-b border-[#D9D9D9] pt-[0.833vw] text-center">
+              <HostSwitchTab active href="/host" label="호스트" />
+              <span className="mb-[6px] h-[22px] w-px bg-[#D9D9D9]" />
+              <HostSwitchTab href="/host/villages" label="로컬" />
+              <span className="mb-[6px] h-[22px] w-px bg-[#D9D9D9]" />
+              <HostSwitchTab href="/admin" label="관리자" />
+            </div>
+          </section>
 
         <section className="border-b border-[#D9D9D9] px-[12px] pb-[var(--host-program-sidebar-12)] pt-[var(--host-program-sidebar-12)]">
           <div className="flex items-start gap-[var(--host-program-sidebar-8)]">
-            <p className="min-h-[40px] min-w-0 flex-1 break-keep text-[16px] font-semibold leading-[1.253] text-[#5B3A29]">
+            <p className="min-h-[40px] min-w-0 flex-1 break-keep text-[var(--host-program-sidebar-16)] font-semibold leading-[1.253] text-[#5B3A29]">
               {title || "프로그램 제목"}
             </p>
             <span className="mt-[1px] shrink-0 rounded-[6px] bg-[#7A8B52] px-[6px] py-[3px] text-[12px] font-semibold leading-[1.253] text-[#F3F3F3]">
               {status}
             </span>
           </div>
-          <p className="mt-[var(--host-program-sidebar-8)] text-[14px] font-semibold leading-[1.253] text-[#5B3A29]">
+          <p className="mt-[var(--host-program-sidebar-8)] text-[var(--host-program-sidebar-14)] font-semibold leading-[1.253] text-[#5B3A29]">
             프로그램 넘버 :{" "}
             <span className="text-[#FE701E]">{formatProgramNumber(programId)}</span>
           </p>
@@ -192,6 +198,7 @@ export function HostProgramSidebar({
             />
           </div>
         </nav>
+        </div>
       </div>
     </aside>
   );
@@ -208,7 +215,7 @@ function HostSwitchTab({
 }) {
   return (
     <Link
-      className={`flex min-h-[var(--host-program-sidebar-34)] flex-1 items-center justify-center pb-[8px] pt-[5px] text-[14px] leading-[1.253] transition ${
+      className={`flex h-[var(--host-program-sidebar-34)] min-h-[34px] flex-1 items-center justify-center pb-[0.556vw] pt-[0.347vw] text-[var(--host-program-sidebar-14)] leading-[1.253] transition ${
         active
           ? "border-b-2 border-[#FF9A3D] font-medium text-[#FE701E]"
           : "font-normal text-[#CAC4BC] hover:text-[#FE701E]"
@@ -231,7 +238,7 @@ function SidebarNavLink({
 }) {
   return (
     <Link
-      className={`block text-[14px] leading-[1.253] text-[#5B3A29] ${
+      className={`block text-[var(--host-program-sidebar-14)] leading-[1.253] text-[#5B3A29] ${
         active ? "font-semibold" : "font-normal"
       }`}
       href={href}
@@ -252,7 +259,7 @@ function SidebarSubLink({
 }) {
   return (
     <Link
-      className={`flex h-[19px] w-fit items-center rounded-[4px] px-[5px] text-[12px] leading-[1.253] ${
+      className={`flex h-[19px] w-fit items-center rounded-[4px] px-[5px] text-[var(--host-program-sidebar-12)] leading-[1.253] ${
         active
           ? "bg-[#FF9A3D] font-semibold text-[#F9F9F9]"
           : "font-normal text-[#5B3A29]"

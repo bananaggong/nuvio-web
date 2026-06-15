@@ -413,71 +413,64 @@ export function HostProgramFormAttachment({
         <section className="flex min-w-0 flex-1 flex-col">
           <main className="min-h-[calc(100vh-4.861vw-var(--form-69))] flex-1 bg-white">
             <div className="w-[var(--form-562)] pl-[var(--form-40)] pt-[var(--form-44)]">
-              <FormConnectionBlock
-                action={
-                  <button
-                    className="inline-flex h-[var(--form-29)] w-[var(--form-92)] items-center justify-center rounded-[4px] border border-[#FE701E] bg-white text-[12px] font-normal leading-[1.253] text-[#FE701E] disabled:cursor-not-allowed disabled:opacity-40"
-                    data-host-form-connect-open
-                    disabled={isBusy}
-                    onClick={() => setIsConnectionDialogOpen(true)}
-                    type="button"
-                  >
-                    폼 연결하기
-                  </button>
-                }
-                helper="신청폼이 연결되지 않으면 게스트가 신청할 수 없어요"
-                title="신청폼 연결"
-              />
-
-              <FormConnectionBlock
-                className="mt-[var(--form-32)]"
-                helper="연결된 신청폼으로 게스트가 신청할 수 있어요"
-                title="신청폼 연결"
-              >
-                <div className="relative h-[var(--form-34)]">
-                  <span
-                    aria-hidden="true"
-                    className="absolute left-0 top-[13px] size-[8px] rounded-full bg-[#7A8B52]"
-                  />
-                  <div className="absolute left-[var(--form-22)] top-0 flex h-[var(--form-34)] w-[var(--form-441)] items-center rounded-[3px] border border-[#6D7A8A] bg-white px-[var(--form-16)] text-[14px] font-semibold leading-[1.253] text-[#33241C]">
-                    {linkedTemplate ? (
-                      <>
-                        <span className="min-w-0 flex-1 truncate">
-                          {linkedTemplate.name || "신청서 제목"}
-                        </span>
-                        <span className="shrink-0">
-                          작성일 {formatFormDate(linkedTemplate.updatedAt)}
-                        </span>
-                      </>
-                    ) : (
-                      <span className="text-[#AEB8C2]">
-                        아직 연결된 신청폼이 없습니다
+              {linkedTemplate ? (
+                <FormConnectionBlock
+                  helper="연결된 신청폼으로 게스트가 신청할 수 있어요"
+                  title="신청폼 연결"
+                >
+                  <div className="relative h-[var(--form-34)]">
+                    <span
+                      aria-hidden="true"
+                      className="absolute left-0 top-[13px] size-[8px] rounded-full bg-[#7A8B52]"
+                    />
+                    <div className="absolute left-[var(--form-22)] top-0 flex h-[var(--form-34)] w-[var(--form-441)] items-center rounded-[3px] border border-[#6D7A8A] bg-white px-[var(--form-16)] text-[14px] font-semibold leading-[1.253] text-[#33241C]">
+                      <span className="min-w-0 flex-1 truncate">
+                        {linkedTemplate.name || "신청서 제목"}
                       </span>
-                    )}
+                      <span className="shrink-0">
+                        작성일 {formatFormDate(linkedTemplate.updatedAt)}
+                      </span>
+                    </div>
                   </div>
-                </div>
-                <div className="mt-[var(--form-24)] flex h-[var(--form-29)] items-center gap-[var(--form-24)] pl-[var(--form-28)]">
-                  <button
-                    className="inline-flex h-[var(--form-29)] w-[var(--form-58)] items-center justify-center rounded-[4px] border border-[#FE701E] bg-white text-[12px] font-normal leading-[1.253] text-[#FE701E] disabled:cursor-not-allowed disabled:opacity-40"
-                    disabled={isBusy}
-                    onClick={() => setIsConnectionDialogOpen(true)}
-                    type="button"
-                  >
-                    변경
-                  </button>
-                  <button
-                    className="inline-flex h-[var(--form-29)] w-[var(--form-79)] items-center justify-center rounded-[4px] border border-[#6D7A8A] bg-white text-[12px] font-normal leading-[1.253] text-[#6D7A8A] disabled:cursor-not-allowed disabled:opacity-40"
-                    disabled={!linkedTemplate || isBusy}
-                    onClick={() => void detachTemplate()}
-                    type="button"
-                  >
-                    {isAttaching && linkedTemplate ? (
-                      <Loader2 aria-hidden="true" className="mr-1 size-3 animate-spin" />
-                    ) : null}
-                    연결해제
-                  </button>
-                </div>
-              </FormConnectionBlock>
+                  <div className="mt-[var(--form-24)] flex h-[var(--form-29)] items-center gap-[var(--form-24)] pl-[var(--form-28)]">
+                    <button
+                      className="inline-flex h-[var(--form-29)] w-[var(--form-58)] items-center justify-center rounded-[4px] border border-[#FE701E] bg-white text-[12px] font-normal leading-[1.253] text-[#FE701E] disabled:cursor-not-allowed disabled:opacity-40"
+                      disabled={isBusy}
+                      onClick={() => setIsConnectionDialogOpen(true)}
+                      type="button"
+                    >
+                      변경
+                    </button>
+                    <button
+                      className="inline-flex h-[var(--form-29)] w-[var(--form-79)] items-center justify-center rounded-[4px] border border-[#6D7A8A] bg-white text-[12px] font-normal leading-[1.253] text-[#6D7A8A] disabled:cursor-not-allowed disabled:opacity-40"
+                      disabled={isBusy}
+                      onClick={() => void detachTemplate()}
+                      type="button"
+                    >
+                      {isAttaching ? (
+                        <Loader2 aria-hidden="true" className="mr-1 size-3 animate-spin" />
+                      ) : null}
+                      연결해제
+                    </button>
+                  </div>
+                </FormConnectionBlock>
+              ) : (
+                <FormConnectionBlock
+                  action={
+                    <button
+                      className="inline-flex h-[var(--form-29)] w-[var(--form-92)] items-center justify-center rounded-[4px] border border-[#FE701E] bg-white text-[12px] font-normal leading-[1.253] text-[#FE701E] disabled:cursor-not-allowed disabled:opacity-40"
+                      data-host-form-connect-open
+                      disabled={isBusy}
+                      onClick={() => setIsConnectionDialogOpen(true)}
+                      type="button"
+                    >
+                      폼 연결하기
+                    </button>
+                  }
+                  helper="신청폼이 연결되지 않으면 게스트가 신청할 수 없어요"
+                  title="신청폼 연결"
+                />
+              )}
 
               <select
                 aria-label="연결할 신청폼 선택"

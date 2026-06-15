@@ -5,6 +5,14 @@ import { useSearchParams } from "next/navigation";
 import { useEffect, useMemo, useState, type CSSProperties } from "react";
 import { HostProgramSidebar } from "@/components/host-program-sidebar";
 import {
+  isQuestionBlock,
+  mergeApplicationFormTemplates,
+  normalizeApplicationFormTemplateShape,
+  readApplicationFormTemplates,
+  type ApplicationFormBlock,
+  type ApplicationFormTemplate,
+} from "@/lib/application-form-builder";
+import {
   findHostProgramOverview,
   findHostProgramDraft,
   findHostProgramDraftOverview,
@@ -84,6 +92,38 @@ const reviewTabs: Array<{ label: string; value: ReviewTab }> = [
   { label: "거절", value: "rejected" },
 ];
 
+const applicationStatusOptions: Array<{
+  description: string;
+  label: string;
+  value: HostApplicationStatus;
+}> = [
+  {
+    description: "아직 심사나 확정 처리를 하지 않은 신청자로 되돌립니다.",
+    label: "검토대기",
+    value: "screening",
+  },
+  {
+    description: "참여 가능한 신청자로 확정합니다.",
+    label: "승인",
+    value: "accepted",
+  },
+  {
+    description: "이번 프로그램 참여가 어려운 신청자로 표시합니다.",
+    label: "거절",
+    value: "rejected",
+  },
+  {
+    description: "프로그램 참여가 진행 중인 신청자로 표시합니다.",
+    label: "참여중",
+    value: "checkedIn",
+  },
+  {
+    description: "프로그램 참여와 후속 처리가 끝난 신청자로 표시합니다.",
+    label: "완료",
+    value: "completed",
+  },
+];
+
 export function HostApplicationsCrm({
   programId,
   projectId,
@@ -96,8 +136,14 @@ export function HostApplicationsCrm({
     useHostOperationsData();
   const [activeTab, setActiveTab] = useState<ReviewTab>("all");
   const [selectedApplicationId, setSelectedApplicationId] = useState("");
+  const [checkedApplicationIds, setCheckedApplicationIds] = useState<string[]>([]);
+  const [applicationFormTemplates, setApplicationFormTemplates] =
+    useState<ApplicationFormTemplate[]>(readApplicationFormTemplates);
   const [hostReviews, setHostReviews] =
     useState<HostReviewManagementItem[]>([]);
+  const [isStatusDialogOpen, setIsStatusDialogOpen] = useState(false);
+  const [statusDialogValue, setStatusDialogValue] =
+    useState<HostApplicationStatus>("screening");
 
   const activePanel: ApplicationsPanel =
     searchParams.get("panel") === "receipts"
@@ -180,6 +226,53 @@ export function HostApplicationsCrm({
     [hostPrograms, sidebarProgramId],
   );
   const sidebarStatus = getHostProgramSidebarStatus(program, sidebarDraft);
+  const selectedApplicationTemplate = useMemo(
+    () =>
+      resolveApplicationTemplate(
+        selectedApplication,
+        applicationFormTemplates,
+        sidebarProgramId,
+        sidebarTitle,
+      ),
+    [applicationFormTemplates, selectedApplication, sidebarProgramId, sidebarTitle],
+  );
+  const checkedApplications = applications.filter((application) =>
+    checkedApplicationIds.includes(application.id),
+  );
+  const checkedCount = checkedApplications.length;
+
+  useEffect(() => {
+    let cancelled = false;
+
+    async function loadApplicationForms() {
+      try {
+        const response = await fetch("/api/host/forms?kind=application", {
+          cache: "no-store",
+        });
+        if (!response.ok) return;
+
+        const payload = (await response.json()) as {
+          data?: ApplicationFormTemplate[];
+        };
+        const databaseTemplates = Array.isArray(payload.data)
+          ? payload.data.map(normalizeApplicationFormTemplateShape)
+          : [];
+        if (cancelled) return;
+
+        setApplicationFormTemplates((currentTemplates) =>
+          mergeApplicationFormTemplates(databaseTemplates, currentTemplates),
+        );
+      } catch {
+        // 신청관리 화면은 신청자 데이터가 우선이라 폼 목록 실패는 조용히 넘깁니다.
+      }
+    }
+
+    void loadApplicationForms();
+
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   useEffect(() => {
     let cancelled = false;
@@ -208,16 +301,46 @@ export function HostApplicationsCrm({
     };
   }, [activePanel]);
 
-  function updateApplicationStatus(
-    applicationId: string,
+  function toggleCheckedApplication(applicationId: string) {
+    setCheckedApplicationIds((currentIds) =>
+      currentIds.includes(applicationId)
+        ? currentIds.filter((id) => id !== applicationId)
+        : [...currentIds, applicationId],
+    );
+  }
+
+  function updateApplicationStatuses(
+    applicationIds: string[],
     status: HostApplicationStatus,
   ) {
+    if (applicationIds.length === 0) return;
+
+    const targetIds = new Set(applicationIds);
     const next = applications.map((application) =>
-      application.id === applicationId ? { ...application, status } : application,
+      targetIds.has(application.id) ? { ...application, status } : application,
     );
 
     setApplications(next);
-    void persistApplicationStatus(applicationId, status);
+    applicationIds.forEach((applicationId) => {
+      void persistApplicationStatus(applicationId, status);
+    });
+  }
+
+  function approveCheckedApplications() {
+    updateApplicationStatuses(checkedApplicationIds, "accepted");
+    setCheckedApplicationIds([]);
+  }
+
+  function openStatusDialog() {
+    if (checkedCount === 0) return;
+    setStatusDialogValue(checkedApplications[0]?.status ?? "screening");
+    setIsStatusDialogOpen(true);
+  }
+
+  function submitStatusDialog() {
+    updateApplicationStatuses(checkedApplicationIds, statusDialogValue);
+    setCheckedApplicationIds([]);
+    setIsStatusDialogOpen(false);
   }
 
   return (
@@ -261,31 +384,71 @@ export function HostApplicationsCrm({
                 <ApplicationListPanel
                   activeTab={activeTab}
                   applications={filteredApplications}
+                  checkedApplicationIds={checkedApplicationIds}
                   onSelect={(applicationId) => setSelectedApplicationId(applicationId)}
                   onTabChange={setActiveTab}
+                  onToggleChecked={toggleCheckedApplication}
                   selectedApplicationId={selectedApplication?.id ?? ""}
                 />
                 <ApplicationDetailPanel
                   application={selectedApplication}
+                  formTemplate={selectedApplicationTemplate}
                   programTitle={sidebarTitle}
-                  onStatusChange={updateApplicationStatus}
                 />
               </>
             ) : null}
           </main>
 
           {activePanel === "applications" ? (
-          <div className="flex h-[var(--app-69)] shrink-0 border-t border-[#6D7A8A] bg-white pl-[var(--app-29)] pt-[var(--app-20)]">
-            <button
-              className="inline-flex h-[var(--app-29)] w-[var(--app-91)] items-center justify-center rounded-[4px] border border-[#FE701E] bg-white text-[12px] font-normal leading-[1.253] text-[#FE701E]"
-              type="button"
-            >
-              메시지 전송
-            </button>
-          </div>
+            <div className="flex h-[var(--app-69)] shrink-0 items-start gap-[10px] border-t border-[#6D7A8A] bg-white pl-[var(--app-29)] pt-[var(--app-20)]">
+              <button
+                className="inline-flex h-[var(--app-29)] w-[var(--app-91)] items-center justify-center rounded-[4px] border border-[#FE701E] bg-white text-[12px] font-normal leading-[1.253] text-[#FE701E]"
+                type="button"
+              >
+                메시지 전송
+              </button>
+              <button
+                className={`inline-flex h-[var(--app-29)] w-[var(--app-77)] items-center justify-center rounded-[4px] border text-[12px] font-normal leading-[1.253] ${
+                  checkedCount > 0
+                    ? "border-[#7A8B52] bg-[#7A8B52] text-white"
+                    : "border-[#D9D9D9] bg-[#F3F3F3] text-[#AEB8C2]"
+                }`}
+                disabled={checkedCount === 0}
+                onClick={approveCheckedApplications}
+                type="button"
+              >
+                승인
+              </button>
+              <button
+                className={`inline-flex h-[var(--app-29)] w-[var(--app-91)] items-center justify-center rounded-[4px] border text-[12px] font-normal leading-[1.253] ${
+                  checkedCount > 0
+                    ? "border-[#6D7A8A] bg-white text-[#5B3A29]"
+                    : "border-[#D9D9D9] bg-[#F3F3F3] text-[#AEB8C2]"
+                }`}
+                disabled={checkedCount === 0}
+                onClick={openStatusDialog}
+                type="button"
+              >
+                상태 수정
+              </button>
+              {checkedCount > 0 ? (
+                <span className="inline-flex h-[var(--app-29)] items-center text-[12px] font-semibold leading-[1.253] text-[#6D7A8A]">
+                  {checkedCount}명 선택
+                </span>
+              ) : null}
+            </div>
           ) : null}
         </section>
       </div>
+      {isStatusDialogOpen ? (
+        <StatusChangeDialog
+          applicationCount={checkedCount}
+          onClose={() => setIsStatusDialogOpen(false)}
+          onSubmit={submitStatusDialog}
+          onValueChange={setStatusDialogValue}
+          value={statusDialogValue}
+        />
+      ) : null}
     </div>
   );
 }
@@ -293,14 +456,18 @@ export function HostApplicationsCrm({
 function ApplicationListPanel({
   activeTab,
   applications,
+  checkedApplicationIds,
   onSelect,
   onTabChange,
+  onToggleChecked,
   selectedApplicationId,
 }: {
   activeTab: ReviewTab;
   applications: HostApplication[];
+  checkedApplicationIds: string[];
   onSelect: (applicationId: string) => void;
   onTabChange: (tab: ReviewTab) => void;
+  onToggleChecked: (applicationId: string) => void;
   selectedApplicationId: string;
 }) {
   return (
@@ -329,8 +496,10 @@ function ApplicationListPanel({
           applications.map((application) => (
             <ApplicationRow
               application={application}
+              checked={checkedApplicationIds.includes(application.id)}
               key={application.id}
               onSelect={onSelect}
+              onToggleChecked={onToggleChecked}
               selected={application.id === selectedApplicationId}
             />
           ))
@@ -346,58 +515,85 @@ function ApplicationListPanel({
 
 function ApplicationRow({
   application,
+  checked,
   onSelect,
+  onToggleChecked,
   selected,
 }: {
   application: HostApplication;
+  checked: boolean;
   onSelect: (applicationId: string) => void;
+  onToggleChecked: (applicationId: string) => void;
   selected: boolean;
 }) {
   const reviewStatus = getReviewStatus(application.status);
   const messageStatus = getMessageStatus(application.status);
 
   return (
-    <button
+    <div
       className={`grid h-[34px] w-full grid-cols-[22px_112px_70px_160px_84px_minmax(0,1fr)] items-center text-left text-[14px] leading-[1.253] ${
         selected ? "bg-[#F3F3F3]" : "bg-white"
       }`}
-      onClick={() => onSelect(application.id)}
-      type="button"
     >
-      <span className="ml-[6px] size-[14px] border border-[#6D7A8A] bg-white" />
-      <span className="truncate font-semibold text-[#0D0D0C]">
-        {application.applicantName || "신청자이름"}
-      </span>
-      <span className="font-semibold text-[#0D0D0C]">성별</span>
-      <span className="font-normal text-[#6D7A8A]">
-        접수일 {formatShortDate(application.submittedAt)}
-      </span>
-      <span
-        className={`inline-flex h-[21px] w-fit items-center rounded-[6px] px-[8px] text-[12px] font-semibold leading-[1.253] ${reviewStatus.className}`}
+      <input
+        aria-label={`${application.applicantName || "신청자"} 선택`}
+        checked={checked}
+        className="ml-[6px] size-[14px] accent-[#FE701E]"
+        onChange={() => onToggleChecked(application.id)}
+        type="checkbox"
+      />
+      <button
+        className="contents text-left"
+        onClick={() => onSelect(application.id)}
+        type="button"
       >
-        {reviewStatus.label}
-      </span>
-      <span className="flex items-center justify-end gap-[3px] pr-[8px] text-[12px] font-normal leading-[1.253] text-[#6D7A8A]">
-        <span className={`size-[4px] rounded-full ${messageStatus.dotClassName}`} />
-        {messageStatus.label}
-      </span>
-    </button>
+        <span className="truncate font-semibold text-[#0D0D0C]">
+          {application.applicantName || "신청자이름"}
+        </span>
+        <span className="font-semibold text-[#0D0D0C]">성별</span>
+        <span className="font-normal text-[#6D7A8A]">
+          접수일 {formatShortDate(application.submittedAt)}
+        </span>
+        <span
+          className={`inline-flex h-[21px] w-fit items-center rounded-[6px] px-[8px] text-[12px] font-semibold leading-[1.253] ${reviewStatus.className}`}
+        >
+          {reviewStatus.label}
+        </span>
+        <span className="flex items-center justify-end gap-[3px] pr-[8px] text-[12px] font-normal leading-[1.253] text-[#6D7A8A]">
+          <span className={`size-[4px] rounded-full ${messageStatus.dotClassName}`} />
+          {messageStatus.label}
+        </span>
+      </button>
+    </div>
   );
 }
 
 function ApplicationDetailPanel({
   application,
-  onStatusChange,
+  formTemplate,
   programTitle,
 }: {
   application?: HostApplication;
-  onStatusChange: (applicationId: string, status: HostApplicationStatus) => void;
+  formTemplate?: ApplicationFormTemplate;
   programTitle: string;
 }) {
-  const approveChecked = application
-    ? ["accepted", "checkedIn", "completed"].includes(application.status)
-    : false;
-  const rejectChecked = application?.status === "rejected";
+  const statusMeta = application ? getApplicationStatusMeta(application.status) : undefined;
+  const answers = application?.answers ?? {};
+  const answerMap = buildApplicationAnswerMap(answers);
+  const fallbackBlocks = buildFallbackBlocksFromAnswers(answers);
+  const previewBlocks =
+    formTemplate?.blocks && formTemplate.blocks.length > 0
+      ? formTemplate.blocks
+      : fallbackBlocks;
+  const formTitle =
+    asString(answers.templateName) ||
+    formTemplate?.name ||
+    (application ? "제출된 신청서" : "프로그램 신청서");
+  const formDescription =
+    formTemplate?.description ||
+    (previewBlocks.length > 0
+      ? "신청자가 제출한 실제 응답을 연결된 신청폼 구조로 보여줍니다."
+      : "신청서 응답이 아직 없습니다.");
 
   return (
     <section className="min-w-0 flex-1 bg-white pl-[var(--app-20)] pr-[11px] pt-[var(--app-52)]">
@@ -405,26 +601,14 @@ function ApplicationDetailPanel({
         <span>{application?.applicantName ?? "신청자이름"}</span>
         <span className="ml-[28px]">성별</span>
         <span className="ml-[28px]">{application?.phone || "010 - 0000 - 0000"}</span>
-        {application ? (
-          <div className="ml-auto flex items-center gap-[14px] pr-[8px] text-[14px] font-normal">
-            <label className="inline-flex items-center gap-[6px]">
-              <input
-                checked={approveChecked}
-                className="size-[14px] accent-[#FE701E]"
-                onChange={() => onStatusChange(application.id, "accepted")}
-                type="radio"
-              />
-              <span className="text-[#FE701E]">승인</span>
-            </label>
-            <label className="inline-flex items-center gap-[6px]">
-              <input
-                checked={rejectChecked}
-                className="size-[14px] accent-[#6D7A8A]"
-                onChange={() => onStatusChange(application.id, "rejected")}
-                type="radio"
-              />
-              <span className="text-[#6D7A8A]">거절</span>
-            </label>
+        {statusMeta ? (
+          <div className="ml-auto flex items-center gap-[8px] pr-[8px] text-[14px] font-normal">
+            <span className="text-[#6D7A8A]">현재 상태</span>
+            <span
+              className={`inline-flex h-[23px] items-center rounded-[999px] px-[10px] text-[12px] font-semibold leading-[1.253] ${statusMeta.className}`}
+            >
+              {statusMeta.label}
+            </span>
           </div>
         ) : null}
       </div>
@@ -457,98 +641,290 @@ function ApplicationDetailPanel({
         </div>
 
         <h3 className="mt-[24px] text-[16px] font-semibold leading-[1.253] text-[#5B3A29]">
-          프로그램 신청서 폼 제목
+          {formTitle}
         </h3>
         <p className="mt-[22px] text-[14px] font-normal leading-[1.253] text-[#6D7A8A]">
-          신청서를 작성전 안내사항을 꼭 읽어주세요
+          {formDescription}
         </p>
         <hr className="mt-[22px] border-[#FE701E]" />
 
-        <ApplicationAnswerText
-          label="질문내용입니다."
-          required
-          value={application?.memo}
-        />
-        <ApplicationAnswerText
-          inputMode="numeric"
-          label="질문내용입니다."
-          value={application?.paymentAmount ? `${application.paymentAmount}` : ""}
-        />
-        <ApplicationCheckboxPreview />
-        <ApplicationSelectPreview />
-        <div className="mt-[22px] border-t border-dashed border-[#F3D7C4] pt-[18px]">
-          <p className="text-[14px] font-semibold leading-[1.253] text-[#5B3A29]">
-            파일요청 질문 내용 입니다.
-          </p>
-          <p className="mt-[16px] text-[12px] font-normal leading-[1.253] text-[#6D7A8A]">
-            &lt;파일요청에 대한 안내 사항 내용입니다.&gt;
-          </p>
-          <div className="mt-[14px] h-[34px] rounded-[4px] border border-dashed border-[#CAC4BC] bg-white" />
-        </div>
+        {previewBlocks.length > 0 ? (
+          previewBlocks.map((block) => (
+            <ApplicationResponseBlock
+              answer={getAnswerForBlock(block, answerMap)}
+              block={block}
+              key={block.id}
+            />
+          ))
+        ) : (
+          <div className="mt-[22px] rounded-[6px] border border-dashed border-[#CAC4BC] bg-white px-[14px] py-[18px] text-[13px] font-normal leading-[1.6] text-[#6D7A8A]">
+            아직 표시할 신청서 응답이 없습니다.
+          </div>
+        )}
       </article>
     </section>
   );
 }
 
-function ApplicationAnswerText({
-  inputMode = "text",
-  label,
-  required = false,
-  value = "",
+function StatusChangeDialog({
+  applicationCount,
+  onClose,
+  onSubmit,
+  onValueChange,
+  value,
 }: {
-  inputMode?: "numeric" | "text";
-  label: string;
-  required?: boolean;
-  value?: string;
+  applicationCount: number;
+  onClose: () => void;
+  onSubmit: () => void;
+  onValueChange: (status: HostApplicationStatus) => void;
+  value: HostApplicationStatus;
 }) {
   return (
-    <div className="mt-[22px] border-t border-dashed border-[#F3D7C4] pt-[18px]">
-      <label className="text-[14px] font-semibold leading-[1.253] text-[#5B3A29]">
-        {label}
-        {required ? <span className="ml-[8px] text-[12px] text-[#FE701E]">*필수항목</span> : null}
-        <input
-          className="mt-[14px] h-[30px] w-full rounded-[4px] border border-[#FF9A3D] bg-white px-[12px] text-[12px] font-normal leading-[1.253] text-[#6D7A8A] outline-none"
-          inputMode={inputMode}
-          readOnly
-          value={value}
-          placeholder={inputMode === "numeric" ? "숫자 입력" : "텍스트 입력"}
-        />
-      </label>
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/35 px-[24px]">
+      <section className="w-[420px] max-w-full rounded-[8px] bg-white px-[24px] py-[22px] shadow-[0_16px_45px_rgba(13,13,12,0.18)]">
+        <div className="flex items-start justify-between gap-[18px]">
+          <div>
+            <p className="text-[12px] font-semibold uppercase tracking-[0.14em] text-[#FE701E]">
+              Status
+            </p>
+            <h2 className="mt-[8px] text-[20px] font-semibold leading-[1.253] text-[#0D0D0C]">
+              신청 상태 수정
+            </h2>
+            <p className="mt-[8px] text-[13px] font-normal leading-[1.55] text-[#6D7A8A]">
+              선택한 {applicationCount}명의 신청 상태를 변경합니다.
+            </p>
+          </div>
+          <button
+            aria-label="닫기"
+            className="inline-flex size-[32px] items-center justify-center rounded-full border border-[#D9D9D9] text-[18px] leading-none text-[#6D7A8A]"
+            onClick={onClose}
+            type="button"
+          >
+            ×
+          </button>
+        </div>
+
+        <div className="mt-[20px] grid gap-[8px]">
+          {applicationStatusOptions.map((option) => (
+            <label
+              className={`grid cursor-pointer grid-cols-[18px_minmax(0,1fr)] gap-[10px] rounded-[6px] border px-[12px] py-[10px] ${
+                value === option.value
+                  ? "border-[#FE701E] bg-[#FFF7F0]"
+                  : "border-[#D9D9D9] bg-white"
+              }`}
+              key={option.value}
+            >
+              <input
+                checked={value === option.value}
+                className="mt-[2px] size-[14px] accent-[#FE701E]"
+                onChange={() => onValueChange(option.value)}
+                type="radio"
+              />
+              <span>
+                <span className="block text-[14px] font-semibold leading-[1.253] text-[#0D0D0C]">
+                  {option.label}
+                </span>
+                <span className="mt-[4px] block text-[12px] font-normal leading-[1.45] text-[#6D7A8A]">
+                  {option.description}
+                </span>
+              </span>
+            </label>
+          ))}
+        </div>
+
+        <div className="mt-[22px] flex justify-end gap-[8px]">
+          <button
+            className="inline-flex h-[36px] items-center justify-center rounded-[4px] border border-[#D9D9D9] bg-white px-[14px] text-[13px] font-normal text-[#6D7A8A]"
+            onClick={onClose}
+            type="button"
+          >
+            취소
+          </button>
+          <button
+            className="inline-flex h-[36px] items-center justify-center rounded-[4px] bg-[#0D0D0C] px-[16px] text-[13px] font-semibold text-white"
+            onClick={onSubmit}
+            type="button"
+          >
+            변경 적용
+          </button>
+        </div>
+      </section>
     </div>
   );
 }
 
-function ApplicationCheckboxPreview() {
+function ApplicationResponseBlock({
+  answer,
+  block,
+}: {
+  answer?: SubmittedAnswer;
+  block: ApplicationFormBlock;
+}) {
+  if (block.type === "title") {
+    return (
+      <h4 className="mt-[22px] border-t border-dashed border-[#F3D7C4] pt-[18px] text-[16px] font-semibold leading-[1.253] text-[#5B3A29]">
+        {block.label}
+      </h4>
+    );
+  }
+
+  if (block.type === "description") {
+    return (
+      <div className="mt-[22px] border-t border-dashed border-[#F3D7C4] pt-[18px]">
+        <p className="text-[14px] font-semibold leading-[1.253] text-[#5B3A29]">
+          {block.label}
+        </p>
+        <p className="mt-[12px] whitespace-pre-line text-[12px] font-normal leading-[1.6] text-[#6D7A8A]">
+          {block.body || block.helper || "안내 내용이 없습니다."}
+        </p>
+      </div>
+    );
+  }
+
+  if (block.type === "divider") {
+    return <hr className="mt-[22px] border-dashed border-[#F3D7C4]" />;
+  }
+
+  if (block.type === "pageBreak") {
+    return (
+      <div className="mt-[22px] border-t border-dashed border-[#F3D7C4] pt-[18px] text-[12px] font-semibold leading-[1.253] text-[#FE701E]">
+        {block.label || "다음 페이지"}
+      </div>
+    );
+  }
+
+  if (block.type === "image") {
+    return (
+      <div className="mt-[22px] border-t border-dashed border-[#F3D7C4] pt-[18px]">
+        <p className="text-[14px] font-semibold leading-[1.253] text-[#5B3A29]">
+          {block.label}
+        </p>
+        {block.imageUrl ? (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img
+            alt={block.imageAlt || block.label}
+            className="mt-[14px] max-h-[260px] rounded-[6px] border border-[#F3D7C4] bg-white object-contain"
+            src={block.imageUrl}
+            style={{ width: `${block.imageWidth ?? 100}%` }}
+          />
+        ) : (
+          <div className="mt-[14px] rounded-[6px] border border-dashed border-[#CAC4BC] bg-white px-[14px] py-[18px] text-[12px] text-[#6D7A8A]">
+            이미지가 연결되지 않았습니다.
+          </div>
+        )}
+        {block.helper ? (
+          <p className="mt-[10px] text-[12px] font-normal leading-[1.6] text-[#6D7A8A]">
+            {block.helper}
+          </p>
+        ) : null}
+      </div>
+    );
+  }
+
   return (
     <div className="mt-[22px] border-t border-dashed border-[#F3D7C4] pt-[18px]">
       <p className="text-[14px] font-semibold leading-[1.253] text-[#5B3A29]">
-        질문내용입니다. <span className="font-normal text-[#6D7A8A]">모두 선택해주세요</span>
+        {block.label || answer?.label || "질문"}
+        {block.required ? (
+          <span className="ml-[8px] text-[12px] text-[#FE701E]">*필수항목</span>
+        ) : null}
       </p>
-      <div className="mt-[16px] grid grid-cols-2 gap-x-[58px] gap-y-[12px] px-[14px] text-[14px] font-normal leading-[1.253] text-[#5B3A29]">
-        {Array.from({ length: 6 }).map((_, index) => (
-          <label className="inline-flex items-center gap-[8px]" key={index}>
-            <input className="size-[14px]" disabled type="checkbox" />
-            선택지 항목1
-          </label>
-        ))}
-      </div>
+      {block.helper ? (
+        <p className="mt-[10px] text-[12px] font-normal leading-[1.6] text-[#6D7A8A]">
+          {block.helper}
+        </p>
+      ) : null}
+      <ApplicationResponseControl answer={answer} block={block} />
     </div>
   );
 }
 
-function ApplicationSelectPreview() {
-  return (
-    <div className="mt-[22px] border-t border-dashed border-[#F3D7C4] pt-[18px]">
-      <label className="text-[14px] font-semibold leading-[1.253] text-[#5B3A29]">
-        질문내용입니다.
-        <div className="relative mt-[14px] h-[34px] rounded-[4px] border border-[#FF9A3D] bg-white">
-          <span className="absolute left-[12px] top-1/2 -translate-y-1/2 text-[12px] font-normal leading-[1.253] text-[#CAC4BC]">
-            선택해 주세요.
-          </span>
-          <span className="absolute right-[14px] top-1/2 h-[10px] w-[18px] -translate-y-1/2 rounded-b-full bg-[#FF9A3D]" />
-        </div>
+function ApplicationResponseControl({
+  answer,
+  block,
+}: {
+  answer?: SubmittedAnswer;
+  block: ApplicationFormBlock;
+}) {
+  const value = answer?.value;
+  const displayValue = formatApplicationAnswer(value);
+
+  if (block.type === "longText") {
+    return (
+      <textarea
+        className="mt-[14px] min-h-[86px] w-full resize-none rounded-[4px] border border-[#FF9A3D] bg-white px-[12px] py-[10px] text-[12px] font-normal leading-[1.6] text-[#6D7A8A] outline-none placeholder:text-[#CAC4BC]"
+        placeholder="응답 없음"
+        readOnly
+        value={displayValue}
+      />
+    );
+  }
+
+  if (block.type === "singleSelect") {
+    return (
+      <div className="relative mt-[14px] min-h-[34px] rounded-[4px] border border-[#FF9A3D] bg-white px-[12px] py-[9px] pr-[42px] text-[12px] font-normal leading-[1.253] text-[#6D7A8A]">
+        {displayValue || "응답 없음"}
+        <span className="absolute right-[14px] top-1/2 h-[10px] w-[18px] -translate-y-1/2 rounded-b-full bg-[#FF9A3D]" />
+      </div>
+    );
+  }
+
+  if (block.type === "multiSelect" || (block.type === "checkbox" && (block.options?.length ?? 0) > 0)) {
+    const selectedValues = answerValues(value);
+    const options =
+      block.options && block.options.length > 0
+        ? block.options
+        : selectedValues.length > 0
+          ? selectedValues
+          : ["응답 없음"];
+
+    return (
+      <div className="mt-[16px] grid grid-cols-2 gap-x-[58px] gap-y-[12px] px-[14px] text-[14px] font-normal leading-[1.253] text-[#5B3A29]">
+        {options.map((option, index) => {
+          const checked = selectedValues.includes(option);
+          return (
+            <label className="inline-flex items-center gap-[8px]" key={`${option}-${index}`}>
+              <input
+                checked={checked}
+                className="size-[14px] accent-[#FE701E]"
+                disabled
+                readOnly
+                type="checkbox"
+              />
+              <span className={checked ? "text-[#5B3A29]" : "text-[#AEB8C2]"}>
+                {option}
+              </span>
+            </label>
+          );
+        })}
+      </div>
+    );
+  }
+
+  if (block.type === "checkbox") {
+    const checked = isTruthyAnswer(value);
+    return (
+      <label className="mt-[16px] inline-flex items-center gap-[8px] px-[14px] text-[14px] font-normal leading-[1.253] text-[#5B3A29]">
+        <input
+          checked={checked}
+          className="size-[14px] accent-[#FE701E]"
+          disabled
+          readOnly
+          type="checkbox"
+        />
+        {checked ? "동의함" : "동의하지 않음"}
       </label>
-    </div>
+    );
+  }
+
+  return (
+    <input
+      className="mt-[14px] h-[30px] w-full rounded-[4px] border border-[#FF9A3D] bg-white px-[12px] text-[12px] font-normal leading-[1.253] text-[#6D7A8A] outline-none placeholder:text-[#CAC4BC]"
+      inputMode={block.type === "phone" ? "tel" : "text"}
+      placeholder="응답 없음"
+      readOnly
+      value={displayValue}
+    />
   );
 }
 
@@ -826,6 +1202,226 @@ function ReviewManagementCard({
   );
 }
 
+type SubmittedAnswer = {
+  id: string;
+  label: string;
+  type: string;
+  value: unknown;
+};
+
+function resolveApplicationTemplate(
+  application: HostApplication | undefined,
+  templates: ApplicationFormTemplate[],
+  routeProgramId: string,
+  routeProgramTitle: string,
+): ApplicationFormTemplate | undefined {
+  if (!application) return undefined;
+
+  const answers = application.answers ?? {};
+  const exactTemplateIds = [
+    application.formId,
+    asString(answers.templateId),
+  ].filter(Boolean);
+  const exactTemplate = templates.find((template) =>
+    exactTemplateIds.includes(template.id),
+  );
+  if (exactTemplate) return exactTemplate;
+
+  const programIdentifiers = [
+    application.programId,
+    routeProgramId,
+    application.programTitle,
+    routeProgramTitle,
+  ].filter(Boolean);
+
+  return templates.find((template) => {
+    return programIdentifiers.some(
+      (identifier) =>
+        identifiersMatch(template.programId, identifier) ||
+        identifiersMatch(template.programTitle, identifier),
+    );
+  });
+}
+
+function buildApplicationAnswerMap(
+  answers: Record<string, unknown>,
+): Map<string, SubmittedAnswer> {
+  const answerMap = new Map<string, SubmittedAnswer>();
+
+  for (const answer of [
+    ...asAnswerArray(answers.templateAnswers),
+    ...asAnswerArray(answers.blockAnswers),
+  ]) {
+    const label = asString(answer.label);
+    const id = asString(answer.id) || label;
+    if (!id && !label) continue;
+
+    const entry = {
+      id,
+      label: label || id,
+      type: asString(answer.type),
+      value: answer.value,
+    };
+    answerMap.set(id, entry);
+    if (label) answerMap.set(label, entry);
+  }
+
+  return answerMap;
+}
+
+function buildFallbackBlocksFromAnswers(
+  answers: Record<string, unknown>,
+): ApplicationFormBlock[] {
+  const submittedAnswers = collectSubmittedAnswers(answers);
+
+  return submittedAnswers.map((answer, index) => ({
+    id: answer.id || `answer-${index}`,
+    label: answer.label || `질문 ${index + 1}`,
+    options: answerValues(answer.value),
+    required: false,
+    type: submittedAnswerTypeToBlockType(answer.type, answer.value),
+  }));
+}
+
+function collectSubmittedAnswers(
+  answers: Record<string, unknown>,
+): SubmittedAnswer[] {
+  const blockAnswers = asAnswerArray(answers.blockAnswers);
+  if (blockAnswers.length > 0) {
+    return blockAnswers.map((answer, index) => ({
+      id: asString(answer.id) || `block-answer-${index}`,
+      label: asString(answer.label) || `질문 ${index + 1}`,
+      type: asString(answer.type),
+      value: answer.value,
+    }));
+  }
+
+  const templateAnswers = asAnswerArray(answers.templateAnswers);
+  if (templateAnswers.length > 0) {
+    return templateAnswers.map((answer, index) => ({
+      id: asString(answer.id) || `template-answer-${index}`,
+      label: asString(answer.label) || `질문 ${index + 1}`,
+      type: asString(answer.type),
+      value: answer.value,
+    }));
+  }
+
+  return Object.entries(answers)
+    .filter(([key, value]) => {
+      if (
+        [
+          "blockAnswers",
+          "companions",
+          "legalConsent",
+          "memo",
+          "templateAnswers",
+          "templateId",
+          "templateName",
+        ].includes(key)
+      ) {
+        return false;
+      }
+      if (value === null || value === undefined) return false;
+      if (typeof value === "string" && value.trim() === "") return false;
+      return true;
+    })
+    .map(([key, value]) => ({
+      id: key,
+      label: humanizeAnswerKey(key),
+      type: Array.isArray(value) ? "multiSelect" : typeof value,
+      value,
+    }));
+}
+
+function getAnswerForBlock(
+  block: ApplicationFormBlock,
+  answerMap: Map<string, SubmittedAnswer>,
+): SubmittedAnswer | undefined {
+  if (!isQuestionBlock(block)) return undefined;
+  return answerMap.get(block.id) ?? answerMap.get(block.label);
+}
+
+function submittedAnswerTypeToBlockType(
+  type: string,
+  value: unknown,
+): ApplicationFormBlock["type"] {
+  if (
+    [
+      "checkbox",
+      "date",
+      "email",
+      "longText",
+      "multiSelect",
+      "phone",
+      "shortText",
+      "singleSelect",
+    ].includes(type)
+  ) {
+    return type as ApplicationFormBlock["type"];
+  }
+  if (Array.isArray(value)) return "multiSelect";
+  if (typeof value === "boolean") return "checkbox";
+  return "shortText";
+}
+
+function answerValues(value: unknown): string[] {
+  if (Array.isArray(value)) {
+    return value
+      .map((item) => formatApplicationAnswer(item))
+      .filter((item) => item.trim().length > 0);
+  }
+  const singleValue = formatApplicationAnswer(value);
+  return singleValue ? [singleValue] : [];
+}
+
+function formatApplicationAnswer(value: unknown): string {
+  if (Array.isArray(value)) return value.map(formatApplicationAnswer).join(", ");
+  if (typeof value === "boolean") return value ? "예" : "아니오";
+  if (typeof value === "number") return value.toLocaleString("ko-KR");
+  if (typeof value === "string") return value;
+  if (value && typeof value === "object") {
+    return JSON.stringify(value, null, 2);
+  }
+  return "";
+}
+
+function isTruthyAnswer(value: unknown): boolean {
+  if (typeof value === "boolean") return value;
+  if (typeof value === "string") {
+    return ["true", "yes", "y", "1", "동의", "동의함", "예"].includes(
+      value.trim().toLowerCase(),
+    );
+  }
+  return Boolean(value);
+}
+
+function asAnswerArray(value: unknown): Array<Record<string, unknown>> {
+  if (!Array.isArray(value)) return [];
+  return value.filter(
+    (item): item is Record<string, unknown> =>
+      Boolean(item) && typeof item === "object" && !Array.isArray(item),
+  );
+}
+
+function asString(value: unknown): string {
+  return typeof value === "string" ? value.trim() : "";
+}
+
+function humanizeAnswerKey(key: string): string {
+  const labels: Record<string, string> = {
+    motivation: "지원 동기",
+    receiptPlan: "증빙 계획",
+    workStyle: "업무 방식",
+  };
+
+  return labels[key] ?? key;
+}
+
+function identifiersMatch(left?: string, right?: string): boolean {
+  if (!left || !right) return false;
+  return left === right || normalizeIdentifier(left) === normalizeIdentifier(right);
+}
+
 async function persistApplicationStatus(
   applicationId: string,
   status: HostApplicationStatus,
@@ -866,6 +1462,22 @@ function getReviewStatus(status: HostApplicationStatus) {
     return { className: "bg-[#FFB45F] text-white", label: "검토대기" };
   }
   return { className: "bg-[#7A8B52] text-white", label: "승인" };
+}
+
+function getApplicationStatusMeta(status: HostApplicationStatus) {
+  if (status === "rejected") {
+    return { className: "bg-[#6D7A8A] text-white", label: "거절" };
+  }
+  if (status === "accepted") {
+    return { className: "bg-[#7A8B52] text-white", label: "승인" };
+  }
+  if (status === "checkedIn") {
+    return { className: "bg-[#1D70D6] text-white", label: "참여중" };
+  }
+  if (status === "completed") {
+    return { className: "bg-[#0D0D0C] text-white", label: "완료" };
+  }
+  return { className: "bg-[#FFB45F] text-white", label: "검토대기" };
 }
 
 function getMessageStatus(status: HostApplicationStatus) {
