@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
+import { CalendarDays, Loader2, X } from "lucide-react";
 import { useEffect, useMemo, useState, type CSSProperties } from "react";
 import { HostProgramSidebar } from "@/components/host-program-sidebar";
 import {
@@ -28,9 +29,14 @@ import {
 import type {
   HostApplication,
   HostApplicationStatus,
+  MessageTemplate,
 } from "@/lib/host-operations";
 import type { HostProgramDraft } from "@/lib/host-program-studio";
 import { launchFeatureFlags } from "@/lib/launch-feature-flags";
+import {
+  readMessageTemplates,
+  renderMessageTemplate,
+} from "@/lib/message-automation";
 import { useHostOperationsData } from "@/lib/use-host-operations-data";
 
 type ReviewTab = "all" | "pending" | "accepted" | "rejected";
@@ -142,11 +148,19 @@ export function HostApplicationsCrm({
   const [checkedApplicationIds, setCheckedApplicationIds] = useState<string[]>([]);
   const [applicationFormTemplates, setApplicationFormTemplates] =
     useState<ApplicationFormTemplate[]>(readApplicationFormTemplates);
+  const [messageTemplates] = useState(readMessageTemplates);
   const [hostReviews, setHostReviews] =
     useState<HostReviewManagementItem[]>([]);
   const [isStatusDialogOpen, setIsStatusDialogOpen] = useState(false);
   const [statusDialogValue, setStatusDialogValue] =
     useState<HostApplicationStatus>("screening");
+  const [isMessageDialogOpen, setIsMessageDialogOpen] = useState(false);
+  const [messageRecipientIds, setMessageRecipientIds] = useState<string[]>([]);
+  const [selectedMessageTemplateId, setSelectedMessageTemplateId] = useState("");
+  const [messageScheduleDate, setMessageScheduleDate] = useState("");
+  const [messageScheduleTime, setMessageScheduleTime] = useState("");
+  const [messageDialogStatus, setMessageDialogStatus] = useState("");
+  const [isSchedulingMessage, setIsSchedulingMessage] = useState(false);
 
   const activePanel: ApplicationsPanel =
     searchParams.get("panel") === "receipts"
@@ -253,6 +267,15 @@ export function HostApplicationsCrm({
     checkedApplicationIds.includes(application.id),
   );
   const checkedCount = checkedApplications.length;
+  const messageRecipients = messageRecipientIds
+    .map((applicationId) =>
+      scopedApplications.find((application) => application.id === applicationId) ??
+      applications.find((application) => application.id === applicationId),
+    )
+    .filter((application): application is HostApplication => Boolean(application));
+  const selectedMessageTemplate =
+    messageTemplates.find((template) => template.id === selectedMessageTemplateId) ??
+    messageTemplates[0];
 
   useEffect(() => {
     let cancelled = false;
@@ -356,6 +379,76 @@ export function HostApplicationsCrm({
     setIsStatusDialogOpen(false);
   }
 
+  function openMessageDialog() {
+    if (checkedCount === 0) return;
+
+    const now = new Date();
+    const localNow = new Date(now.getTime() - now.getTimezoneOffset() * 60000);
+    setMessageRecipientIds(checkedApplicationIds);
+    setSelectedMessageTemplateId((currentId) => currentId || messageTemplates[0]?.id || "");
+    setMessageScheduleDate((currentDate) => currentDate || localNow.toISOString().slice(0, 10));
+    setMessageScheduleTime((currentTime) => currentTime || localNow.toISOString().slice(11, 16));
+    setMessageDialogStatus("");
+    setIsMessageDialogOpen(true);
+  }
+
+  function removeMessageRecipient(applicationId: string) {
+    setMessageRecipientIds((currentIds) =>
+      currentIds.filter((currentId) => currentId !== applicationId),
+    );
+  }
+
+  async function scheduleSelectedMessages() {
+    if (!selectedMessageTemplate || messageRecipients.length === 0) return;
+
+    setIsSchedulingMessage(true);
+    setMessageDialogStatus("");
+
+    try {
+      const response = await fetch("/api/host/scheduled-messages", {
+        body: JSON.stringify({
+          applicationIds: messageRecipients.map((recipient) => recipient.id),
+          channel: "sms",
+          scheduledFor:
+            messageScheduleDate && messageScheduleTime
+              ? `${messageScheduleDate}T${messageScheduleTime}`
+              : "",
+          status: "scheduled",
+          templateBody: selectedMessageTemplate.body,
+          templateId: selectedMessageTemplate.id,
+        }),
+        headers: { "Content-Type": "application/json" },
+        method: "POST",
+      });
+      const payload = (await response.json()) as {
+        data?: { insertedCount?: number; recipientCount?: number };
+        error?: string;
+      };
+
+      if (!response.ok) {
+        throw new Error(payload.error ?? "메시지 예약에 실패했습니다.");
+      }
+
+      const insertedCount = payload.data?.insertedCount ?? 0;
+      if (insertedCount > 0) {
+        setMessageDialogStatus(`${insertedCount}명에게 보낼 메시지를 예약했습니다.`);
+      } else {
+        setMessageDialogStatus(
+          "데모 신청자는 화면에서만 확인됩니다. 실제 신청자 데이터에서는 예약 메시지로 저장됩니다.",
+        );
+      }
+      setCheckedApplicationIds((currentIds) =>
+        currentIds.filter((id) => !messageRecipientIds.includes(id)),
+      );
+    } catch (error) {
+      setMessageDialogStatus(
+        error instanceof Error ? error.message : "메시지 예약에 실패했습니다.",
+      );
+    } finally {
+      setIsSchedulingMessage(false);
+    }
+  }
+
   return (
     <div
       className="font-pretendard min-h-[calc(100vh_-_4.861vw)] bg-white text-[#5B3A29]"
@@ -417,7 +510,13 @@ export function HostApplicationsCrm({
           {activePanel === "applications" ? (
             <div className="flex h-[var(--app-69)] shrink-0 items-start gap-[10px] border-t border-[#6D7A8A] bg-white pl-[var(--app-29)] pt-[var(--app-20)]">
               <button
-                className="inline-flex h-[var(--app-29)] w-[var(--app-91)] items-center justify-center rounded-[4px] border border-[#FE701E] bg-white text-[12px] font-normal leading-[1.253] text-[#FE701E]"
+                className={`inline-flex h-[var(--app-29)] w-[var(--app-91)] items-center justify-center rounded-[4px] border text-[12px] font-normal leading-[1.253] ${
+                  checkedCount > 0
+                    ? "border-[#FE701E] bg-white text-[#FE701E]"
+                    : "border-[#D9D9D9] bg-[#F3F3F3] text-[#AEB8C2]"
+                }`}
+                disabled={checkedCount === 0}
+                onClick={openMessageDialog}
                 type="button"
               >
                 메시지 전송
@@ -462,6 +561,23 @@ export function HostApplicationsCrm({
           onSubmit={submitStatusDialog}
           onValueChange={setStatusDialogValue}
           value={statusDialogValue}
+        />
+      ) : null}
+      {isMessageDialogOpen ? (
+        <SendMessageDialog
+          isScheduling={isSchedulingMessage}
+          onClose={() => setIsMessageDialogOpen(false)}
+          onRemoveRecipient={removeMessageRecipient}
+          onSchedule={scheduleSelectedMessages}
+          onScheduleDateChange={setMessageScheduleDate}
+          onScheduleTimeChange={setMessageScheduleTime}
+          onTemplateChange={setSelectedMessageTemplateId}
+          recipients={messageRecipients}
+          scheduleDate={messageScheduleDate}
+          scheduleTime={messageScheduleTime}
+          selectedTemplateId={selectedMessageTemplate?.id ?? ""}
+          statusMessage={messageDialogStatus}
+          templates={messageTemplates}
         />
       ) : null}
     </div>
@@ -700,6 +816,216 @@ function ApplicationDetailPanel({
         )}
       </article>
     </section>
+  );
+}
+
+function SendMessageDialog({
+  isScheduling,
+  onClose,
+  onRemoveRecipient,
+  onSchedule,
+  onScheduleDateChange,
+  onScheduleTimeChange,
+  onTemplateChange,
+  recipients,
+  scheduleDate,
+  scheduleTime,
+  selectedTemplateId,
+  statusMessage,
+  templates,
+}: {
+  isScheduling: boolean;
+  onClose: () => void;
+  onRemoveRecipient: (applicationId: string) => void;
+  onSchedule: () => Promise<void>;
+  onScheduleDateChange: (value: string) => void;
+  onScheduleTimeChange: (value: string) => void;
+  onTemplateChange: (templateId: string) => void;
+  recipients: HostApplication[];
+  scheduleDate: string;
+  scheduleTime: string;
+  selectedTemplateId: string;
+  statusMessage: string;
+  templates: MessageTemplate[];
+}) {
+  const selectedTemplate =
+    templates.find((template) => template.id === selectedTemplateId) ?? templates[0];
+  const previewRecipient = recipients[0];
+  const canSchedule =
+    Boolean(selectedTemplate) &&
+    recipients.length > 0 &&
+    Boolean(scheduleDate) &&
+    Boolean(scheduleTime) &&
+    !isScheduling;
+
+  return (
+    <div className="fixed inset-0 z-50 bg-black/10 px-[30px] py-[42px]">
+      <section className="flex w-[286px] max-w-[calc(100vw-60px)] flex-col rounded-[7px] border border-[#D9D9D9] bg-white px-[13px] py-[14px] shadow-[0_18px_42px_rgba(13,13,12,0.12)]">
+        <div className="flex items-start justify-between">
+          <div>
+            <p className="text-[12px] font-normal leading-[1.253] text-[#CAC4BC]">
+              Send a message
+            </p>
+            <h2 className="mt-[30px] text-[12px] font-semibold leading-[1.253] text-[#0D0D0C]">
+              메시지 전송
+            </h2>
+            <p className="mt-[8px] text-[11px] font-normal leading-[1.45] text-[#6D7A8A]">
+              선택한 신청자에게 메시지를 발송해요
+            </p>
+          </div>
+          <button
+            aria-label="메시지 전송 닫기"
+            className="grid size-[18px] place-items-center text-[#0D0D0C] transition hover:text-[#FE701E]"
+            onClick={onClose}
+            type="button"
+          >
+            <X aria-hidden="true" className="size-[16px]" strokeWidth={2} />
+          </button>
+        </div>
+
+        <section className="mt-[16px]">
+          <h3 className="text-[12px] font-normal leading-[1.253] text-[#6D7A8A]">
+            수신자 ({String(recipients.length).padStart(2, "0")}명)
+          </h3>
+          <div className="mt-[7px] max-h-[128px] overflow-y-auto pr-[2px]">
+            {recipients.length > 0 ? (
+              recipients.map((recipient) => (
+                <div
+                  className="grid h-[25px] grid-cols-[54px_44px_minmax(0,1fr)_14px] items-center border-b border-[#E9E9E9] px-[8px] text-[10px] font-normal leading-[1.253] text-[#6D7A8A] last:border-b-0"
+                  key={recipient.id}
+                >
+                  <span className="truncate">{recipient.applicantName || "신청자"}</span>
+                  <span>{getApplicationGenderLabel(recipient)}</span>
+                  <span>접수일 {formatShortDate(recipient.submittedAt)}</span>
+                  <button
+                    aria-label={`${recipient.applicantName || "신청자"} 수신자 제거`}
+                    className="ml-auto size-[9px] rounded-full bg-[#CAC4BC]"
+                    onClick={() => onRemoveRecipient(recipient.id)}
+                    type="button"
+                  />
+                </div>
+              ))
+            ) : (
+              <div className="flex h-[48px] items-center justify-center rounded-[4px] border border-dashed border-[#D9D9D9] text-[11px] text-[#AEB8C2]">
+                선택된 수신자가 없습니다.
+              </div>
+            )}
+          </div>
+        </section>
+
+        <section className="mt-[14px]">
+          <h3 className="text-[12px] font-normal leading-[1.253] text-[#6D7A8A]">
+            메시지 템플릿
+          </h3>
+          <div className="mt-[7px] grid gap-[7px]">
+            {templates.map((template) => {
+              const selected = template.id === selectedTemplate?.id;
+              const renderedBody = previewRecipient
+                ? renderMessageTemplate(template.body, previewRecipient)
+                : template.body;
+
+              return (
+                <label
+                  className={`grid cursor-pointer grid-cols-[14px_minmax(0,1fr)] items-start gap-[5px] ${
+                    selected ? "text-[#0D0D0C]" : "text-[#6D7A8A]"
+                  }`}
+                  key={template.id}
+                >
+                  <input
+                    checked={selected}
+                    className="mt-[7px] size-[8px] accent-[#FE701E]"
+                    onChange={() => onTemplateChange(template.id)}
+                    type="radio"
+                  />
+                  <span
+                    className={`overflow-hidden rounded-[4px] border ${
+                      selected
+                        ? "border-[#FF9A3D] bg-white"
+                        : "border-[#AEB8C2] bg-white"
+                    }`}
+                  >
+                    <span
+                      className={`flex h-[21px] items-center justify-between px-[9px] text-[10px] font-semibold leading-[1.253] ${
+                        selected
+                          ? "bg-[#FF9A3D] text-white"
+                          : "bg-white text-[#6D7A8A]"
+                      }`}
+                    >
+                      <span className="truncate">{template.name}</span>
+                      <span className="ml-[8px] shrink-0 font-normal">
+                        작성일 0000. 00. 00
+                      </span>
+                    </span>
+                    {selected ? (
+                      <span className="block truncate px-[9px] py-[8px] text-[10px] font-normal leading-[1.253] text-[#5B3A29]">
+                        {renderedBody}
+                      </span>
+                    ) : null}
+                  </span>
+                </label>
+              );
+            })}
+            <Link
+              className="ml-[14px] flex w-fit items-center gap-[4px] text-[10px] font-normal leading-[1.253] text-[#FF9A3D]"
+              href="/host/settings?panel=notifications"
+            >
+              <span className="grid size-[9px] place-items-center rounded-full bg-[#FF9A3D] text-[8px] font-semibold leading-none text-white">
+                +
+              </span>
+              <span>새 템플릿 만들기</span>
+            </Link>
+          </div>
+        </section>
+
+        <section className="mt-[13px]">
+          <h3 className="text-[12px] font-normal leading-[1.253] text-[#6D7A8A]">
+            발송 일정
+          </h3>
+          <div className="mt-[7px] grid grid-cols-[1fr_70px] gap-[5px]">
+            <label className="relative">
+              <input
+                className="h-[29px] w-full rounded-[4px] border border-[#F7B267] bg-white px-[10px] pr-[30px] text-[11px] font-normal leading-[1.253] text-[#6D7A8A] outline-none"
+                onChange={(event) => onScheduleDateChange(event.target.value)}
+                type="date"
+                value={scheduleDate}
+              />
+              <CalendarDays
+                aria-hidden="true"
+                className="pointer-events-none absolute right-[8px] top-1/2 size-[14px] -translate-y-1/2 text-[#6D7A8A]"
+                strokeWidth={1.8}
+              />
+            </label>
+            <input
+              className="h-[29px] rounded-[4px] border border-[#F7B267] bg-white px-[8px] text-[11px] font-normal leading-[1.253] text-[#6D7A8A] outline-none"
+              onChange={(event) => onScheduleTimeChange(event.target.value)}
+              type="time"
+              value={scheduleTime}
+            />
+          </div>
+        </section>
+
+        {statusMessage ? (
+          <p className="mt-[10px] rounded-[4px] bg-[#FFF7F0] px-[9px] py-[7px] text-[10px] font-normal leading-[1.45] text-[#5B3A29]">
+            {statusMessage}
+          </p>
+        ) : null}
+
+        <button
+          className="ml-auto mt-[12px] inline-flex h-[29px] min-w-[52px] items-center justify-center rounded-[4px] bg-[#FE701E] px-[10px] text-[10px] font-semibold leading-[1.253] text-white disabled:cursor-not-allowed disabled:bg-[#D9D9D9]"
+          disabled={!canSchedule}
+          onClick={() => {
+            void onSchedule();
+          }}
+          type="button"
+        >
+          {isScheduling ? (
+            <Loader2 aria-hidden="true" className="size-[12px] animate-spin" />
+          ) : (
+            "전송 예약"
+          )}
+        </button>
+      </section>
+    </div>
   );
 }
 
@@ -1389,6 +1715,11 @@ function findAnswerTextByLabels(
   }
 
   return "";
+}
+
+function getApplicationGenderLabel(application: HostApplication): string {
+  const answerMap = buildApplicationAnswerMap(application.answers ?? {});
+  return findAnswerTextByLabels(answerMap, ["성별", "gender"]) || "성별 미입력";
 }
 
 function submittedAnswerTypeToBlockType(
