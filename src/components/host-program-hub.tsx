@@ -26,6 +26,7 @@ import {
   X,
 } from "lucide-react";
 import { nuvioIcons } from "@/components/icons/nuvio-icons";
+import { KakaoMap } from "@/components/kakao-map";
 import { HostProgramSidebar } from "@/components/host-program-sidebar";
 import {
   useEffect,
@@ -3399,9 +3400,11 @@ function FigmaTextarea({
 
 function MapPreviewBox({ address }: { address: string }) {
   return (
-    <div className="grid h-[var(--figma-185)] place-items-center rounded-[var(--figma-7)] bg-[#CAC4BC] text-[length:var(--figma-14)] font-semibold leading-[1.253] text-white">
-      {address ? "지도 API 연결 후 이 위치가 표시돼요" : "주소를 입력하면 지도가 표시돼요"}
-    </div>
+    <KakaoMap
+      address={address}
+      className="h-[var(--figma-185)] min-h-0 rounded-[var(--figma-7)]"
+      markerLabel="프로그램 위치"
+    />
   );
 }
 
@@ -4740,7 +4743,7 @@ function AddressSearchField({
         new Postcode({
           height: "100%",
           maxSuggestItems: 5,
-          oncomplete: (data) => {
+          oncomplete: (data: KakaoPostcodeData) => {
             onAddressChange(getSelectedKakaoAddress(data));
             onAddressDetailChange("");
             setAddressSearchOpen(false);

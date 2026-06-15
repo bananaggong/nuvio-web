@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { Bell } from "lucide-react";
 import type { CSSProperties } from "react";
 import { launchFeatureFlags } from "@/lib/launch-feature-flags";
 
@@ -25,6 +26,7 @@ type HostProgramSidebarProps = {
   applicationsHref: string;
   formsHref: string;
   messagesHref: string;
+  hostName?: string;
   programId: string;
   programPath: string;
   status: string;
@@ -39,6 +41,8 @@ const hostProgramSidebarScaleStyle = {
   "--host-program-sidebar-22": "clamp(22px, 1.528vw, 29.333px)",
   "--host-program-sidebar-24": "clamp(24px, 1.667vw, 32px)",
   "--host-program-sidebar-28": "clamp(28px, 1.944vw, 37.333px)",
+  "--host-program-sidebar-34": "clamp(34px, 2.361vw, 45.333px)",
+  "--host-program-sidebar-40": "clamp(40px, 2.778vw, 53.333px)",
   "--host-program-sidebar-228": "clamp(228px, 15.833vw, 304px)",
 } as CSSProperties;
 
@@ -58,6 +62,7 @@ export function HostProgramSidebar({
   activeItem,
   applicationsHref,
   formsHref,
+  hostName = "로컬 호스트님",
   messagesHref,
   programId,
   programPath,
@@ -69,8 +74,33 @@ export function HostProgramSidebar({
       className="w-[var(--host-program-sidebar-228)] shrink-0 border-r border-[#6D7A8A] bg-white shadow-[2px_5px_5.2px_rgba(0,0,0,0.23)] max-md:w-full"
       style={hostProgramSidebarScaleStyle}
     >
-      <div className="min-h-[515px] px-[var(--host-program-sidebar-18)] pt-[var(--host-program-sidebar-24)]">
-        <section className="border-b border-[#D9D9D9] pb-[var(--host-program-sidebar-12)]">
+      <div className="min-h-[650px] px-[6px]">
+        <section className="w-full">
+          <div className="flex min-h-[var(--host-program-sidebar-40)] items-center justify-center pb-[8px] pt-[12px]">
+            <Link
+              className="min-w-0 flex-1 truncate text-[16px] font-semibold leading-[1.253] text-[#5B3A29] transition hover:text-[#FE701E]"
+              href="/host"
+            >
+              {hostName}
+            </Link>
+            <Link
+              aria-label="호스트 알림 보기"
+              className="grid size-8 shrink-0 place-items-center rounded-full text-[#FF9A3D] transition hover:bg-[#FFF6EC]"
+              href="/host/settings?panel=notifications"
+            >
+              <Bell aria-hidden="true" className="size-5" strokeWidth={1.8} />
+            </Link>
+          </div>
+          <div className="flex min-h-[46px] items-end border-b border-[#D9D9D9] pt-[12px] text-center">
+            <HostSwitchTab active href="/host" label="호스트" />
+            <span className="mb-[6px] h-[22px] w-px bg-[#D9D9D9]" />
+            <HostSwitchTab href="/host/villages" label="로컬" />
+            <span className="mb-[6px] h-[22px] w-px bg-[#D9D9D9]" />
+            <HostSwitchTab href="/admin" label="관리자" />
+          </div>
+        </section>
+
+        <section className="border-b border-[#D9D9D9] px-[12px] pb-[var(--host-program-sidebar-12)] pt-[var(--host-program-sidebar-12)]">
           <div className="flex items-start gap-[var(--host-program-sidebar-8)]">
             <p className="min-h-[40px] min-w-0 flex-1 break-keep text-[16px] font-semibold leading-[1.253] text-[#5B3A29]">
               {title || "프로그램 제목"}
@@ -85,7 +115,7 @@ export function HostProgramSidebar({
           </p>
         </section>
 
-        <nav className="pt-[var(--host-program-sidebar-24)] text-[#5B3A29]">
+        <nav className="px-[12px] pt-[var(--host-program-sidebar-24)] text-[#5B3A29]">
           <section className="border-b-[0.8px] border-[#6D7A8A] pb-[var(--host-program-sidebar-16)]">
             <SidebarNavLink
               active={activeItem === "dashboard"}
@@ -141,7 +171,7 @@ export function HostProgramSidebar({
             <SidebarNavLink
               active={activeItem === "messages"}
               href={messagesHref}
-              label="메세지함"
+              label="메시지함"
             />
             <SidebarNavLink
               active={activeItem === "receipts"}
@@ -164,6 +194,29 @@ export function HostProgramSidebar({
         </nav>
       </div>
     </aside>
+  );
+}
+
+function HostSwitchTab({
+  active = false,
+  href,
+  label,
+}: {
+  active?: boolean;
+  href: string;
+  label: string;
+}) {
+  return (
+    <Link
+      className={`flex min-h-[var(--host-program-sidebar-34)] flex-1 items-center justify-center pb-[8px] pt-[5px] text-[14px] leading-[1.253] transition ${
+        active
+          ? "border-b-2 border-[#FF9A3D] font-medium text-[#FE701E]"
+          : "font-normal text-[#CAC4BC] hover:text-[#FE701E]"
+      }`}
+      href={href}
+    >
+      {label}
+    </Link>
   );
 }
 

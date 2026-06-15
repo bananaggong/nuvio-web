@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { CheckCircle2, FileText, Send, ShieldCheck } from "lucide-react";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import type {
   ApplicationFormBlock,
   ApplicationFormTemplate,
@@ -60,6 +60,60 @@ export function ProgramApplicationForm({
       ? resolveVisibleBlocks(normalizedTemplate.blocks, dynamicAnswers)
       : [];
   const hasTemplate = Boolean(normalizedTemplate && visibleBlocks.length > 0);
+
+  useEffect(() => {
+    let active = true;
+
+    async function loadSignedInProfile() {
+      try {
+        const response = await fetch("/api/auth/session", { cache: "no-store" });
+        if (!response.ok) return;
+
+        const payload = (await response.json()) as {
+          data?: {
+            profile?: {
+              contactEmail?: string;
+              displayName?: string;
+              email?: string;
+              phone?: string;
+            } | null;
+            user?: {
+              email?: string;
+              userMetadata?: Record<string, unknown>;
+            } | null;
+          };
+        };
+        if (!active) return;
+
+        const profile = payload.data?.profile;
+        const user = payload.data?.user;
+        const metadataName =
+          typeof user?.userMetadata?.full_name === "string"
+            ? user.userMetadata.full_name
+            : typeof user?.userMetadata?.name === "string"
+              ? user.userMetadata.name
+              : "";
+        const nextName = profile?.displayName || metadataName;
+        const nextEmail = profile?.contactEmail || profile?.email || user?.email || "";
+        const nextPhone = profile?.phone || "";
+
+        setForm((current) => ({
+          ...current,
+          applicantName: current.applicantName || nextName,
+          email: current.email || nextEmail,
+          phone: current.phone || nextPhone,
+        }));
+      } catch {
+        // Anonymous users can still fill the form manually.
+      }
+    }
+
+    void loadSignedInProfile();
+
+    return () => {
+      active = false;
+    };
+  }, []);
 
   function updateField<Key extends keyof ApplicationFormState>(
     key: Key,

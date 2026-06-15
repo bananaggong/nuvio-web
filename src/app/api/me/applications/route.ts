@@ -17,7 +17,11 @@ export async function GET() {
       auth.profile.contactEmail ?? "",
       auth.user.email ?? "",
     ];
-    const applications = await listHostApplications({ emails, limit: 100 });
+    const applications = await listHostApplications({
+      emails,
+      limit: 100,
+      submittedByUserId: auth.user.id,
+    });
 
     return NextResponse.json({ data: applications });
   } catch (error) {

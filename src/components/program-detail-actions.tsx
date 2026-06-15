@@ -47,6 +47,16 @@ export function ProgramDetailActions({
           data?: ProgramStateMaps;
         };
         if (active) setBookmarked(Boolean(payload.data?.bookmarks?.[id]));
+
+        void fetch("/api/me/program-state", {
+          body: JSON.stringify({
+            enabled: true,
+            kind: "trackingEnabled",
+            programId: id,
+          }),
+          headers: { "Content-Type": "application/json" },
+          method: "PATCH",
+        }).catch(() => undefined);
       } catch {
         // Signed-out users can still browse and share programs.
       }

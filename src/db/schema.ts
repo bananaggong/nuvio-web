@@ -834,6 +834,9 @@ export const programApplications = pgTable(
     applicantName: text("applicant_name").notNull(),
     email: text("email").notNull(),
     phone: text("phone"),
+    submittedBy: uuid("submitted_by").references(() => profiles.id, {
+      onDelete: "set null",
+    }),
     status: applicationStatusEnum("status").default("submitted").notNull(),
     answers: jsonb("answers").$type<Record<string, unknown>>().default(emptyObject).notNull(),
     paymentAmount: integer("payment_amount").default(0).notNull(),
@@ -849,6 +852,7 @@ export const programApplications = pgTable(
     index("program_applications_program_id_idx").on(table.programId),
     index("program_applications_status_idx").on(table.status),
     index("program_applications_email_idx").on(table.email),
+    index("program_applications_submitted_by_idx").on(table.submittedBy),
   ],
 );
 

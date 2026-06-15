@@ -1,4 +1,4 @@
-import { and, desc, eq, inArray, type SQL } from "drizzle-orm";
+import { and, desc, eq, inArray, or, type SQL } from "drizzle-orm";
 import { getDb } from "@/db/client";
 import {
   applicationStatusEvents,
@@ -25,6 +25,7 @@ export type ProgramApplicationInput = {
   phone: string;
   answers: Record<string, unknown>;
   memo?: string;
+  submittedBy?: string;
 };
 
 export type HostApplicationStatusEvent = {
@@ -43,6 +44,7 @@ export type HostApplicationDetail = HostApplication & {
 export type ListHostApplicationsOptions = {
   emails?: string[];
   limit?: number;
+  submittedByUserId?: string;
   villageIds?: string[];
 };
 
@@ -62,6 +64,7 @@ export async function createProgramApplication(
       applicantName: input.applicantName,
       email: input.email,
       phone: input.phone,
+      submittedBy: isUuid(input.submittedBy ?? "") ? input.submittedBy : null,
       answers: input.answers,
       status: "submitted",
       paymentAmount: 0,
@@ -93,6 +96,46 @@ export async function createProgramApplication(
     signatureCompleted: row.signatureCompleted,
     reviewSubmitted: row.reviewSubmitted,
     memo: input.memo ?? String(input.answers.motivation ?? "").slice(0, 72),
+  };
+}
+
+export type ExistingProgramApplication = Pick<
+  HostApplication,
+  "id" | "programId" | "programTitle" | "status" | "submittedAt"
+>;
+
+export async function findExistingProgramApplication(input: {
+  emails: string[];
+  programId: number | string;
+}): Promise<ExistingProgramApplication | null> {
+  const emails = normalizeEmailList(input.emails);
+  if (emails.length === 0) return null;
+
+  const program = await resolveApplicationProgram(input.programId);
+  const [row] = await getDb()
+    .select({
+      id: programApplications.id,
+      status: programApplications.status,
+      submittedAt: programApplications.submittedAt,
+    })
+    .from(programApplications)
+    .where(
+      and(
+        eq(programApplications.programId, program.id),
+        inArray(programApplications.email, emails),
+      ),
+    )
+    .orderBy(desc(programApplications.submittedAt))
+    .limit(1);
+
+  if (!row) return null;
+
+  return {
+    id: row.id,
+    programId: program.id,
+    programTitle: program.title,
+    status: row.status,
+    submittedAt: row.submittedAt.toISOString(),
   };
 }
 
@@ -132,8 +175,21 @@ export async function listHostApplications(
   if (options.villageIds) {
     conditions.push(inArray(programsTable.villageId, options.villageIds));
   }
+
+  const ownerConditions: SQL[] = [];
+  if (options.submittedByUserId) {
+    ownerConditions.push(
+      eq(programApplications.submittedBy, options.submittedByUserId),
+    );
+  }
   if (options.emails) {
-    conditions.push(inArray(programApplications.email, emails));
+    ownerConditions.push(inArray(programApplications.email, emails));
+  }
+  if (ownerConditions.length === 1) {
+    conditions.push(ownerConditions[0]);
+  } else if (ownerConditions.length > 1) {
+    const ownerCondition = or(...ownerConditions);
+    if (ownerCondition) conditions.push(ownerCondition);
   }
 
   let query = getDb()

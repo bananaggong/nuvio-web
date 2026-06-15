@@ -2,9 +2,14 @@ import { NextResponse } from "next/server";
 import {
   applyRateLimit,
   enforceContentLength,
+  getOptionalAuthenticatedUser,
 } from "@/lib/api-security";
-import { createProgramApplication } from "@/lib/host-application-db";
+import {
+  createProgramApplication,
+  findExistingProgramApplication,
+} from "@/lib/host-application-db";
 import { queueApplicationSubmittedNotification } from "@/lib/notification-db";
+import { updateUserProgramState } from "@/lib/user-program-state-db";
 
 export const runtime = "nodejs";
 
@@ -23,16 +28,49 @@ export async function POST(request: Request) {
     const body = await request.json();
     const answers = normalizeAnswers(body.answers);
     validateApplicationPayload(body, answers);
+    const auth = await getOptionalAuthenticatedUser();
+    const programId = normalizeProgramId(body.programId);
+    const email = normalizeText(body.email, 120).toLowerCase();
+    const duplicateEmails = normalizeEmailList([
+      email,
+      auth?.profile.email,
+      auth?.profile.contactEmail ?? undefined,
+      auth?.user.email,
+    ]);
+    const existingApplication = await findExistingProgramApplication({
+      emails: duplicateEmails,
+      programId,
+    });
+
+    if (existingApplication) {
+      return NextResponse.json(
+        {
+          data: existingApplication,
+          error: "이미 신청한 프로그램입니다. 마이페이지에서 신청 내역을 확인해 주세요.",
+        },
+        { status: 409 },
+      );
+    }
 
     const application = await createProgramApplication({
-      programId: normalizeProgramId(body.programId),
+      programId,
       formId: typeof body.formId === "string" ? body.formId : undefined,
       applicantName: normalizeText(body.applicantName, 80),
-      email: normalizeText(body.email, 120).toLowerCase(),
+      email,
       phone: normalizeText(body.phone, 40),
       answers,
       memo: typeof body.memo === "string" ? normalizeText(body.memo, 120) : undefined,
+      submittedBy: auth?.user.id,
     });
+
+    if (auth) {
+      void updateUserProgramState(
+        auth.user.id,
+        String(programId),
+        "trackingEnabled",
+        true,
+      ).catch(() => undefined);
+    }
 
     void queueApplicationSubmittedNotification({
       applicantName: application.applicantName,
@@ -65,6 +103,16 @@ function normalizeProgramId(value: unknown): number | string {
 function normalizeAnswers(value: unknown): Record<string, unknown> {
   if (!value || typeof value !== "object" || Array.isArray(value)) return {};
   return value as Record<string, unknown>;
+}
+
+function normalizeEmailList(values: Array<string | undefined>): string[] {
+  return Array.from(
+    new Set(
+      values
+        .map((value) => normalizeText(value, 120).toLowerCase())
+        .filter((value) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/u.test(value)),
+    ),
+  );
 }
 
 function validateApplicationPayload(

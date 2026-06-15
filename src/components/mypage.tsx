@@ -1841,7 +1841,7 @@ function MemberInformationForm({
         new Postcode({
           height: "100%",
           maxSuggestItems: 5,
-          oncomplete: (data) => {
+          oncomplete: (data: KakaoPostcodeData) => {
             setForm((current) => ({
               ...current,
               address: getSelectedKakaoAddress(data),

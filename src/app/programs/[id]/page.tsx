@@ -8,7 +8,6 @@ import {
   ChevronRight,
   ChevronUp,
   Mail,
-  MapPin,
   Minus,
   MoreHorizontal,
   Phone,
@@ -18,8 +17,10 @@ import {
   Ticket,
 } from "lucide-react";
 import { JsonLdScript } from "@/components/json-ld";
+import { KakaoMap } from "@/components/kakao-map";
 import { NuvioEmptyState } from "@/components/nuvio-empty-state";
 import { ProgramDetailActions } from "@/components/program-detail-actions";
+import { ProgramDetailNav } from "@/components/program-detail-nav";
 import { ProgramGalleryCarousel } from "@/components/program-gallery-carousel";
 import {
   ProgramScheduleCards,
@@ -248,25 +249,7 @@ export default async function ProgramDetailPage({
             />
           </header>
 
-          <nav
-            aria-label="프로그램 상세 메뉴"
-            className="sticky top-[max(56px,4.861vw)] z-30 flex h-[33px] w-full items-center gap-[21px] overflow-x-auto border-y-[0.5px] border-[#F5E1D3] bg-white/95 pt-1.5 backdrop-blur [scrollbar-width:none] [&::-webkit-scrollbar]:hidden max-md:top-[56px] max-md:gap-4"
-          >
-            {detailTabs.map((tab, index) => (
-              <a
-                aria-current={index === 0 ? "page" : undefined}
-                className={`relative inline-flex h-[27px] shrink-0 items-center justify-center whitespace-nowrap text-xs ${
-                  index === 0
-                    ? "pb-3 font-semibold leading-[1.253] text-[#5B3A29] after:absolute after:bottom-[-1px] after:left-0 after:h-0.5 after:w-full after:bg-[#FE701E]"
-                    : "pb-2 font-normal leading-[1.6] text-[#CAC4BC]"
-                }`}
-                href={tab.href}
-                key={tab.label}
-              >
-                {tab.label}
-              </a>
-            ))}
-          </nav>
+          <ProgramDetailNav tabs={detailTabs} />
 
           <section
             className="flex h-[886px] w-full scroll-mt-[calc(max(56px,4.861vw)+42px)] flex-col pb-[30px] min-[1440px]:h-[61.528vw] min-[1440px]:pb-[2.083vw] max-md:h-[118vw] max-md:min-h-[420px] max-md:scroll-mt-[104px] max-md:pb-0"
@@ -378,13 +361,11 @@ export default async function ProgramDetailPage({
               </div>
             </div>
 
-            <div
-              aria-label="지도 영역"
-              className="flex h-[243px] w-[45.972vw] flex-col items-center justify-center gap-3 rounded-md bg-[#F7F5F3] px-8 text-center text-sm font-medium leading-[1.55] text-[#6D7A8A] min-[1440px]:h-[16.875vw] max-md:w-full"
-            >
-              <MapPin aria-hidden="true" className="size-7 text-[#FE701E]" />
-              <span className="break-keep">{placeDetails.meetingAddress}</span>
-            </div>
+            <KakaoMap
+              address={placeDetails.meetingMapAddress || placeDetails.meetingAddress}
+              className="h-[243px] w-[45.972vw] min-[1440px]:h-[16.875vw] max-md:w-full"
+              markerLabel={program.title}
+            />
 
             <section
               className="flex w-full scroll-mt-[calc(max(56px,4.861vw)+42px)] flex-col items-center gap-7 max-md:w-full max-md:scroll-mt-[104px]"

@@ -10,6 +10,7 @@ export type ProgramScheduleViewItem = {
 export type ProgramPlaceDetails = {
   accommodation: string;
   meetingAddress: string;
+  meetingMapAddress: string;
   meetingMemo: string;
   parkingGuide: string;
   transportGuide: string;
@@ -108,9 +109,11 @@ export function getProgramScheduleItems(
 
 export function getProgramPlaceDetails(program: Program): ProgramPlaceDetails {
   const placeInfo = program.placeInfo;
+  const meetingMapAddress =
+    placeInfo?.meetingAddress?.trim() || joinText([program.region, program.city]);
   const meetingAddress =
     joinText([placeInfo?.meetingAddress, placeInfo?.meetingAddressDetail]) ||
-    joinText([program.region, program.city]) ||
+    meetingMapAddress ||
     "집결지 정보는 준비 중입니다.";
 
   const accommodation = placeInfo?.accommodationEnabled
@@ -121,6 +124,7 @@ export function getProgramPlaceDetails(program: Program): ProgramPlaceDetails {
   return {
     accommodation,
     meetingAddress,
+    meetingMapAddress,
     meetingMemo: placeInfo?.meetingMemo?.trim() ?? "",
     parkingGuide:
       placeInfo?.parkingGuide?.trim() ||
