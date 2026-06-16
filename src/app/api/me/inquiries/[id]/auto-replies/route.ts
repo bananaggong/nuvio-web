@@ -66,6 +66,18 @@ export async function POST(
       );
     }
 
+    const selectedQuestionMessage = await createProgramInquiryMessage(id, {
+      message: item.label,
+      senderId: auth.user.id,
+      senderName:
+        auth.profile.displayName ||
+        auth.profile.fullName ||
+        auth.user.email ||
+        inquiry.contactName,
+      senderRole: "user",
+      statusAfter: inquiry.status === "closed" ? "closed" : "new",
+    });
+
     const savedMessage = await createProgramInquiryMessage(id, {
       message: item.response,
       senderName: "자동응답",
@@ -73,14 +85,17 @@ export async function POST(
       statusAfter: inquiry.status === "closed" ? "closed" : "answered",
     });
 
-    if (!savedMessage) {
+    if (!selectedQuestionMessage || !savedMessage) {
       return NextResponse.json(
         { error: "Auto reply was not saved." },
         { status: 500 },
       );
     }
 
-    return NextResponse.json({ data: savedMessage }, { status: 201 });
+    return NextResponse.json(
+      { data: [selectedQuestionMessage, savedMessage] },
+      { status: 201 },
+    );
   } catch (error) {
     return NextResponse.json(
       {

@@ -21,6 +21,7 @@ import {
   WalletCards,
 } from "lucide-react";
 import {
+  useCallback,
   useEffect,
   useMemo,
   useRef,
@@ -725,6 +726,18 @@ function MessagesContent({ context }: { context: MypageContext }) {
   const [localInquiryIdsByThread, setLocalInquiryIdsByThread] = useState<
     Record<string, string>
   >({});
+  const [readThreadIds, setReadThreadIds] = useState<Set<string>>(
+    () => new Set(),
+  );
+  const markThreadRead = useCallback((threadId: string) => {
+    setReadThreadIds((current) => {
+      if (current.has(threadId)) return current;
+
+      const next = new Set(current);
+      next.add(threadId);
+      return next;
+    });
+  }, []);
   const requestedProgramThread = useMemo<RequestedProgramMessageThread | null>(() => {
     if (!requestedProgramId && !requestedProgramTitle) return null;
 
@@ -758,24 +771,30 @@ function MessagesContent({ context }: { context: MypageContext }) {
       threads.map((thread) => ({
         ...thread,
         inquiryId: localInquiryIdsByThread[thread.id] ?? thread.inquiryId,
+        unread: thread.unread && !readThreadIds.has(thread.id),
         messages: [
           ...thread.messages,
           ...(localMessagesByThread[thread.id] ?? []),
         ],
       })),
-    [localInquiryIdsByThread, localMessagesByThread, threads],
+    [localInquiryIdsByThread, localMessagesByThread, readThreadIds, threads],
   );
   const visibleThreads = useMemo(() => {
     const query = threadQuery.trim().toLowerCase();
-    if (!query) return threadsWithLocalMessages;
+    const matchingThreads = query
+      ? threadsWithLocalMessages.filter((thread) =>
+          [thread.title, thread.hostName, thread.location]
+            .join(" ")
+            .toLowerCase()
+            .includes(query),
+        )
+      : threadsWithLocalMessages;
 
-    return threadsWithLocalMessages.filter((thread) =>
-      [thread.title, thread.hostName, thread.location]
-        .join(" ")
-        .toLowerCase()
-        .includes(query),
-    );
-  }, [threadQuery, threadsWithLocalMessages]);
+    return matchingThreads.map((thread, index) => ({
+      ...thread,
+      unread: thread.unread && !(activeThreadId === null && index === 0),
+    }));
+  }, [activeThreadId, threadQuery, threadsWithLocalMessages]);
   const activeThread =
     visibleThreads.find((thread) => thread.id === activeThreadId) ??
     visibleThreads[0] ??
@@ -863,7 +882,20 @@ function MessagesContent({ context }: { context: MypageContext }) {
   ) {
     if (!item.response.trim()) return;
 
-    let savedMessage: ProgramInquiryMessage | undefined;
+    const now = Date.now();
+    const selectedQuestionMessage: MessageBubble = {
+      body: item.label.trim() || item.response,
+      id: `auto-reply-question-${thread.id}-${item.id}-${now}`,
+      sender: "user",
+      timeLabel: "방금 전",
+    };
+    const fallbackReplyMessage: MessageBubble = {
+      body: item.response,
+      id: `auto-reply-${thread.id}-${item.id}-${now}`,
+      sender: "host",
+      timeLabel: "방금 전",
+    };
+    let savedMessages: ProgramInquiryMessage[] = [];
 
     if (thread.inquiryId) {
       const response = await fetch(
@@ -875,7 +907,7 @@ function MessagesContent({ context }: { context: MypageContext }) {
         },
       );
       const payload = (await response.json().catch(() => ({}))) as {
-        data?: ProgramInquiryMessage;
+        data?: ProgramInquiryMessage | ProgramInquiryMessage[];
         error?: string;
       };
 
@@ -883,27 +915,38 @@ function MessagesContent({ context }: { context: MypageContext }) {
         throw new Error(payload.error || "자동응답을 불러오지 못했습니다.");
       }
 
-      savedMessage = payload.data;
+      savedMessages = Array.isArray(payload.data) ? payload.data : [payload.data];
     }
 
-    const replyMessage =
-      createMessageBubbleFromInquiryMessage(savedMessage) ?? {
-        body: item.response,
-        id: `auto-reply-${thread.id}-${item.id}-${Date.now()}`,
-        sender: "host" as const,
-        timeLabel: "방금 전",
-      };
+    const savedMessageBubbles = savedMessages
+      .map(createMessageBubbleFromInquiryMessage)
+      .filter((message): message is MessageBubble => Boolean(message));
+    const hasSavedUserQuestion = savedMessageBubbles.some(
+      (message) => message.sender === "user",
+    );
+    const hasSavedHostReply = savedMessageBubbles.some(
+      (message) => message.sender === "host",
+    );
+    const messagesToAppend = [
+      ...(hasSavedUserQuestion ? [] : [selectedQuestionMessage]),
+      ...savedMessageBubbles,
+      ...(hasSavedHostReply ? [] : [fallbackReplyMessage]),
+    ];
 
     setLocalMessagesByThread((current) => ({
       ...current,
-      [thread.id]: [...(current[thread.id] ?? []), replyMessage],
+      [thread.id]: [...(current[thread.id] ?? []), ...messagesToAppend],
     }));
   }
 
   return (
     <section className="font-pretendard min-h-[calc(100vh-70px)] bg-white pb-24 pt-3 text-[#5B3A29]">
       <div className="mx-auto w-full max-w-[1025px] px-5 lg:px-0 min-[1440px]:w-[71.181vw] min-[1440px]:max-w-none">
-        <div className="flex items-center gap-[19px] min-[1440px]:gap-[1.319vw]">
+        <Link
+          aria-label="마이페이지로 돌아가기"
+          className="flex items-center gap-[19px] rounded-[8px] transition hover:text-[#FE701E] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[#FE701E] min-[1440px]:gap-[1.319vw]"
+          href="/mypage"
+        >
           <ChevronLeft
             aria-hidden="true"
             className="h-[15px] w-[11px] shrink-0 text-[#FF9A3D]"
@@ -912,7 +955,7 @@ function MessagesContent({ context }: { context: MypageContext }) {
           <h1 className="min-w-0 flex-1 text-[16px] font-semibold leading-[1.253]">
             메세지
           </h1>
-        </div>
+        </Link>
 
         <div className="flex w-full items-start justify-center gap-4 py-5 max-lg:flex-col min-[1440px]:gap-[1.111vw] min-[1440px]:py-[1.389vw]">
           <aside className="flex w-[357px] shrink-0 flex-col gap-[6px] self-stretch border-r-[3px] border-[#F3F3F3] pr-5 max-lg:w-full max-lg:border-b-[3px] max-lg:border-r-0 max-lg:pb-5 max-lg:pr-0 min-[1440px]:w-[24.792vw] min-[1440px]:gap-[0.417vw] min-[1440px]:border-r-[0.208vw] min-[1440px]:pr-[1.389vw]">
@@ -925,6 +968,7 @@ function MessagesContent({ context }: { context: MypageContext }) {
                   active={thread.id === activeThread?.id}
                   key={thread.id}
                   onSelect={() => {
+                    markThreadRead(thread.id);
                     setActiveThreadId(thread.id);
                     setConversationSearchOpen(false);
                   }}
@@ -1045,6 +1089,23 @@ function MessageConversationPanel({
   const [sendError, setSendError] = useState("");
   const [sending, setSending] = useState(false);
   const messageInputRef = useRef<HTMLInputElement>(null);
+  const messagesScrollRef = useRef<HTMLDivElement>(null);
+  const hasActiveThread = Boolean(thread);
+  const activeMessageCount = thread?.messages.length ?? 0;
+  const scrollMessagesToBottom = useCallback(
+    (behavior: ScrollBehavior = "smooth") => {
+      window.requestAnimationFrame(() => {
+        const element = messagesScrollRef.current;
+        if (!element) return;
+
+        element.scrollTo({
+          behavior,
+          top: element.scrollHeight,
+        });
+      });
+    },
+    [],
+  );
 
   useEffect(() => {
     let active = true;
@@ -1098,6 +1159,22 @@ function MessageConversationPanel({
       active = false;
     };
   }, [thread?.id, thread?.programId]);
+
+  useEffect(() => {
+    if (!hasActiveThread) return;
+    scrollMessagesToBottom("auto");
+  }, [hasActiveThread, scrollMessagesToBottom, thread?.id]);
+
+  useEffect(() => {
+    if (!hasActiveThread) return;
+    scrollMessagesToBottom("smooth");
+  }, [
+    activeMessageCount,
+    autoReplyConfig?.items.length,
+    autoReplyMenuOpen,
+    hasActiveThread,
+    scrollMessagesToBottom,
+  ]);
 
   if (!thread) {
     return (
@@ -1226,7 +1303,10 @@ function MessageConversationPanel({
         </button>
       </div>
 
-      <div className="flex min-h-0 w-full flex-1 flex-col gap-3 overflow-y-auto px-2.5 py-3 min-[1440px]:gap-[0.833vw] min-[1440px]:px-[0.694vw] min-[1440px]:py-[0.833vw]">
+      <div
+        className="flex min-h-0 w-full flex-1 flex-col gap-3 overflow-y-auto px-2.5 py-3 min-[1440px]:gap-[0.833vw] min-[1440px]:px-[0.694vw] min-[1440px]:py-[0.833vw]"
+        ref={messagesScrollRef}
+      >
         {thread.messages.map((message) => (
           <div
             className={`flex w-full ${
@@ -2552,7 +2632,12 @@ function ProfileSummaryCard({
         <div className="grid flex-1 grid-cols-2 gap-y-5 sm:grid-cols-3">
           <SummaryMetric icon={CalendarDays} label="내 여행" value={tripCount} />
           <SummaryMetric icon={Bookmark} label="저장" value={bookmarkCount} />
-          <SummaryMetric icon={MessageCircle} label="메시지" value={messageCount} />
+          <SummaryMetric
+            href="/mypage/messages"
+            icon={MessageCircle}
+            label="메시지"
+            value={messageCount}
+          />
         </div>
       </div>
     </section>
@@ -2576,19 +2661,38 @@ function WalletSummaryCard({ pointCount }: { pointCount: number }) {
 }
 
 function SummaryMetric({
+  href,
   icon: Icon,
   label,
   value,
 }: {
+  href?: string;
   icon: ComponentType<{ className?: string; size?: number; strokeWidth?: number }>;
   label: string;
   value: number;
 }) {
-  return (
-    <div className="flex flex-col items-center gap-2 text-center">
+  const content = (
+    <>
       <Icon className="text-[#8B9F67]" size={20} strokeWidth={1.8} />
       <span className="text-[12px] font-medium text-[#6F7E56]">{label}</span>
       <span className="text-[13px] font-semibold text-[#4B3328]">{value}</span>
+    </>
+  );
+
+  if (href) {
+    return (
+      <Link
+        className="flex flex-col items-center gap-2 rounded-[8px] text-center transition hover:text-[#FE701E] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[#FE701E]"
+        href={href}
+      >
+        {content}
+      </Link>
+    );
+  }
+
+  return (
+    <div className="flex flex-col items-center gap-2 text-center">
+      {content}
     </div>
   );
 }

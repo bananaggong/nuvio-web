@@ -43,7 +43,7 @@ export const channelLabels: Record<MessageChannel, string> = {
 };
 
 export const campaignStatusLabels: Record<MessageCampaignStatus, string> = {
-  draft: "작성중",
+  draft: "작성 중",
   scheduled: "예약됨",
   sent: "발송 완료",
 };
@@ -64,21 +64,21 @@ export const seedMessageCampaigns: MessageCampaign[] = [
     id: "campaign-accepted",
     name: "합격자 서명 안내",
     templateId: "msg-accepted",
-    channel: "email",
+    channel: "sms",
     targetStatus: "accepted",
-    scheduledAt: "2026-05-04T14:00",
+    scheduledAt: "2026-06-15T14:00",
     status: "scheduled",
-    updatedAt: "2026-05-04T00:00:00+09:00",
+    updatedAt: "2026-06-14T00:00:00+09:00",
   },
   {
     id: "campaign-review",
-    name: "완료자 후기 요청",
+    name: "참여 후기 요청",
     templateId: "msg-review",
     channel: "kakao",
     targetStatus: "completed",
-    scheduledAt: "2026-05-05T10:00",
+    scheduledAt: "2026-06-16T10:00",
     status: "draft",
-    updatedAt: "2026-05-04T00:00:00+09:00",
+    updatedAt: "2026-06-14T00:00:00+09:00",
   },
 ];
 
@@ -121,7 +121,7 @@ export function createMessageCampaign(
     id: `campaign-${Date.now()}`,
     name: "새 메시지 캠페인",
     templateId: templates[0]?.id ?? "msg-accepted",
-    channel: "email",
+    channel: "sms",
     targetStatus: "all",
     scheduledAt: toLocalDatetimeInputValue(new Date()),
     status: "draft",
@@ -154,7 +154,15 @@ export function buildMessageExportCsv(
   applications = readHostApplicationsFromStorage(),
 ): string {
   const rows = buildMessageRecipientPreview(campaign, templates, applications);
-  const header = ["캠페인", "채널", "수신자", "연락처", "프로그램", "상태", "본문"];
+  const header = [
+    "캠페인",
+    "채널",
+    "수신자",
+    "연락처",
+    "프로그램",
+    "상태",
+    "본문",
+  ];
 
   return [
     header,

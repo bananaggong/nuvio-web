@@ -22,6 +22,7 @@ import {
 } from "react";
 import { HostWorkspaceLayout } from "@/components/host-workspace-ui";
 import { type HostApplication } from "@/lib/host-operations";
+import { type HostProgramDraft } from "@/lib/host-program-studio";
 import {
   normalizeHostInquiry,
   normalizeProgramInquiryMessage,
@@ -159,7 +160,7 @@ function HostMessageScaleOverrides() {
 }
 
 export function HostMessageInbox({ view }: { view: HostMessageInboxView }) {
-  const { applications } = useHostOperationsData();
+  const { applications, programs } = useHostOperationsData();
   const [inquiries, setInquiries] = useState<HostInquiry[]>([]);
   const [isLoadingInquiries, setIsLoadingInquiries] = useState(true);
   const [loadError, setLoadError] = useState("");
@@ -168,8 +169,8 @@ export function HostMessageInbox({ view }: { view: HostMessageInboxView }) {
   const [replyError, setReplyError] = useState("");
   const [replyingThreadId, setReplyingThreadId] = useState("");
   const allThreads = useMemo(
-    () => buildMessageThreads(inquiries, applications),
-    [applications, inquiries],
+    () => buildMessageThreads(inquiries, applications, programs),
+    [applications, inquiries, programs],
   );
   const threads = useMemo(
     () =>
@@ -878,14 +879,17 @@ function ThreadDetailPanel({
 
       {isEnded ? (
         <div className="mt-[var(--host-msg-20)] rounded-[var(--host-msg-8)] border border-[#6D7A8A] p-[var(--host-msg-18)]">
-          <div className="mb-[var(--host-msg-33)] flex justify-end px-[var(--host-msg-10)] py-[var(--host-msg-4)]">
+          <div className="mb-[var(--host-msg-20)] flex items-center justify-between px-[var(--host-msg-10)] py-[var(--host-msg-4)]">
+            <p className="text-[length:var(--host-msg-12)] font-semibold leading-[1.253] text-[#6D7A8A]">
+              실제 대화 내역 {formatTwoDigits(thread.messages.length)}
+            </p>
             <Minus
               aria-hidden="true"
               className="h-[var(--host-msg-19)] w-[var(--host-msg-34)] rounded-full bg-[#A8AFB8] px-[var(--host-msg-8)] text-white"
               strokeWidth={2}
             />
           </div>
-          <AutoAnswerPreview />
+          <EndedConversationTimeline thread={thread} />
         </div>
       ) : null}
 
@@ -961,35 +965,40 @@ function MiniProgramHeader({ thread }: { thread?: MessageThread }) {
   );
 }
 
-function AutoAnswerPreview({ align = "center" }: { align?: "center" | "right" }) {
+function EndedConversationTimeline({ thread }: { thread: MessageThread }) {
+  const messages = thread.messages;
+
+  if (messages.length === 0) {
+    return (
+      <div className="grid min-h-[var(--host-msg-180)] place-items-center rounded-[var(--host-msg-12)] border border-dashed border-[#D9D9D9] bg-[#F9F9F9] px-[var(--host-msg-18)] py-[var(--host-msg-24)] text-center text-[length:var(--host-msg-13)] font-medium leading-[1.6] text-[#6D7A8A]">
+        저장된 대화 내역이 없습니다.
+      </div>
+    );
+  }
+
   return (
-    <div
-      className={`w-full rounded-[var(--host-msg-12)] border border-[#D9D9D9] bg-[#F9F9F9] px-[var(--host-msg-18)] py-[var(--host-msg-24)] ${
-        align === "center" ? "mx-auto" : ""
-      }`}
-      style={{ maxWidth: scaledSize(365) }}
-    >
-      <p className="whitespace-pre-wrap text-[length:var(--host-msg-14)] font-medium leading-[1.253] text-[#0D0D0C]">
-        호스트가 입력한 첫인사 텍스트가 쓰여질 공간 입니다{"\n"}
-        ex) 안녕하세요 ㅇㅇㅇ에 관심 가져주셔서 감사해요.{"\n"}
-        궁금한 점이 있으시면 아래 항목을 눌러보세요 :)
-      </p>
-      <div className="mt-[var(--host-msg-6)] grid gap-[var(--host-msg-6)]">
-        {[
-          "집합 장소 및 시간 안내",
-          "준비물과 복장 안내",
-          "취소 및 환불 규정 안내",
-          "호스트와 직접 소통하기",
-        ].map((label, index) => (
-          <button
-            className={`flex min-h-[var(--host-msg-32)] items-center justify-center rounded-[var(--host-msg-7)] border border-[#F7B267] px-[var(--host-msg-12)] text-[length:var(--host-msg-12)] font-medium leading-[1.253] ${
-              index === 3 ? "text-[#FE701E]" : "text-[#6D7A8A]"
-            }`}
-            key={label}
-            type="button"
+    <div className="max-h-[min(44vh,var(--host-msg-365))] overflow-y-auto pr-[var(--host-msg-6)]">
+      <div className="grid gap-[var(--host-msg-12)]">
+        {messages.map((message) => (
+          <div
+            className={`flex ${message.sender === "host" ? "justify-end" : "justify-start"}`}
+            key={message.id}
           >
-            {label}
-          </button>
+            <div
+              className={`max-w-[72%] rounded-[var(--host-msg-12)] border px-[var(--host-msg-16)] py-[var(--host-msg-12)] text-[length:var(--host-msg-13)] font-medium leading-[1.6] shadow-sm ${
+                message.sender === "host"
+                  ? "rounded-br-[var(--host-msg-4)] border-[#FE701E] bg-[#FFF6EC] text-[#5B3A29]"
+                  : "rounded-bl-[var(--host-msg-4)] border-[#D9D9D9] bg-[#F9F9F9] text-[#5B3A29]"
+              }`}
+            >
+              <div className="mb-[var(--host-msg-4)] flex items-center gap-[var(--host-msg-6)] text-[length:var(--host-msg-11)] font-semibold leading-[1.253] text-[#6D7A8A]">
+                <span>{message.sender === "host" ? "호스트" : message.senderName || thread.guestName}</span>
+                <span>·</span>
+                <span>{message.timeLabel}</span>
+              </div>
+              <p className="whitespace-pre-line break-keep">{message.body}</p>
+            </div>
+          </div>
         ))}
       </div>
     </div>
@@ -1324,6 +1333,7 @@ function Avatar({
 function buildMessageThreads(
   inquiries: HostInquiry[],
   applications: HostApplication[],
+  programs: HostProgramDraft[],
 ): MessageThread[] {
   const applicationByProgramId = new Map(
     applications
@@ -1333,11 +1343,26 @@ function buildMessageThreads(
   const applicationByProgramTitle = new Map(
     applications.map((application) => [normalizeTitle(application.programTitle), application]),
   );
+  const programById = new Map<string, HostProgramDraft>();
+  const programByTitle = new Map<string, HostProgramDraft>();
+
+  for (const program of programs) {
+    programById.set(program.id, program);
+    if (program.slug) programById.set(program.slug, program);
+    programByTitle.set(normalizeTitle(program.title), program);
+  }
 
   return inquiries.map((inquiry, index) => {
     const relatedApplication =
       applicationByProgramId.get(inquiry.programId) ??
       applicationByProgramTitle.get(normalizeTitle(inquiry.programTitle));
+    const relatedProgram =
+      programById.get(inquiry.programId ?? "") ??
+      programByTitle.get(normalizeTitle(inquiry.programTitle)) ??
+      (relatedApplication
+        ? programById.get(relatedApplication.programId ?? "") ??
+          programByTitle.get(normalizeTitle(relatedApplication.programTitle))
+        : undefined);
     const messages = createHostThreadMessages(inquiry);
     const latestMessage = messages[messages.length - 1];
     const submitted = new Date(inquiry.submittedAt);
@@ -1361,17 +1386,28 @@ function buildMessageThreads(
       dateLabel,
       guestName: inquiry.contactName || "게스트명",
       id: inquiry.id || `message-thread-${index}`,
-      imageUrl: resolveThreadImage(inquiry.programTitle),
+      imageUrl:
+        relatedProgram?.image ||
+        resolveThreadImage(
+          relatedProgram?.title || inquiry.programTitle || relatedApplication?.programTitle || "",
+        ),
       lastMessage: latestMessage?.body ?? inquiry.message,
       messages,
-      openDate: dateLabel,
-      periodLabel: "0000. 00. 00 - 0000. 00. 00",
-      programId: inquiry.programId ?? "",
-      programNumber: inquiry.programId
-        ? `P-${inquiry.programId.slice(0, 4).toUpperCase()}`
+      openDate: formatDateLabel(relatedProgram?.recruitStart, dateLabel),
+      periodLabel: formatPeriodLabel(
+        relatedProgram?.activityStart,
+        relatedProgram?.activityEnd,
+      ),
+      programId: inquiry.programId || relatedProgram?.id || "",
+      programNumber: (inquiry.programId || relatedProgram?.id)
+        ? `P-${(inquiry.programId || relatedProgram?.id || "").slice(0, 4).toUpperCase()}`
         : `P-${String(index + 1).padStart(4, "0")}`,
       programTitle:
-        inquiry.programTitle || inquiry.title || "문의한 프로그램 명 또는 호스트 문의",
+        relatedProgram?.title ||
+        inquiry.programTitle ||
+        relatedApplication?.programTitle ||
+        inquiry.title ||
+        "문의한 프로그램 명 또는 호스트 문의",
       sourceId: inquiry.id,
       status: inquiry.status,
       timeLabel: formatRelativeTime(
@@ -1422,6 +1458,27 @@ function resolveThreadImage(programTitle: string): string {
     return "https://images.unsplash.com/photo-1500534314209-a25ddb2bd429?auto=format&fit=crop&w=480&q=80";
   }
   return "";
+}
+
+function formatDateLabel(value?: string, fallback = "0000. 00. 00"): string {
+  if (!value) return fallback;
+
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return fallback;
+
+  return new Intl.DateTimeFormat("ko-KR", {
+    day: "2-digit",
+    month: "2-digit",
+    year: "numeric",
+  })
+    .format(date)
+    .replace(/\.$/u, "");
+}
+
+function formatPeriodLabel(start?: string, end?: string): string {
+  const startLabel = formatDateLabel(start);
+  const endLabel = formatDateLabel(end);
+  return `${startLabel} - ${endLabel}`;
 }
 
 function normalizeTitle(value: string): string {

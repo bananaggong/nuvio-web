@@ -50,9 +50,9 @@ export const applicationStatusFlow: HostApplicationStatus[] = [
 export const applicationStatusLabels: Record<HostApplicationStatus, string> = {
   submitted: "접수",
   screening: "검토",
-  accepted: "합격",
-  rejected: "불합격",
-  checkedIn: "참여중",
+  accepted: "승인",
+  rejected: "거절",
+  checkedIn: "참여 중",
   completed: "완료",
 };
 
@@ -101,7 +101,7 @@ export const seedHostApplications: HostApplication[] = [
   },
   {
     id: "app-004",
-    programTitle: "제천 반값여행 페이백 2차",
+    programTitle: "제천 반값여행 네이버 2차",
     applicantName: "정유진",
     email: "yujin@example.com",
     phone: "010-2190-5366",
@@ -130,7 +130,7 @@ export const seedHostApplications: HostApplication[] = [
   {
     id: "app-006",
     programTitle: "로컬살롱",
-    applicantName: "윤지후",
+    applicantName: "오지후",
     email: "jihyu@example.com",
     phone: "010-5520-8821",
     status: "accepted",
@@ -153,28 +153,28 @@ export const seedHostApplications: HostApplication[] = [
     receiptCount: 0,
     signatureCompleted: false,
     reviewSubmitted: false,
-    memo: "블렌딩티 상품 기획 동기 확인 필요",
+    memo: "블렌딩 상품 기획 동기 확인 필요",
   },
 ];
 
 export const seedMessageTemplates: MessageTemplate[] = [
   {
     id: "msg-accepted",
-    name: "합격 안내",
-    trigger: "합격 처리 직후",
-    body: "{name}님, {program} 참여가 확정됐어요. 결제와 사전 서명을 오늘 안에 완료해 주세요.",
+    name: "승인 안내",
+    trigger: "승인 처리 직후",
+    body: "{name}님, {program} 참여가 확정되었습니다. 결제와 사전 서명을 오늘 안에 완료해 주세요.",
   },
   {
     id: "msg-reminder",
     name: "참여 전 리마인더",
     trigger: "시작 2일 전",
-    body: "{name}님, {program} 시작 전 준비물과 집결 장소를 확인해주세요. 영수증은 누비오에 저장하면 됩니다.",
+    body: "{name}님, {program} 시작 전 준비물과 집결 장소를 확인해 주세요. 영수증은 누비오에 저장하면 됩니다.",
   },
   {
     id: "msg-review",
     name: "리뷰 요청",
     trigger: "종료 다음 날",
-    body: "{name}님, 참여 후기는 지원 조건 확인과 다음 모집 홍보에 활용됩니다. 오늘 안에 리뷰를 남겨주세요.",
+    body: "{name}님, 참여 후기는 지원 조건 확인과 다음 모집 홍보에 사용됩니다. 오늘 안에 리뷰를 남겨주세요.",
   },
 ];
 
@@ -210,9 +210,9 @@ export function buildReportMetrics(applications: HostApplication[]): ReportMetri
       helper: "접수 DB 기준",
     },
     {
-      label: "선정/참여",
+      label: "확정/참여",
       value: `${summary.accepted + summary.checkedIn + summary.completed}명`,
-      helper: "합격 이후 상태",
+      helper: "승인 이후 상태",
     },
     {
       label: "수납 금액",

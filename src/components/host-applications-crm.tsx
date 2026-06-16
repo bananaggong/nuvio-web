@@ -761,7 +761,7 @@ function ApplicationDetailPanel({
       </p>
 
       <article className="mt-[13px] h-[calc(100vh_-_4.861vw_-_var(--app-69)_-_107px)] min-h-[705px] w-[var(--app-555)] overflow-y-auto rounded-[6px] border border-[#6D7A8A] bg-[#F9F9F9] px-[24px] py-[18px]">
-        <div className="grid grid-cols-[96px_minmax(0,1fr)_92px_92px] gap-x-[14px] border-b border-[#FE701E] pb-[22px]">
+        <div className="grid grid-cols-[96px_minmax(0,1fr)_108px_108px] gap-x-[12px] border-b border-[#FE701E] pb-[22px]">
           <div className="h-[96px] w-[96px] overflow-hidden rounded-[16px] bg-[#D9D9D9]">
             {programImageUrl ? (
               // eslint-disable-next-line @next/next/no-img-element
@@ -785,11 +785,11 @@ function ApplicationDetailPanel({
           </div>
           <div className="pt-[17px] text-[12px] font-normal leading-[1.253] text-[#6D7A8A]">
             <p>시작일</p>
-            <p className="mt-[18px] font-semibold">{startDate}</p>
+            <p className="mt-[18px] whitespace-nowrap font-semibold">{startDate}</p>
           </div>
           <div className="pt-[17px] text-[12px] font-normal leading-[1.253] text-[#6D7A8A]">
             <p>종료일</p>
-            <p className="mt-[18px] font-semibold">{endDate}</p>
+            <p className="mt-[18px] whitespace-nowrap font-semibold">{endDate}</p>
           </div>
         </div>
 

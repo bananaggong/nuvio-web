@@ -1,4 +1,14 @@
-import { eq, inArray } from "drizzle-orm";
+import {
+  and,
+  asc,
+  desc,
+  eq,
+  inArray,
+  isNull,
+  lte,
+  or,
+  type SQL,
+} from "drizzle-orm";
 import { getDb } from "@/db/client";
 import {
   programApplications,
@@ -11,6 +21,7 @@ import {
   type MessageChannel,
 } from "@/lib/message-automation";
 import type { HostApplication } from "@/lib/host-operations";
+import { sendSmsMessage } from "@/lib/sms-provider";
 
 type ScheduleSelectedMessagesInput = {
   applicationIds: string[];
@@ -21,6 +32,26 @@ type ScheduleSelectedMessagesInput = {
   templateId?: string;
 };
 
+export type ScheduledMessageDeliveryStatus = MessageCampaignStatus | "failed";
+
+export type HostScheduledMessage = {
+  applicationId: string;
+  applicantName: string;
+  body: string;
+  channel: MessageChannel;
+  createdAt: string;
+  deliveryStatus: ScheduledMessageDeliveryStatus;
+  error: string;
+  id: string;
+  programId: string;
+  programTitle: string;
+  recipient: string;
+  scheduledFor: string;
+  sentAt: string;
+  submittedAt: string;
+  updatedAt: string;
+};
+
 export type ScheduleSelectedMessagesResult = {
   insertedCount: number;
   recipientCount: number;
@@ -28,12 +59,21 @@ export type ScheduleSelectedMessagesResult = {
 
 export async function scheduleSelectedApplicationMessages(
   input: ScheduleSelectedMessagesInput,
+  options: { villageIds?: string[] } = {},
 ): Promise<ScheduleSelectedMessagesResult> {
   const applicationIds = Array.from(
     new Set(input.applicationIds.map((id) => id.trim()).filter(isUuid)),
   );
+  if (options.villageIds && options.villageIds.length === 0) {
+    return { insertedCount: 0, recipientCount: input.applicationIds.length };
+  }
   if (applicationIds.length === 0) {
     return { insertedCount: 0, recipientCount: input.applicationIds.length };
+  }
+
+  const conditions: SQL[] = [inArray(programApplications.id, applicationIds)];
+  if (options.villageIds) {
+    conditions.push(inArray(programsTable.villageId, options.villageIds));
   }
 
   const rows = await getDb()
@@ -54,7 +94,7 @@ export async function scheduleSelectedApplicationMessages(
     })
     .from(programApplications)
     .leftJoin(programsTable, eq(programApplications.programId, programsTable.id))
-    .where(inArray(programApplications.id, applicationIds));
+    .where(and(...conditions));
 
   const scheduledFor = parseKoreaLocalDatetime(input.scheduledFor);
   const values = rows
@@ -76,7 +116,8 @@ export async function scheduleSelectedApplicationMessages(
         status: row.status,
         submittedAt: row.submittedAt.toISOString(),
       };
-      const recipient = input.channel === "email" ? application.email : application.phone;
+      const recipient =
+        input.channel === "email" ? application.email : application.phone;
 
       if (!recipient.trim()) return null;
 
@@ -97,11 +138,179 @@ export async function scheduleSelectedApplicationMessages(
     return { insertedCount: 0, recipientCount: rows.length };
   }
 
-  const insertedRows = await getDb().insert(scheduledMessages).values(values).returning({
-    id: scheduledMessages.id,
-  });
+  const insertedRows = await getDb()
+    .insert(scheduledMessages)
+    .values(values)
+    .returning({
+      id: scheduledMessages.id,
+    });
 
   return { insertedCount: insertedRows.length, recipientCount: rows.length };
+}
+
+export async function listHostScheduledMessages(
+  options: { limit?: number; villageIds?: string[] } = {},
+): Promise<HostScheduledMessage[]> {
+  if (options.villageIds && options.villageIds.length === 0) return [];
+
+  const conditions: SQL[] = [];
+  if (options.villageIds) {
+    conditions.push(inArray(programsTable.villageId, options.villageIds));
+  }
+
+  let query = getDb()
+    .select({
+      applicationId: programApplications.id,
+      applicantName: programApplications.applicantName,
+      body: scheduledMessages.body,
+      channel: scheduledMessages.channel,
+      createdAt: scheduledMessages.createdAt,
+      deliveryStatus: scheduledMessages.deliveryStatus,
+      error: scheduledMessages.error,
+      id: scheduledMessages.id,
+      programId: programApplications.programId,
+      programTitle: programsTable.title,
+      recipient: scheduledMessages.recipient,
+      scheduledFor: scheduledMessages.scheduledFor,
+      sentAt: scheduledMessages.sentAt,
+      submittedAt: programApplications.submittedAt,
+      updatedAt: scheduledMessages.updatedAt,
+    })
+    .from(scheduledMessages)
+    .leftJoin(
+      programApplications,
+      eq(scheduledMessages.applicationId, programApplications.id),
+    )
+    .leftJoin(programsTable, eq(programApplications.programId, programsTable.id))
+    .$dynamic();
+
+  if (conditions.length === 1) {
+    query = query.where(conditions[0]);
+  } else if (conditions.length > 1) {
+    query = query.where(and(...conditions));
+  }
+
+  const rows = await query
+    .orderBy(desc(scheduledMessages.createdAt))
+    .limit(options.limit ?? 200);
+
+  return rows.map((row) => ({
+    applicationId: row.applicationId ?? "",
+    applicantName: row.applicantName ?? "신청자",
+    body: row.body,
+    channel: row.channel,
+    createdAt: row.createdAt.toISOString(),
+    deliveryStatus: row.deliveryStatus,
+    error: row.error ?? "",
+    id: row.id,
+    programId: row.programId ?? "",
+    programTitle: row.programTitle ?? "누비오 프로그램",
+    recipient: row.recipient,
+    scheduledFor: row.scheduledFor?.toISOString() ?? "",
+    sentAt: row.sentAt?.toISOString() ?? "",
+    submittedAt: row.submittedAt?.toISOString() ?? "",
+    updatedAt: row.updatedAt.toISOString(),
+  }));
+}
+
+export async function deleteHostScheduledMessages(
+  messageIds: string[],
+  options: { villageIds?: string[] } = {},
+): Promise<number> {
+  const normalizedIds = Array.from(
+    new Set(messageIds.map((id) => id.trim()).filter(isUuid)),
+  );
+  if (normalizedIds.length === 0) return 0;
+  if (options.villageIds && options.villageIds.length === 0) return 0;
+
+  const conditions: SQL[] = [inArray(scheduledMessages.id, normalizedIds)];
+  if (options.villageIds) {
+    conditions.push(inArray(programsTable.villageId, options.villageIds));
+  }
+
+  let allowedQuery = getDb()
+    .select({
+      id: scheduledMessages.id,
+    })
+    .from(scheduledMessages)
+    .leftJoin(
+      programApplications,
+      eq(scheduledMessages.applicationId, programApplications.id),
+    )
+    .leftJoin(programsTable, eq(programApplications.programId, programsTable.id))
+    .$dynamic();
+
+  allowedQuery =
+    conditions.length === 1
+      ? allowedQuery.where(conditions[0])
+      : allowedQuery.where(and(...conditions));
+
+  const allowedRows = await allowedQuery;
+  const allowedIds = allowedRows.map((row) => row.id);
+  if (allowedIds.length === 0) return 0;
+
+  const deletedRows = await getDb()
+    .delete(scheduledMessages)
+    .where(inArray(scheduledMessages.id, allowedIds))
+    .returning({ id: scheduledMessages.id });
+
+  return deletedRows.length;
+}
+
+export async function processDueScheduledSmsMessages(
+  options: { limit?: number } = {},
+): Promise<{ failed: number; processed: number; sent: number }> {
+  const now = new Date();
+  const rows = await getDb()
+    .select({
+      body: scheduledMessages.body,
+      id: scheduledMessages.id,
+      recipient: scheduledMessages.recipient,
+    })
+    .from(scheduledMessages)
+    .where(
+      and(
+        eq(scheduledMessages.channel, "sms"),
+        eq(scheduledMessages.deliveryStatus, "scheduled"),
+        or(
+          isNull(scheduledMessages.scheduledFor),
+          lte(scheduledMessages.scheduledFor, now),
+        ),
+      ),
+    )
+    .orderBy(asc(scheduledMessages.scheduledFor))
+    .limit(options.limit ?? 50);
+
+  let sent = 0;
+  let failed = 0;
+
+  for (const row of rows) {
+    try {
+      await sendSmsMessage({ body: row.body, to: row.recipient });
+      await getDb()
+        .update(scheduledMessages)
+        .set({
+          deliveryStatus: "sent",
+          error: null,
+          sentAt: new Date(),
+          updatedAt: new Date(),
+        })
+        .where(eq(scheduledMessages.id, row.id));
+      sent += 1;
+    } catch (error) {
+      await getDb()
+        .update(scheduledMessages)
+        .set({
+          deliveryStatus: "failed",
+          error: error instanceof Error ? error.message : "SMS delivery failed.",
+          updatedAt: new Date(),
+        })
+        .where(eq(scheduledMessages.id, row.id));
+      failed += 1;
+    }
+  }
+
+  return { failed, processed: rows.length, sent };
 }
 
 function parseKoreaLocalDatetime(value: string): Date | null {
