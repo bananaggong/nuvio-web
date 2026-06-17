@@ -1,5 +1,9 @@
 import { NextResponse } from "next/server";
 import {
+  apiError,
+  applyRateLimit,
+  enforceContentLength,
+  enforceSameOrigin,
   isApiAuthError,
   requireAuthenticatedUser,
 } from "@/lib/api-security";
@@ -11,6 +15,7 @@ import {
 export const runtime = "nodejs";
 
 const MAX_MESSAGE_LENGTH = 2000;
+const MAX_MESSAGE_PAYLOAD_BYTES = 8 * 1024;
 
 export async function POST(
   request: Request,
@@ -18,6 +23,19 @@ export async function POST(
 ) {
   const auth = await requireAuthenticatedUser();
   if (isApiAuthError(auth)) return auth.response;
+
+  const crossOrigin = enforceSameOrigin(request);
+  if (crossOrigin) return crossOrigin;
+
+  const payloadTooLarge = enforceContentLength(request, MAX_MESSAGE_PAYLOAD_BYTES);
+  if (payloadTooLarge) return payloadTooLarge;
+
+  const limited = applyRateLimit(request, {
+    key: "me-inquiry-message:create",
+    limit: 30,
+    windowMs: 15 * 60 * 1000,
+  });
+  if (limited) return limited;
 
   try {
     const { id } = await params;
@@ -44,6 +62,9 @@ export async function POST(
         { status: 404 },
       );
     }
+    if (inquiry.status === "closed") {
+      return apiError("Closed inquiries cannot receive new messages.", 409);
+    }
 
     const savedMessage = await createProgramInquiryMessage(id, {
       message,
@@ -54,14 +75,11 @@ export async function POST(
         auth.user.email ||
         inquiry.contactName,
       senderRole: "user",
-      statusAfter: inquiry.status === "closed" ? "closed" : "new",
+      statusAfter: "new",
     });
 
     if (!savedMessage) {
-      return NextResponse.json(
-        { error: "Message was not saved." },
-        { status: 500 },
-      );
+      return apiError("Closed inquiries cannot receive new messages.", 409);
     }
 
     return NextResponse.json({ data: savedMessage }, { status: 201 });

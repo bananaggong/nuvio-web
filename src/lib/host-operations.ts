@@ -15,9 +15,11 @@ export type HostApplication = {
   formId?: string;
   formSnapshot?: Record<string, unknown>;
   programId?: string;
+  programCreatedBy?: string;
   programRunId?: string;
   programRunTitle?: string;
   programTitle: string;
+  villageId?: string;
   applicantName: string;
   email: string;
   phone: string;

@@ -1,15 +1,34 @@
 import { NextResponse } from "next/server";
-import { isApiAuthError, requireHostRole } from "@/lib/api-security";
+import {
+  applyRateLimit,
+  enforceContentLength,
+  enforceSameOrigin,
+  isApiAuthError,
+  requireHostRole,
+} from "@/lib/api-security";
 import { deleteApplicationFormTemplate } from "@/lib/application-form-db";
 
 export const runtime = "nodejs";
 
 export async function DELETE(
-  _request: Request,
+  request: Request,
   { params }: { params: Promise<{ id: string }> },
 ) {
   const auth = await requireHostRole();
   if (isApiAuthError(auth)) return auth.response;
+
+  const crossOrigin = enforceSameOrigin(request);
+  if (crossOrigin) return crossOrigin;
+
+  const payloadTooLarge = enforceContentLength(request, 1024);
+  if (payloadTooLarge) return payloadTooLarge;
+
+  const limited = applyRateLimit(request, {
+    key: "host-form:delete",
+    limit: 30,
+    windowMs: 15 * 60 * 1000,
+  });
+  if (limited) return limited;
 
   try {
     const { id } = await params;

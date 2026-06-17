@@ -1,4 +1,4 @@
-import { and, desc, eq } from "drizzle-orm";
+import { and, desc, eq, sql } from "drizzle-orm";
 import { getDb } from "@/db/client";
 import { programs as programsTable, savedPrograms } from "@/db/schema";
 import { getProgramRecordByIdentifier } from "@/lib/program-db";
@@ -59,59 +59,65 @@ export async function updateUserProgramState(
     throw new Error("Program was not found.");
   }
 
-  const [current] = await getDb()
-    .select()
-    .from(savedPrograms)
-    .where(
-      and(
-        eq(savedPrograms.userId, userId),
-        eq(savedPrograms.programId, program.id),
-      ),
-    )
-    .limit(1);
+  await getDb().transaction(async (tx) => {
+    await tx.execute(
+      sql`select pg_advisory_xact_lock(hashtext(${`user-program-state:${userId}:${program.id}`}))`,
+    );
 
-  const next = {
-    bookmarked: current?.bookmarked ?? false,
-    alertEnabled: current?.alertEnabled ?? false,
-    trackingEnabled: current?.trackingEnabled ?? false,
-    [kind]: enabled,
-  };
-
-  if (!next.bookmarked && !next.alertEnabled && !next.trackingEnabled) {
-    await getDb()
-      .delete(savedPrograms)
+    const [current] = await tx
+      .select()
+      .from(savedPrograms)
       .where(
         and(
           eq(savedPrograms.userId, userId),
           eq(savedPrograms.programId, program.id),
         ),
-      );
-    return listUserProgramState(userId);
-  }
+      )
+      .limit(1);
 
-  const value = {
-    alertEnabled: next.alertEnabled,
-    bookmarked: next.bookmarked,
-    programId: program.id,
-    trackingEnabled: next.trackingEnabled,
-    userId,
-  } satisfies Partial<SavedProgramRow> & {
-    programId: string;
-    userId: string;
-  };
+    const next = {
+      bookmarked: current?.bookmarked ?? false,
+      alertEnabled: current?.alertEnabled ?? false,
+      trackingEnabled: current?.trackingEnabled ?? false,
+      [kind]: enabled,
+    };
 
-  await getDb()
-    .insert(savedPrograms)
-    .values(value)
-    .onConflictDoUpdate({
-      target: [savedPrograms.userId, savedPrograms.programId],
-      set: {
-        alertEnabled: value.alertEnabled,
-        bookmarked: value.bookmarked,
-        trackingEnabled: value.trackingEnabled,
-        updatedAt: new Date(),
-      },
-    });
+    if (!next.bookmarked && !next.alertEnabled && !next.trackingEnabled) {
+      await tx
+        .delete(savedPrograms)
+        .where(
+          and(
+            eq(savedPrograms.userId, userId),
+            eq(savedPrograms.programId, program.id),
+          ),
+        );
+      return;
+    }
+
+    const value = {
+      alertEnabled: next.alertEnabled,
+      bookmarked: next.bookmarked,
+      programId: program.id,
+      trackingEnabled: next.trackingEnabled,
+      userId,
+    } satisfies Partial<SavedProgramRow> & {
+      programId: string;
+      userId: string;
+    };
+
+    await tx
+      .insert(savedPrograms)
+      .values(value)
+      .onConflictDoUpdate({
+        target: [savedPrograms.userId, savedPrograms.programId],
+        set: {
+          alertEnabled: value.alertEnabled,
+          bookmarked: value.bookmarked,
+          trackingEnabled: value.trackingEnabled,
+          updatedAt: new Date(),
+        },
+      });
+  });
 
   return listUserProgramState(userId);
 }

@@ -1,5 +1,9 @@
 import { NextResponse } from "next/server";
-import { isApiAuthError, requireAdminRole } from "@/lib/api-security";
+import {
+  applyRateLimit,
+  isApiAuthError,
+  requireAdminRole,
+} from "@/lib/api-security";
 import { listAuditLogs } from "@/lib/audit-log-db";
 
 export const runtime = "nodejs";
@@ -7,6 +11,13 @@ export const runtime = "nodejs";
 export async function GET(request: Request) {
   const auth = await requireAdminRole();
   if (isApiAuthError(auth)) return auth.response;
+
+  const limited = applyRateLimit(request, {
+    key: "admin-audit-logs:list",
+    limit: 90,
+    windowMs: 15 * 60 * 1000,
+  });
+  if (limited) return limited;
 
   try {
     const { searchParams } = new URL(request.url);

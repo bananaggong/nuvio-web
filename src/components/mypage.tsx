@@ -46,6 +46,10 @@ import {
   type ProgramAutoReplyConfig,
   type ProgramAutoReplyItem,
 } from "@/lib/program-auto-replies";
+import {
+  formatApplicationDisplayCode,
+  formatProgramDisplayName,
+} from "@/lib/display-code";
 import { launchFeatureFlags } from "@/lib/launch-feature-flags";
 import { programPath } from "@/lib/program-routing";
 import type { Program, Review } from "@/lib/types";
@@ -1526,7 +1530,9 @@ function buildMessageThreads({
       id: `notification-${notification.id}`,
       messageBody: notification.body,
       program,
-      title: program?.title ?? application?.programTitle ?? notification.title,
+      title: program?.title ?? (application
+        ? formatProgramDisplayName(application.programTitle, application.programId)
+        : notification.title),
       unread: !notification.readAt,
     });
   });
@@ -1539,7 +1545,7 @@ function buildMessageThreads({
       createdAt: application.submittedAt,
       id: `application-${application.id}`,
       program,
-      title: program?.title ?? application.programTitle,
+      title: program?.title ?? formatProgramDisplayName(application.programTitle, application.programId),
       unread: false,
     });
   });
@@ -1581,7 +1587,10 @@ function buildInquiryMessageThreads(
     if (!latest) return [];
 
     const program = findProgramForInquiry(latest, programs);
-    const title = program?.title || latest.programTitle || latest.title;
+    const title = formatProgramDisplayName(
+      program?.title || latest.programTitle || latest.title,
+      latest.programId,
+    );
     const hostName = program?.sourceName || "프로그램 관리자";
     const closed = program?.status === "closed" || program?.status === "earlyClosed";
     const inquiryMessages = sortedItems.flatMap(createMessageBubblesFromInquiry);
@@ -1607,7 +1616,7 @@ function buildInquiryMessageThreads(
           )}`
         : "메시지함에서 연결됨",
       programId: latest.programId ?? "",
-      programTitle: latest.programTitle || title,
+      programTitle: title,
       statusLabel: closed ? "마감" : "문의 가능",
       statusTone: closed ? "closed" : "open",
       timeLabel: formatMessageRelativeTime(latestMessageCreatedAt),
@@ -1639,6 +1648,10 @@ function createMessageThread({
     program?.status === "earlyClosed" ||
     application?.status === "completed" ||
     application?.status === "rejected";
+  const displayTitle = formatProgramDisplayName(
+    title || program?.title || application?.programTitle,
+    application?.programId ?? (program ? String(program.id || program.slug || "") : ""),
+  );
 
   return {
     hostName: program?.sourceName || "호스트명",
@@ -1648,7 +1661,7 @@ function createMessageThread({
       {
         body:
           messageBody ||
-          `${program?.sourceName || "프로그램 관리자"}입니다.\n${title} 관련 안내와 문의를 이 메시지함에서 확인할 수 있습니다.`,
+          `${program?.sourceName || "프로그램 관리자"}입니다.\n${displayTitle} 관련 안내와 문의를 이 메시지함에서 확인할 수 있습니다.`,
         id: `${id}-host-message`,
         sender: "host",
         timeLabel: formatMessageRelativeTime(createdAt),
@@ -1662,11 +1675,11 @@ function createMessageThread({
     programId:
       application?.programId ??
       (program ? String(program.id || program.slug || "") : ""),
-    programTitle: title || program?.title || application?.programTitle || "",
+    programTitle: displayTitle,
     statusLabel: closed ? "마감" : "모집중",
     statusTone: closed ? "closed" : "open",
     timeLabel: formatMessageRelativeTime(createdAt),
-    title: title || "프로그램 제목",
+    title: displayTitle,
     unread,
   };
 }
@@ -1677,7 +1690,10 @@ function createRequestedProgramMessageThread(
   inquiries: HostInquiry[] = [],
 ): MessageThread {
   const program = findProgramForRequestedMessage(requested, programs);
-  const title = program?.title || requested.programTitle || "프로그램";
+  const title = formatProgramDisplayName(
+    program?.title || requested.programTitle,
+    requested.programId || (program ? String(program.id) : ""),
+  );
   const hostName = requested.hostName || program?.sourceName || "프로그램 관리자";
   const matchingInquiries = inquiries
     .filter((inquiry) => inquiryMatchesRequestedProgram(inquiry, requested, program))
@@ -2912,7 +2928,7 @@ function TripMiniCard({
       <div className="relative aspect-square w-full overflow-hidden rounded-[16px] bg-[#f3f3f3]">
         {image ? (
           <Image
-            alt={program?.title ?? application.programTitle}
+            alt={program?.title ?? formatProgramDisplayName(application.programTitle, application.programId)}
             className="object-cover transition duration-300 group-hover:scale-105"
             fill
             sizes="(min-width: 1920px) 360px, (min-width: 1024px) 18vw, (min-width: 640px) 45vw, 90vw"
@@ -2928,7 +2944,7 @@ function TripMiniCard({
         {tripStatusLabels[application.status]} {formatShortDate(application.submittedAt)}
       </p>
       <p className="mt-1 line-clamp-2 min-h-[44px] text-[16px] font-semibold leading-[22px] text-[#4B3328] transition group-hover:text-[#f7983a]">
-        {program?.title ?? application.programTitle}
+        {program?.title ?? formatProgramDisplayName(application.programTitle, application.programId)}
       </p>
     </Link>
   );
@@ -2973,14 +2989,14 @@ function TripDetailCard({
             {tripStatusLabels[application.status]}
           </span>
           <span className="text-[12px] text-[#8F7A6C]">
-            신청번호 {application.id}
+            신청번호 {formatApplicationDisplayCode(application.id, application.submittedAt)}
           </span>
         </div>
         <Link
           className="mt-2 line-clamp-2 text-[18px] font-semibold leading-7 text-[#4B3328] hover:text-[#f7983a]"
           href={href}
         >
-          {program?.title ?? application.programTitle}
+          {program?.title ?? formatProgramDisplayName(application.programTitle, application.programId)}
         </Link>
         <div className="mt-3 grid gap-1 text-[13px] leading-6 text-[#8F7A6C] sm:grid-cols-2">
           <span>신청일 {formatDate(application.submittedAt)}</span>

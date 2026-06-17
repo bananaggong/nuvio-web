@@ -1,4 +1,5 @@
 import type { HostVillageMediaDraft } from "@/lib/village-media-db";
+import { readLimitedResponseText } from "@/lib/outbound-fetch-security";
 
 export const FACEBOOK_OAUTH_SCOPES = [
   "pages_show_list",
@@ -75,6 +76,9 @@ export type FacebookOAuthConfig = {
   graphVersion: string;
   redirectUri: string;
 };
+
+const META_GRAPH_TIMEOUT_MS = 10_000;
+const META_GRAPH_MAX_RESPONSE_BYTES = 64 * 1024;
 
 export function hasFacebookOAuthConfig(): boolean {
   return Boolean(process.env.FACEBOOK_APP_ID && process.env.FACEBOOK_APP_SECRET);
@@ -286,14 +290,29 @@ async function fetchMetaJson<T>(url: URL | string): Promise<T> {
   const response = await fetch(url, {
     headers: { Accept: "application/json" },
     cache: "no-store",
+    signal: AbortSignal.timeout(META_GRAPH_TIMEOUT_MS),
   });
-  const payload = (await response.json()) as T & { error?: MetaGraphError };
+  const payloadText = await readLimitedResponseText(
+    response,
+    META_GRAPH_MAX_RESPONSE_BYTES,
+  );
+  const payload = parseMetaJsonPayload<T>(payloadText);
 
   if (!response.ok || payload.error) {
     throw new Error(formatMetaError(payload.error, response.status));
   }
 
   return payload;
+}
+
+function parseMetaJsonPayload<T>(value: string): T & { error?: MetaGraphError } {
+  if (!value.trim()) return {} as T & { error?: MetaGraphError };
+
+  try {
+    return JSON.parse(value) as T & { error?: MetaGraphError };
+  } catch {
+    return {} as T & { error?: MetaGraphError };
+  }
 }
 
 function normalizeGraphVersion(value: string | undefined): string {

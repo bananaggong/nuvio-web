@@ -1,31 +1,45 @@
 import { NextResponse } from "next/server";
-import { isApiAuthError, requireHostRole } from "@/lib/api-security";
+import {
+  applyRateLimit,
+  enforceContentLength,
+  enforceSameOrigin,
+  isApiAuthError,
+  requireHostRole,
+} from "@/lib/api-security";
 import { safeCreateAuditLog } from "@/lib/audit-log-db";
 import { listApplicationFormTemplatesFromDb } from "@/lib/application-form-db";
 import {
+  HostProgramAccessError,
   listHostProgramDraftsFromDb,
   normalizeHostProgramDraft,
   upsertHostProgramDraft,
 } from "@/lib/host-program-db";
 import { getProgramPublishBlockers } from "@/lib/host-program-publish-readiness";
 import {
-  listHostVillageWorkspaces,
+  listManageableHostVillageWorkspaces,
   type HostVillageWorkspace,
 } from "@/lib/host-village-access";
 import type { HostProgramDraft } from "@/lib/host-program-studio";
 
 export const runtime = "nodejs";
 
-export async function GET() {
+export async function GET(request: Request) {
   const auth = await requireHostRole();
   if (isApiAuthError(auth)) return auth.response;
+
+  const limited = applyRateLimit(request, {
+    key: "host-program:list",
+    limit: 120,
+    windowMs: 15 * 60 * 1000,
+  });
+  if (limited) return limited;
 
   try {
     const drafts =
       auth.profile.role === "admin"
         ? await listHostProgramDraftsFromDb()
         : await listHostProgramDraftsFromDb({
-            villageIds: (await listHostVillageWorkspaces(auth)).map(
+            villageIds: (await listManageableHostVillageWorkspaces(auth)).map(
               (workspace) => workspace.villageId,
             ),
           });
@@ -47,11 +61,26 @@ export async function POST(request: Request) {
   const auth = await requireHostRole();
   if (isApiAuthError(auth)) return auth.response;
 
+  const crossOrigin = enforceSameOrigin(request);
+  if (crossOrigin) return crossOrigin;
+
+  const payloadTooLarge = enforceContentLength(request, 512 * 1024);
+  if (payloadTooLarge) return payloadTooLarge;
+
+  const limited = applyRateLimit(request, {
+    key: "host-program:save",
+    limit: 60,
+    windowMs: 15 * 60 * 1000,
+  });
+  if (limited) return limited;
+
   try {
-    const body = await request.json();
+    const body = await request.json().catch(() => ({}));
     const draft = normalizeHostProgramDraft(body);
     const workspaces =
-      auth.profile.role === "admin" ? [] : await listHostVillageWorkspaces(auth);
+      auth.profile.role === "admin"
+        ? []
+        : await listManageableHostVillageWorkspaces(auth);
     const scopedDraft =
       auth.profile.role === "admin"
         ? draft
@@ -112,6 +141,10 @@ export async function POST(request: Request) {
 
     return NextResponse.json({ data: savedDraft }, { status: 201 });
   } catch (error) {
+    if (error instanceof HostProgramAccessError) {
+      return NextResponse.json({ error: error.message }, { status: 403 });
+    }
+
     return NextResponse.json(
       {
         error:

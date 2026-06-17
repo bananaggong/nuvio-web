@@ -1,21 +1,34 @@
 import { NextResponse } from "next/server";
-import { isApiAuthError, requireHostRole } from "@/lib/api-security";
+import {
+  applyRateLimit,
+  enforceContentLength,
+  enforceSameOrigin,
+  isApiAuthError,
+  requireHostRole,
+} from "@/lib/api-security";
 import {
   listReportProjectsFromDb,
   normalizeReportProject,
   upsertReportProject,
 } from "@/lib/report-automation-db";
 import {
-  listHostVillageWorkspaces,
+  listManageableHostVillageWorkspaces,
   type HostVillageWorkspace,
 } from "@/lib/host-village-access";
 import type { ReportProject } from "@/lib/report-automation";
 
 export const runtime = "nodejs";
 
-export async function GET() {
+export async function GET(request: Request) {
   const auth = await requireHostRole();
   if (isApiAuthError(auth)) return auth.response;
+
+  const limited = applyRateLimit(request, {
+    key: "host-report-project:list",
+    limit: 120,
+    windowMs: 15 * 60 * 1000,
+  });
+  if (limited) return limited;
 
   try {
     const projects = await listReportProjectsFromDb();
@@ -23,7 +36,7 @@ export async function GET() {
       return NextResponse.json({ data: projects });
     }
 
-    const workspaces = await listHostVillageWorkspaces(auth);
+    const workspaces = await listManageableHostVillageWorkspaces(auth);
     const scopedProjects = projects.filter((project) =>
       findProjectWorkspace(project, workspaces),
     );
@@ -46,11 +59,26 @@ export async function POST(request: Request) {
   const auth = await requireHostRole();
   if (isApiAuthError(auth)) return auth.response;
 
+  const crossOrigin = enforceSameOrigin(request);
+  if (crossOrigin) return crossOrigin;
+
+  const payloadTooLarge = enforceContentLength(request, 256 * 1024);
+  if (payloadTooLarge) return payloadTooLarge;
+
+  const limited = applyRateLimit(request, {
+    key: "host-report-project:save",
+    limit: 60,
+    windowMs: 15 * 60 * 1000,
+  });
+  if (limited) return limited;
+
   try {
-    const body = await request.json();
+    const body = await request.json().catch(() => ({}));
     const project = normalizeReportProject(body);
     const workspaces =
-      auth.profile.role === "admin" ? [] : await listHostVillageWorkspaces(auth);
+      auth.profile.role === "admin"
+        ? []
+        : await listManageableHostVillageWorkspaces(auth);
     const scopedProject =
       auth.profile.role === "admin"
         ? project

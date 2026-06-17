@@ -1,6 +1,20 @@
-import { and, desc, eq, inArray } from "drizzle-orm";
+import { and, count, desc, eq, inArray } from "drizzle-orm";
 import { getDb } from "@/db/client";
-import { programs as programsTable } from "@/db/schema";
+import {
+  announcements,
+  messageTemplates,
+  participantDocuments,
+  programApplicationForms,
+  programApplications,
+  programAutoReplies,
+  programInquiries,
+  programRuns,
+  programs as programsTable,
+  reportProjects,
+  reviews,
+  savedPrograms,
+  scheduledMessages,
+} from "@/db/schema";
 import {
   createHostProgramItineraryDay,
   decodeHostProgramMeta,
@@ -19,6 +33,40 @@ type ProgramRow = typeof programsTable.$inferSelect;
 type UpsertHostProgramDraftOptions = {
   allowedVillageIds?: string[];
 };
+
+export type HostProgramDeletionImpact = {
+  announcementCount: number;
+  applicationCount: number;
+  applicationFormCount: number;
+  autoReplyCount: number;
+  inquiryCount: number;
+  messageTemplateCount: number;
+  participantDocumentCount: number;
+  programRunCount: number;
+  reportProjectCount: number;
+  reviewCount: number;
+  savedProgramCount: number;
+  scheduledMessageCount: number;
+};
+
+export class HostProgramDeletionBlockedError extends Error {
+  impact: HostProgramDeletionImpact;
+
+  constructor(impact: HostProgramDeletionImpact) {
+    super(
+      "This program has operational history attached and cannot be hard deleted.",
+    );
+    this.name = "HostProgramDeletionBlockedError";
+    this.impact = impact;
+  }
+}
+
+export class HostProgramAccessError extends Error {
+  constructor() {
+    super("You do not have permission to update this program.");
+    this.name = "HostProgramAccessError";
+  }
+}
 
 const defaultTheme: ThemeKey = "workation";
 const defaultPeriod: PeriodKey = "week";
@@ -70,6 +118,12 @@ export async function deleteHostProgramDraftFromDb(
 ): Promise<HostProgramDraft | null> {
   if (options.allowedVillageIds && options.allowedVillageIds.length === 0) return null;
 
+  const impact = await getHostProgramDeletionImpactFromDb(programId, options);
+  if (!impact) return null;
+  if (hasHostProgramDeletionImpact(impact)) {
+    throw new HostProgramDeletionBlockedError(impact);
+  }
+
   const conditions = [eq(programsTable.id, programId)];
 
   if (options.allowedVillageIds) {
@@ -82,6 +136,93 @@ export async function deleteHostProgramDraftFromDb(
     .returning();
 
   return row ? mapProgramRowToHostDraft(row) : null;
+}
+
+export async function getHostProgramDeletionImpactFromDb(
+  programId: string,
+  options: { allowedVillageIds?: string[] } = {},
+): Promise<HostProgramDeletionImpact | null> {
+  if (options.allowedVillageIds && options.allowedVillageIds.length === 0) {
+    return null;
+  }
+
+  const conditions = [eq(programsTable.id, programId)];
+
+  if (options.allowedVillageIds) {
+    conditions.push(inArray(programsTable.villageId, options.allowedVillageIds));
+  }
+
+  const [program] = await getDb()
+    .select({ id: programsTable.id })
+    .from(programsTable)
+    .where(and(...conditions))
+    .limit(1);
+
+  if (!program) return null;
+
+  const [
+    announcementCount,
+    applicationCount,
+    applicationFormCount,
+    autoReplyCount,
+    inquiryCount,
+    messageTemplateCount,
+    participantDocumentCount,
+    programRunCount,
+    reportProjectCount,
+    reviewCount,
+    savedProgramCount,
+    scheduledMessageCount,
+  ] = await Promise.all([
+    countRows(announcements, eq(announcements.programId, programId)),
+    countRows(programApplications, eq(programApplications.programId, programId)),
+    countRows(programApplicationForms, eq(programApplicationForms.programId, programId)),
+    countRows(programAutoReplies, eq(programAutoReplies.programId, programId)),
+    countRows(programInquiries, eq(programInquiries.programId, programId)),
+    countRows(messageTemplates, eq(messageTemplates.programId, programId)),
+    countJoinedApplicationRows(participantDocuments),
+    countRows(programRuns, eq(programRuns.programId, programId)),
+    countRows(reportProjects, eq(reportProjects.programId, programId)),
+    countRows(reviews, eq(reviews.programId, programId)),
+    countRows(savedPrograms, eq(savedPrograms.programId, programId)),
+    countJoinedApplicationRows(scheduledMessages),
+  ]);
+
+  return {
+    announcementCount,
+    applicationCount,
+    applicationFormCount,
+    autoReplyCount,
+    inquiryCount,
+    messageTemplateCount,
+    participantDocumentCount,
+    programRunCount,
+    reportProjectCount,
+    reviewCount,
+    savedProgramCount,
+    scheduledMessageCount,
+  };
+
+  async function countJoinedApplicationRows(
+    table: typeof participantDocuments | typeof scheduledMessages,
+  ): Promise<number> {
+    const [row] = await getDb()
+      .select({ value: count() })
+      .from(table)
+      .innerJoin(
+        programApplications,
+        eq(table.applicationId, programApplications.id),
+      )
+      .where(eq(programApplications.programId, programId));
+
+    return row?.value ?? 0;
+  }
+}
+
+export function hasHostProgramDeletionImpact(
+  impact: HostProgramDeletionImpact,
+): boolean {
+  return Object.values(impact).some((value) => value > 0);
 }
 
 export async function upsertHostProgramDraft(
@@ -108,6 +249,14 @@ export async function upsertHostProgramDraft(
       .returning();
 
     if (updatedRow) return mapProgramRowToHostDraft(updatedRow);
+
+    const [existingRow] = await getDb()
+      .select({ id: programsTable.id })
+      .from(programsTable)
+      .where(eq(programsTable.id, draft.id))
+      .limit(1);
+
+    if (existingRow) throw new HostProgramAccessError();
 
     const [createdRow] = await getDb()
       .insert(programsTable)
@@ -394,6 +543,28 @@ function addDays(dateString: string, days: number): string {
 
 function toDateString(date: Date): string {
   return date.toISOString().slice(0, 10);
+}
+
+async function countRows(
+  table:
+    | typeof announcements
+    | typeof messageTemplates
+    | typeof programApplicationForms
+    | typeof programApplications
+    | typeof programAutoReplies
+    | typeof programInquiries
+    | typeof programRuns
+    | typeof reportProjects
+    | typeof reviews
+    | typeof savedPrograms,
+  condition: ReturnType<typeof eq>,
+): Promise<number> {
+  const [row] = await getDb()
+    .select({ value: count() })
+    .from(table)
+    .where(condition);
+
+  return row?.value ?? 0;
 }
 
 function isUuid(value: string): boolean {

@@ -11,6 +11,7 @@ import {
   HostWorkspaceLayout,
   type HostProgramListItem,
 } from "@/components/host-workspace-ui";
+import { formatProgramDisplayCode } from "@/lib/display-code";
 import type { HostProgramDraft } from "@/lib/host-program-studio";
 import {
   createHostProgramDraft,
@@ -659,10 +660,7 @@ function InsideFolderProgramCard({
   const statusMeta = getInsideFolderStatusMeta(status);
   const href = `${projectPath}/programs/${encodeURIComponent(program.id)}`;
   const isMetricPending = status === "upcoming" && program.applicationCount === 0;
-  const programNumber = program.id
-    .replace(/^draft-/u, "")
-    .replace(/^program-/u, "")
-    .slice(0, 9);
+  const programNumber = formatProgramDisplayCode(program.id);
   const periodLabel =
     draft?.activityStart && draft.activityEnd
       ? `${formatCompactDate(draft.activityStart)}-${formatCompactDate(draft.activityEnd)}`
@@ -701,7 +699,7 @@ function InsideFolderProgramCard({
           </div>
           <div className="flex min-w-0 flex-1 flex-col gap-1">
             <p className="truncate text-[var(--host-12)] font-normal leading-[1.253]">
-              프로그램 넘버{" "}
+              프로그램 코드{" "}
               <span className="text-[#FE701E]">{programNumber || "000000000"}</span>
             </p>
             <p className="line-clamp-1 text-[var(--host-14)] font-medium leading-[1.253]">

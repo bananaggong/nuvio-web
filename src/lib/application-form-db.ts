@@ -1,4 +1,4 @@
-import { and, desc, eq } from "drizzle-orm";
+import { and, desc, eq, isNull } from "drizzle-orm";
 import { getDb } from "@/db/client";
 import { programApplicationForms } from "@/db/schema";
 import { getProgramRecordByIdentifier } from "@/lib/program-db";
@@ -17,6 +17,13 @@ import type { Program } from "@/lib/types";
 
 type FormInsert = typeof programApplicationForms.$inferInsert;
 type FormRow = typeof programApplicationForms.$inferSelect;
+
+export class ApplicationFormAccessError extends Error {
+  constructor() {
+    super("You do not have permission to update this application form.");
+    this.name = "ApplicationFormAccessError";
+  }
+}
 
 export async function listApplicationFormTemplatesFromDb(options: {
   formKind?: ApplicationFormKind;
@@ -49,21 +56,40 @@ export async function getApplicationFormTemplateForProgram(
   program: Program,
 ): Promise<ApplicationFormTemplate | undefined> {
   try {
-    const rows = await getDb()
-      .select()
-      .from(programApplicationForms)
-      .where(eq(programApplicationForms.formKind, "application"))
-      .orderBy(desc(programApplicationForms.updatedAt))
-      .limit(200);
     const programRecord = await getProgramRecordByIdentifier(program.id);
     const normalizedTitle = normalizeText(program.title);
-    const row =
-      rows.find((item) =>
-        Boolean(programRecord?.id && item.programId === programRecord.id),
-      ) ??
-      rows.find(
+    let row: FormRow | undefined;
+
+    if (programRecord?.id) {
+      [row] = await getDb()
+        .select()
+        .from(programApplicationForms)
+        .where(
+          and(
+            eq(programApplicationForms.formKind, "application"),
+            eq(programApplicationForms.programId, programRecord.id),
+          ),
+        )
+        .orderBy(desc(programApplicationForms.updatedAt))
+        .limit(1);
+    }
+
+    if (!row) {
+      const rows = await getDb()
+        .select()
+        .from(programApplicationForms)
+        .where(
+          and(
+            eq(programApplicationForms.formKind, "application"),
+            isNull(programApplicationForms.programId),
+          ),
+        )
+        .orderBy(desc(programApplicationForms.updatedAt))
+        .limit(200);
+      row = rows.find(
         (item) => normalizeText(item.programTitle ?? "") === normalizedTitle,
       );
+    }
 
     return row ? mapFormRowToTemplate(row) : undefined;
   } catch {
@@ -108,6 +134,16 @@ export async function upsertApplicationFormTemplate(
       .returning();
 
     if (updatedRow) return mapFormRowToTemplate(updatedRow);
+
+    if (options.ownerId && options.restrictToOwner) {
+      const [existingRow] = await getDb()
+        .select({ id: programApplicationForms.id })
+        .from(programApplicationForms)
+        .where(eq(programApplicationForms.id, template.id))
+        .limit(1);
+
+      if (existingRow) throw new ApplicationFormAccessError();
+    }
 
     const [createdRow] = await getDb()
       .insert(programApplicationForms)
@@ -248,20 +284,42 @@ async function findApplicationFormRowForSubmission(input: {
       .where(eq(programApplicationForms.id, input.formId!))
       .limit(1);
 
-    if (row) return row;
+    if (
+      row?.formKind === "application" &&
+      (!row.programId || row.programId === input.programId)
+    ) {
+      return row;
+    }
   }
+
+  const [linkedRow] = await getDb()
+    .select()
+    .from(programApplicationForms)
+    .where(
+      and(
+        eq(programApplicationForms.formKind, "application"),
+        eq(programApplicationForms.programId, input.programId),
+      ),
+    )
+    .orderBy(desc(programApplicationForms.updatedAt))
+    .limit(1);
+  if (linkedRow) return linkedRow;
 
   const rows = await getDb()
     .select()
     .from(programApplicationForms)
-    .where(eq(programApplicationForms.formKind, "application"))
+    .where(
+      and(
+        eq(programApplicationForms.formKind, "application"),
+        isNull(programApplicationForms.programId),
+      ),
+    )
     .orderBy(desc(programApplicationForms.updatedAt))
     .limit(200);
   const normalizedTitle = normalizeText(input.programTitle);
 
-  return (
-    rows.find((item) => item.programId === input.programId) ??
-    rows.find((item) => normalizeText(item.programTitle ?? "") === normalizedTitle)
+  return rows.find(
+    (item) => normalizeText(item.programTitle ?? "") === normalizedTitle,
   );
 }
 

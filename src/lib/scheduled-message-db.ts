@@ -7,6 +7,7 @@ import {
   isNull,
   lte,
   or,
+  sql,
   type SQL,
 } from "drizzle-orm";
 import { getDb } from "@/db/client";
@@ -32,7 +33,10 @@ type ScheduleSelectedMessagesInput = {
   templateId?: string;
 };
 
-export type ScheduledMessageDeliveryStatus = MessageCampaignStatus | "failed";
+export type ScheduledMessageDeliveryStatus =
+  | MessageCampaignStatus
+  | "failed"
+  | "processing";
 
 export type HostScheduledMessage = {
   applicationId: string;
@@ -97,6 +101,8 @@ export async function scheduleSelectedApplicationMessages(
     .where(and(...conditions));
 
   const scheduledFor = parseKoreaLocalDatetime(input.scheduledFor);
+  const deliveryStatus: MessageCampaignStatus =
+    input.status === "draft" ? "draft" : "scheduled";
   const values = rows
     .map((row) => {
       const application: HostApplication = {
@@ -125,10 +131,10 @@ export async function scheduleSelectedApplicationMessages(
         applicationId: row.id,
         body: renderMessageTemplate(input.templateBody, application),
         channel: input.channel,
-        deliveryStatus: input.status,
+        deliveryStatus,
         recipient,
         scheduledFor,
-        sentAt: input.status === "sent" ? new Date() : null,
+        sentAt: null,
         templateId: isUuid(input.templateId ?? "") ? input.templateId : null,
       };
     })
@@ -260,26 +266,64 @@ export async function deleteHostScheduledMessages(
 export async function processDueScheduledSmsMessages(
   options: { limit?: number } = {},
 ): Promise<{ failed: number; processed: number; sent: number }> {
+  const limit = Math.min(Math.max(options.limit ?? 50, 1), 100);
   const now = new Date();
-  const rows = await getDb()
-    .select({
-      body: scheduledMessages.body,
-      id: scheduledMessages.id,
-      recipient: scheduledMessages.recipient,
-    })
-    .from(scheduledMessages)
-    .where(
-      and(
-        eq(scheduledMessages.channel, "sms"),
-        eq(scheduledMessages.deliveryStatus, "scheduled"),
-        or(
-          isNull(scheduledMessages.scheduledFor),
-          lte(scheduledMessages.scheduledFor, now),
+  const staleProcessingBefore = new Date(now.getTime() - 30 * 60 * 1000);
+
+  const rows = await getDb().transaction(async (tx) => {
+    await tx.execute(
+      sql`select pg_advisory_xact_lock(hashtext('nuvio:process-scheduled-sms'))`,
+    );
+
+    await tx
+      .update(scheduledMessages)
+      .set({
+        deliveryStatus: "scheduled",
+        error: "Recovered stale SMS processing claim.",
+        updatedAt: now,
+      })
+      .where(
+        and(
+          eq(scheduledMessages.channel, "sms"),
+          eq(scheduledMessages.deliveryStatus, "processing"),
+          lte(scheduledMessages.updatedAt, staleProcessingBefore),
         ),
-      ),
-    )
-    .orderBy(asc(scheduledMessages.scheduledFor))
-    .limit(options.limit ?? 50);
+      );
+
+    const dueRows = await tx
+      .select({
+        body: scheduledMessages.body,
+        id: scheduledMessages.id,
+        recipient: scheduledMessages.recipient,
+      })
+      .from(scheduledMessages)
+      .where(
+        and(
+          eq(scheduledMessages.channel, "sms"),
+          eq(scheduledMessages.deliveryStatus, "scheduled"),
+          or(
+            isNull(scheduledMessages.scheduledFor),
+            lte(scheduledMessages.scheduledFor, now),
+          ),
+        ),
+      )
+      .orderBy(asc(scheduledMessages.scheduledFor))
+      .limit(limit);
+
+    const ids = dueRows.map((row) => row.id);
+    if (ids.length > 0) {
+      await tx
+        .update(scheduledMessages)
+        .set({
+          deliveryStatus: "processing",
+          error: null,
+          updatedAt: now,
+        })
+        .where(inArray(scheduledMessages.id, ids));
+    }
+
+    return dueRows;
+  });
 
   let sent = 0;
   let failed = 0;
@@ -295,7 +339,12 @@ export async function processDueScheduledSmsMessages(
           sentAt: new Date(),
           updatedAt: new Date(),
         })
-        .where(eq(scheduledMessages.id, row.id));
+        .where(
+          and(
+            eq(scheduledMessages.id, row.id),
+            eq(scheduledMessages.deliveryStatus, "processing"),
+          ),
+        );
       sent += 1;
     } catch (error) {
       await getDb()
@@ -305,7 +354,12 @@ export async function processDueScheduledSmsMessages(
           error: error instanceof Error ? error.message : "SMS delivery failed.",
           updatedAt: new Date(),
         })
-        .where(eq(scheduledMessages.id, row.id));
+        .where(
+          and(
+            eq(scheduledMessages.id, row.id),
+            eq(scheduledMessages.deliveryStatus, "processing"),
+          ),
+        );
       failed += 1;
     }
   }

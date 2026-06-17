@@ -1,4 +1,4 @@
-import { eq } from "drizzle-orm";
+import { eq, or, type SQL } from "drizzle-orm";
 import { getDb } from "@/db/client";
 import { programs as programsTable } from "@/db/schema";
 import type { Program } from "@/lib/types";
@@ -8,7 +8,7 @@ type ProgramRow = typeof programsTable.$inferSelect;
 
 export type ProgramRecordSummary = Pick<
   ProgramRow,
-  "id" | "legacyId" | "slug" | "title" | "publishedAt" | "villageId"
+  "createdBy" | "id" | "legacyId" | "slug" | "title" | "publishedAt" | "villageId"
 >;
 
 export async function ensureProgramRecord(program: Program): Promise<string> {
@@ -48,7 +48,13 @@ export async function getProgramRecordByIdentifier(
   if (!key) return undefined;
 
   const numericId = Number(key);
-  const rows = await getDb()
+  const conditions: SQL[] = [eq(programsTable.slug, key)];
+  if (isUuid(key)) conditions.push(eq(programsTable.id, key));
+  if (Number.isInteger(numericId)) {
+    conditions.push(eq(programsTable.legacyId, numericId));
+  }
+
+  const [row] = await getDb()
     .select({
       id: programsTable.id,
       legacyId: programsTable.legacyId,
@@ -56,14 +62,13 @@ export async function getProgramRecordByIdentifier(
       title: programsTable.title,
       publishedAt: programsTable.publishedAt,
       villageId: programsTable.villageId,
+      createdBy: programsTable.createdBy,
     })
     .from(programsTable)
-    .limit(500);
+    .where(or(...conditions))
+    .limit(1);
 
-  return rows.find((row) => {
-    if (Number.isInteger(numericId) && row.legacyId === numericId) return true;
-    return row.id === key || row.slug === key;
-  });
+  return row;
 }
 
 function mapProgramToInsert(program: Program): ProgramInsert {
@@ -102,4 +107,10 @@ function mapProgramToInsert(program: Program): ProgramInsert {
     body: program.body,
     publishedAt: new Date(),
   };
+}
+
+function isUuid(value: string): boolean {
+  return /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/iu.test(
+    value,
+  );
 }

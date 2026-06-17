@@ -1,6 +1,12 @@
 import { cookies } from "next/headers";
 import { NextResponse } from "next/server";
+import {
+  applyRateLimit,
+  isApiAuthError,
+  requireHostRole,
+} from "@/lib/api-security";
 import { upsertHostSocialConnection } from "@/lib/host-social-connections-db";
+import { canManageHostVillage } from "@/lib/host-village-access";
 import { siteConfig } from "@/lib/seo";
 import {
   exchangeFacebookCode,
@@ -25,6 +31,12 @@ export async function GET(request: Request) {
   const requestUrl = new URL(request.url);
   const fallbackReturnTo = "/host/villages/boseong";
   let returnTo = fallbackReturnTo;
+  const limited = applyRateLimit(request, {
+    key: "host-facebook-callback:complete",
+    limit: 60,
+    windowMs: 15 * 60 * 1000,
+  });
+  if (limited) return limited;
 
   try {
     const state = parseState(requestUrl.searchParams.get("state"));
@@ -34,6 +46,13 @@ export async function GET(request: Request) {
     const expectedNonce = cookieStore.get(STATE_COOKIE)?.value;
     if (!expectedNonce || expectedNonce !== state.nonce) {
       throw new Error("Facebook connection state is invalid. Please try again.");
+    }
+    const auth = await requireHostRole();
+    if (isApiAuthError(auth)) {
+      throw new Error("Host login is required to complete Facebook connection.");
+    }
+    if (!(await canManageHostVillage(auth, state.villageSlug))) {
+      throw new Error("You do not have permission to connect this village.");
     }
 
     const error = requestUrl.searchParams.get("error_description");

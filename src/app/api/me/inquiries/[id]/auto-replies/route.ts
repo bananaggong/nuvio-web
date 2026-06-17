@@ -1,5 +1,9 @@
 import { NextResponse } from "next/server";
 import {
+  apiError,
+  applyRateLimit,
+  enforceContentLength,
+  enforceSameOrigin,
   isApiAuthError,
   requireAuthenticatedUser,
 } from "@/lib/api-security";
@@ -12,12 +16,27 @@ import { createDefaultProgramAutoReplyConfig } from "@/lib/program-auto-replies"
 
 export const runtime = "nodejs";
 
+const MAX_AUTO_REPLY_PAYLOAD_BYTES = 4 * 1024;
+
 export async function POST(
   request: Request,
   { params }: { params: Promise<{ id: string }> },
 ) {
   const auth = await requireAuthenticatedUser();
   if (isApiAuthError(auth)) return auth.response;
+
+  const crossOrigin = enforceSameOrigin(request);
+  if (crossOrigin) return crossOrigin;
+
+  const payloadTooLarge = enforceContentLength(request, MAX_AUTO_REPLY_PAYLOAD_BYTES);
+  if (payloadTooLarge) return payloadTooLarge;
+
+  const limited = applyRateLimit(request, {
+    key: "me-inquiry-auto-reply:create",
+    limit: 30,
+    windowMs: 15 * 60 * 1000,
+  });
+  if (limited) return limited;
 
   try {
     const { id } = await params;
@@ -43,6 +62,9 @@ export async function POST(
         { error: "Inquiry was not found." },
         { status: 404 },
       );
+    }
+    if (inquiry.status === "closed") {
+      return apiError("Closed inquiries cannot receive new messages.", 409);
     }
 
     const config =
@@ -75,14 +97,14 @@ export async function POST(
         auth.user.email ||
         inquiry.contactName,
       senderRole: "user",
-      statusAfter: inquiry.status === "closed" ? "closed" : "new",
+      statusAfter: "new",
     });
 
     const savedMessage = await createProgramInquiryMessage(id, {
       message: item.response,
       senderName: "자동응답",
       senderRole: "host",
-      statusAfter: inquiry.status === "closed" ? "closed" : "answered",
+      statusAfter: "answered",
     });
 
     if (!selectedQuestionMessage || !savedMessage) {

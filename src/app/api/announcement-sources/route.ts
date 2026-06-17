@@ -1,5 +1,11 @@
 import { NextResponse } from "next/server";
-import { isApiAuthError, requireAdminRole } from "@/lib/api-security";
+import {
+  applyRateLimit,
+  enforceContentLength,
+  enforceSameOrigin,
+  isApiAuthError,
+  requireAdminRole,
+} from "@/lib/api-security";
 import { safeCreateAuditLog } from "@/lib/audit-log-db";
 import { getConfiguredAnnouncementSources } from "@/lib/announcement-sources";
 import {
@@ -10,9 +16,18 @@ import {
 
 export const runtime = "nodejs";
 
-export async function GET() {
+const MAX_ANNOUNCEMENT_SOURCE_PAYLOAD_BYTES = 32 * 1024;
+
+export async function GET(request: Request) {
   const auth = await requireAdminRole();
   if (isApiAuthError(auth)) return auth.response;
+
+  const limited = applyRateLimit(request, {
+    key: "admin-announcement-sources:list",
+    limit: 90,
+    windowMs: 15 * 60 * 1000,
+  });
+  if (limited) return limited;
 
   try {
     const sources = await listAnnouncementSourceStatuses();
@@ -36,16 +51,32 @@ export async function POST(request: Request) {
   if (isApiAuthError(auth)) return auth.response;
 
   try {
-    const body = await request.json();
+    const payloadTooLarge = enforceContentLength(
+      request,
+      MAX_ANNOUNCEMENT_SOURCE_PAYLOAD_BYTES,
+    );
+    if (payloadTooLarge) return payloadTooLarge;
+
+    const crossOrigin = enforceSameOrigin(request);
+    if (crossOrigin) return crossOrigin;
+
+    const limited = applyRateLimit(request, {
+      key: "announcement-source:create",
+      limit: 30,
+      windowMs: 10 * 60 * 1000,
+    });
+    if (limited) return limited;
+
+    const body = await request.json().catch(() => ({}));
     const source = await upsertAnnouncementSource({
       id: normalizeId(String(body.id ?? body.name ?? body.url ?? "")),
-      name: String(body.name ?? ""),
+      name: normalizeText(body.name, 120),
       type: "rss",
-      url: String(body.url ?? ""),
+      url: normalizeUrl(body.url),
       enabled: body.enabled !== false,
       keywords: normalizeStringArray(body.keywords),
       minimumKeywordMatches: normalizeInteger(body.minimumKeywordMatches),
-      notes: typeof body.notes === "string" ? body.notes : undefined,
+      notes: normalizeOptionalText(body.notes, 500),
     });
 
     void safeCreateAuditLog({
@@ -80,15 +111,31 @@ export async function PATCH(request: Request) {
   if (isApiAuthError(auth)) return auth.response;
 
   try {
-    const body = await request.json();
+    const payloadTooLarge = enforceContentLength(
+      request,
+      MAX_ANNOUNCEMENT_SOURCE_PAYLOAD_BYTES,
+    );
+    if (payloadTooLarge) return payloadTooLarge;
+
+    const crossOrigin = enforceSameOrigin(request);
+    if (crossOrigin) return crossOrigin;
+
+    const limited = applyRateLimit(request, {
+      key: "announcement-source:update",
+      limit: 60,
+      windowMs: 10 * 60 * 1000,
+    });
+    if (limited) return limited;
+
+    const body = await request.json().catch(() => ({}));
     const sourceId = String(body.id ?? "").trim();
     if (!sourceId) {
       return NextResponse.json({ error: "Source id is required." }, { status: 400 });
     }
 
     const source = await updateAnnouncementSource(sourceId, {
-      ...(typeof body.name === "string" ? { name: body.name } : {}),
-      ...(typeof body.url === "string" ? { url: body.url } : {}),
+      ...(typeof body.name === "string" ? { name: normalizeText(body.name, 120) } : {}),
+      ...(typeof body.url === "string" ? { url: normalizeUrl(body.url) } : {}),
       ...(typeof body.enabled === "boolean" ? { enabled: body.enabled } : {}),
       ...(body.keywords !== undefined
         ? { keywords: normalizeStringArray(body.keywords) }
@@ -96,7 +143,9 @@ export async function PATCH(request: Request) {
       ...(body.minimumKeywordMatches !== undefined
         ? { minimumKeywordMatches: normalizeInteger(body.minimumKeywordMatches) }
         : {}),
-      ...(typeof body.notes === "string" ? { notes: body.notes } : {}),
+      ...(typeof body.notes === "string"
+        ? { notes: normalizeOptionalText(body.notes, 500) }
+        : {}),
     });
 
     if (!source) {
@@ -143,15 +192,17 @@ function normalizeId(value: string): string {
 }
 
 function normalizeStringArray(value: unknown): string[] {
+  const normalize = (item: unknown) => String(item).trim().slice(0, 80);
   if (Array.isArray(value)) {
-    return value.map((item) => String(item).trim()).filter(Boolean);
+    return value.map(normalize).filter(Boolean).slice(0, 20);
   }
 
   if (typeof value === "string") {
     return value
       .split(",")
-      .map((item) => item.trim())
-      .filter(Boolean);
+      .map(normalize)
+      .filter(Boolean)
+      .slice(0, 20);
   }
 
   return [];
@@ -159,5 +210,24 @@ function normalizeStringArray(value: unknown): string[] {
 
 function normalizeInteger(value: unknown): number {
   const numericValue = Number(value);
-  return Number.isInteger(numericValue) ? Math.max(numericValue, 0) : 0;
+  return Number.isInteger(numericValue)
+    ? Math.max(0, Math.min(numericValue, 10))
+    : 0;
+}
+
+function normalizeText(value: unknown, maxLength: number): string {
+  return String(value ?? "").trim().slice(0, maxLength);
+}
+
+function normalizeOptionalText(value: unknown, maxLength: number): string | undefined {
+  const text = normalizeText(value, maxLength);
+  return text || undefined;
+}
+
+function normalizeUrl(value: unknown): string {
+  const url = normalizeText(value, 500);
+  if (!/^https?:\/\//iu.test(url)) {
+    throw new Error("Announcement source URL must start with http:// or https://.");
+  }
+  return url;
 }

@@ -1,4 +1,4 @@
-import { and, desc, isNotNull, notInArray } from "drizzle-orm";
+import { and, desc, eq, isNotNull, notInArray, or, type SQL } from "drizzle-orm";
 import { getDb } from "@/db/client";
 import { programs as programsTable } from "@/db/schema";
 import { getCrawledProgramByIdentifier } from "@/lib/crawled-programs";
@@ -47,17 +47,18 @@ export async function getPublicProgramByIdentifier(
   if (!key) return undefined;
 
   try {
-    const rows = await getDb()
+    const numericId = Number(key);
+    const identifierConditions: SQL[] = [eq(programsTable.slug, key)];
+    if (isUuid(key)) identifierConditions.push(eq(programsTable.id, key));
+    if (Number.isInteger(numericId)) {
+      identifierConditions.push(eq(programsTable.legacyId, numericId));
+    }
+
+    const [row] = await getDb()
       .select()
       .from(programsTable)
-      .where(isNotNull(programsTable.publishedAt))
-      .orderBy(desc(programsTable.updatedAt))
-      .limit(500);
-    const numericId = Number(key);
-    const row = rows.find((item) => {
-      if (Number.isInteger(numericId) && item.legacyId === numericId) return true;
-      return item.id === key || item.slug === key;
-    });
+      .where(and(isNotNull(programsTable.publishedAt), or(...identifierConditions)))
+      .limit(1);
 
     if (row) return mapProgramRowToProgram(row);
   } catch {
@@ -98,6 +99,12 @@ function getStaticProgram(identifier: string): Program | undefined {
   const numericId = Number(identifier);
   if (Number.isInteger(numericId)) return getProgramById(numericId);
   return seedPrograms.find((program) => program.slug === identifier);
+}
+
+function isUuid(value: string): boolean {
+  return /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{12}$/iu.test(
+    value,
+  );
 }
 
 function mapProgramRowToProgram(row: ProgramRow): Program {

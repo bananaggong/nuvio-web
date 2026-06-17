@@ -2,13 +2,16 @@ import { NextResponse } from "next/server";
 import {
   applyRateLimit,
   enforceContentLength,
+  enforceSameOrigin,
   getOptionalAuthenticatedUser,
 } from "@/lib/api-security";
 import {
   createProgramApplication,
+  DuplicateProgramApplicationError,
   findExistingProgramApplication,
 } from "@/lib/host-application-db";
 import { queueApplicationSubmittedNotification } from "@/lib/notification-db";
+import { sanitizeJsonRecord } from "@/lib/safe-json";
 import { updateUserProgramState } from "@/lib/user-program-state-db";
 
 export const runtime = "nodejs";
@@ -16,6 +19,9 @@ export const runtime = "nodejs";
 export async function POST(request: Request) {
   const payloadTooLarge = enforceContentLength(request, 64 * 1024);
   if (payloadTooLarge) return payloadTooLarge;
+
+  const crossOrigin = enforceSameOrigin(request);
+  if (crossOrigin) return crossOrigin;
 
   const limited = applyRateLimit(request, {
     key: "program-application:create",
@@ -25,7 +31,7 @@ export async function POST(request: Request) {
   if (limited) return limited;
 
   try {
-    const body = await request.json();
+    const body = await request.json().catch(() => ({}));
     const answers = normalizeAnswers(body.answers);
     validateApplicationPayload(body, answers);
     const auth = await getOptionalAuthenticatedUser();
@@ -78,11 +84,23 @@ export async function POST(request: Request) {
       applicantName: application.applicantName,
       applicationId: application.id,
       email: application.email,
+      programCreatedBy: application.programCreatedBy,
       programTitle: application.programTitle,
+      villageId: application.villageId,
     }).catch(() => undefined);
 
     return NextResponse.json({ data: application }, { status: 201 });
   } catch (error) {
+    if (error instanceof DuplicateProgramApplicationError) {
+      return NextResponse.json(
+        {
+          error:
+            "This program already has an application for the submitted email.",
+        },
+        { status: 409 },
+      );
+    }
+
     return NextResponse.json(
       {
         error:
@@ -103,8 +121,12 @@ function normalizeProgramId(value: unknown): number | string {
 }
 
 function normalizeAnswers(value: unknown): Record<string, unknown> {
-  if (!value || typeof value !== "object" || Array.isArray(value)) return {};
-  return value as Record<string, unknown>;
+  return sanitizeJsonRecord(value, {
+    maxArrayLength: 100,
+    maxDepth: 8,
+    maxObjectKeys: 140,
+    maxStringLength: 3000,
+  });
 }
 
 function normalizeEmailList(values: Array<string | undefined>): string[] {
@@ -123,6 +145,7 @@ function validateApplicationPayload(
 ) {
   const programId = String(body.programId ?? "").trim();
   if (!programId) throw new Error("Program id is required.");
+  if (programId.length > 160) throw new Error("Program id is too long.");
 
   const applicantName = normalizeText(body.applicantName, 80);
   if (applicantName.length < 2) throw new Error("Applicant name is required.");

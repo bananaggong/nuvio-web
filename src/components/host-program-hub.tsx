@@ -28,6 +28,7 @@ import {
 import { nuvioIcons } from "@/components/icons/nuvio-icons";
 import { KakaoMap } from "@/components/kakao-map";
 import { HostProgramSidebar } from "@/components/host-program-sidebar";
+import { formatProgramDisplayCode } from "@/lib/display-code";
 import {
   useEffect,
   useMemo,
@@ -1153,7 +1154,7 @@ function DashboardPanel({
             {program.title || "프로그램 제목"}
           </h1>
           <p className="text-[16px] font-normal leading-[1.253]">
-            프로그램 넘버 : {formatProgramNumber(program.id)}
+            프로그램 코드 : {formatProgramNumber(program.id)}
           </p>
         </div>
         <span
@@ -1256,7 +1257,7 @@ function DashboardStatusPanel({
           </h1>
           <div className="flex w-full items-start gap-[var(--figma-8)] text-[16px] font-normal leading-[1.253] text-[#0D0D0C]">
             <p className="shrink-0 whitespace-nowrap">
-              프로그램 넘버 : {formatProgramNumber(program.id)}
+              프로그램 코드 : {formatProgramNumber(program.id)}
             </p>
             <p className="min-w-0 flex-1 text-center">
               프로그램 진행일 : {activityRange}
@@ -5069,10 +5070,7 @@ function getDashboardDday(targetDate: string, status: ProgramStatus): string {
 }
 
 function formatProgramNumber(programId: string): string {
-  const normalizedId = programId.trim();
-  if (!normalizedId) return "-";
-
-  return normalizedId.length > 12 ? normalizedId.slice(0, 12) : normalizedId;
+  return formatProgramDisplayCode(programId);
 }
 
 function formatProgramPeriod(start: string, end: string): string {

@@ -11,6 +11,7 @@ import {
 } from "drizzle-orm";
 import { getDb } from "@/db/client";
 import {
+  hostVillageMemberships,
   notificationEvents,
   notificationPreferences,
   profiles,
@@ -236,45 +237,56 @@ export async function processPendingNotificationEvents(
 ): Promise<NotificationProcessSummary> {
   const limit = Math.min(Math.max(options.limit ?? 50, 1), 100);
   const now = new Date();
-  const rows = await getDb()
-    .select()
-    .from(notificationEvents)
-    .where(
-      and(
-        eq(notificationEvents.status, "pending"),
-        or(isNull(notificationEvents.scheduledFor), lte(notificationEvents.scheduledFor, now)),
-      ),
-    )
-    .orderBy(asc(notificationEvents.createdAt))
-    .limit(limit);
-
-  const summary: NotificationProcessSummary = {
-    details: [],
-    failed: 0,
-    processed: rows.length,
-    sent: 0,
-    skipped: 0,
-  };
-
-  for (const event of rows) {
-    const detail = await processNotificationEvent(event).catch(async (error) =>
-      markNotificationEvent(event, "failed", normalizeError(error)),
+  return getDb().transaction(async (tx) => {
+    await tx.execute(
+      sql`select pg_advisory_xact_lock(hashtext('nuvio:process-notification-events'))`,
     );
 
-    summary.details.push(detail);
-    if (detail.status === "sent") summary.sent += 1;
-    if (detail.status === "skipped") summary.skipped += 1;
-    if (detail.status === "failed") summary.failed += 1;
-  }
+    const rows = await tx
+      .select()
+      .from(notificationEvents)
+      .where(
+        and(
+          eq(notificationEvents.status, "pending"),
+          or(
+            isNull(notificationEvents.scheduledFor),
+            lte(notificationEvents.scheduledFor, now),
+          ),
+        ),
+      )
+      .orderBy(asc(notificationEvents.createdAt))
+      .limit(limit);
 
-  return summary;
+    const summary: NotificationProcessSummary = {
+      details: [],
+      failed: 0,
+      processed: rows.length,
+      sent: 0,
+      skipped: 0,
+    };
+
+    for (const event of rows) {
+      const detail = await processNotificationEvent(event).catch(async (error) =>
+        markNotificationEvent(event, "failed", normalizeError(error)),
+      );
+
+      summary.details.push(detail);
+      if (detail.status === "sent") summary.sent += 1;
+      if (detail.status === "skipped") summary.skipped += 1;
+      if (detail.status === "failed") summary.failed += 1;
+    }
+
+    return summary;
+  });
 }
 
 export async function queueApplicationSubmittedNotification(input: {
   applicantName?: string;
   applicationId: string;
   email: string;
+  programCreatedBy?: string;
   programTitle: string;
+  villageId?: string;
 }) {
   const recipientEmail = normalizeEmail(input.email);
   const recipientUserId = await findProfileIdByEmail(recipientEmail);
@@ -305,7 +317,9 @@ export async function queueApplicationSubmittedNotification(input: {
   await notifyHostUsersAboutSubmittedApplication({
     applicantName: input.applicantName,
     applicationId: input.applicationId,
+    programCreatedBy: input.programCreatedBy,
     programTitle: input.programTitle,
+    villageId: input.villageId,
   });
 }
 
@@ -461,9 +475,14 @@ async function createInAppNotificationIfEnabled(
 async function notifyHostUsersAboutSubmittedApplication(input: {
   applicantName?: string;
   applicationId: string;
+  programCreatedBy?: string;
   programTitle: string;
+  villageId?: string;
 }) {
-  const recipients = await listHostNotificationRecipients();
+  const recipients = await listHostNotificationRecipients({
+    programCreatedBy: input.programCreatedBy,
+    villageId: input.villageId,
+  });
   if (recipients.length === 0) return;
 
   const applicantName = input.applicantName?.trim() || "신청자";
@@ -476,6 +495,7 @@ async function notifyHostUsersAboutSubmittedApplication(input: {
           applicationId: input.applicationId,
           applicantName,
           programTitle: input.programTitle,
+          villageId: input.villageId,
         },
         title: "새 신청서가 접수됐어요",
         type: "application.submitted.host",
@@ -484,17 +504,60 @@ async function notifyHostUsersAboutSubmittedApplication(input: {
   );
 }
 
-async function listHostNotificationRecipients(): Promise<
+async function listHostNotificationRecipients(options: {
+  programCreatedBy?: string;
+  villageId?: string;
+}): Promise<
   Array<{ email: string; id: string }>
 > {
-  return getDb()
-    .select({
-      email: profiles.email,
-      id: profiles.id,
-    })
-    .from(profiles)
-    .where(or(eq(profiles.onboardingIntent, "host"), inArray(profiles.role, ["partner", "admin"])))
-    .limit(100);
+  const recipients = new Map<string, { email: string; id: string }>();
+
+  if (isUuid(options.programCreatedBy ?? "")) {
+    const [creator] = await getDb()
+      .select({
+        email: profiles.email,
+        id: profiles.id,
+      })
+      .from(profiles)
+      .where(eq(profiles.id, options.programCreatedBy!))
+      .limit(1);
+    if (creator) recipients.set(creator.id, creator);
+  }
+
+  if (isUuid(options.villageId ?? "")) {
+    const rows = await getDb()
+      .select({
+        email: profiles.email,
+        id: profiles.id,
+      })
+      .from(hostVillageMemberships)
+      .innerJoin(profiles, eq(hostVillageMemberships.userId, profiles.id))
+      .where(
+        and(
+          eq(hostVillageMemberships.villageId, options.villageId!),
+          eq(hostVillageMemberships.status, "active"),
+          inArray(hostVillageMemberships.role, ["owner", "manager", "editor"]),
+        ),
+      )
+      .limit(100);
+
+    for (const row of rows) recipients.set(row.id, row);
+  }
+
+  if (recipients.size === 0) {
+    const admins = await getDb()
+      .select({
+        email: profiles.email,
+        id: profiles.id,
+      })
+      .from(profiles)
+      .where(eq(profiles.role, "admin"))
+      .limit(20);
+
+    for (const admin of admins) recipients.set(admin.id, admin);
+  }
+
+  return [...recipients.values()];
 }
 
 async function findProfileIdByEmail(email?: string | null): Promise<string | undefined> {
@@ -563,6 +626,12 @@ function isChannelEnabled(
 
 function normalizeEmail(email?: string | null): string {
   return String(email ?? "").trim().toLowerCase();
+}
+
+function isUuid(value: string): boolean {
+  return /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/iu.test(
+    value,
+  );
 }
 
 function normalizeError(error: unknown): string {

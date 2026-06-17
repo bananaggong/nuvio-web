@@ -1,14 +1,22 @@
 import { NextResponse } from "next/server";
-import { isApiAuthError, requireHostRole } from "@/lib/api-security";
+import {
+  apiError,
+  applyRateLimit,
+  enforceContentLength,
+  enforceSameOrigin,
+  isApiAuthError,
+  requireHostRole,
+} from "@/lib/api-security";
 import {
   createProgramInquiryMessage,
   getHostInquiryFromDb,
 } from "@/lib/host-inquiry-db";
-import { listHostVillageWorkspaces } from "@/lib/host-village-access";
+import { listManageableHostVillageWorkspaces } from "@/lib/host-village-access";
 
 export const runtime = "nodejs";
 
 const MAX_MESSAGE_LENGTH = 2000;
+const MAX_MESSAGE_PAYLOAD_BYTES = 8 * 1024;
 
 export async function POST(
   request: Request,
@@ -16,6 +24,19 @@ export async function POST(
 ) {
   const auth = await requireHostRole();
   if (isApiAuthError(auth)) return auth.response;
+
+  const crossOrigin = enforceSameOrigin(request);
+  if (crossOrigin) return crossOrigin;
+
+  const payloadTooLarge = enforceContentLength(request, MAX_MESSAGE_PAYLOAD_BYTES);
+  if (payloadTooLarge) return payloadTooLarge;
+
+  const limited = applyRateLimit(request, {
+    key: "host-inquiry-message:create",
+    limit: 60,
+    windowMs: 15 * 60 * 1000,
+  });
+  if (limited) return limited;
 
   try {
     const { id } = await params;
@@ -38,7 +59,7 @@ export async function POST(
     const villageIds =
       auth.profile.role === "admin"
         ? undefined
-        : (await listHostVillageWorkspaces(auth)).map(
+        : (await listManageableHostVillageWorkspaces(auth)).map(
             (workspace) => workspace.villageId,
           );
     const inquiry = await getHostInquiryFromDb(id, { villageIds });
@@ -48,6 +69,9 @@ export async function POST(
         { error: "Inquiry was not found." },
         { status: 404 },
       );
+    }
+    if (inquiry.status === "closed") {
+      return apiError("Closed inquiries cannot receive new messages.", 409);
     }
 
     const savedMessage = await createProgramInquiryMessage(id, {
@@ -59,14 +83,11 @@ export async function POST(
         auth.user.email ||
         "호스트",
       senderRole: "host",
-      statusAfter: inquiry.status === "closed" ? "closed" : "answered",
+      statusAfter: "answered",
     });
 
     if (!savedMessage) {
-      return NextResponse.json(
-        { error: "Message was not saved." },
-        { status: 500 },
-      );
+      return apiError("Closed inquiries cannot receive new messages.", 409);
     }
 
     return NextResponse.json({ data: savedMessage }, { status: 201 });

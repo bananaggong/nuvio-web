@@ -1,4 +1,4 @@
-import { and, asc, desc, eq, inArray } from "drizzle-orm";
+import { and, asc, desc, eq, inArray, ne } from "drizzle-orm";
 import { getDb } from "@/db/client";
 import { programInquiries, programInquiryMessages } from "@/db/schema";
 import {
@@ -138,31 +138,41 @@ export async function createProgramInquiryMessage(
   const message = input.message.trim();
   if (!isUuid(inquiryId) || !message) return null;
 
-  const insertValue: InquiryMessageInsert = {
-    inquiryId,
-    message,
-    senderId: isUuid(input.senderId ?? "") ? input.senderId : null,
-    senderName: input.senderName?.trim() || null,
-    senderRole: input.senderRole,
-  };
+  return getDb().transaction(async (tx) => {
+    const updateValue: {
+      status?: HostInquiryStatus;
+      updatedAt: Date;
+    } = { updatedAt: new Date() };
+    if (input.statusAfter) updateValue.status = input.statusAfter;
 
-  const [row] = await getDb()
-    .insert(programInquiryMessages)
-    .values(insertValue)
-    .returning();
+    const [inquiry] = await tx
+      .update(programInquiries)
+      .set(updateValue)
+      .where(
+        and(
+          eq(programInquiries.id, inquiryId),
+          ne(programInquiries.status, "closed"),
+        ),
+      )
+      .returning({ id: programInquiries.id });
 
-  const updateValue: {
-    status?: HostInquiryStatus;
-    updatedAt: Date;
-  } = { updatedAt: new Date() };
-  if (input.statusAfter) updateValue.status = input.statusAfter;
+    if (!inquiry) return null;
 
-  await getDb()
-    .update(programInquiries)
-    .set(updateValue)
-    .where(eq(programInquiries.id, inquiryId));
+    const insertValue: InquiryMessageInsert = {
+      inquiryId,
+      message,
+      senderId: isUuid(input.senderId ?? "") ? input.senderId : null,
+      senderName: input.senderName?.trim() || null,
+      senderRole: input.senderRole,
+    };
 
-  return mapInquiryMessageRowToMessage(row);
+    const [row] = await tx
+      .insert(programInquiryMessages)
+      .values(insertValue)
+      .returning();
+
+    return mapInquiryMessageRowToMessage(row);
+  });
 }
 
 export async function updateHostInquiryStatus(

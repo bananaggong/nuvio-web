@@ -123,6 +123,7 @@ export const notificationEventStatusEnum = pgEnum("notification_event_status", [
 export const messageDeliveryStatusEnum = pgEnum("message_delivery_status", [
   "draft",
   "scheduled",
+  "processing",
   "sent",
   "failed",
 ]);

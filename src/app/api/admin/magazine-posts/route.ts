@@ -3,6 +3,7 @@ import {
   apiError,
   applyRateLimit,
   enforceContentLength,
+  enforceSameOrigin,
   isApiAuthError,
   requireAdminRole,
 } from "@/lib/api-security";
@@ -20,6 +21,13 @@ const maxJsonBytes = 1024 * 1024;
 export async function GET(request: Request) {
   const auth = await requireAdminRole();
   if (isApiAuthError(auth)) return auth.response;
+
+  const limited = applyRateLimit(request, {
+    key: "admin-magazine-post:list",
+    limit: 90,
+    windowMs: 15 * 60 * 1000,
+  });
+  if (limited) return limited;
 
   try {
     const { searchParams } = new URL(request.url);
@@ -41,6 +49,9 @@ export async function GET(request: Request) {
 export async function POST(request: Request) {
   const auth = await requireAdminRole();
   if (isApiAuthError(auth)) return auth.response;
+
+  const crossOrigin = enforceSameOrigin(request);
+  if (crossOrigin) return crossOrigin;
 
   const lengthError = enforceContentLength(request, maxJsonBytes);
   if (lengthError) return lengthError;

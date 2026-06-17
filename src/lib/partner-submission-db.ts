@@ -71,7 +71,7 @@ export function normalizePartnerSubmissionInput(
     phone: cleanText(value.phone, 40),
     plannedPrograms: cleanText(value.plannedPrograms, 3000),
     region: cleanText(value.region, 120),
-    url: cleanText(value.url, 400),
+    url: normalizeOptionalUrl(value.url),
     villageName: cleanText(value.villageName, 160),
   };
 
@@ -122,4 +122,19 @@ function normalizePartnerSubmissionPayload(
 
 function cleanText(value: unknown, maxLength: number): string {
   return String(value ?? "").trim().slice(0, maxLength);
+}
+
+function normalizeOptionalUrl(value: unknown): string {
+  const text = cleanText(value, 400);
+  if (!text) return "";
+
+  try {
+    const url = new URL(text);
+    if (url.protocol !== "http:" && url.protocol !== "https:") {
+      throw new Error("Unsupported URL protocol.");
+    }
+    return url.toString().slice(0, 400);
+  } catch {
+    throw new Error("URL은 http:// 또는 https://로 시작하는 주소만 입력할 수 있습니다.");
+  }
 }

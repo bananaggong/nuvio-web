@@ -1,11 +1,14 @@
 import { NextResponse } from "next/server";
 import {
   apiError,
+  applyRateLimit,
   enforceContentLength,
+  enforceSameOrigin,
   isApiAuthError,
   requireHostRole,
 } from "@/lib/api-security";
 import { canManageHostVillage } from "@/lib/host-village-access";
+import { validateImageUploadFile } from "@/lib/image-upload-security";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 import {
   createVillageAsset,
@@ -16,16 +19,17 @@ export const runtime = "nodejs";
 
 const bucketName = "village-assets";
 const maxUploadBytes = 5 * 1024 * 1024;
-const allowedUploadTypes = new Set([
-  "image/gif",
-  "image/jpeg",
-  "image/png",
-  "image/webp",
-]);
 
 export async function GET(request: Request) {
   const auth = await requireHostRole();
   if (isApiAuthError(auth)) return auth.response;
+
+  const limited = applyRateLimit(request, {
+    key: "host-village-assets:list",
+    limit: 120,
+    windowMs: 15 * 60 * 1000,
+  });
+  if (limited) return limited;
 
   try {
     const { searchParams } = new URL(request.url);
@@ -52,8 +56,18 @@ export async function POST(request: Request) {
   const auth = await requireHostRole();
   if (isApiAuthError(auth)) return auth.response;
 
+  const crossOrigin = enforceSameOrigin(request);
+  if (crossOrigin) return crossOrigin;
+
   const payloadTooLarge = enforceContentLength(request, 8 * 1024 * 1024);
   if (payloadTooLarge) return payloadTooLarge;
+
+  const limited = applyRateLimit(request, {
+    key: "host-village-asset:write",
+    limit: 30,
+    windowMs: 10 * 60 * 1000,
+  });
+  if (limited) return limited;
 
   try {
     const contentType = request.headers.get("content-type") ?? "";
@@ -104,7 +118,7 @@ async function handleFileUpload(request: Request) {
     throw new Error("File is required.");
   }
 
-  validateUploadFile(file);
+  await validateUploadFile(file);
 
   const villageSlug = asString(formData.get("villageSlug")) || "boseong";
   const auth = await requireHostRole();
@@ -208,14 +222,8 @@ function safeStorageExtension(fileName: string, contentType: string): string {
   return "jpg";
 }
 
-function validateUploadFile(file: File) {
-  if (file.size > maxUploadBytes) {
-    throw new Error("File size must be 5MB or less.");
-  }
-
-  if (!allowedUploadTypes.has(file.type)) {
-    throw new Error("Only JPG, PNG, WebP, and GIF images can be uploaded.");
-  }
+async function validateUploadFile(file: File) {
+  await validateImageUploadFile(file, { maxBytes: maxUploadBytes });
 }
 
 function validateAssetUrl(value: string): string {

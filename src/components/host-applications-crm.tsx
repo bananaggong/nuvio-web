@@ -30,6 +30,10 @@ import type {
   MessageTemplate,
 } from "@/lib/host-operations";
 import type { HostProgramDraft } from "@/lib/host-program-studio";
+import {
+  formatApplicationDisplayCode,
+  formatProgramDisplayName,
+} from "@/lib/display-code";
 import { launchFeatureFlags } from "@/lib/launch-feature-flags";
 import {
   readMessageTemplates,
@@ -230,8 +234,11 @@ export function HostApplicationsCrm({
   const applicationsHref = `${resolvedProgramBasePath}/applications`;
   const formsHref = `${resolvedProgramBasePath}/forms`;
   const messagesHref = `${resolvedProgramBasePath}/messages`;
-  const sidebarTitle =
+  const rawSidebarTitle =
     program?.title ?? selectedApplication?.programTitle ?? project?.title ?? "프로그램 제목";
+  const sidebarTitle = selectedApplication
+    ? formatProgramDisplayName(rawSidebarTitle, selectedApplication.programId)
+    : rawSidebarTitle;
   const sidebarProgramId = program?.id ?? programId ?? selectedApplication?.programId ?? "";
   const sidebarDraft = useMemo(() => {
     const identifiers = [
@@ -755,6 +762,11 @@ function ApplicationDetailPanel({
       <p className="text-[14px] font-normal leading-[1.253] text-[#6D7A8A]">
         접수일 {formatShortDate(application?.submittedAt)}
       </p>
+      {application ? (
+        <p className="mt-[4px] text-[12px] font-semibold leading-[1.253] text-[#8F7A6C]">
+          신청번호 {formatApplicationDisplayCode(application.id, application.submittedAt)}
+        </p>
+      ) : null}
 
       <article className="mt-[13px] h-[calc(100vh_-_4.861vw_-_var(--app-69)_-_107px)] min-h-[705px] w-[var(--app-555)] overflow-y-auto rounded-[6px] border border-[#6D7A8A] bg-[#F9F9F9] px-[24px] py-[18px]">
         <div className="grid grid-cols-[96px_minmax(0,1fr)_108px_108px] gap-x-[12px] border-b border-[#FE701E] pb-[22px]">
@@ -1422,7 +1434,7 @@ function PaymentManagementPanel({
               key={application.id}
             >
               <span className="max-w-[170px] truncate">
-                {application.programTitle || "문의한 프로그램"}
+                {formatProgramDisplayName(application.programTitle, application.programId)}
               </span>
               <span>{formatShortDate(application.submittedAt)}</span>
             </div>

@@ -1,6 +1,7 @@
 import { desc, eq } from "drizzle-orm";
 import { getDb } from "@/db/client";
 import { villageAssets } from "@/db/schema";
+import { sanitizeJsonRecord } from "@/lib/safe-json";
 
 export type VillageAsset = {
   id: string;
@@ -39,11 +40,16 @@ export async function createVillageAsset(input: {
   const [row] = await getDb()
     .insert(villageAssets)
     .values({
-      altText: input.altText?.trim() || null,
-      fileName: input.fileName.trim() || "asset",
-      metadata: input.metadata ?? {},
-      url: input.url.trim(),
-      usage: input.usage?.trim() || "page",
+      altText: cleanText(input.altText, 300) || null,
+      fileName: cleanText(input.fileName, 180) || "asset",
+      metadata: sanitizeJsonRecord(input.metadata ?? {}, {
+        maxArrayLength: 40,
+        maxDepth: 4,
+        maxObjectKeys: 40,
+        maxStringLength: 1000,
+      }),
+      url: cleanText(input.url, 2000),
+      usage: cleanText(input.usage, 80) || "page",
       villageSlug: normalizeSlug(input.villageSlug ?? "boseong"),
     })
     .returning();
@@ -69,8 +75,12 @@ function normalizeSlug(value: string): string {
     value
       .normalize("NFKC")
       .toLowerCase()
-      .replace(/[^a-z0-9가-힣]+/gu, "-")
+      .replace(/[^\p{Letter}\p{Number}_-]+/gu, "-")
       .replace(/^-+|-+$/gu, "")
       .slice(0, 72) || "boseong"
   );
+}
+
+function cleanText(value: unknown, maxLength: number): string {
+  return String(value ?? "").trim().slice(0, maxLength);
 }

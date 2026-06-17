@@ -1,7 +1,11 @@
 import { NextResponse } from "next/server";
-import { isApiAuthError, requireHostRole } from "@/lib/api-security";
+import {
+  applyRateLimit,
+  isApiAuthError,
+  requireHostRole,
+} from "@/lib/api-security";
 import { listHostInquiriesFromDb } from "@/lib/host-inquiry-db";
-import { listHostVillageWorkspaces } from "@/lib/host-village-access";
+import { listManageableHostVillageWorkspaces } from "@/lib/host-village-access";
 import { getProgramRecordByIdentifier } from "@/lib/program-db";
 
 export const runtime = "nodejs";
@@ -10,6 +14,13 @@ export async function GET(request: Request) {
   const auth = await requireHostRole();
   if (isApiAuthError(auth)) return auth.response;
 
+  const limited = applyRateLimit(request, {
+    key: "host-inquiries:list",
+    limit: 120,
+    windowMs: 15 * 60 * 1000,
+  });
+  if (limited) return limited;
+
   try {
     const { searchParams } = new URL(request.url);
     const programIdentifier = searchParams.get("programId")?.trim();
@@ -17,7 +28,9 @@ export async function GET(request: Request) {
       ? await getProgramRecordByIdentifier(programIdentifier)
       : undefined;
     const workspaces =
-      auth.profile.role === "admin" ? [] : await listHostVillageWorkspaces(auth);
+      auth.profile.role === "admin"
+        ? []
+        : await listManageableHostVillageWorkspaces(auth);
     const allowedVillageIds = workspaces.map((workspace) => workspace.villageId);
 
     if (programIdentifier && !program) {

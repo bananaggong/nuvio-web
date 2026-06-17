@@ -10,6 +10,7 @@ import {
   Plus,
 } from "lucide-react";
 import type { CSSProperties, ReactNode } from "react";
+import { formatProgramDisplayCode } from "@/lib/display-code";
 import { hostProjectPath, type HostProgramOverview } from "@/lib/host-projects";
 
 const hostWorkspaceScaleStyle = {
@@ -572,8 +573,8 @@ export function HostMiniProgramCard({
         </div>
         <div className="flex min-w-0 flex-col gap-[var(--host-4)] text-[#0D0D0C]">
           <p className="truncate text-[var(--host-12)] font-normal leading-[1.253]">
-            프로그램 제목{" "}
-            <span className="text-[#FE701E]">{program.id.slice(0, 6)}</span>
+            프로그램 코드{" "}
+            <span className="text-[#FE701E]">{formatProgramDisplayCode(program.id)}</span>
           </p>
           <p className="line-clamp-1 text-[var(--host-14)] font-medium leading-[1.253]">
             {program.title}

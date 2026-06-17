@@ -21,6 +21,10 @@ import {
   type FormEvent,
 } from "react";
 import { HostWorkspaceLayout } from "@/components/host-workspace-ui";
+import {
+  formatProgramDisplayCode,
+  formatProgramDisplayName,
+} from "@/lib/display-code";
 import { type HostApplication } from "@/lib/host-operations";
 import { type HostProgramDraft } from "@/lib/host-program-studio";
 import {
@@ -837,7 +841,7 @@ function ThreadDetailPanel({
                 {thread?.programTitle ?? "프로그램 제목"}
               </p>
               <p className="shrink-0 font-normal text-[#6D7A8A]">
-                {thread?.programNumber ?? "프로그램 넘버"}
+                {thread?.programNumber ?? "프로그램 코드"}
               </p>
             </div>
             <div className="mt-[3px] flex items-center gap-3 pl-[6px]">
@@ -944,7 +948,7 @@ function MiniProgramHeader({ thread }: { thread?: MessageThread }) {
             {thread?.programTitle ?? "프로그램 제목 입력"}
           </p>
           <p className="shrink-0 text-[length:var(--host-msg-12)] font-normal leading-[1.6] text-[#6D7A8A]">
-            {thread?.programNumber ?? "프로그램 넘버"}
+            {thread?.programNumber ?? "프로그램 코드"}
           </p>
         </div>
         <div className="mt-[var(--host-msg-4)] grid gap-[var(--host-msg-3)] pl-[var(--host-msg-6)]">
@@ -1376,6 +1380,17 @@ function buildMessageThreads(
           .format(submitted)
           .replace(/\.$/u, "");
 
+    const rawProgramTitle =
+      relatedProgram?.title ||
+      inquiry.programTitle ||
+      relatedApplication?.programTitle ||
+      inquiry.title ||
+      "";
+    const displayProgramTitle = formatProgramDisplayName(
+      rawProgramTitle,
+      inquiry.programId || relatedProgram?.id || relatedApplication?.programId,
+    );
+
     return {
       bookingInfo:
         relatedApplication?.status === "completed"
@@ -1388,9 +1403,7 @@ function buildMessageThreads(
       id: inquiry.id || `message-thread-${index}`,
       imageUrl:
         relatedProgram?.image ||
-        resolveThreadImage(
-          relatedProgram?.title || inquiry.programTitle || relatedApplication?.programTitle || "",
-        ),
+        resolveThreadImage(rawProgramTitle),
       lastMessage: latestMessage?.body ?? inquiry.message,
       messages,
       openDate: formatDateLabel(relatedProgram?.recruitStart, dateLabel),
@@ -1399,14 +1412,11 @@ function buildMessageThreads(
         relatedProgram?.activityEnd,
       ),
       programId: inquiry.programId || relatedProgram?.id || "",
-      programNumber: (inquiry.programId || relatedProgram?.id)
-        ? `P-${(inquiry.programId || relatedProgram?.id || "").slice(0, 4).toUpperCase()}`
-        : `P-${String(index + 1).padStart(4, "0")}`,
+      programNumber: formatProgramDisplayCode(
+        inquiry.programId || relatedProgram?.id || String(index + 1),
+      ),
       programTitle:
-        relatedProgram?.title ||
-        inquiry.programTitle ||
-        relatedApplication?.programTitle ||
-        inquiry.title ||
+        displayProgramTitle ||
         "문의한 프로그램 명 또는 호스트 문의",
       sourceId: inquiry.id,
       status: inquiry.status,

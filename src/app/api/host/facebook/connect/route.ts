@@ -1,7 +1,12 @@
 import { randomUUID } from "crypto";
 import { cookies } from "next/headers";
 import { NextResponse } from "next/server";
-import { apiError, isApiAuthError, requireHostRole } from "@/lib/api-security";
+import {
+  apiError,
+  applyRateLimit,
+  isApiAuthError,
+  requireHostRole,
+} from "@/lib/api-security";
 import { canManageHostVillage } from "@/lib/host-village-access";
 import {
   buildFacebookOAuthUrl,
@@ -14,6 +19,13 @@ const STATE_COOKIE = "nuvio_facebook_oauth_state";
 
 export async function GET(request: Request) {
   const requestUrl = new URL(request.url);
+  const limited = applyRateLimit(request, {
+    key: "host-facebook-connect:start",
+    limit: 20,
+    windowMs: 15 * 60 * 1000,
+  });
+  if (limited) return limited;
+
   const auth = await requireHostRole();
   if (isApiAuthError(auth)) return auth.response;
 

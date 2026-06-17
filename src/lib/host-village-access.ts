@@ -165,6 +165,15 @@ export async function listHostVillageWorkspaces(
   }
 }
 
+export async function listManageableHostVillageWorkspaces(
+  auth: ApiAuthContext,
+): Promise<HostVillageWorkspace[]> {
+  const workspaces = await listHostVillageWorkspaces(auth);
+  if (auth.profile.role === "admin") return workspaces;
+
+  return workspaces.filter((workspace) => canRoleManageVillage(workspace.role));
+}
+
 export async function getHostVillageAccess(
   villageSlug: string,
 ): Promise<HostVillageAccessResult> {
@@ -195,7 +204,10 @@ export async function canManageHostVillage(
 
   try {
     const [row] = await getDb()
-      .select({ id: hostVillageMemberships.id })
+      .select({
+        id: hostVillageMemberships.id,
+        role: hostVillageMemberships.role,
+      })
       .from(hostVillageMemberships)
       .innerJoin(villages, eq(hostVillageMemberships.villageId, villages.id))
       .where(
@@ -207,7 +219,7 @@ export async function canManageHostVillage(
       )
       .limit(1);
 
-    return Boolean(row);
+    return Boolean(row && canRoleManageVillage(row.role));
   } catch {
     return false;
   }
@@ -304,4 +316,10 @@ function normalizeEmail(value: string): string {
 
 function normalizeSlug(value: string): string {
   return value.trim().toLowerCase();
+}
+
+function canRoleManageVillage(
+  role: HostVillageWorkspace["role"] | null | undefined,
+): boolean {
+  return role === "owner" || role === "manager" || role === "editor";
 }

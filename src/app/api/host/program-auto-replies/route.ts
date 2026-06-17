@@ -1,5 +1,8 @@
 import { NextResponse } from "next/server";
 import {
+  applyRateLimit,
+  enforceContentLength,
+  enforceSameOrigin,
   isApiAuthError,
   requireHostRole,
   type ApiAuthContext,
@@ -12,7 +15,9 @@ import {
   createDefaultProgramAutoReplyConfig,
   normalizeProgramAutoReplyConfig,
 } from "@/lib/program-auto-replies";
-import { listHostVillageWorkspaces } from "@/lib/host-village-access";
+import {
+  listManageableHostVillageWorkspaces,
+} from "@/lib/host-village-access";
 import { getProgramRecordByIdentifier } from "@/lib/program-db";
 
 export const runtime = "nodejs";
@@ -20,6 +25,13 @@ export const runtime = "nodejs";
 export async function GET(request: Request) {
   const auth = await requireHostRole();
   if (isApiAuthError(auth)) return auth.response;
+
+  const limited = applyRateLimit(request, {
+    key: "host-program-auto-replies:get",
+    limit: 120,
+    windowMs: 15 * 60 * 1000,
+  });
+  if (limited) return limited;
 
   try {
     const { searchParams } = new URL(request.url);
@@ -49,8 +61,21 @@ export async function PUT(request: Request) {
   const auth = await requireHostRole();
   if (isApiAuthError(auth)) return auth.response;
 
+  const crossOrigin = enforceSameOrigin(request);
+  if (crossOrigin) return crossOrigin;
+
+  const payloadTooLarge = enforceContentLength(request, 64 * 1024);
+  if (payloadTooLarge) return payloadTooLarge;
+
+  const limited = applyRateLimit(request, {
+    key: "host-program-auto-replies:save",
+    limit: 60,
+    windowMs: 15 * 60 * 1000,
+  });
+  if (limited) return limited;
+
   try {
-    const body = await request.json();
+    const body = await request.json().catch(() => ({}));
     const input = normalizeProgramAutoReplyConfig(body);
     const access = await resolveHostProgramAccess(input.programId, auth);
 
@@ -104,7 +129,7 @@ async function resolveHostProgramAccess(
 
   if (auth.profile.role === "admin") return { program };
 
-  const allowedVillageIds = (await listHostVillageWorkspaces(auth)).map(
+  const allowedVillageIds = (await listManageableHostVillageWorkspaces(auth)).map(
     (workspace) => workspace.villageId,
   );
   if (!program.villageId || !allowedVillageIds.includes(program.villageId)) {

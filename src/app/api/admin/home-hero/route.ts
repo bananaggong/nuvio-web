@@ -1,6 +1,8 @@
 import { NextResponse } from "next/server";
 import {
+  applyRateLimit,
   enforceContentLength,
+  enforceSameOrigin,
   isApiAuthError,
   requireAdminRole,
 } from "@/lib/api-security";
@@ -12,9 +14,18 @@ import {
 
 export const runtime = "nodejs";
 
-export async function GET() {
+const MAX_HOME_HERO_PAYLOAD_BYTES = 64 * 1024;
+
+export async function GET(request: Request) {
   const auth = await requireAdminRole();
   if (isApiAuthError(auth)) return auth.response;
+
+  const limited = applyRateLimit(request, {
+    key: "admin-home-hero:list",
+    limit: 90,
+    windowMs: 15 * 60 * 1000,
+  });
+  if (limited) return limited;
 
   try {
     const slides = await listAdminHomeHeroSlides();
@@ -34,11 +45,21 @@ export async function POST(request: Request) {
   const auth = await requireAdminRole();
   if (isApiAuthError(auth)) return auth.response;
 
-  const lengthError = enforceContentLength(request, 64 * 1024);
+  const crossOrigin = enforceSameOrigin(request);
+  if (crossOrigin) return crossOrigin;
+
+  const lengthError = enforceContentLength(request, MAX_HOME_HERO_PAYLOAD_BYTES);
   if (lengthError) return lengthError;
 
+  const limited = applyRateLimit(request, {
+    key: "admin-home-hero:replace",
+    limit: 30,
+    windowMs: 10 * 60 * 1000,
+  });
+  if (limited) return limited;
+
   try {
-    const payload = (await request.json()) as { slides?: unknown };
+    const payload = (await request.json().catch(() => ({}))) as { slides?: unknown };
     const slides = await replaceHomeHeroSlides(payload.slides);
 
     await safeCreateAuditLog({

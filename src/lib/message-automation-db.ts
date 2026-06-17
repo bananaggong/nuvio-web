@@ -12,6 +12,13 @@ import {
 type CampaignInsert = typeof messageCampaigns.$inferInsert;
 type CampaignRow = typeof messageCampaigns.$inferSelect;
 
+export class MessageCampaignAccessError extends Error {
+  constructor() {
+    super("You do not have permission to update this message campaign.");
+    this.name = "MessageCampaignAccessError";
+  }
+}
+
 export async function listMessageCampaignsFromDb(options: {
   ownerId?: string;
 } = {}): Promise<MessageCampaign[]> {
@@ -51,6 +58,16 @@ export async function upsertMessageCampaign(
       .returning();
 
     if (updatedRow) return mapCampaignRowToMessageCampaign(updatedRow);
+
+    if (options.ownerId && options.restrictToOwner) {
+      const [existingRow] = await getDb()
+        .select({ id: messageCampaigns.id })
+        .from(messageCampaigns)
+        .where(eq(messageCampaigns.id, campaign.id))
+        .limit(1);
+
+      if (existingRow) throw new MessageCampaignAccessError();
+    }
 
     const [createdRow] = await getDb()
       .insert(messageCampaigns)
@@ -110,7 +127,7 @@ function mapCampaignRowToMessageCampaign(row: CampaignRow): MessageCampaign {
     channel: row.channel,
     targetStatus: asTargetStatus(row.targetStatus),
     scheduledAt: row.scheduledAt ? toKoreaDatetimeInputValue(row.scheduledAt) : "",
-    status: row.status === "failed" ? "draft" : row.status,
+    status: asCampaignStatus(row.status === "processing" ? "scheduled" : row.status),
     updatedAt: row.updatedAt.toISOString(),
   };
 }

@@ -1,5 +1,8 @@
 import { NextResponse } from "next/server";
 import {
+  applyRateLimit,
+  enforceContentLength,
+  enforceSameOrigin,
   isApiAuthError,
   requireHostRole,
   type ApiAuthContext,
@@ -7,11 +10,12 @@ import {
 import type { ApplicationFormTemplate } from "@/lib/application-form-builder";
 import { asFormKind } from "@/lib/application-form-builder";
 import {
+  ApplicationFormAccessError,
   listApplicationFormTemplatesFromDb,
   normalizeApplicationFormTemplate,
   upsertApplicationFormTemplate,
 } from "@/lib/application-form-db";
-import { listHostVillageWorkspaces } from "@/lib/host-village-access";
+import { listManageableHostVillageWorkspaces } from "@/lib/host-village-access";
 import { getProgramRecordByIdentifier } from "@/lib/program-db";
 
 export const runtime = "nodejs";
@@ -19,6 +23,13 @@ export const runtime = "nodejs";
 export async function GET(request: Request) {
   const auth = await requireHostRole();
   if (isApiAuthError(auth)) return auth.response;
+
+  const limited = applyRateLimit(request, {
+    key: "host-form:list",
+    limit: 120,
+    windowMs: 15 * 60 * 1000,
+  });
+  if (limited) return limited;
 
   try {
     const { searchParams } = new URL(request.url);
@@ -50,8 +61,21 @@ export async function POST(request: Request) {
   const auth = await requireHostRole();
   if (isApiAuthError(auth)) return auth.response;
 
+  const crossOrigin = enforceSameOrigin(request);
+  if (crossOrigin) return crossOrigin;
+
+  const payloadTooLarge = enforceContentLength(request, 256 * 1024);
+  if (payloadTooLarge) return payloadTooLarge;
+
+  const limited = applyRateLimit(request, {
+    key: "host-form:save",
+    limit: 60,
+    windowMs: 15 * 60 * 1000,
+  });
+  if (limited) return limited;
+
   try {
-    const body = await request.json();
+    const body = await request.json().catch(() => ({}));
     const template = normalizeApplicationFormTemplate(body);
     const scopedTemplate = await scopeTemplateToProgram(template, auth);
     const savedTemplate = await upsertApplicationFormTemplate(scopedTemplate, {
@@ -61,6 +85,10 @@ export async function POST(request: Request) {
 
     return NextResponse.json({ data: savedTemplate }, { status: 201 });
   } catch (error) {
+    if (error instanceof ApplicationFormAccessError) {
+      return NextResponse.json({ error: error.message }, { status: 403 });
+    }
+
     return NextResponse.json(
       {
         error:
@@ -86,7 +114,7 @@ async function scopeTemplateToProgram(
   }
 
   if (auth.profile.role !== "admin") {
-    const allowedVillageIds = (await listHostVillageWorkspaces(auth)).map(
+    const allowedVillageIds = (await listManageableHostVillageWorkspaces(auth)).map(
       (workspace) => workspace.villageId,
     );
 

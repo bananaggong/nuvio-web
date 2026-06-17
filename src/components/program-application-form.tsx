@@ -11,6 +11,10 @@ import {
   isQuestionBlock,
   normalizeApplicationFormTemplateShape,
 } from "@/lib/application-form-builder";
+import {
+  formatApplicationDisplayCode,
+  formatProgramDisplayName,
+} from "@/lib/display-code";
 import { programPath } from "@/lib/program-routing";
 import type { Program } from "@/lib/types";
 
@@ -55,7 +59,10 @@ export function ProgramApplicationForm({
 }: ProgramApplicationFormProps) {
   const [form, setForm] = useState<ApplicationFormState>(initialFormState);
   const [dynamicAnswers, setDynamicAnswers] = useState<DynamicAnswers>({});
-  const [submittedId, setSubmittedId] = useState<string>();
+  const [submittedApplication, setSubmittedApplication] = useState<{
+    id: string;
+    submittedAt?: string;
+  }>();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState<string>();
   const normalizedTemplate = formTemplate
@@ -218,13 +225,16 @@ export function ProgramApplicationForm({
       }
 
       const payload = (await response.json()) as {
-        data?: { id: string };
+        data?: { id: string; submittedAt?: string };
       };
       if (!payload.data) {
         throw new Error("신청서 저장 결과를 확인하지 못했어요.");
       }
 
-      setSubmittedId(payload.data.id);
+      setSubmittedApplication({
+        id: payload.data.id,
+        submittedAt: payload.data.submittedAt,
+      });
     } catch (error) {
       setSubmitError(
         error instanceof Error
@@ -236,7 +246,12 @@ export function ProgramApplicationForm({
     }
   }
 
-  if (submittedId) {
+  if (submittedApplication) {
+    const displayCode = formatApplicationDisplayCode(
+      submittedApplication.id,
+      submittedApplication.submittedAt,
+    );
+
     return (
       <section className="mx-auto max-w-3xl px-4 py-10 md:px-8">
         <div className="rounded-md border border-teal-200 bg-white p-6 text-center shadow-sm">
@@ -246,7 +261,7 @@ export function ProgramApplicationForm({
           </h1>
           <p className="mt-3 text-sm leading-6 text-slate-600">
             신청 내용은 호스트 콘솔의 신청자 파이프라인에 반영돼요. 접수번호는{" "}
-            <span className="font-mono font-black text-slate-900">{submittedId}</span>
+            <span className="font-mono font-black text-slate-900">{displayCode}</span>
             입니다.
           </p>
           {submitError ? (
@@ -422,6 +437,8 @@ export function ProgramApplicationForm({
 }
 
 function ApplicationDocumentHeader({ program }: { program: Program }) {
+  const displayProgramTitle = formatProgramDisplayName(program.title, program.id);
+
   return (
     <div className="border-b border-[#FE701E] pb-[22px]">
       <div className="grid grid-cols-[118px_minmax(0,1fr)_94px_94px] gap-x-[16px] max-sm:grid-cols-[92px_minmax(0,1fr)] max-sm:gap-y-[14px]">
@@ -438,7 +455,7 @@ function ApplicationDocumentHeader({ program }: { program: Program }) {
         </div>
         <div className="pt-[13px]">
           <h2 className="line-clamp-2 text-[20px] font-semibold leading-[1.32] text-[#5B3A29]">
-            {program.title}
+            {displayProgramTitle}
           </h2>
           <p className="mt-[12px] text-[12px] font-normal leading-[1.55] text-[#6D7A8A]">
             {program.region} {program.city}

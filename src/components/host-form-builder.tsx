@@ -25,6 +25,7 @@ import {
   HostWorkspaceLayout,
 } from "@/components/host-workspace-ui";
 import { nuvioIcons } from "@/components/icons/nuvio-icons";
+import { formatProgramDisplayName } from "@/lib/display-code";
 
 type HostProgramOption = {
   id: string;
@@ -671,7 +672,7 @@ function FormPreview({ template }: { template: ApplicationFormTemplate }) {
               <div className="h-[118px] w-[118px] shrink-0 rounded-[16px] bg-[#D9D9D9]" />
               <div className="pt-[13px]">
                 <p className="line-clamp-2 text-[20px] font-semibold leading-[1.32] text-[#5B3A29]">
-                  {template.programTitle || "프로그램 제목 입력"}
+                  {formatProgramDisplayName(template.programTitle, template.programId)}
                 </p>
                 <p className="mt-[12px] text-[12px] font-normal leading-[1.55] text-[#6D7A8A]">
                   프로그램 지역 위치

@@ -1,5 +1,8 @@
 import type { User } from "@supabase/supabase-js";
+import { and, eq, isNull } from "drizzle-orm";
 import { NextResponse } from "next/server";
+import { getDb } from "@/db/client";
+import { hostVillageMemberships } from "@/db/schema";
 import {
   ensureUserProfile,
   getUserProfile,
@@ -55,7 +58,16 @@ export async function getOptionalAuthenticatedUser(): Promise<ApiAuthContext | n
 }
 
 export async function requireHostRole(): Promise<ApiAuthResult> {
-  return requireAuthenticatedUser();
+  const auth = await requireAuthenticatedUser();
+  if (isApiAuthError(auth)) return auth;
+
+  if (auth.profile.role === "admin" || auth.profile.role === "partner") {
+    return auth;
+  }
+
+  if (await hasActiveHostVillageMembership(auth)) return auth;
+
+  return { response: apiError("Host access is required.", 403) };
 }
 
 export async function requireAdminRole(): Promise<ApiAuthResult> {
@@ -116,6 +128,16 @@ export function enforceContentLength(
   return apiError("Payload is too large.", 413);
 }
 
+export function enforceSameOrigin(request: Request): NextResponse | null {
+  const origin = request.headers.get("origin");
+  if (!origin) return null;
+
+  const allowedOrigins = getAllowedOrigins(request);
+  if (allowedOrigins.has(origin)) return null;
+
+  return apiError("Cross-origin state-changing requests are not allowed.", 403);
+}
+
 export function applyRateLimit(
   request: Request,
   options: RateLimitOptions,
@@ -169,10 +191,111 @@ function getClientIp(request: Request): string {
   );
 }
 
+function getAllowedOrigins(request: Request): Set<string> {
+  const origins = new Set<string>();
+  const host = getFirstHeaderValue(
+    request.headers.get("x-forwarded-host") || request.headers.get("host"),
+  );
+  const forwardedProto = getFirstHeaderValue(
+    request.headers.get("x-forwarded-proto"),
+  );
+
+  if (host) {
+    const proto =
+      forwardedProto ||
+      (host.startsWith("localhost") || host.startsWith("127.0.0.1")
+        ? "http"
+        : "https");
+    addOrigin(origins, `${proto}://${host}`);
+
+    if (host.startsWith("localhost") || host.startsWith("127.0.0.1")) {
+      addOrigin(origins, `http://${host}`);
+      addOrigin(origins, `https://${host}`);
+    }
+  }
+
+  [
+    process.env.NEXT_PUBLIC_SITE_URL,
+    process.env.NEXT_PUBLIC_APP_URL,
+    process.env.SITE_URL,
+    process.env.APP_URL,
+    process.env.VERCEL_PROJECT_PRODUCTION_URL,
+    process.env.VERCEL_URL,
+  ].forEach((value) => {
+    if (!value) return;
+    value
+      .split(",")
+      .map((item) => item.trim())
+      .filter(Boolean)
+      .forEach((item) => addOrigin(origins, item));
+  });
+
+  return origins;
+}
+
+function getFirstHeaderValue(value: string | null): string {
+  return value?.split(",")[0]?.trim() ?? "";
+}
+
+function addOrigin(origins: Set<string>, value: string) {
+  try {
+    const url = new URL(value.includes("://") ? value : `https://${value}`);
+    origins.add(url.origin);
+  } catch {
+    // Ignore invalid deployment metadata.
+  }
+}
+
 function sweepExpiredRateLimits(now: number) {
   if (rateLimitStore.size < 1000) return;
 
   for (const [key, entry] of rateLimitStore.entries()) {
     if (entry.resetAt <= now) rateLimitStore.delete(key);
   }
+}
+
+async function hasActiveHostVillageMembership(
+  auth: ApiAuthContext,
+): Promise<boolean> {
+  try {
+    await activatePendingHostMembership(auth);
+
+    const [membership] = await getDb()
+      .select({ id: hostVillageMemberships.id })
+      .from(hostVillageMemberships)
+      .where(
+        and(
+          eq(hostVillageMemberships.userId, auth.user.id),
+          eq(hostVillageMemberships.status, "active"),
+        ),
+      )
+      .limit(1);
+
+    return Boolean(membership);
+  } catch {
+    return false;
+  }
+}
+
+async function activatePendingHostMembership(
+  auth: ApiAuthContext,
+): Promise<void> {
+  const accountEmail = auth.profile.email.trim().toLowerCase();
+  if (!accountEmail) return;
+
+  await getDb()
+    .update(hostVillageMemberships)
+    .set({
+      activatedAt: new Date(),
+      status: "active",
+      updatedAt: new Date(),
+      userId: auth.user.id,
+    })
+    .where(
+      and(
+        eq(hostVillageMemberships.accountEmail, accountEmail),
+        eq(hostVillageMemberships.status, "pending"),
+        isNull(hostVillageMemberships.userId),
+      ),
+    );
 }

@@ -1,6 +1,8 @@
 import { NextResponse } from "next/server";
 import {
+  applyRateLimit,
   enforceContentLength,
+  enforceSameOrigin,
   isApiAuthError,
   requireAuthenticatedUser,
 } from "@/lib/api-security";
@@ -28,9 +30,16 @@ type PreferencePatch = Partial<
   >
 >;
 
-export async function GET() {
+export async function GET(request: Request) {
   const auth = await requireAuthenticatedUser();
   if (isApiAuthError(auth)) return auth.response;
+
+  const limited = applyRateLimit(request, {
+    key: "me-notification-preferences:get",
+    limit: 180,
+    windowMs: 15 * 60 * 1000,
+  });
+  if (limited) return limited;
 
   const preference = await getNotificationPreference(auth.user.id);
   return NextResponse.json({ data: preference });
@@ -40,8 +49,18 @@ export async function PATCH(request: Request) {
   const auth = await requireAuthenticatedUser();
   if (isApiAuthError(auth)) return auth.response;
 
+  const crossOrigin = enforceSameOrigin(request);
+  if (crossOrigin) return crossOrigin;
+
   const payloadTooLarge = enforceContentLength(request, 16 * 1024);
   if (payloadTooLarge) return payloadTooLarge;
+
+  const limited = applyRateLimit(request, {
+    key: "me-notification-preferences:patch",
+    limit: 60,
+    windowMs: 15 * 60 * 1000,
+  });
+  if (limited) return limited;
 
   const body = (await request.json().catch(() => ({}))) as Record<string, unknown>;
   const patch = normalizePreferencePatch(body);
@@ -72,7 +91,15 @@ function normalizePreferencePatch(body: Record<string, unknown>): PreferencePatc
 
 function normalizeTime(value: string): string {
   const text = value.trim();
-  return /^\d{2}:\d{2}$/u.test(text) ? text : "";
+  const match = /^(\d{2}):(\d{2})$/u.exec(text);
+  if (!match) return "";
+
+  const hour = Number(match[1]);
+  const minute = Number(match[2]);
+  if (!Number.isInteger(hour) || !Number.isInteger(minute)) return "";
+  if (hour < 0 || hour > 23 || minute < 0 || minute > 59) return "";
+
+  return text;
 }
 
 const booleanPreferenceKeys = [

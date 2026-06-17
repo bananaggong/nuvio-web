@@ -1,4 +1,4 @@
-import { and, desc, eq } from "drizzle-orm";
+import { and, desc, eq, inArray } from "drizzle-orm";
 import { getDb } from "@/db/client";
 import { programs as programsTable, reviews as reviewsTable } from "@/db/schema";
 import type { Review, ReviewCategory } from "@/lib/types";
@@ -17,8 +17,20 @@ export type HostReviewDraft = {
   updatedAt: string;
 };
 
+type UpsertHostReviewDraftOptions = {
+  allowedVillageIds?: string[];
+  allowedVillageSlugs?: string[];
+};
+
 type ReviewRow = typeof reviewsTable.$inferSelect;
 type ReviewInsert = typeof reviewsTable.$inferInsert;
+
+export class HostReviewAccessError extends Error {
+  constructor() {
+    super("You do not have permission to manage this review.");
+    this.name = "HostReviewAccessError";
+  }
+}
 
 const reviewCategories: ReviewCategory[] = [
   "programTip",
@@ -72,16 +84,29 @@ export async function listPublicProgramReviewsFromDb(
   );
 }
 
-export async function listHostReviewDraftsFromDb(): Promise<HostReviewDraft[]> {
-  const rows = await getDb()
+export async function listHostReviewDraftsFromDb(
+  options: { villageSlugs?: string[] } = {},
+): Promise<HostReviewDraft[]> {
+  const villageSlugs = options.villageSlugs
+    ? Array.from(new Set(options.villageSlugs.map((slug) => slug.trim()).filter(Boolean)))
+    : undefined;
+
+  if (villageSlugs && villageSlugs.length === 0) return [];
+
+  const baseQuery = getDb()
     .select({
       review: reviewsTable,
       programLegacyId: programsTable.legacyId,
     })
     .from(reviewsTable)
-    .leftJoin(programsTable, eq(reviewsTable.programId, programsTable.id))
-    .orderBy(desc(reviewsTable.updatedAt))
-    .limit(300);
+    .leftJoin(programsTable, eq(reviewsTable.programId, programsTable.id));
+
+  const rows = villageSlugs
+    ? await baseQuery
+        .where(inArray(reviewsTable.villageSlug, villageSlugs))
+        .orderBy(desc(reviewsTable.updatedAt))
+        .limit(300)
+    : await baseQuery.orderBy(desc(reviewsTable.updatedAt)).limit(300);
 
   return rows.map(({ review, programLegacyId }) =>
     mapReviewRowToHostDraft(review, programLegacyId ?? undefined),
@@ -90,21 +115,55 @@ export async function listHostReviewDraftsFromDb(): Promise<HostReviewDraft[]> {
 
 export async function upsertHostReviewDraft(
   draft: HostReviewDraft,
+  options: UpsertHostReviewDraftOptions = {},
 ): Promise<HostReviewDraft> {
-  const insertValue = await mapHostDraftToReviewInsert(draft);
+  const allowedVillageSlugs = normalizeAllowedValues(options.allowedVillageSlugs);
+  const allowedVillageIds = normalizeAllowedValues(options.allowedVillageIds);
+  if (options.allowedVillageSlugs && allowedVillageSlugs?.length === 0) {
+    throw new HostReviewAccessError();
+  }
+  if (options.allowedVillageIds && allowedVillageIds?.length === 0) {
+    throw new HostReviewAccessError();
+  }
+
+  const insertValue = await mapHostDraftToReviewInsert(draft, {
+    allowedVillageIds,
+  });
   const now = new Date();
 
   if (isUuid(draft.id)) {
+    const [existingRow] = await getDb()
+      .select({
+        id: reviewsTable.id,
+        villageSlug: reviewsTable.villageSlug,
+      })
+      .from(reviewsTable)
+      .where(eq(reviewsTable.id, draft.id))
+      .limit(1);
+
+    if (existingRow) {
+      assertReviewVillageAccess(existingRow.villageSlug, allowedVillageSlugs);
+    }
+
     const [updatedRow] = await getDb()
       .update(reviewsTable)
       .set({ ...insertValue, updatedAt: now })
-      .where(eq(reviewsTable.id, draft.id))
+      .where(
+        allowedVillageSlugs
+          ? and(
+              eq(reviewsTable.id, draft.id),
+              inArray(reviewsTable.villageSlug, allowedVillageSlugs),
+            )
+          : eq(reviewsTable.id, draft.id),
+      )
       .returning();
 
     if (updatedRow) {
       return mapReviewRowToHostDraft(updatedRow, draft.programLegacyId);
     }
   }
+
+  assertReviewVillageAccess(insertValue.villageSlug, allowedVillageSlugs);
 
   const [row] = await getDb().insert(reviewsTable).values(insertValue).returning();
   return mapReviewRowToHostDraft(row, draft.programLegacyId);
@@ -144,10 +203,13 @@ export function maskKoreanName(value: string): string {
 
 async function mapHostDraftToReviewInsert(
   draft: HostReviewDraft,
+  options: { allowedVillageIds?: string[] } = {},
 ): Promise<ReviewInsert> {
   return {
     programId: draft.programLegacyId
-      ? await resolveProgramUuidByLegacyId(draft.programLegacyId)
+      ? await resolveProgramUuidByLegacyId(draft.programLegacyId, {
+          allowedVillageIds: options.allowedVillageIds,
+        })
       : null,
     villageSlug: draft.villageSlug?.trim() || null,
     title: draft.title.trim() || "참여 후기",
@@ -165,12 +227,26 @@ async function mapHostDraftToReviewInsert(
 
 async function resolveProgramUuidByLegacyId(
   legacyId: number,
+  options: { allowedVillageIds?: string[] } = {},
 ): Promise<string | null> {
+  if (options.allowedVillageIds && options.allowedVillageIds.length === 0) {
+    throw new HostReviewAccessError();
+  }
+
+  const conditions = [eq(programsTable.legacyId, legacyId)];
+  if (options.allowedVillageIds) {
+    conditions.push(inArray(programsTable.villageId, options.allowedVillageIds));
+  }
+
   const [row] = await getDb()
     .select({ id: programsTable.id })
     .from(programsTable)
-    .where(eq(programsTable.legacyId, legacyId))
+    .where(and(...conditions))
     .limit(1);
+
+  if (!row && options.allowedVillageIds) {
+    throw new HostReviewAccessError();
+  }
 
   return row?.id ?? null;
 }
@@ -234,6 +310,24 @@ function asOptionalString(value: unknown): string | undefined {
 function asOptionalNumber(value: unknown): number | undefined {
   const numberValue = Number(value);
   return Number.isFinite(numberValue) ? numberValue : undefined;
+}
+
+function normalizeAllowedValues(
+  values: string[] | undefined,
+): string[] | undefined {
+  return values
+    ? Array.from(new Set(values.map((value) => value.trim()).filter(Boolean)))
+    : undefined;
+}
+
+function assertReviewVillageAccess(
+  villageSlug: string | null | undefined,
+  allowedVillageSlugs: string[] | undefined,
+) {
+  if (!allowedVillageSlugs) return;
+  if (!villageSlug || !allowedVillageSlugs.includes(villageSlug)) {
+    throw new HostReviewAccessError();
+  }
 }
 
 function isUuid(value: string): boolean {

@@ -22,6 +22,7 @@ import {
   hostProjectPath,
   hostStandaloneProgramPath,
 } from "@/lib/host-projects";
+import { formatApplicationDisplayCode } from "@/lib/display-code";
 
 type StatusEvent = {
   id: string;
@@ -251,6 +252,11 @@ export function HostApplicationDetail({
           <section className="rounded-md border border-slate-200 bg-white p-5">
             <h2 className="text-lg font-black text-slate-950">신청자 정보</h2>
             <div className="mt-4 space-y-3">
+              <InfoLine
+                icon={CheckCircle2}
+                label="신청번호"
+                value={formatApplicationDisplayCode(application.id, application.submittedAt)}
+              />
               <InfoLine icon={UserRound} label="이름" value={application.applicantName} />
               <InfoLine icon={Mail} label="이메일" value={application.email} />
               <InfoLine

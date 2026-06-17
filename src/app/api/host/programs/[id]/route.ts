@@ -1,12 +1,21 @@
 import { NextResponse } from "next/server";
-import { isApiAuthError, requireHostRole } from "@/lib/api-security";
+import {
+  applyRateLimit,
+  enforceContentLength,
+  enforceSameOrigin,
+  isApiAuthError,
+  requireHostRole,
+} from "@/lib/api-security";
 import { listApplicationFormTemplatesFromDb } from "@/lib/application-form-db";
 import {
   deleteHostProgramDraftFromDb,
   getHostProgramDraftFromDb,
+  getHostProgramDeletionImpactFromDb,
+  hasHostProgramDeletionImpact,
+  HostProgramDeletionBlockedError,
 } from "@/lib/host-program-db";
 import { getProgramPublishBlockers } from "@/lib/host-program-publish-readiness";
-import { listHostVillageWorkspaces } from "@/lib/host-village-access";
+import { listManageableHostVillageWorkspaces } from "@/lib/host-village-access";
 import type { HostProgramDraft } from "@/lib/host-program-studio";
 
 export const runtime = "nodejs";
@@ -17,6 +26,19 @@ export async function DELETE(
 ) {
   const auth = await requireHostRole();
   if (isApiAuthError(auth)) return auth.response;
+
+  const crossOrigin = enforceSameOrigin(request);
+  if (crossOrigin) return crossOrigin;
+
+  const payloadTooLarge = enforceContentLength(request, 1024);
+  if (payloadTooLarge) return payloadTooLarge;
+
+  const limited = applyRateLimit(request, {
+    key: "host-program:delete",
+    limit: 30,
+    windowMs: 15 * 60 * 1000,
+  });
+  if (limited) return limited;
 
   try {
     const { id } = await params;
@@ -30,7 +52,7 @@ export async function DELETE(
     const allowedVillageIds =
       auth.profile.role === "admin"
         ? undefined
-        : (await listHostVillageWorkspaces(auth)).map(
+        : (await listManageableHostVillageWorkspaces(auth)).map(
             (workspace) => workspace.villageId,
           );
     const program = await getHostProgramDraftFromDb(id, { allowedVillageIds });
@@ -39,6 +61,28 @@ export async function DELETE(
       return NextResponse.json(
         { error: "Program was not found." },
         { status: 404 },
+      );
+    }
+
+    const deletionImpact = await getHostProgramDeletionImpactFromDb(id, {
+      allowedVillageIds,
+    });
+
+    if (!deletionImpact) {
+      return NextResponse.json(
+        { error: "Program was not found." },
+        { status: 404 },
+      );
+    }
+
+    if (hasHostProgramDeletionImpact(deletionImpact)) {
+      return NextResponse.json(
+        {
+          data: { impact: deletionImpact },
+          error:
+            "This program has applications, messages, forms, saved users, or reporting history attached. Close or unpublish it instead of deleting it.",
+        },
+        { status: 409 },
       );
     }
 
@@ -77,6 +121,17 @@ export async function DELETE(
 
     return NextResponse.json({ data: deletedProgram });
   } catch (error) {
+    if (error instanceof HostProgramDeletionBlockedError) {
+      return NextResponse.json(
+        {
+          data: { impact: error.impact },
+          error:
+            "This program has applications, messages, forms, saved users, or reporting history attached. Close or unpublish it instead of deleting it.",
+        },
+        { status: 409 },
+      );
+    }
+
     return NextResponse.json(
       {
         error:

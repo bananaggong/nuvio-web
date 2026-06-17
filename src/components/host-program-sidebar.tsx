@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { Bell } from "lucide-react";
 import type { CSSProperties } from "react";
+import { formatProgramDisplayCode } from "@/lib/display-code";
 import { launchFeatureFlags } from "@/lib/launch-feature-flags";
 
 export type HostProgramSidebarActiveItem =
@@ -116,7 +117,7 @@ export function HostProgramSidebar({
             </span>
           </div>
           <p className="mt-[var(--host-program-sidebar-8)] text-[var(--host-program-sidebar-14)] font-semibold leading-[1.253] text-[#5B3A29]">
-            프로그램 넘버 :{" "}
+            프로그램 코드 :{" "}
             <span className="text-[#FE701E]">{formatProgramNumber(programId)}</span>
           </p>
         </section>
@@ -272,8 +273,5 @@ function SidebarSubLink({
 }
 
 function formatProgramNumber(programId: string): string {
-  const normalizedId = programId.trim();
-  if (!normalizedId) return "0000000000";
-
-  return normalizedId.length > 12 ? normalizedId.slice(0, 12) : normalizedId;
+  return formatProgramDisplayCode(programId);
 }

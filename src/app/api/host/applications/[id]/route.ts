@@ -1,10 +1,16 @@
 import { NextResponse } from "next/server";
-import { isApiAuthError, requireHostRole } from "@/lib/api-security";
+import {
+  applyRateLimit,
+  enforceContentLength,
+  enforceSameOrigin,
+  isApiAuthError,
+  requireHostRole,
+} from "@/lib/api-security";
 import {
   getHostApplicationDetail,
   updateHostApplicationStatus,
 } from "@/lib/host-application-db";
-import { listHostVillageWorkspaces } from "@/lib/host-village-access";
+import { listManageableHostVillageWorkspaces } from "@/lib/host-village-access";
 import { applicationStatusFlow } from "@/lib/host-operations";
 import type { HostApplicationStatus } from "@/lib/host-operations";
 
@@ -16,11 +22,18 @@ const applicationStatuses: HostApplicationStatus[] = [
 ];
 
 export async function GET(
-  _request: Request,
+  request: Request,
   { params }: { params: Promise<{ id: string }> },
 ) {
   const auth = await requireHostRole();
   if (isApiAuthError(auth)) return auth.response;
+
+  const limited = applyRateLimit(request, {
+    key: "host-application-detail:get",
+    limit: 180,
+    windowMs: 15 * 60 * 1000,
+  });
+  if (limited) return limited;
 
   try {
     const { id } = await params;
@@ -32,7 +45,7 @@ export async function GET(
     const villageIds =
       auth.profile.role === "admin"
         ? undefined
-        : (await listHostVillageWorkspaces(auth)).map(
+        : (await listManageableHostVillageWorkspaces(auth)).map(
             (workspace) => workspace.villageId,
           );
     const application = await getHostApplicationDetail(id, { villageIds });
@@ -65,9 +78,24 @@ export async function PATCH(
   const auth = await requireHostRole();
   if (isApiAuthError(auth)) return auth.response;
 
+  const crossOrigin = enforceSameOrigin(request);
+  if (crossOrigin) return crossOrigin;
+
+  const payloadTooLarge = enforceContentLength(request, 4 * 1024);
+  if (payloadTooLarge) return payloadTooLarge;
+
+  const limited = applyRateLimit(request, {
+    key: "host-application-status:update",
+    limit: 120,
+    windowMs: 15 * 60 * 1000,
+  });
+  if (limited) return limited;
+
   try {
     const { id } = await params;
-    const body = await request.json();
+    const body = (await request.json().catch(() => ({}))) as {
+      status?: HostApplicationStatus;
+    };
     const status = body.status as HostApplicationStatus;
 
     if (!isUuid(id)) {
@@ -81,7 +109,7 @@ export async function PATCH(
     const villageIds =
       auth.profile.role === "admin"
         ? undefined
-        : (await listHostVillageWorkspaces(auth)).map(
+        : (await listManageableHostVillageWorkspaces(auth)).map(
             (workspace) => workspace.villageId,
           );
     const updated = await updateHostApplicationStatus(id, status, auth.user.id, {

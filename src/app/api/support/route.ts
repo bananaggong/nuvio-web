@@ -9,6 +9,7 @@ import {
   apiError,
   applyRateLimit,
   enforceContentLength,
+  enforceSameOrigin,
 } from "@/lib/api-security";
 
 export const runtime = "nodejs";
@@ -32,6 +33,9 @@ type ValidatedSupportInquiry = {
 export async function POST(request: Request) {
   const contentLengthError = enforceContentLength(request, MAX_PAYLOAD_BYTES);
   if (contentLengthError) return contentLengthError;
+
+  const crossOriginError = enforceSameOrigin(request);
+  if (crossOriginError) return crossOriginError;
 
   const rateLimitError = applyRateLimit(request, SUPPORT_RATE_LIMIT);
   if (rateLimitError) return rateLimitError;

@@ -1,25 +1,40 @@
 import { NextResponse } from "next/server";
 import {
   completeUserOnboarding,
-  ensureUserProfile,
   type OnboardingIntent,
 } from "@/lib/auth-profile-db";
-import { createSupabaseServerClient } from "@/lib/supabase/server";
+import {
+  applyRateLimit,
+  enforceContentLength,
+  enforceSameOrigin,
+  isApiAuthError,
+  requireAuthenticatedUser,
+} from "@/lib/api-security";
 
 export const runtime = "nodejs";
 
 export async function POST(request: Request) {
+  const payloadTooLarge = enforceContentLength(request, 8 * 1024);
+  if (payloadTooLarge) return payloadTooLarge;
+
+  const crossOrigin = enforceSameOrigin(request);
+  if (crossOrigin) return crossOrigin;
+
+  const limited = applyRateLimit(request, {
+    key: "me-onboarding:complete",
+    limit: 20,
+    windowMs: 15 * 60 * 1000,
+  });
+  if (limited) return limited;
+
   try {
-    const supabase = await createSupabaseServerClient();
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
+    const auth = await requireAuthenticatedUser();
+    if (isApiAuthError(auth)) return auth.response;
 
-    if (!user) {
-      return NextResponse.json({ error: "Unauthorized." }, { status: 401 });
-    }
-
-    const body = await request.json();
+    const body = (await request.json().catch(() => ({}))) as Record<
+      string,
+      unknown
+    >;
     const intent = normalizeIntent(body.intent);
     if (!intent) {
       return NextResponse.json(
@@ -28,10 +43,10 @@ export async function POST(request: Request) {
       );
     }
 
-    const displayName = normalizeRequiredText(body.displayName);
-    const phone = normalizeRequiredText(body.phone);
-    const contactEmail = normalizeRequiredText(body.contactEmail);
-    const address = normalizeRequiredText(body.address);
+    const displayName = normalizeRequiredText(body.displayName, 80);
+    const phone = normalizeRequiredText(body.phone, 40);
+    const contactEmail = normalizeRequiredText(body.contactEmail, 120);
+    const address = normalizeRequiredText(body.address, 200);
 
     if (!displayName || !phone || !contactEmail || !address) {
       return NextResponse.json(
@@ -47,8 +62,7 @@ export async function POST(request: Request) {
       );
     }
 
-    await ensureUserProfile(user);
-    const profile = await completeUserOnboarding(user.id, {
+    const profile = await completeUserOnboarding(auth.user.id, {
       address,
       contactEmail,
       displayName,
@@ -74,10 +88,10 @@ function normalizeIntent(value: unknown): OnboardingIntent | null {
   return value === "participant" || value === "host" ? value : null;
 }
 
-function normalizeRequiredText(value: unknown): string {
-  return typeof value === "string" ? value.trim() : "";
+function normalizeRequiredText(value: unknown, maxLength: number): string {
+  return typeof value === "string" ? value.trim().slice(0, maxLength) : "";
 }
 
 function isValidEmail(value: string): boolean {
-  return /.+@.+\..+/.test(value);
+  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/u.test(value);
 }

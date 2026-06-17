@@ -326,9 +326,21 @@ function ProfileMenu({
       </div>
 
       <div className="mt-[1.111vw] grid grid-cols-3 gap-[0.972vw]">
-        <ProfileMenuMetric icon={CalendarDays} label="내 여행" />
-        <ProfileMenuMetric icon={Bookmark} label="저장" />
-        <ProfileMenuMetric icon={MessageCircle} label="메시지" />
+        <ProfileMenuMetric
+          href={signedIn ? "/mypage/trips" : "/login?next=/mypage/trips"}
+          icon={CalendarDays}
+          label="내 여행"
+        />
+        <ProfileMenuMetric
+          href={signedIn ? "/mypage/bookmarks" : "/login?next=/mypage/bookmarks"}
+          icon={Bookmark}
+          label="저장"
+        />
+        <ProfileMenuMetric
+          href={signedIn ? "/mypage/messages" : "/login?next=/mypage/messages"}
+          icon={MessageCircle}
+          label="메시지"
+        />
       </div>
 
       <div className="mt-[1.111vw] flex items-center justify-between text-[0.833vw] leading-[1.253] max-[1100px]:text-xs">
@@ -364,14 +376,20 @@ function ProfileMenu({
 }
 
 function ProfileMenuMetric({
+  href,
   icon: Icon,
   label,
 }: {
+  href: string;
   icon: typeof CalendarDays;
   label: string;
 }) {
   return (
-    <div className="flex min-w-0 flex-col items-center justify-center gap-[0.278vw] text-center">
+    <Link
+      aria-label={`${label} 바로가기`}
+      className="flex min-w-0 flex-col items-center justify-center gap-[0.278vw] rounded-[0.278vw] text-center transition-colors hover:bg-[#FFF6EC] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[#FF9A3D]"
+      href={href}
+    >
       <Icon
         aria-hidden="true"
         className="size-[1.181vw] min-h-[16px] min-w-[16px] text-[#7A8B52]"
@@ -380,7 +398,7 @@ function ProfileMenuMetric({
       <span className="whitespace-nowrap text-[0.596vw] font-medium leading-[1.253] text-[#7A8B52] max-[1100px]:text-[8.5px]">
         {label}
       </span>
-    </div>
+    </Link>
   );
 }
 

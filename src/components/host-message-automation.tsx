@@ -38,6 +38,7 @@ import {
 } from "@/lib/host-inquiries";
 import type { HostApplication, MessageTemplate } from "@/lib/host-operations";
 import { HostProgramSidebar } from "@/components/host-program-sidebar";
+import { formatProgramDisplayName } from "@/lib/display-code";
 import { useHostOperationsData } from "@/lib/use-host-operations-data";
 
 type MessageListTab = "all" | "scheduled" | "sent";
@@ -603,8 +604,10 @@ function createDemoScheduledMessages(
       error: "",
       id: `demo-scheduled-${application.id}`,
       programId: application.programId ?? "",
-      programTitle:
-        application.programTitle || fallbackProgramTitle || "누비오 프로그램",
+      programTitle: formatProgramDisplayName(
+        application.programTitle || fallbackProgramTitle,
+        application.programId,
+      ),
       recipient: application.phone || application.email,
       scheduledFor: sent ? "" : baseScheduledFor,
       sentAt: sent ? "2026-06-14T15:30:00+09:00" : "",
@@ -919,7 +922,7 @@ function HostInquiryInbox({
                   </p>
                   {inquiry.programTitle ? (
                     <p className="mt-3 text-xs font-black text-[#8B7A6E]">
-                      연결 프로그램 · {inquiry.programTitle}
+                      연결 프로그램 · {formatProgramDisplayName(inquiry.programTitle, inquiry.programId)}
                     </p>
                   ) : null}
                 </div>

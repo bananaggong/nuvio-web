@@ -3,9 +3,11 @@ import {
   apiError,
   applyRateLimit,
   enforceContentLength,
+  enforceSameOrigin,
   isApiAuthError,
   requireAdminRole,
 } from "@/lib/api-security";
+import { validateImageUploadFile } from "@/lib/image-upload-security";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 
 export const runtime = "nodejs";
@@ -22,6 +24,9 @@ const allowedUploadTypes = new Set([
 export async function POST(request: Request) {
   const auth = await requireAdminRole();
   if (isApiAuthError(auth)) return auth.response;
+
+  const crossOrigin = enforceSameOrigin(request);
+  if (crossOrigin) return crossOrigin;
 
   const payloadTooLarge = enforceContentLength(request, 8 * 1024 * 1024);
   if (payloadTooLarge) return payloadTooLarge;
@@ -41,7 +46,7 @@ export async function POST(request: Request) {
       return apiError("파일이 필요합니다.", 400);
     }
 
-    validateUploadFile(file);
+    await validateUploadFile(file);
 
     const safeName = sanitizeStorageFileName(
       file.name || "magazine-image",
@@ -95,7 +100,9 @@ export async function POST(request: Request) {
   }
 }
 
-function validateUploadFile(file: File) {
+async function validateUploadFile(file: File) {
+  await validateImageUploadFile(file, { maxBytes: maxUploadBytes });
+
   if (file.size > maxUploadBytes) {
     throw new Error("이미지 파일은 5MB 이하여야 합니다.");
   }

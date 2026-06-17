@@ -30,6 +30,17 @@ export type HostVillageMediaDraft = {
 type MediaRow = typeof mediaTable.$inferSelect;
 type MediaInsert = typeof mediaTable.$inferInsert;
 
+type VillageMediaMutationOptions = {
+  allowedVillageSlug?: string;
+};
+
+export class VillageMediaAccessError extends Error {
+  constructor() {
+    super("You do not have permission to manage this village media.");
+    this.name = "VillageMediaAccessError";
+  }
+}
+
 const mediaCategories: VillageMediaCategory[] = [
   "original",
   "broadcast",
@@ -90,25 +101,71 @@ export async function listHostVillageMediaFromDb(
 
 export async function upsertHostVillageMediaDraft(
   draft: HostVillageMediaDraft,
+  options: VillageMediaMutationOptions = {},
 ): Promise<HostVillageMediaDraft> {
   const insertValue = mapHostDraftToMediaInsert(draft);
   const now = new Date();
+  const allowedVillageSlug = options.allowedVillageSlug
+    ? createSlug(options.allowedVillageSlug)
+    : undefined;
+
+  assertMediaVillageAccess(insertValue.villageSlug, allowedVillageSlug);
 
   if (isUuid(draft.id)) {
+    const [existingRow] = await getDb()
+      .select({
+        id: mediaTable.id,
+        villageSlug: mediaTable.villageSlug,
+      })
+      .from(mediaTable)
+      .where(eq(mediaTable.id, draft.id))
+      .limit(1);
+
+    if (existingRow) {
+      assertMediaVillageAccess(existingRow.villageSlug, allowedVillageSlug);
+    }
+
     const [updatedRow] = await getDb()
       .update(mediaTable)
       .set({ ...insertValue, updatedAt: now })
-      .where(eq(mediaTable.id, draft.id))
+      .where(
+        allowedVillageSlug
+          ? and(
+              eq(mediaTable.id, draft.id),
+              eq(mediaTable.villageSlug, allowedVillageSlug),
+            )
+          : eq(mediaTable.id, draft.id),
+      )
       .returning();
 
     if (updatedRow) return mapMediaRowToHostDraft(updatedRow);
   }
 
   if (!isUuid(draft.id) && draft.id) {
+    const [existingRow] = await getDb()
+      .select({
+        id: mediaTable.id,
+        villageSlug: mediaTable.villageSlug,
+      })
+      .from(mediaTable)
+      .where(eq(mediaTable.legacyId, draft.id))
+      .limit(1);
+
+    if (existingRow) {
+      assertMediaVillageAccess(existingRow.villageSlug, allowedVillageSlug);
+    }
+
     const [updatedRow] = await getDb()
       .update(mediaTable)
       .set({ ...insertValue, updatedAt: now })
-      .where(eq(mediaTable.legacyId, draft.id))
+      .where(
+        allowedVillageSlug
+          ? and(
+              eq(mediaTable.legacyId, draft.id),
+              eq(mediaTable.villageSlug, allowedVillageSlug),
+            )
+          : eq(mediaTable.legacyId, draft.id),
+      )
       .returning();
 
     if (updatedRow) return mapMediaRowToHostDraft(updatedRow);
@@ -257,6 +314,16 @@ function applyLimit(
   limit?: number,
 ): VillageMediaContent[] {
   return typeof limit === "number" ? media.slice(0, limit) : media;
+}
+
+function assertMediaVillageAccess(
+  villageSlug: string,
+  allowedVillageSlug: string | undefined,
+) {
+  if (!allowedVillageSlug) return;
+  if (createSlug(villageSlug) !== allowedVillageSlug) {
+    throw new VillageMediaAccessError();
+  }
 }
 
 function asMediaCategory(value: unknown): VillageMediaCategory {

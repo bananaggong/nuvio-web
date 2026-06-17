@@ -1,5 +1,10 @@
 import { NextResponse } from "next/server";
-import { apiError, isApiAuthError, requireHostRole } from "@/lib/api-security";
+import {
+  apiError,
+  applyRateLimit,
+  isApiAuthError,
+  requireHostRole,
+} from "@/lib/api-security";
 import { canManageHostVillage } from "@/lib/host-village-access";
 import {
   getHostSocialConnection,
@@ -12,6 +17,13 @@ export const runtime = "nodejs";
 export async function GET(request: Request) {
   const auth = await requireHostRole();
   if (isApiAuthError(auth)) return auth.response;
+
+  const limited = applyRateLimit(request, {
+    key: "host-facebook-status:get",
+    limit: 120,
+    windowMs: 15 * 60 * 1000,
+  });
+  if (limited) return limited;
 
   const { searchParams } = new URL(request.url);
   const villageSlug = searchParams.get("villageSlug") ?? "boseong";

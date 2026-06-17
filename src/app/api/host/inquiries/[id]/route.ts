@@ -1,7 +1,13 @@
 import { NextResponse } from "next/server";
-import { isApiAuthError, requireHostRole } from "@/lib/api-security";
+import {
+  applyRateLimit,
+  enforceContentLength,
+  enforceSameOrigin,
+  isApiAuthError,
+  requireHostRole,
+} from "@/lib/api-security";
 import { updateHostInquiryStatus } from "@/lib/host-inquiry-db";
-import { listHostVillageWorkspaces } from "@/lib/host-village-access";
+import { listManageableHostVillageWorkspaces } from "@/lib/host-village-access";
 import type { HostInquiryStatus } from "@/lib/host-inquiries";
 
 export const runtime = "nodejs";
@@ -19,6 +25,19 @@ export async function PATCH(
 ) {
   const auth = await requireHostRole();
   if (isApiAuthError(auth)) return auth.response;
+
+  const crossOrigin = enforceSameOrigin(request);
+  if (crossOrigin) return crossOrigin;
+
+  const payloadTooLarge = enforceContentLength(request, 4 * 1024);
+  if (payloadTooLarge) return payloadTooLarge;
+
+  const limited = applyRateLimit(request, {
+    key: "host-inquiry-status:update",
+    limit: 120,
+    windowMs: 15 * 60 * 1000,
+  });
+  if (limited) return limited;
 
   try {
     const { id } = await params;
@@ -38,7 +57,7 @@ export async function PATCH(
     const villageIds =
       auth.profile.role === "admin"
         ? undefined
-        : (await listHostVillageWorkspaces(auth)).map(
+        : (await listManageableHostVillageWorkspaces(auth)).map(
             (workspace) => workspace.villageId,
           );
     const inquiry = await updateHostInquiryStatus(id, status, { villageIds });

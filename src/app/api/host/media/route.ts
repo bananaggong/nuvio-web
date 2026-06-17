@@ -1,17 +1,34 @@
 import { NextResponse } from "next/server";
-import { apiError, isApiAuthError, requireHostRole } from "@/lib/api-security";
+import {
+  apiError,
+  applyRateLimit,
+  enforceContentLength,
+  enforceSameOrigin,
+  isApiAuthError,
+  requireHostRole,
+} from "@/lib/api-security";
 import { canManageHostVillage } from "@/lib/host-village-access";
 import {
   listHostVillageMediaFromDb,
   normalizeHostVillageMediaDraft,
   upsertHostVillageMediaDraft,
+  VillageMediaAccessError,
 } from "@/lib/village-media-db";
 
 export const runtime = "nodejs";
 
+const MAX_MEDIA_PAYLOAD_BYTES = 128 * 1024;
+
 export async function GET(request: Request) {
   const auth = await requireHostRole();
   if (isApiAuthError(auth)) return auth.response;
+
+  const limited = applyRateLimit(request, {
+    key: "host-media:list",
+    limit: 120,
+    windowMs: 15 * 60 * 1000,
+  });
+  if (limited) return limited;
 
   try {
     const { searchParams } = new URL(request.url);
@@ -39,16 +56,35 @@ export async function POST(request: Request) {
   if (isApiAuthError(auth)) return auth.response;
 
   try {
-    const body = await request.json();
+    const crossOrigin = enforceSameOrigin(request);
+    if (crossOrigin) return crossOrigin;
+
+    const contentLengthError = enforceContentLength(request, MAX_MEDIA_PAYLOAD_BYTES);
+    if (contentLengthError) return contentLengthError;
+
+    const rateLimitError = applyRateLimit(request, {
+      key: "host-media-post",
+      limit: 60,
+      windowMs: 15 * 60 * 1000,
+    });
+    if (rateLimitError) return rateLimitError;
+
+    const body = await request.json().catch(() => ({}));
     const draft = normalizeHostVillageMediaDraft(body);
     if (!(await canManageHostVillage(auth, draft.villageSlug))) {
       return apiError("You do not have permission to manage this village.", 403);
     }
 
-    const savedDraft = await upsertHostVillageMediaDraft(draft);
+    const savedDraft = await upsertHostVillageMediaDraft(draft, {
+      allowedVillageSlug: draft.villageSlug,
+    });
 
     return NextResponse.json({ data: savedDraft }, { status: 201 });
   } catch (error) {
+    if (error instanceof VillageMediaAccessError) {
+      return apiError(error.message, 403);
+    }
+
     return NextResponse.json(
       {
         error:

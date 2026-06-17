@@ -1,22 +1,32 @@
 import { NextResponse } from "next/server";
 import {
-  ensureUserProfile,
   getUserProfile,
   type ProfileGender,
   updateUserProfile,
 } from "@/lib/auth-profile-db";
-import { createSupabaseServerClient } from "@/lib/supabase/server";
+import {
+  applyRateLimit,
+  enforceContentLength,
+  enforceSameOrigin,
+  isApiAuthError,
+  requireAuthenticatedUser,
+} from "@/lib/api-security";
 
 export const runtime = "nodejs";
 
-export async function GET() {
-  try {
-    const user = await getAuthenticatedUser();
-    if (!user) {
-      return NextResponse.json({ error: "Unauthorized." }, { status: 401 });
-    }
+export async function GET(request: Request) {
+  const limited = applyRateLimit(request, {
+    key: "me-profile:get",
+    limit: 180,
+    windowMs: 15 * 60 * 1000,
+  });
+  if (limited) return limited;
 
-    const profile = (await getUserProfile(user.id)) ?? (await ensureUserProfile(user));
+  try {
+    const auth = await requireAuthenticatedUser();
+    if (isApiAuthError(auth)) return auth.response;
+
+    const profile = (await getUserProfile(auth.user.id)) ?? auth.profile;
     return NextResponse.json({ data: profile });
   } catch (error) {
     return NextResponse.json(
@@ -30,28 +40,41 @@ export async function GET() {
 }
 
 export async function PATCH(request: Request) {
-  try {
-    const user = await getAuthenticatedUser();
-    if (!user) {
-      return NextResponse.json({ error: "Unauthorized." }, { status: 401 });
-    }
+  const payloadTooLarge = enforceContentLength(request, 16 * 1024);
+  if (payloadTooLarge) return payloadTooLarge;
 
-    await ensureUserProfile(user);
-    const body = await request.json();
-    const profile = await updateUserProfile(user.id, {
-      fullName: normalizeText(body.fullName),
-      displayName: normalizeText(body.displayName),
-      loginId: normalizeText(body.loginId),
-      phone: normalizeText(body.phone),
-      contactEmail: normalizeText(body.contactEmail),
-      address: normalizeText(body.address),
-      addressDetail: normalizeText(body.addressDetail),
-      avatarUrl: normalizeText(body.avatarUrl),
+  const crossOrigin = enforceSameOrigin(request);
+  if (crossOrigin) return crossOrigin;
+
+  const limited = applyRateLimit(request, {
+    key: "me-profile:update",
+    limit: 60,
+    windowMs: 15 * 60 * 1000,
+  });
+  if (limited) return limited;
+
+  try {
+    const auth = await requireAuthenticatedUser();
+    if (isApiAuthError(auth)) return auth.response;
+
+    const body = (await request.json().catch(() => ({}))) as Record<
+      string,
+      unknown
+    >;
+    const profile = await updateUserProfile(auth.user.id, {
+      fullName: normalizeText(body.fullName, 80),
+      displayName: normalizeText(body.displayName, 80),
+      loginId: normalizeText(body.loginId, 40),
+      phone: normalizeText(body.phone, 40),
+      contactEmail: normalizeContactEmail(body.contactEmail),
+      address: normalizeText(body.address, 200),
+      addressDetail: normalizeText(body.addressDetail, 200),
+      avatarUrl: normalizeAvatarUrl(body.avatarUrl),
       gender: normalizeGender(body.gender),
       birthDate: normalizeBirthDate(body.birthDate),
-      paymentMethod: normalizeText(body.paymentMethod),
-      refundBank: normalizeText(body.refundBank),
-      refundAccount: normalizeText(body.refundAccount),
+      paymentMethod: normalizeText(body.paymentMethod, 80),
+      refundBank: normalizeText(body.refundBank, 80),
+      refundAccount: normalizeText(body.refundAccount, 80),
     });
 
     return NextResponse.json({ data: profile });
@@ -66,21 +89,36 @@ export async function PATCH(request: Request) {
   }
 }
 
-async function getAuthenticatedUser() {
-  const supabase = await createSupabaseServerClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-
-  return user;
+function normalizeText(value: unknown, maxLength: number): string | undefined {
+  return typeof value === "string" ? value.trim().slice(0, maxLength) : undefined;
 }
 
-function normalizeText(value: unknown): string | undefined {
-  return typeof value === "string" ? value.trim() : undefined;
+function normalizeContactEmail(value: unknown): string | undefined {
+  const normalized = normalizeText(value, 120);
+  if (normalized === undefined || !normalized) return normalized;
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/u.test(normalized)) {
+    throw new Error("Invalid contact email.");
+  }
+  return normalized.toLowerCase();
+}
+
+function normalizeAvatarUrl(value: unknown): string | undefined {
+  const normalized = normalizeText(value, 500);
+  if (normalized === undefined || !normalized) return normalized;
+
+  try {
+    const url = new URL(normalized);
+    if (url.protocol !== "https:" && url.protocol !== "http:") {
+      throw new Error("Invalid avatar URL.");
+    }
+    return url.toString();
+  } catch {
+    throw new Error("Invalid avatar URL.");
+  }
 }
 
 function normalizeGender(value: unknown): ProfileGender | "" | undefined {
-  const normalized = normalizeText(value);
+  const normalized = normalizeText(value, 20);
   if (normalized === undefined) return undefined;
   if (!normalized) return "";
   if (normalized === "female" || normalized === "male" || normalized === "neutral") {
@@ -92,7 +130,7 @@ function normalizeGender(value: unknown): ProfileGender | "" | undefined {
 function normalizeBirthDate(value: unknown): string | null | undefined {
   if (value === null) return null;
 
-  const normalized = normalizeText(value);
+  const normalized = normalizeText(value, 10);
   if (normalized === undefined) return undefined;
   if (!normalized) return null;
   if (!/^\d{4}-\d{2}-\d{2}$/.test(normalized)) {

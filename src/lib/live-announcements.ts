@@ -6,6 +6,10 @@ import {
   listPersistedExternalAnnouncements,
   listRuntimeAnnouncementSources,
 } from "./external-announcement-db";
+import {
+  fetchPublicHttpUrl,
+  readLimitedResponseText,
+} from "./outbound-fetch-security";
 import type { ExternalAnnouncementSource } from "./announcement-sources";
 import type {
   Announcement,
@@ -51,6 +55,7 @@ export type LiveAnnouncementFeed = {
 };
 
 const DEFAULT_REFRESH_SECONDS = 43_200;
+const MAX_RSS_RESPONSE_BYTES = 1024 * 1024;
 
 const parser = new XMLParser({
   cdataPropName: "__cdata",
@@ -167,7 +172,7 @@ async function fetchSourceAnnouncements(
   const timeout = AbortSignal.timeout(5_000);
 
   try {
-    const response = await fetch(source.url, {
+    const response = await fetchPublicHttpUrl(source.url, {
       headers: {
         Accept: "application/rss+xml, application/xml, text/xml;q=0.9,*/*;q=0.8",
         "User-Agent": "NUVIO/0.1 (+https://github.com/bananaggong/nuvio-web)",
@@ -184,7 +189,7 @@ async function fetchSourceAnnouncements(
       };
     }
 
-    const xml = await response.text();
+    const xml = await readLimitedResponseText(response, MAX_RSS_RESPONSE_BYTES);
     const parsed = parser.parse(xml) as RssDocument;
     const rssItems = getFeedItems(parsed);
     const items = rssItems

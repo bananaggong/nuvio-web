@@ -1,5 +1,11 @@
 import { NextResponse } from "next/server";
-import { isApiAuthError, requireAdminRole } from "@/lib/api-security";
+import {
+  applyRateLimit,
+  enforceContentLength,
+  enforceSameOrigin,
+  isApiAuthError,
+  requireAdminRole,
+} from "@/lib/api-security";
 import { getAnnouncementRefreshSeconds } from "@/lib/live-announcements";
 import {
   createDraftFromProgramLead,
@@ -10,9 +16,18 @@ import { getProgramLeadFeed } from "@/lib/program-leads";
 
 export const runtime = "nodejs";
 
-export async function GET() {
+const MAX_PROGRAM_LEAD_PAYLOAD_BYTES = 128 * 1024;
+
+export async function GET(request: Request) {
   const auth = await requireAdminRole();
   if (isApiAuthError(auth)) return auth.response;
+
+  const limited = applyRateLimit(request, {
+    key: "admin-program-leads:list",
+    limit: 90,
+    windowMs: 15 * 60 * 1000,
+  });
+  if (limited) return limited;
 
   const feed = await getProgramLeadFeed();
   const refreshSeconds = getAnnouncementRefreshSeconds();
@@ -32,7 +47,23 @@ export async function POST(request: Request) {
   if (isApiAuthError(auth)) return auth.response;
 
   try {
-    const body = await request.json();
+    const payloadTooLarge = enforceContentLength(
+      request,
+      MAX_PROGRAM_LEAD_PAYLOAD_BYTES,
+    );
+    if (payloadTooLarge) return payloadTooLarge;
+
+    const crossOrigin = enforceSameOrigin(request);
+    if (crossOrigin) return crossOrigin;
+
+    const limited = applyRateLimit(request, {
+      key: "admin-program-leads:update",
+      limit: 60,
+      windowMs: 10 * 60 * 1000,
+    });
+    if (limited) return limited;
+
+    const body = await request.json().catch(() => ({}));
     const lead = normalizeProgramLeadPayload(body.lead);
     const action = String(body.action ?? "");
 

@@ -39,6 +39,9 @@ export function revealSecret(value: string | null | undefined): string {
   }
 
   if (!value.startsWith(ENCRYPTED_PREFIX)) {
+    if (process.env.NODE_ENV === "production") {
+      throw new Error("Unencrypted social tokens are not allowed in production.");
+    }
     return value;
   }
 

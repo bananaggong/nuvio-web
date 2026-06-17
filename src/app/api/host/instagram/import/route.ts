@@ -1,5 +1,12 @@
 import { NextResponse } from "next/server";
-import { apiError, isApiAuthError, requireHostRole } from "@/lib/api-security";
+import {
+  apiError,
+  applyRateLimit,
+  enforceContentLength,
+  enforceSameOrigin,
+  isApiAuthError,
+  requireHostRole,
+} from "@/lib/api-security";
 import { canManageHostVillage } from "@/lib/host-village-access";
 import {
   getHostSocialConnection,
@@ -15,12 +22,31 @@ import { upsertHostVillageMediaDraft } from "@/lib/village-media-db";
 
 export const runtime = "nodejs";
 
+const MAX_INSTAGRAM_IMPORT_PAYLOAD_BYTES = 4 * 1024;
+const MAX_INSTAGRAM_IMPORT_LIMIT = 50;
+
 export async function POST(request: Request) {
   let connectionId: string | undefined;
   const auth = await requireHostRole();
   if (isApiAuthError(auth)) return auth.response;
 
   try {
+    const crossOrigin = enforceSameOrigin(request);
+    if (crossOrigin) return crossOrigin;
+
+    const contentLengthError = enforceContentLength(
+      request,
+      MAX_INSTAGRAM_IMPORT_PAYLOAD_BYTES,
+    );
+    if (contentLengthError) return contentLengthError;
+
+    const rateLimitError = applyRateLimit(request, {
+      key: "host-instagram-import",
+      limit: 10,
+      windowMs: 15 * 60 * 1000,
+    });
+    if (rateLimitError) return rateLimitError;
+
     const body = (await request.json().catch(() => ({}))) as {
       villageSlug?: unknown;
       limit?: unknown;
@@ -31,7 +57,7 @@ export async function POST(request: Request) {
       return apiError("You do not have permission to manage this village.", 403);
     }
 
-    const limit = typeof body.limit === "number" ? body.limit : 24;
+    const limit = normalizeImportLimit(body.limit);
     const connection = await getHostSocialConnection(villageSlug, "facebook");
     connectionId = connection?.id;
 
@@ -85,6 +111,17 @@ export async function POST(request: Request) {
       { status: 400 },
     );
   }
+}
+
+function normalizeImportLimit(value: unknown): number {
+  const numericValue =
+    typeof value === "number" || typeof value === "string" ? Number(value) : 24;
+  if (!Number.isFinite(numericValue)) return 24;
+
+  return Math.max(
+    1,
+    Math.min(MAX_INSTAGRAM_IMPORT_LIMIT, Math.floor(numericValue)),
+  );
 }
 
 async function fetchMediaWithFallback(

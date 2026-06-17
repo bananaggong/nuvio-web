@@ -3,6 +3,7 @@ import {
   apiError,
   applyRateLimit,
   enforceContentLength,
+  enforceSameOrigin,
   isApiAuthError,
   requireAdminRole,
 } from "@/lib/api-security";
@@ -19,11 +20,18 @@ export const runtime = "nodejs";
 const maxJsonBytes = 1024 * 1024;
 
 export async function GET(
-  _request: Request,
+  request: Request,
   { params }: { params: Promise<{ id: string }> },
 ) {
   const auth = await requireAdminRole();
   if (isApiAuthError(auth)) return auth.response;
+
+  const limited = applyRateLimit(request, {
+    key: "admin-magazine-post:get",
+    limit: 120,
+    windowMs: 15 * 60 * 1000,
+  });
+  if (limited) return limited;
 
   const { id } = await params;
   const post = await getAdminMagazinePost(id);
@@ -41,6 +49,9 @@ export async function PATCH(
 ) {
   const auth = await requireAdminRole();
   if (isApiAuthError(auth)) return auth.response;
+
+  const crossOrigin = enforceSameOrigin(request);
+  if (crossOrigin) return crossOrigin;
 
   const lengthError = enforceContentLength(request, maxJsonBytes);
   if (lengthError) return lengthError;
@@ -85,11 +96,24 @@ export async function PATCH(
 }
 
 export async function DELETE(
-  _request: Request,
+  request: Request,
   { params }: { params: Promise<{ id: string }> },
 ) {
   const auth = await requireAdminRole();
   if (isApiAuthError(auth)) return auth.response;
+
+  const crossOrigin = enforceSameOrigin(request);
+  if (crossOrigin) return crossOrigin;
+
+  const lengthError = enforceContentLength(request, 1024);
+  if (lengthError) return lengthError;
+
+  const limited = applyRateLimit(request, {
+    key: "admin-magazine-post:delete",
+    limit: 30,
+    windowMs: 15 * 60 * 1000,
+  });
+  if (limited) return limited;
 
   const { id } = await params;
   const post = await archiveMagazinePost(id);

@@ -26,6 +26,17 @@ type SectionInsert = typeof villagePageSections.$inferInsert;
 
 const defaultDate = "2026-05-09T00:00:00.000Z";
 
+type VillagePageMutationOptions = {
+  allowedVillageSlug?: string;
+};
+
+export class VillagePageAccessError extends Error {
+  constructor() {
+    super("You do not have permission to manage this village page section.");
+    this.name = "VillagePageAccessError";
+  }
+}
+
 export async function listPublicVillagePageSections(
   villageSlug: string,
   pageKey: VillagePageKey,
@@ -85,15 +96,41 @@ export async function listHostVillagePageSections(
 
 export async function upsertHostVillagePageSection(
   draft: VillagePageSectionDraft,
+  options: VillagePageMutationOptions = {},
 ): Promise<VillagePageSectionDraft> {
   const insertValue = mapDraftToInsert(draft);
   const now = new Date();
+  const allowedVillageSlug = options.allowedVillageSlug
+    ? normalizeSlug(options.allowedVillageSlug)
+    : undefined;
+
+  assertSectionVillageAccess(insertValue.villageSlug, allowedVillageSlug);
 
   if (isUuid(draft.id)) {
+    const [existingRow] = await getDb()
+      .select({
+        id: villagePageSections.id,
+        villageSlug: villagePageSections.villageSlug,
+      })
+      .from(villagePageSections)
+      .where(eq(villagePageSections.id, draft.id))
+      .limit(1);
+
+    if (existingRow) {
+      assertSectionVillageAccess(existingRow.villageSlug, allowedVillageSlug);
+    }
+
     const [updatedRow] = await getDb()
       .update(villagePageSections)
       .set({ ...insertValue, updatedAt: now })
-      .where(eq(villagePageSections.id, draft.id))
+      .where(
+        allowedVillageSlug
+          ? and(
+              eq(villagePageSections.id, draft.id),
+              eq(villagePageSections.villageSlug, allowedVillageSlug),
+            )
+          : eq(villagePageSections.id, draft.id),
+      )
       .returning();
 
     if (updatedRow) return mapSectionRowToDraft(updatedRow);
@@ -117,8 +154,12 @@ export async function upsertHostVillagePageSection(
 
 export async function publishHostVillagePageSection(
   draft: VillagePageSectionDraft,
+  options: VillagePageMutationOptions = {},
 ): Promise<VillagePageSectionDraft> {
-  const savedDraft = await upsertHostVillagePageSection(draft);
+  const allowedVillageSlug = options.allowedVillageSlug
+    ? normalizeSlug(options.allowedVillageSlug)
+    : undefined;
+  const savedDraft = await upsertHostVillagePageSection(draft, options);
   const now = new Date();
 
   const [publishedRow] = await getDb()
@@ -131,8 +172,19 @@ export async function publishHostVillagePageSection(
       publishedAt: now,
       updatedAt: now,
     })
-    .where(eq(villagePageSections.id, savedDraft.id))
+    .where(
+      allowedVillageSlug
+        ? and(
+            eq(villagePageSections.id, savedDraft.id),
+            eq(villagePageSections.villageSlug, allowedVillageSlug),
+          )
+        : eq(villagePageSections.id, savedDraft.id),
+    )
     .returning();
+
+  if (!publishedRow) {
+    throw new VillagePageAccessError();
+  }
 
   await getDb().insert(villagePageRevisions).values({
     sectionId: savedDraft.id,
@@ -214,6 +266,16 @@ function getHostPageSectionFallback(
   return isDemoModeEnabled()
     ? getDefaultHostVillagePageSections(villageSlug, pageKey)
     : [];
+}
+
+function assertSectionVillageAccess(
+  villageSlug: string,
+  allowedVillageSlug: string | undefined,
+) {
+  if (!allowedVillageSlug) return;
+  if (normalizeSlug(villageSlug) !== allowedVillageSlug) {
+    throw new VillagePageAccessError();
+  }
 }
 
 export function getDefaultPublishedVillagePageSections(

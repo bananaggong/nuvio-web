@@ -1,4 +1,4 @@
-import { and, desc, eq, inArray, or, type SQL } from "drizzle-orm";
+import { and, desc, eq, inArray, or, sql, type SQL } from "drizzle-orm";
 import { getDb } from "@/db/client";
 import {
   applicationStatusEvents,
@@ -56,10 +56,18 @@ export type HostApplicationAccessOptions = {
   villageIds?: string[];
 };
 
+export class DuplicateProgramApplicationError extends Error {
+  constructor() {
+    super("Program application already exists.");
+    this.name = "DuplicateProgramApplicationError";
+  }
+}
+
 export async function createProgramApplication(
   input: ProgramApplicationInput,
 ): Promise<HostApplication> {
   const program = await resolveApplicationProgram(input.programId);
+  const email = input.email.trim().toLowerCase();
   const formId = isUuid(input.formId ?? "") ? input.formId : undefined;
   const programRunId = isUuid(input.programRunId ?? "")
     ? input.programRunId
@@ -71,35 +79,53 @@ export async function createProgramApplication(
   });
   const consentSnapshot = buildConsentSnapshot(input.answers);
 
-  const [row] = await getDb()
-    .insert(programApplications)
-    .values({
-      programId: program.id,
-      programRunId: programRunId ?? null,
-      formId: formId ?? null,
-      applicantName: input.applicantName,
-      email: input.email,
-      phone: input.phone,
-      submittedBy: isUuid(input.submittedBy ?? "") ? input.submittedBy : null,
-      answers: input.answers,
-      consentSnapshot,
-      formSnapshot,
-      status: "submitted",
-      paymentAmount: 0,
-      receiptCount: 0,
-      signatureCompleted: false,
-      reviewSubmitted: false,
-    })
-    .returning({
-      id: programApplications.id,
-      programRunId: programApplications.programRunId,
-      status: programApplications.status,
-      submittedAt: programApplications.submittedAt,
-      paymentAmount: programApplications.paymentAmount,
-      receiptCount: programApplications.receiptCount,
-      signatureCompleted: programApplications.signatureCompleted,
-      reviewSubmitted: programApplications.reviewSubmitted,
-    });
+  const [row] = await getDb().transaction(async (tx) => {
+    await tx.execute(
+      sql`select pg_advisory_xact_lock(hashtext(${`program-application:${program.id}:${email}`}))`,
+    );
+
+    const [existingApplication] = await tx
+      .select({ id: programApplications.id })
+      .from(programApplications)
+      .where(
+        sql`${programApplications.programId} = ${program.id} and lower(${programApplications.email}) = ${email}`,
+      )
+      .limit(1);
+
+    if (existingApplication) {
+      throw new DuplicateProgramApplicationError();
+    }
+
+    return tx
+      .insert(programApplications)
+      .values({
+        programId: program.id,
+        programRunId: programRunId ?? null,
+        formId: formId ?? null,
+        applicantName: input.applicantName,
+        email,
+        phone: input.phone,
+        submittedBy: isUuid(input.submittedBy ?? "") ? input.submittedBy : null,
+        answers: input.answers,
+        consentSnapshot,
+        formSnapshot,
+        status: "submitted",
+        paymentAmount: 0,
+        receiptCount: 0,
+        signatureCompleted: false,
+        reviewSubmitted: false,
+      })
+      .returning({
+        id: programApplications.id,
+        programRunId: programApplications.programRunId,
+        status: programApplications.status,
+        submittedAt: programApplications.submittedAt,
+        paymentAmount: programApplications.paymentAmount,
+        receiptCount: programApplications.receiptCount,
+        signatureCompleted: programApplications.signatureCompleted,
+        reviewSubmitted: programApplications.reviewSubmitted,
+      });
+  });
 
   return {
     answers: input.answers,
@@ -108,10 +134,12 @@ export async function createProgramApplication(
     formSnapshot: formSnapshot ?? undefined,
     id: row.id,
     programId: program.id,
+    programCreatedBy: program.createdBy ?? undefined,
     programRunId: row.programRunId ?? undefined,
     programTitle: program.title,
+    villageId: program.villageId ?? undefined,
     applicantName: input.applicantName,
-    email: input.email,
+    email,
     phone: input.phone,
     status: row.status,
     submittedAt: row.submittedAt.toISOString(),
@@ -165,7 +193,7 @@ export async function findExistingProgramApplication(input: {
 
 async function resolveApplicationProgram(
   programId: number | string,
-): Promise<{ id: string; title: string }> {
+): Promise<{ createdBy?: string | null; id: string; title: string; villageId?: string | null }> {
   const key = String(programId).trim();
   const numericId = Number(key);
   const staticProgram = Number.isInteger(numericId)
@@ -176,12 +204,19 @@ async function resolveApplicationProgram(
     return {
       id: await ensureProgramRecord(staticProgram),
       title: staticProgram.title,
+      createdBy: null,
+      villageId: null,
     };
   }
 
   const programRecord = await getProgramRecordByIdentifier(key);
   if (programRecord) {
-    return { id: programRecord.id, title: programRecord.title };
+    return {
+      createdBy: programRecord.createdBy,
+      id: programRecord.id,
+      title: programRecord.title,
+      villageId: programRecord.villageId,
+    };
   }
 
   throw new Error(`Program ${key} was not found.`);
@@ -399,16 +434,23 @@ export async function updateHostApplicationStatus(
     return false;
   }
 
-  await getDb()
-    .update(programApplications)
-    .set({ status, updatedAt: new Date() })
-    .where(eq(programApplications.id, applicationId));
+  if (current.status === status) {
+    return true;
+  }
 
-  await getDb().insert(applicationStatusEvents).values({
-    applicationId,
-    fromStatus: current.status,
-    toStatus: status,
-    note: "Updated from 누비오 host console",
+  await getDb().transaction(async (tx) => {
+    await tx
+      .update(programApplications)
+      .set({ status, updatedAt: new Date() })
+      .where(eq(programApplications.id, applicationId));
+
+    await tx.insert(applicationStatusEvents).values({
+      actorId: isUuid(actorId ?? "") ? actorId : null,
+      applicationId,
+      fromStatus: current.status,
+      toStatus: status,
+      note: "Updated from host console",
+    });
   });
 
   void queueApplicationStatusNotification({
