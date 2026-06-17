@@ -3,8 +3,10 @@ import { getDb } from "@/db/client";
 import {
   applicationStatusEvents,
   programApplications,
+  programRuns,
   programs as programsTable,
 } from "@/db/schema";
+import { getApplicationFormSnapshotForSubmission } from "@/lib/application-form-db";
 import { programs } from "@/lib/data";
 import { safeCreateAuditLog } from "@/lib/audit-log-db";
 import type {
@@ -16,9 +18,11 @@ import {
   ensureProgramRecord,
   getProgramRecordByIdentifier,
 } from "@/lib/program-db";
+import { ensureDefaultProgramRunForProgram } from "@/lib/program-run-db";
 
 export type ProgramApplicationInput = {
   programId: number | string;
+  programRunId?: string;
   formId?: string;
   applicantName: string;
   email: string;
@@ -56,16 +60,30 @@ export async function createProgramApplication(
   input: ProgramApplicationInput,
 ): Promise<HostApplication> {
   const program = await resolveApplicationProgram(input.programId);
+  const formId = isUuid(input.formId ?? "") ? input.formId : undefined;
+  const programRunId = isUuid(input.programRunId ?? "")
+    ? input.programRunId
+    : await ensureDefaultProgramRunForProgram(program.id);
+  const formSnapshot = await getApplicationFormSnapshotForSubmission({
+    formId,
+    programId: program.id,
+    programTitle: program.title,
+  });
+  const consentSnapshot = buildConsentSnapshot(input.answers);
+
   const [row] = await getDb()
     .insert(programApplications)
     .values({
       programId: program.id,
-      formId: isUuid(input.formId ?? "") ? input.formId : null,
+      programRunId: programRunId ?? null,
+      formId: formId ?? null,
       applicantName: input.applicantName,
       email: input.email,
       phone: input.phone,
       submittedBy: isUuid(input.submittedBy ?? "") ? input.submittedBy : null,
       answers: input.answers,
+      consentSnapshot,
+      formSnapshot,
       status: "submitted",
       paymentAmount: 0,
       receiptCount: 0,
@@ -74,6 +92,7 @@ export async function createProgramApplication(
     })
     .returning({
       id: programApplications.id,
+      programRunId: programApplications.programRunId,
       status: programApplications.status,
       submittedAt: programApplications.submittedAt,
       paymentAmount: programApplications.paymentAmount,
@@ -84,9 +103,12 @@ export async function createProgramApplication(
 
   return {
     answers: input.answers,
-    formId: input.formId,
+    consentSnapshot: consentSnapshot ?? undefined,
+    formId,
+    formSnapshot: formSnapshot ?? undefined,
     id: row.id,
     programId: program.id,
+    programRunId: row.programRunId ?? undefined,
     programTitle: program.title,
     applicantName: input.applicantName,
     email: input.email,
@@ -198,7 +220,11 @@ export async function listHostApplications(
     .select({
       id: programApplications.id,
       formId: programApplications.formId,
+      formSnapshot: programApplications.formSnapshot,
+      consentSnapshot: programApplications.consentSnapshot,
       programId: programApplications.programId,
+      programRunId: programApplications.programRunId,
+      programRunTitle: programRuns.title,
       programTitle: programsTable.title,
       applicantName: programApplications.applicantName,
       email: programApplications.email,
@@ -213,6 +239,7 @@ export async function listHostApplications(
     })
     .from(programApplications)
     .leftJoin(programsTable, eq(programApplications.programId, programsTable.id))
+    .leftJoin(programRuns, eq(programApplications.programRunId, programRuns.id))
     .$dynamic();
 
   if (conditions.length === 1) {
@@ -228,8 +255,12 @@ export async function listHostApplications(
   return rows.map((row) => ({
     id: row.id,
     answers: row.answers,
+    consentSnapshot: row.consentSnapshot ?? undefined,
     formId: row.formId ?? undefined,
+    formSnapshot: row.formSnapshot ?? undefined,
     programId: row.programId,
+    programRunId: row.programRunId ?? undefined,
+    programRunTitle: row.programRunTitle ?? undefined,
     programTitle: row.programTitle ?? "누비오 프로그램",
     applicantName: row.applicantName,
     email: row.email,
@@ -266,7 +297,11 @@ export async function getHostApplicationDetail(
     .select({
       id: programApplications.id,
       formId: programApplications.formId,
+      formSnapshot: programApplications.formSnapshot,
+      consentSnapshot: programApplications.consentSnapshot,
       programId: programApplications.programId,
+      programRunId: programApplications.programRunId,
+      programRunTitle: programRuns.title,
       programTitle: programsTable.title,
       applicantName: programApplications.applicantName,
       email: programApplications.email,
@@ -282,6 +317,7 @@ export async function getHostApplicationDetail(
     })
     .from(programApplications)
     .leftJoin(programsTable, eq(programApplications.programId, programsTable.id))
+    .leftJoin(programRuns, eq(programApplications.programRunId, programRuns.id))
     .where(eq(programApplications.id, applicationId))
     .limit(1);
 
@@ -320,6 +356,10 @@ export async function getHostApplicationDetail(
     signatureCompleted: row.signatureCompleted,
     reviewSubmitted: row.reviewSubmitted,
     memo: extractMemo(row.answers),
+    consentSnapshot: row.consentSnapshot ?? undefined,
+    formSnapshot: row.formSnapshot ?? undefined,
+    programRunId: row.programRunId ?? undefined,
+    programRunTitle: row.programRunTitle ?? undefined,
     answers: row.answers,
     statusEvents: statusEvents.map((event) => ({
       id: event.id,
@@ -392,6 +432,22 @@ export async function updateHostApplicationStatus(
   });
 
   return true;
+}
+
+function buildConsentSnapshot(
+  answers: Record<string, unknown>,
+): Record<string, unknown> | null {
+  const legalConsent = answers.legalConsent;
+  if (!legalConsent || typeof legalConsent !== "object" || Array.isArray(legalConsent)) {
+    return null;
+  }
+
+  return {
+    capturedAt: new Date().toISOString(),
+    consent: legalConsent,
+    snapshotVersion: 1,
+    source: "answers.legalConsent",
+  };
 }
 
 function extractMemo(answers: Record<string, unknown>): string {

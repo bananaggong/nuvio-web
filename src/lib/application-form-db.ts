@@ -71,6 +71,21 @@ export async function getApplicationFormTemplateForProgram(
   }
 }
 
+export async function getApplicationFormSnapshotForSubmission(input: {
+  formId?: string;
+  programId: string;
+  programTitle: string;
+}): Promise<Record<string, unknown> | undefined> {
+  try {
+    const row = await findApplicationFormRowForSubmission(input);
+    if (!row) return undefined;
+
+    return buildApplicationFormSnapshot(mapFormRowToTemplate(row));
+  } catch {
+    return undefined;
+  }
+}
+
 export async function upsertApplicationFormTemplate(
   template: ApplicationFormTemplate,
   options: { ownerId?: string; restrictToOwner?: boolean } = {},
@@ -179,6 +194,75 @@ function mapTemplateToInsert(
       type: block.type,
     })),
   };
+}
+
+function buildApplicationFormSnapshot(
+  template: ApplicationFormTemplate,
+): Record<string, unknown> {
+  const normalizedTemplate = normalizeApplicationFormTemplateShape(template);
+
+  return {
+    blocks: normalizedTemplate.blocks.map((block) => ({
+      body: block.body ?? "",
+      branches: block.branches ?? [],
+      helper: block.helper ?? "",
+      id: block.id,
+      imageAlt: block.imageAlt ?? "",
+      imageUrl: block.imageUrl ?? "",
+      imageWidth: block.imageWidth ?? 100,
+      label: block.label,
+      options: block.options ?? [],
+      required: block.required,
+      type: block.type,
+    })),
+    capturedAt: new Date().toISOString(),
+    description: normalizedTemplate.description,
+    fields: normalizedTemplate.fields.map((field) => ({
+      helper: field.helper ?? "",
+      id: field.id,
+      label: field.label,
+      options: field.options ?? [],
+      required: field.required,
+      type: field.type,
+    })),
+    formKind: normalizedTemplate.formKind,
+    id: normalizedTemplate.id,
+    name: normalizedTemplate.name,
+    programId: normalizedTemplate.programId ?? "",
+    programTitle: normalizedTemplate.programTitle,
+    snapshotVersion: 1,
+    sourceFormId: normalizedTemplate.id,
+    updatedAt: normalizedTemplate.updatedAt,
+  };
+}
+
+async function findApplicationFormRowForSubmission(input: {
+  formId?: string;
+  programId: string;
+  programTitle: string;
+}): Promise<FormRow | undefined> {
+  if (isUuid(input.formId ?? "")) {
+    const [row] = await getDb()
+      .select()
+      .from(programApplicationForms)
+      .where(eq(programApplicationForms.id, input.formId!))
+      .limit(1);
+
+    if (row) return row;
+  }
+
+  const rows = await getDb()
+    .select()
+    .from(programApplicationForms)
+    .where(eq(programApplicationForms.formKind, "application"))
+    .orderBy(desc(programApplicationForms.updatedAt))
+    .limit(200);
+  const normalizedTitle = normalizeText(input.programTitle);
+
+  return (
+    rows.find((item) => item.programId === input.programId) ??
+    rows.find((item) => normalizeText(item.programTitle ?? "") === normalizedTitle)
+  );
 }
 
 function mapFormRowToTemplate(row: FormRow): ApplicationFormTemplate {

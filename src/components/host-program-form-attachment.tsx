@@ -12,7 +12,6 @@ import { Loader2 } from "lucide-react";
 import {
   mergeApplicationFormTemplates,
   normalizeApplicationFormTemplateShape,
-  readApplicationFormTemplates,
   type ApplicationFormTemplate,
 } from "@/lib/application-form-builder";
 import {
@@ -22,7 +21,6 @@ import {
   hostStandaloneProgramPath,
 } from "@/lib/host-projects";
 import { HostProgramSidebar } from "@/components/host-program-sidebar";
-import { readHostProgramDrafts } from "@/lib/host-program-studio";
 import type { ProgramStatus } from "@/lib/types";
 
 type HostProgramOption = {
@@ -92,18 +90,8 @@ export function HostProgramFormAttachment({
   programId: string;
   projectId?: string;
 }) {
-  const [templates, setTemplates] = useState<ApplicationFormTemplate[]>(
-    readApplicationFormTemplates,
-  );
-  const [hostPrograms, setHostPrograms] = useState<HostProgramOption[]>(() =>
-    readHostProgramDrafts().map((program) => ({
-      id: program.id,
-      published: program.published,
-      slug: program.slug,
-      status: program.status,
-      title: program.title,
-    })),
-  );
+  const [templates, setTemplates] = useState<ApplicationFormTemplate[]>([]);
+  const [hostPrograms, setHostPrograms] = useState<HostProgramOption[]>([]);
   const [selectedTemplateId, setSelectedTemplateId] = useState("");
   const [isAttaching, setIsAttaching] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
@@ -175,9 +163,7 @@ export function HostProgramFormAttachment({
           : [];
         if (!isMounted) return;
 
-        setTemplates((currentTemplates) =>
-          mergeApplicationFormTemplates(databaseTemplates, currentTemplates),
-        );
+        setTemplates(databaseTemplates);
       } catch {
         if (isMounted) setError("신청폼을 불러오지 못했습니다.");
       }

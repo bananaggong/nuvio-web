@@ -1,7 +1,6 @@
 import {
   applicationStatusFlow,
   applicationStatusLabels,
-  readHostApplicationsFromStorage,
   seedMessageTemplates,
 } from "@/lib/host-operations";
 import { isDemoModeEnabled } from "@/lib/demo-mode";
@@ -132,7 +131,7 @@ export function createMessageCampaign(
 export function buildMessageRecipientPreview(
   campaign: MessageCampaign,
   templates = readMessageTemplates(),
-  applications = readHostApplicationsFromStorage(),
+  applications: HostApplication[] = [],
 ): MessageRecipientPreview[] {
   const template =
     templates.find((item) => item.id === campaign.templateId) ?? templates[0];
@@ -151,7 +150,7 @@ export function buildMessageRecipientPreview(
 export function buildMessageExportCsv(
   campaign: MessageCampaign,
   templates = readMessageTemplates(),
-  applications = readHostApplicationsFromStorage(),
+  applications: HostApplication[] = [],
 ): string {
   const rows = buildMessageRecipientPreview(campaign, templates, applications);
   const header = [
@@ -182,7 +181,7 @@ export function buildMessageExportCsv(
 
 export function getCampaignRecipients(
   campaign: MessageCampaign,
-  applications = readHostApplicationsFromStorage(),
+  applications: HostApplication[] = [],
 ): HostApplication[] {
   if (campaign.targetStatus === "all") return applications;
   return applications.filter(

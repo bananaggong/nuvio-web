@@ -328,6 +328,34 @@ export const programs = pgTable(
   ],
 );
 
+export const programRuns = pgTable(
+  "program_runs",
+  {
+    id: uuid("id").defaultRandom().primaryKey(),
+    programId: uuid("program_id")
+      .notNull()
+      .references(() => programs.id, { onDelete: "cascade" }),
+    title: text("title").notNull(),
+    slug: text("slug").default("default").notNull(),
+    recruitStart: date("recruit_start").notNull(),
+    recruitEnd: date("recruit_end").notNull(),
+    activityStart: date("activity_start").notNull(),
+    activityEnd: date("activity_end").notNull(),
+    capacity: text("capacity").notNull(),
+    fee: text("fee").notNull(),
+    status: programStatusEnum("status").$type<ProgramStatus>().notNull(),
+    metadata: jsonb("metadata").$type<Record<string, unknown>>().default(emptyObject).notNull(),
+    createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+    updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
+  },
+  (table) => [
+    uniqueIndex("program_runs_program_slug_idx").on(table.programId, table.slug),
+    index("program_runs_program_id_idx").on(table.programId),
+    index("program_runs_status_idx").on(table.status),
+    index("program_runs_recruit_end_idx").on(table.recruitEnd),
+  ],
+);
+
 export const homepageHeroSlides = pgTable(
   "homepage_hero_slides",
   {
@@ -828,6 +856,9 @@ export const programApplications = pgTable(
     programId: uuid("program_id")
       .references(() => programs.id, { onDelete: "cascade" })
       .notNull(),
+    programRunId: uuid("program_run_id").references(() => programRuns.id, {
+      onDelete: "set null",
+    }),
     formId: uuid("form_id").references(() => programApplicationForms.id, {
       onDelete: "set null",
     }),
@@ -839,6 +870,8 @@ export const programApplications = pgTable(
     }),
     status: applicationStatusEnum("status").default("submitted").notNull(),
     answers: jsonb("answers").$type<Record<string, unknown>>().default(emptyObject).notNull(),
+    formSnapshot: jsonb("form_snapshot").$type<Record<string, unknown>>(),
+    consentSnapshot: jsonb("consent_snapshot").$type<Record<string, unknown>>(),
     paymentAmount: integer("payment_amount").default(0).notNull(),
     paymentMethod: text("payment_method"),
     receiptCount: integer("receipt_count").default(0).notNull(),
@@ -850,6 +883,7 @@ export const programApplications = pgTable(
   },
   (table) => [
     index("program_applications_program_id_idx").on(table.programId),
+    index("program_applications_program_run_id_idx").on(table.programRunId),
     index("program_applications_status_idx").on(table.status),
     index("program_applications_email_idx").on(table.email),
     index("program_applications_submitted_by_idx").on(table.submittedBy),

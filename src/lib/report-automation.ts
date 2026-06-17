@@ -1,7 +1,4 @@
-import {
-  readHostApplicationsFromStorage,
-  summarizeApplications,
-} from "@/lib/host-operations";
+import { summarizeApplications } from "@/lib/host-operations";
 import { isDemoModeEnabled } from "@/lib/demo-mode";
 import type { HostApplication } from "@/lib/host-operations";
 
@@ -504,7 +501,7 @@ export function createManualField(
 
 export function getReportApplications(
   project: ReportProject,
-  applications = readHostApplicationsFromStorage(),
+  applications: HostApplication[] = [],
 ): HostApplication[] {
   const connectedIds = project.connectedProgramIds.filter(Boolean);
   const connectedTitles = project.connectedProgramTitles.filter(Boolean);
@@ -542,7 +539,7 @@ export function getExpenseEvidenceItems(
 
 export function summarizeReportProject(
   project: ReportProject,
-  applications = readHostApplicationsFromStorage(),
+  applications: HostApplication[] = [],
 ): ReportProjectSummary {
   const scopedApplications = getReportApplications(project, applications);
   const totalBudget = project.budgetCategories.reduce(
@@ -610,7 +607,7 @@ export function summarizeReportProject(
 
 export function buildReportChecklist(
   project: ReportProject,
-  applications = readHostApplicationsFromStorage(),
+  applications: HostApplication[] = [],
 ): ReportChecklistItem[] {
   const summary = summarizeReportProject(project, applications);
 
@@ -662,7 +659,7 @@ export function buildReportChecklist(
 
 export function buildGeneratedReportSections(
   project: ReportProject,
-  applications = readHostApplicationsFromStorage(),
+  applications: HostApplication[] = [],
 ): GeneratedReportSection[] {
   const summary = summarizeReportProject(project, applications);
   const applicationSummary = summarizeApplications(getReportApplications(project, applications));
@@ -718,7 +715,7 @@ export function buildGeneratedReportSections(
 
 export function buildReportMarkdown(
   project: ReportProject,
-  applications = readHostApplicationsFromStorage(),
+  applications: HostApplication[] = [],
 ): string {
   const summary = summarizeReportProject(project, applications);
   const sections = buildGeneratedReportSections(project, applications);
@@ -761,7 +758,7 @@ export function buildReportMarkdown(
 
 export function buildReportJson(
   project: ReportProject,
-  applications = readHostApplicationsFromStorage(),
+  applications: HostApplication[] = [],
 ): string {
   const scopedApplications = getReportApplications(project, applications);
 

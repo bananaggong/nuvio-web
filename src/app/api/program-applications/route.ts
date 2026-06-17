@@ -54,6 +54,8 @@ export async function POST(request: Request) {
 
     const application = await createProgramApplication({
       programId,
+      programRunId:
+        typeof body.programRunId === "string" ? body.programRunId : undefined,
       formId: typeof body.formId === "string" ? body.formId : undefined,
       applicantName: normalizeText(body.applicantName, 80),
       email,
@@ -133,6 +135,16 @@ function validateApplicationPayload(
   const serializedAnswers = JSON.stringify(answers);
   if (serializedAnswers.length > 20_000) {
     throw new Error("Application answers are too large.");
+  }
+
+  const legalConsent = answers.legalConsent;
+  if (
+    !legalConsent ||
+    typeof legalConsent !== "object" ||
+    Array.isArray(legalConsent) ||
+    (legalConsent as Record<string, unknown>).agreed !== true
+  ) {
+    throw new Error("Required consent is missing.");
   }
 }
 

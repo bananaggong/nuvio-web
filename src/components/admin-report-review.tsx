@@ -14,14 +14,13 @@ import { useEffect, useMemo, useState } from "react";
 import type { ReactNode } from "react";
 import {
   formatCurrency,
-  readReportProjects,
   reportStatusLabels,
   summarizeReportProject,
 } from "@/lib/report-automation";
 import type { ReportProject } from "@/lib/report-automation";
 
 export function AdminReportReview() {
-  const [projects, setProjects] = useState<ReportProject[]>(readReportProjects);
+  const [projects, setProjects] = useState<ReportProject[]>([]);
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState("");
 
@@ -35,7 +34,7 @@ export function AdminReportReview() {
 
         const payload = (await response.json()) as { data?: ReportProject[] };
         const databaseProjects = Array.isArray(payload.data) ? payload.data : [];
-        if (isMounted && databaseProjects.length > 0) {
+        if (isMounted) {
           setProjects(databaseProjects);
         }
       } catch {

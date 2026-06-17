@@ -7,9 +7,7 @@ import { useEffect, useMemo, useState, type CSSProperties } from "react";
 import { HostProgramSidebar } from "@/components/host-program-sidebar";
 import {
   isQuestionBlock,
-  mergeApplicationFormTemplates,
   normalizeApplicationFormTemplateShape,
-  readApplicationFormTemplates,
   type ApplicationFormBlock,
   type ApplicationFormTemplate,
 } from "@/lib/application-form-builder";
@@ -147,7 +145,7 @@ export function HostApplicationsCrm({
   const [selectedApplicationId, setSelectedApplicationId] = useState("");
   const [checkedApplicationIds, setCheckedApplicationIds] = useState<string[]>([]);
   const [applicationFormTemplates, setApplicationFormTemplates] =
-    useState<ApplicationFormTemplate[]>(readApplicationFormTemplates);
+    useState<ApplicationFormTemplate[]>([]);
   const [messageTemplates] = useState(readMessageTemplates);
   const [hostReviews, setHostReviews] =
     useState<HostReviewManagementItem[]>([]);
@@ -295,9 +293,7 @@ export function HostApplicationsCrm({
           : [];
         if (cancelled) return;
 
-        setApplicationFormTemplates((currentTemplates) =>
-          mergeApplicationFormTemplates(databaseTemplates, currentTemplates),
-        );
+        setApplicationFormTemplates(databaseTemplates);
       } catch {
         // 신청관리 화면은 신청자 데이터가 우선이라 폼 목록 실패는 조용히 넘깁니다.
       }
@@ -1580,6 +1576,11 @@ function resolveApplicationTemplate(
 ): ApplicationFormTemplate | undefined {
   if (!application) return undefined;
 
+  const snapshotTemplate = normalizeApplicationSnapshotTemplate(
+    application.formSnapshot,
+  );
+  if (snapshotTemplate) return snapshotTemplate;
+
   const answers = application.answers ?? {};
   const exactTemplateIds = [
     application.formId,
@@ -1604,6 +1605,30 @@ function resolveApplicationTemplate(
         identifiersMatch(template.programTitle, identifier),
     );
   });
+}
+
+function normalizeApplicationSnapshotTemplate(
+  snapshot: Record<string, unknown> | undefined,
+): ApplicationFormTemplate | undefined {
+  if (!snapshot || typeof snapshot !== "object" || Array.isArray(snapshot)) {
+    return undefined;
+  }
+
+  const template = normalizeApplicationFormTemplateShape({
+    blocks: snapshot.blocks,
+    description: snapshot.description,
+    fields: snapshot.fields,
+    formKind: snapshot.formKind,
+    id: asString(snapshot.sourceFormId) || asString(snapshot.id),
+    name: snapshot.name,
+    programId: snapshot.programId,
+    programTitle: snapshot.programTitle,
+    updatedAt: snapshot.updatedAt,
+  });
+
+  return template.blocks.length > 0 || template.fields.length > 0
+    ? template
+    : undefined;
 }
 
 function buildApplicationAnswerMap(

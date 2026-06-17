@@ -11,8 +11,12 @@ export type HostApplicationStatus =
 export type HostApplication = {
   id: string;
   answers?: Record<string, unknown>;
+  consentSnapshot?: Record<string, unknown>;
   formId?: string;
+  formSnapshot?: Record<string, unknown>;
   programId?: string;
+  programRunId?: string;
+  programRunTitle?: string;
   programTitle: string;
   applicantName: string;
   email: string;
