@@ -29,7 +29,6 @@ import { programs } from "@/lib/data";
 import { isDemoModeEnabled } from "@/lib/demo-mode";
 import { launchFeatureFlags } from "@/lib/launch-feature-flags";
 import {
-  escapeCssUrl,
   floatingScheduleItems,
   getProgramGalleryImages,
   getProgramGuideDetails,
@@ -205,8 +204,9 @@ export default async function ProgramDetailPage({
     ? getProgramReviewListHref(program)
     : "";
   const galleryImages = getProgramGalleryImages(program);
-  const introImage = galleryImages[0] ?? "";
-  const introParagraphs = getProgramIntroParagraphs(program);
+  const introParagraphs = getProgramIntroParagraphs(program, 8).filter(
+    (paragraph) => program.body.length === 0 || paragraph !== program.description,
+  );
   const scheduleCards = getProgramScheduleItems(program, galleryImages);
   const placeDetails = getProgramPlaceDetails(program);
   const guideDetails = getProgramGuideDetails(program);
@@ -251,37 +251,14 @@ export default async function ProgramDetailPage({
           <ProgramDetailNav tabs={detailTabs} />
 
           <section
-            className="flex h-[886px] w-full scroll-mt-[112px] flex-col pb-[30px] max-md:h-[118vw] max-md:min-h-[420px] max-md:scroll-mt-[104px] max-md:pb-0"
+            className="flex min-h-[886px] w-full scroll-mt-[112px] flex-col pb-[30px] max-md:min-h-[420px] max-md:scroll-mt-[104px] max-md:pb-0"
             id="detail-section-intro"
           >
-            <div
-              aria-label="여행 소개 이미지 영역"
-              className={`relative h-[856px] w-full overflow-hidden bg-[#D9D9D9] bg-cover bg-center max-md:h-[118vw] max-md:min-h-[420px] ${
-                introImage ? "" : "bg-[linear-gradient(135deg,#E9E2DB,#D9D9D9)]"
-              }`}
-              style={
-                introImage
-                  ? { backgroundImage: `url("${escapeCssUrl(introImage)}")` }
-                  : undefined
-              }
-            >
-              <div
-                aria-hidden="true"
-                className="absolute inset-x-0 bottom-0 h-1/2 bg-gradient-to-t from-black/55 to-transparent"
-              />
-              <div className="absolute inset-x-0 bottom-0 flex flex-col gap-3 p-8 text-white max-md:p-5">
-                <p className="max-w-[580px] break-keep text-base font-semibold leading-[1.55] drop-shadow">
-                  {program.summary}
-                </p>
-                <div className="flex max-w-[580px] flex-col gap-2 text-sm font-medium leading-[1.7] text-white/90 drop-shadow">
-                  {introParagraphs.map((paragraph, index) => (
-                    <p className="break-keep" key={`${paragraph}-${index}`}>
-                      {paragraph}
-                    </p>
-                  ))}
-                </div>
-              </div>
-            </div>
+            <ProgramIntroArticle
+              images={galleryImages}
+              paragraphs={introParagraphs}
+              title={program.title}
+            />
           </section>
 
           <section
@@ -436,6 +413,81 @@ function SectionTitle({ title }: { title: string }) {
         {title}
       </h2>
       <span aria-hidden="true" className="h-px min-w-px flex-1 bg-[#F5E1D3]" />
+    </div>
+  );
+}
+
+function ProgramIntroArticle({
+  images,
+  paragraphs,
+  title,
+}: {
+  images: string[];
+  paragraphs: string[];
+  title: string;
+}) {
+  const introImages = images.filter(isRenderableImage).slice(0, 3);
+  const lead = paragraphs[0] ?? "";
+  const bodyParagraphs = paragraphs.slice(1);
+  const primaryImage = introImages[1] ?? introImages[0] ?? "";
+  const secondaryImage =
+    introImages.find((imageUrl) => imageUrl !== primaryImage) ?? "";
+
+  return (
+    <div className="flex min-h-[856px] w-full flex-col border-b border-[#F5E1D3] bg-white px-[34px] py-[34px] max-md:min-h-0 max-md:px-4 max-md:py-6">
+      <div className="flex w-full flex-col gap-[24px]">
+        {lead ? (
+          <p className="break-keep text-lg font-semibold leading-[1.65] text-[#5B3A29] max-md:text-base">
+            {lead}
+          </p>
+        ) : null}
+
+        {bodyParagraphs.slice(0, 2).map((paragraph, index) => (
+          <p
+            className="break-keep text-sm font-medium leading-[1.85] text-[#5B3A29]"
+            key={`${paragraph}-${index}`}
+          >
+            {paragraph}
+          </p>
+        ))}
+
+        {primaryImage ? (
+          <figure className="flex w-full flex-col gap-2">
+            <div className="relative h-[360px] w-full overflow-hidden rounded-[3px] bg-[#D9D9D9] max-md:h-[58vw] max-md:min-h-[240px]">
+              <Image
+                alt={`${title} 여행소개 이미지`}
+                className="object-cover"
+                fill
+                sizes="(max-width: 767px) 90vw, 624px"
+                src={primaryImage}
+              />
+            </div>
+          </figure>
+        ) : null}
+
+        {bodyParagraphs.slice(2).map((paragraph, index) => (
+          <p
+            className="break-keep text-sm font-medium leading-[1.85] text-[#5B3A29]"
+            key={`${paragraph}-${index + 2}`}
+          >
+            {paragraph}
+          </p>
+        ))}
+
+        {secondaryImage ? (
+          <figure className="mt-1 flex w-full flex-col gap-2">
+            <div className="relative h-[270px] w-full overflow-hidden rounded-[3px] bg-[#D9D9D9] max-md:h-[50vw] max-md:min-h-[220px]">
+              <Image
+                alt={`${title} 본문 이미지`}
+                className="object-cover"
+                fill
+                sizes="(max-width: 767px) 90vw, 624px"
+                src={secondaryImage}
+              />
+            </div>
+          </figure>
+        ) : null}
+      </div>
     </div>
   );
 }
