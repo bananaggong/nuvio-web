@@ -18,7 +18,7 @@ function getActivationLine() {
     return 104;
   }
 
-  return Math.max(56, window.innerWidth * 0.04861) + 42;
+  return Math.min(Math.max(56, window.innerWidth * 0.04861), 93) + 42;
 }
 
 export function ProgramDetailNav({ tabs }: { tabs: ProgramDetailNavTab[] }) {
@@ -89,7 +89,7 @@ export function ProgramDetailNav({ tabs }: { tabs: ProgramDetailNavTab[] }) {
   return (
     <nav
       aria-label="프로그램 상세 메뉴"
-      className="sticky top-[max(56px,4.861vw)] z-30 flex h-[33px] w-full items-center gap-[21px] overflow-x-auto border-y-[0.5px] border-[#F5E1D3] bg-white/95 pt-1.5 backdrop-blur [scrollbar-width:none] [&::-webkit-scrollbar]:hidden max-md:top-[56px] max-md:gap-4"
+      className="sticky top-[70px] z-30 flex h-[33px] w-full items-center gap-[21px] overflow-x-auto border-y-[0.5px] border-[#F5E1D3] bg-white/95 pt-1.5 backdrop-blur [scrollbar-width:none] [&::-webkit-scrollbar]:hidden max-md:top-[56px] max-md:gap-4"
     >
       {tabs.map((tab) => {
         const isActive = tab.href === activeHref;
@@ -97,9 +97,9 @@ export function ProgramDetailNav({ tabs }: { tabs: ProgramDetailNavTab[] }) {
         return (
           <a
             aria-current={isActive ? "page" : undefined}
-            className={`relative inline-flex h-[27px] shrink-0 items-center justify-center whitespace-nowrap text-xs ${
+            className={`relative inline-flex h-[27px] min-w-[55px] shrink-0 items-center justify-center whitespace-nowrap text-xs ${
               isActive
-                ? "pb-3 font-semibold leading-[1.253] text-[#5B3A29] after:absolute after:bottom-[-1px] after:left-0 after:h-0.5 after:w-full after:bg-[#FE701E]"
+                ? "pb-3 font-semibold leading-[1.253] text-[#5B3A29] after:absolute after:bottom-[-1px] after:left-1/2 after:h-0.5 after:w-[55px] after:-translate-x-1/2 after:bg-[#FE701E]"
                 : "pb-2 font-normal leading-[1.6] text-[#CAC4BC]"
             }`}
             href={tab.href}

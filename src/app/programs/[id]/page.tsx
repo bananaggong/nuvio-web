@@ -8,10 +8,8 @@ import {
   ChevronRight,
   ChevronUp,
   Mail,
-  Minus,
   MoreHorizontal,
   Phone,
-  Plus,
   Star,
   Tag,
   Ticket,
@@ -21,7 +19,9 @@ import { KakaoMap } from "@/components/kakao-map";
 import { NuvioEmptyState } from "@/components/nuvio-empty-state";
 import { ProgramDetailActions } from "@/components/program-detail-actions";
 import { ProgramDetailNav } from "@/components/program-detail-nav";
+import { ProgramDetailScale } from "@/components/program-detail-scale";
 import { ProgramGalleryCarousel } from "@/components/program-gallery-carousel";
+import { ProgramReservationCard } from "@/components/program-reservation-card";
 import {
   ProgramScheduleCards,
 } from "@/components/program-schedule-popover";
@@ -31,8 +31,6 @@ import { launchFeatureFlags } from "@/lib/launch-feature-flags";
 import {
   escapeCssUrl,
   floatingScheduleItems,
-  formatCompactDateRange,
-  formatKoreanDate,
   getProgramGalleryImages,
   getProgramGuideDetails,
   getProgramIntroParagraphs,
@@ -228,7 +226,8 @@ export default async function ProgramDetailPage({
 
       <ProgramGalleryCarousel images={galleryImages} title={program.title} />
 
-      <div className="relative mx-auto grid w-[71.597vw] grid-cols-[minmax(0,48.056vw)_minmax(0,20.625vw)] items-start gap-[2.917vw] pt-10 min-[1440px]:pt-[2.778vw] max-md:block max-md:w-[90vw] max-md:pt-7">
+      <ProgramDetailScale>
+      <div className="relative grid w-[1375px] grid-cols-[minmax(0,923px)_minmax(0,396px)] items-start gap-[56px] pt-10 max-md:block max-md:w-[90vw] max-md:pt-7">
         <article className="flex w-full min-w-0 flex-col gap-3 min-[1440px]:gap-[0.833vw] max-md:w-full">
           <header className="flex w-full items-start justify-between pb-1.5 min-[1440px]:pb-[0.417vw] max-md:pb-2">
             <div className="flex w-[188px] flex-col items-start gap-2">
@@ -252,12 +251,12 @@ export default async function ProgramDetailPage({
           <ProgramDetailNav tabs={detailTabs} />
 
           <section
-            className="flex h-[886px] w-full scroll-mt-[calc(max(56px,4.861vw)+42px)] flex-col pb-[30px] min-[1440px]:h-[61.528vw] min-[1440px]:pb-[2.083vw] max-md:h-[118vw] max-md:min-h-[420px] max-md:scroll-mt-[104px] max-md:pb-0"
+            className="flex h-[886px] w-full scroll-mt-[112px] flex-col pb-[30px] max-md:h-[118vw] max-md:min-h-[420px] max-md:scroll-mt-[104px] max-md:pb-0"
             id="detail-section-intro"
           >
             <div
               aria-label="여행 소개 이미지 영역"
-              className={`relative h-[856px] w-full overflow-hidden bg-[#D9D9D9] bg-cover bg-center min-[1440px]:h-[59.444vw] max-md:h-[118vw] max-md:min-h-[420px] ${
+              className={`relative h-[856px] w-full overflow-hidden bg-[#D9D9D9] bg-cover bg-center max-md:h-[118vw] max-md:min-h-[420px] ${
                 introImage ? "" : "bg-[linear-gradient(135deg,#E9E2DB,#D9D9D9)]"
               }`}
               style={
@@ -286,7 +285,7 @@ export default async function ProgramDetailPage({
           </section>
 
           <section
-            className="flex min-h-[496px] w-full scroll-mt-[calc(max(56px,4.861vw)+42px)] flex-col gap-[18px] pb-10 max-md:scroll-mt-[104px]"
+            className="flex min-h-[496px] w-full scroll-mt-[112px] flex-col gap-[18px] pb-10 max-md:scroll-mt-[104px]"
             id="detail-section-schedule"
           >
             <SectionTitle title="여행 일정" />
@@ -304,7 +303,7 @@ export default async function ProgramDetailPage({
           ) : null}
 
           <section
-            className="flex min-h-[932px] w-full scroll-mt-[calc(max(56px,4.861vw)+42px)] flex-col items-center gap-7 pb-10 min-[1440px]:min-h-[64.722vw] max-md:w-full max-md:scroll-mt-[104px]"
+            className="flex min-h-[932px] w-full scroll-mt-[112px] flex-col items-center gap-7 pb-10 max-md:w-full max-md:scroll-mt-[104px]"
             id="detail-section-place"
           >
             <SectionTitle title="집결지 정보" />
@@ -363,12 +362,12 @@ export default async function ProgramDetailPage({
 
             <KakaoMap
               address={placeDetails.meetingMapAddress || placeDetails.meetingAddress}
-              className="h-[243px] w-[45.972vw] min-[1440px]:h-[16.875vw] max-md:w-full"
+              className="h-[243px] w-[662px] max-md:w-full"
               markerLabel={program.title}
             />
 
             <section
-              className="flex w-full scroll-mt-[calc(max(56px,4.861vw)+42px)] flex-col items-center gap-7 max-md:w-full max-md:scroll-mt-[104px]"
+              className="flex w-full scroll-mt-[112px] flex-col items-center gap-7 max-md:w-full max-md:scroll-mt-[104px]"
               id="detail-section-guide"
             >
               <SectionTitle title="안내사항" />
@@ -402,85 +401,7 @@ export default async function ProgramDetailPage({
         </article>
 
         <aside className="sticky top-[86px] flex w-full min-w-0 flex-col items-start gap-[11px] self-start min-[1440px]:gap-[0.764vw] max-md:static max-md:mt-[34px] max-md:w-full">
-          <section
-            className="flex min-h-[333px] w-full flex-col items-center gap-[17px] rounded-md border border-[#F5E1D3] bg-[#FCFCFC] p-4 min-[1440px]:min-h-[23.125vw] min-[1440px]:gap-[1.181vw] min-[1440px]:p-[1.111vw] max-md:w-full"
-            id="apply"
-          >
-            <div className="grid min-h-[35px] w-[93.208%] grid-cols-[minmax(0,1fr)_minmax(0,1fr)] items-center rounded-[7px] border-[0.5px] border-[#F5E1D3] min-[1440px]:min-h-[2.431vw] max-md:w-full max-md:grid-cols-2">
-              <div className="flex min-w-0 items-center justify-center gap-1 p-2 min-[1440px]:gap-[0.278vw] min-[1440px]:p-[0.556vw]">
-                <strong className="shrink-0 whitespace-nowrap text-xs font-medium leading-[1.253] text-[#5B3A29]">
-                  일정
-                </strong>
-                <span className="min-w-0 whitespace-nowrap text-xs font-normal leading-[1.6] text-[#6D7A8A]">
-                  {formatCompactDateRange(program.activityStart, program.activityEnd)}
-                </span>
-              </div>
-              <div className="flex min-w-0 items-center justify-center gap-1 border-l-[0.5px] border-[#F5E1D3] p-2 min-[1440px]:gap-[0.278vw] min-[1440px]:p-[0.556vw]">
-                <strong className="shrink-0 whitespace-nowrap text-xs font-medium leading-[1.253] text-[#5B3A29]">
-                  모집
-                </strong>
-                <span className="min-w-0 whitespace-nowrap text-xs font-normal leading-[1.6] text-[#6D7A8A]">
-                  {program.capacity}
-                </span>
-              </div>
-            </div>
-            <p className="-mt-3.5 mr-[13px] w-full text-right text-xs font-normal leading-[1.6] text-[#6D7A8A]">
-              ~{formatKoreanDate(program.recruitEnd)}
-            </p>
-
-            <div className="-mt-[3px] flex w-full items-center justify-between">
-              <span className="text-xs font-medium leading-[1.253] text-[#F7B267]">
-                자유신청
-              </span>
-              <strong className="text-center text-sm font-semibold leading-[1.253] text-[#7A8B52]">
-                D-20
-              </strong>
-            </div>
-            <h2 className="-mt-[13px] self-start text-base font-medium leading-[1.253] text-[#5B3A29]">
-              {program.title}
-            </h2>
-
-            <div className="flex w-full items-start gap-1.5">
-              <strong className="text-base font-medium leading-[1.253] text-[#5B3A29]">
-                {program.fee}
-              </strong>
-              <span className="text-xs font-normal leading-[1.6] text-[#CAC4BC]">
-                /명
-              </span>
-            </div>
-
-            <div className="flex w-full flex-col items-center gap-[7px] rounded-[5px] bg-[#F3F3F3] p-1.5">
-              <div className="flex w-full items-center justify-between">
-                <span className="text-xs font-normal leading-[1.6] text-[#6D7A8A]">
-                  신청 인원
-                </span>
-                <div className="flex items-center gap-[17px]">
-                  <QuantityButton ariaLabel="인원 줄이기">
-                    <Minus aria-hidden="true" className="size-2" />
-                  </QuantityButton>
-                  <b className="text-xs font-normal leading-[1.6] text-[#6D7A8A]">00</b>
-                  <QuantityButton ariaLabel="인원 늘리기">
-                    <Plus aria-hidden="true" className="size-2" />
-                  </QuantityButton>
-                </div>
-              </div>
-              <div className="flex w-full items-center justify-between border-t border-[#F5E1D3] pt-1.5">
-                <strong className="text-base font-medium leading-[1.253] text-[#5B3A29]">
-                  총액
-                </strong>
-                <strong className="text-base font-medium leading-[1.253] text-[#5B3A29]">
-                  {program.fee}
-                </strong>
-              </div>
-            </div>
-
-            <a
-              className="-mt-px flex h-[29px] w-full items-center justify-center rounded bg-[#FE701E] text-xs font-medium leading-[1.253] text-[#FFF6EC]"
-              href={applyHref}
-            >
-              신청하기
-            </a>
-          </section>
+          <ProgramReservationCard applyHref={applyHref} program={program} />
 
           {launchFeatureFlags.coupons || launchFeatureFlags.promotions ? (
             <div className="flex w-full flex-col gap-[9px] min-[1440px]:gap-[0.625vw] max-md:w-full">
@@ -503,6 +424,7 @@ export default async function ProgramDetailPage({
         </aside>
 
       </div>
+      </ProgramDetailScale>
     </div>
   );
 }
@@ -708,24 +630,6 @@ function GuideInfoRow({ label, values }: { label: string; values: string[] }) {
         ))}
       </div>
     </div>
-  );
-}
-
-function QuantityButton({
-  ariaLabel,
-  children,
-}: {
-  ariaLabel: string;
-  children: React.ReactNode;
-}) {
-  return (
-    <button
-      aria-label={ariaLabel}
-      className="inline-flex size-3 items-center justify-center rounded-full border border-[#CAC4BC] bg-transparent p-0 text-[#CAC4BC]"
-      type="button"
-    >
-      {children}
-    </button>
   );
 }
 

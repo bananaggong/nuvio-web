@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { useSearchParams } from "next/navigation";
 import { CheckCircle2, ChevronDown } from "lucide-react";
 import { useEffect, useState } from "react";
 import type {
@@ -15,6 +16,7 @@ import {
   formatApplicationDisplayCode,
   formatProgramDisplayName,
 } from "@/lib/display-code";
+import { ProgramQuantityControl } from "@/components/program-quantity-control";
 import { programPath } from "@/lib/program-routing";
 import type { Program } from "@/lib/types";
 
@@ -40,7 +42,7 @@ const initialFormState: ApplicationFormState = {
   applicantName: "",
   email: "",
   phone: "",
-  companions: "1",
+  companions: "",
   motivation: "",
   workStyle: "",
   receiptPlan: "",
@@ -65,6 +67,11 @@ export function ProgramApplicationForm({
   }>();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState<string>();
+  const searchParams = useSearchParams();
+  const requestedPeople = parseQuantityParam(searchParams.get("people"));
+  const companionCount = getCompanionCount(
+    form.companions || String(requestedPeople ?? 1),
+  );
   const normalizedTemplate = formTemplate
     ? normalizeApplicationFormTemplateShape(formTemplate)
     : undefined;
@@ -172,7 +179,7 @@ export function ProgramApplicationForm({
             type: block.type,
             value: dynamicAnswers[block.id] ?? (block.type === "checkbox" ? false : ""),
           })),
-        companions: form.companions,
+        companions: String(companionCount),
         legalConsent,
         memo: buildMemo(),
         templateId: normalizedTemplate.id,
@@ -187,7 +194,7 @@ export function ProgramApplicationForm({
     }
 
     return {
-      companions: form.companions,
+      companions: String(companionCount),
       legalConsent,
       motivation: form.motivation,
       workStyle: form.workStyle,
@@ -339,16 +346,17 @@ export function ProgramApplicationForm({
                 </Field>
               </div>
               <Field label="참여 인원">
-                <select
-                  className={applicationInputClassName}
-                  onChange={(event) => updateField("companions", event.target.value)}
-                  value={form.companions}
-                >
-                  <option value="1">1명</option>
-                  <option value="2">2명</option>
-                  <option value="3">3명</option>
-                  <option value="4+">4명 이상</option>
-                </select>
+                <div className="flex h-[34px] w-full items-center justify-between rounded-[4px] border border-[#FF9A3D] bg-white px-[12px] text-[#5B3A29]">
+                  <span className="text-[12px] font-normal leading-[1.253]">
+                    {companionCount}명
+                  </span>
+                  <ProgramQuantityControl
+                    max={99}
+                    min={1}
+                    onChange={(value) => updateField("companions", String(value))}
+                    value={companionCount}
+                  />
+                </div>
               </Field>
             </div>
           </div>
@@ -756,4 +764,22 @@ function formatApplicationDate(value: string): string {
   const month = String(date.getMonth() + 1).padStart(2, "0");
   const day = String(date.getDate()).padStart(2, "0");
   return `${year}년 ${month}월 ${day}일`;
+}
+
+function parseQuantityParam(value: string | null): number | null {
+  if (!value) return null;
+
+  const quantity = Number(value);
+  if (!Number.isFinite(quantity)) return null;
+
+  const nextQuantity = Math.trunc(quantity);
+  if (nextQuantity < 1) return null;
+
+  return Math.min(99, nextQuantity);
+}
+
+function getCompanionCount(value: string): number {
+  const quantity = Number(value.replace(/[^\d]/g, ""));
+  if (!Number.isFinite(quantity) || quantity < 1) return 1;
+  return Math.min(99, Math.trunc(quantity));
 }
