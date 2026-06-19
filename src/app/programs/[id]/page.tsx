@@ -227,7 +227,7 @@ export default async function ProgramDetailPage({
       <ProgramGalleryCarousel images={galleryImages} title={program.title} />
 
       <ProgramDetailScale>
-      <div className="relative grid w-[1375px] grid-cols-[minmax(0,923px)_minmax(0,396px)] items-start gap-[56px] pt-10 max-md:block max-md:w-[90vw] max-md:pt-7">
+      <div className="relative grid w-[1031px] grid-cols-[minmax(0,692px)_minmax(0,297px)] items-start gap-[42px] pt-10 max-md:block max-md:w-[90vw] max-md:pt-7">
         <article className="flex w-full min-w-0 flex-col gap-3 min-[1440px]:gap-[0.833vw] max-md:w-full">
           <header className="flex w-full items-start justify-between pb-1.5 min-[1440px]:pb-[0.417vw] max-md:pb-2">
             <div className="flex w-[188px] flex-col items-start gap-2">

@@ -32,10 +32,10 @@ export function ProgramReservationCard({
 
   return (
     <section
-      className="flex min-h-[405px] w-full flex-col items-center gap-[17px] rounded-md border border-[#F5E1D3] bg-[#FCFCFC] p-[22px] max-md:min-h-[333px] max-md:w-full max-md:p-4"
+      className="flex min-h-[333px] w-full flex-col items-center gap-[17px] rounded-md border border-[#F5E1D3] bg-[#FCFCFC] p-4 max-md:w-full"
       id="apply"
     >
-      <div className="grid min-h-[46px] w-[93.208%] grid-cols-[minmax(0,1fr)_minmax(0,1fr)] items-center rounded-[7px] border-[0.5px] border-[#F5E1D3] max-md:min-h-[35px] max-md:w-full max-md:grid-cols-2">
+      <div className="grid min-h-[35px] w-[93.208%] grid-cols-[minmax(0,1fr)_minmax(0,1fr)] items-center rounded-[7px] border-[0.5px] border-[#F5E1D3] max-md:w-full max-md:grid-cols-2">
         <div className="flex min-w-0 items-center justify-center gap-1 p-2 min-[1440px]:gap-[0.278vw] min-[1440px]:p-[0.556vw]">
           <strong className="shrink-0 whitespace-nowrap text-xs font-medium leading-[1.253] text-[#5B3A29]">
             일정
