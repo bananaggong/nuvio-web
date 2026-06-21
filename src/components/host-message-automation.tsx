@@ -87,7 +87,9 @@ export function HostMessageAutomation({
   const [messageListTab, setMessageListTab] = useState<MessageListTab>("all");
   const [isLoadingMessages, setIsLoadingMessages] = useState(false);
   const [messageError, setMessageError] = useState("");
+  const [messageNotice, setMessageNotice] = useState("");
   const [isDeletingMessage, setIsDeletingMessage] = useState(false);
+  const [isMarkingSent, setIsMarkingSent] = useState(false);
 
   const project = useMemo(() => {
     if (!projectId) return undefined;
@@ -147,6 +149,7 @@ export function HostMessageAutomation({
     async function loadScheduledMessages() {
       setIsLoadingMessages(true);
       setMessageError("");
+      setMessageNotice("");
 
       try {
         const response = await fetch("/api/host/scheduled-messages", {
@@ -239,6 +242,7 @@ export function HostMessageAutomation({
     const messageIds = selectedBatch.messages.map((message) => message.id);
     setIsDeletingMessage(true);
     setMessageError("");
+    setMessageNotice("");
 
     try {
       const response = await fetch("/api/host/scheduled-messages", {
@@ -265,6 +269,89 @@ export function HostMessageAutomation({
       );
     } finally {
       setIsDeletingMessage(false);
+    }
+  }
+
+  function copySelectedBatchBody() {
+    if (!selectedBatch?.body) return;
+
+    void navigator.clipboard
+      .writeText(selectedBatch.body)
+      .then(() => {
+        setMessageError("");
+        setMessageNotice("메시지 본문을 복사했습니다. 업무폰에서 붙여넣어 발송하세요.");
+      })
+      .catch(() => {
+        setMessageNotice("");
+        setMessageError("메시지 본문을 복사하지 못했습니다.");
+      });
+  }
+
+  async function markSelectedBatchSent() {
+    if (
+      !selectedBatch ||
+      selectedBatch.isDemo ||
+      selectedBatch.deliveryStatus === "sent" ||
+      isMarkingSent
+    ) {
+      return;
+    }
+
+    const messageIds = selectedBatch.messages.map((message) => message.id);
+    setIsMarkingSent(true);
+    setMessageError("");
+    setMessageNotice("");
+
+    try {
+      const response = await fetch("/api/host/scheduled-messages", {
+        body: JSON.stringify({ messageIds, result: "업무폰 수동 발송" }),
+        headers: { "Content-Type": "application/json" },
+        method: "PATCH",
+      });
+      const payload = (await response.json().catch(() => ({}))) as {
+        data?: {
+          sheetSync?: { message?: string; status?: string; updatedCount?: number };
+          updatedCount?: number;
+        };
+        error?: string;
+      };
+
+      if (!response.ok) {
+        throw new Error(payload.error ?? "발송완료 처리에 실패했습니다.");
+      }
+
+      const sentAt = new Date().toISOString();
+      setScheduledMessages((currentMessages) =>
+        currentMessages.map((message) =>
+          messageIds.includes(message.id)
+            ? {
+                ...message,
+                deliveryStatus: "sent",
+                error: "",
+                sentAt,
+                updatedAt: sentAt,
+              }
+            : message,
+        ),
+      );
+
+      const updatedCount = payload.data?.updatedCount ?? messageIds.length;
+      const sheetSync = payload.data?.sheetSync;
+      const sheetMessage =
+        sheetSync?.status === "synced"
+          ? " Google Sheet도 갱신했습니다."
+          : sheetSync?.status === "skipped"
+            ? ` Google Sheet 동기화는 건너뜀: ${sheetSync.message ?? ""}`
+            : sheetSync?.status === "failed"
+              ? ` Google Sheet 동기화 실패: ${sheetSync.message ?? ""}`
+              : "";
+      setMessageNotice(`${updatedCount}건을 발송완료로 처리했습니다.${sheetMessage}`);
+    } catch (error) {
+      setMessageError(
+        error instanceof Error ? error.message : "발송완료 처리에 실패했습니다.",
+      );
+    } finally {
+      setIsMarkingSent(false);
     }
   }
 
@@ -311,14 +398,31 @@ export function HostMessageAutomation({
               batches={visibleMessageBatches}
               error={messageError}
               isLoading={isLoadingMessages}
+              notice={messageNotice}
               onSelect={setSelectedBatchId}
               onTabChange={setMessageListTab}
               selectedBatchId={selectedBatch?.id}
             />
-            <MessageScheduleDetailPanel batch={selectedBatch} />
+            <MessageScheduleDetailPanel
+              batch={selectedBatch}
+              onCopyBody={copySelectedBatchBody}
+            />
           </main>
 
-          <div className="flex h-[var(--msg-bottom-height)] shrink-0 items-start border-t border-[#6D7A8A] bg-white pl-[28px] pt-[20px]">
+          <div className="flex h-[var(--msg-bottom-height)] shrink-0 items-start gap-[10px] border-t border-[#6D7A8A] bg-white pl-[28px] pt-[20px]">
+            <button
+              className="inline-flex h-[28px] w-[92px] items-center justify-center rounded-[4px] border border-[#7A8B52] bg-[#7A8B52] text-[12px] font-normal leading-[1.253] text-white disabled:cursor-not-allowed disabled:opacity-40"
+              disabled={
+                !selectedBatch ||
+                selectedBatch.isDemo ||
+                selectedBatch.deliveryStatus === "sent" ||
+                isMarkingSent
+              }
+              onClick={markSelectedBatchSent}
+              type="button"
+            >
+              {isMarkingSent ? "처리 중" : "발송완료"}
+            </button>
             <button
               className="inline-flex h-[28px] w-[92px] items-center justify-center rounded-[4px] border border-[#FE701E] bg-white text-[12px] font-normal leading-[1.253] text-[#FE701E] disabled:cursor-not-allowed disabled:opacity-40"
               disabled={!selectedBatch || selectedBatch.isDemo || isDeletingMessage}
@@ -328,7 +432,7 @@ export function HostMessageAutomation({
               메시지 삭제
             </button>
             {selectedBatch?.isDemo ? (
-              <span className="ml-3 mt-[7px] text-[12px] font-normal leading-[1.253] text-[#A68B7B]">
+              <span className="mt-[7px] text-[12px] font-normal leading-[1.253] text-[#A68B7B]">
                 실제 예약 메시지가 생성되면 삭제할 수 있어요.
               </span>
             ) : null}
@@ -345,6 +449,7 @@ function MessageScheduleListPanel({
   batches,
   error,
   isLoading,
+  notice,
   onSelect,
   onTabChange,
   selectedBatchId,
@@ -353,6 +458,7 @@ function MessageScheduleListPanel({
   batches: MessageBatch[];
   error: string;
   isLoading: boolean;
+  notice: string;
   onSelect: (batchId: string) => void;
   onTabChange: (tab: MessageListTab) => void;
   selectedBatchId?: string;
@@ -393,6 +499,10 @@ function MessageScheduleListPanel({
         ) : error ? (
           <div className="rounded-[4px] border border-[#FE701E]/40 px-3 py-2 text-[12px] font-semibold leading-[1.5] text-[#FE701E]">
             {error}
+          </div>
+        ) : notice ? (
+          <div className="rounded-[4px] border border-[#7A8B52]/40 bg-[#F6FAF0] px-3 py-2 text-[12px] font-semibold leading-[1.5] text-[#5D6F38]">
+            {notice}
           </div>
         ) : batches.length > 0 ? (
           batches.map((batch) => (
@@ -448,7 +558,13 @@ function MessageScheduleRow({
   );
 }
 
-function MessageScheduleDetailPanel({ batch }: { batch?: MessageBatch }) {
+function MessageScheduleDetailPanel({
+  batch,
+  onCopyBody,
+}: {
+  batch?: MessageBatch;
+  onCopyBody: () => void;
+}) {
   const status = getMessageStatusMeta(batch?.deliveryStatus ?? "draft");
   const dateTime = formatCampaignDateTime(
     batch?.scheduledFor || batch?.sentAt || batch?.createdAt,
@@ -492,9 +608,15 @@ function MessageScheduleDetailPanel({ batch }: { batch?: MessageBatch }) {
           <h2 className="text-[14px] font-semibold leading-[1.253] text-[#0D0D0C]">
             메시지 템플릿
           </h2>
-          <span className="ml-auto grid size-[18px] place-items-center rounded-[4px] border border-[#6D7A8A] text-[12px] text-[#6D7A8A]">
+          <button
+            aria-label="메시지 본문 복사"
+            className="ml-auto grid size-[18px] place-items-center rounded-[4px] border border-[#6D7A8A] text-[12px] text-[#6D7A8A] disabled:cursor-not-allowed disabled:opacity-40"
+            disabled={!batch}
+            onClick={onCopyBody}
+            type="button"
+          >
             <Copy aria-hidden="true" className="size-[12px]" strokeWidth={1.8} />
-          </span>
+          </button>
         </div>
         <div className="mt-[13px] h-[188px] w-full rounded-[4px] border border-[#6D7A8A] bg-white">
           <div className="flex h-[34px] items-center border-b border-[#6D7A8A] px-[12px] text-[12px] font-normal leading-[1.253] text-[#6D7A8A]">
@@ -519,23 +641,32 @@ function MessageScheduleDetailPanel({ batch }: { batch?: MessageBatch }) {
           {recipients.length > 0 ? (
             recipients.map((recipient) => (
               <div
-                className="grid h-[36px] grid-cols-[64px_54px_1fr_20px] items-center border-b border-[#D9D9D9] px-[22px] text-[12px] font-normal leading-[1.253] text-[#6D7A8A] last:border-b-0"
+                className="grid h-[36px] grid-cols-[64px_104px_1fr_48px] items-center border-b border-[#D9D9D9] px-[22px] text-[12px] font-normal leading-[1.253] text-[#6D7A8A] last:border-b-0"
                 key={recipient.id}
               >
                 <span className="truncate">{recipient.applicantName}</span>
-                <span>신청자</span>
+                <span className="truncate">{recipient.recipient}</span>
                 <span>접수일 {formatCampaignDateTime(recipient.submittedAt).date}</span>
-                <span className="ml-auto size-[10px] rounded-full bg-[#CAC4BC]" />
+                {recipient.recipient ? (
+                  <a
+                    className="ml-auto inline-flex h-[22px] w-[38px] items-center justify-center rounded-[4px] border border-[#6D7A8A] text-[11px] font-semibold text-[#6D7A8A]"
+                    href={getSmsHref(recipient.recipient)}
+                  >
+                    SMS
+                  </a>
+                ) : (
+                  <span className="ml-auto size-[10px] rounded-full bg-[#CAC4BC]" />
+                )}
               </div>
             ))
           ) : (
             Array.from({ length: 5 }).map((_, index) => (
               <div
-                className="grid h-[36px] grid-cols-[64px_54px_1fr_20px] items-center border-b border-[#D9D9D9] px-[22px] text-[12px] font-normal leading-[1.253] text-[#6D7A8A] last:border-b-0"
+                className="grid h-[36px] grid-cols-[64px_104px_1fr_48px] items-center border-b border-[#D9D9D9] px-[22px] text-[12px] font-normal leading-[1.253] text-[#6D7A8A] last:border-b-0"
                 key={`placeholder-recipient-${index}`}
               >
                 <span>신청자</span>
-                <span>성별</span>
+                <span>연락처</span>
                 <span>접수일 0000. 00. 00</span>
                 <span className="ml-auto size-[10px] rounded-full bg-[#CAC4BC]" />
               </div>
@@ -692,7 +823,8 @@ function normalizeDeliveryStatus(
   return value === "draft" ||
     value === "scheduled" ||
     value === "sent" ||
-    value === "failed"
+    value === "failed" ||
+    value === "processing"
     ? value
     : "scheduled";
 }
@@ -753,6 +885,11 @@ function formatCampaignDateTime(value?: string) {
 
 function asString(value: unknown): string {
   return typeof value === "string" ? value : "";
+}
+
+function getSmsHref(value: string): string {
+  const phone = value.replace(/[^\d+]/gu, "");
+  return phone ? `sms:${phone}` : "#";
 }
 
 function HostInquiryInbox({

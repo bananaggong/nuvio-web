@@ -22,6 +22,11 @@ import {
   type MessageChannel,
 } from "@/lib/message-automation";
 import type { HostApplication } from "@/lib/host-operations";
+import {
+  appendManualDispatchRows,
+  markManualDispatchRowsSent,
+  type ManualDispatchSheetSyncResult,
+} from "@/lib/manual-dispatch-sheet";
 import { sendSmsMessage } from "@/lib/sms-provider";
 
 type ScheduleSelectedMessagesInput = {
@@ -59,6 +64,12 @@ export type HostScheduledMessage = {
 export type ScheduleSelectedMessagesResult = {
   insertedCount: number;
   recipientCount: number;
+  sheetSync: ManualDispatchSheetSyncResult;
+};
+
+export type MarkHostScheduledMessagesSentResult = {
+  sheetSync: ManualDispatchSheetSyncResult;
+  updatedCount: number;
 };
 
 export async function scheduleSelectedApplicationMessages(
@@ -69,10 +80,18 @@ export async function scheduleSelectedApplicationMessages(
     new Set(input.applicationIds.map((id) => id.trim()).filter(isUuid)),
   );
   if (options.villageIds && options.villageIds.length === 0) {
-    return { insertedCount: 0, recipientCount: input.applicationIds.length };
+    return {
+      insertedCount: 0,
+      recipientCount: input.applicationIds.length,
+      sheetSync: { message: "No manageable village scope.", status: "skipped" },
+    };
   }
   if (applicationIds.length === 0) {
-    return { insertedCount: 0, recipientCount: input.applicationIds.length };
+    return {
+      insertedCount: 0,
+      recipientCount: input.applicationIds.length,
+      sheetSync: { message: "No valid application ids.", status: "skipped" },
+    };
   }
 
   const conditions: SQL[] = [inArray(programApplications.id, applicationIds)];
@@ -141,17 +160,51 @@ export async function scheduleSelectedApplicationMessages(
     .filter((value): value is NonNullable<typeof value> => Boolean(value));
 
   if (values.length === 0) {
-    return { insertedCount: 0, recipientCount: rows.length };
+    return {
+      insertedCount: 0,
+      recipientCount: rows.length,
+      sheetSync: { message: "No recipients with contact values.", status: "skipped" },
+    };
   }
 
   const insertedRows = await getDb()
     .insert(scheduledMessages)
     .values(values)
     .returning({
+      applicationId: scheduledMessages.applicationId,
+      body: scheduledMessages.body,
+      channel: scheduledMessages.channel,
       id: scheduledMessages.id,
+      recipient: scheduledMessages.recipient,
+      scheduledFor: scheduledMessages.scheduledFor,
+      templateId: scheduledMessages.templateId,
     });
 
-  return { insertedCount: insertedRows.length, recipientCount: rows.length };
+  const applicationsById = new Map(rows.map((row) => [row.id, row]));
+  const sheetSync = await appendManualDispatchRows(
+    insertedRows.map((row) => {
+      const application = applicationsById.get(row.applicationId ?? "");
+
+      return {
+        applicationId: row.applicationId ?? "",
+        applicantName: application?.applicantName ?? "",
+        body: row.body,
+        channel: row.channel,
+        messageId: row.id,
+        phone: row.recipient,
+        programTitle: application?.programTitle ?? "",
+        scheduledFor: row.scheduledFor,
+        templateName: row.templateId ?? input.templateId ?? "",
+        trigger: "호스트 수동예약",
+      };
+    }),
+  );
+
+  return {
+    insertedCount: insertedRows.length,
+    recipientCount: rows.length,
+    sheetSync,
+  };
 }
 
 export async function listHostScheduledMessages(
@@ -263,9 +316,97 @@ export async function deleteHostScheduledMessages(
   return deletedRows.length;
 }
 
+export async function markHostScheduledMessagesSent(
+  messageIds: string[],
+  options: {
+    actorEmail?: string;
+    memo?: string;
+    result?: string;
+    senderPhone?: string;
+    villageIds?: string[];
+  } = {},
+): Promise<MarkHostScheduledMessagesSentResult> {
+  const normalizedIds = Array.from(
+    new Set(messageIds.map((id) => id.trim()).filter(isUuid)),
+  );
+  if (normalizedIds.length === 0) {
+    return {
+      sheetSync: { message: "No valid message ids.", status: "skipped" },
+      updatedCount: 0,
+    };
+  }
+  if (options.villageIds && options.villageIds.length === 0) {
+    return {
+      sheetSync: { message: "No manageable village scope.", status: "skipped" },
+      updatedCount: 0,
+    };
+  }
+
+  const conditions: SQL[] = [inArray(scheduledMessages.id, normalizedIds)];
+  if (options.villageIds) {
+    conditions.push(inArray(programsTable.villageId, options.villageIds));
+  }
+
+  let allowedQuery = getDb()
+    .select({
+      id: scheduledMessages.id,
+    })
+    .from(scheduledMessages)
+    .leftJoin(
+      programApplications,
+      eq(scheduledMessages.applicationId, programApplications.id),
+    )
+    .leftJoin(programsTable, eq(programApplications.programId, programsTable.id))
+    .$dynamic();
+
+  allowedQuery =
+    conditions.length === 1
+      ? allowedQuery.where(conditions[0])
+      : allowedQuery.where(and(...conditions));
+
+  const allowedRows = await allowedQuery;
+  const allowedIds = allowedRows.map((row) => row.id);
+  if (allowedIds.length === 0) {
+    return {
+      sheetSync: { message: "No scheduled messages were found.", status: "skipped" },
+      updatedCount: 0,
+    };
+  }
+
+  const sentAt = new Date();
+  const updatedRows = await getDb()
+    .update(scheduledMessages)
+    .set({
+      deliveryStatus: "sent",
+      error: null,
+      sentAt,
+      updatedAt: sentAt,
+    })
+    .where(inArray(scheduledMessages.id, allowedIds))
+    .returning({ id: scheduledMessages.id });
+
+  const sheetSync = await markManualDispatchRowsSent({
+    actorEmail: options.actorEmail,
+    memo: options.memo,
+    messageIds: updatedRows.map((row) => row.id),
+    result: options.result,
+    senderPhone: options.senderPhone,
+    sentAt,
+  });
+
+  return {
+    sheetSync,
+    updatedCount: updatedRows.length,
+  };
+}
+
 export async function processDueScheduledSmsMessages(
   options: { limit?: number } = {},
 ): Promise<{ failed: number; processed: number; sent: number }> {
+  if (process.env.SMS_AUTO_DELIVERY_ENABLED !== "true") {
+    return { failed: 0, processed: 0, sent: 0 };
+  }
+
   const limit = Math.min(Math.max(options.limit ?? 50, 1), 100);
   const now = new Date();
   const staleProcessingBefore = new Date(now.getTime() - 30 * 60 * 1000);

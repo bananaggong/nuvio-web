@@ -101,7 +101,7 @@ export function HostProgramSidebar({
             <div className="flex h-[var(--host-program-sidebar-46)] min-h-[46px] items-end border-b border-[#D9D9D9] pt-[0.833vw] text-center">
               <HostSwitchTab active href="/host" label="호스트" />
               <span className="mb-[6px] h-[22px] w-px bg-[#D9D9D9]" />
-              <HostSwitchTab href="/host/villages" label="로컬" />
+              <HostSwitchTab href="/host/channels/settings" label="채널" />
               <span className="mb-[6px] h-[22px] w-px bg-[#D9D9D9]" />
               <HostSwitchTab href="/admin" label="관리자" />
             </div>

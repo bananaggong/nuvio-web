@@ -424,7 +424,11 @@ export function HostApplicationsCrm({
         method: "POST",
       });
       const payload = (await response.json()) as {
-        data?: { insertedCount?: number; recipientCount?: number };
+        data?: {
+          insertedCount?: number;
+          recipientCount?: number;
+          sheetSync?: { message?: string; status?: string };
+        };
         error?: string;
       };
 
@@ -433,12 +437,24 @@ export function HostApplicationsCrm({
       }
 
       const insertedCount = payload.data?.insertedCount ?? 0;
+      const sheetSync = payload.data?.sheetSync;
+      const sheetMessage =
+        sheetSync?.status === "synced"
+          ? " Google Sheet에도 추가했습니다."
+          : sheetSync?.status === "skipped"
+            ? ` Google Sheet 동기화는 건너뜀: ${sheetSync.message ?? ""}`
+            : sheetSync?.status === "failed"
+              ? ` Google Sheet 동기화 실패: ${sheetSync.message ?? ""}`
+              : "";
       if (insertedCount > 0) {
         setMessageDialogStatus(`${insertedCount}명에게 보낼 메시지를 예약했습니다.`);
       } else {
         setMessageDialogStatus(
           "데모 신청자는 화면에서만 확인됩니다. 실제 신청자 데이터에서는 예약 메시지로 저장됩니다.",
         );
+      }
+      if (sheetMessage) {
+        setMessageDialogStatus((currentMessage) => `${currentMessage}${sheetMessage}`);
       }
       setCheckedApplicationIds((currentIds) =>
         currentIds.filter((id) => !messageRecipientIds.includes(id)),

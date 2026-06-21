@@ -151,6 +151,9 @@ function HostWorkspaceSidebar({ sidebarHeight }: { sidebarHeight: string }) {
   const messagePanel = searchParams.get("panel");
   const messageStatus = searchParams.get("status");
   const messageView = searchParams.get("view");
+  const activeWorkspaceTab = pathname.startsWith("/host/channels")
+    ? "channel"
+    : "host";
   const onMessagesPage = pathname === "/host/messages";
   const onFormsPage = pathname === "/host/forms" || pathname.startsWith("/host/forms/");
   const onSettingsPage = pathname === "/host/settings";
@@ -181,84 +184,81 @@ function HostWorkspaceSidebar({ sidebarHeight }: { sidebarHeight: string }) {
               />
             </div>
             <div className="flex h-[3.194vw] min-h-[46px] items-end border-b border-[#D9D9D9] pt-[0.833vw] text-center">
-              <Link
-                className="flex h-[2.361vw] min-h-[34px] flex-1 items-center justify-center border-b-2 border-[#FF9A3D] pb-[0.556vw] pt-[0.347vw] text-[var(--host-14)] font-medium leading-[1.253] text-[#FE701E]"
+              <HostWorkspaceSwitchTab
+                active={activeWorkspaceTab === "host"}
                 href="/host"
-              >
-                호스트
-              </Link>
+                label="호스트"
+              />
               <span className="mb-[0.417vw] h-[1.528vw] min-h-[22px] w-px bg-[#D9D9D9]" />
-              <Link
-                className="flex h-[2.361vw] min-h-[34px] flex-1 items-center justify-center py-[0.556vw] text-[var(--host-14)] font-normal leading-[1.253] text-[#CAC4BC] transition hover:text-[#FE701E]"
-                href="/host/villages"
-              >
-                로컬
-              </Link>
+              <HostWorkspaceSwitchTab
+                active={activeWorkspaceTab === "channel"}
+                href="/host/channels/settings"
+                label="채널"
+              />
               <span className="mb-[0.417vw] h-[1.528vw] min-h-[22px] w-px bg-[#D9D9D9]" />
-              <Link
-                className="flex h-[2.361vw] min-h-[34px] flex-1 items-center justify-center py-[0.556vw] text-[var(--host-14)] font-normal leading-[1.253] text-[#CAC4BC] transition hover:text-[#FE701E]"
-                href="/admin"
-              >
-                관리자
-              </Link>
+              <HostWorkspaceSwitchTab href="/admin" label="관리자" />
             </div>
           </section>
 
-          <nav className="mt-[0.833vw] px-[0.833vw] text-[#5B3A29]">
-            <section className="flex flex-col gap-[0.417vw]">
-              <Link
-                className="block w-full text-[var(--host-14)] font-semibold leading-[1.253]"
-                href="/host"
-              >
-                내 프로그램
-              </Link>
-              <div className="flex w-full flex-col gap-[3px] border-b-[0.8px] border-[#6D7A8A] pb-[0.833vw] pl-[0.417vw]">
-                <HostSidebarSubLink href="/host?status=open" label="오픈 프로그램" />
-                <HostSidebarSubLink href="/host?status=upcoming" label="예정 프로그램" />
-                <HostSidebarSubLink href="/host?status=closed" label="마감 프로그램" />
-              </div>
-            </section>
-            <div className="mt-[0.903vw] grid gap-[0.903vw]">
-              <section className="flex flex-col gap-[6px]">
-                <p
-                  className={`text-[var(--host-14)] leading-[1.253] ${
-                    onMessagesPage ? "font-semibold" : "font-normal"
-                  }`}
+          {activeWorkspaceTab === "channel" ? (
+            <HostChannelSidebarNav pathname={pathname} />
+          ) : (
+            <nav className="mt-[0.833vw] px-[0.833vw] text-[#5B3A29]">
+              <section className="flex flex-col gap-[0.417vw]">
+                <Link
+                  className="block w-full text-[var(--host-14)] font-semibold leading-[1.253]"
+                  href="/host"
                 >
-                  메세지
-                </p>
+                  내 프로그램
+                </Link>
                 <div className="flex w-full flex-col gap-[3px] border-b-[0.8px] border-[#6D7A8A] pb-[0.833vw] pl-[0.417vw]">
-                  <HostSidebarSubLink
-                    active={ongoingMessagesActive}
-                    href="/host/messages"
-                    label="진행 중인 메세지"
-                  />
-                  <HostSidebarSubLink
-                    active={endedMessagesActive}
-                    href="/host/messages?view=ended"
-                    label="종료된 메세지"
-                  />
+                  <HostSidebarSubLink href="/host?status=open" label="오픈 프로그램" />
+                  <HostSidebarSubLink href="/host?status=upcoming" label="예정 프로그램" />
+                  <HostSidebarSubLink href="/host?status=closed" label="마감 프로그램" />
                 </div>
               </section>
-              <HostSidebarRootLink
-                active={onFormsPage}
-                href="/host/forms"
-                label="신청서 양식"
-              />
-              <HostSidebarRootLink
-                active={onSettingsPage}
-                href="/host/settings"
-                label="설정"
-              />
-            </div>
-          </nav>
+              <div className="mt-[0.903vw] grid gap-[0.903vw]">
+                <section className="flex flex-col gap-[6px]">
+                  <p
+                    className={`text-[var(--host-14)] leading-[1.253] ${
+                      onMessagesPage ? "font-semibold" : "font-normal"
+                    }`}
+                  >
+                    메세지
+                  </p>
+                  <div className="flex w-full flex-col gap-[3px] border-b-[0.8px] border-[#6D7A8A] pb-[0.833vw] pl-[0.417vw]">
+                    <HostSidebarSubLink
+                      active={ongoingMessagesActive}
+                      href="/host/messages"
+                      label="진행 중인 메세지"
+                    />
+                    <HostSidebarSubLink
+                      active={endedMessagesActive}
+                      href="/host/messages?view=ended"
+                      label="종료된 메세지"
+                    />
+                  </div>
+                </section>
+                <HostSidebarRootLink
+                  active={onFormsPage}
+                  href="/host/forms"
+                  label="신청서 양식"
+                />
+                <HostSidebarRootLink
+                  active={onSettingsPage}
+                  href="/host/settings"
+                  label="설정"
+                />
+              </div>
+            </nav>
+          )}
         </div>
       </div>
     </aside>
   );
 }
 
-function HostSidebarRootLink({
+function HostWorkspaceSwitchTab({
   active = false,
   href,
   label,
@@ -269,10 +269,71 @@ function HostSidebarRootLink({
 }) {
   return (
     <Link
+      className={`flex h-[2.361vw] min-h-[34px] flex-1 items-center justify-center pb-[0.556vw] pt-[0.347vw] text-[var(--host-14)] leading-[1.253] transition ${
+        active
+          ? "border-b-2 border-[#FF9A3D] font-medium text-[#FE701E]"
+          : "font-normal text-[#CAC4BC] hover:text-[#FE701E]"
+      }`}
+      href={href}
+    >
+      {label}
+    </Link>
+  );
+}
+
+const channelSidebarItems = [
+  { href: "/host/channels", label: "채널 홈" },
+  { href: "/host/channels/programs", label: "프로그램" },
+  { href: "/host/channels/reviews", label: "후기" },
+  { href: "/host/channels/galleries", label: "갤러리함" },
+  { href: "/host/channels/magazines", label: "매거진함" },
+  { href: "/host/channels/boards", label: "게시판함" },
+  { href: "/host/channels/free", label: "자유함" },
+  { href: "/host/channels/menu", label: "+메뉴 설정", muted: true },
+];
+
+function HostChannelSidebarNav({ pathname }: { pathname: string }) {
+  return (
+    <nav className="mt-[0.833vw] px-[0.833vw] text-[#5B3A29]">
+      <section className="flex flex-col gap-[0.556vw] border-b-[0.8px] border-[#6D7A8A] pb-[0.833vw]">
+        {channelSidebarItems.map((item) => (
+          <HostSidebarRootLink
+            active={pathname === item.href}
+            href={item.href}
+            key={item.href}
+            label={item.label}
+            muted={item.muted}
+          />
+        ))}
+      </section>
+      <div className="mt-[0.903vw]">
+        <HostSidebarRootLink
+          active={pathname === "/host/channels/settings"}
+          href="/host/channels/settings"
+          label="채널 설정"
+        />
+      </div>
+    </nav>
+  );
+}
+
+function HostSidebarRootLink({
+  active = false,
+  href,
+  label,
+  muted = false,
+}: {
+  active?: boolean;
+  href: string;
+  label: string;
+  muted?: boolean;
+}) {
+  return (
+    <Link
       className={`block w-fit rounded-[4px] py-[0.139vw] text-[var(--host-14)] leading-[1.253] transition ${
         active
-          ? "font-semibold text-[#5B3A29]"
-          : "font-normal text-[#5B3A29] hover:text-[#FE701E]"
+          ? `${muted ? "text-[#FE701E]" : "text-[#5B3A29]"} font-semibold`
+          : `${muted ? "text-[var(--host-12)] text-[#8B7A6E]" : "text-[#5B3A29]"} font-normal hover:text-[#FE701E]`
       }`}
       href={href}
     >

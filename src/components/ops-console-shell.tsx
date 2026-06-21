@@ -67,8 +67,8 @@ const navigationByArea: Record<ConsoleArea, NavigationItem[]> = {
       children: [],
     },
     {
-      name: "로컬페이지",
-      href: "/host/villages",
+      name: "채널",
+      href: "/host/channels/settings",
       icon: FolderOpen,
       children: [],
     },
@@ -129,8 +129,8 @@ const navigationByArea: Record<ConsoleArea, NavigationItem[]> = {
       ],
     },
     {
-      name: "로컬페이지 관리",
-      href: "/host/villages",
+      name: "채널 관리",
+      href: "/host/channels/settings",
       icon: Settings,
       children: [
         { name: "호스트센터", href: "/host" },
@@ -184,6 +184,7 @@ export function OpsConsoleShell({
       pathname.startsWith("/host/forms/") ||
       pathname === "/host/messages" ||
       pathname === "/host/programs" ||
+      pathname.startsWith("/host/channels") ||
       pathname === "/host/settings" ||
       /^\/host\/projects\/[^/]+\/?$/u.test(pathname));
 

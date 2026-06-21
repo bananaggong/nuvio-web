@@ -13,6 +13,7 @@ import {
 import {
   deleteHostScheduledMessages,
   listHostScheduledMessages,
+  markHostScheduledMessagesSent,
   scheduleSelectedApplicationMessages,
 } from "@/lib/scheduled-message-db";
 import type {
@@ -150,6 +151,50 @@ export async function DELETE(request: Request) {
   }
 }
 
+export async function PATCH(request: Request) {
+  const auth = await requireHostRole();
+  if (isApiAuthError(auth)) return auth.response;
+
+  const crossOrigin = enforceSameOrigin(request);
+  if (crossOrigin) return crossOrigin;
+
+  const payloadTooLarge = enforceContentLength(request, 16 * 1024);
+  if (payloadTooLarge) return payloadTooLarge;
+
+  const limited = applyRateLimit(request, {
+    key: "host-scheduled-message:mark-sent",
+    limit: 60,
+    windowMs: 15 * 60 * 1000,
+  });
+  if (limited) return limited;
+
+  try {
+    const payload = normalizeManualDispatchCompletionPayload(
+      await request.json().catch(() => ({})),
+    );
+    const villageIds =
+      auth.profile.role === "admin"
+        ? undefined
+        : (await listManageableHostVillageWorkspaces(auth)).map(
+            (workspace) => workspace.villageId,
+          );
+    const result = await markHostScheduledMessagesSent(payload.messageIds, {
+      actorEmail: auth.profile.email,
+      memo: payload.memo,
+      result: payload.result,
+      senderPhone: payload.senderPhone,
+      villageIds,
+    });
+
+    return NextResponse.json({ data: result });
+  } catch (error) {
+    return apiError(
+      error instanceof Error ? error.message : "Failed to update manual dispatch status.",
+      400,
+    );
+  }
+}
+
 function normalizeScheduledMessagePayload(input: unknown): {
   applicationIds: string[];
   channel: MessageChannel;
@@ -205,6 +250,38 @@ function normalizeScheduledMessagePayload(input: unknown): {
   };
 }
 
+function normalizeManualDispatchCompletionPayload(input: unknown): {
+  memo: string;
+  messageIds: string[];
+  result: string;
+  senderPhone: string;
+} {
+  const value =
+    input && typeof input === "object" && !Array.isArray(input)
+      ? (input as Record<string, unknown>)
+      : {};
+  const messageIds = Array.isArray(value.messageIds)
+    ? Array.from(
+        new Set(
+          value.messageIds
+            .map((item) => (typeof item === "string" ? item.trim() : ""))
+            .filter(isUuid),
+        ),
+      )
+    : [];
+
+  if (messageIds.length === 0) {
+    throw new Error("No messages were selected.");
+  }
+
+  return {
+    memo: asShortText(value.memo, 500),
+    messageIds,
+    result: asShortText(value.result, 120) || "업무폰 수동 발송",
+    senderPhone: asShortText(value.senderPhone, 40),
+  };
+}
+
 function asChannel(value: unknown): MessageChannel {
   if (value === "email" || value === "kakao" || value === "sms") return value;
   throw new Error("Invalid message channel.");
@@ -221,8 +298,12 @@ function isValidScheduledFor(value: string): boolean {
   return !Number.isNaN(date.getTime());
 }
 
+function asShortText(value: unknown, maxLength: number): string {
+  return typeof value === "string" ? value.trim().slice(0, maxLength) : "";
+}
+
 function isUuid(value: string): boolean {
-  return /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{12}$/iu.test(
+  return /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/iu.test(
     value,
   );
 }
