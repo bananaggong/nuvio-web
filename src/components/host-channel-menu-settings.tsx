@@ -2,10 +2,7 @@
 
 import { Copy, GripVertical, Plus, Trash2, X } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
-import {
-  HostWorkspaceContent,
-  HostWorkspaceLayout,
-} from "@/components/host-workspace-ui";
+import { HostWorkspaceLayout } from "@/components/host-workspace-ui";
 
 type ChannelMenuKind = "fixed" | "program" | "review" | "gallery" | "magazine" | "board" | "free";
 
@@ -184,14 +181,14 @@ export function HostChannelMenuSettings() {
 
   return (
     <HostWorkspaceLayout sidebarHeight="min-h-[var(--host-1864)]">
-      <HostWorkspaceContent>
-        <div className="w-[var(--host-1118)] max-w-full pt-[var(--host-24)] max-md:w-full max-md:pt-5">
+      <section className="min-w-0 flex-1 overflow-x-auto">
+        <div className="w-full max-w-[var(--host-1230)] pt-[var(--host-24)] max-md:w-full max-md:pt-5">
           <p className="text-[var(--host-12)] font-medium leading-[1.253] text-[#CAC4BC]">
             Channel Manager - Menu Settings
           </p>
 
           <section className="mt-[var(--host-12)] border-b border-[#6D7A8A] bg-white pb-[var(--host-16)]">
-            <div className="flex items-center gap-[var(--host-24)] px-[var(--host-36)] py-[var(--host-20)] max-md:px-0">
+            <div className="flex items-center gap-[var(--host-24)] px-[var(--host-58)] py-[var(--host-20)] max-md:px-0">
               <div className="size-[var(--host-110)] shrink-0 rounded-full bg-[#D9D9D9]" />
               <div className="min-w-0 flex-1">
                 <div className="flex flex-wrap items-center gap-[var(--host-8)]">
@@ -210,7 +207,7 @@ export function HostChannelMenuSettings() {
                 </p>
               </div>
             </div>
-            <nav className="flex h-[var(--host-36)] items-end gap-[var(--host-32)] px-[var(--host-36)] text-[var(--host-12)] font-semibold leading-[1.253] text-[#33241C] max-md:overflow-x-auto max-md:px-0">
+            <nav className="flex h-[var(--host-36)] items-end gap-[var(--host-32)] px-[var(--host-58)] text-[var(--host-12)] font-semibold leading-[1.253] text-[#33241C] max-md:overflow-x-auto max-md:px-0">
               {items.slice(0, 7).map((item) => (
                 <span className="shrink-0" key={item.id}>
                   {item.label}
@@ -219,7 +216,7 @@ export function HostChannelMenuSettings() {
             </nav>
           </section>
 
-          <section className="px-[var(--host-36)] py-[var(--host-34)] max-md:px-0">
+          <section className="px-[var(--host-58)] py-[var(--host-34)] max-md:px-0">
             <h2 className="text-[var(--host-18)] font-medium leading-[1.253] text-[#33241C]">
               메뉴 설정
             </h2>
@@ -272,7 +269,7 @@ export function HostChannelMenuSettings() {
             ) : null}
           </div>
         </div>
-      </HostWorkspaceContent>
+      </section>
 
       {typeDialogOpen ? (
         <SelectMenuTypeDialog
@@ -299,7 +296,7 @@ function ChannelMenuRow({
   onUpdate: (patch: Partial<ChannelMenuItem>) => void;
 }) {
   return (
-    <div className="grid min-h-[var(--host-77)] grid-cols-[var(--host-28)_minmax(0,var(--host-509))_var(--host-110)_var(--host-77)] items-center gap-[var(--host-18)] py-[var(--host-12)] max-lg:grid-cols-[var(--host-28)_minmax(0,1fr)] max-lg:gap-y-[var(--host-8)]">
+    <div className="grid min-h-[var(--host-77)] grid-cols-[var(--host-28)_minmax(0,var(--host-509))_var(--host-110)_1fr] items-center gap-[var(--host-18)] py-[var(--host-12)] max-lg:grid-cols-[var(--host-28)_minmax(0,1fr)] max-lg:gap-y-[var(--host-8)]">
       <span className="grid size-[var(--host-18)] place-items-center rounded-[4px] border border-[#D9D9D9] text-[#CAC4BC]">
         <GripVertical className="size-[var(--host-12)]" strokeWidth={1.8} />
       </span>

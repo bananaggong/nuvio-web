@@ -112,6 +112,7 @@ const hostWorkspaceScaleStyle = {
   "--host-959": "clamp(959px, 66.597vw, 1278.667px)",
   "--host-1118": "clamp(1118px, 77.639vw, 1490.667px)",
   "--host-1158": "clamp(1158px, 80.417vw, 1544px)",
+  "--host-1230": "clamp(1230px, 85.417vw, 1640px)",
   "--host-1261": "clamp(1261px, 87.569vw, 1681.333px)",
   "--host-1794": "clamp(1794px, 124.583vw, 2392px)",
   "--host-1864": "clamp(1864px, 129.444vw, 2485.333px)",
@@ -289,7 +290,7 @@ const channelSidebarItems = [
   { href: "/host/channels/magazines", label: "매거진함" },
   { href: "/host/channels/boards", label: "게시판함" },
   { href: "/host/channels/free", label: "자유함" },
-  { href: "/host/channels/menu", label: "+메뉴 설정", muted: true },
+  { href: "/host/channels/settings", label: "+메뉴 설정", muted: true },
 ];
 
 function HostChannelSidebarNav({ pathname }: { pathname: string }) {
@@ -298,7 +299,7 @@ function HostChannelSidebarNav({ pathname }: { pathname: string }) {
       <section className="flex flex-col gap-[0.556vw] border-b-[0.8px] border-[#6D7A8A] pb-[0.833vw]">
         {channelSidebarItems.map((item) => (
           <HostSidebarRootLink
-            active={pathname === item.href}
+            active={pathname === item.href || (item.href === "/host/channels/settings" && pathname === "/host/channels/menu")}
             href={item.href}
             key={item.href}
             label={item.label}
@@ -308,8 +309,8 @@ function HostChannelSidebarNav({ pathname }: { pathname: string }) {
       </section>
       <div className="mt-[0.903vw]">
         <HostSidebarRootLink
-          active={pathname === "/host/channels/settings"}
-          href="/host/channels/settings"
+          active={pathname === "/host/channels/channel-settings"}
+          href="/host/channels/channel-settings"
           label="채널 설정"
         />
       </div>
