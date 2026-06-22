@@ -111,7 +111,7 @@ export function HostChannelBoards() {
         <div className="w-full max-w-[var(--host-1230)]">
           <ChannelProfileHeader activeLabel="게시판형" channel={channel} publicHref={publicHref} />
 
-          <section className="relative border-b border-[#6D7A8A] pb-[var(--host-34)] pt-[var(--host-76)]">
+          <section className="relative border-b border-[#6D7A8A] pb-[var(--host-30)] pt-[var(--host-62)]">
             <button
               aria-label="게시글 추가"
               className="absolute right-[var(--host-36)] top-[var(--host-40)] size-[var(--host-20)] transition hover:opacity-80"
@@ -128,7 +128,7 @@ export function HostChannelBoards() {
             </div>
           </section>
 
-          <footer className="flex h-[var(--host-72)] items-center gap-[var(--host-12)] border-b border-[#6D7A8A] px-[var(--host-24)]">
+          <footer className="flex h-[var(--host-69)] items-center gap-[var(--host-12)] border-b border-[#6D7A8A] px-[var(--host-24)]">
             <button
               className="h-[var(--host-29)] rounded-[3px] border border-[#6D7A8A] bg-white px-[var(--host-20)] text-[length:var(--host-12)] font-medium leading-[1.253] text-[#6D7A8A] transition hover:border-[#FE701E] hover:text-[#FE701E]"
               onClick={saveDraft}
