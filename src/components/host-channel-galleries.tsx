@@ -179,6 +179,7 @@ export function HostChannelGalleries() {
   const selectedItem =
     items.find((item) => item.id === selectedId) ?? filteredItems[0] ?? items[0];
   const showDetail = viewMode === "stack" && Boolean(selectedItem);
+  const sidebarHeight = showDetail ? "min-h-[var(--host-2260)]" : "min-h-[var(--host-707)]";
 
   function addDraftItem() {
     const now = new Date().toISOString();
@@ -211,45 +212,47 @@ export function HostChannelGalleries() {
   }
 
   return (
-    <HostWorkspaceLayout sidebarHeight="min-h-[var(--host-1158)]">
+    <HostWorkspaceLayout sidebarHeight={sidebarHeight}>
       <section className="min-w-0 flex-1 overflow-x-hidden bg-white">
         <div className="w-full max-w-[var(--host-1230)]">
           <ChannelProfileHeader activeLabel="갤러리형" channel={channel} publicHref={publicHref} />
 
           <section
-            className="relative border-b border-[#6D7A8A] px-[var(--host-36)] pb-[var(--host-16)] pt-[var(--host-34)]"
-            style={{ minHeight: "clamp(930px, 64.583vw, 1240px)" }}
+            className="relative border-b border-[#6D7A8A] pb-[var(--host-16)] pt-[var(--host-24)]"
+            style={{ minHeight: showDetail ? "var(--host-1794)" : "var(--host-450)" }}
           >
             <button
               aria-label="갤러리 게시물 추가"
-              className="absolute right-[var(--host-36)] top-[var(--host-26)] size-[var(--host-20)] transition hover:opacity-80"
+              className="absolute right-[var(--host-37)] top-[var(--host-24)] size-[var(--host-20)] transition hover:opacity-80"
               onClick={addDraftItem}
               type="button"
             >
               <Image alt="" height={24} src={nuvioIcons.channelAddCircle} width={24} />
             </button>
 
-            <GalleryViewTabs
-              activeMode={viewMode}
-              onChange={(mode) => {
-                setViewMode(mode);
-                if (mode === "stack" && !selectedId && filteredItems[0]) {
-                  setSelectedId(filteredItems[0].id);
-                }
-              }}
-            />
-
-            {showDetail ? (
-              <GalleryDetailView item={selectedItem ?? galleryFallbackItems[0]} />
-            ) : (
-              <GalleryGrid
-                items={filteredItems}
-                onSelect={(item) => {
-                  setSelectedId(item.id);
-                  setViewMode("stack");
+            <div className="mx-auto w-[var(--host-1142)] max-w-full">
+              <GalleryViewTabs
+                activeMode={viewMode}
+                onChange={(mode) => {
+                  setViewMode(mode);
+                  if (mode === "stack" && !selectedId && filteredItems[0]) {
+                    setSelectedId(filteredItems[0].id);
+                  }
                 }}
               />
-            )}
+
+              {showDetail ? (
+                <GalleryDetailView item={selectedItem ?? galleryFallbackItems[0]} />
+              ) : (
+                <GalleryGrid
+                  items={filteredItems}
+                  onSelect={(item) => {
+                    setSelectedId(item.id);
+                    setViewMode("stack");
+                  }}
+                />
+              )}
+            </div>
           </section>
 
           <footer className="flex h-[var(--host-72)] items-start gap-[var(--host-12)] border-b border-[#6D7A8A] px-[var(--host-24)] pt-[var(--host-18)]">
@@ -286,11 +289,15 @@ function GalleryViewTabs({
   ];
 
   return (
-    <div className="mx-auto flex h-[var(--host-35)] w-[var(--host-210)] items-center justify-center gap-[var(--host-40)]">
+    <div className="mx-auto flex h-[var(--host-48)] items-start justify-center gap-[var(--host-82)] pt-[var(--host-6)]">
       {tabs.map((tab) => (
         <button
           aria-label={tab.label}
-          className={`size-[var(--host-22)] transition ${
+          className={`${
+            tab.mode === "video"
+              ? "h-[var(--host-22)] w-[var(--host-25)]"
+              : "size-[var(--host-25)]"
+          } transition ${
             activeMode === tab.mode ? "text-[#FF9A3D]" : "text-[#D9D9D9] hover:text-[#CAC4BC]"
           }`}
           key={tab.mode}
@@ -314,21 +321,21 @@ function GalleryGrid({
   const visible = items.length > 0 ? items.slice(0, 5) : galleryFallbackItems.slice(0, 5);
 
   return (
-    <div className="mt-[var(--host-15)] grid grid-cols-5 gap-[var(--host-6)]">
+    <div className="mt-[var(--host-12)] grid w-full grid-cols-[repeat(5,minmax(0,var(--host-222)))] gap-[var(--host-6)]">
       {visible.map((item) => (
         <button
-          className="group min-w-0 text-left"
+          className="group w-[var(--host-222)] min-w-0 text-left"
           key={item.id}
           onClick={() => onSelect(item)}
           type="button"
         >
-          <div className="relative h-[var(--host-235)] overflow-hidden rounded-[4px] bg-[#D9D9D9] transition group-hover:bg-[#CAC4BC]">
+          <div className="relative h-[var(--host-295)] w-[var(--host-222)] overflow-hidden rounded-[4px] bg-[#D9D9D9] transition group-hover:bg-[#CAC4BC]">
             {item.thumbnail ? (
               <Image
                 alt=""
                 className="object-cover opacity-70"
                 fill
-                sizes="(min-width: 1920px) 274px, 206px"
+                sizes="(min-width: 1920px) 296px, 222px"
                 src={item.thumbnail}
               />
             ) : null}
@@ -345,9 +352,11 @@ function GalleryGrid({
               </span>
             ) : null}
           </div>
-          <p className="mt-[var(--host-8)] line-clamp-2 text-[length:var(--host-12)] font-semibold leading-[1.35] text-[#33241C]">
-            {item.title}
-          </p>
+          <div className="mt-[var(--host-8)] px-[var(--host-6)]">
+            <p className="line-clamp-2 w-[var(--host-200)] text-[length:var(--host-14)] font-medium leading-[1.253] text-[#0D0D0C]">
+              {item.title}
+            </p>
+          </div>
         </button>
       ))}
     </div>
