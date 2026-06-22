@@ -22,6 +22,7 @@ Figma designs for this project are authored at a 1440px desktop width. When tran
 - For shared host/channel workspace work, treat the sidebar, header, icon set, and scroll ownership as shared infrastructure. Fix the shared component instead of patching one route when the mismatch can recur elsewhere.
 - After a Figma fidelity fix, run the relevant checks, commit intentionally, push `main`, and leave the worktree clean unless the user explicitly asks to keep changes local.
 - For host/channel workspace routes, include `npm.cmd run verify:overflow -- /target/route` in the verification pass so browser-level horizontal scroll regressions are caught before screenshots or deployment.
+- When a user reports a visual scrollbar from `nuvio.kr` but local overflow checks pass, verify both states explicitly: run the overflow script locally, then run it against production with `NUVIO_VERIFY_BASE_URL=https://nuvio.kr` after the deployment is available. Do not assume a local pass means the user-facing deployment has caught up.
 
 ## Repeat-prevention checklist
 
@@ -30,7 +31,9 @@ Before finishing any Figma-derived screen, confirm these points explicitly:
 - The exact Figma frame was inspected and the implementation was matched at 1440px before scaling to 1920px.
 - No Figma frame labels, debug headings, helper explanations, or placeholder copy leaked into the product UI.
 - The page has no unintended browser or inner horizontal scrollbar; `scrollWidth <= clientWidth` must hold for 1440px and 1920px.
+- If a browser horizontal scrollbar appears only after vertical scrolling, inspect the full document at the scrolled position and the bottom edge; fixed/sticky footers and scaled sidebar + content sums are common causes.
 - Shared desktop shells must not use `100vw`/`100dvw` as the content width cap. Prefer `w-full`, `max-w-full`, `min-w-0`, and clipped overflow so vertical scrollbar width cannot create a second horizontal scrollbar.
+- Avoid solving Figma workspace overflow by hiding it on `html`/`body` first. Fix the owning width, usually the shared sidebar/content shell or a route root with fixed/scaled width.
 - Host/channel/program navigation changes were made in shared components when they affect multiple routes.
 - The host/channel sidebar uses the shared shell and only switches the active section/menu, rather than creating a second sidebar variant.
 - Icons used in Figma-matched UI come from `public/icons/nuvio` via `src/components/icons/nuvio-icons.ts`; export/register missing Figma icons instead of approximating them.

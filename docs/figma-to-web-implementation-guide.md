@@ -180,6 +180,24 @@ lists, tables, or modal lists.
   creates an unwanted bottom scrollbar.
 - If a page has a browser scrollbar and an inner horizontal scrollbar at the
   same time, the layout is not done.
+- Do not make `overflow-x: hidden` on `html` or `body` the first fix. It can
+  hide the symptom while leaving the scaled frame wider than the viewport.
+  Correct the route root, shared shell, fixed footer, or content max-width that
+  owns the extra pixels.
+- When local verification passes but a production screenshot still shows a
+  scrollbar, treat it as a deployment-state question first. Run the same
+  overflow script against both targets:
+
+```powershell
+npm.cmd run verify:overflow -- /host/channels/settings
+$env:NUVIO_VERIFY_BASE_URL="https://nuvio.kr"; npm.cmd run verify:overflow -- /host/channels/settings
+Remove-Item Env:\NUVIO_VERIFY_BASE_URL
+```
+
+- Also inspect the bottom of long pages after scrolling. Scaled fixed footers,
+  absolute-positioned controls, and route roots that use a 1440-to-1920 content
+  width without accounting for the shared sidebar are the usual places where a
+  second scrollbar appears.
 
 ## Typography
 
