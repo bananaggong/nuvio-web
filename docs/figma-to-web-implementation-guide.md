@@ -194,6 +194,10 @@ $env:NUVIO_VERIFY_BASE_URL="https://nuvio.kr"; npm.cmd run verify:overflow -- /h
 Remove-Item Env:\NUVIO_VERIFY_BASE_URL
 ```
 
+- `npm.cmd run verify:overflow` checks each route at 1440px and 1920px, then
+  probes top, middle, and bottom scroll positions. It also fails when an
+  unintended inner element owns a horizontal scrollbar. Do not weaken this
+  script to only check the initial viewport.
 - Also inspect the bottom of long pages after scrolling. Scaled fixed footers,
   absolute-positioned controls, and route roots that use a 1440-to-1920 content
   width without accounting for the shared sidebar are the usual places where a
