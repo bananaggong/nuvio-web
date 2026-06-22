@@ -8,6 +8,7 @@
     "start": "next start",
     "lint": "eslint",
     "verify:host-program-flow": "node scripts/verify-host-program-flow.mjs",
+    "verify:overflow": "node scripts/verify-route-overflow.mjs",
     "db:generate": "drizzle-kit generate",
     "db:push": "drizzle-kit push",
     "db:studio": "drizzle-kit studio",

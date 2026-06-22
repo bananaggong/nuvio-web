@@ -245,6 +245,9 @@ A Figma-derived page is done only when:
 - Figma icons are exported and registered, not approximated.
 - 1440px and 1920px browser checks pass.
 - There is no unwanted horizontal overflow.
+- For routes that use the shared host/channel workspace shell, run
+  `npm.cmd run verify:overflow -- /target/route` before committing. The default
+  route is `/host/channels/settings`.
 - Shared layout mismatches are fixed in shared components.
 - Lint, diff check, and required build checks pass.
 - Changes are committed, pushed, and the worktree is clean.
