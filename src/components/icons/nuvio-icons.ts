@@ -27,6 +27,7 @@ export const nuvioIcons = {
   map: "/icons/nuvio/map.svg",
   menuReorder: "/icons/nuvio/menu-reorder.svg",
   message: "/icons/nuvio/message.svg",
+  modalClose: "/icons/nuvio/modal-close.svg",
   moreHorizontal: "/icons/nuvio/more-horizontal.svg",
   notificationDot: "/icons/nuvio/notification-dot.svg",
   phone: "/icons/nuvio/phone.svg",

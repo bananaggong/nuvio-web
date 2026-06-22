@@ -1,7 +1,7 @@
 "use client";
 
 import Image from "next/image";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import { nuvioIcons } from "@/components/icons/nuvio-icons";
 import { HostWorkspaceLayout } from "@/components/host-workspace-ui";
 
@@ -120,11 +120,6 @@ export function HostChannelMenuSettings() {
   const [typeDialogOpen, setTypeDialogOpen] = useState(false);
   const [saved, setSaved] = useState(false);
 
-  const customItemCount = useMemo(
-    () => items.filter((item) => !item.locked && item.kind !== "fixed").length,
-    [items],
-  );
-
   useEffect(() => {
     try {
       const stored = window.localStorage.getItem(storageKey);
@@ -208,7 +203,13 @@ export function HostChannelMenuSettings() {
                   호스트 채널 소개내용
                 </p>
                 <p className="mt-[var(--host-10)] text-[length:var(--host-16)] font-medium leading-[1.253] text-[#6D7A8A]">
-                  <span className="mr-[var(--host-8)] text-[#FE701E]">ↄ</span>
+                  <Image
+                    alt=""
+                    className="mr-[var(--host-8)] inline-block size-[var(--host-16)] align-[-0.12em]"
+                    height={16}
+                    src={nuvioIcons.channelLink}
+                    width={16}
+                  />
                   이름&nbsp;&nbsp; 연결링크
                 </p>
               </div>
@@ -253,11 +254,11 @@ export function HostChannelMenuSettings() {
             </span>
             <button
               aria-label="메뉴 추가"
-              className="mt-[var(--host-5)] grid size-[var(--host-28)] place-items-center rounded-full bg-[#6D7A8A] text-[length:var(--host-24)] font-medium leading-none text-white transition hover:bg-[#FE701E]"
+              className="mt-[var(--host-5)] grid size-[var(--host-28)] place-items-center transition hover:opacity-80"
               onClick={openTypeDialog}
               type="button"
             >
-              +
+              <Image alt="" height={24} src={nuvioIcons.channelAddCircle} width={24} />
             </button>
           </div>
 
@@ -280,7 +281,6 @@ export function HostChannelMenuSettings() {
 
       {typeDialogOpen ? (
         <SelectMenuTypeDialog
-          customItemCount={customItemCount}
           onClose={() => setTypeDialogOpen(false)}
           onCreate={createMenuItem}
           onSelect={setSelectedKind}
@@ -373,13 +373,11 @@ function ChannelMenuRow({
 }
 
 function SelectMenuTypeDialog({
-  customItemCount,
   onClose,
   onCreate,
   onSelect,
   selectedKind,
 }: {
-  customItemCount: number;
   onClose: () => void;
   onCreate: () => void;
   onSelect: (kind: ChannelMenuKind) => void;
@@ -388,10 +386,10 @@ function SelectMenuTypeDialog({
   return (
     <div
       aria-modal="true"
-      className="fixed inset-0 z-[90] bg-[#F3F3F3]/80 px-[var(--host-24)] py-[var(--host-40)]"
+      className="fixed inset-0 z-[90] bg-[#F3F3F3] px-[var(--host-24)] py-[var(--host-24)]"
       role="dialog"
     >
-      <div className="ml-[var(--host-48)] mt-[var(--host-16)] w-[var(--host-427)] max-w-[calc(100vw-48px)]">
+      <div className="ml-[var(--host-48)] w-[var(--host-427)] max-w-[calc(100vw-48px)]">
         <p className="text-[length:var(--host-12)] font-medium leading-[1.253] text-[#CAC4BC]">
           Select Menu Type
         </p>
@@ -399,13 +397,11 @@ function SelectMenuTypeDialog({
           <div className="flex justify-end">
             <button
               aria-label="닫기"
-              className="grid size-[var(--host-20)] place-items-center text-[#0D0D0C] transition hover:text-[#FE701E]"
+              className="grid size-[var(--host-20)] place-items-center transition hover:opacity-70"
               onClick={onClose}
               type="button"
             >
-              <span aria-hidden="true" className="text-[length:var(--host-18)] leading-none">
-                ×
-              </span>
+              <Image alt="" height={20} src={nuvioIcons.modalClose} width={20} />
             </button>
           </div>
           <p className="text-[length:var(--host-12)] font-semibold leading-[1.253] text-[#0D0D0C]">
@@ -437,10 +433,7 @@ function SelectMenuTypeDialog({
               );
             })}
           </div>
-          <div className="mt-[var(--host-16)] flex items-center justify-between gap-[var(--host-12)]">
-            <span className="text-[length:var(--host-10)] font-normal leading-[1.253] text-[#FE701E]">
-              현재 추가 메뉴 {customItemCount}개
-            </span>
+          <div className="mt-[var(--host-16)] flex items-center justify-end">
             <button
               className="inline-flex h-[var(--host-29)] items-center justify-center rounded-[4px] bg-[#FE701E] px-[var(--host-16)] text-[length:var(--host-11)] font-medium leading-[1.253] text-white"
               onClick={onCreate}
