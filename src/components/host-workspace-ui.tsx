@@ -168,6 +168,7 @@ const hostWorkspaceScaleStyle = {
   "--host-1864": "clamp(1864px, 129.444vw, 2485.333px)",
   "--host-2053": "clamp(2053px, 142.569vw, 2737.333px)",
   "--host-2260": "clamp(2260px, 156.944vw, 3013.333px)",
+  "--host-3942": "clamp(3942px, 273.75vw, 5256px)",
 } as CSSProperties;
 
 export type HostProgramListItem = HostProgramOverview & {

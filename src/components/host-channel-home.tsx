@@ -181,7 +181,7 @@ export function HostChannelHome() {
   const visiblePrograms = programs.slice(0, 8);
 
   return (
-    <HostWorkspaceLayout sidebarHeight="min-h-[var(--host-1864)]">
+    <HostWorkspaceLayout sidebarHeight="min-h-[var(--host-3942)]">
       <section className="min-w-0 flex-1 overflow-x-hidden bg-white">
         <div className="w-full max-w-[var(--host-1230)]">
           <section className="grid h-[var(--host-386)] place-items-center border-b border-[#D9D9D9] bg-[#F9F9F9]">
@@ -342,11 +342,24 @@ export function HostChannelHome() {
                 <br />
                 바뀌두어 섹션 사이 여백(40px)으로 사용 가능해요
               </div>
-              <div className="mt-[var(--host-10)] rounded-[8px] border border-[#F3E2D5] bg-white p-[var(--host-18)]">
+              <div className="relative mt-[var(--host-10)] rounded-[8px] border border-[#F3E2D5] bg-white px-[var(--host-18)] pb-[var(--host-18)] pt-[var(--host-16)]">
                 <p className="text-[length:var(--host-14)] font-semibold leading-[1.253] text-[#5B3A29]">
                   블록 편집
                 </p>
-                <div className="mt-[var(--host-18)] h-[var(--host-194)] rounded-[4px] border border-[#F3C3A5] bg-[#FFFDFB] p-[var(--host-18)] text-[length:var(--host-12)] font-medium leading-[1.65] text-[#0D0D0C]">
+                <button
+                  aria-label="close block editor"
+                  className="absolute right-[var(--host-18)] top-[var(--host-16)] size-[var(--host-18)]"
+                  type="button"
+                >
+                  <Image alt="" height={18} src={nuvioIcons.modalClose} width={18} />
+                </button>
+                <div className="mt-[var(--host-16)] text-[length:var(--host-11)] font-medium leading-[1.55] text-[#6D7A8A]">
+                  <p>이미지 업로드 시</p>
+                  <p>가로 최대 사이즈 초과 시 자동 축소</p>
+                  <p>JPG, PNG, WebP, GIF 파일을 5MB 이하로 업로드할 수 있어요</p>
+                </div>
+                <ChannelEditorToolbar />
+                <div className="mt-[var(--host-8)] h-[var(--host-480)] rounded-[4px] border border-[#F3C3A5] bg-[#FFFDFB] px-[var(--host-20)] py-[var(--host-24)] text-[length:var(--host-20)] font-semibold leading-[1.55] text-[#0D0D0C]">
                   지정 폰트 : Pretendard
                   <br />
                   <br />
@@ -358,6 +371,14 @@ export function HostChannelHome() {
                   <br />
                   - 본문 : 14
                 </div>
+                <div className="mt-[var(--host-10)] flex justify-end">
+                  <button
+                    className="inline-flex h-[var(--host-26)] min-w-[var(--host-48)] items-center justify-center rounded-[4px] bg-[#FE701E] px-[var(--host-12)] text-[length:var(--host-11)] font-semibold leading-[1.253] text-white"
+                    type="button"
+                  >
+                    발행
+                  </button>
+                </div>
               </div>
               <div className="mt-[var(--host-28)] flex flex-col items-center gap-[var(--host-6)] text-[length:var(--host-11)] font-medium text-[#6D7A8A]">
                 <span>블록 추가</span>
@@ -368,6 +389,69 @@ export function HostChannelHome() {
         </div>
       </section>
     </HostWorkspaceLayout>
+  );
+}
+
+function ChannelEditorToolbar() {
+  const iconButtons = [
+    nuvioIcons.channelUploadMuted,
+  ];
+
+  return (
+    <div className="mt-[var(--host-18)] flex h-[var(--host-38)] items-center gap-[var(--host-10)] text-[length:var(--host-15)] font-semibold leading-[1.253] text-[#6D7A8A]">
+      {iconButtons.map((icon) => (
+        <button
+          className="grid size-[var(--host-28)] place-items-center rounded-[4px] transition hover:bg-[#FFF6EC]"
+          key={icon}
+          type="button"
+        >
+          <Image alt="" className="size-[var(--host-20)] opacity-90" height={20} src={icon} width={20} />
+        </button>
+      ))}
+      <button
+        className="grid size-[var(--host-28)] place-items-center rounded-[4px] bg-[#FF9A3D] text-[length:var(--host-16)] font-bold leading-none text-white"
+        type="button"
+      >
+        T
+      </button>
+      <button
+        className="inline-flex h-[var(--host-32)] min-w-[var(--host-116)] items-center justify-between rounded-[4px] border border-[#D9D9D9] bg-white px-[var(--host-12)] text-[length:var(--host-18)] text-[#6D7A8A]"
+        type="button"
+      >
+        제목
+        <Image alt="" className="size-[var(--host-12)]" height={12} src={nuvioIcons.formSelectDropdown} width={12} />
+      </button>
+      <span className="text-[#6D7A8A]">R</span>
+      <span className="text-[#FE701E]">M</span>
+      <span className="text-[#6D7A8A]">B</span>
+      <span className="mx-[var(--host-2)] size-[var(--host-18)] rotate-45 rounded-[2px] bg-[#6D7A8A]" />
+      <span className="mx-[var(--host-2)] size-[var(--host-16)] bg-[#0D0D0C]" />
+      <span className="mx-[var(--host-2)] size-[var(--host-16)] bg-[#D9D9D9]" />
+      <span className="h-[var(--host-28)] w-px bg-[#D9D9D9]" />
+      <button className="h-[var(--host-28)] px-[var(--host-4)] text-[length:var(--host-18)] font-bold text-[#6D7A8A]" type="button">
+        T
+      </button>
+      <button className="h-[var(--host-28)] px-[var(--host-4)] text-[length:var(--host-18)] font-bold" type="button">
+        +
+      </button>
+      <button className="h-[var(--host-28)] px-[var(--host-4)] text-[length:var(--host-18)] font-bold" type="button">
+        ▇
+      </button>
+      <span className="h-[var(--host-28)] w-px bg-[#D9D9D9]" />
+      <button className="h-[var(--host-28)] px-[var(--host-4)] text-[length:var(--host-18)] font-bold text-[#FE701E]" type="button">
+        ≡
+      </button>
+      <button className="h-[var(--host-28)] px-[var(--host-4)] text-[length:var(--host-18)] font-bold" type="button">
+        =
+      </button>
+      <button className="h-[var(--host-28)] px-[var(--host-4)] text-[length:var(--host-18)] font-bold" type="button">
+        ||
+      </button>
+      <span className="h-[var(--host-28)] w-px bg-[#D9D9D9]" />
+      <button className="grid size-[var(--host-28)] place-items-center rounded-[5px] border border-[#6D7A8A] text-[length:var(--host-14)] font-bold text-[#6D7A8A]" type="button">
+        @
+      </button>
+    </div>
   );
 }
 
