@@ -5,7 +5,7 @@ import { useEffect, useState } from "react";
 import { nuvioIcons } from "@/components/icons/nuvio-icons";
 import { HostWorkspaceLayout } from "@/components/host-workspace-ui";
 
-type ChannelMenuKind = "fixed" | "program" | "review" | "gallery" | "magazine" | "board" | "free";
+type ChannelMenuKind = "fixed" | "program" | "gallery" | "magazine" | "board" | "free";
 
 type ChannelMenuItem = {
   description: string;
@@ -21,6 +21,10 @@ type MenuTypeOption = {
   label: string;
 };
 
+type StoredChannelMenuItem = Omit<ChannelMenuItem, "kind"> & {
+  kind: ChannelMenuKind | "review" | string;
+};
+
 const defaultMenuItems: ChannelMenuItem[] = [
   {
     description: "채널 메인 화면에 쓰는 위치 이동은 불가능해요",
@@ -34,13 +38,6 @@ const defaultMenuItems: ChannelMenuItem[] = [
     id: "program",
     kind: "program",
     label: "프로그램",
-    locked: true,
-  },
-  {
-    description: "호스트가 오픈한 모든 프로그램의 후기가 표시돼요",
-    id: "review",
-    kind: "review",
-    label: "후기",
     locked: true,
   },
   {
@@ -101,7 +98,6 @@ const typeLabelByKind: Record<ChannelMenuKind, string> = {
   gallery: "갤러리 형",
   magazine: "매거진 형",
   program: "기본 메뉴",
-  review: "기본 메뉴",
 };
 
 const storageKey = "nuvio-channel-menu-settings";
@@ -124,9 +120,12 @@ export function HostChannelMenuSettings() {
     try {
       const stored = window.localStorage.getItem(storageKey);
       if (!stored) return;
-      const parsed = JSON.parse(stored) as ChannelMenuItem[];
+      const parsed = JSON.parse(stored) as StoredChannelMenuItem[];
       if (Array.isArray(parsed) && parsed.length > 0) {
-        window.setTimeout(() => setItems(parsed), 0);
+        const normalized = parsed.filter((item): item is ChannelMenuItem =>
+          ["fixed", "program", "gallery", "magazine", "board", "free"].includes(item.kind),
+        );
+        window.setTimeout(() => setItems(normalized.length > 0 ? normalized : defaultMenuItems), 0);
       }
     } catch {
       // Local draft persistence is optional for this first menu editor frame.
