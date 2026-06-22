@@ -215,11 +215,9 @@ function HostWorkspaceSidebar({ sidebarHeight }: { sidebarHeight: string }) {
               <span className="mb-[0.417vw] h-[1.528vw] min-h-[22px] w-px bg-[#D9D9D9]" />
               <HostWorkspaceSwitchTab
                 active={activeWorkspaceTab === "channel"}
-                href="/host/channels/settings"
+                href="/host/channels"
                 label="채널"
               />
-              <span className="mb-[0.417vw] h-[1.528vw] min-h-[22px] w-px bg-[#D9D9D9]" />
-              <HostWorkspaceSwitchTab href="/admin" label="관리자" />
             </div>
           </section>
 
