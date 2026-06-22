@@ -44,8 +44,8 @@ export const channelGuestScaleRootStyle = {
 } as CSSProperties;
 
 const profileStyle = {
-  maxWidth: `calc(100% - ${px(304)})`,
-  width: px(1136),
+  maxWidth: `calc(100% - ${px(336)})`,
+  width: px(1104),
 } as CSSProperties;
 
 export const channelGuestContentStyle = {

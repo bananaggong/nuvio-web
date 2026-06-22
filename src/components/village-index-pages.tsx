@@ -4,9 +4,9 @@ import { ArrowRight, CalendarDays, MapPin, Quote } from "lucide-react";
 import { BoseongAboutContent } from "@/components/boseong-intro-section";
 import {
   BoseongFigmaAboutPage,
-  BoseongFigmaNoticePage,
   BoseongFigmaReviewsPage,
 } from "@/components/boseong-figma-site";
+import { ChannelGuestBoardPage } from "@/components/channel-guest-board";
 import { ChannelGuestProgramsPage } from "@/components/channel-guest-programs";
 import { NuvioEmptyState } from "@/components/nuvio-empty-state";
 import { StatusBadge } from "@/components/status-badge";
@@ -141,7 +141,6 @@ export function VillageAboutIndexPage({
 }
 
 export function VillageNoticeIndexPage({
-  pageSections,
   programs,
   village,
 }: {
@@ -152,14 +151,7 @@ export function VillageNoticeIndexPage({
   const notices = buildVillageNotices(village, programs);
 
   if (village.slug === "boseong") {
-    return (
-      <BoseongFigmaNoticePage
-        notices={notices}
-        pageSections={pageSections}
-        programs={programs}
-        village={village}
-      />
-    );
+    return <ChannelGuestBoardPage notices={notices} village={village} />;
   }
 
   return (
