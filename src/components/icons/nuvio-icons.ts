@@ -40,6 +40,7 @@ export const nuvioIcons = {
   quantityPlus: "/icons/nuvio/quantity-plus.svg",
   quantityPlusDisabled: "/icons/nuvio/quantity-plus-disabled.svg",
   review: "/icons/nuvio/review.svg",
+  search: "/icons/nuvio/search.svg",
   settings: "/icons/nuvio/settings.svg",
   share: "/icons/nuvio/share.svg",
   user: "/icons/nuvio/user.svg",
