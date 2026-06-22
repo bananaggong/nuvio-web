@@ -216,7 +216,10 @@ export function HostChannelGalleries() {
         <div className="w-full max-w-[var(--host-1230)]">
           <ChannelProfileHeader activeLabel="갤러리형" channel={channel} publicHref={publicHref} />
 
-          <section className="relative border-b border-[#6D7A8A] px-[var(--host-36)] pb-[var(--host-16)] pt-[var(--host-34)]">
+          <section
+            className="relative border-b border-[#6D7A8A] px-[var(--host-36)] pb-[var(--host-16)] pt-[var(--host-34)]"
+            style={{ minHeight: "clamp(930px, 64.583vw, 1240px)" }}
+          >
             <button
               aria-label="갤러리 게시물 추가"
               className="absolute right-[var(--host-36)] top-[var(--host-26)] size-[var(--host-20)] transition hover:opacity-80"
@@ -249,7 +252,7 @@ export function HostChannelGalleries() {
             )}
           </section>
 
-          <footer className="flex h-[var(--host-72)] items-center gap-[var(--host-12)] border-b border-[#6D7A8A] px-[var(--host-24)]">
+          <footer className="flex h-[var(--host-72)] items-start gap-[var(--host-12)] border-b border-[#6D7A8A] px-[var(--host-24)] pt-[var(--host-18)]">
             <button
               className="h-[var(--host-29)] rounded-[3px] border border-[#6D7A8A] bg-white px-[var(--host-20)] text-[length:var(--host-12)] font-medium leading-[1.253] text-[#6D7A8A] transition hover:border-[#FE701E] hover:text-[#FE701E]"
               onClick={saveDraft}
