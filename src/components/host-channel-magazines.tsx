@@ -106,12 +106,12 @@ export function HostChannelMagazines() {
   }
 
   return (
-    <HostWorkspaceLayout sidebarHeight="min-h-[var(--host-1158)]">
+    <HostWorkspaceLayout sidebarHeight="min-h-[var(--host-2053)]">
       <section className="min-w-0 flex-1 overflow-x-hidden bg-white">
         <div className="w-full max-w-[var(--host-1230)]">
           <ChannelProfileHeader activeLabel="매거진형" channel={channel} publicHref={publicHref} />
 
-          <section className="relative border-b border-[#6D7A8A] px-[var(--host-58)] pb-[var(--host-42)] pt-[var(--host-46)]">
+          <section className="relative min-h-[var(--host-1806)] border-b border-[#6D7A8A] pb-[var(--host-8)] pt-[var(--host-62)]">
             <button
               aria-label="매거진 게시물 추가"
               className="absolute right-[var(--host-36)] top-[var(--host-34)] size-[var(--host-20)] transition hover:opacity-80"
@@ -121,7 +121,7 @@ export function HostChannelMagazines() {
               <Image alt="" height={24} src={nuvioIcons.channelAddCircle} width={24} />
             </button>
 
-            <div className="grid grid-cols-2 gap-x-[var(--host-36)] gap-y-[var(--host-45)] pr-[var(--host-16)]">
+            <div className="mx-auto grid w-[var(--host-1103)] max-w-full grid-cols-[repeat(2,var(--host-530))] gap-x-[var(--host-43)] gap-y-[var(--host-43)]">
               {items.map((item) => (
                 <MagazineCard item={item} key={item.id} />
               ))}
@@ -150,23 +150,23 @@ export function HostChannelMagazines() {
 
 function MagazineCard({ item }: { item: ChannelMagazine }) {
   return (
-    <article className="min-w-0 overflow-hidden rounded-[8px] bg-[#FCFCFC]">
-      <div className="relative h-[var(--host-270)] w-full overflow-hidden rounded-t-[8px] bg-[#D9D9D9]">
+    <article className="h-[var(--host-550)] w-[var(--host-530)] min-w-0 overflow-hidden rounded-[8px] bg-[#FCFCFC]">
+      <div className="relative h-[var(--host-368)] w-full overflow-hidden rounded-t-[8px] bg-[#D9D9D9]">
         {item.image ? (
           <Image
             alt=""
             className="object-cover opacity-70"
             fill
-            sizes="(min-width: 1920px) 564px, 423px"
+            sizes="(min-width: 1920px) 707px, 530px"
             src={item.image}
           />
         ) : null}
       </div>
-      <div className="flex h-[var(--host-95)] flex-col items-center justify-center rounded-b-[8px] bg-[#FCFCFC] text-center">
-        <h2 className="text-[length:var(--host-16)] font-semibold leading-[1.253] text-[#5B3A29]">
+      <div className="mt-[var(--host-30)] rounded-b-[8px] bg-[#FCFCFC] text-center">
+        <h2 className="text-[length:var(--host-20)] font-semibold leading-[1.253] text-[#5B3A29]">
           {item.title}
         </h2>
-        <p className="mt-[var(--host-12)] text-[length:var(--host-12)] font-medium leading-[1.253] text-[#CAC4BC]">
+        <p className="mt-[var(--host-13)] text-[length:var(--host-14)] font-medium leading-[1.253] text-[#CAC4BC]">
           {formatMagazineDate(item.createdAt)}
         </p>
       </div>
