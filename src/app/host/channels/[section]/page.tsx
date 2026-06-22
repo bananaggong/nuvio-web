@@ -1,7 +1,8 @@
 import type { Metadata } from "next";
+import { HostChannelGalleries } from "@/components/host-channel-galleries";
+import { HostChannelPlaceholder } from "@/components/host-channel-placeholder";
 import { HostChannelPrograms } from "@/components/host-channel-programs";
 import { HostChannelReviews } from "@/components/host-channel-reviews";
-import { HostChannelPlaceholder } from "@/components/host-channel-placeholder";
 
 export const metadata: Metadata = {
   title: "채널 관리 | 누비오 호스트센터",
@@ -16,6 +17,7 @@ export default async function HostChannelSectionPage({
 
   if (section === "programs") return <HostChannelPrograms />;
   if (section === "reviews") return <HostChannelReviews />;
+  if (section === "galleries") return <HostChannelGalleries />;
 
   return <HostChannelPlaceholder section={section} />;
 }
