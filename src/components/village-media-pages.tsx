@@ -3,8 +3,8 @@ import Link from "next/link";
 import { ArrowRight, ExternalLink, PlayCircle } from "lucide-react";
 import {
   BoseongFigmaMediaDetailPage,
-  BoseongFigmaMediaIndexPage,
 } from "@/components/boseong-figma-site";
+import { ChannelGuestGalleryPage } from "@/components/channel-guest-gallery";
 import { NuvioEmptyState } from "@/components/nuvio-empty-state";
 import {
   VillageSiteFooter,
@@ -24,7 +24,6 @@ const mediaCategoryLabels: Record<VillageMediaContent["category"], string> = {
 
 export function VillageMediaIndexPage({
   media,
-  pageSections,
   programs,
   village,
 }: {
@@ -34,14 +33,7 @@ export function VillageMediaIndexPage({
   village: Village;
 }) {
   if (village.slug === "boseong") {
-    return (
-      <BoseongFigmaMediaIndexPage
-        media={media}
-        pageSections={pageSections}
-        programs={programs}
-        village={village}
-      />
-    );
+    return <ChannelGuestGalleryPage media={media} village={village} />;
   }
 
   return (
