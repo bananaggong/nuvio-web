@@ -27,8 +27,7 @@ export const fallbackChannel: Village = {
   contactEmail: "hello@nuvio.kr",
   contactPhone: "010-0000-0000",
   description: "차를 매개로 지역의 시간과 사람을 연결하는 채널입니다.",
-  heroImage:
-    "https://images.unsplash.com/photo-1500530855697-b586d89ba3ee?auto=format&fit=crop&w=1200&q=80",
+  heroImage: "",
   id: "demo-channel",
   kakaoUrl: "",
   links: [],
@@ -173,7 +172,7 @@ export function HostChannelHome() {
             </div>
           </section>
 
-          <ChannelProfileHeader channel={channel} publicHref={publicHref} />
+          <ChannelProfileHeader activeLabel="채널 홈" channel={channel} publicHref={publicHref} />
 
           <section className="px-[var(--host-58)] pt-[var(--host-20)]">
             <div className="flex items-center gap-[var(--host-8)] text-[length:var(--host-12)] font-medium leading-[1.253]">
@@ -234,9 +233,11 @@ export function HostChannelHome() {
 }
 
 export function ChannelProfileHeader({
+  activeLabel = "채널 홈",
   channel,
   publicHref,
 }: {
+  activeLabel?: string;
   channel: Village;
   publicHref: string;
 }) {
@@ -280,8 +281,14 @@ export function ChannelProfileHeader({
       </div>
       <nav className="absolute left-[var(--host-228)] top-[var(--host-128)] flex items-end gap-[var(--host-40-7)] text-[length:var(--host-16)] font-semibold leading-[1.253] text-[#5B3A29]">
         {menuLabels.map((label) => (
-          <span className="shrink-0" key={label}>
+          <span
+            className="relative shrink-0 pb-[var(--host-8)] text-[#5B3A29]"
+            key={label}
+          >
             {label}
+            {activeLabel === label ? (
+              <span className="absolute bottom-0 left-0 h-[var(--host-2)] w-full bg-[#FE701E]" />
+            ) : null}
           </span>
         ))}
       </nav>

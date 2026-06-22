@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { HostChannelPrograms } from "@/components/host-channel-programs";
+import { HostChannelReviews } from "@/components/host-channel-reviews";
 import { HostChannelPlaceholder } from "@/components/host-channel-placeholder";
 
 export const metadata: Metadata = {
@@ -14,6 +15,7 @@ export default async function HostChannelSectionPage({
   const { section } = await params;
 
   if (section === "programs") return <HostChannelPrograms />;
+  if (section === "reviews") return <HostChannelReviews />;
 
   return <HostChannelPlaceholder section={section} />;
 }
