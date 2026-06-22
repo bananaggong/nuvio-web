@@ -5,6 +5,8 @@ export const nuvioIcons = {
   bookmarkFilled: "/icons/nuvio/bookmark-filled.svg",
   calendar: "/icons/nuvio/calendar.svg",
   channelAddCircle: "/icons/nuvio/channel-add-circle.svg",
+  channelFreeAdd: "/icons/nuvio/channel-free-add.svg",
+  channelFreeBlock: "/icons/nuvio/channel-free-block.svg",
   channelViewGrid: "/icons/nuvio/channel-view-grid.svg",
   channelViewStack: "/icons/nuvio/channel-view-stack.svg",
   channelViewVideo: "/icons/nuvio/channel-view-video.svg",

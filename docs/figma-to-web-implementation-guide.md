@@ -29,13 +29,12 @@ For a Figma value `Bpx`, the scalable token is:
 --token: clamp(Bpx, calc(B / 1440 * 100vw), calc(B * 1920 / 1440 * 1px));
 ```
 
-When using a CSS variable for font size in Tailwind, always use:
+When using a CSS variable for font size in Tailwind, always use the arbitrary
+font-size form with a `length:` type hint before the CSS variable.
 
-```tsx
-className="text-[length:var(--font-token)]"
-```
-
-Never use `text-[var(--font-token)]` for Figma-derived font sizes.
+Do not write literal Tailwind arbitrary-value class examples in markdown.
+Tailwind scans project markdown during dev, and documentation-only placeholder
+examples can still generate broken CSS.
 
 ## Required Workflow
 
@@ -142,13 +141,11 @@ const figmaScaleStyle = {
 } as CSSProperties;
 ```
 
-Then consume them directly:
+Then consume them directly in source code with real Tailwind classes. Keep the
+literal arbitrary-value class in `.tsx` source, not in this markdown guide:
 
 ```tsx
-<section
-  className="w-[var(--screen-144)] text-[length:var(--screen-16)]"
-  style={figmaScaleStyle}
-/>
+<section style={figmaScaleStyle} />
 ```
 
 This is the default method for new Figma-derived product screens.
