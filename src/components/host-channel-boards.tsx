@@ -111,7 +111,7 @@ export function HostChannelBoards() {
         <div className="w-full max-w-[var(--host-1230)]">
           <ChannelProfileHeader activeLabel="게시판형" channel={channel} publicHref={publicHref} />
 
-          <section className="relative border-b border-[#6D7A8A] px-[var(--host-40)] pb-[var(--host-34)] pt-[var(--host-76)]">
+          <section className="relative border-b border-[#6D7A8A] pb-[var(--host-34)] pt-[var(--host-76)]">
             <button
               aria-label="게시글 추가"
               className="absolute right-[var(--host-36)] top-[var(--host-40)] size-[var(--host-20)] transition hover:opacity-80"
@@ -121,7 +121,7 @@ export function HostChannelBoards() {
               <Image alt="" height={24} src={nuvioIcons.channelAddCircle} width={24} />
             </button>
 
-            <div className="w-full pr-[var(--host-36)]">
+            <div className="ml-[var(--host-30)] w-[var(--host-1170)] max-w-[calc(100%-var(--host-60))]">
               {posts.map((post) => (
                 <BoardPostRow key={post.id} post={post} />
               ))}
@@ -149,17 +149,23 @@ export function HostChannelBoards() {
 }
 
 function BoardPostRow({ post }: { post: ChannelBoardPost }) {
+  const hasBadge = Boolean(post.pinned || post.unread);
+
   return (
-    <article className="grid h-[var(--host-40)] grid-cols-[var(--host-66)_minmax(0,1fr)_var(--host-176)] items-center border-b border-[#F3E2D5] text-[length:var(--host-12)] leading-[1.253]">
-      <div className="flex items-center">
+    <article className="relative h-[var(--host-43)] w-full border-b border-[#F3E2D5] text-[length:var(--host-12)] leading-[1.253]">
+      <div className="absolute left-0 top-[var(--host-13)] flex h-[var(--host-17)] w-[var(--host-39)] items-center">
         {post.pinned ? <BoardBadge tone="pinned">고정</BoardBadge> : null}
         {post.unread ? <BoardBadge tone="new">새글</BoardBadge> : null}
       </div>
-      <h2 className="truncate text-[length:var(--host-12)] font-semibold leading-[1.253] text-[#5B3A29]">
+      <h2
+        className={`absolute top-[var(--host-14)] w-[var(--host-433)] truncate text-[length:var(--host-12)] font-semibold leading-[1.253] text-[#5B3A29] ${
+          hasBadge ? "left-[var(--host-91)]" : "left-[var(--host-44)]"
+        }`}
+      >
         {post.title}
       </h2>
       <time
-        className="justify-self-end text-[length:var(--host-12)] font-medium leading-[1.253] text-[#CAC4BC]"
+        className="absolute right-[var(--host-27)] top-[var(--host-12)] text-[length:var(--host-12)] font-medium leading-[1.253] text-[#CAC4BC]"
         dateTime={post.createdAt}
       >
         {formatBoardDate(post.createdAt)}
@@ -177,7 +183,7 @@ function BoardBadge({
 }) {
   return (
     <span
-      className={`inline-flex h-[var(--host-18)] min-w-[var(--host-37)] items-center justify-center rounded-[var(--host-4)] px-[var(--host-7)] text-[length:var(--host-11)] font-semibold leading-[1.253] text-white ${
+      className={`inline-flex h-[var(--host-17)] w-[var(--host-39)] items-center justify-center rounded-[var(--host-4)] text-[length:var(--host-11)] font-semibold leading-[1.253] text-white ${
         tone === "pinned" ? "bg-[#86A15C]" : "bg-[#FE701E]"
       }`}
     >
