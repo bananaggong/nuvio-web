@@ -11,3 +11,8 @@ Figma designs for this project are authored at a 1440px desktop width. When tran
 - At 1920px, 1440-based measurements should expand by 4/3 where appropriate.
 - Use responsive constraints such as `max-width: 1920px`, `clamp(...)`, proportional grid tracks, or equivalent Tailwind/CSS patterns.
 - Verify key Figma-derived layouts at both 1440px and 1920px before considering the implementation complete.
+- Font size, icon size, spacing, border radius, border width, and x/y coordinates are part of the scale rule, not exceptions.
+- For Figma-derived font-size variables in Tailwind, use `text-[length:var(--token)]`, not `text-[var(--token)]`.
+- Use Figma-exported assets from `public/icons/nuvio` through `src/components/icons/nuvio-icons.ts` before using hand-written SVGs or icon libraries. If the Figma icon is missing, export and register it first.
+- Use Pretendard for exact Figma-derived NUVIO screens unless the Figma frame explicitly uses another face.
+- Before implementing or refactoring a Figma-derived screen, read `docs/figma-to-web-implementation-guide.md` and follow its audit/checklist.

@@ -18,6 +18,7 @@ export const nuvioIcons = {
   login: "/icons/nuvio/login.svg",
   mail: "/icons/nuvio/mail.svg",
   map: "/icons/nuvio/map.svg",
+  menuReorder: "/icons/nuvio/menu-reorder.svg",
   message: "/icons/nuvio/message.svg",
   moreHorizontal: "/icons/nuvio/more-horizontal.svg",
   notificationDot: "/icons/nuvio/notification-dot.svg",

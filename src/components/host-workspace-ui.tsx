@@ -4,12 +4,12 @@ import Image from "next/image";
 import Link from "next/link";
 import { usePathname, useSearchParams } from "next/navigation";
 import {
-  Bell,
   ChevronLeft,
   Minus,
   Plus,
 } from "lucide-react";
 import type { CSSProperties, ReactNode } from "react";
+import { nuvioIcons } from "@/components/icons/nuvio-icons";
 import { formatProgramDisplayCode } from "@/lib/display-code";
 import { hostProjectPath, type HostProgramOverview } from "@/lib/host-projects";
 
@@ -52,6 +52,7 @@ const hostWorkspaceScaleStyle = {
   "--host-37": "clamp(37px, 2.569vw, 49.333px)",
   "--host-38": "clamp(38px, 2.639vw, 50.667px)",
   "--host-40": "clamp(40px, 2.778vw, 53.333px)",
+  "--host-40-7": "clamp(40.7px, 2.826vw, 54.267px)",
   "--host-42": "clamp(42px, 2.917vw, 56px)",
   "--host-44": "clamp(44px, 3.056vw, 58.667px)",
   "--host-45": "clamp(45px, 3.125vw, 60px)",
@@ -59,6 +60,7 @@ const hostWorkspaceScaleStyle = {
   "--host-48": "clamp(48px, 3.333vw, 64px)",
   "--host-50": "clamp(50px, 3.472vw, 66.667px)",
   "--host-52": "clamp(52px, 3.611vw, 69.333px)",
+  "--host-53-5": "clamp(53.5px, 3.715vw, 71.333px)",
   "--host-56": "clamp(56px, 3.889vw, 74.667px)",
   "--host-58": "clamp(58px, 4.028vw, 77.333px)",
   "--host-64": "clamp(64px, 4.444vw, 85.333px)",
@@ -74,6 +76,7 @@ const hostWorkspaceScaleStyle = {
   "--host-87": "clamp(87px, 6.042vw, 116px)",
   "--host-90": "clamp(90px, 6.25vw, 120px)",
   "--host-93": "clamp(93px, 6.458vw, 124px)",
+  "--host-95": "clamp(95px, 6.597vw, 126.667px)",
   "--host-105": "clamp(105px, 7.292vw, 140px)",
   "--host-110": "clamp(110px, 7.639vw, 146.667px)",
   "--host-128": "clamp(128px, 8.889vw, 170.667px)",
@@ -107,15 +110,20 @@ const hostWorkspaceScaleStyle = {
   "--host-386": "clamp(386px, 26.806vw, 514.667px)",
   "--host-427": "clamp(427px, 29.653vw, 569.333px)",
   "--host-457": "clamp(457px, 31.736vw, 609.333px)",
+  "--host-507": "clamp(507px, 35.208vw, 676px)",
   "--host-509": "clamp(509px, 35.347vw, 678.667px)",
   "--host-511": "clamp(511px, 35.486vw, 681.333px)",
   "--host-514": "clamp(514px, 35.694vw, 685.333px)",
   "--host-521": "clamp(521px, 36.181vw, 694.667px)",
+  "--host-529": "clamp(529px, 36.736vw, 705.333px)",
+  "--host-539": "clamp(539px, 37.431vw, 718.667px)",
   "--host-546": "clamp(546px, 37.917vw, 728px)",
   "--host-547": "clamp(547px, 37.986vw, 729.333px)",
   "--host-557": "clamp(557px, 38.681vw, 742.667px)",
   "--host-567": "clamp(567px, 39.375vw, 756px)",
+  "--host-573": "clamp(573px, 39.792vw, 764px)",
   "--host-577": "clamp(577px, 40.069vw, 769.333px)",
+  "--host-583": "clamp(583px, 40.486vw, 777.333px)",
   "--host-603": "clamp(603px, 41.875vw, 804px)",
   "--host-636": "clamp(636px, 44.167vw, 848px)",
   "--host-782": "clamp(782px, 54.306vw, 1042.667px)",
@@ -187,13 +195,15 @@ function HostWorkspaceSidebar({ sidebarHeight }: { sidebarHeight: string }) {
         <div className="w-[var(--host-198)] min-w-[198px] max-md:w-full">
           <section className="h-[5.972vw] min-h-[86px]">
             <div className="flex h-[2.778vw] min-h-10 items-center justify-center pb-[0.556vw] pt-[0.833vw]">
-              <span className="w-[var(--host-176)] min-w-[176px] text-[var(--host-16)] font-semibold leading-[1.253] text-[#5B3A29]">
+              <span className="w-[var(--host-176)] min-w-[176px] text-[length:var(--host-16)] font-semibold leading-[1.253] text-[#5B3A29]">
                 로컬 호스트님
               </span>
-              <Bell
-                size={20}
-                strokeWidth={1.8}
-                className="size-5 shrink-0 text-[#FF9A3D]"
+              <Image
+                alt=""
+                className="size-[var(--host-20)] shrink-0"
+                height={20}
+                src={nuvioIcons.bell}
+                width={20}
               />
             </div>
             <div className="flex h-[3.194vw] min-h-[46px] items-end border-b border-[#D9D9D9] pt-[0.833vw] text-center">
@@ -219,7 +229,7 @@ function HostWorkspaceSidebar({ sidebarHeight }: { sidebarHeight: string }) {
             <nav className="mt-[0.833vw] px-[0.833vw] text-[#5B3A29]">
               <section className="flex flex-col gap-[0.417vw]">
                 <Link
-                  className="block w-full text-[var(--host-14)] font-semibold leading-[1.253]"
+                  className="block w-full text-[length:var(--host-14)] font-semibold leading-[1.253]"
                   href="/host"
                 >
                   내 프로그램
@@ -233,7 +243,7 @@ function HostWorkspaceSidebar({ sidebarHeight }: { sidebarHeight: string }) {
               <div className="mt-[0.903vw] grid gap-[0.903vw]">
                 <section className="flex flex-col gap-[6px]">
                   <p
-                    className={`text-[var(--host-14)] leading-[1.253] ${
+                    className={`text-[length:var(--host-14)] leading-[1.253] ${
                       onMessagesPage ? "font-semibold" : "font-normal"
                     }`}
                   >
@@ -282,7 +292,7 @@ function HostWorkspaceSwitchTab({
 }) {
   return (
     <Link
-      className={`flex h-[2.361vw] min-h-[34px] flex-1 items-center justify-center pb-[0.556vw] pt-[0.347vw] text-[var(--host-14)] leading-[1.253] transition ${
+      className={`flex h-[2.361vw] min-h-[34px] flex-1 items-center justify-center pb-[0.556vw] pt-[0.347vw] text-[length:var(--host-14)] leading-[1.253] transition ${
         active
           ? "border-b-2 border-[#FF9A3D] font-medium text-[#FE701E]"
           : "font-normal text-[#CAC4BC] hover:text-[#FE701E]"
@@ -345,8 +355,8 @@ function HostSidebarRootLink({
     <Link
       className={`block w-fit rounded-[4px] py-[0.139vw] leading-[1.253] transition ${
         active
-          ? `${muted ? "text-[var(--host-12)] text-[#FE701E]" : "text-[var(--host-14)] text-[#5B3A29]"} font-semibold`
-          : `${muted ? "text-[var(--host-12)] text-[#FE701E]" : "text-[var(--host-14)] text-[#5B3A29]"} font-normal hover:text-[#FE701E]`
+          ? `${muted ? "text-[length:var(--host-12)] text-[#FE701E]" : "text-[length:var(--host-14)] text-[#5B3A29]"} font-semibold`
+          : `${muted ? "text-[length:var(--host-12)] text-[#FE701E]" : "text-[length:var(--host-14)] text-[#5B3A29]"} font-normal hover:text-[#FE701E]`
       }`}
       href={href}
     >
@@ -366,7 +376,7 @@ function HostSidebarSubLink({
 }) {
   return (
     <Link
-      className={`block w-fit rounded-[4px] px-[0.556vw] py-[0.139vw] text-[var(--host-12)] leading-[1.253] transition ${
+      className={`block w-fit rounded-[4px] px-[0.556vw] py-[0.139vw] text-[length:var(--host-12)] leading-[1.253] transition ${
         active
           ? "bg-[#FF9A3D] font-semibold text-[#F9F9F9]"
           : "font-normal text-[#5B3A29] hover:text-[#FE701E]"
@@ -408,7 +418,7 @@ export function HostSectionTitle({
   return (
     <div className="flex h-[var(--host-29)] items-center gap-[var(--host-34)]">
       <h2
-        className="text-[var(--host-16)] font-medium leading-[1.253] text-[#6d7a8a]"
+        className="text-[length:var(--host-16)] font-medium leading-[1.253] text-[#6d7a8a]"
         style={{ color: "#6D7A8A" }}
       >
         {title}
@@ -428,7 +438,7 @@ export function HostSmallButton({
   if (onClick) {
     return (
       <button
-        className="inline-flex h-[var(--host-29)] items-center justify-center rounded-[4px] bg-[#6d7a8a] px-[var(--host-12)] py-[var(--host-4)] text-[var(--host-12)] font-medium leading-[1.253] text-[#fff6ec] transition hover:bg-[#5f6b79]"
+        className="inline-flex h-[var(--host-29)] items-center justify-center rounded-[4px] bg-[#6d7a8a] px-[var(--host-12)] py-[var(--host-4)] text-[length:var(--host-12)] font-medium leading-[1.253] text-[#fff6ec] transition hover:bg-[#5f6b79]"
         onClick={onClick}
         style={{ backgroundColor: "#6D7A8A", color: "#FFF6EC" }}
         type="button"
@@ -440,7 +450,7 @@ export function HostSmallButton({
 
   return (
     <span
-      className="inline-flex h-[var(--host-29)] items-center justify-center rounded-[4px] bg-[#6d7a8a] px-[var(--host-12)] py-[var(--host-4)] text-[var(--host-12)] font-medium leading-[1.253] text-[#fff6ec]"
+      className="inline-flex h-[var(--host-29)] items-center justify-center rounded-[4px] bg-[#6d7a8a] px-[var(--host-12)] py-[var(--host-4)] text-[length:var(--host-12)] font-medium leading-[1.253] text-[#fff6ec]"
       style={{ backgroundColor: "#6D7A8A", color: "#FFF6EC" }}
     >
       {children}
@@ -501,16 +511,16 @@ export function HostFolderCard({
           <span className="grid size-[var(--host-20)] place-items-center rounded-full bg-[#FF9A3D] text-white">
             <Plus className="size-[var(--host-14)]" strokeWidth={2.4} />
           </span>
-          <span className="text-[var(--host-12)] font-normal leading-[1.253] text-[#6D7A8A] transition group-hover/view:text-[#FE701E]">
+          <span className="text-[length:var(--host-12)] font-normal leading-[1.253] text-[#6D7A8A] transition group-hover/view:text-[#FE701E]">
             전체보기
           </span>
         </Link>
       </div>
       <div className="mt-[var(--host-10)] flex w-full flex-col gap-[var(--host-8)]">
-        <p className="text-[var(--host-12)] font-normal leading-[1.6] text-[#6D7A8A]">
+        <p className="text-[length:var(--host-12)] font-normal leading-[1.6] text-[#6D7A8A]">
           저장된 프로그램 ({String(programCount).padStart(2, "0")})
         </p>
-        <p className="line-clamp-2 text-[var(--host-16)] font-normal leading-[1.253] text-[#5B3A29]">
+        <p className="line-clamp-2 text-[length:var(--host-16)] font-normal leading-[1.253] text-[#5B3A29]">
           {folder.title}
         </p>
       </div>
@@ -540,16 +550,16 @@ export function HostFolderPlaceholderCard({
           <span className="grid size-[var(--host-20)] place-items-center rounded-full bg-[#FF9A3D] text-white">
             <Plus className="size-[var(--host-14)]" strokeWidth={2.4} />
           </span>
-          <span className="text-[var(--host-12)] font-normal leading-[1.253] text-[#6D7A8A]">
+          <span className="text-[length:var(--host-12)] font-normal leading-[1.253] text-[#6D7A8A]">
             전체보기
           </span>
         </div>
       </div>
       <div className="mt-[var(--host-10)] flex w-full flex-col gap-[var(--host-8)]">
-        <p className="text-[var(--host-12)] font-normal leading-[1.6] text-[#6D7A8A]">
+        <p className="text-[length:var(--host-12)] font-normal leading-[1.6] text-[#6D7A8A]">
           저장된 프로그램 (00)
         </p>
-        <p className="text-[var(--host-16)] font-normal leading-[1.253] text-[#5B3A29]">
+        <p className="text-[length:var(--host-16)] font-normal leading-[1.253] text-[#5B3A29]">
           폴더명
         </p>
       </div>
@@ -581,7 +591,7 @@ export function HostProgramRow({
       }
     >
       <div className="flex h-[var(--host-18)] items-center gap-[var(--host-16)]">
-        <h3 className="shrink-0 text-[var(--host-14)] font-medium leading-[1.253] text-[#6D7A8A]">
+        <h3 className="shrink-0 text-[length:var(--host-14)] font-medium leading-[1.253] text-[#6D7A8A]">
           {title} ({String(items.length).padStart(2, "0")})
         </h3>
         <span className="h-px flex-1 bg-[#B6C0CA]" />
@@ -605,7 +615,7 @@ export function HostProgramRow({
           : null}
         {!expanded ? (
           <Link
-            className="flex h-[var(--host-42)] w-[var(--host-42)] shrink-0 flex-col items-center justify-center gap-[var(--host-8)] text-center text-[var(--host-12)] font-normal leading-[1.253] text-[#6D7A8A]"
+            className="flex h-[var(--host-42)] w-[var(--host-42)] shrink-0 flex-col items-center justify-center gap-[var(--host-8)] text-center text-[length:var(--host-12)] font-normal leading-[1.253] text-[#6D7A8A]"
             href={`/host?status=${encodeURIComponent(statusFilter)}`}
           >
             <span className="grid size-[var(--host-20)] place-items-center rounded-full bg-[#FF9A3D] text-white">
@@ -646,22 +656,22 @@ export function HostMiniProgramCard({
           ) : null}
         </div>
         <div className="flex min-w-0 flex-col gap-[var(--host-4)] text-[#0D0D0C]">
-          <p className="truncate text-[var(--host-12)] font-normal leading-[1.253]">
+          <p className="truncate text-[length:var(--host-12)] font-normal leading-[1.253]">
             프로그램 코드{" "}
             <span className="text-[#FE701E]">{formatProgramDisplayCode(program.id)}</span>
           </p>
-          <p className="line-clamp-1 text-[var(--host-14)] font-medium leading-[1.253]">
+          <p className="line-clamp-1 text-[length:var(--host-14)] font-medium leading-[1.253]">
             {program.title}
           </p>
-          <p className="truncate text-[var(--host-12)] font-normal leading-[1.253]">
+          <p className="truncate text-[length:var(--host-12)] font-normal leading-[1.253]">
             모집금액 : {program.applicationCount.toLocaleString("ko-KR")}명
           </p>
         </div>
-        <div className="col-span-2 mt-auto flex items-center gap-[var(--host-6)] text-[var(--host-12)] font-normal leading-[1.253]">
+        <div className="col-span-2 mt-auto flex items-center gap-[var(--host-6)] text-[length:var(--host-12)] font-normal leading-[1.253]">
           <span className="min-w-0 flex-1 truncate text-[#0D0D0C]">
             신청 {program.applicationCount}명 · 조회 {program.readiness}
           </span>
-          <span className="inline-flex h-[var(--host-29)] shrink-0 items-center justify-center rounded-[4px] border-[0.8px] border-[#FE701E] bg-[#FCFCFC] px-[var(--host-18)] text-[var(--host-12)] font-normal leading-[1.253] text-[#FE701E]">
+          <span className="inline-flex h-[var(--host-29)] shrink-0 items-center justify-center rounded-[4px] border-[0.8px] border-[#FE701E] bg-[#FCFCFC] px-[var(--host-18)] text-[length:var(--host-12)] font-normal leading-[1.253] text-[#FE701E]">
             {actionLabel}
           </span>
         </div>
@@ -716,7 +726,7 @@ export function HostFolderInsideHeader({
       >
         <ChevronLeft className="size-[var(--host-18)]" strokeWidth={1.8} />
       </Link>
-      <h1 className="shrink-0 text-[var(--host-16)] font-medium leading-[1.253] text-[#6D7A8A]">
+      <h1 className="shrink-0 text-[length:var(--host-16)] font-medium leading-[1.253] text-[#6D7A8A]">
         {title} ({count})
       </h1>
       <div className="flex flex-1 items-center justify-end" />
