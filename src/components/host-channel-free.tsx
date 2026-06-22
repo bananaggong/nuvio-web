@@ -67,12 +67,12 @@ export function HostChannelFree() {
         <div className="w-full max-w-[var(--host-1230)]">
           <ChannelProfileHeader activeLabel="자유형" channel={channel} publicHref={publicHref} />
 
-          <section className="border-b border-[#6D7A8A]">
+          <section className="border-b border-[#6D7A8A] pb-[var(--host-8)] pt-[var(--host-8)]">
             <div className="relative h-[var(--host-56)]">
               <FreeCanvasTools className="left-[var(--host-18)] top-[var(--host-18)]" onAdd={addBlock} />
             </div>
 
-            <div className="grid h-[var(--host-56)] grid-cols-3 border-b border-[#6D7A8A]">
+            <div className="mt-[var(--host-8)] grid h-[var(--host-56)] grid-cols-3">
               <FreeSlot onAdd={addBlock} />
               <FreeSlot onAdd={addBlock} />
               <FreeSlot onAdd={addBlock} />

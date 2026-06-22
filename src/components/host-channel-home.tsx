@@ -209,7 +209,12 @@ export function HostChannelHome() {
             </div>
           </section>
 
-          <ChannelProfileHeader activeLabel="채널 홈" channel={channel} publicHref={publicHref} />
+          <ChannelProfileHeader
+            activeLabel="채널 홈"
+            channel={channel}
+            publicHref={publicHref}
+            variant="home"
+          />
 
           <section className="px-[var(--host-58)] pb-[var(--host-70)] pt-[var(--host-20)]">
             <ChannelSectionShell title="프로그램">
@@ -370,16 +375,27 @@ export function ChannelProfileHeader({
   activeLabel = "채널 홈",
   channel,
   publicHref,
+  variant = "section",
 }: {
   activeLabel?: string;
   channel: Village;
   publicHref: string;
+  variant?: "home" | "section";
 }) {
   const menuLabels = ["채널 홈", "프로그램", "갤러리형", "매거진형", "게시판형", "자유형"];
+  const sectionVariant = variant === "section";
 
   return (
-    <section className="relative h-[var(--host-156)] border-b border-[#6D7A8A] bg-white">
-      <div className="flex items-start gap-[var(--host-42)] px-[var(--host-58)] pt-[var(--host-14)]">
+    <section
+      className={`relative border-b border-[#6D7A8A] bg-white ${
+        sectionVariant ? "h-[var(--host-178)]" : "h-[var(--host-156)]"
+      }`}
+    >
+      <div
+        className={`flex items-start gap-[var(--host-42)] px-[var(--host-58)] ${
+          sectionVariant ? "pt-[var(--host-36)]" : "pt-[var(--host-14)]"
+        }`}
+      >
         <div className="relative size-[var(--host-128)] shrink-0 overflow-hidden rounded-full bg-[#D9D9D9]">
           {channel.heroImage ? (
             <Image
@@ -413,7 +429,11 @@ export function ChannelProfileHeader({
           </Link>
         </div>
       </div>
-      <nav className="absolute left-[var(--host-228)] top-[var(--host-128)] flex items-end gap-[var(--host-40-7)] text-[length:var(--host-16)] font-semibold leading-[1.253] text-[#5B3A29]">
+      <nav
+        className={`absolute left-[var(--host-228)] flex items-end gap-[var(--host-40-7)] text-[length:var(--host-16)] font-semibold leading-[1.253] text-[#5B3A29] ${
+          sectionVariant ? "top-[var(--host-142)]" : "top-[var(--host-128)]"
+        }`}
+      >
         {menuLabels.map((label) => (
           <span
             className="relative shrink-0 pb-[var(--host-8)] text-[#5B3A29]"
