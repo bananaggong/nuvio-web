@@ -19,7 +19,7 @@ type HostProgramsPayload = {
   error?: string;
 };
 
-const fallbackChannel: Village = {
+export const fallbackChannel: Village = {
   accentColor: "#FE701E",
   address: "전남 보성군",
   brandColor: "#5B3A29",
@@ -43,7 +43,7 @@ const fallbackChannel: Village = {
   updatedAt: new Date().toISOString(),
 };
 
-const fallbackPrograms: HostProgramDraft[] = [
+export const fallbackPrograms: HostProgramDraft[] = [
   {
     activityEnd: "2026-07-26",
     activityStart: "2026-07-22",
@@ -233,7 +233,7 @@ export function HostChannelHome() {
   );
 }
 
-function ChannelProfileHeader({
+export function ChannelProfileHeader({
   channel,
   publicHref,
 }: {
@@ -289,7 +289,7 @@ function ChannelProfileHeader({
   );
 }
 
-function ChannelSectionHeader({
+export function ChannelSectionHeader({
   actionLabel,
   title,
 }: {

@@ -48,9 +48,23 @@ Tailwind에서 폰트 크기 변수를 쓸 때는 반드시 `text-[length:var(--
 - 사용자가 요청하지 않은 설명 문구, 임시 제목, 보조 박스, 디버그성 버튼은 피그마에 없으면 화면에 남기지 않습니다.
 - 피그마 프레임 이름은 개발 중 참고용일 뿐입니다. 실제 제품 화면 안에 그대로 렌더링하지 않습니다.
 - 같은 화면에서 브라우저 기본 스크롤과 내부 가로/세로 스크롤이 겹치면 완료로 보지 않습니다.
+- 1920px에서 `sidebar + content`가 viewport를 몇 px 넘기면 브라우저 하단 가로 스크롤이 생깁니다. 공유 워크스페이스는 `max-width: 100dvw`, `overflow-x: clip`, 본문은 `min-w-0`과 부모 기준 `w-full`을 유지합니다.
 - 아이콘은 Figma 아이콘을 SVG 에셋으로 먼저 추가하고 `nuvioIcons`에 등록합니다. lucide나 임의 SVG는 임시 구현으로 남기지 않습니다.
+- 텍스트 문자(`○`, `+`, `ↄ` 등)를 아이콘처럼 쓰지 않습니다. 피그마 아이콘이면 SVG 에셋을 추가하고 색상만 맞춥니다.
 - 1440px에서 먼저 정확히 맞춘 뒤 1920px에서 `4 / 3` 배율로 커지는지 확인합니다. 1920px에 맞추려고 1440px 좌표를 희생하지 않습니다.
 - 변경 후 `git diff --check`, 필요한 lint/build, 커밋, 푸시, `git status -sb` clean 확인까지 한 묶음으로 처리합니다.
+
+## Per-Frame Commit Protocol
+
+채널 관리자처럼 프레임을 하나씩 옮기는 작업은 프레임 단위로 닫습니다.
+
+1. Figma 프레임명과 실제 라우트를 먼저 매핑합니다.
+2. 화면 안에 Figma 프레임명, 개발용 제목, placeholder 설명이 렌더링되지 않는지 확인합니다.
+3. 1440px과 1920px에서 브라우저 스크린샷을 찍고 `scrollWidth <= clientWidth`를 확인합니다.
+4. 아이콘은 `public/icons/nuvio`와 `nuvioIcons` 경유인지 확인합니다.
+5. `npm.cmd run lint`, `git diff --check`, 필요한 경우 `npm.cmd run build`를 통과시킵니다.
+6. 해당 프레임 변경만 의도적으로 커밋하고 `origin/main`에 푸시합니다.
+7. 마지막에 `git status -sb`가 clean인지 확인합니다.
 
 ## Layout Patterns
 
