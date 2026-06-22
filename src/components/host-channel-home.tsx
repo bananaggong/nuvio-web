@@ -2,6 +2,7 @@
 
 import Image from "next/image";
 import Link from "next/link";
+import type { ReactNode } from "react";
 import { useEffect, useMemo, useState } from "react";
 import { nuvioIcons } from "@/components/icons/nuvio-icons";
 import { HostWorkspaceLayout } from "@/components/host-workspace-ui";
@@ -118,7 +119,7 @@ const reviews = [
   },
 ];
 
-const magazineCards = [
+const storyCards = [
   {
     body: "목포 바다를 따라 걷고, 오래된 골목에서 지역의 이야기를 수집하는 방법.",
     title: "기록으로 남기는 원도심",
@@ -131,6 +132,13 @@ const magazineCards = [
     body: "참여자가 남긴 사진과 문장을 채널 홈에서 다시 읽히게 하는 편집 방식.",
     title: "후기가 콘텐츠가 되는 순간",
   },
+];
+
+const noticeRows = [
+  { category: "고정", title: "제목", date: "2000. 00. 00 00:00" },
+  { category: "새글", title: "제목", date: "2000. 00. 00 00:00" },
+  { category: "", title: "제목", date: "2000. 00. 00 00:00" },
+  { category: "", title: "제목", date: "2000. 00. 00 00:00" },
 ];
 
 export function HostChannelHome() {
@@ -177,91 +185,180 @@ export function HostChannelHome() {
       <section className="min-w-0 flex-1 overflow-x-hidden bg-white">
         <div className="w-full max-w-[var(--host-1230)]">
           <section className="grid h-[var(--host-386)] place-items-center border-b border-[#D9D9D9] bg-[#F9F9F9]">
-            <div className="flex flex-col items-center text-center">
-              <span className="grid size-[var(--host-40)] place-items-center rounded-full border border-[#D9D9D9] bg-white">
-                <Image alt="" height={20} src={nuvioIcons.message} width={20} />
-              </span>
-              <p className="mt-[var(--host-12)] text-[length:var(--host-16)] font-semibold leading-[1.253] text-[#6D7A8A]">
-                채널 홈에 보여줄 대표 콘텐츠를 준비 중입니다.
+            <div className="flex flex-col items-center text-center text-[#6D7A8A]">
+              <Image
+                alt=""
+                className="size-[var(--host-20)]"
+                height={21}
+                src={nuvioIcons.channelUploadMuted}
+                width={21}
+              />
+              <p className="mt-[var(--host-12)] text-[length:var(--host-14)] font-semibold leading-[1.253]">
+                파일 업로드
               </p>
-              <p className="mt-[var(--host-6)] text-[length:var(--host-12)] font-normal leading-[1.6] text-[#CAC4BC]">
-                공개 프로그램, 후기, 갤러리가 연결되면 이곳에 자동으로 모입니다.
+              <p className="mt-[var(--host-10)] text-[length:var(--host-12)] font-normal leading-[1.65] text-[#6D7A8A]">
+                JPG, PNG, WebP, GIF 파일을 5MB 이하로 업로드할 수 있어요
+              </p>
+              <p className="mt-[var(--host-12)] text-[length:var(--host-12)] font-normal leading-[1.65] text-[#6D7A8A]">
+                권장 이미지 사이즈
+                <br />
+                가로 : 1920px(해상도상이하)
+                <br />
+                세로 : 200px - 560px
               </p>
             </div>
           </section>
 
           <ChannelProfileHeader activeLabel="채널 홈" channel={channel} publicHref={publicHref} />
 
-          <section className="px-[var(--host-58)] pt-[var(--host-20)]">
-            <div className="flex items-center gap-[var(--host-8)] text-[length:var(--host-12)] font-medium leading-[1.253]">
-              <span className="rounded-full bg-[#FE701E] px-[var(--host-14)] py-[var(--host-5)] text-white">
-                전체
-              </span>
-              <span className="rounded-full bg-[#CAC4BC] px-[var(--host-14)] py-[var(--host-5)] text-white">
-                모집중
-              </span>
-              <span className="rounded-full bg-[#CAC4BC] px-[var(--host-14)] py-[var(--host-5)] text-white">
-                예정
-              </span>
-              <span className="rounded-full bg-[#CAC4BC] px-[var(--host-14)] py-[var(--host-5)] text-white">
-                마감
-              </span>
-            </div>
+          <section className="px-[var(--host-58)] pb-[var(--host-70)] pt-[var(--host-20)]">
+            <ChannelSectionShell title="프로그램">
+              <div className="mb-[var(--host-24)] flex items-center gap-[var(--host-8)] text-[length:var(--host-12)] font-medium leading-[1.253]">
+                <span className="rounded-full bg-[#FF9A3D] px-[var(--host-16)] py-[var(--host-5)] text-white">
+                  전체
+                </span>
+                <span className="rounded-full bg-[#CAC4BC] px-[var(--host-16)] py-[var(--host-5)] text-white">
+                  오픈
+                </span>
+                <span className="rounded-full bg-[#CAC4BC] px-[var(--host-16)] py-[var(--host-5)] text-white">
+                  예정
+                </span>
+                <span className="rounded-full bg-[#CAC4BC] px-[var(--host-16)] py-[var(--host-5)] text-white">
+                  마감
+                </span>
+              </div>
+              <div className="grid grid-cols-4 gap-[var(--host-36)]">
+                {Array.from({ length: 4 }).map((_, index) => (
+                  <ChannelProgramMiniCard
+                    key={visiblePrograms[index]?.id ?? `program-placeholder-${index}`}
+                    program={visiblePrograms[index]}
+                    variantIndex={index}
+                  />
+                ))}
+              </div>
+            </ChannelSectionShell>
 
-            <ChannelSectionHeader actionLabel="전체 보기" title="프로그램" />
-            <div className="grid grid-cols-4 gap-[var(--host-18)]">
-              {visiblePrograms.slice(0, 4).map((program) => (
-                <ChannelProgramMiniCard key={program.id} program={program} />
-              ))}
-            </div>
-
-            <ChannelSectionHeader actionLabel="후기 관리" title="후기" />
-            <div className="grid grid-cols-4 gap-[var(--host-18)]">
-              {reviews.map((review) => (
-                <article className="min-w-0" key={review.title}>
-                  <div className="h-[var(--host-110)] rounded-[4px] bg-[#D9D9D9]" />
-                  <h3 className="mt-[var(--host-10)] line-clamp-1 text-[length:var(--host-13)] font-semibold leading-[1.253] text-[#5B3A29]">
-                    {review.title}
-                  </h3>
-                  <p className="mt-[var(--host-6)] line-clamp-3 text-[length:var(--host-11)] font-normal leading-[1.55] text-[#6D7A8A]">
-                    {review.body}
-                  </p>
-                </article>
-              ))}
-            </div>
-
-            <ChannelSectionHeader actionLabel="갤러리 관리" title="갤러리" />
-            <div className="grid grid-cols-3 gap-[var(--host-24)]">
-              {galleryCards.map((title, index) => (
-                <article key={`${title}-${index}`}>
-                  <div className="relative h-[var(--host-254)] overflow-hidden rounded-[4px] bg-[#D9D9D9]">
-                    {index === 1 ? (
-                      <span className="absolute left-1/2 top-1/2 size-0 -translate-x-1/2 -translate-y-1/2 border-y-[var(--host-12)] border-l-[var(--host-18)] border-y-transparent border-l-white" />
-                    ) : null}
-                    <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/35 to-transparent px-[var(--host-14)] pb-[var(--host-14)] pt-[var(--host-40)]">
-                      <h3 className="text-[length:var(--host-13)] font-semibold leading-[1.253] text-white">
-                        {title}
-                      </h3>
+            <ChannelSectionShell actionLabel="전체보기 +" title="후기">
+              <div className="grid grid-cols-4 gap-[var(--host-36)]">
+                {reviews.map((review) => (
+                  <article className="min-w-0" key={review.title}>
+                    <div className="h-[var(--host-110)] rounded-[4px] bg-[#D9D9D9]" />
+                    <div className="mt-[var(--host-10)] flex items-center gap-[var(--host-6)]">
+                      <span className="size-[var(--host-12)] rounded-full bg-[#D9D9D9]" />
+                      <span className="text-[length:var(--host-12)] font-semibold leading-[1.253] text-[#5B3A29]">
+                        닉네임
+                      </span>
+                      <span className="text-[length:var(--host-11)] font-semibold leading-[1.253] text-[#FE701E]">
+                        5.0
+                      </span>
                     </div>
-                  </div>
-                </article>
-              ))}
-            </div>
+                    <h3 className="mt-[var(--host-8)] line-clamp-1 text-[length:var(--host-12)] font-semibold leading-[1.253] text-[#5B3A29]">
+                      {review.title}
+                    </h3>
+                    <p className="mt-[var(--host-4)] line-clamp-3 text-[length:var(--host-10)] font-normal leading-[1.55] text-[#0D0D0C]">
+                      {review.body}
+                    </p>
+                  </article>
+                ))}
+              </div>
+            </ChannelSectionShell>
 
-            <ChannelSectionHeader actionLabel="매거진 관리" title="매거진" />
-            <div className="grid grid-cols-3 gap-[var(--host-24)] pb-[var(--host-70)]">
-              {magazineCards.map((card) => (
-                <article className="min-w-0" key={card.title}>
-                  <div className="h-[var(--host-150)] rounded-[4px] bg-[#D9D9D9]" />
-                  <h3 className="mt-[var(--host-10)] text-[length:var(--host-14)] font-semibold leading-[1.253] text-[#5B3A29]">
-                    {card.title}
-                  </h3>
-                  <p className="mt-[var(--host-6)] line-clamp-2 text-[length:var(--host-11)] font-normal leading-[1.55] text-[#6D7A8A]">
-                    {card.body}
-                  </p>
-                </article>
-              ))}
-            </div>
+            <ChannelSectionShell actionLabel="전체보기" badge="갤러리형" title="갤러리">
+              <div className="grid grid-cols-3 gap-[var(--host-36)]">
+                {galleryCards.map((title, index) => (
+                  <article key={`${title}-${index}`}>
+                    <div className="relative h-[var(--host-354)] overflow-hidden rounded-[4px] bg-[#D9D9D9]">
+                      {index === 1 ? (
+                        <span className="absolute left-1/2 top-1/2 size-0 -translate-x-1/2 -translate-y-1/2 border-y-[var(--host-12)] border-l-[var(--host-18)] border-y-transparent border-l-white" />
+                      ) : null}
+                      <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/35 to-transparent px-[var(--host-18)] pb-[var(--host-18)] pt-[var(--host-56)]">
+                        <p className="line-clamp-3 text-[length:var(--host-12)] font-medium leading-[1.6] text-white">
+                          {title}를 따라 채널에서 보여줄 이미지와 영상 설명이 표시됩니다.
+                        </p>
+                      </div>
+                      {index !== 1 ? (
+                        <span className="absolute right-[var(--host-12)] top-[var(--host-12)] text-[length:var(--host-12)] font-semibold leading-[1.253] text-white">
+                          +3
+                        </span>
+                      ) : null}
+                    </div>
+                  </article>
+                ))}
+              </div>
+            </ChannelSectionShell>
+
+            <ChannelSectionShell actionLabel="숨김" badge="매거진형" title="이야기" toggleOn={false}>
+              <div className="grid grid-cols-3 gap-[var(--host-36)]">
+                {storyCards.map((card) => (
+                  <article className="min-w-0 overflow-hidden rounded-[8px] bg-[#F9F9F9]" key={card.title}>
+                    <div className="h-[var(--host-288)] rounded-t-[8px] bg-[#D9D9D9]" />
+                    <div className="px-[var(--host-18)] py-[var(--host-16)]">
+                      <h3 className="text-[length:var(--host-14)] font-semibold leading-[1.253] text-[#5B3A29]">
+                        메인 타이틀 제목
+                      </h3>
+                      <p className="mt-[var(--host-4)] text-[length:var(--host-11)] font-normal leading-[1.253] text-[#CAC4BC]">
+                        0000. 00. 00
+                      </p>
+                      <p className="sr-only">{card.body}</p>
+                    </div>
+                  </article>
+                ))}
+              </div>
+            </ChannelSectionShell>
+
+            <ChannelSectionShell actionLabel="숨김" badge="게시판형" title="공지" toggleOn={false}>
+              <div className="border-t border-[#F3E2D5]">
+                {noticeRows.map((row, index) => (
+                  <div
+                    className="grid h-[var(--host-37)] grid-cols-[var(--host-82)_minmax(0,1fr)_var(--host-166)] items-center border-b border-[#F3E2D5] text-[length:var(--host-11)] leading-[1.253]"
+                    key={`${row.category}-${index}`}
+                  >
+                    <div>
+                      {row.category ? (
+                        <span
+                          className={`inline-flex h-[var(--host-16)] items-center rounded-[4px] px-[var(--host-8)] text-[length:var(--host-10)] font-semibold text-white ${
+                            row.category === "고정" ? "bg-[#6BAA50]" : "bg-[#FE701E]"
+                          }`}
+                        >
+                          {row.category}
+                        </span>
+                      ) : null}
+                    </div>
+                    <p className="font-medium text-[#5B3A29]">{row.title}</p>
+                    <p className="text-right font-normal text-[#CAC4BC]">{row.date}</p>
+                  </div>
+                ))}
+              </div>
+            </ChannelSectionShell>
+
+            <ChannelSectionShell badge="블록형" title="자유형">
+              <div className="relative border border-dashed border-[#D9D9D9] px-[var(--host-36)] py-[var(--host-18)] text-center text-[length:var(--host-12)] font-normal leading-[1.45] text-[#6D7A8A]">
+                이미지나 텍스트를 추가해서 자유롭게 꾸밀 수 있어요
+                <br />
+                바뀌두어 섹션 사이 여백(40px)으로 사용 가능해요
+              </div>
+              <div className="mt-[var(--host-10)] rounded-[8px] border border-[#F3E2D5] bg-white p-[var(--host-18)]">
+                <p className="text-[length:var(--host-14)] font-semibold leading-[1.253] text-[#5B3A29]">
+                  블록 편집
+                </p>
+                <div className="mt-[var(--host-18)] h-[var(--host-194)] rounded-[4px] border border-[#F3C3A5] bg-[#FFFDFB] p-[var(--host-18)] text-[length:var(--host-12)] font-medium leading-[1.65] text-[#0D0D0C]">
+                  지정 폰트 : Pretendard
+                  <br />
+                  <br />
+                  사이즈
+                  <br />
+                  - 제목 : 20
+                  <br />
+                  - 소제목 : 16
+                  <br />
+                  - 본문 : 14
+                </div>
+              </div>
+              <div className="mt-[var(--host-28)] flex flex-col items-center gap-[var(--host-6)] text-[length:var(--host-11)] font-medium text-[#6D7A8A]">
+                <span>블록 추가</span>
+                <Image alt="" className="size-[var(--host-24)]" height={24} src={nuvioIcons.channelAddCircle} width={24} />
+              </div>
+            </ChannelSectionShell>
           </section>
         </div>
       </section>
@@ -333,53 +430,99 @@ export function ChannelProfileHeader({
   );
 }
 
-export function ChannelSectionHeader({
+export function ChannelSectionShell({
   actionLabel,
+  badge,
+  children,
   title,
+  toggleOn = true,
 }: {
-  actionLabel: string;
+  actionLabel?: string;
+  badge?: string;
+  children: ReactNode;
   title: string;
+  toggleOn?: boolean;
 }) {
   return (
-    <div className="mb-[var(--host-16)] mt-[var(--host-36)] flex items-center justify-between border-t border-[#D9D9D9] pt-[var(--host-16)]">
-      <h2 className="text-[length:var(--host-16)] font-semibold leading-[1.253] text-[#5B3A29]">
-        {title}
-      </h2>
-      <button
-        className="text-[length:var(--host-12)] font-medium leading-[1.253] text-[#FE701E]"
-        type="button"
-      >
-        {actionLabel} &gt;
-      </button>
-    </div>
+    <section className="border-t border-[#D9D9D9] py-[var(--host-22)]">
+      <div className="mb-[var(--host-18)] flex items-center justify-between">
+        <div className="flex items-center gap-[var(--host-8)]">
+          <span className="grid size-[var(--host-16)] place-items-center rounded-[4px] border border-[#D9D9D9] bg-white">
+            <span className="size-[var(--host-5)] rounded-full bg-[#CAC4BC]" />
+          </span>
+          <h2 className="text-[length:var(--host-16)] font-semibold leading-[1.253] text-[#5B3A29]">
+            {title}
+          </h2>
+          {badge ? (
+            <span className="inline-flex h-[var(--host-20)] items-center rounded-full bg-[#6D7A8A] px-[var(--host-10)] text-[length:var(--host-10)] font-semibold leading-[1.253] text-white">
+              {badge}
+            </span>
+          ) : null}
+        </div>
+        <div className="flex items-center gap-[var(--host-10)]">
+          {actionLabel ? (
+            <button
+              className="text-[length:var(--host-11)] font-medium leading-[1.253] text-[#FE701E]"
+              type="button"
+            >
+              {actionLabel}
+            </button>
+          ) : null}
+          <Image
+            alt=""
+            className="h-[var(--host-16)] w-[var(--host-20)]"
+            height={20}
+            src={toggleOn ? nuvioIcons.formRequiredToggleOn : nuvioIcons.formRequiredToggleOff}
+            width={23}
+          />
+        </div>
+      </div>
+      {children}
+    </section>
   );
 }
 
-function ChannelProgramMiniCard({ program }: { program: HostProgramDraft }) {
-  const href = `/programs/${encodeURIComponent(program.slug || program.id)}`;
+function ChannelProgramMiniCard({
+  program,
+  variantIndex,
+}: {
+  program?: HostProgramDraft;
+  variantIndex: number;
+}) {
+  const href = program ? `/programs/${encodeURIComponent(program.slug || program.id)}` : "/host/channels/programs";
+  const title = program?.title || "프로그램 제목 입력";
+  const statusLabel =
+    variantIndex === 0 ? "오픈" : variantIndex === 1 ? "오픈" : variantIndex === 2 ? "예정" : "마감";
 
   return (
-    <article>
-      <Link className="group block" href={href} target="_blank">
-        <div className="relative h-[var(--host-210)] overflow-hidden rounded-[6px] bg-[#D9D9D9]">
-          {program.image ? (
-            <Image
-              alt=""
-              className="object-cover transition duration-200 group-hover:scale-[1.03]"
-              fill
-              sizes="(min-width: 1920px) 264px, 198px"
-              src={program.image}
-            />
-          ) : null}
+    <article className="min-w-0">
+      <Link className="group block" href={href} target={program ? "_blank" : undefined}>
+        <div className="h-[var(--host-194)] rounded-[4px] bg-[#D9D9D9]" />
+        <div className="mt-[var(--host-10)] flex items-center gap-[var(--host-8)]">
+          <span
+            className={`inline-flex h-[var(--host-18)] items-center rounded-[4px] px-[var(--host-8)] text-[length:var(--host-10)] font-semibold leading-[1.253] text-white ${
+              statusLabel === "오픈"
+                ? "bg-[#FF9A3D]"
+                : statusLabel === "예정"
+                  ? "bg-[#FE701E]"
+                  : "bg-[#6D7A8A]"
+            }`}
+          >
+            {statusLabel}
+          </span>
+          <span className="truncate text-[length:var(--host-10)] font-normal leading-[1.253] text-[#6D7A8A]">
+            D+ 00일오픈마감
+          </span>
+          <Image alt="" className="ml-auto size-[var(--host-16)]" height={16} src={nuvioIcons.bookmark} width={16} />
         </div>
-        <p className="mt-[var(--host-8)] text-[length:var(--host-11)] font-medium leading-[1.253] text-[#FE701E]">
-          {program.status === "open" ? "모집중" : program.status === "upcoming" ? "예정" : "마감"}
-        </p>
-        <h3 className="mt-[var(--host-4)] line-clamp-2 text-[length:var(--host-14)] font-semibold leading-[1.35] text-[#5B3A29]">
-          {program.title}
+        <h3 className="mt-[var(--host-8)] line-clamp-1 text-[length:var(--host-14)] font-semibold leading-[1.253] text-[#5B3A29]">
+          {title}
         </h3>
-        <p className="mt-[var(--host-6)] line-clamp-2 text-[length:var(--host-12)] font-normal leading-[1.45] text-[#6D7A8A]">
-          {program.summary}
+        <p className="mt-[var(--host-8)] line-clamp-3 text-[length:var(--host-10)] font-normal leading-[1.55] text-[#CAC4BC]">
+          프로그램 소개 간략한 후킹을 작성해 주세요. 얼마나 길게 남길지 프레임에 맞춰 표시됩니다.
+        </p>
+        <p className="mt-[var(--host-16)] text-[length:var(--host-10)] font-normal leading-[1.253] text-[#6D7A8A]">
+          프로그램 기간
         </p>
       </Link>
     </article>

@@ -9,6 +9,7 @@ export const nuvioIcons = {
   channelFreeBlock: "/icons/nuvio/channel-free-block.svg",
   channelLink: "/icons/nuvio/channel-link.svg",
   channelUpload: "/icons/nuvio/channel-upload.svg",
+  channelUploadMuted: "/icons/nuvio/channel-upload-muted.svg",
   channelViewGrid: "/icons/nuvio/channel-view-grid.svg",
   channelViewStack: "/icons/nuvio/channel-view-stack.svg",
   channelViewVideo: "/icons/nuvio/channel-view-video.svg",
