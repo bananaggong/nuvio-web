@@ -1,6 +1,7 @@
 "use client";
 
 import Image from "next/image";
+import { useSearchParams } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
 import {
   ChannelProfileHeader,
@@ -21,6 +22,7 @@ type HostMediaPayload = {
 };
 
 type GalleryViewMode = "grid" | "stack" | "video";
+type GalleryMediaLayout = "portrait" | "landscape";
 
 type GalleryItem = VillageMediaContent & {
   imageCount?: number;
@@ -133,6 +135,8 @@ function isVideoItem(item: GalleryItem) {
 }
 
 export function HostChannelGalleries() {
+  const searchParams = useSearchParams();
+  const galleryDetailParam = searchParams.get("galleryDetail");
   const [channel, setChannel] = useState<Village>(fallbackChannel);
   const [items, setItems] = useState<GalleryItem[]>(galleryFallbackItems);
   const [viewMode, setViewMode] = useState<GalleryViewMode>("grid");
@@ -176,9 +180,17 @@ export function HostChannelGalleries() {
     if (viewMode === "video") return items.filter(isVideoItem);
     return items;
   }, [items, viewMode]);
+  const routeSelectedId = useMemo(() => {
+    if (!galleryDetailParam || items.length === 0) return null;
+    if (galleryDetailParam === "1") return items[0]?.id ?? null;
+    return items.some((item) => item.id === galleryDetailParam)
+      ? galleryDetailParam
+      : null;
+  }, [galleryDetailParam, items]);
+  const activeSelectedId = selectedId ?? routeSelectedId;
   const selectedItem =
-    items.find((item) => item.id === selectedId) ?? filteredItems[0] ?? items[0];
-  const showDetail = viewMode === "stack" && Boolean(selectedItem);
+    items.find((item) => item.id === activeSelectedId) ?? filteredItems[0] ?? items[0];
+  const showDetail = Boolean(activeSelectedId && selectedItem);
   const sidebarHeight = showDetail ? "min-h-[var(--host-2260)]" : "min-h-[var(--host-707)]";
 
   function addDraftItem() {
@@ -235,20 +247,17 @@ export function HostChannelGalleries() {
                 activeMode={viewMode}
                 onChange={(mode) => {
                   setViewMode(mode);
-                  if (mode === "stack" && !selectedId && filteredItems[0]) {
-                    setSelectedId(filteredItems[0].id);
-                  }
+                  setSelectedId(null);
                 }}
               />
 
               {showDetail ? (
-                <GalleryDetailView item={selectedItem ?? galleryFallbackItems[0]} />
+                <GalleryDetailView item={selectedItem ?? galleryFallbackItems[0]} items={items} />
               ) : (
                 <GalleryGrid
                   items={filteredItems}
                   onSelect={(item) => {
                     setSelectedId(item.id);
-                    setViewMode("stack");
                   }}
                 />
               )}
@@ -363,43 +372,57 @@ function GalleryGrid({
   );
 }
 
-function GalleryDetailView({ item }: { item: GalleryItem }) {
-  const imageIsWide = isVideoItem(item);
+function GalleryDetailView({
+  item,
+  items,
+}: {
+  item: GalleryItem;
+  items: GalleryItem[];
+}) {
+  const videoItem = items.find(isVideoItem) ?? item;
+  const nextPortraitItem =
+    items.find((candidate) => candidate.id !== item.id && !isVideoItem(candidate)) ?? item;
 
   return (
-    <div className="mt-[var(--host-34)] pb-[var(--host-70)]">
-      <GalleryDetailRow item={item} wide={imageIsWide} />
-      <GalleryDetailRow item={item} offset wide />
+    <div className="mt-[var(--host-40)] flex w-full flex-col gap-[var(--host-50)] pb-[var(--host-50)]">
+      <GalleryDetailRow item={item} layout="portrait" />
+      <GalleryDetailRow item={videoItem} layout="landscape" />
+      <GalleryDetailRow item={nextPortraitItem} layout="portrait" />
     </div>
   );
 }
 
 function GalleryDetailRow({
   item,
-  offset = false,
-  wide = false,
+  layout,
 }: {
   item: GalleryItem;
-  offset?: boolean;
-  wide?: boolean;
+  layout: GalleryMediaLayout;
 }) {
+  const isLandscape = layout === "landscape";
+  const imageCount = item.imageCount ?? (isLandscape ? 0 : 3);
+
   return (
-    <article
-      className={`grid grid-cols-[minmax(0,var(--host-603))_var(--host-288)] gap-[var(--host-44)] ${
-        offset ? "mt-[var(--host-70)]" : ""
-      }`}
-    >
-      <div className="relative flex min-h-[var(--host-427)] items-center justify-center">
-        <button
-          aria-label="이전 게시물"
-          className="absolute left-0 top-1/2 size-[var(--host-42)] -translate-y-1/2 text-[#D9D9D9] transition hover:text-[#CAC4BC]"
-          type="button"
-        >
-          <ChevronShape direction="left" />
-        </button>
+    <article className="flex w-full items-start gap-[var(--host-12)]">
+      <div
+        className={`relative flex min-w-0 flex-1 items-start justify-center ${
+          isLandscape ? "h-[var(--host-430)]" : "h-[var(--host-643)]"
+        }`}
+      >
+        {isLandscape ? null : (
+          <button
+            aria-label="이전 게시물"
+            className="absolute left-[var(--host-42)] top-[var(--host-281)] h-[var(--host-42)] w-[var(--host-27)] text-[#D9D9D9] transition hover:text-[#CAC4BC]"
+            type="button"
+          >
+            <ChevronShape direction="left" />
+          </button>
+        )}
         <div
-          className={`relative overflow-hidden rounded-[4px] bg-[#D9D9D9] ${
-            wide ? "h-[var(--host-427)] w-[var(--host-539)]" : "h-[var(--host-567)] w-[var(--host-354)]"
+          className={`relative overflow-hidden rounded-[6px] bg-[#D9D9D9] ${
+            isLandscape
+              ? "h-[var(--host-430)] w-[var(--host-765)]"
+              : "mt-[var(--host-22)] h-[var(--host-600)] w-[var(--host-480)]"
           }`}
         >
           {item.thumbnail ? (
@@ -407,34 +430,37 @@ function GalleryDetailRow({
               alt=""
               className="object-cover opacity-70"
               fill
-              sizes="(min-width: 1920px) 718px, 539px"
+              sizes={isLandscape ? "(min-width: 1920px) 1020px, 765px" : "(min-width: 1920px) 640px, 480px"}
               src={item.thumbnail}
             />
           ) : null}
-          {item.imageCount && item.imageCount > 0 ? (
-            <span className="absolute right-[var(--host-16)] top-[var(--host-12)] text-[length:var(--host-20)] font-semibold leading-[1.253] text-[#F9F9F9]">
-              +{item.imageCount}
+          {!isLandscape && imageCount > 0 ? (
+            <span className="absolute right-[var(--host-16)] top-[var(--host-12)] text-[length:var(--host-24)] font-normal leading-[1.253] text-[#FFF6EC]">
+              +{imageCount}
             </span>
           ) : null}
-          {isVideoItem(item) ? (
+          {isLandscape || isVideoItem(item) ? (
             <span className="absolute inset-0 grid place-items-center text-[#FFF6EC]">
-              <span className="size-[var(--host-64)]">
+              <span className="h-[var(--host-77)] w-[var(--host-87)]">
                 <MaskIcon icon={nuvioIcons.channelViewVideo} />
               </span>
             </span>
           ) : null}
         </div>
-        <button
-          aria-label="다음 게시물"
-          className="absolute right-0 top-1/2 size-[var(--host-42)] -translate-y-1/2 text-[#D9D9D9] transition hover:text-[#CAC4BC]"
-          type="button"
-        >
-          <ChevronShape direction="right" />
-        </button>
+        {isLandscape ? null : (
+          <button
+            aria-label="다음 게시물"
+            className="absolute right-[var(--host-42)] top-[var(--host-281)] h-[var(--host-42)] w-[var(--host-27)] text-[#D9D9D9] transition hover:text-[#CAC4BC]"
+            type="button"
+          >
+            <ChevronShape direction="right" />
+          </button>
+        )}
       </div>
 
-      <div className="relative pt-[var(--host-52)]">
-        <div className="absolute right-0 top-[var(--host-8)] flex items-center gap-[var(--host-12)] text-[#6D7A8A]">
+      <div className="relative h-[var(--host-501)] w-[var(--host-340)] shrink-0 pt-[var(--host-20)]">
+        <div className="mb-[var(--host-12)] flex w-full items-start gap-[var(--host-12)] px-[var(--host-12)] text-[#6D7A8A]">
+          <span className="min-w-0 flex-1" />
           <button aria-label="게시물 복제" className="size-[var(--host-16)] transition hover:text-[#FE701E]" type="button">
             <MaskIcon icon={nuvioIcons.formItemCopy} />
           </button>
@@ -445,10 +471,10 @@ function GalleryDetailRow({
         <p className="text-[length:var(--host-16)] font-semibold leading-[1.253] text-[#6D7A8A]">
           {formatGalleryDate(item.date)} <span className="font-normal">(작성일)</span>
         </p>
-        <h2 className="mt-[var(--host-22)] text-[length:var(--host-16)] font-semibold leading-[1.45] text-[#0D0D0C]">
+        <h2 className="mt-[var(--host-16)] text-[length:var(--host-16)] font-semibold leading-[1.253] text-[#0D0D0C]">
           {item.title}
         </h2>
-        <div className="mt-[var(--host-4)] text-[length:var(--host-16)] font-normal leading-[1.55] text-[#0D0D0C]">
+        <div className="mt-[var(--host-4)] text-[length:var(--host-16)] font-normal leading-[1.253] text-[#0D0D0C]">
           {(item.body.length > 0 ? item.body : [item.summary]).slice(0, 3).map((line) => (
             <p key={line}>{line}</p>
           ))}
