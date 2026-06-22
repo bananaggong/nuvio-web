@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { HostChannelBoards } from "@/components/host-channel-boards";
 import { HostChannelGalleries } from "@/components/host-channel-galleries";
 import { HostChannelMagazines } from "@/components/host-channel-magazines";
 import { HostChannelPlaceholder } from "@/components/host-channel-placeholder";
@@ -20,6 +21,7 @@ export default async function HostChannelSectionPage({
   if (section === "reviews") return <HostChannelReviews />;
   if (section === "galleries") return <HostChannelGalleries />;
   if (section === "magazines") return <HostChannelMagazines />;
+  if (section === "boards") return <HostChannelBoards />;
 
   return <HostChannelPlaceholder section={section} />;
 }
