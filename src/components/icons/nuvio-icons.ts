@@ -7,6 +7,7 @@ export const nuvioIcons = {
   channelAddCircle: "/icons/nuvio/channel-add-circle.svg",
   channelFreeAdd: "/icons/nuvio/channel-free-add.svg",
   channelFreeBlock: "/icons/nuvio/channel-free-block.svg",
+  channelLink: "/icons/nuvio/channel-link.svg",
   channelViewGrid: "/icons/nuvio/channel-view-grid.svg",
   channelViewStack: "/icons/nuvio/channel-view-stack.svg",
   channelViewVideo: "/icons/nuvio/channel-view-video.svg",

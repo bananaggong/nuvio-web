@@ -5,6 +5,7 @@ import { Loader2 } from "lucide-react";
 import type { ReactNode } from "react";
 import { useEffect, useMemo, useState } from "react";
 import { fallbackChannel } from "@/components/host-channel-home";
+import { nuvioIcons } from "@/components/icons/nuvio-icons";
 import { HostWorkspaceLayout } from "@/components/host-workspace-ui";
 import { villagePath } from "@/lib/village-routing";
 import type { Village } from "@/lib/village-types";
@@ -301,7 +302,7 @@ function ChannelSettingsHeader({
             href={publicHref}
             target="_blank"
           >
-            <span className="text-[#FE701E]">ↄ</span>
+            <Image alt="" height={16} src={nuvioIcons.channelLink} width={16} />
             이름&nbsp;&nbsp; 연결링크
           </a>
           <button

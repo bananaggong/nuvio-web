@@ -169,8 +169,10 @@ Desktop Figma pages should generally have one vertical scroll owner: the page
 itself. Inner scrolling is allowed only for designed panels such as message
 lists, tables, or modal lists.
 
-- Root workspace wrappers should use `max-width: 100dvw` and `overflow-x: clip`
-  where appropriate.
+- Root workspace wrappers should avoid `100vw`/`100dvw` width caps on normal
+  document pages. These units include scrollbar width in some browser states and
+  can create a bottom scrollbar that Figma does not have. Prefer `w-full`,
+  `max-w-full`, `min-w-0`, and `overflow-x: clip`.
 - Main content containers should use `min-w-0`.
 - Repeated rows and dividers should be `w-full`, not fixed-width, unless Figma
   explicitly requires a fixed measurement.

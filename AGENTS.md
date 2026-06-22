@@ -30,6 +30,7 @@ Before finishing any Figma-derived screen, confirm these points explicitly:
 - The exact Figma frame was inspected and the implementation was matched at 1440px before scaling to 1920px.
 - No Figma frame labels, debug headings, helper explanations, or placeholder copy leaked into the product UI.
 - The page has no unintended browser or inner horizontal scrollbar; `scrollWidth <= clientWidth` must hold for 1440px and 1920px.
+- Shared desktop shells must not use `100vw`/`100dvw` as the content width cap. Prefer `w-full`, `max-w-full`, `min-w-0`, and clipped overflow so vertical scrollbar width cannot create a second horizontal scrollbar.
 - Host/channel/program navigation changes were made in shared components when they affect multiple routes.
 - The host/channel sidebar uses the shared shell and only switches the active section/menu, rather than creating a second sidebar variant.
 - Icons used in Figma-matched UI come from `public/icons/nuvio` via `src/components/icons/nuvio-icons.ts`; export/register missing Figma icons instead of approximating them.

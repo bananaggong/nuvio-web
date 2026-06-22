@@ -155,7 +155,7 @@ export function HostWorkspaceLayout({
 }: HostWorkspaceLayoutProps) {
   return (
     <main
-      className="font-pretendard min-h-[calc(100vh-4.861vw)] w-full max-w-[100dvw] overflow-x-clip bg-white text-[#33241C]"
+      className="font-pretendard min-h-[calc(100vh-4.861vw)] w-full max-w-full overflow-x-clip bg-white text-[#33241C]"
       style={hostWorkspaceScaleStyle}
     >
       <div className="flex min-h-[calc(100vh-4.861vw)] w-full max-w-full overflow-x-clip max-md:flex-col">

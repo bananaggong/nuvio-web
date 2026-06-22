@@ -94,10 +94,9 @@ export const fallbackPrograms: HostProgramDraft[] = [
 ];
 
 const galleryCards = [
-  "채널 이미지 제목",
-  "채널 이미지 제목",
-  "채널 이미지 제목",
-  "채널 이미지 제목",
+  "목포 원도심 산책",
+  "바다 앞 기록 워크숍",
+  "로컬 리서치 노트",
 ];
 
 const reviews = [
@@ -112,6 +111,25 @@ const reviews = [
   {
     body: "숙소와 작업 공간, 로컬 만남이 자연스럽게 연결되어 다음 프로그램도 기대됩니다.",
     title: "다시 찾고 싶은 운영",
+  },
+  {
+    body: "낯선 도시에서 나만의 속도로 머물며 기록을 남길 수 있었던 시간이었습니다.",
+    title: "머무는 감각을 다시 배웠어요",
+  },
+];
+
+const magazineCards = [
+  {
+    body: "목포 바다를 따라 걷고, 오래된 골목에서 지역의 이야기를 수집하는 방법.",
+    title: "기록으로 남기는 원도심",
+  },
+  {
+    body: "숙소와 코워킹 공간을 연결해 하루의 리듬을 만드는 워케이션 운영 노트.",
+    title: "머무는 사람을 위한 동선",
+  },
+  {
+    body: "참여자가 남긴 사진과 문장을 채널 홈에서 다시 읽히게 하는 편집 방식.",
+    title: "후기가 콘텐츠가 되는 순간",
   },
 ];
 
@@ -198,16 +216,14 @@ export function HostChannelHome() {
             </div>
 
             <ChannelSectionHeader actionLabel="후기 관리" title="후기" />
-            <div className="grid grid-cols-3 gap-[var(--host-18)]">
+            <div className="grid grid-cols-4 gap-[var(--host-18)]">
               {reviews.map((review) => (
-                <article
-                  className="min-h-[var(--host-156)] rounded-[4px] border border-[#D9D9D9] bg-white px-[var(--host-16)] py-[var(--host-16)]"
-                  key={review.title}
-                >
-                  <h3 className="text-[length:var(--host-14)] font-semibold leading-[1.35] text-[#5B3A29]">
+                <article className="min-w-0" key={review.title}>
+                  <div className="h-[var(--host-110)] rounded-[4px] bg-[#D9D9D9]" />
+                  <h3 className="mt-[var(--host-10)] line-clamp-1 text-[length:var(--host-13)] font-semibold leading-[1.253] text-[#5B3A29]">
                     {review.title}
                   </h3>
-                  <p className="mt-[var(--host-10)] line-clamp-4 text-[length:var(--host-12)] font-normal leading-[1.7] text-[#6D7A8A]">
+                  <p className="mt-[var(--host-6)] line-clamp-3 text-[length:var(--host-11)] font-normal leading-[1.55] text-[#6D7A8A]">
                     {review.body}
                   </p>
                 </article>
@@ -215,13 +231,34 @@ export function HostChannelHome() {
             </div>
 
             <ChannelSectionHeader actionLabel="갤러리 관리" title="갤러리" />
-            <div className="grid grid-cols-4 gap-[var(--host-18)] pb-[var(--host-70)]">
+            <div className="grid grid-cols-3 gap-[var(--host-24)]">
               {galleryCards.map((title, index) => (
                 <article key={`${title}-${index}`}>
-                  <div className="h-[var(--host-194)] rounded-[6px] bg-[#D9D9D9]" />
-                  <h3 className="mt-[var(--host-10)] text-[length:var(--host-12)] font-medium leading-[1.253] text-[#5B3A29]">
-                    {title}
+                  <div className="relative h-[var(--host-254)] overflow-hidden rounded-[4px] bg-[#D9D9D9]">
+                    {index === 1 ? (
+                      <span className="absolute left-1/2 top-1/2 size-0 -translate-x-1/2 -translate-y-1/2 border-y-[var(--host-12)] border-l-[var(--host-18)] border-y-transparent border-l-white" />
+                    ) : null}
+                    <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/35 to-transparent px-[var(--host-14)] pb-[var(--host-14)] pt-[var(--host-40)]">
+                      <h3 className="text-[length:var(--host-13)] font-semibold leading-[1.253] text-white">
+                        {title}
+                      </h3>
+                    </div>
+                  </div>
+                </article>
+              ))}
+            </div>
+
+            <ChannelSectionHeader actionLabel="매거진 관리" title="매거진" />
+            <div className="grid grid-cols-3 gap-[var(--host-24)] pb-[var(--host-70)]">
+              {magazineCards.map((card) => (
+                <article className="min-w-0" key={card.title}>
+                  <div className="h-[var(--host-150)] rounded-[4px] bg-[#D9D9D9]" />
+                  <h3 className="mt-[var(--host-10)] text-[length:var(--host-14)] font-semibold leading-[1.253] text-[#5B3A29]">
+                    {card.title}
                   </h3>
+                  <p className="mt-[var(--host-6)] line-clamp-2 text-[length:var(--host-11)] font-normal leading-[1.55] text-[#6D7A8A]">
+                    {card.body}
+                  </p>
                 </article>
               ))}
             </div>
@@ -274,7 +311,7 @@ export function ChannelProfileHeader({
             href={publicHref}
             target="_blank"
           >
-            <span className="text-[#FE701E]">ↄ</span>
+            <Image alt="" height={16} src={nuvioIcons.channelLink} width={16} />
             이름&nbsp;&nbsp; 연결링크
           </Link>
         </div>
