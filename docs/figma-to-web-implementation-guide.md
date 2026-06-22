@@ -76,6 +76,19 @@ const figmaScaleStyle = {
 
 현재 `src/components/boseong-figma-site.tsx`가 이 유형에 많이 남아 있습니다. 편집기 미리보기처럼 의도적으로 1440 캔버스를 보여주는 경우만 예외입니다.
 
+## Scroll And Overflow
+
+정밀 피그마 화면에서 스크롤은 의도한 축과 컨테이너에만 하나씩 존재해야 합니다. 페이지 전체 세로 스크롤과 내부 프레임 가로 스크롤이 동시에 생기면 구현 오류로 봅니다.
+
+- 데스크톱 전체 화면의 가로 스크롤은 기본적으로 금지합니다.
+- 루트 워크스페이스에는 필요하면 `overflow-x-hidden`을 둡니다.
+- 본문 영역에 `overflow-x-auto`를 넣기 전에 정말 내부 가로 스크롤이 피그마에 있는지 확인합니다.
+- `width: scaledFrameWidth`와 `min-width: baseFrameWidth`를 함께 쓰는 패턴은 피합니다. 세로 스크롤바 폭 때문에 실제 viewport가 줄면 몇 px 차이로 내부 스크롤이 생깁니다.
+- 본문 프레임은 `w-full max-w-[var(--frame-width)]`처럼 사용 가능한 폭 안에서 줄어들 수 있어야 합니다.
+- 반복 row나 divider는 고정 `w-[...]`보다 부모 기준 `w-full`을 우선합니다.
+- `scrollWidth > clientWidth`가 생기는지 1440px과 1920px에서 확인합니다.
+- 예외는 데이터 테이블, 캔버스, 타임라인처럼 피그마에서 명확히 내부 가로 스크롤이 설계된 경우뿐입니다.
+
 ## Typography
 
 피그마 기반 누비오 화면은 Pretendard 기준으로 맞춥니다. 현재 전역 Next font는 Geist로 설정되어 있으므로, 정밀 피그마 화면 루트에는 `font-pretendard`를 명시합니다.
@@ -132,6 +145,7 @@ const figmaScaleStyle = {
 - 아이콘 크기와 색
 - 긴 텍스트 줄바꿈
 - 스크롤 영역과 sticky 영역
+- 불필요한 내부 가로 스크롤과 이중 스크롤 여부
 - 클릭 가능한 hit area
 
 시각 검증 결과는 `output/visual-diff`에 남기는 것을 권장합니다.

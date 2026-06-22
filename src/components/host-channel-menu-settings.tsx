@@ -190,8 +190,8 @@ export function HostChannelMenuSettings() {
 
   return (
     <HostWorkspaceLayout sidebarHeight="min-h-[var(--host-1086)]">
-      <section className="min-w-0 flex-1 overflow-x-auto">
-        <div className="w-[var(--host-1230)] min-w-[1230px] max-md:min-w-full max-md:w-full">
+      <section className="min-w-0 flex-1 overflow-x-hidden">
+        <div className="w-full max-w-[var(--host-1230)] max-md:w-full">
           <section className="relative h-[var(--host-156)] border-b border-[#6D7A8A] bg-white">
             <div className="flex items-start gap-[var(--host-42)] px-[var(--host-58)] pt-[var(--host-14)] max-md:px-0">
               <div className="size-[var(--host-128)] shrink-0 rounded-full bg-[#D9D9D9]" />
@@ -308,7 +308,7 @@ function ChannelMenuRow({
 
   return (
     <div
-      className="group relative h-[var(--host-68)] w-[var(--host-1114)] border-b border-[#CAC4BC]"
+      className="group relative h-[var(--host-68)] w-full border-b border-[#CAC4BC]"
       style={{ marginTop: rowIndex === 0 ? 0 : "var(--host-22)" }}
     >
       {!fixedHome ? (
