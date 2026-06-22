@@ -5,9 +5,9 @@ import { BoseongAboutContent } from "@/components/boseong-intro-section";
 import {
   BoseongFigmaAboutPage,
   BoseongFigmaNoticePage,
-  BoseongFigmaProgramsPage,
   BoseongFigmaReviewsPage,
 } from "@/components/boseong-figma-site";
+import { ChannelGuestProgramsPage } from "@/components/channel-guest-programs";
 import { NuvioEmptyState } from "@/components/nuvio-empty-state";
 import { StatusBadge } from "@/components/status-badge";
 import { VillageSiteFooter, VillageSiteHeader } from "@/components/village-site-chrome";
@@ -22,7 +22,6 @@ import type { PublishedVillagePageSection } from "@/lib/village-page-cms";
 import type { Village, VillageSection } from "@/lib/village-types";
 
 export function VillageProgramsIndexPage({
-  pageSections,
   programs,
   village,
 }: {
@@ -33,13 +32,7 @@ export function VillageProgramsIndexPage({
   const primaryProgram = programs[0];
 
   if (village.slug === "boseong") {
-    return (
-      <BoseongFigmaProgramsPage
-        pageSections={pageSections}
-        programs={programs}
-        village={village}
-      />
-    );
+    return <ChannelGuestProgramsPage programs={programs} village={village} />;
   }
 
   return (
