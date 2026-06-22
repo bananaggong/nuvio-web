@@ -309,7 +309,6 @@ function HostWorkspaceSwitchTab({
 const channelSidebarItems = [
   { href: "/host/channels", label: "채널 홈" },
   { href: "/host/channels/programs", label: "프로그램" },
-  { href: "/host/channels/reviews", label: "후기" },
   { href: "/host/channels/galleries", label: "갤러리형" },
   { href: "/host/channels/magazines", label: "매거진형" },
   { href: "/host/channels/boards", label: "게시판형" },

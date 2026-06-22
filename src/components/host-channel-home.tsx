@@ -375,7 +375,7 @@ export function ChannelProfileHeader({
   channel: Village;
   publicHref: string;
 }) {
-  const menuLabels = ["채널 홈", "프로그램", "후기", "갤러리형", "매거진형", "게시판형", "자유형"];
+  const menuLabels = ["채널 홈", "프로그램", "갤러리형", "매거진형", "게시판형", "자유형"];
 
   return (
     <section className="relative h-[var(--host-156)] border-b border-[#6D7A8A] bg-white">
