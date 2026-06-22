@@ -105,7 +105,7 @@ export function HostChannelPrograms() {
         <div className="w-full max-w-[var(--host-1230)]">
           <ChannelProfileHeader activeLabel="프로그램" channel={channel} publicHref={publicHref} />
 
-          <section className="px-[var(--host-44)] pt-[var(--host-30)]">
+          <section className="px-[var(--host-44)] pt-[var(--host-8)]">
             <div className="flex h-[var(--host-48)] items-start justify-between pt-[var(--host-6)]">
               <div className="flex items-center gap-[var(--host-10)] pl-[var(--host-9)] text-[length:var(--host-12)] font-semibold leading-[1.253]">
                 {filters.map((filter) => {
