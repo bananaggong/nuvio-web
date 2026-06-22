@@ -1,7 +1,8 @@
 "use client";
 
-import { Copy, GripVertical, Plus, Trash2, X } from "lucide-react";
+import Image from "next/image";
 import { useEffect, useMemo, useState } from "react";
+import { nuvioIcons } from "@/components/icons/nuvio-icons";
 import { HostWorkspaceLayout } from "@/components/host-workspace-ui";
 
 type ChannelMenuKind = "fixed" | "program" | "review" | "gallery" | "magazine" | "board" | "free";
@@ -180,34 +181,31 @@ export function HostChannelMenuSettings() {
   }
 
   return (
-    <HostWorkspaceLayout sidebarHeight="min-h-[var(--host-1864)]">
+    <HostWorkspaceLayout sidebarHeight="min-h-[var(--host-1086)]">
       <section className="min-w-0 flex-1 overflow-x-auto">
-        <div className="w-full max-w-[var(--host-1230)] pt-[var(--host-24)] max-md:w-full max-md:pt-5">
-          <p className="text-[var(--host-12)] font-medium leading-[1.253] text-[#CAC4BC]">
-            Channel Manager - Menu Settings
-          </p>
-
-          <section className="mt-[var(--host-12)] border-b border-[#6D7A8A] bg-white pb-[var(--host-16)]">
-            <div className="flex items-center gap-[var(--host-24)] px-[var(--host-58)] py-[var(--host-20)] max-md:px-0">
-              <div className="size-[var(--host-110)] shrink-0 rounded-full bg-[#D9D9D9]" />
+        <div className="w-[var(--host-1230)] min-w-[1230px] max-md:min-w-full max-md:w-full">
+          <section className="h-[var(--host-156)] border-b border-[#6D7A8A] bg-white">
+            <div className="flex items-start gap-[var(--host-42)] px-[var(--host-58)] pt-[var(--host-14)] max-md:px-0">
+              <div className="size-[var(--host-128)] shrink-0 rounded-full bg-[#D9D9D9]" />
               <div className="min-w-0 flex-1">
-                <div className="flex flex-wrap items-center gap-[var(--host-8)]">
-                  <h1 className="text-[var(--host-20)] font-semibold leading-[1.253] text-[#33241C]">
+                <div className="flex flex-wrap items-end gap-[var(--host-10)] pt-[var(--host-3)]">
+                  <h1 className="text-[var(--host-24)] font-medium leading-[1.253] text-[#0D0D0C]">
                     호스트 채널 명
                   </h1>
-                  <span className="text-[var(--host-12)] font-medium leading-[1.253] text-[#6D7A8A]">
+                  <span className="pb-[var(--host-2)] text-[var(--host-14)] font-medium leading-[1.253] text-[#6D7A8A]">
                     지역명
                   </span>
                 </div>
-                <p className="mt-[var(--host-6)] text-[var(--host-12)] font-normal leading-[1.6] text-[#6D7A8A]">
+                <p className="mt-[var(--host-10)] text-[var(--host-16)] font-medium leading-[1.253] text-[#6D7A8A]">
                   호스트 채널 소개내용
                 </p>
-                <p className="mt-[var(--host-6)] text-[var(--host-12)] font-medium leading-[1.253] text-[#FE701E]">
-                  링크 연결링크
+                <p className="mt-[var(--host-10)] text-[var(--host-16)] font-medium leading-[1.253] text-[#6D7A8A]">
+                  <span className="mr-[var(--host-8)] text-[#FE701E]">ↄ</span>
+                  이름&nbsp;&nbsp; 연결링크
                 </p>
               </div>
             </div>
-            <nav className="flex h-[var(--host-36)] items-end gap-[var(--host-32)] px-[var(--host-58)] text-[var(--host-12)] font-semibold leading-[1.253] text-[#33241C] max-md:overflow-x-auto max-md:px-0">
+            <nav className="ml-[var(--host-228)] -mt-[var(--host-32)] flex items-end gap-[var(--host-40)] text-[var(--host-16)] font-semibold leading-[1.253] text-[#5B3A29] max-md:ml-0 max-md:overflow-x-auto">
               {items.slice(0, 7).map((item) => (
                 <span className="shrink-0" key={item.id}>
                   {item.label}
@@ -216,47 +214,48 @@ export function HostChannelMenuSettings() {
             </nav>
           </section>
 
-          <section className="px-[var(--host-58)] py-[var(--host-34)] max-md:px-0">
-            <h2 className="text-[var(--host-18)] font-medium leading-[1.253] text-[#33241C]">
+          <section className="h-[var(--host-129)] px-[var(--host-58)] pt-[var(--host-40)] max-md:px-0">
+            <h2 className="text-[var(--host-20)] font-semibold leading-[1.253] text-[#6D7A8A]">
               메뉴 설정
             </h2>
-            <p className="mt-[var(--host-8)] text-[var(--host-12)] font-normal leading-[1.6] text-[#6D7A8A]">
+            <p className="mt-[var(--host-12)] text-[var(--host-16)] font-normal leading-[1.6] text-[#6D7A8A]">
               채널 네비게이션에 표시되는 메뉴를 관리해요
             </p>
-            <p className="mt-[var(--host-8)] text-[var(--host-12)] font-normal leading-[1.6] text-[#6D7A8A]">
+            <p className="mt-[var(--host-6)] text-[var(--host-16)] font-normal leading-[1.6] text-[#6D7A8A]">
               모든 메뉴 이름은 자유롭게 변경할 수 있어요
             </p>
-
-            <div className="mt-[var(--host-18)] divide-y divide-[#D9D9D9] border-b border-[#D9D9D9]">
-              {items.map((item) => (
-                <ChannelMenuRow
-                  item={item}
-                  key={item.id}
-                  onDuplicate={() => duplicateItem(item)}
-                  onRemove={() => removeItem(item.id)}
-                  onUpdate={(patch) => updateItem(item.id, patch)}
-                />
-              ))}
-            </div>
-
-            <div className="flex flex-col items-center justify-center gap-[var(--host-6)] py-[var(--host-18)]">
-              <span className="text-[var(--host-11)] font-medium leading-[1.253] text-[#5B3A29]">
-                메뉴 추가
-              </span>
-              <button
-                aria-label="메뉴 추가"
-                className="grid size-[var(--host-24)] place-items-center rounded-full bg-[#6D7A8A] text-white transition hover:bg-[#FE701E]"
-                onClick={openTypeDialog}
-                type="button"
-              >
-                <Plus className="size-[var(--host-16)]" strokeWidth={2.4} />
-              </button>
-            </div>
           </section>
 
-          <div className="flex h-[var(--host-58)] items-center border-t border-[#6D7A8A] px-[var(--host-24)]">
+          <section className="h-[var(--host-636)] px-[var(--host-58)] pt-[var(--host-14)] max-md:px-0">
+            {items.map((item, index) => (
+              <ChannelMenuRow
+                item={item}
+                key={item.id}
+                onDuplicate={() => duplicateItem(item)}
+                onRemove={() => removeItem(item.id)}
+                onUpdate={(patch) => updateItem(item.id, patch)}
+                rowIndex={index}
+              />
+            ))}
+          </section>
+
+          <div className="flex h-[var(--host-64)] flex-col items-center justify-start pt-[var(--host-2)]">
+            <span className="text-[var(--host-14)] font-medium leading-[1.253] text-[#6D7A8A]">
+              메뉴 추가
+            </span>
             <button
-              className="inline-flex h-[var(--host-29)] items-center justify-center rounded-[4px] border border-[#6D7A8A] bg-white px-[var(--host-18)] text-[var(--host-11)] font-medium leading-[1.253] text-[#6D7A8A] transition hover:border-[#FE701E] hover:text-[#FE701E]"
+              aria-label="메뉴 추가"
+              className="mt-[var(--host-5)] grid size-[var(--host-28)] place-items-center rounded-full bg-[#6D7A8A] text-[var(--host-24)] font-medium leading-none text-white transition hover:bg-[#FE701E]"
+              onClick={openTypeDialog}
+              type="button"
+            >
+              +
+            </button>
+          </div>
+
+          <div className="flex h-[var(--host-69)] items-start border-t border-[#6D7A8A] px-[var(--host-28)] pt-[var(--host-18)]">
+            <button
+              className="inline-flex h-[var(--host-29)] w-[var(--host-58)] items-center justify-center rounded-[4px] border border-[#6D7A8A] bg-white text-[var(--host-11)] font-medium leading-[1.253] text-[#6D7A8A] transition hover:border-[#FE701E] hover:text-[#FE701E]"
               onClick={saveDraft}
               type="button"
             >
@@ -289,48 +288,60 @@ function ChannelMenuRow({
   onDuplicate,
   onRemove,
   onUpdate,
+  rowIndex,
 }: {
   item: ChannelMenuItem;
   onDuplicate: () => void;
   onRemove: () => void;
   onUpdate: (patch: Partial<ChannelMenuItem>) => void;
+  rowIndex: number;
 }) {
   return (
-    <div className="grid min-h-[var(--host-77)] grid-cols-[var(--host-28)_minmax(0,var(--host-509))_var(--host-110)_1fr] items-center gap-[var(--host-18)] py-[var(--host-12)] max-lg:grid-cols-[var(--host-28)_minmax(0,1fr)] max-lg:gap-y-[var(--host-8)]">
-      <span className="grid size-[var(--host-18)] place-items-center rounded-[4px] border border-[#D9D9D9] text-[#CAC4BC]">
-        <GripVertical className="size-[var(--host-12)]" strokeWidth={1.8} />
+    <div
+      className="grid h-[var(--host-68)] w-[var(--host-1114)] grid-cols-[var(--host-28)_var(--host-509)_var(--host-110)_1fr] items-start gap-[var(--host-18)] border-b border-[#CAC4BC] pt-0"
+      style={{ marginTop: rowIndex === 0 ? 0 : "var(--host-22)" }}
+    >
+      <span className="mt-[var(--host-6)] grid size-[var(--host-22)] place-items-center rounded-[4px] border border-[#D9D9D9]">
+        <span
+          aria-hidden="true"
+          className="block h-[var(--host-13)] w-[var(--host-8)]"
+          style={{
+            backgroundImage: "radial-gradient(circle, #D3CFC8 1.2px, transparent 1.4px)",
+            backgroundSize: "6px 6px",
+          }}
+        />
       </span>
       <label className="grid gap-[var(--host-6)]">
         <input
-          className="h-[var(--host-29)] rounded-[4px] border border-[#B6C0CA] bg-white px-[var(--host-12)] text-[var(--host-12)] font-medium leading-[1.253] text-[#5B3A29] outline-none transition placeholder:text-[#CAC4BC] focus:border-[#FE701E]"
+          className="h-[var(--host-29)] rounded-[4px] border border-[#6D7A8A] bg-white px-[var(--host-14)] text-[var(--host-14)] font-medium leading-[1.253] text-[#6D7A8A] outline-none transition placeholder:text-[#CAC4BC] focus:border-[#FE701E]"
           onChange={(event) => onUpdate({ label: event.target.value })}
           value={item.label}
         />
-        <span className="text-[var(--host-10)] font-normal leading-[1.6] text-[#CAC4BC]">
+        <span className="text-[var(--host-14)] font-normal leading-[1.253] text-[#CAC4BC]">
           {item.description}
         </span>
       </label>
-      <span className="inline-flex h-[var(--host-20)] w-fit items-center justify-center rounded-full bg-[#6D7A8A] px-[var(--host-10)] text-[var(--host-10)] font-semibold leading-[1.253] text-white max-lg:col-start-2">
+      <span className="mt-[var(--host-4)] inline-flex h-[var(--host-22)] w-fit min-w-[var(--host-76)] items-center justify-center rounded-full bg-[#6D7A8A] px-[var(--host-12)] text-[var(--host-14)] font-semibold leading-[1.253] text-[#F9F9F9]">
         {typeLabelByKind[item.kind]}
       </span>
-      <span className="flex items-center justify-end gap-[var(--host-10)] max-lg:col-start-2 max-lg:justify-start">
+      <span className="mt-[var(--host-8)] flex items-center justify-end gap-[var(--host-11)]">
         {!item.locked ? (
           <>
             <button
               aria-label={`${item.label} 복제`}
-              className="text-[#6D7A8A] transition hover:text-[#FE701E]"
+              className="grid size-[var(--host-16)] place-items-center"
               onClick={onDuplicate}
               type="button"
             >
-              <Copy className="size-[var(--host-14)]" strokeWidth={1.8} />
+              <Image alt="" height={16} src={nuvioIcons.formItemCopy} width={16} />
             </button>
             <button
               aria-label={`${item.label} 삭제`}
-              className="text-[#6D7A8A] transition hover:text-[#FE701E]"
+              className="grid size-[var(--host-16)] place-items-center"
               onClick={onRemove}
               type="button"
             >
-              <Trash2 className="size-[var(--host-14)]" strokeWidth={1.8} />
+              <Image alt="" height={16} src={nuvioIcons.formItemTrash} width={16} />
             </button>
           </>
         ) : null}
@@ -370,7 +381,9 @@ function SelectMenuTypeDialog({
               onClick={onClose}
               type="button"
             >
-              <X className="size-[var(--host-18)]" strokeWidth={2} />
+              <span aria-hidden="true" className="text-[var(--host-18)] leading-none">
+                ×
+              </span>
             </button>
           </div>
           <p className="text-[var(--host-12)] font-semibold leading-[1.253] text-[#0D0D0C]">

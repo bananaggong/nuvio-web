@@ -15,6 +15,7 @@ import { hostProjectPath, type HostProgramOverview } from "@/lib/host-projects";
 
 const hostWorkspaceScaleStyle = {
   "--host-scale": "clamp(1, calc(min(100vw, 1920px) / 1440), 1.333333)",
+  "--host-2": "clamp(2px, 0.139vw, 2.667px)",
   "--host-3": "clamp(3px, 0.208vw, 4px)",
   "--host-4": "clamp(4px, 0.278vw, 5.333px)",
   "--host-5": "clamp(5px, 0.347vw, 6.667px)",
@@ -60,10 +61,13 @@ const hostWorkspaceScaleStyle = {
   "--host-52": "clamp(52px, 3.611vw, 69.333px)",
   "--host-56": "clamp(56px, 3.889vw, 74.667px)",
   "--host-58": "clamp(58px, 4.028vw, 77.333px)",
+  "--host-64": "clamp(64px, 4.444vw, 85.333px)",
   "--host-66": "clamp(66px, 4.583vw, 88px)",
+  "--host-68": "clamp(68px, 4.722vw, 90.667px)",
   "--host-69": "clamp(69px, 4.792vw, 92px)",
   "--host-70": "clamp(70px, 4.861vw, 93.333px)",
   "--host-71": "clamp(71px, 4.931vw, 94.667px)",
+  "--host-76": "clamp(76px, 5.278vw, 101.333px)",
   "--host-77": "clamp(77px, 5.347vw, 102.667px)",
   "--host-82": "clamp(82px, 5.694vw, 109.333px)",
   "--host-86": "clamp(86px, 5.972vw, 114.667px)",
@@ -72,15 +76,20 @@ const hostWorkspaceScaleStyle = {
   "--host-93": "clamp(93px, 6.458vw, 124px)",
   "--host-105": "clamp(105px, 7.292vw, 140px)",
   "--host-110": "clamp(110px, 7.639vw, 146.667px)",
+  "--host-128": "clamp(128px, 8.889vw, 170.667px)",
+  "--host-129": "clamp(129px, 8.958vw, 172px)",
   "--host-133": "clamp(133px, 9.236vw, 177.333px)",
   "--host-135": "clamp(135px, 9.375vw, 180px)",
   "--host-142": "clamp(142px, 9.861vw, 189.333px)",
   "--host-150": "clamp(150px, 10.417vw, 200px)",
+  "--host-156": "clamp(156px, 10.833vw, 208px)",
   "--host-166": "clamp(166px, 11.528vw, 221.333px)",
   "--host-176": "clamp(176px, 12.222vw, 234.667px)",
   "--host-179": "clamp(179px, 12.431vw, 238.667px)",
   "--host-188": "clamp(188px, 13.056vw, 250.667px)",
   "--host-194": "clamp(194px, 13.472vw, 258.667px)",
+  "--host-198": "clamp(198px, 13.75vw, 264px)",
+  "--host-210": "clamp(210px, 14.583vw, 280px)",
   "--host-216": "clamp(216px, 15vw, 288px)",
   "--host-219": "clamp(219px, 15.208vw, 292px)",
   "--host-222": "clamp(222px, 15.417vw, 296px)",
@@ -108,8 +117,11 @@ const hostWorkspaceScaleStyle = {
   "--host-567": "clamp(567px, 39.375vw, 756px)",
   "--host-577": "clamp(577px, 40.069vw, 769.333px)",
   "--host-603": "clamp(603px, 41.875vw, 804px)",
+  "--host-636": "clamp(636px, 44.167vw, 848px)",
   "--host-782": "clamp(782px, 54.306vw, 1042.667px)",
   "--host-959": "clamp(959px, 66.597vw, 1278.667px)",
+  "--host-1086": "clamp(1086px, 75.417vw, 1448px)",
+  "--host-1114": "clamp(1114px, 77.361vw, 1485.333px)",
   "--host-1118": "clamp(1118px, 77.639vw, 1490.667px)",
   "--host-1158": "clamp(1158px, 80.417vw, 1544px)",
   "--host-1230": "clamp(1230px, 85.417vw, 1640px)",
@@ -169,10 +181,10 @@ function HostWorkspaceSidebar({ sidebarHeight }: { sidebarHeight: string }) {
 
   return (
     <aside
-      className={`w-[var(--host-228)] min-w-[228px] shrink-0 border-r border-[#6D7A8A] bg-white shadow-[2px_5px_5.2px_rgba(0,0,0,0.23)] ${sidebarHeight} max-md:w-full max-md:min-h-0 max-md:border-r-0 max-md:shadow-none`}
+      className={`w-[var(--host-210)] min-w-[210px] shrink-0 border-r border-[#6D7A8A] bg-white shadow-[2px_5px_5.2px_rgba(0,0,0,0.23)] ${sidebarHeight} max-md:w-full max-md:min-h-0 max-md:border-r-0 max-md:shadow-none`}
     >
       <div className="px-[0.417vw] max-md:px-5">
-        <div className="w-[var(--host-216)] min-w-[216px] max-md:w-full">
+        <div className="w-[var(--host-198)] min-w-[198px] max-md:w-full">
           <section className="h-[5.972vw] min-h-[86px]">
             <div className="flex h-[2.778vw] min-h-10 items-center justify-center pb-[0.556vw] pt-[0.833vw]">
               <span className="w-[var(--host-176)] min-w-[176px] text-[var(--host-16)] font-semibold leading-[1.253] text-[#5B3A29]">
@@ -286,10 +298,10 @@ const channelSidebarItems = [
   { href: "/host/channels", label: "채널 홈" },
   { href: "/host/channels/programs", label: "프로그램" },
   { href: "/host/channels/reviews", label: "후기" },
-  { href: "/host/channels/galleries", label: "갤러리함" },
-  { href: "/host/channels/magazines", label: "매거진함" },
-  { href: "/host/channels/boards", label: "게시판함" },
-  { href: "/host/channels/free", label: "자유함" },
+  { href: "/host/channels/galleries", label: "갤러리형" },
+  { href: "/host/channels/magazines", label: "매거진형" },
+  { href: "/host/channels/boards", label: "게시판형" },
+  { href: "/host/channels/free", label: "자유형" },
   { href: "/host/channels/settings", label: "+메뉴 설정", muted: true },
 ];
 
@@ -331,10 +343,10 @@ function HostSidebarRootLink({
 }) {
   return (
     <Link
-      className={`block w-fit rounded-[4px] py-[0.139vw] text-[var(--host-14)] leading-[1.253] transition ${
+      className={`block w-fit rounded-[4px] py-[0.139vw] leading-[1.253] transition ${
         active
-          ? `${muted ? "text-[#FE701E]" : "text-[#5B3A29]"} font-semibold`
-          : `${muted ? "text-[var(--host-12)] text-[#8B7A6E]" : "text-[#5B3A29]"} font-normal hover:text-[#FE701E]`
+          ? `${muted ? "text-[var(--host-12)] text-[#FE701E]" : "text-[var(--host-14)] text-[#5B3A29]"} font-semibold`
+          : `${muted ? "text-[var(--host-12)] text-[#FE701E]" : "text-[var(--host-14)] text-[#5B3A29]"} font-normal hover:text-[#FE701E]`
       }`}
       href={href}
     >
