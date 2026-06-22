@@ -16,3 +16,5 @@ Figma designs for this project are authored at a 1440px desktop width. When tran
 - Use Figma-exported assets from `public/icons/nuvio` through `src/components/icons/nuvio-icons.ts` before using hand-written SVGs or icon libraries. If the Figma icon is missing, export and register it first.
 - Use Pretendard for exact Figma-derived NUVIO screens unless the Figma frame explicitly uses another face.
 - Before implementing or refactoring a Figma-derived screen, read `docs/figma-to-web-implementation-guide.md` and follow its audit/checklist.
+- For shared host/channel workspace work, treat the sidebar, header, icon set, and scroll ownership as shared infrastructure. Fix the shared component instead of patching one route when the mismatch can recur elsewhere.
+- After a Figma fidelity fix, run the relevant checks, commit intentionally, push `main`, and leave the worktree clean unless the user explicitly asks to keep changes local.
