@@ -18,3 +18,16 @@ Figma designs for this project are authored at a 1440px desktop width. When tran
 - Before implementing or refactoring a Figma-derived screen, read `docs/figma-to-web-implementation-guide.md` and follow its audit/checklist.
 - For shared host/channel workspace work, treat the sidebar, header, icon set, and scroll ownership as shared infrastructure. Fix the shared component instead of patching one route when the mismatch can recur elsewhere.
 - After a Figma fidelity fix, run the relevant checks, commit intentionally, push `main`, and leave the worktree clean unless the user explicitly asks to keep changes local.
+
+## Repeat-prevention checklist
+
+Before finishing any Figma-derived screen, confirm these points explicitly:
+
+- The exact Figma frame was inspected and the implementation was matched at 1440px before scaling to 1920px.
+- No Figma frame labels, debug headings, helper explanations, or placeholder copy leaked into the product UI.
+- The page has no unintended browser or inner horizontal scrollbar; `scrollWidth <= clientWidth` must hold for 1440px and 1920px.
+- Host/channel/program navigation changes were made in shared components when they affect multiple routes.
+- The host/channel sidebar uses the shared shell and only switches the active section/menu, rather than creating a second sidebar variant.
+- Icons used in Figma-matched UI come from `public/icons/nuvio` via `src/components/icons/nuvio-icons.ts`; export/register missing Figma icons instead of approximating them.
+- Text, color, weight, spacing, underline, and border details are treated as implementation requirements, not polish.
+- Finish with `git diff --check`, lint/build when relevant, commit, push, and a clean `git status -sb`.
