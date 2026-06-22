@@ -34,10 +34,10 @@ const text = {
   review: "후기",
 } as const;
 
-const px = (value: number) =>
+export const px = (value: number) =>
   `clamp(${value}px, ${(value / 14.4).toFixed(6)}vw, ${(value * 4 / 3).toFixed(6)}px)`;
 
-const scaleRootStyle = {
+export const channelGuestScaleRootStyle = {
   "--channel-font-14": px(14),
   "--channel-font-16": px(16),
   "--channel-font-24": px(24),
@@ -48,7 +48,7 @@ const profileStyle = {
   width: px(1136),
 } as CSSProperties;
 
-const contentStyle = {
+export const channelGuestContentStyle = {
   maxWidth: `calc(100% - ${px(298)})`,
   width: px(1142),
 } as CSSProperties;
@@ -63,7 +63,7 @@ export function ChannelGuestGalleryPage({
   return (
     <div
       className="min-h-screen overflow-x-clip bg-white font-pretendard text-[#5B3A29]"
-      style={scaleRootStyle}
+      style={channelGuestScaleRootStyle}
     >
       <main className="mx-auto w-full max-w-[1920px]">
         <ChannelProfileHeader activeTab="gallery" homeHref={homeHref} village={village} />
@@ -71,7 +71,7 @@ export function ChannelGuestGalleryPage({
         <section
           className="mx-auto flex flex-col items-center"
           style={{
-            ...contentStyle,
+            ...channelGuestContentStyle,
             paddingBottom: px(70),
             paddingTop: px(32),
           }}
@@ -96,7 +96,7 @@ export function ChannelGuestGalleryPage({
   );
 }
 
-function ChannelProfileHeader({
+export function ChannelProfileHeader({
   activeTab,
   homeHref,
   village,

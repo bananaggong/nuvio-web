@@ -5,6 +5,7 @@ import {
   BoseongFigmaMediaDetailPage,
 } from "@/components/boseong-figma-site";
 import { ChannelGuestGalleryPage } from "@/components/channel-guest-gallery";
+import { ChannelGuestMagazinePage } from "@/components/channel-guest-magazine";
 import { NuvioEmptyState } from "@/components/nuvio-empty-state";
 import {
   VillageSiteFooter,
@@ -26,13 +27,19 @@ export function VillageMediaIndexPage({
   media,
   programs,
   village,
+  viewType = "gallery",
 }: {
   media: VillageMediaContent[];
   pageSections?: PublishedVillagePageSection[];
   programs: Program[];
   village: Village;
+  viewType?: "gallery" | "magazine";
 }) {
   if (village.slug === "boseong") {
+    if (viewType === "magazine") {
+      return <ChannelGuestMagazinePage media={media} village={village} />;
+    }
+
     return <ChannelGuestGalleryPage media={media} village={village} />;
   }
 

@@ -34,10 +34,15 @@ export async function generateMetadata({
 
 export default async function VillageMediaRoute({
   params,
+  searchParams,
 }: {
   params: Promise<{ villageSlug: string }>;
+  searchParams?: Promise<{ type?: string | string[] }>;
 }) {
   const { villageSlug } = await params;
+  const query = searchParams ? await searchParams : {};
+  const rawViewType = Array.isArray(query.type) ? query.type[0] : query.type;
+  const viewType = rawViewType === "magazine" ? "magazine" : "gallery";
   if (isReservedVillageSlug(villageSlug)) notFound();
 
   const village = await getPublicVillageBySlug(villageSlug);
@@ -56,6 +61,7 @@ export default async function VillageMediaRoute({
       pageSections={pageSections}
       programs={programs}
       village={village}
+      viewType={viewType}
     />
   );
 }
