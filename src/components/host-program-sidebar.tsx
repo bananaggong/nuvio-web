@@ -1,7 +1,9 @@
 "use client";
 
+import Image from "next/image";
 import Link from "next/link";
 import type { CSSProperties } from "react";
+import { nuvioIcons } from "@/components/icons/nuvio-icons";
 import { formatProgramDisplayCode } from "@/lib/display-code";
 import { launchFeatureFlags } from "@/lib/launch-feature-flags";
 
@@ -38,6 +40,7 @@ const hostProgramSidebarScaleStyle = {
   "--host-program-sidebar-14": "clamp(14px, 0.972vw, 18.667px)",
   "--host-program-sidebar-16": "clamp(16px, 1.111vw, 21.333px)",
   "--host-program-sidebar-18": "clamp(18px, 1.25vw, 24px)",
+  "--host-program-sidebar-20": "clamp(20px, 1.389vw, 26.667px)",
   "--host-program-sidebar-22": "clamp(22px, 1.528vw, 29.333px)",
   "--host-program-sidebar-24": "clamp(24px, 1.667vw, 32px)",
   "--host-program-sidebar-28": "clamp(28px, 1.944vw, 37.333px)",
@@ -79,6 +82,26 @@ export function HostProgramSidebar({
     >
       <div className="min-h-[650px] px-[0.417vw] max-md:px-5">
         <div className="w-[var(--host-program-sidebar-216)] min-w-[216px] max-md:w-full">
+          <section className="h-[var(--host-program-sidebar-86)] min-h-[86px] border-b border-[#D9D9D9]">
+            <div className="flex h-[var(--host-program-sidebar-40)] min-h-10 items-center justify-center pb-[var(--host-program-sidebar-8)] pt-[var(--host-program-sidebar-12)]">
+              <span className="w-[var(--host-program-sidebar-176)] min-w-0 text-[var(--host-program-sidebar-16)] font-semibold leading-[1.253] text-[#5B3A29]">
+                로컬 호스트님
+              </span>
+              <Image
+                alt="알림"
+                className="size-[var(--host-program-sidebar-20)] shrink-0"
+                height={20}
+                src={nuvioIcons.bell}
+                width={20}
+              />
+            </div>
+            <div className="flex h-[var(--host-program-sidebar-46)] min-h-[46px] items-end pt-[var(--host-program-sidebar-12)] text-center">
+              <HostProgramWorkspaceTab active href="/host" label="호스트" />
+              <span className="mb-[var(--host-program-sidebar-8)] h-[var(--host-program-sidebar-22)] min-h-[22px] w-px bg-[#D9D9D9]" />
+              <HostProgramWorkspaceTab href="/host/channels" label="채널" />
+            </div>
+          </section>
+
         <section className="border-b border-[#D9D9D9] px-[12px] pb-[var(--host-program-sidebar-12)] pt-[var(--host-program-sidebar-12)]">
           <div className="flex items-start gap-[var(--host-program-sidebar-8)]">
             <p className="min-h-[40px] min-w-0 flex-1 break-keep text-[var(--host-program-sidebar-16)] font-semibold leading-[1.253] text-[#5B3A29]">
@@ -174,6 +197,29 @@ export function HostProgramSidebar({
         </div>
       </div>
     </aside>
+  );
+}
+
+function HostProgramWorkspaceTab({
+  active = false,
+  href,
+  label,
+}: {
+  active?: boolean;
+  href: string;
+  label: string;
+}) {
+  return (
+    <Link
+      className={`flex h-full flex-1 items-end justify-center border-b-[2px] pb-[var(--host-program-sidebar-12)] text-[var(--host-program-sidebar-14)] leading-[1.253] ${
+        active
+          ? "border-[#FE701E] font-semibold text-[#FE701E]"
+          : "border-transparent font-normal text-[#CAC4BC]"
+      }`}
+      href={href}
+    >
+      {label}
+    </Link>
   );
 }
 
