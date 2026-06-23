@@ -428,7 +428,7 @@ export function BoseongPageEditor({
             </Link>
             <div className="min-w-0">
               <p className="text-xs font-black uppercase tracking-[0.16em] text-teal-300">
-                로컬페이지 편집기
+                채널 편집기
               </p>
               <h1 className="truncate text-lg font-black md:text-2xl">
                 보성 공개 페이지 편집모드

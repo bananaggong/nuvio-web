@@ -64,7 +64,7 @@ export default async function VillageProgramRoute({
           programJsonLd(program, canonicalPath),
           breadcrumbJsonLd([
             { name: "홈", path: "/" },
-            { name: "로컬페이지", path: "/villages" },
+            { name: "채널", path: "/channels" },
             { name: village.name, path: canonicalVillagePath(village.slug) },
             { name: program.title, path: canonicalPath },
           ]),

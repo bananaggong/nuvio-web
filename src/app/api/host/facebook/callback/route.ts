@@ -52,7 +52,7 @@ export async function GET(request: Request) {
       throw new Error("Host login is required to complete Facebook connection.");
     }
     if (!(await canManageHostVillage(auth, state.villageSlug))) {
-      throw new Error("You do not have permission to connect this village.");
+      throw new Error("You do not have permission to connect this channel.");
     }
 
     const error = requestUrl.searchParams.get("error_description");

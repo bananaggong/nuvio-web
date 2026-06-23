@@ -21,7 +21,7 @@ export const runtime = "nodejs";
 export const metadata: Metadata = {
   title: "호스트 설정 | 누비오",
   description:
-    "로컬페이지 호스트가 팀 권한, 알림, 데이터 설정을 관리하는 화면입니다.",
+    "채널 호스트가 팀 권한, 알림, 데이터 설정을 관리하는 화면입니다.",
 };
 
 type SettingsPanel = "data" | "general" | "notifications" | "team";

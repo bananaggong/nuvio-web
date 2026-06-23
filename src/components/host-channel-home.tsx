@@ -131,7 +131,7 @@ export function HostChannelHome() {
 
     async function load() {
       const [channelResponse, programsResponse] = await Promise.allSettled([
-        fetch("/api/host/villages", { cache: "no-store" }),
+        fetch("/api/host/channels", { cache: "no-store" }),
         fetch("/api/host/programs", { cache: "no-store" }),
       ]);
 

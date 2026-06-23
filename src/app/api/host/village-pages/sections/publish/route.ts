@@ -42,7 +42,7 @@ export async function POST(request: Request) {
     const body = await request.json().catch(() => ({}));
     const draft = normalizeVillagePageSectionDraft(body);
     if (!(await canManageHostVillage(auth, draft.villageSlug))) {
-      return apiError("You do not have permission to manage this village.", 403);
+      return apiError("You do not have permission to manage this channel.", 403);
     }
 
     const publishedDraft = await publishHostVillagePageSection(draft, {
@@ -60,7 +60,7 @@ export async function POST(request: Request) {
         error:
           error instanceof Error
             ? error.message
-            : "Failed to publish village page section.",
+            : "Failed to publish channel page section.",
       },
       { status: 400 },
     );

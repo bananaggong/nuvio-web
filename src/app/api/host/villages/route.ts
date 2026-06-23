@@ -5,6 +5,7 @@ import {
   enforceContentLength,
   enforceSameOrigin,
   isApiAuthError,
+  requireAuthenticatedUser,
   requireHostRole,
 } from "@/lib/api-security";
 import {
@@ -13,6 +14,7 @@ import {
   listHostVillageWorkspaces,
 } from "@/lib/host-village-access";
 import {
+  getHostVillageBySlug,
   listHostVillagesFromDb,
   normalizeHostVillage,
   upsertHostVillage,
@@ -47,7 +49,7 @@ export async function GET(request: Request) {
     return NextResponse.json(
       {
         error:
-          error instanceof Error ? error.message : "Failed to load villages.",
+          error instanceof Error ? error.message : "Failed to load channels.",
       },
       { status: 500 },
     );
@@ -55,7 +57,7 @@ export async function GET(request: Request) {
 }
 
 export async function POST(request: Request) {
-  const auth = await requireHostRole();
+  const auth = await requireAuthenticatedUser();
   if (isApiAuthError(auth)) return auth.response;
 
   try {
@@ -74,35 +76,42 @@ export async function POST(request: Request) {
 
     const body = await request.json().catch(() => ({}));
     const village = normalizeHostVillage(body);
-    const existingVillages = await listHostVillagesFromDb();
-    const existingVillage = existingVillages.find(
-      (item) => item.slug === village.slug,
-    );
+    const existingVillage = await getHostVillageBySlug(village.slug);
+    const isCreatingVillage = !existingVillage;
 
     if (auth.profile.role !== "admin") {
       const workspaces = await listHostVillageWorkspaces(auth);
       const canUpdateExistingVillage = existingVillage
         ? await canManageHostVillage(auth, village.slug)
         : false;
+      const canCreateFirstVillage = isCreatingVillage && workspaces.length === 0;
 
-      if (!existingVillage && workspaces.length > 0) {
-        return apiError("로컬페이지는 계정당 하나만 만들 수 있습니다.", 409);
+      if (isCreatingVillage && workspaces.length > 0) {
+        return apiError("채널은 계정당 하나만 만들 수 있습니다.", 409);
+      }
+
+      if (isCreatingVillage && !canCreateFirstVillage) {
+        return apiError("Host access is required.", 403);
       }
 
       if (existingVillage && !canUpdateExistingVillage) {
-        return apiError("You do not have permission to manage this village.", 403);
+        return apiError("You do not have permission to manage this channel.", 403);
       }
     }
 
     const savedVillage = await upsertHostVillage(village);
-    await ensureOwnerMembershipForVillage(savedVillage.id, auth);
+    if (isCreatingVillage) {
+      await ensureOwnerMembershipForVillage(savedVillage.id, auth, {
+        required: true,
+      });
+    }
 
     return NextResponse.json({ data: savedVillage }, { status: 201 });
   } catch (error) {
     return NextResponse.json(
       {
         error:
-          error instanceof Error ? error.message : "Failed to save village.",
+          error instanceof Error ? error.message : "Failed to save channel.",
       },
       { status: 400 },
     );

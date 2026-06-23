@@ -34,7 +34,7 @@ export async function GET(request: Request) {
     const { searchParams } = new URL(request.url);
     const villageSlug = searchParams.get("villageSlug") ?? "boseong";
     if (!(await canManageHostVillage(auth, villageSlug))) {
-      return apiError("You do not have permission to manage this village.", 403);
+      return apiError("You do not have permission to manage this channel.", 403);
     }
 
     const requestedPageKey = searchParams.get("pageKey");
@@ -52,7 +52,7 @@ export async function GET(request: Request) {
         error:
           error instanceof Error
             ? error.message
-            : "Failed to load village page sections.",
+            : "Failed to load channel page sections.",
       },
       { status: 500 },
     );
@@ -84,7 +84,7 @@ export async function POST(request: Request) {
     }
 
     if (!(await canManageHostVillage(auth, draft.villageSlug))) {
-      return apiError("You do not have permission to manage this village.", 403);
+      return apiError("You do not have permission to manage this channel.", 403);
     }
 
     const savedDraft = await upsertHostVillagePageSection(draft, {
@@ -102,7 +102,7 @@ export async function POST(request: Request) {
         error:
           error instanceof Error
             ? error.message
-            : "Failed to save village page section.",
+            : "Failed to save channel page section.",
       },
       { status: 400 },
     );

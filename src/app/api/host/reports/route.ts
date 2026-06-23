@@ -88,7 +88,7 @@ export async function POST(request: Request) {
 
     if (!scopedProject) {
       return NextResponse.json(
-        { error: "이 계정에 연결된 로컬페이지 폴더만 저장할 수 있습니다." },
+        { error: "이 계정에 연결된 채널 폴더만 저장할 수 있습니다." },
         { status: 403 },
       );
     }
@@ -98,7 +98,7 @@ export async function POST(request: Request) {
       !(await isProjectUpdateAllowed(scopedProject, workspaces))
     ) {
       return NextResponse.json(
-        { error: "이 계정에 연결된 로컬페이지 폴더만 수정할 수 있습니다." },
+        { error: "이 계정에 연결된 채널 폴더만 수정할 수 있습니다." },
         { status: 403 },
       );
     }
@@ -230,7 +230,7 @@ function attachWorkspace(
   return {
     ...project,
     agencyName:
-      isGenericText(project.agencyName, ["운영 조직명", "로컬페이지"])
+      isGenericText(project.agencyName, ["운영 조직명", "채널"])
         ? `${workspace.title} 운영팀`
         : project.agencyName,
     imageUrl: project.imageUrl || workspace.heroImage,
@@ -267,7 +267,7 @@ function isGenericProjectWorkspace(project: ReportProject): boolean {
   return (
     !normalizeIdentifier(project.villageId) &&
     !normalizeIdentifier(project.villageSlug) &&
-    isGenericText(project.villageName, ["", "로컬페이지", "운영 조직명"])
+    isGenericText(project.villageName, ["", "채널", "운영 조직명"])
   );
 }
 

@@ -6,7 +6,7 @@ import { ClipboardList, MapPinned, UserRound } from "lucide-react";
 
 const tabs = [
   { href: "/", label: "프로그램탐색", icon: ClipboardList, match: ["/programs"] },
-  { href: "/villages", label: "로컬채널", icon: MapPinned, match: ["/villages"] },
+  { href: "/channels", label: "채널", icon: MapPinned, match: ["/channels"] },
   { href: "/login", label: "로그인", icon: UserRound, match: ["/login", "/signup"] },
 ];
 

@@ -113,7 +113,7 @@ export function HostProgramHome() {
       periodLabel: "운영 기간 미정",
       title: trimmedFolderName,
       updatedAt: now,
-      villageName: "로컬페이지",
+      villageName: "채널",
     };
 
     setIsFolderSaving(true);

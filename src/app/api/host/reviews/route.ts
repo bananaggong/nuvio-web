@@ -97,7 +97,7 @@ export async function POST(request: Request) {
         draft.villageSlug || (workspaces.length === 1 ? workspaces[0].slug : "");
 
       if (!villageSlug || !(await canManageHostVillage(auth, villageSlug))) {
-        return apiError("You do not have permission to manage this village.", 403);
+        return apiError("You do not have permission to manage this channel.", 403);
       }
 
       draft = { ...draft, villageSlug };
@@ -105,7 +105,7 @@ export async function POST(request: Request) {
       draft.villageSlug &&
       !(await canManageHostVillage(auth, draft.villageSlug))
     ) {
-      return apiError("You do not have permission to manage this village.", 403);
+      return apiError("You do not have permission to manage this channel.", 403);
     }
 
     const savedDraft = await upsertHostReviewDraft(draft, {

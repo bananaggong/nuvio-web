@@ -18,8 +18,8 @@ export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
 
 export const metadata: Metadata = {
-  title: "로컬페이지 편집 | 누비오",
-  description: "권한이 연결된 로컬페이지를 실제 화면 위에서 편집합니다.",
+  title: "채널 편집 | 누비오",
+  description: "권한이 연결된 채널을 실제 화면 위에서 편집합니다.",
 };
 
 export default async function HostVillageEditorPage({
@@ -128,10 +128,10 @@ function AccessDenied({ villageSlug }: { villageSlug: string }) {
           편집 권한 확인 필요
         </p>
         <h1 className="mt-3 text-2xl font-black text-slate-950">
-          이 로컬페이지를 편집할 수 있는 계정이 아닙니다.
+          이 채널을 편집할 수 있는 계정이 아닙니다.
         </h1>
         <p className="mt-2 text-sm leading-6 text-slate-600">
-          /{villageSlug} 편집 권한은 로컬페이지별로 연결됩니다. 관리자에게 운영 계정
+          /{villageSlug} 편집 권한은 채널별로 연결됩니다. 관리자에게 운영 계정
           연결 상태를 확인해 주세요.
         </p>
         <div className="mt-5 flex flex-wrap gap-2">

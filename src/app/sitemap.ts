@@ -23,7 +23,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const staticRoutes: MetadataRoute.Sitemap = [
     route("/", "hourly", 1, now),
     route("/half-price-travel", "weekly", 0.8, now),
-    route("/villages", "daily", 0.8, now),
+    route("/channels", "daily", 0.8, now),
     route("/announcements", "hourly", 0.7, now),
     ...(launchFeatureFlags.reviews
       ? [route("/reviews", "daily", 0.7, now)]

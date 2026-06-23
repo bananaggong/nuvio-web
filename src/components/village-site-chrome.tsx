@@ -196,7 +196,7 @@ export function VillageSiteFooter({
           </Link>
           <Link
             className="inline-flex h-11 items-center justify-center gap-2 border border-white/15 px-4 text-sm font-black text-white/80 hover:bg-white/10"
-            href="/villages"
+            href="/channels"
           >
             <Home size={17} />
             로컬 목록

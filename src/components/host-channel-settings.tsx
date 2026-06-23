@@ -27,7 +27,7 @@ export function HostChannelSettings() {
 
     async function loadChannel() {
       try {
-        const response = await fetch("/api/host/villages", { cache: "no-store" });
+        const response = await fetch("/api/host/channels", { cache: "no-store" });
         const payload = (await response.json().catch(() => ({}))) as {
           data?: Village[];
         };
@@ -81,7 +81,7 @@ export function HostChannelSettings() {
     setIsSaving(true);
 
     try {
-      const response = await fetch("/api/host/villages", {
+      const response = await fetch("/api/host/channels", {
         body: JSON.stringify(channel),
         headers: { "Content-Type": "application/json" },
         method: "POST",

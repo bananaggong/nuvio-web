@@ -83,7 +83,7 @@ export async function scheduleSelectedApplicationMessages(
     return {
       insertedCount: 0,
       recipientCount: input.applicationIds.length,
-      sheetSync: { message: "No manageable village scope.", status: "skipped" },
+      sheetSync: { message: "No manageable channel scope.", status: "skipped" },
     };
   }
   if (applicationIds.length === 0) {
@@ -337,7 +337,7 @@ export async function markHostScheduledMessagesSent(
   }
   if (options.villageIds && options.villageIds.length === 0) {
     return {
-      sheetSync: { message: "No manageable village scope.", status: "skipped" },
+      sheetSync: { message: "No manageable channel scope.", status: "skipped" },
       updatedCount: 0,
     };
   }

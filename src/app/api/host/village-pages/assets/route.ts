@@ -35,7 +35,7 @@ export async function GET(request: Request) {
     const { searchParams } = new URL(request.url);
     const villageSlug = searchParams.get("villageSlug") ?? "boseong";
     if (!(await canManageHostVillage(auth, villageSlug))) {
-      return apiError("You do not have permission to manage this village.", 403);
+      return apiError("You do not have permission to manage this channel.", 403);
     }
 
     const assets = await listVillageAssets(villageSlug);
@@ -45,7 +45,7 @@ export async function GET(request: Request) {
     return NextResponse.json(
       {
         error:
-          error instanceof Error ? error.message : "Failed to load village assets.",
+          error instanceof Error ? error.message : "Failed to load channel assets.",
       },
       { status: 500 },
     );
@@ -86,7 +86,7 @@ export async function POST(request: Request) {
     const safeUrl = validateAssetUrl(url);
     const villageSlug = asString(body.villageSlug) || "boseong";
     if (!(await canManageHostVillage(auth, villageSlug))) {
-      return apiError("You do not have permission to manage this village.", 403);
+      return apiError("You do not have permission to manage this channel.", 403);
     }
 
     const asset = await createVillageAsset({
@@ -103,7 +103,7 @@ export async function POST(request: Request) {
     return NextResponse.json(
       {
         error:
-          error instanceof Error ? error.message : "Failed to save village asset.",
+          error instanceof Error ? error.message : "Failed to save channel asset.",
       },
       { status: 400 },
     );
@@ -124,7 +124,7 @@ async function handleFileUpload(request: Request) {
   const auth = await requireHostRole();
   if (isApiAuthError(auth)) return auth.response;
   if (!(await canManageHostVillage(auth, villageSlug))) {
-    return apiError("You do not have permission to manage this village.", 403);
+    return apiError("You do not have permission to manage this channel.", 403);
   }
 
   const usage = asString(formData.get("usage")) || "page";

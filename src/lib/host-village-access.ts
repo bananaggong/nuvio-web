@@ -257,6 +257,7 @@ export async function activatePendingHostVillageMemberships(
 export async function ensureOwnerMembershipForVillage(
   villageId: string,
   auth: ApiAuthContext,
+  options: { required?: boolean } = {},
 ): Promise<void> {
   const accountEmail = normalizeEmail(auth.profile.email);
   if (!accountEmail) return;
@@ -286,7 +287,9 @@ export async function ensureOwnerMembershipForVillage(
           userId: auth.user.id,
         },
       });
-  } catch {
+  } catch (error) {
+    if (options.required) throw error;
+
     // Membership creation should not block village saving while migrations roll out.
   }
 }

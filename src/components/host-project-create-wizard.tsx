@@ -33,7 +33,7 @@ export function HostProjectCreateWizard() {
       programTitle: "전체 프로그램",
       title: trimmedName,
       updatedAt: now,
-      villageName: "로컬페이지",
+      villageName: "채널",
     };
 
     setIsCreating(true);

@@ -63,20 +63,20 @@ export const implementationStatus: {
             "Open a DB-published program slug from /host/programs after publishing it.",
         },
         {
-          title: "Village home pages and path-first routing",
+          title: "Channel home pages and path-first routing",
           state: "implemented",
           summary:
-            "Each village can have a public homepage, short path alias, canonical /villages route, and village-scoped program detail route.",
+            "Each channel can have a public homepage, short path alias, canonical /channels route, and channel-scoped program detail route.",
           routes: [
-            { label: "Village directory", href: "/villages" },
-            { label: "Short village URL", href: "/boseong" },
+            { label: "Channel directory", href: "/channels" },
+            { label: "Short channel URL", href: "/boseong" },
             {
-              label: "Village program URL",
+              label: "Channel program URL",
               href: "/gangneung-wave/gangneung-wave-workation",
             },
           ],
           verification:
-            "Open /villages, /boseong, and a village program path, then confirm the page resolves from seed or Supabase data.",
+            "Open /channels, /boseong, and a channel program path, then confirm the page resolves from seed or Supabase data.",
         },
       ],
     },
@@ -152,16 +152,16 @@ export const implementationStatus: {
             "Sign in with a regular user account and confirm host screens and APIs load.",
         },
         {
-          title: "Host village homepage studio",
+          title: "Host channel studio",
           state: "implemented",
           summary:
-            "Hosts can draft, preview, publish, and persist village home data including slug, program links, and contact channels.",
+            "Hosts can draft, preview, publish, and persist channel home data including slug, program links, and contact channels.",
           routes: [
-            { label: "Village studio", href: "/host/villages" },
-            { label: "Villages API", href: "/api/host/villages" },
+            { label: "Channel studio", href: "/host/villages" },
+            { label: "Channels API", href: "/api/host/channels" },
           ],
           verification:
-            "Create or edit a village in /host/villages, save it to Supabase, then confirm it appears on the public village route.",
+            "Create or edit a channel, save it to Supabase, then confirm it appears on the public channel route.",
         },
         {
           title: "External lead approval to program draft",

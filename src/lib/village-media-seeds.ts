@@ -69,7 +69,7 @@ export const boseongMediaSeeds: VillageMediaContent[] = [
     summary: "숙재받 2기 청년들이 보성의 자연 안에서 만든 에피소드.",
     body: [
       "보성의 장소성과 청년들의 즉흥적인 활동을 묶어낸 숙재받 2기 콘텐츠입니다.",
-      "로컬페이지에서는 프로그램의 결과물과 누비어의 분위기를 함께 확인할 수 있도록 보관합니다.",
+      "채널에서는 프로그램의 결과물과 누비어의 분위기를 함께 확인할 수 있도록 보관합니다.",
     ],
     thumbnail: "https://cdn.imweb.me/thumbnail/20251103/56d09703580c7.jpg",
     embedUrl: youtubeEmbed("2FP0GsHWIB4"),
@@ -107,7 +107,7 @@ export const boseongMediaSeeds: VillageMediaContent[] = [
     summary: "숙재받 2기 누비어의 음악과 보성의 장면이 만난 기록.",
     body: [
       "청년의 창작 결과물이 지역의 풍경과 함께 남은 영상 콘텐츠입니다.",
-      "로컬페이지에서는 프로그램 결과물, 후기, 미디어가 서로 이어지도록 배치합니다.",
+      "채널에서는 프로그램 결과물, 후기, 미디어가 서로 이어지도록 배치합니다.",
     ],
     thumbnail: "https://cdn.imweb.me/thumbnail/20251103/7e79d35dce608.jpg",
     embedUrl: youtubeEmbed("KqA3pdMnzuI"),
@@ -126,7 +126,7 @@ export const boseongMediaSeeds: VillageMediaContent[] = [
     summary: "숙재받 EP.3로 남겨진 누비어들의 관계와 시간.",
     body: [
       "보성에서 만들어진 관계와 장면을 에피소드 형태로 엮은 콘텐츠입니다.",
-      "기수별 기록이 흩어지지 않도록 누비오의 로컬페이지 안에서 다시 정리합니다.",
+      "기수별 기록이 흩어지지 않도록 누비오의 채널 안에서 다시 정리합니다.",
     ],
     thumbnail: "https://cdn.imweb.me/thumbnail/20251103/587ef4efbb8cc.jpg",
     embedUrl: youtubeEmbed("hqzynE_KuC0"),
@@ -164,7 +164,7 @@ export const boseongMediaSeeds: VillageMediaContent[] = [
     summary: "숙재받의 시작을 알리는 소개 콘텐츠.",
     body: [
       "숙재받 프로그램의 콘셉트와 보성 체류의 첫인상을 전달하는 초기 아카이브입니다.",
-      "신규 누비어가 프로그램 성격을 이해할 수 있도록 로컬페이지에 보관합니다.",
+      "신규 누비어가 프로그램 성격을 이해할 수 있도록 채널에 보관합니다.",
     ],
     thumbnail: "https://cdn.imweb.me/thumbnail/20250915/0a0a3fc52906a.jpg",
     embedUrl: youtubeEmbed("7POsECC_2Zw"),

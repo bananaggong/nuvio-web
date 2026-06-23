@@ -36,7 +36,7 @@ type VillageMediaMutationOptions = {
 
 export class VillageMediaAccessError extends Error {
   constructor() {
-    super("You do not have permission to manage this village media.");
+    super("You do not have permission to manage this channel media.");
     this.name = "VillageMediaAccessError";
   }
 }

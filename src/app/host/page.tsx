@@ -10,7 +10,7 @@ export const runtime = "nodejs";
 export const metadata: Metadata = {
   title: "호스트센터 | 누비오",
   description:
-    "누비오 호스트가 로컬페이지와 프로그램을 관리하는 시작 화면입니다.",
+    "누비오 호스트가 채널와 프로그램을 관리하는 시작 화면입니다.",
 };
 
 export default async function HostPage() {

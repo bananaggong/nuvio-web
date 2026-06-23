@@ -18,7 +18,7 @@ import { launchFeatureFlags } from "@/lib/launch-feature-flags";
 
 const navItems = [
   { href: "/magazine", label: "매거진", match: ["/magazine"] },
-  { href: "/villages", label: "채널", match: ["/villages"] },
+  { href: "/channels", label: "채널", match: ["/channels"] },
 ];
 
 type HeaderSession =

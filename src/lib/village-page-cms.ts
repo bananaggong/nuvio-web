@@ -32,7 +32,7 @@ type VillagePageMutationOptions = {
 
 export class VillagePageAccessError extends Error {
   constructor() {
-    super("You do not have permission to manage this village page section.");
+    super("You do not have permission to manage this channel page section.");
     this.name = "VillagePageAccessError";
   }
 }

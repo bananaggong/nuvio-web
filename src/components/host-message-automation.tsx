@@ -993,7 +993,7 @@ function HostInquiryInbox({
           <div>
             <p className="inline-flex items-center gap-2 text-sm font-black text-[#FE701E]">
               <Inbox size={18} />
-              {scoped ? "프로그램 문의" : "로컬채널 문의"}
+              {scoped ? "프로그램 문의" : "채널 문의"}
             </p>
             <h1 className="mt-2 text-2xl font-black leading-tight text-[#0D0D0C] sm:text-3xl">
               {scoped ? `${programTitle ?? "프로그램"} 문의사항` : "전체 문의사항"}
@@ -1001,7 +1001,7 @@ function HostInquiryInbox({
             <p className="mt-2 text-sm font-bold leading-6 text-[#8B7A6E]">
               {scoped
                 ? "전체 문의 중 이 프로그램과 연결된 문의만 보여줍니다."
-                : "로컬채널로 들어온 모든 프로그램 문의를 한곳에서 확인합니다."}
+                : "채널로 들어온 모든 프로그램 문의를 한곳에서 확인합니다."}
             </p>
           </div>
           {error ? (
@@ -1087,7 +1087,7 @@ function HostInquiryInbox({
               <p className="mt-2 text-sm font-bold leading-6 text-[#8B7A6E]">
                 {scoped
                   ? "이 프로그램으로 접수된 문의가 생기면 이곳에 표시됩니다."
-                  : "로컬채널 또는 프로그램 상세페이지에서 접수된 문의가 이곳에 모입니다."}
+                  : "채널 또는 프로그램 상세페이지에서 접수된 문의가 이곳에 모입니다."}
               </p>
             </div>
           </div>

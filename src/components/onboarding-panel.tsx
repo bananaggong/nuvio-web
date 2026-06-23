@@ -273,7 +273,7 @@ export function OnboardingPanel() {
               <option value="social">SNS</option>
               <option value="program">프로그램 공고</option>
               <option value="recommendation">지인 추천</option>
-              <option value="local-page">로컬페이지 안내</option>
+              <option value="local-page">채널 안내</option>
             </select>
           </label>
 

@@ -90,7 +90,7 @@ export async function POST(request: Request) {
       return NextResponse.json(
         {
           error:
-            "이 계정에 연결된 로컬페이지 프로그램만 저장할 수 있습니다.",
+            "이 계정에 연결된 채널 프로그램만 저장할 수 있습니다.",
         },
         { status: 403 },
       );

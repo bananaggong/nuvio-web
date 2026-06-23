@@ -148,7 +148,7 @@ export function HostChannelGalleries() {
 
     async function load() {
       const [channelResponse, mediaResponse] = await Promise.allSettled([
-        fetch("/api/host/villages", { cache: "no-store" }),
+        fetch("/api/host/channels", { cache: "no-store" }),
         fetch("/api/host/media", { cache: "no-store" }),
       ]);
 

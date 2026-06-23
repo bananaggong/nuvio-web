@@ -31,10 +31,10 @@ export function HostLocalPageCreate() {
   const fileInputId = useId();
   const router = useRouter();
   const imagePreviewRef = useRef("");
-  const [name, setName] = useState("새 로컬페이지");
+  const [name, setName] = useState("새 채널");
   const [location, setLocation] = useState("전국 로컬");
   const [summary, setSummary] = useState(
-    "로컬페이지 소개, 프로그램 안내와 공지를 한곳에서 관리합니다.",
+    "채널 소개, 프로그램 안내와 공지를 한곳에서 관리합니다.",
   );
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [imagePreviewUrl, setImagePreviewUrl] = useState("");
@@ -43,11 +43,11 @@ export function HostLocalPageCreate() {
   const [errorMessage, setErrorMessage] = useState("");
   const [createdHref, setCreatedHref] = useState("");
 
-  const trimmedName = name.trim() || "새 로컬페이지";
+  const trimmedName = name.trim() || "새 채널";
   const trimmedLocation = location.trim() || "전국 로컬";
   const trimmedSummary =
     summary.trim() ||
-    "로컬페이지 소개, 프로그램 안내와 공지를 한곳에서 관리합니다.";
+    "채널 소개, 프로그램 안내와 공지를 한곳에서 관리합니다.";
   const previewImage = imagePreviewUrl || fallbackHeroImage;
 
   const locationParts = useMemo(
@@ -68,7 +68,7 @@ export function HostLocalPageCreate() {
     setCreatedHref("");
 
     if (!trimmedName) {
-      setErrorMessage("로컬페이지 이름을 입력해 주세요.");
+      setErrorMessage("채널 이름을 입력해 주세요.");
       return;
     }
 
@@ -80,7 +80,7 @@ export function HostLocalPageCreate() {
     setIsSubmitting(true);
 
     try {
-      setStatusMessage("로컬페이지를 만들고 있어요.");
+      setStatusMessage("채널을 만들고 있어요.");
       const createdVillage = await saveVillage(buildVillageDraft({
         name: trimmedName,
         region: locationParts.region,
@@ -99,14 +99,14 @@ export function HostLocalPageCreate() {
           setCreatedHref(`/host/villages/${createdVillage.slug}`);
           setErrorMessage(
             error instanceof Error
-              ? `로컬페이지는 만들어졌지만 이미지를 저장하지 못했어요. ${error.message}`
-              : "로컬페이지는 만들어졌지만 이미지를 저장하지 못했어요.",
+              ? `채널은 만들어졌지만 이미지를 저장하지 못했어요. ${error.message}`
+              : "채널은 만들어졌지만 이미지를 저장하지 못했어요.",
           );
           return;
         }
       }
 
-      setStatusMessage("로컬페이지가 만들어졌어요. 호스트센터로 이동해요.");
+      setStatusMessage("채널이 만들어졌어요. 호스트센터로 이동해요.");
       router.push("/host");
       router.refresh();
       setCreatedHref(`/host/villages/${finalVillage.slug}`);
@@ -114,7 +114,7 @@ export function HostLocalPageCreate() {
       setErrorMessage(
         error instanceof Error
           ? error.message
-          : "로컬페이지를 만드는 중 잠깐 문제가 생겼어요.",
+          : "채널을 만드는 중 잠깐 문제가 생겼어요.",
       );
     } finally {
       setIsSubmitting(false);
@@ -149,13 +149,13 @@ export function HostLocalPageCreate() {
         >
           <p className="inline-flex items-center gap-2 text-sm font-black text-[var(--primary)]">
             <MapPin size={18} />
-            로컬페이지 만들기
+            채널 만들기
           </p>
           <h1 className="mt-3 text-2xl font-black leading-tight text-slate-950 sm:text-3xl">
             처음 호스트센터에 들어온 계정입니다.
           </h1>
           <p className="mt-2 max-w-2xl text-sm leading-6 text-slate-600">
-            운영할 로컬페이지의 첫 화면에 필요한 기본 정보만 먼저 등록해 주세요.
+            운영할 채널의 첫 화면에 필요한 기본 정보만 먼저 등록해 주세요.
           </p>
 
           <div className="mt-6 grid gap-5">
@@ -200,9 +200,9 @@ export function HostLocalPageCreate() {
                 value={location}
               />
               <TextField
-                label="로컬페이지 이름"
+                label="채널 이름"
                 onChange={setName}
-                placeholder="예: 새 로컬페이지"
+                placeholder="예: 새 채널"
                 value={name}
               />
             </div>
@@ -214,7 +214,7 @@ export function HostLocalPageCreate() {
               <textarea
                 className="min-h-28 w-full rounded-md border border-slate-200 p-3 text-sm leading-6 text-slate-800 outline-none focus:border-[var(--primary)]"
                 onChange={(event) => setSummary(event.target.value)}
-                placeholder="로컬페이지 소개, 프로그램 안내와 공지를 한곳에서 관리합니다."
+                placeholder="채널 소개, 프로그램 안내와 공지를 한곳에서 관리합니다."
                 value={summary}
               />
             </label>
@@ -227,7 +227,7 @@ export function HostLocalPageCreate() {
               type="submit"
             >
               {isSubmitting ? <Loader2 className="animate-spin" size={16} /> : null}
-              로컬페이지 만들기
+              채널 만들기
               {!isSubmitting ? <ArrowRight size={16} /> : null}
             </button>
             <Link
@@ -244,7 +244,7 @@ export function HostLocalPageCreate() {
                 <p className="text-red-700">{errorMessage}</p>
                 {createdHref ? (
                   <Link className="text-[var(--primary)] underline" href={createdHref}>
-                    만든 로컬페이지로 이동하기
+                    만든 채널로 이동하기
                   </Link>
                 ) : null}
               </div>
@@ -252,7 +252,7 @@ export function HostLocalPageCreate() {
               <p className="text-[var(--primary)]">{statusMessage}</p>
             ) : createdHref ? (
               <Link className="text-[var(--primary)] underline" href={createdHref}>
-                만든 로컬페이지로 이동하기
+                만든 채널로 이동하기
               </Link>
             ) : null}
           </div>
@@ -279,7 +279,7 @@ export function HostLocalPageCreate() {
               {trimmedSummary}
             </p>
             <p className="mt-5 text-sm font-black text-[var(--primary)]">
-              로컬페이지 열기
+              채널 열기
               <ArrowRight className="ml-1 inline-block" size={15} />
             </p>
           </div>
@@ -314,7 +314,7 @@ function TextField({
 }
 
 async function saveVillage(village: Village): Promise<Village> {
-  const response = await fetch("/api/host/villages", {
+  const response = await fetch("/api/host/channels", {
     body: JSON.stringify(village),
     headers: { "Content-Type": "application/json" },
     method: "POST",
@@ -322,7 +322,7 @@ async function saveVillage(village: Village): Promise<Village> {
   const payload = (await response.json().catch(() => ({}))) as VillagePayload;
 
   if (!response.ok || !payload.data) {
-    throw new Error(payload.error ?? "로컬페이지를 저장하지 못했어요.");
+    throw new Error(payload.error ?? "채널을 저장하지 못했어요.");
   }
 
   return payload.data;
@@ -386,7 +386,7 @@ function buildVillageDraft({
       {
         body: summary,
         id: "story",
-        items: ["로컬페이지 소개", "프로그램 안내", "참여 후기와 공지"],
+        items: ["채널 소개", "프로그램 안내", "참여 후기와 공지"],
         title: `${name} 소개`,
         type: "story",
       },

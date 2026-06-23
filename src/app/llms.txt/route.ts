@@ -15,7 +15,7 @@ export function GET() {
     "",
     "## Public Entry Points",
     `- Home and program search: ${absoluteUrl("/")}`,
-    `- Villages: ${absoluteUrl("/villages")}`,
+    `- Channels: ${absoluteUrl("/channels")}`,
     `- Public announcements: ${absoluteUrl("/announcements")}`,
     ...(launchFeatureFlags.reviews ? [`- Reviews: ${absoluteUrl("/reviews")}`] : []),
     `- Half-price travel collection: ${absoluteUrl("/half-price-travel")}`,

@@ -154,7 +154,7 @@ export function webApplicationJsonLd() {
     featureList: [
       "여행지원금 프로그램 검색",
       "워케이션과 한달살기 모집 공고 탐색",
-      "로컬페이지 기반 프로그램 안내와 공지 관리",
+      "채널 기반 프로그램 안내와 공지 관리",
       "내 여행 프로그램 기록과 실시간 공지 확인",
     ],
     publisher: {
@@ -247,7 +247,7 @@ export function programJsonLd(program: Program, path = programPath(program)) {
   };
 }
 
-export function villageJsonLd(village: Village, path = `/villages/${village.slug}`) {
+export function villageJsonLd(village: Village, path = `/channels/${village.slug}`) {
   return {
     "@context": "https://schema.org",
     "@type": "Place",

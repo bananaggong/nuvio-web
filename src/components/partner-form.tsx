@@ -51,10 +51,10 @@ export function PartnerForm() {
           운영 문의
         </p>
         <h1 className="mt-2 text-3xl font-black tracking-tight text-slate-950">
-          로컬페이지를 만들고 프로그램을 운영해보세요
+          채널을 만들고 프로그램을 운영해보세요
         </h1>
         <p className="mt-3 text-base leading-7 text-slate-600">
-          로컬페이지 구성이나 운영 작업이 필요하면 아래 양식으로 문의해 주세요.
+          채널 구성이나 운영 작업이 필요하면 아래 양식으로 문의해 주세요.
           접수 내용은 운영 DB에 저장되고 관리자 검토 대상으로 들어가요.
         </p>
       </div>
@@ -75,7 +75,7 @@ export function PartnerForm() {
         onSubmit={submit}
       >
         <div className="grid gap-4 md:grid-cols-2">
-          <Field label="로컬페이지 브랜드명" name="villageName" required />
+          <Field label="채널 브랜드명" name="villageName" required />
           <Field
             label="운영 주체"
             name="organization"
@@ -88,7 +88,7 @@ export function PartnerForm() {
           <Field label="지역" name="region" placeholder="예: 전남 보성군" required />
         </div>
         <label className="grid gap-2 text-sm font-black text-slate-700">
-          로컬페이지 소개
+          채널 소개
           <textarea
             className="min-h-32 rounded-md border border-slate-200 p-3 font-semibold leading-6 outline-none focus:ring-2 focus:ring-[var(--primary)]"
             name="description"
@@ -112,7 +112,7 @@ export function PartnerForm() {
         />
         <label className="flex items-start gap-2 text-sm font-bold text-slate-600">
           <input className="mt-1 accent-[var(--primary)]" required type="checkbox" />
-          제출한 자료를 누비오 로컬페이지 구성과 운영 작업 안내 목적으로 사용하는 데
+          제출한 자료를 누비오 채널 구성과 운영 작업 안내 목적으로 사용하는 데
           동의합니다.
         </label>
         <button

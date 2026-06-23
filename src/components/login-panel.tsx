@@ -337,7 +337,7 @@ export function LoginPanel({
         <h1 className="text-center text-[26px] font-bold leading-snug text-[#111111]">
           {intent === "host" ? (
             <>
-              로컬페이지 운영을
+              채널 운영을
               <br />
               누비오에서 시작해보세요
             </>

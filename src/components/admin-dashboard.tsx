@@ -381,7 +381,7 @@ function AdminQueue({
       href: "/partners/apply",
       label: "운영 문의",
       value: `${partnerSubmissionCount}건`,
-      helper: "로컬페이지 구성이나 운영 협업 문의를 검토합니다.",
+      helper: "채널 구성이나 운영 협업 문의를 검토합니다.",
       icon: Users,
     },
     {

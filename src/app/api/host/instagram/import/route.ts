@@ -54,7 +54,7 @@ export async function POST(request: Request) {
     const villageSlug =
       typeof body.villageSlug === "string" ? body.villageSlug : "boseong";
     if (!(await canManageHostVillage(auth, villageSlug))) {
-      return apiError("You do not have permission to manage this village.", 403);
+      return apiError("You do not have permission to manage this channel.", 403);
     }
 
     const limit = normalizeImportLimit(body.limit);

@@ -32,7 +32,7 @@ export async function GET(request: Request) {
   try {
     const villageSlug = requestUrl.searchParams.get("villageSlug") ?? "boseong";
     if (!(await canManageHostVillage(auth, villageSlug))) {
-      return apiError("You do not have permission to manage this village.", 403);
+      return apiError("You do not have permission to manage this channel.", 403);
     }
 
     const returnTo = normalizeReturnTo(

@@ -34,10 +34,10 @@ export const defaultHomeHeroSlides: HomeHeroSlide[] = [
   },
   {
     id: "demo-daon-local-lab",
-    eyebrow: "로컬채널",
+    eyebrow: "채널",
     title: "다온 로컬랩",
     subtitle:
-      "빈집과 공유 작업공간, 지역 클래스를 연결해 남해 체류 경험을 운영하는 첫 번째 누비오 로컬채널입니다.",
+      "빈집과 공유 작업공간, 지역 클래스를 연결해 남해 체류 경험을 운영하는 첫 번째 누비오 채널입니다.",
     imageUrl:
       "https://images.unsplash.com/photo-1507525428034-b723cf961d3e?auto=format&fit=crop&w=1600&q=82",
     href: "/daon-local-lab",
@@ -61,7 +61,7 @@ export const defaultHomeHeroSlides: HomeHeroSlide[] = [
     eyebrow: "호스트 공간",
     title: "호스트센터에서 프로그램을 운영하세요",
     subtitle:
-      "로컬채널, 프로그램 등록, 신청자 관리까지 운영 흐름을 한 화면에서 이어갈 수 있어요.",
+      "채널, 프로그램 등록, 신청자 관리까지 운영 흐름을 한 화면에서 이어갈 수 있어요.",
     imageUrl:
       "https://images.unsplash.com/photo-1518005020951-eccb494ad742?auto=format&fit=crop&w=1600&q=82",
     href: "/host",

@@ -47,6 +47,30 @@ export async function listHostVillagesFromDb(): Promise<Village[]> {
   }
 }
 
+export async function getHostVillageBySlug(
+  slug: string,
+): Promise<Village | undefined> {
+  const key = slug.trim().toLowerCase();
+  if (!key) return undefined;
+
+  try {
+    const rows = await getDb()
+      .select()
+      .from(villagesTable)
+      .where(eq(villagesTable.slug, key))
+      .limit(1);
+    const row = rows[0];
+
+    if (row) return mapVillageRowToVillage(row);
+  } catch {
+    if (!isDemoModeEnabled()) return undefined;
+  }
+
+  if (!isDemoModeEnabled()) return undefined;
+
+  return seedVillages.find((village) => village.slug === key);
+}
+
 export async function getPublicVillageBySlug(
   slug: string,
 ): Promise<Village | undefined> {
@@ -177,7 +201,7 @@ export async function upsertHostVillage(village: Village): Promise<Village> {
 
 export function normalizeHostVillage(input: unknown): Village {
   if (!input || typeof input !== "object" || Array.isArray(input)) {
-    throw new Error("Village payload is required.");
+    throw new Error("Channel payload is required.");
   }
 
   const value = input as Record<string, unknown>;
@@ -195,7 +219,7 @@ export function normalizeHostVillage(input: unknown): Village {
     summary: asString(value.summary) || `${name}의 프로그램과 소식을 모아 보여줍니다.`,
     description:
       asString(value.description) ||
-      `${name} 호스트가 신청, 공지, 후기, 보고서 자료를 한곳에서 관리할 수 있는 로컬페이지입니다.`,
+      `${name} 호스트가 신청, 공지, 후기, 보고서 자료를 한곳에서 관리할 수 있는 채널입니다.`,
     heroImage: asString(value.heroImage) || fallbackImage,
     logoText: asString(value.logoText) || name.slice(0, 2).toUpperCase(),
     brandColor: normalizeColor(asString(value.brandColor), "#0f766e"),
@@ -227,7 +251,7 @@ export function createVillageSlug(value: string): string {
 function mapVillageToInsert(village: Village): VillageInsert {
   return {
     slug: createVillageSlug(village.slug),
-    name: village.name.trim() || "누비오 village",
+    name: village.name.trim() || "누비오 채널",
     region: village.region.trim() || "전국",
     city: village.city.trim() || "로컬",
     tagline: village.tagline.trim() || `${village.name} 공식 홈`,

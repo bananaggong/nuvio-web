@@ -156,7 +156,7 @@ export function VillageProgramPage({
               className="mt-4 inline-flex w-full items-center justify-center gap-2 rounded-md bg-white px-4 py-3 text-sm font-black text-slate-700 hover:text-[var(--primary)]"
               href={canonicalVillagePath(village.slug)}
             >
-              로컬페이지 보기
+              채널 보기
               <ExternalLink size={16} />
             </Link>
           </section>

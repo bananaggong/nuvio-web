@@ -120,7 +120,7 @@ async function scopeTemplateToProgram(
 
     if (!program.villageId || !allowedVillageIds.includes(program.villageId)) {
       throw new Error(
-        "이 계정에 연결된 로컬페이지 프로그램에만 신청서를 연결할 수 있습니다.",
+        "이 계정에 연결된 채널 프로그램에만 신청서를 연결할 수 있습니다.",
       );
     }
   }

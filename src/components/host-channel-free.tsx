@@ -29,7 +29,7 @@ export function HostChannelFree() {
     let active = true;
 
     async function loadChannel() {
-      const response = await fetch("/api/host/villages", { cache: "no-store" }).catch(
+      const response = await fetch("/api/host/channels", { cache: "no-store" }).catch(
         () => null,
       );
       if (!active || !response?.ok) return;

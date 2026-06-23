@@ -5,6 +5,7 @@ const reservedTopLevelSegments = new Set([
   "api",
   "auth",
   "apple-icon.png",
+  "channels",
   "favicon.ico",
   "half-price-travel",
   "host",
@@ -32,7 +33,7 @@ export function villagePath(slug: string): string {
 }
 
 export function canonicalVillagePath(slug: string): string {
-  return `/villages/${slug}`;
+  return `/channels/${slug}`;
 }
 
 export function villageProgramPath(villageSlug: string, programSlug: string): string {
@@ -43,7 +44,7 @@ export function canonicalVillageProgramPath(
   villageSlug: string,
   programSlug: string,
 ): string {
-  return `/villages/${villageSlug}/programs/${programSlug}`;
+  return `/channels/${villageSlug}/programs/${programSlug}`;
 }
 
 export function isVillageMicrositePath(pathname: string): boolean {
@@ -53,7 +54,7 @@ export function isVillageMicrositePath(pathname: string): boolean {
 
   if (!first) return false;
 
-  if (first === "villages") {
+  if (first === "villages" || first === "channels") {
     return segments.length >= 2;
   }
 

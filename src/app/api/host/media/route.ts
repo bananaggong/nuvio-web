@@ -34,7 +34,7 @@ export async function GET(request: Request) {
     const { searchParams } = new URL(request.url);
     const villageSlug = searchParams.get("villageSlug") ?? "boseong";
     if (!(await canManageHostVillage(auth, villageSlug))) {
-      return apiError("You do not have permission to manage this village.", 403);
+      return apiError("You do not have permission to manage this channel.", 403);
     }
 
     const drafts = await listHostVillageMediaFromDb(villageSlug);
@@ -72,7 +72,7 @@ export async function POST(request: Request) {
     const body = await request.json().catch(() => ({}));
     const draft = normalizeHostVillageMediaDraft(body);
     if (!(await canManageHostVillage(auth, draft.villageSlug))) {
-      return apiError("You do not have permission to manage this village.", 403);
+      return apiError("You do not have permission to manage this channel.", 403);
     }
 
     const savedDraft = await upsertHostVillageMediaDraft(draft, {
