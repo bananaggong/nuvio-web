@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { redirect } from "next/navigation";
 import { JsonLdScript } from "@/components/json-ld";
 import { ProgramExplorer } from "@/components/program-explorer";
 import { listPublishedHomeHeroSlides } from "@/lib/home-hero-db";
@@ -19,7 +20,17 @@ export const metadata: Metadata = createSeoMetadata({
   path: "/",
 });
 
-export default async function Home() {
+type HomeProps = {
+  searchParams?: Promise<Record<string, string | string[] | undefined>>;
+};
+
+export default async function Home({ searchParams }: HomeProps) {
+  const callbackPath = getOAuthCallbackPath(await searchParams);
+
+  if (callbackPath) {
+    redirect(callbackPath);
+  }
+
   const [publicPrograms, heroSlides] = await Promise.all([
     listPublicPrograms(),
     listPublishedHomeHeroSlides(),
@@ -36,4 +47,26 @@ export default async function Home() {
       <ProgramExplorer heroSlides={heroSlides} programs={publicPrograms} />
     </>
   );
+}
+
+function getOAuthCallbackPath(
+  searchParams?: Record<string, string | string[] | undefined>,
+): string | null {
+  const code = getSingleValue(searchParams?.code);
+
+  if (!code) return null;
+
+  const callbackParams = new URLSearchParams({ code });
+  const next = getSingleValue(searchParams?.next);
+  const intent = getSingleValue(searchParams?.intent);
+
+  if (next) callbackParams.set("next", next);
+  if (intent) callbackParams.set("intent", intent);
+
+  return `/auth/callback?${callbackParams.toString()}`;
+}
+
+function getSingleValue(value: string | string[] | undefined): string | null {
+  if (Array.isArray(value)) return value[0] ?? null;
+  return value ?? null;
 }
