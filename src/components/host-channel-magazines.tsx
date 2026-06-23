@@ -107,7 +107,7 @@ export function HostChannelMagazines() {
 
   return (
     <HostWorkspaceLayout sidebarHeight="min-h-[var(--host-2053)]">
-      <section className="min-w-0 flex-1 overflow-x-hidden bg-white">
+      <section className="min-w-0 flex-1 overflow-x-clip bg-white">
         <div className="w-full max-w-[var(--host-1230)]">
           <ChannelProfileHeader activeLabel="매거진형" channel={channel} publicHref={publicHref} />
 
