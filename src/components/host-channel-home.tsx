@@ -100,25 +100,6 @@ const galleryCards = [
   "로컬 리서치 노트",
 ];
 
-const reviews = [
-  {
-    body: "호스트가 안내한 일정과 장소가 분명해서 처음 방문한 지역에서도 편하게 참여할 수 있었어요.",
-    title: "지역을 천천히 만나는 방식이 좋았어요",
-  },
-  {
-    body: "프로그램 중간마다 기록을 정리할 시간이 있어서 결과물을 만들기 쉬웠습니다.",
-    title: "작은 기록이 프로젝트가 되는 경험",
-  },
-  {
-    body: "숙소와 작업 공간, 로컬 만남이 자연스럽게 연결되어 다음 프로그램도 기대됩니다.",
-    title: "다시 찾고 싶은 운영",
-  },
-  {
-    body: "낯선 도시에서 나만의 속도로 머물며 기록을 남길 수 있었던 시간이었습니다.",
-    title: "머무는 감각을 다시 배웠어요",
-  },
-];
-
 const storyCards = [
   {
     body: "목포 바다를 따라 걷고, 오래된 골목에서 지역의 이야기를 수집하는 방법.",
@@ -239,31 +220,6 @@ export function HostChannelHome() {
                     program={visiblePrograms[index]}
                     variantIndex={index}
                   />
-                ))}
-              </div>
-            </ChannelSectionShell>
-
-            <ChannelSectionShell actionLabel="전체보기 +" title="후기">
-              <div className="grid grid-cols-4 gap-[var(--host-36)]">
-                {reviews.map((review) => (
-                  <article className="min-w-0" key={review.title}>
-                    <div className="h-[var(--host-110)] rounded-[4px] bg-[#D9D9D9]" />
-                    <div className="mt-[var(--host-10)] flex items-center gap-[var(--host-6)]">
-                      <span className="size-[var(--host-12)] rounded-full bg-[#D9D9D9]" />
-                      <span className="text-[length:var(--host-12)] font-semibold leading-[1.253] text-[#5B3A29]">
-                        닉네임
-                      </span>
-                      <span className="text-[length:var(--host-11)] font-semibold leading-[1.253] text-[#FE701E]">
-                        5.0
-                      </span>
-                    </div>
-                    <h3 className="mt-[var(--host-8)] line-clamp-1 text-[length:var(--host-12)] font-semibold leading-[1.253] text-[#5B3A29]">
-                      {review.title}
-                    </h3>
-                    <p className="mt-[var(--host-4)] line-clamp-3 text-[length:var(--host-10)] font-normal leading-[1.55] text-[#0D0D0C]">
-                      {review.body}
-                    </p>
-                  </article>
                 ))}
               </div>
             </ChannelSectionShell>
