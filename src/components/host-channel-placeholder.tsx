@@ -7,7 +7,6 @@ const sectionLabels: Record<string, string> = {
   magazines: "매거진함",
   menu: "메뉴 설정",
   programs: "프로그램",
-  reviews: "후기",
 };
 
 export function HostChannelPlaceholder({ section = "home" }: { section?: string }) {
