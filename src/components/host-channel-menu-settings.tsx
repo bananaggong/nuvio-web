@@ -388,53 +388,50 @@ function SelectMenuTypeDialog({
       className="fixed inset-0 z-[90] bg-[#F3F3F3] px-[var(--host-24)] py-[var(--host-24)]"
       role="dialog"
     >
-      <div className="ml-[var(--host-48)] w-[var(--host-427)] max-w-[calc(100vw-48px)]">
-        <p className="text-[length:var(--host-12)] font-medium leading-[1.253] text-[#CAC4BC]">
-          Select Menu Type
-        </p>
-        <section className="mt-[var(--host-12)] rounded-[10px] border border-[#D9D9D9] bg-white px-[var(--host-18)] py-[var(--host-20)] shadow-[0_18px_44px_rgba(91,58,41,0.08)]">
-          <div className="flex justify-end">
+      <div className="ml-[var(--host-48)] w-[var(--host-457)] max-w-[calc(100vw-var(--host-48))]">
+        <section className="flex h-[var(--host-386)] w-full flex-col items-start gap-[var(--host-6)] rounded-[12px] border border-[#D9D9D9] bg-[#F9F9F9] px-[var(--host-18)] py-[var(--host-24)]">
+          <div className="flex w-full justify-end">
             <button
               aria-label="닫기"
-              className="grid size-[var(--host-20)] place-items-center transition hover:opacity-70"
+              className="grid size-[var(--host-16)] place-items-center transition hover:opacity-70"
               onClick={onClose}
               type="button"
             >
-              <Image alt="" height={20} src={nuvioIcons.modalClose} width={20} />
+              <Image alt="" height={16} src={nuvioIcons.modalClose} width={16} />
             </button>
           </div>
-          <p className="text-[length:var(--host-12)] font-semibold leading-[1.253] text-[#0D0D0C]">
+          <p className="text-[length:var(--host-14)] font-medium leading-[1.253] text-[#0D0D0C]">
             페이지 타입 선택
           </p>
-          <div className="mt-[var(--host-8)] grid gap-[var(--host-6)]">
+          <div className="grid gap-[var(--host-6)]">
             {menuTypeOptions.map((option) => {
               const selected = selectedKind === option.kind;
 
               return (
                 <button
                   aria-pressed={selected}
-                  className={`rounded-[6px] border px-[var(--host-10)] py-[var(--host-8)] text-left transition ${
+                  className={`w-[var(--host-415)] rounded-[7px] border-[0.5px] py-[var(--host-8)] pl-[var(--host-12)] pr-[var(--host-20)] text-left transition ${
                     selected
-                      ? "border-[#F7B267] bg-[#FFF8F1]"
+                      ? "border-[#F7B267] bg-[#FCFAF7]"
                       : "border-[#D9D9D9] bg-white hover:border-[#F7B267]"
                   }`}
                   key={option.kind}
                   onClick={() => onSelect(option.kind)}
                   type="button"
                 >
-                  <span className="block text-[length:var(--host-12)] font-medium leading-[1.253] text-[#5B3A29]">
+                  <span className="block text-[length:var(--host-14)] font-semibold leading-[1.253] text-[#6D7A8A]">
                     {option.label}
                   </span>
-                  <span className="mt-[var(--host-3)] block text-[length:var(--host-10)] font-normal leading-[1.45] text-[#CAC4BC]">
+                  <span className="mt-[var(--host-4)] block text-[length:var(--host-12)] font-medium leading-[1.253] text-[#CAC4BC]">
                     {option.description}
                   </span>
                 </button>
               );
             })}
           </div>
-          <div className="mt-[var(--host-16)] flex items-center justify-end">
+          <div className="flex w-full items-center justify-end pt-[var(--host-12)]">
             <button
-              className="inline-flex h-[var(--host-29)] items-center justify-center rounded-[4px] bg-[#FE701E] px-[var(--host-16)] text-[length:var(--host-11)] font-medium leading-[1.253] text-white"
+              className="inline-flex h-[var(--host-29)] items-center justify-center rounded-[4px] bg-[#FE701E] pb-[var(--host-5)] pl-[var(--host-19)] pr-[var(--host-18)] pt-[var(--host-6)] text-[length:var(--host-12)] font-medium leading-[1.253] text-[#FFF6EC]"
               onClick={onCreate}
               type="button"
             >

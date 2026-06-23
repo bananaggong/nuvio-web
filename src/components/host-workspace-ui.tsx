@@ -121,6 +121,7 @@ const hostWorkspaceScaleStyle = {
   "--host-368": "clamp(368px, 25.556vw, 490.667px)",
   "--host-386": "clamp(386px, 26.806vw, 514.667px)",
   "--host-398": "clamp(398px, 27.639vw, 530.667px)",
+  "--host-415": "clamp(415px, 28.819vw, 553.333px)",
   "--host-427": "clamp(427px, 29.653vw, 569.333px)",
   "--host-430": "clamp(430px, 29.861vw, 573.333px)",
   "--host-433": "clamp(433px, 30.069vw, 577.333px)",
