@@ -33,6 +33,7 @@ Before finishing any Figma-derived screen, confirm these points explicitly:
 - The page has no unintended browser or inner horizontal scrollbar; `scrollWidth <= clientWidth` must hold for 1440px and 1920px.
 - If a browser horizontal scrollbar appears only after vertical scrolling, inspect the full document at the scrolled position and the bottom edge; fixed/sticky footers and scaled sidebar + content sums are common causes.
 - Shared desktop shells must not use `100vw`/`100dvw` as the content width cap. Prefer `w-full`, `max-w-full`, `min-w-0`, and clipped overflow so vertical scrollbar width cannot create a second horizontal scrollbar.
+- Do not use `overflow-x-hidden` on Figma-derived main frame columns. It can compute `overflow-y` to `auto` and create accidental nested scroll ownership; use `overflow-x-clip` unless the frame intentionally has an inner scroll panel.
 - Avoid solving Figma workspace overflow by hiding it on `html`/`body` first. Fix the owning width, usually the shared sidebar/content shell or a route root with fixed/scaled width.
 - Host/channel/program navigation changes were made in shared components when they affect multiple routes.
 - The host/channel sidebar uses the shared shell and only switches the active section/menu, rather than creating a second sidebar variant.
