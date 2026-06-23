@@ -215,7 +215,6 @@ function ChannelProfileHeader({
             href={`${homeHref}/programs`}
             label={text.program}
           />
-          <ChannelTab href={`${homeHref}#channel-reviews`} label={text.review} />
           <ChannelTab href={`${homeHref}/media?type=gallery`} label={text.galleryType} />
           <ChannelTab href={`${homeHref}/media?type=magazine`} label={text.magazineType} />
           <ChannelTab href={`${homeHref}/notice`} label={text.boardType} />

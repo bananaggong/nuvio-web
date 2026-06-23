@@ -26,8 +26,6 @@ const text = {
     "인스타그램처럼 게시물과 캡션(본문)내용을 함께 적어 올리는 방식으로 홈화면에서의 캡션은 간략하게 보임",
   freeType: "자유형",
   galleryType: "갤러리형",
-  linkName: "이름",
-  linkUrl: "연결링크",
   magazineType: "매거진형",
   notice: "알림",
   program: "프로그램",
@@ -158,10 +156,10 @@ export function ChannelProfileHeader({
             width={12}
           />
           <span className="text-[length:var(--channel-font-16)] font-medium leading-[1.253] text-[#6D7A8A]">
-            {text.linkName}
+            {village.region}
           </span>
           <span className="text-[length:var(--channel-font-16)] font-medium leading-[1.253] text-[#6D7A8A]">
-            {text.linkUrl}
+            {village.slug}
           </span>
         </div>
         <div
@@ -204,7 +202,6 @@ export function ChannelProfileHeader({
             href={`${homeHref}/programs`}
             label={text.program}
           />
-          <ChannelTab href={`${homeHref}#channel-reviews`} label={text.review} />
           <ChannelTab
             active={activeTab === "gallery"}
             href={`${homeHref}/media?type=gallery`}

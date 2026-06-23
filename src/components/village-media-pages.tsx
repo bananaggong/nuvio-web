@@ -3,10 +3,11 @@ import Link from "next/link";
 import { ArrowRight, ExternalLink, PlayCircle } from "lucide-react";
 import {
   BoseongFigmaMediaDetailPage,
+  BoseongFigmaMediaAspectIndexPage,
+  BoseongFigmaMediaIndexPage,
 } from "@/components/boseong-figma-site";
 import { ChannelGuestGalleryPage } from "@/components/channel-guest-gallery";
 import { ChannelGuestMagazinePage } from "@/components/channel-guest-magazine";
-import { NuvioEmptyState } from "@/components/nuvio-empty-state";
 import {
   VillageSiteFooter,
   VillageSiteHeader,
@@ -25,6 +26,7 @@ const mediaCategoryLabels: Record<VillageMediaContent["category"], string> = {
 
 export function VillageMediaIndexPage({
   media,
+  pageSections,
   programs,
   village,
   viewType = "gallery",
@@ -37,25 +39,30 @@ export function VillageMediaIndexPage({
 }) {
   if (village.slug === "boseong") {
     if (viewType === "magazine") {
-      return <ChannelGuestMagazinePage media={media} village={village} />;
+      return (
+        <BoseongFigmaMediaAspectIndexPage
+          media={media}
+          programs={programs}
+          village={village}
+        />
+      );
     }
 
-    return <ChannelGuestGalleryPage media={media} village={village} />;
+    return (
+      <BoseongFigmaMediaIndexPage
+        media={media}
+        pageSections={pageSections}
+        programs={programs}
+        village={village}
+      />
+    );
   }
 
-  return (
-    <VillageMediaFrame primaryProgram={programs[0]} title="미디어" village={village}>
-      {media.length > 0 ? (
-        <div className="grid gap-5 md:grid-cols-2 lg:grid-cols-3">
-          {media.map((content) => (
-            <MediaListCard content={content} key={content.id} village={village} />
-          ))}
-        </div>
-      ) : (
-        <EmptyMedia />
-      )}
-    </VillageMediaFrame>
-  );
+  if (viewType === "magazine") {
+    return <ChannelGuestMagazinePage media={media} village={village} />;
+  }
+
+  return <ChannelGuestGalleryPage media={media} village={village} />;
 }
 
 export function VillageMediaDetailPage({
@@ -211,55 +218,6 @@ function VillageMediaFrame({
         {children}
       </section>
       <VillageSiteFooter primaryProgram={primaryProgram} village={village} />
-    </div>
-  );
-}
-
-function MediaListCard({
-  content,
-  village,
-}: {
-  content: VillageMediaContent;
-  village: Village;
-}) {
-  return (
-    <article className="border border-[#d9d6c9] bg-white">
-      <Link
-        className="relative block aspect-video overflow-hidden bg-[#11130f]"
-        href={`${villagePath(village.slug)}/media/${content.id}`}
-      >
-        <Image
-          alt={content.title}
-          className="object-cover transition duration-500 hover:scale-105"
-          fill
-          sizes="(max-width: 768px) 100vw, 33vw"
-          src={content.thumbnail}
-        />
-      </Link>
-      <div className="px-5 py-5">
-        <p className="text-xs font-black text-[#4E7C3A]">
-          {mediaCategoryLabels[content.category]}
-        </p>
-        <Link href={`${villagePath(village.slug)}/media/${content.id}`}>
-          <h2 className="mt-3 line-clamp-2 text-xl font-black leading-7 hover:text-[#4E7C3A]">
-            {content.title}
-          </h2>
-        </Link>
-        <p className="mt-3 line-clamp-3 text-sm leading-6 text-slate-600">
-          {content.summary}
-        </p>
-        <p className="mt-5 text-sm font-bold text-slate-500">
-          {formatDate(content.date)}
-        </p>
-      </div>
-    </article>
-  );
-}
-
-function EmptyMedia() {
-  return (
-    <div className="border border-dashed border-[#cfc9b9] bg-white text-center">
-      <NuvioEmptyState className="min-h-[260px]" label="미디어" />
     </div>
   );
 }

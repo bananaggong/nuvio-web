@@ -24,15 +24,6 @@ type ProgramCardModel = {
   title: string;
 };
 
-type ReviewCardModel = {
-  author: string;
-  excerpt: string;
-  id: string;
-  image?: string;
-  rating: string;
-  title: string;
-};
-
 type GalleryCardModel = {
   caption: string;
   count?: number;
@@ -117,12 +108,10 @@ const contentStyle = {
 export function ChannelGuestHomePage({
   media = [],
   programs,
-  reviews,
   village,
 }: ChannelGuestHomePageProps) {
   const homeHref = villagePath(village.slug);
   const programCards = buildProgramCards(programs, village).slice(0, 4);
-  const reviewCards = buildReviewCards(reviews, programs).slice(0, 4);
   const galleryCards = buildGalleryCards(media, programs).slice(0, 3);
   const stories = buildStoryCards(media, village).slice(0, 3);
   const notices = buildChannelNotices(village, programs).slice(0, 4);
@@ -165,7 +154,6 @@ export function ChannelGuestHomePage({
           }}
         >
           <ChannelProgramSection homeHref={homeHref} programs={programCards} />
-          <ChannelReviewSection reviews={reviewCards} />
           <ChannelGallerySection homeHref={homeHref} items={galleryCards} />
           <ChannelStorySection stories={stories} />
           <ChannelNoticeSection notices={notices} />
@@ -272,7 +260,6 @@ function ChannelProfileHeader({
         >
           <ChannelTab active href={homeHref} label={text.channelHome} />
           <ChannelTab href={`${homeHref}/programs`} label={text.program} />
-          <ChannelTab href="#channel-reviews" label={text.review} />
           <ChannelTab href={`${homeHref}/media?type=gallery`} label={text.galleryType} />
           <ChannelTab href={`${homeHref}/media?type=magazine`} label={text.magazineType} />
           <ChannelTab href={`${homeHref}/notice`} label={text.boardType} />
@@ -417,67 +404,6 @@ function MiniProgramCard({ program }: { program: ProgramCardModel }) {
         </p>
       </div>
     </Link>
-  );
-}
-
-function ChannelReviewSection({ reviews }: { reviews: ReviewCardModel[] }) {
-  return (
-    <section id="channel-reviews">
-      <SectionHeading actionHref="#channel-reviews" actionLabel={text.seeAllPlus} title={text.review} />
-      <div
-        className="grid"
-        style={{
-          gap: px(40),
-          gridTemplateColumns: `repeat(4, minmax(0, ${px(250)}))`,
-          paddingTop: px(26),
-        }}
-      >
-        {reviews.map((review) => (
-          <ReviewTile key={review.id} review={review} />
-        ))}
-      </div>
-    </section>
-  );
-}
-
-function ReviewTile({ review }: { review: ReviewCardModel }) {
-  return (
-    <article className="min-w-0" style={{ width: px(250) }}>
-      <div
-        className="relative overflow-hidden bg-[#D9D9D9]"
-        style={{ borderRadius: px(4), height: px(184) }}
-      >
-        {review.image ? (
-          <Image
-            alt={review.title}
-            className="object-cover"
-            fill
-            sizes="334px"
-            src={review.image}
-          />
-        ) : null}
-      </div>
-      <div className="flex items-center" style={{ gap: px(10), marginTop: px(8) }}>
-        <span
-          className="block rounded-full bg-[#D9D9D9]"
-          style={{ height: px(20), width: px(20) }}
-        />
-        <span className="text-[length:var(--channel-font-14)] font-semibold leading-[1.253] text-[#5B3A29]">
-          {review.author}
-        </span>
-      </div>
-      <div className="flex items-center" style={{ gap: px(16), marginTop: px(8) }}>
-        <p className="truncate text-[length:var(--channel-font-12)] font-normal leading-[1.253] text-[#6D7A8A]">
-          {review.title}
-        </p>
-        <p className="text-[length:var(--channel-font-12)] font-semibold leading-[1.253] text-[#FF9A3D]">
-          {review.rating}
-        </p>
-      </div>
-      <p className="line-clamp-3 text-[length:var(--channel-font-12)] font-medium leading-[1.6] text-[#5B3A29]" style={{ marginTop: px(8) }}>
-        {review.excerpt}
-      </p>
-    </article>
   );
 }
 
@@ -703,29 +629,6 @@ function buildProgramCards(programs: Program[], village: Village): ProgramCardMo
       status: index === 2 ? "upcoming" : index === 3 ? "closed" : "open",
       summary: text.fallbackProgramSummary,
       title: index === 0 ? `${village.name} ${text.program}` : text.fallbackProgramTitle,
-    })),
-  );
-}
-
-function buildReviewCards(reviews: Review[], programs: Program[]): ReviewCardModel[] {
-  const fallbackImage = programs[0]?.image;
-  const cards = reviews.map((review) => ({
-    author: review.author || text.nickname,
-    excerpt: review.excerpt || text.fallbackReview,
-    id: String(review.id),
-    image: review.images[0] || fallbackImage,
-    rating: "5.0",
-    title: review.title || text.reviewTitle,
-  }));
-
-  return cards.concat(
-    Array.from({ length: Math.max(0, 4 - cards.length) }, (_, index) => ({
-      author: index === 0 ? "Intume" : text.nickname,
-      excerpt: text.fallbackReview,
-      id: `review-fallback-${index}`,
-      image: programs[index]?.image || fallbackImage,
-      rating: "5.0",
-      title: programs[index]?.title || text.reviewTitle,
     })),
   );
 }

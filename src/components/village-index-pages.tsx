@@ -1,27 +1,28 @@
 import Image from "next/image";
 import Link from "next/link";
-import { ArrowRight, CalendarDays, MapPin, Quote } from "lucide-react";
-import { BoseongAboutContent } from "@/components/boseong-intro-section";
+import { ArrowRight, Quote } from "lucide-react";
 import {
   BoseongFigmaAboutPage,
+  BoseongFigmaNoticePage,
+  BoseongFigmaProgramsPage,
   BoseongFigmaReviewsPage,
 } from "@/components/boseong-figma-site";
+import { ChannelGuestAboutPage } from "@/components/channel-guest-about";
 import { ChannelGuestBoardPage } from "@/components/channel-guest-board";
 import { ChannelGuestProgramsPage } from "@/components/channel-guest-programs";
 import { NuvioEmptyState } from "@/components/nuvio-empty-state";
-import { StatusBadge } from "@/components/status-badge";
 import { VillageSiteFooter, VillageSiteHeader } from "@/components/village-site-chrome";
-import { formatDate, getDday } from "@/lib/format";
-import { villagePath, villageProgramPath } from "@/lib/village-routing";
+import { formatDate } from "@/lib/format";
+import { villagePath } from "@/lib/village-routing";
 import {
   buildVillageNotices,
-  sectionTypeLabels,
 } from "@/lib/village-template";
 import type { Program, Review } from "@/lib/types";
 import type { PublishedVillagePageSection } from "@/lib/village-page-cms";
-import type { Village, VillageSection } from "@/lib/village-types";
+import type { Village } from "@/lib/village-types";
 
 export function VillageProgramsIndexPage({
+  pageSections,
   programs,
   village,
 }: {
@@ -29,33 +30,17 @@ export function VillageProgramsIndexPage({
   programs: Program[];
   village: Village;
 }) {
-  const primaryProgram = programs[0];
-
   if (village.slug === "boseong") {
-    return <ChannelGuestProgramsPage programs={programs} village={village} />;
+    return (
+      <BoseongFigmaProgramsPage
+        pageSections={pageSections}
+        programs={programs}
+        village={village}
+      />
+    );
   }
 
-  return (
-    <VillagePageFrame
-      primaryProgram={primaryProgram}
-      title="프로그램"
-      village={village}
-    >
-      {programs.length > 0 ? (
-        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-          {programs.map((program) => (
-            <ProgramListCard
-              key={`${program.id}-${program.slug}`}
-              program={program}
-              village={village}
-            />
-          ))}
-        </div>
-      ) : (
-        <EmptyBlock text="아직 공개된 프로그램이 없습니다." village={village} />
-      )}
-    </VillagePageFrame>
-  );
+  return <ChannelGuestProgramsPage programs={programs} village={village} />;
 }
 
 export function VillageReviewsIndexPage({
@@ -121,26 +106,11 @@ export function VillageAboutIndexPage({
     );
   }
 
-  return (
-    <VillagePageFrame
-      primaryProgram={programs[0]}
-      title={`${village.name} 둘러보기`}
-      village={village}
-    >
-      {village.slug === "boseong" ? (
-        <BoseongAboutContent />
-      ) : (
-        <div className="grid gap-5 md:grid-cols-2">
-          {village.sections.map((section) => (
-            <SectionCard key={section.id} section={section} village={village} />
-          ))}
-        </div>
-      )}
-    </VillagePageFrame>
-  );
+  return <ChannelGuestAboutPage village={village} />;
 }
 
 export function VillageNoticeIndexPage({
+  pageSections,
   programs,
   village,
 }: {
@@ -151,34 +121,17 @@ export function VillageNoticeIndexPage({
   const notices = buildVillageNotices(village, programs);
 
   if (village.slug === "boseong") {
-    return <ChannelGuestBoardPage notices={notices} village={village} />;
+    return (
+      <BoseongFigmaNoticePage
+        notices={notices}
+        pageSections={pageSections}
+        programs={programs}
+        village={village}
+      />
+    );
   }
 
-  return (
-    <VillagePageFrame
-      primaryProgram={programs[0]}
-      title="알림"
-      village={village}
-    >
-      <div className="divide-y divide-[#dedbd1] border-y border-[#dedbd1]">
-        {notices.map((notice) => (
-          <Link
-            className="grid gap-3 px-1 py-5 hover:bg-white md:grid-cols-[120px_minmax(0,1fr)_140px]"
-            href={notice.href}
-            key={`${notice.type}-${notice.title}`}
-          >
-            <span className="font-black" style={{ color: village.brandColor }}>
-              [{notice.type}]
-            </span>
-            <span className="min-w-0 font-bold">{notice.title}</span>
-            <span className="text-left text-sm text-slate-500 md:text-right">
-              {formatDate(notice.date)}
-            </span>
-          </Link>
-        ))}
-      </div>
-    </VillagePageFrame>
-  );
+  return <ChannelGuestBoardPage notices={notices} village={village} />;
 }
 
 export function VillageReviewDetailPage({
@@ -326,54 +279,6 @@ function VillagePageFrame({
   );
 }
 
-function ProgramListCard({
-  program,
-  village,
-}: {
-  program: Program;
-  village: Village;
-}) {
-  return (
-    <article className="border border-[#ddd8ca] bg-white">
-      <Link
-        className="relative block aspect-[4/3] overflow-hidden bg-[#ece8dd]"
-        href={villageProgramPath(village.slug, program.slug)}
-      >
-        <Image
-          alt={program.title}
-          className="object-cover transition duration-500 hover:scale-105"
-          fill
-          sizes="(max-width: 768px) 100vw, 33vw"
-          src={program.image}
-        />
-      </Link>
-      <div className="px-5 py-6">
-        <div className="flex flex-wrap gap-2">
-          <StatusBadge program={program} />
-          <span className="rounded-full bg-[#242421] px-3 py-1 text-xs font-black text-white">
-            {getDday(program.recruitEnd, program.status)}
-          </span>
-        </div>
-        <Link href={villageProgramPath(village.slug, program.slug)}>
-          <h2 className="mt-4 line-clamp-2 text-2xl font-black leading-8 hover:text-[#0f766e]">
-            {program.title}
-          </h2>
-        </Link>
-        <p className="mt-3 line-clamp-3 text-sm leading-6 text-slate-600">
-          {program.summary}
-        </p>
-        <div className="mt-5 grid gap-2 text-sm font-bold text-slate-700">
-          <InfoLine icon={<MapPin size={16} />} text={`${program.region} ${program.city}`} />
-          <InfoLine
-            icon={<CalendarDays size={16} />}
-            text={`${formatDate(program.activityStart)} - ${formatDate(program.activityEnd)}`}
-          />
-        </div>
-      </div>
-    </article>
-  );
-}
-
 function ReviewListCard({
   review,
   village,
@@ -409,35 +314,6 @@ function ReviewListCard({
   );
 }
 
-function SectionCard({
-  section,
-  village,
-}: {
-  section: VillageSection;
-  village: Village;
-}) {
-  return (
-    <article className="border border-[#dfddd5] bg-white px-6 py-6">
-      <p className="text-xs font-black uppercase text-slate-500">
-        {sectionTypeLabels[section.type]}
-      </p>
-      <h2 className="mt-3 font-serif text-3xl font-black">{section.title}</h2>
-      <p className="mt-4 text-sm leading-7 text-slate-600">{section.body}</p>
-      <div className="mt-5 flex flex-wrap gap-2">
-        {section.items.map((item) => (
-          <span
-            className="border px-2.5 py-1 text-xs font-black"
-            key={item}
-            style={{ borderColor: village.accentColor, color: village.brandColor }}
-          >
-            {item}
-          </span>
-        ))}
-      </div>
-    </article>
-  );
-}
-
 function EmptyBlock({ text, village }: { text: string; village: Village }) {
   const label = text.includes("후기") ? "참여 후기" : "프로그램";
 
@@ -453,14 +329,5 @@ function EmptyBlock({ text, village }: { text: string; village: Village }) {
         <ArrowRight size={15} />
       </Link>
     </div>
-  );
-}
-
-function InfoLine({ icon, text }: { icon: React.ReactNode; text: string }) {
-  return (
-    <p className="flex items-center gap-2">
-      <span className="text-[#0f766e]">{icon}</span>
-      {text}
-    </p>
   );
 }
