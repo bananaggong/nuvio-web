@@ -163,7 +163,7 @@ export function HostChannelHome() {
 
   return (
     <HostWorkspaceLayout sidebarHeight="min-h-[var(--host-3942)]">
-      <section className="min-w-0 flex-1 overflow-x-hidden bg-white">
+      <section className="min-w-0 flex-1 overflow-x-clip bg-white">
         <div className="w-full max-w-[var(--host-1230)]">
           <section className="grid h-[var(--host-560)] place-items-center border-b border-[#D9D9D9] bg-[#F9F9F9]">
             <div className="flex flex-col items-center text-center text-[#6D7A8A]">

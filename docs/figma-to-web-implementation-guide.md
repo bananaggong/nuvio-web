@@ -15,6 +15,10 @@ first, then scale the same layout proportionally up to 1920px.
 - Between 1440px and 1920px, values should scale smoothly.
 - Above 1920px, keep the 1920px frame centered or extend only backgrounds.
 - Do not make a layout look right at 1920px by sacrificing 1440px fidelity.
+- Do not use `overflow-x-hidden` on main frame columns. In browsers this can
+  compute `overflow-y` to `auto` and create accidental nested scroll ownership.
+  Use `overflow-x-clip` unless the Figma frame explicitly designs an inner
+  scroll region.
 
 Preferred token pattern:
 
