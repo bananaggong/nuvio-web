@@ -5,10 +5,16 @@ import Link from "next/link";
 import { usePathname, useSearchParams } from "next/navigation";
 import {
   ChevronLeft,
-  Minus,
   Plus,
 } from "lucide-react";
-import type { CSSProperties, ReactNode } from "react";
+import {
+  useEffect,
+  useRef,
+  useState,
+  type CSSProperties,
+  type KeyboardEvent,
+  type ReactNode,
+} from "react";
 import { nuvioIcons } from "@/components/icons/nuvio-icons";
 import { formatProgramDisplayCode } from "@/lib/display-code";
 import { hostProjectPath, type HostProgramOverview } from "@/lib/host-projects";
@@ -756,16 +762,84 @@ function HostMiniProgramCardPlaceholder() {
 export function HostFolderInsideHeader({
   count,
   deleteActive = false,
+  isBusy = false,
   onAdd,
   onDelete,
+  onRemoveFolder,
+  onRename,
   title,
 }: {
   count: number;
   deleteActive?: boolean;
+  isBusy?: boolean;
   onAdd: () => void;
   onDelete: () => void;
+  onRemoveFolder?: () => void;
+  onRename?: (title: string) => Promise<void> | void;
   title: string;
 }) {
+  const [isEditingTitle, setIsEditingTitle] = useState(false);
+  const [isCommittingTitle, setIsCommittingTitle] = useState(false);
+  const [draftTitle, setDraftTitle] = useState(title);
+  const titleInputRef = useRef<HTMLInputElement>(null);
+  const displayTitle = `${title} (${count})`;
+
+  useEffect(() => {
+    if (!isEditingTitle) return;
+
+    titleInputRef.current?.focus();
+    titleInputRef.current?.select();
+  }, [isEditingTitle]);
+
+  function beginTitleEdit() {
+    if (!onRename || isBusy) return;
+
+    setDraftTitle(title);
+    setIsEditingTitle(true);
+  }
+
+  function cancelTitleEdit() {
+    if (isCommittingTitle) return;
+
+    setDraftTitle(title);
+    setIsEditingTitle(false);
+  }
+
+  async function commitTitleEdit() {
+    if (!onRename || isCommittingTitle) return;
+
+    const nextTitle = draftTitle.trim();
+    if (!nextTitle || nextTitle === title) {
+      cancelTitleEdit();
+      return;
+    }
+
+    setIsCommittingTitle(true);
+    try {
+      await onRename(nextTitle);
+      setIsEditingTitle(false);
+    } catch {
+      titleInputRef.current?.focus();
+      titleInputRef.current?.select();
+    } finally {
+      setIsCommittingTitle(false);
+    }
+  }
+
+  function handleTitleKeyDown(event: KeyboardEvent<HTMLInputElement>) {
+    if (event.nativeEvent.isComposing) return;
+
+    if (event.key === "Enter") {
+      event.preventDefault();
+      void commitTitleEdit();
+    }
+
+    if (event.key === "Escape") {
+      event.preventDefault();
+      cancelTitleEdit();
+    }
+  }
+
   return (
     <div className="flex h-[var(--host-20)] w-full items-center gap-[0.972vw]">
       <Link
@@ -775,26 +849,87 @@ export function HostFolderInsideHeader({
       >
         <ChevronLeft className="size-[var(--host-18)]" strokeWidth={1.8} />
       </Link>
-      <h1 className="shrink-0 text-[length:var(--host-16)] font-medium leading-[1.253] text-[#6D7A8A]">
-        {title} ({count})
-      </h1>
+      <div className="min-w-0 max-w-[min(66vw,720px)] shrink">
+        {isEditingTitle ? (
+          <input
+            aria-label="폴더 이름"
+            className="h-[var(--host-24)] w-[min(66vw,720px)] max-w-full rounded-[4px] border border-[#F7B267] bg-white px-[var(--host-6)] text-[length:var(--host-16)] font-medium leading-[1.253] text-[#4C5968] outline-none focus:border-[#FE701E] disabled:opacity-60"
+            disabled={isBusy || isCommittingTitle}
+            onBlur={cancelTitleEdit}
+            onChange={(event) => setDraftTitle(event.target.value)}
+            onKeyDown={handleTitleKeyDown}
+            ref={titleInputRef}
+            title="Enter로 저장, Esc로 취소"
+            value={draftTitle}
+          />
+        ) : onRename ? (
+          <button
+            aria-label="폴더 이름 변경"
+            className="group/title -ml-[var(--host-3)] min-w-0 rounded-[4px] border border-transparent px-[var(--host-3)] py-[var(--host-2)] text-left transition hover:border-[#F7B267] hover:bg-[#FFF6EC] focus-visible:border-[#FE701E] focus-visible:bg-[#FFF6EC] focus-visible:outline-none disabled:cursor-default disabled:hover:border-transparent disabled:hover:bg-transparent"
+            disabled={isBusy}
+            onDoubleClick={beginTitleEdit}
+            title="더블클릭해서 폴더 이름 변경"
+            type="button"
+          >
+            <span className="block truncate text-[length:var(--host-16)] font-medium leading-[1.253] text-[#6D7A8A] underline-offset-4 group-hover/title:decoration-[#F7B267]">
+              {displayTitle}
+            </span>
+          </button>
+        ) : (
+          <h1 className="truncate text-[length:var(--host-16)] font-medium leading-[1.253] text-[#6D7A8A]">
+            {displayTitle}
+          </h1>
+        )}
+      </div>
       <div className="flex flex-1 items-center justify-end" />
       <button
         aria-label={deleteActive ? "삭제 선택 취소" : "폴더에서 프로그램 제거"}
-        className="inline-flex size-[var(--host-16)] min-h-4 min-w-4 items-center justify-center rounded-full bg-[#FF9A3D] text-white"
+        className="inline-flex size-[var(--host-18)] min-h-[18px] min-w-[18px] items-center justify-center rounded-full transition hover:opacity-80 disabled:opacity-45"
+        disabled={isBusy}
         onClick={onDelete}
         type="button"
       >
-        <Minus className="size-[var(--host-10)]" strokeWidth={2.4} />
+        <Image
+          alt=""
+          className="size-full"
+          height={18}
+          src={nuvioIcons.quantityMinus}
+          width={18}
+        />
       </button>
       <button
         aria-label="폴더에 프로그램 추가"
-        className="inline-flex size-[var(--host-16)] min-h-4 min-w-4 items-center justify-center rounded-full bg-[#FF9A3D] text-white"
+        className="inline-flex size-[var(--host-18)] min-h-[18px] min-w-[18px] items-center justify-center rounded-full transition hover:opacity-80 disabled:opacity-45"
+        disabled={isBusy}
         onClick={onAdd}
         type="button"
       >
-        <Plus className="size-[var(--host-10)]" strokeWidth={2.4} />
+        <Image
+          alt=""
+          className="size-full"
+          height={18}
+          src={nuvioIcons.quantityPlus}
+          width={18}
+        />
       </button>
+      {onRemoveFolder ? (
+        <button
+          aria-label="폴더 삭제"
+          className="inline-flex size-[var(--host-18)] min-h-[18px] min-w-[18px] items-center justify-center rounded-[4px] transition hover:opacity-70 disabled:opacity-40"
+          disabled={isBusy}
+          onClick={onRemoveFolder}
+          title="폴더 삭제"
+          type="button"
+        >
+          <Image
+            alt=""
+            className="h-full w-auto"
+            height={18}
+            src={nuvioIcons.formItemTrash}
+            width={16}
+          />
+        </button>
+      ) : null}
     </div>
   );
 }

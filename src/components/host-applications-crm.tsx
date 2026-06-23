@@ -470,10 +470,10 @@ export function HostApplicationsCrm({
 
   return (
     <div
-      className="font-pretendard min-h-[calc(100vh_-_4.861vw)] bg-white text-[#5B3A29]"
+      className="font-pretendard h-[calc(100vh_-_4.861vw)] min-h-0 overflow-hidden bg-white text-[#5B3A29]"
       style={applicationFigmaScaleStyle}
     >
-      <div className="flex min-h-[calc(100vh_-_4.861vw)] max-md:flex-col">
+      <div className="flex h-full min-h-0 max-md:flex-col">
         <HostProgramSidebar
           activeItem={activePanel}
           applicationsHref={applicationsHref}
@@ -485,12 +485,12 @@ export function HostApplicationsCrm({
           title={sidebarTitle}
         />
 
-        <section className="flex min-w-0 flex-1 flex-col">
+        <section className="flex min-h-0 min-w-0 flex-1 flex-col">
           <main
             className={
               activePanel === "applications"
-                ? "flex min-h-[calc(100vh_-_4.861vw_-_var(--app-69))] flex-1 bg-white"
-                : "min-h-[calc(100vh_-_4.861vw)] flex-1 bg-white"
+                ? "flex min-h-0 flex-1 overflow-hidden bg-white"
+                : "min-h-0 flex-1 overflow-auto bg-white"
             }
           >
             {activePanel === "receipts" ? (
@@ -621,7 +621,7 @@ function ApplicationListPanel({
   selectedApplicationId: string;
 }) {
   return (
-    <section className="w-[var(--app-625)] shrink-0 border-r border-[#6D7A8A] bg-white">
+    <section className="w-[var(--app-625)] shrink-0 overflow-y-auto border-r border-[#6D7A8A] bg-white">
       <div className="ml-[var(--app-40)] mt-[var(--app-47)] w-[var(--app-577)] border-b border-[#CAC4BC]">
         <div className="flex h-[27px] items-start gap-[12px]">
           {reviewTabs.map((tab) => (
@@ -759,7 +759,7 @@ function ApplicationDetailPanel({
   const endDate = formatApplicationPanelDate(programDraft?.activityEnd);
 
   return (
-    <section className="min-w-0 flex-1 bg-white pl-[var(--app-20)] pr-[11px] pt-[var(--app-52)]">
+    <section className="min-h-0 min-w-0 flex-1 bg-white pl-[var(--app-20)] pr-[11px] pt-[var(--app-52)]">
       <div className="flex h-[28px] items-start text-[16px] font-semibold leading-[1.253] text-[#0D0D0C]">
         <span>{application?.applicantName ?? "신청자이름"}</span>
         <span className="ml-[28px]">{applicantGender}</span>
@@ -784,7 +784,7 @@ function ApplicationDetailPanel({
         </p>
       ) : null}
 
-      <article className="mt-[13px] h-[calc(100vh_-_4.861vw_-_var(--app-69)_-_107px)] min-h-[705px] w-[var(--app-555)] overflow-y-auto rounded-[6px] border border-[#6D7A8A] bg-[#F9F9F9] px-[24px] py-[18px]">
+      <article className="mt-[13px] h-[calc(100vh_-_4.861vw_-_var(--app-69)_-_107px)] min-h-0 w-[var(--app-555)] overflow-y-auto rounded-[6px] border border-[#6D7A8A] bg-[#F9F9F9] px-[24px] py-[18px]">
         <div className="grid grid-cols-[96px_minmax(0,1fr)_108px_108px] gap-x-[12px] border-b border-[#FE701E] pb-[22px]">
           <div className="h-[96px] w-[96px] overflow-hidden rounded-[16px] bg-[#D9D9D9]">
             {programImageUrl ? (
@@ -883,44 +883,42 @@ function SendMessageDialog({
     !isScheduling;
 
   return (
-    <div className="fixed inset-0 z-50 bg-black/10 px-[30px] py-[42px]">
-      <section className="flex w-[286px] max-w-[calc(100vw-60px)] flex-col rounded-[7px] border border-[#D9D9D9] bg-white px-[13px] py-[14px] shadow-[0_18px_42px_rgba(13,13,12,0.12)]">
-        <div className="flex items-start justify-between">
-          <div>
-            <p className="text-[12px] font-normal leading-[1.253] text-[#CAC4BC]">
-              Send a message
-            </p>
-            <h2 className="mt-[30px] text-[12px] font-semibold leading-[1.253] text-[#0D0D0C]">
-              메시지 전송
-            </h2>
-            <p className="mt-[8px] text-[11px] font-normal leading-[1.45] text-[#6D7A8A]">
-              선택한 신청자에게 메시지를 발송해요
-            </p>
-          </div>
-          <button
-            aria-label="메시지 전송 닫기"
-            className="grid size-[18px] place-items-center text-[#0D0D0C] transition hover:text-[#FE701E]"
-            onClick={onClose}
-            type="button"
-          >
-            <X aria-hidden="true" className="size-[16px]" strokeWidth={2} />
-          </button>
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/20 px-[24px] py-[24px]">
+      <section className="relative flex h-[clamp(635px,44.097vw,846.667px)] max-h-[calc(100vh-48px)] w-[clamp(457px,31.736vw,609.333px)] max-w-[calc(100vw-48px)] flex-col overflow-y-auto rounded-[8px] border border-[#D9D9D9] bg-white px-[20px] pb-[24px] pt-[49px] shadow-[0_18px_42px_rgba(13,13,12,0.12)]">
+        <button
+          aria-label="메시지 전송 닫기"
+          className="absolute right-[17px] top-[18px] grid size-[30px] place-items-center text-[#0D0D0C] transition hover:text-[#FE701E]"
+          onClick={onClose}
+          type="button"
+        >
+          <X aria-hidden="true" className="size-[24px]" strokeWidth={2} />
+        </button>
+
+        <div>
+          <h2 className="text-[14px] font-medium leading-[1.253] text-[#0D0D0C]">
+            메세지 전송
+          </h2>
+          <p className="mt-[13px] text-[14px] font-normal leading-[1.253] text-[#6D7A8A]">
+            선택한 신청자에게 메시지를 발송해요
+          </p>
         </div>
 
-        <section className="mt-[16px]">
-          <h3 className="text-[12px] font-normal leading-[1.253] text-[#6D7A8A]">
+        <section className="mt-[22px]">
+          <h3 className="text-[14px] font-medium leading-[1.253] text-[#6D7A8A]">
             수신자 ({String(recipients.length).padStart(2, "0")}명)
           </h3>
-          <div className="mt-[7px] max-h-[128px] overflow-y-auto pr-[2px]">
+          <div className="ml-[20px] mt-[11px] h-[108px] overflow-y-auto pr-[2px]">
             {recipients.length > 0 ? (
               recipients.map((recipient) => (
                 <div
-                  className="grid h-[25px] grid-cols-[54px_44px_minmax(0,1fr)_14px] items-center border-b border-[#E9E9E9] px-[8px] text-[10px] font-normal leading-[1.253] text-[#6D7A8A] last:border-b-0"
+                  className="grid h-[27px] grid-cols-[58px_47px_minmax(0,1fr)_14px] items-center border-b border-[#E9E9E9] px-[4px] text-[12px] font-medium leading-[1.253] text-[#6D7A8A] last:border-b-0"
                   key={recipient.id}
                 >
                   <span className="truncate">{recipient.applicantName || "신청자"}</span>
-                  <span>{getApplicationGenderLabel(recipient)}</span>
-                  <span>접수일 {formatShortDate(recipient.submittedAt)}</span>
+                  <span className="truncate">{getApplicationGenderLabel(recipient)}</span>
+                  <span className="truncate">
+                    접수일 {formatShortDate(recipient.submittedAt)}
+                  </span>
                   <button
                     aria-label={`${recipient.applicantName || "신청자"} 수신자 제거`}
                     className="ml-auto size-[9px] rounded-full bg-[#CAC4BC]"
@@ -930,18 +928,18 @@ function SendMessageDialog({
                 </div>
               ))
             ) : (
-              <div className="flex h-[48px] items-center justify-center rounded-[4px] border border-dashed border-[#D9D9D9] text-[11px] text-[#AEB8C2]">
+              <div className="flex h-full items-center justify-center rounded-[4px] border border-dashed border-[#D9D9D9] text-[12px] font-medium text-[#AEB8C2]">
                 선택된 수신자가 없습니다.
               </div>
             )}
           </div>
         </section>
 
-        <section className="mt-[14px]">
-          <h3 className="text-[12px] font-normal leading-[1.253] text-[#6D7A8A]">
-            메시지 템플릿
+        <section className="mt-[11px]">
+          <h3 className="text-[14px] font-medium leading-[1.253] text-[#6D7A8A]">
+            메세지 템플릿
           </h3>
-          <div className="mt-[7px] grid gap-[7px]">
+          <div className="mt-[9px] grid gap-[8px]">
             {templates.map((template) => {
               const selected = template.id === selectedTemplate?.id;
               const renderedBody = previewRecipient
@@ -950,14 +948,14 @@ function SendMessageDialog({
 
               return (
                 <label
-                  className={`grid cursor-pointer grid-cols-[14px_minmax(0,1fr)] items-start gap-[5px] ${
+                  className={`grid cursor-pointer grid-cols-[14px_minmax(0,1fr)] items-start gap-[6px] ${
                     selected ? "text-[#0D0D0C]" : "text-[#6D7A8A]"
                   }`}
                   key={template.id}
                 >
                   <input
                     checked={selected}
-                    className="mt-[7px] size-[8px] accent-[#FE701E]"
+                    className="mt-[8px] size-[12px] accent-[#FE701E]"
                     onChange={() => onTemplateChange(template.id)}
                     type="radio"
                   />
@@ -969,7 +967,7 @@ function SendMessageDialog({
                     }`}
                   >
                     <span
-                      className={`flex h-[21px] items-center justify-between px-[9px] text-[10px] font-semibold leading-[1.253] ${
+                      className={`flex h-[31px] items-center justify-between px-[12px] text-[12px] font-medium leading-[1.253] ${
                         selected
                           ? "bg-[#FF9A3D] text-white"
                           : "bg-white text-[#6D7A8A]"
@@ -981,7 +979,7 @@ function SendMessageDialog({
                       </span>
                     </span>
                     {selected ? (
-                      <span className="block truncate px-[9px] py-[8px] text-[10px] font-normal leading-[1.253] text-[#5B3A29]">
+                      <span className="block min-h-[37px] px-[12px] py-[10px] text-[12px] font-medium leading-[1.253] text-[#5B3A29]">
                         {renderedBody}
                       </span>
                     ) : null}
@@ -990,10 +988,10 @@ function SendMessageDialog({
               );
             })}
             <Link
-              className="ml-[14px] flex w-fit items-center gap-[4px] text-[10px] font-normal leading-[1.253] text-[#FF9A3D]"
+              className="ml-[14px] flex w-fit items-center gap-[4px] text-[12px] font-normal leading-[1.253] text-[#FF9A3D]"
               href="/host/settings?panel=notifications"
             >
-              <span className="grid size-[9px] place-items-center rounded-full bg-[#FF9A3D] text-[8px] font-semibold leading-none text-white">
+              <span className="grid size-[12px] place-items-center rounded-full bg-[#FF9A3D] text-[10px] font-semibold leading-none text-white">
                 +
               </span>
               <span>새 템플릿 만들기</span>
@@ -1001,26 +999,26 @@ function SendMessageDialog({
           </div>
         </section>
 
-        <section className="mt-[13px]">
-          <h3 className="text-[12px] font-normal leading-[1.253] text-[#6D7A8A]">
+        <section className="mt-[20px]">
+          <h3 className="text-[14px] font-medium leading-[1.253] text-[#6D7A8A]">
             발송 일정
           </h3>
-          <div className="mt-[7px] grid grid-cols-[1fr_70px] gap-[5px]">
+          <div className="mt-[8px] grid grid-cols-[minmax(0,242px)_75px] gap-[7px]">
             <label className="relative">
               <input
-                className="h-[29px] w-full rounded-[4px] border border-[#F7B267] bg-white px-[10px] pr-[30px] text-[11px] font-normal leading-[1.253] text-[#6D7A8A] outline-none"
+                className="h-[36px] w-full rounded-[4px] border border-[#F7B267] bg-white px-[10px] pr-[34px] text-[12px] font-normal leading-[1.253] text-[#6D7A8A] outline-none"
                 onChange={(event) => onScheduleDateChange(event.target.value)}
                 type="date"
                 value={scheduleDate}
               />
               <CalendarDays
                 aria-hidden="true"
-                className="pointer-events-none absolute right-[8px] top-1/2 size-[14px] -translate-y-1/2 text-[#6D7A8A]"
+                className="pointer-events-none absolute right-[10px] top-1/2 size-[16px] -translate-y-1/2 text-[#6D7A8A]"
                 strokeWidth={1.8}
               />
             </label>
             <input
-              className="h-[29px] rounded-[4px] border border-[#F7B267] bg-white px-[8px] text-[11px] font-normal leading-[1.253] text-[#6D7A8A] outline-none"
+              className="h-[36px] rounded-[4px] border border-[#F7B267] bg-white px-[8px] text-[12px] font-normal leading-[1.253] text-[#6D7A8A] outline-none"
               onChange={(event) => onScheduleTimeChange(event.target.value)}
               type="time"
               value={scheduleTime}
@@ -1035,7 +1033,7 @@ function SendMessageDialog({
         ) : null}
 
         <button
-          className="ml-auto mt-[12px] inline-flex h-[29px] min-w-[52px] items-center justify-center rounded-[4px] bg-[#FE701E] px-[10px] text-[10px] font-semibold leading-[1.253] text-white disabled:cursor-not-allowed disabled:bg-[#D9D9D9]"
+          className="ml-auto mt-auto inline-flex h-[29px] min-w-[80px] items-center justify-center rounded-[4px] bg-[#FE701E] px-[10px] text-[12px] font-semibold leading-[1.253] text-white disabled:cursor-not-allowed disabled:bg-[#D9D9D9]"
           disabled={!canSchedule}
           onClick={() => {
             void onSchedule();

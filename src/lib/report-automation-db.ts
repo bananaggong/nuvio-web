@@ -28,6 +28,20 @@ export async function listReportProjectsFromDb(options: {
   return rows.map(mapReportRowToProject);
 }
 
+export async function getReportProjectFromDb(
+  projectId: string,
+): Promise<ReportProject | null> {
+  if (!isUuid(projectId)) return null;
+
+  const [row] = await getDb()
+    .select()
+    .from(reportProjects)
+    .where(eq(reportProjects.id, projectId))
+    .limit(1);
+
+  return row ? mapReportRowToProject(row) : null;
+}
+
 export async function upsertReportProject(
   project: ReportProject,
   options: { ownerId?: string; restrictToOwner?: boolean } = {},
@@ -65,6 +79,27 @@ export async function upsertReportProject(
     .returning();
 
   return mapReportRowToProject(row);
+}
+
+export async function deleteReportProjectFromDb(
+  projectId: string,
+  options: { ownerId?: string; restrictToOwner?: boolean } = {},
+): Promise<ReportProject | null> {
+  if (!isUuid(projectId)) return null;
+
+  const [deletedRow] = await getDb()
+    .delete(reportProjects)
+    .where(
+      options.ownerId && options.restrictToOwner
+        ? and(
+            eq(reportProjects.id, projectId),
+            eq(reportProjects.createdBy, options.ownerId),
+          )
+        : eq(reportProjects.id, projectId),
+    )
+    .returning();
+
+  return deletedRow ? mapReportRowToProject(deletedRow) : null;
 }
 
 export function normalizeReportProject(input: unknown): ReportProject {

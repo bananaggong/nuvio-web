@@ -54,6 +54,7 @@ export function HostProjectHub({ projectId }: { projectId: string }) {
     [],
   );
   const [isSaving, setIsSaving] = useState(false);
+  const [isDeletingProject, setIsDeletingProject] = useState(false);
   const [actionError, setActionError] = useState("");
 
   const project = findHostProjectOverview(
@@ -192,6 +193,66 @@ export function HostProjectHub({ projectId }: { projectId: string }) {
       throw error;
     } finally {
       setIsSaving(false);
+    }
+  }
+
+  async function renameProject(nextTitle: string) {
+    const baseProject = resolveReportProject(
+      activeProject.id,
+      reportProjects,
+      activeProject.reportProject,
+    );
+    const trimmedTitle = nextTitle.trim();
+    if (!baseProject || !trimmedTitle || isSaving || isDeletingProject) return;
+
+    await saveReportProject({
+      ...baseProject,
+      title: trimmedTitle,
+      updatedAt: new Date().toISOString(),
+    });
+  }
+
+  async function deleteProject() {
+    const baseProject = resolveReportProject(
+      activeProject.id,
+      reportProjects,
+      activeProject.reportProject,
+    );
+    if (!baseProject || isSaving || isDeletingProject) return;
+
+    const confirmed = window.confirm(
+      `"${activeProject.title}" 폴더를 삭제할까요? 연결된 프로그램은 삭제되지 않습니다.`,
+    );
+    if (!confirmed) return;
+
+    setIsDeletingProject(true);
+    setActionError("");
+
+    try {
+      const response = await fetch("/api/host/reports", {
+        body: JSON.stringify({ id: baseProject.id }),
+        headers: { "Content-Type": "application/json" },
+        method: "DELETE",
+      });
+      const payload = (await response.json()) as {
+        data?: ReportProject;
+        error?: string;
+      };
+
+      if (!response.ok || !payload.data) {
+        throw new Error(payload.error ?? "폴더를 삭제하지 못했습니다.");
+      }
+
+      setReportProjects((current) =>
+        current.filter((project) => project.id !== payload.data?.id),
+      );
+      router.push("/host");
+    } catch (error) {
+      setActionError(
+        error instanceof Error ? error.message : "폴더를 삭제하지 못했습니다.",
+      );
+    } finally {
+      setIsDeletingProject(false);
     }
   }
 
@@ -356,6 +417,7 @@ export function HostProjectHub({ projectId }: { projectId: string }) {
           <HostFolderInsideHeader
             count={programs.length}
             deleteActive={isDeleteMode}
+            isBusy={isSaving || isDeletingProject}
             onAdd={() => {
               setActionError("");
               setIsDeleteMode(false);
@@ -372,6 +434,8 @@ export function HostProjectHub({ projectId }: { projectId: string }) {
               setSelectedDeleteProgramIds([]);
               setIsDeleteMode((current) => !current);
             }}
+            onRemoveFolder={() => void deleteProject()}
+            onRename={(title) => renameProject(title)}
             title={activeProject.title}
           />
           {actionError ? (

@@ -7,6 +7,8 @@ import {
   requireHostRole,
 } from "@/lib/api-security";
 import {
+  deleteReportProjectFromDb,
+  getReportProjectFromDb,
   listReportProjectsFromDb,
   normalizeReportProject,
   upsertReportProject,
@@ -114,6 +116,81 @@ export async function POST(request: Request) {
           error instanceof Error
             ? error.message
             : "운영 폴더를 저장하지 못했습니다.",
+      },
+      { status: 400 },
+    );
+  }
+}
+
+export async function DELETE(request: Request) {
+  const auth = await requireHostRole();
+  if (isApiAuthError(auth)) return auth.response;
+
+  const crossOrigin = enforceSameOrigin(request);
+  if (crossOrigin) return crossOrigin;
+
+  const payloadTooLarge = enforceContentLength(request, 16 * 1024);
+  if (payloadTooLarge) return payloadTooLarge;
+
+  const limited = applyRateLimit(request, {
+    key: "host-report-project:delete",
+    limit: 30,
+    windowMs: 15 * 60 * 1000,
+  });
+  if (limited) return limited;
+
+  try {
+    const body = await request.json().catch(() => ({}));
+    const bodyId =
+      body &&
+      typeof body === "object" &&
+      !Array.isArray(body) &&
+      typeof (body as { id?: unknown }).id === "string"
+        ? (body as { id: string }).id.trim()
+        : "";
+    const queryId = new URL(request.url).searchParams.get("id")?.trim() ?? "";
+    const projectId = bodyId || queryId;
+
+    if (!projectId) {
+      return NextResponse.json(
+        { error: "삭제할 폴더 ID가 필요합니다." },
+        { status: 400 },
+      );
+    }
+
+    const existingProject = await getReportProjectFromDb(projectId);
+
+    if (!existingProject) {
+      return NextResponse.json(
+        { error: "삭제할 폴더를 찾을 수 없습니다." },
+        { status: 404 },
+      );
+    }
+
+    if (auth.profile.role !== "admin") {
+      const workspaces = await listManageableHostVillageWorkspaces(auth);
+      if (!findProjectWorkspace(existingProject, workspaces)) {
+        return NextResponse.json(
+          { error: "이 계정에서 관리할 수 있는 폴더만 삭제할 수 있습니다." },
+          { status: 403 },
+        );
+      }
+    }
+
+    const deletedProject = await deleteReportProjectFromDb(projectId);
+    if (!deletedProject) {
+      return NextResponse.json(
+        { error: "삭제할 폴더를 찾을 수 없습니다." },
+        { status: 404 },
+      );
+    }
+
+    return NextResponse.json({ data: deletedProject });
+  } catch (error) {
+    return NextResponse.json(
+      {
+        error:
+          error instanceof Error ? error.message : "폴더를 삭제하지 못했습니다.",
       },
       { status: 400 },
     );

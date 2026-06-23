@@ -1,7 +1,6 @@
 "use client";
 
 import Link from "next/link";
-import { Bell } from "lucide-react";
 import type { CSSProperties } from "react";
 import { formatProgramDisplayCode } from "@/lib/display-code";
 import { launchFeatureFlags } from "@/lib/launch-feature-flags";
@@ -27,7 +26,6 @@ type HostProgramSidebarProps = {
   applicationsHref: string;
   formsHref: string;
   messagesHref: string;
-  hostName?: string;
   programId: string;
   programPath: string;
   status: string;
@@ -68,7 +66,6 @@ export function HostProgramSidebar({
   activeItem,
   applicationsHref,
   formsHref,
-  hostName = "로컬 호스트님",
   messagesHref,
   programId,
   programPath,
@@ -82,29 +79,6 @@ export function HostProgramSidebar({
     >
       <div className="min-h-[650px] px-[0.417vw] max-md:px-5">
         <div className="w-[var(--host-program-sidebar-216)] min-w-[216px] max-md:w-full">
-          <section className="h-[var(--host-program-sidebar-86)] min-h-[86px]">
-            <div className="flex h-[var(--host-program-sidebar-40)] min-h-10 items-center justify-center pb-[0.556vw] pt-[0.833vw]">
-              <Link
-                className="w-[var(--host-program-sidebar-176)] min-w-[176px] truncate text-[var(--host-program-sidebar-16)] font-semibold leading-[1.253] text-[#5B3A29] transition hover:text-[#FE701E]"
-                href="/host"
-              >
-                {hostName}
-              </Link>
-              <Link
-                aria-label="호스트 알림 보기"
-                className="flex size-5 shrink-0 items-center justify-center text-[#FF9A3D] transition hover:text-[#FE701E]"
-                href="/host/settings?panel=notifications"
-              >
-                <Bell aria-hidden="true" className="size-5" strokeWidth={1.8} />
-              </Link>
-            </div>
-            <div className="flex h-[var(--host-program-sidebar-46)] min-h-[46px] items-end border-b border-[#D9D9D9] pt-[0.833vw] text-center">
-              <HostSwitchTab active href="/host" label="호스트" />
-              <span className="mb-[6px] h-[22px] w-px bg-[#D9D9D9]" />
-              <HostSwitchTab href="/host/channels" label="채널" />
-            </div>
-          </section>
-
         <section className="border-b border-[#D9D9D9] px-[12px] pb-[var(--host-program-sidebar-12)] pt-[var(--host-program-sidebar-12)]">
           <div className="flex items-start gap-[var(--host-program-sidebar-8)]">
             <p className="min-h-[40px] min-w-0 flex-1 break-keep text-[var(--host-program-sidebar-16)] font-semibold leading-[1.253] text-[#5B3A29]">
@@ -115,7 +89,7 @@ export function HostProgramSidebar({
             </span>
           </div>
           <p className="mt-[var(--host-program-sidebar-8)] text-[var(--host-program-sidebar-14)] font-semibold leading-[1.253] text-[#5B3A29]">
-            프로그램 코드 :{" "}
+            프로그램 넘버 :{" "}
             <span className="text-[#FE701E]">{formatProgramNumber(programId)}</span>
           </p>
         </section>
@@ -200,29 +174,6 @@ export function HostProgramSidebar({
         </div>
       </div>
     </aside>
-  );
-}
-
-function HostSwitchTab({
-  active = false,
-  href,
-  label,
-}: {
-  active?: boolean;
-  href: string;
-  label: string;
-}) {
-  return (
-    <Link
-      className={`flex h-[var(--host-program-sidebar-34)] min-h-[34px] flex-1 items-center justify-center pb-[0.556vw] pt-[0.347vw] text-[var(--host-program-sidebar-14)] leading-[1.253] transition ${
-        active
-          ? "border-b-2 border-[#FF9A3D] font-medium text-[#FE701E]"
-          : "font-normal text-[#CAC4BC] hover:text-[#FE701E]"
-      }`}
-      href={href}
-    >
-      {label}
-    </Link>
   );
 }
 
