@@ -140,6 +140,7 @@ const hostWorkspaceScaleStyle = {
   "--host-547": "clamp(547px, 37.986vw, 729.333px)",
   "--host-550": "clamp(550px, 38.194vw, 733.333px)",
   "--host-557": "clamp(557px, 38.681vw, 742.667px)",
+  "--host-560": "clamp(560px, 38.889vw, 746.667px)",
   "--host-567": "clamp(567px, 39.375vw, 756px)",
   "--host-573": "clamp(573px, 39.792vw, 764px)",
   "--host-577": "clamp(577px, 40.069vw, 769.333px)",
@@ -222,13 +223,13 @@ function HostWorkspaceSidebar({ sidebarHeight }: { sidebarHeight: string }) {
 
   return (
     <aside
-      className={`w-[var(--host-270)] min-w-[270px] shrink-0 border-r border-[#6D7A8A] bg-white shadow-[2px_5px_5.2px_rgba(0,0,0,0.23)] ${sidebarHeight} max-md:w-full max-md:min-h-0 max-md:border-r-0 max-md:shadow-none`}
+      className={`w-[var(--host-210)] min-w-[210px] shrink-0 border-r border-[#6D7A8A] bg-white shadow-[2px_5px_5.2px_rgba(0,0,0,0.23)] ${sidebarHeight} max-md:w-full max-md:min-h-0 max-md:border-r-0 max-md:shadow-none`}
     >
-      <div className="px-[var(--host-12)] max-md:px-5">
-        <div className="w-[var(--host-243)] min-w-[243px] max-md:w-full">
+      <div className="px-[0.417vw] max-md:px-5">
+        <div className="w-[var(--host-198)] min-w-[198px] max-md:w-full">
           <section className="h-[5.972vw] min-h-[86px]">
-            <div className="flex h-[2.778vw] min-h-10 items-center justify-between pb-[0.556vw] pt-[0.833vw]">
-              <span className="text-[length:var(--host-16)] font-semibold leading-[1.253] text-[#5B3A29]">
+            <div className="flex h-[2.778vw] min-h-10 items-center justify-center pb-[0.556vw] pt-[0.833vw]">
+              <span className="w-[var(--host-176)] min-w-[176px] text-[length:var(--host-16)] font-semibold leading-[1.253] text-[#5B3A29]">
                 로컬 호스트님
               </span>
               <Image

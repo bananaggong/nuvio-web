@@ -103,12 +103,8 @@ export function SiteHeader() {
     window.location.href = "/";
   }
 
-  const headerHeightClass = isHostRoute
-    ? "h-[6.111vw] min-h-[72px]"
-    : "h-[4.861vw] min-h-[56px]";
-
   return (
-    <header className={`font-pretendard sticky top-0 z-50 border-b border-[#f1e7df] bg-white ${headerHeightClass}`}>
+    <header className="font-pretendard sticky top-0 z-50 h-[4.861vw] min-h-[56px] border-b border-[#f1e7df] bg-white">
       <div className="mx-auto flex h-full w-full items-center px-[2.083vw] min-[1440px]:px-[2.083vw]">
         <Link
           aria-label="누비오 홈"
