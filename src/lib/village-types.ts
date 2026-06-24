@@ -51,6 +51,7 @@ export type Village = {
   summary: string;
   description: string;
   heroImage: string;
+  profileImage?: string;
   logoText?: string;
   brandColor: string;
   accentColor: string;

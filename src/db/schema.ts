@@ -212,6 +212,7 @@ export const villages = pgTable(
     summary: text("summary").notNull(),
     description: text("description").notNull(),
     heroImageUrl: text("hero_image_url").notNull(),
+    profileImageUrl: text("profile_image_url").default("").notNull(),
     logoText: text("logo_text"),
     brandColor: text("brand_color").default("#0f766e").notNull(),
     accentColor: text("accent_color").default("#f59e0b").notNull(),

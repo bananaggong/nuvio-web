@@ -2,7 +2,7 @@
 
 import Image from "next/image";
 import { useSearchParams } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState, type ChangeEvent } from "react";
 import { fallbackChannel } from "@/components/host-channel-home";
 import { nuvioIcons } from "@/components/icons/nuvio-icons";
 import { HostWorkspaceLayout } from "@/components/host-workspace-ui";
@@ -19,12 +19,29 @@ const defaultLink: VillageLink = {
 const regionOptions = ["전남", "서울", "부산", "강원", "제주"];
 const cityOptions = ["보성군", "목포시", "강릉시", "제주시", "부산 중구"];
 
+const maxProfileUploadBytes = 5 * 1024 * 1024;
+
+type AssetUploadPayload = {
+  data?: {
+    url?: string;
+  };
+  error?: string;
+};
+
+type SaveChannelPayload = {
+  data?: Village;
+  error?: string;
+};
+
 export function HostChannelSettings() {
   const searchParams = useSearchParams();
   const requestedChannelSlug = searchParams.get("channel");
   const [channel, setChannel] = useState<Village>(fallbackChannel);
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
+  const [isUploadingProfile, setIsUploadingProfile] = useState(false);
+  const [profileMessage, setProfileMessage] = useState("");
+  const profileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     let active = true;
@@ -83,6 +100,74 @@ export function HostChannelSettings() {
     updateChannel({ links: channel.links.slice(1) });
   }
 
+  async function handleProfileFileChange(event: ChangeEvent<HTMLInputElement>) {
+    const file = event.target.files?.[0];
+    event.target.value = "";
+    if (!file || isUploadingProfile) return;
+
+    if (!channel.slug) {
+      setProfileMessage("먼저 채널을 선택해 주세요.");
+      return;
+    }
+
+    if (!file.type.startsWith("image/")) {
+      setProfileMessage("이미지 파일만 업로드할 수 있어요.");
+      return;
+    }
+
+    if (file.size > maxProfileUploadBytes) {
+      setProfileMessage("5MB 이하 이미지만 업로드할 수 있어요.");
+      return;
+    }
+
+    setIsUploadingProfile(true);
+    setProfileMessage("프로필 이미지를 업로드 중입니다...");
+
+    try {
+      const formData = new FormData();
+      formData.append("file", file);
+      formData.append("villageSlug", channel.slug);
+      formData.append("usage", "channel-profile");
+      formData.append("altText", `${channel.name || "채널"} 프로필 이미지`);
+
+      const uploadResponse = await fetch("/api/host/village-pages/assets", {
+        body: formData,
+        method: "POST",
+      });
+      const uploadPayload = (await uploadResponse.json().catch(() => ({}))) as AssetUploadPayload;
+      const uploadedUrl = uploadPayload.data?.url;
+
+      if (!uploadResponse.ok || !uploadedUrl) {
+        throw new Error(uploadPayload.error || "프로필 이미지를 업로드하지 못했습니다.");
+      }
+
+      const nextChannel: Village = {
+        ...channel,
+        profileImage: uploadedUrl,
+        updatedAt: new Date().toISOString(),
+      };
+      const saveResponse = await fetch("/api/host/channels", {
+        body: JSON.stringify(nextChannel),
+        headers: { "Content-Type": "application/json" },
+        method: "POST",
+      });
+      const savePayload = (await saveResponse.json().catch(() => ({}))) as SaveChannelPayload;
+
+      if (!saveResponse.ok || !savePayload.data) {
+        throw new Error(savePayload.error || "업로드한 프로필 이미지를 저장하지 못했습니다.");
+      }
+
+      setChannel(savePayload.data);
+      setProfileMessage("프로필 이미지가 저장되었습니다.");
+    } catch (error) {
+      setProfileMessage(
+        error instanceof Error ? error.message : "프로필 이미지를 업로드하지 못했습니다.",
+      );
+    } finally {
+      setIsUploadingProfile(false);
+    }
+  }
+
   async function saveChannel() {
     if (isSaving) return;
 
@@ -119,17 +204,28 @@ export function HostChannelSettings() {
               />
               <div className="absolute left-[var(--host-58)] top-[var(--host-129)] flex h-[var(--host-128)] items-start">
                 <div className="relative size-[var(--host-128)] shrink-0 overflow-hidden rounded-full bg-[#D9D9D9]">
-                  {channel.heroImage ? (
+                  {channel.profileImage ? (
                     <Image
                       alt=""
                       className="object-cover"
                       fill
                       sizes="(min-width: 1920px) 171px, 128px"
-                      src={channel.heroImage}
+                      src={channel.profileImage}
                     />
-                  ) : null}
+                  ) : (
+                    <span className="flex h-full w-full items-center justify-center text-[length:var(--host-24)] font-semibold leading-[1] text-[#6D7A8A]">
+                      {(channel.name || channel.logoText || "N").slice(0, 1)}
+                    </span>
+                  )}
                 </div>
                 <div className="ml-[var(--host-14)] mt-[var(--host-17)] w-[var(--host-352)]">
+                  <input
+                    accept="image/gif,image/jpeg,image/png,image/webp"
+                    className="sr-only"
+                    onChange={handleProfileFileChange}
+                    ref={profileInputRef}
+                    type="file"
+                  />
                   <p className="text-[length:var(--host-14)] font-medium leading-[1.286] text-[#6D7A8A]">
                     <span className="block">98x98픽셀 이상</span>
                     <span className="block whitespace-nowrap">
@@ -138,11 +234,18 @@ export function HostChannelSettings() {
                   </p>
                   <button
                     className="mt-[var(--host-18)] inline-flex h-[var(--host-40)] w-[var(--host-113)] items-center justify-center gap-[var(--host-9)] rounded-[4px] bg-[#6D7A8A] text-[length:var(--host-12)] font-medium leading-[1.253] text-[#F9F9F9] transition hover:bg-[#5F6B79]"
+                    disabled={isLoading || isUploadingProfile}
+                    onClick={() => profileInputRef.current?.click()}
                     type="button"
                   >
                     <Image alt="" height={21} src={nuvioIcons.channelUpload} width={21} />
-                    썸네일 추가
+                    {isUploadingProfile ? "업로드 중" : "프로필 추가"}
                   </button>
+                  {profileMessage ? (
+                    <p className="mt-[var(--host-8)] text-[length:var(--host-12)] font-medium leading-[1.253] text-[#6D7A8A]">
+                      {profileMessage}
+                    </p>
+                  ) : null}
                 </div>
               </div>
             </section>

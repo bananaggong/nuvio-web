@@ -179,15 +179,19 @@ export function HostChannelMenuSettings() {
           <section className="relative h-[var(--host-156)] border-b border-[#6D7A8A] bg-white">
             <div className="flex items-start gap-[var(--host-42)] px-[var(--host-58)] pt-[var(--host-14)] max-md:px-5">
               <div className="relative size-[var(--host-128)] shrink-0 overflow-hidden rounded-full bg-[#D9D9D9]">
-                {channel?.heroImage ? (
+                {channel?.profileImage ? (
                   <Image
                     alt=""
                     className="object-cover"
                     fill
                     sizes="(min-width: 1920px) 171px, 128px"
-                    src={channel.heroImage}
+                    src={channel.profileImage}
                   />
-                ) : null}
+                ) : (
+                  <span className="flex h-full w-full items-center justify-center text-[length:var(--host-24)] font-semibold leading-[1] text-[#6D7A8A]">
+                    {(channelName || channel?.logoText || "N").slice(0, 1)}
+                  </span>
+                )}
               </div>
               <div className="min-w-0 flex-1">
                 <div className="flex flex-wrap items-end gap-[var(--host-10)] pt-[var(--host-3)]">

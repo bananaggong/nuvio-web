@@ -142,15 +142,22 @@ function ChannelProfileHeader({
           width: px(128),
         }}
       >
-        {village.heroImage ? (
+        {village.profileImage ? (
           <Image
             alt={`${village.name} profile`}
             className="object-cover"
             fill
             sizes="170px"
-            src={village.heroImage}
+            src={village.profileImage}
           />
-        ) : null}
+        ) : (
+          <span
+            className="flex h-full w-full items-center justify-center font-semibold leading-[1] text-[#6D7A8A]"
+            style={{ fontSize: px(24) }}
+          >
+            {(village.name || village.logoText || "N").slice(0, 1)}
+          </span>
+        )}
       </div>
 
       <div className="flex min-w-0 flex-col" style={{ gap: px(4) }}>

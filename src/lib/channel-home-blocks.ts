@@ -43,7 +43,7 @@ export const channelHomeBlockTextWeights: Record<
 export const defaultChannelHomeBlock: Omit<ChannelHomeBlock, "id" | "order"> = {
   backgroundColor: "#F9F9F9",
   imageUrl: "",
-  mode: "image",
+  mode: "text",
   text: "",
   textAlign: "left",
   textColor: "#0D0D0C",

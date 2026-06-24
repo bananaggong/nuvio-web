@@ -87,10 +87,9 @@ function BlockImage({
   if (!block.imageUrl) {
     return (
       <div
-        className="flex h-full min-h-[inherit] w-full items-center justify-center bg-[#D9D9D9] text-center font-pretendard font-medium leading-[1.253] text-[#0D0D0C]"
-        style={{ fontSize: px(14) }}
+        className="flex h-full min-h-[inherit] w-full items-center justify-center bg-[#F4F4F4] text-center font-pretendard text-[#6D7A8A]"
       >
-        이미지 넣을경우
+        <ImagePlaceholder px={px} />
       </div>
     );
   }
@@ -103,6 +102,64 @@ function BlockImage({
       sizes="(min-width: 1920px) 760px, 570px"
       src={block.imageUrl}
     />
+  );
+}
+
+function ImagePlaceholder({ px }: { px: (value: number) => string }) {
+  return (
+    <div
+      className="flex flex-col items-center justify-center"
+      style={{ padding: px(16) }}
+    >
+      <svg
+        aria-hidden
+        fill="none"
+        style={{ height: px(20), width: px(20) }}
+        viewBox="0 0 20 20"
+      >
+        <path
+          d="M5.75 17.25H14.25C15.08 17.25 15.75 16.58 15.75 15.75V7.32L11.46 3.25H5.75C4.92 3.25 4.25 3.92 4.25 4.75V15.75C4.25 16.58 4.92 17.25 5.75 17.25Z"
+          stroke="currentColor"
+          strokeLinejoin="round"
+          strokeWidth="1.35"
+        />
+        <path
+          d="M11.35 3.55V6.35C11.35 7.02 11.89 7.56 12.56 7.56H15.37"
+          stroke="currentColor"
+          strokeLinejoin="round"
+          strokeWidth="1.35"
+        />
+        <path
+          d="M10 13.9V9.1M7.95 11.25L10 9.1L12.05 11.25"
+          stroke="currentColor"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          strokeWidth="1.35"
+        />
+      </svg>
+      <span
+        className="font-medium leading-[1.253]"
+        style={{ fontSize: px(12), marginTop: px(6) }}
+      >
+        파일 업로드
+      </span>
+      <span
+        className="font-normal leading-[1.253]"
+        style={{ fontSize: px(12), marginTop: px(18) }}
+      >
+        JPG, PNG, WebP, GIF 파일을 5MB 이하로 업로드할 수 있어요
+      </span>
+      <span
+        className="font-normal leading-[1.45]"
+        style={{ fontSize: px(12), marginTop: px(14) }}
+      >
+        권장 이미지 사이즈
+        <br />
+        가로 : 1920px(풀스크린) 이하
+        <br />
+        세로 : 200px ~ 560px
+      </span>
+    </div>
   );
 }
 

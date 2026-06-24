@@ -219,7 +219,7 @@ function HostChannelHomeBlocksInner({
       }
 
       updateBlock(pendingUploadBlockId, { imageUrl: uploadedUrl });
-      setStatusMessage("이미지가 추가되었습니다. 생성 버튼을 눌러 저장해 주세요.");
+      setStatusMessage("이미지가 추가되었습니다. 저장 버튼을 눌러 저장해 주세요.");
     } catch (error) {
       setStatusMessage(error instanceof Error ? error.message : "이미지를 업로드하지 못했습니다.");
     } finally {
@@ -594,7 +594,7 @@ function BlockEditor({
           onClick={onCommit}
           type="button"
         >
-          생성
+          저장
         </button>
       </div>
     </section>
@@ -646,7 +646,7 @@ function ImageDropArea({
 }) {
   return (
     <button
-      className="relative flex min-h-[var(--host-198)] w-full items-center justify-center overflow-hidden bg-[#D9D9D9] text-center text-[length:var(--host-14)] font-medium leading-[1.253] text-[#0D0D0C]"
+      className="relative flex min-h-[var(--host-198)] w-full items-center justify-center overflow-hidden bg-[#F4F4F4] text-center transition hover:bg-[#EFEFEF] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#FE701E]"
       onClick={onRequestImage}
       type="button"
     >
@@ -659,9 +659,30 @@ function ImageDropArea({
           src={block.imageUrl}
         />
       ) : (
-        "이미지 넣을경우"
+        <ImageUploadHint />
       )}
     </button>
+  );
+}
+
+function ImageUploadHint() {
+  return (
+    <span className="flex flex-col items-center justify-center px-[var(--host-16)] font-pretendard text-[#6D7A8A]">
+      <IconMask icon={nuvioIcons.channelBlockImage} size="var(--host-20)" />
+      <span className="mt-[var(--host-6)] text-[length:var(--host-12)] font-medium leading-[1.253]">
+        파일 업로드
+      </span>
+      <span className="mt-[var(--host-18)] text-[length:var(--host-12)] font-normal leading-[1.253]">
+        JPG, PNG, WebP, GIF 파일을 5MB 이하로 업로드할 수 있어요
+      </span>
+      <span className="mt-[var(--host-14)] text-[length:var(--host-12)] font-normal leading-[1.45]">
+        권장 이미지 사이즈
+        <br />
+        가로 : 1920px(풀스크린) 이하
+        <br />
+        세로 : 200px ~ 560px
+      </span>
+    </span>
   );
 }
 
@@ -678,7 +699,7 @@ function TextEditArea({
   return (
     <textarea
       aria-label="블록 텍스트"
-      className="min-h-[var(--host-198)] w-full resize-y border border-dashed border-[#D9D9D9] bg-white/60 p-[var(--host-16)] font-pretendard leading-[1.6] outline-none transition placeholder:text-[#A8AFB8] focus:border-[#FE701E]"
+      className="min-h-[var(--host-198)] w-full resize-y border border-dashed border-[#D9D9D9] bg-transparent p-[var(--host-16)] font-pretendard leading-[1.6] outline-none transition placeholder:text-[#6D7A8A] focus:border-[#FE701E]"
       onChange={(event) => onUpdate({ text: event.target.value })}
       placeholder="텍스트를 입력해 주세요."
       style={{
@@ -705,6 +726,7 @@ function ColorPickerPopover({
   const [hue, setHue] = useState(() => hexToHsv(value).h);
 
   const rgb = hexToRgb(draftHex) ?? { b: 0, g: 0, r: 0 };
+  const spectrumMarker = hexToHsv(draftHex);
 
   function commitColor(color: string) {
     const normalized = normalizeHexInput(color);
@@ -734,25 +756,35 @@ function ColorPickerPopover({
   }
 
   return (
-    <div className="absolute left-0 top-[var(--host-32)] z-30 w-[var(--host-546)] rounded-[4px] bg-[#292929] px-[var(--host-18)] py-[var(--host-18)] text-white shadow-[0_18px_48px_rgba(0,0,0,0.22)]">
-      <h4 className="text-[length:var(--host-16)] font-semibold leading-[1.253]">
+    <div className="absolute left-0 top-[var(--host-32)] z-30 w-[var(--host-546)] rounded-[4px] border border-[#D9D9D9] bg-white px-[var(--host-18)] py-[var(--host-18)] text-[#0D0D0C] shadow-[0_18px_48px_rgba(0,0,0,0.16)]">
+      <h4 className="text-[length:var(--host-16)] font-semibold leading-[1.253] text-[#0D0D0C]">
         색 편집
       </h4>
       <div className="mt-[var(--host-18)] grid grid-cols-[var(--host-257)_var(--host-44)_var(--host-12)_var(--host-123)_auto] gap-[var(--host-14)]">
         <button
           aria-label="색상 영역에서 선택"
-          className="relative h-[var(--host-188)] rounded-[4px] border border-[#3B3B3B]"
+          className="relative h-[var(--host-188)] rounded-[4px] border border-[#D9D9D9]"
           onPointerDown={pickSpectrum}
           style={{
             background:
               `linear-gradient(to top, #000 0%, transparent 55%), linear-gradient(to right, #fff 0%, hsl(${hue} 100% 50%) 100%)`,
           }}
           type="button"
-        />
-        <div className="h-[var(--host-188)] rounded-[3px] border border-[#3B3B3B]" style={{ backgroundColor: draftHex }} />
+        >
+          <span
+            aria-hidden
+            className="pointer-events-none absolute size-[var(--host-14)] rounded-full border-2 border-white shadow-[0_0_0_1px_rgba(0,0,0,0.55),0_2px_6px_rgba(0,0,0,0.2)]"
+            style={{
+              left: `${spectrumMarker.s * 100}%`,
+              top: `${(1 - spectrumMarker.v) * 100}%`,
+              transform: "translate(-50%, -50%)",
+            }}
+          />
+        </button>
+        <div className="h-[var(--host-188)] rounded-[3px] border border-[#D9D9D9]" style={{ backgroundColor: draftHex }} />
         <button
           aria-label="색상 슬라이더"
-          className="h-[var(--host-188)] rounded-full border border-[#3B3B3B]"
+          className="h-[var(--host-188)] rounded-full border border-[#D9D9D9]"
           onPointerDown={pickHue}
           style={{
             background:
@@ -763,7 +795,7 @@ function ColorPickerPopover({
         <div className="flex flex-col gap-[var(--host-10)]">
           <input
             aria-label="HEX 색상 코드"
-            className="h-[var(--host-31)] rounded-[4px] border border-[#3B3B3B] bg-[#3A3A3A] px-[var(--host-10)] text-[length:var(--host-12)] font-medium leading-[1.253] text-white outline-none focus:border-[#FE701E]"
+            className="h-[var(--host-31)] rounded-[4px] border border-[#D9D9D9] bg-white px-[var(--host-10)] text-[length:var(--host-12)] font-medium leading-[1.253] text-[#0D0D0C] outline-none focus:border-[#FE701E]"
             onChange={(event) => {
               setDraftHex(event.target.value);
               const normalized = normalizeHexInput(event.target.value);
@@ -773,7 +805,7 @@ function ColorPickerPopover({
           />
           <select
             aria-label="색상 입력 방식"
-            className="h-[var(--host-31)] rounded-[4px] border border-[#3B3B3B] bg-[#3A3A3A] px-[var(--host-10)] text-[length:var(--host-12)] font-medium leading-[1.253] text-white outline-none"
+            className="h-[var(--host-31)] rounded-[4px] border border-[#D9D9D9] bg-white px-[var(--host-10)] text-[length:var(--host-12)] font-medium leading-[1.253] text-[#0D0D0C] outline-none"
             value="RGB"
             onChange={() => undefined}
           >
@@ -782,7 +814,7 @@ function ColorPickerPopover({
           {(["r", "g", "b"] as const).map((channel) => (
             <input
               aria-label={`${channel.toUpperCase()} 색상값`}
-              className="h-[var(--host-31)] rounded-[4px] border border-[#3B3B3B] bg-[#3A3A3A] px-[var(--host-10)] text-[length:var(--host-12)] font-medium leading-[1.253] text-white outline-none focus:border-[#FE701E]"
+              className="h-[var(--host-31)] rounded-[4px] border border-[#D9D9D9] bg-white px-[var(--host-10)] text-[length:var(--host-12)] font-medium leading-[1.253] text-[#0D0D0C] outline-none focus:border-[#FE701E]"
               key={channel}
               max={255}
               min={0}
@@ -792,7 +824,7 @@ function ColorPickerPopover({
             />
           ))}
         </div>
-        <div className="flex flex-col justify-end gap-[var(--host-17)] text-[length:var(--host-12)] font-medium leading-[1.253]">
+        <div className="flex flex-col justify-end gap-[var(--host-17)] text-[length:var(--host-12)] font-medium leading-[1.253] text-[#6D7A8A]">
           <span>빨강</span>
           <span>녹색</span>
           <span>파랑</span>
@@ -824,14 +856,14 @@ function ColorChipGroup({
 }) {
   return (
     <div>
-      <p className="mb-[var(--host-14)] text-[length:var(--host-12)] font-medium leading-[1.253] text-white">
+      <p className="mb-[var(--host-14)] text-[length:var(--host-12)] font-medium leading-[1.253] text-[#6D7A8A]">
         {label}
       </p>
       <div className="flex items-center gap-[var(--host-10)]">
         {colors.slice(0, 12).map((color) => (
           <button
             aria-label={`${color} 선택`}
-            className="size-[var(--host-18)] rounded-full border border-white/30"
+            className="size-[var(--host-18)] rounded-full border border-[#D9D9D9]"
             key={color}
             onClick={() => onPick(color)}
             style={{ backgroundColor: color }}
@@ -841,7 +873,7 @@ function ColorChipGroup({
         {Array.from({ length: emptyCount }).map((_, index) => (
           <span
             aria-hidden
-            className="size-[var(--host-18)] rounded-full border border-dashed border-white/40"
+            className="size-[var(--host-18)] rounded-full border border-dashed border-[#D9D9D9]"
             key={index}
           />
         ))}

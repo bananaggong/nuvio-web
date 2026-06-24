@@ -221,6 +221,7 @@ export function normalizeHostVillage(input: unknown): Village {
       asString(value.description) ||
       `${name} 호스트가 신청, 공지, 후기, 보고서 자료를 한곳에서 관리할 수 있는 채널입니다.`,
     heroImage: asString(value.heroImage),
+    profileImage: asString(value.profileImage),
     logoText: asString(value.logoText) || name.slice(0, 2).toUpperCase(),
     brandColor: normalizeColor(asString(value.brandColor), "#0f766e"),
     accentColor: normalizeColor(asString(value.accentColor), "#f59e0b"),
@@ -259,6 +260,7 @@ function mapVillageToInsert(village: Village): VillageInsert {
     description:
       village.description.trim() || village.summary.trim() || village.tagline.trim(),
     heroImageUrl: village.heroImage.trim(),
+    profileImageUrl: village.profileImage?.trim() || "",
     logoText: village.logoText?.trim() || null,
     brandColor: normalizeColor(village.brandColor, "#0f766e"),
     accentColor: normalizeColor(village.accentColor, "#f59e0b"),
@@ -285,6 +287,7 @@ function mapVillageRowToVillage(row: VillageRow): Village {
     summary: row.summary,
     description: row.description,
     heroImage: row.heroImageUrl,
+    profileImage: row.profileImageUrl,
     logoText: row.logoText ?? undefined,
     brandColor: row.brandColor,
     accentColor: row.accentColor,
