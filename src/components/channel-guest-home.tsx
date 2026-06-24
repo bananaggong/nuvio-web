@@ -1,6 +1,7 @@
 ﻿import Image from "next/image";
 import Link from "next/link";
 import type { CSSProperties } from "react";
+import { ChannelHomeBlockView } from "@/components/channel-home-block-view";
 import { nuvioIcons } from "@/components/icons/nuvio-icons";
 import {
   channelGuestHref,
@@ -10,6 +11,10 @@ import {
   isChannelMenuSection,
   type ChannelMenuItem,
 } from "@/lib/channel-menu";
+import {
+  getChannelHomeBlocks,
+  isChannelHomeBlockSection,
+} from "@/lib/channel-home-blocks";
 import { villagePath, villageProgramPath } from "@/lib/village-routing";
 import type { Program, Review, VillageMediaContent } from "@/lib/types";
 import type { Village } from "@/lib/village-types";
@@ -124,6 +129,7 @@ export function ChannelGuestHomePage({
   const stories = buildStoryCards(media, village).slice(0, 3);
   const notices = buildChannelNotices(village, programs).slice(0, 4);
   const visibleMenuItems = getVisibleChannelMenuItems(village);
+  const homeBlocks = getChannelHomeBlocks(village);
 
   return (
     <div
@@ -169,6 +175,9 @@ export function ChannelGuestHomePage({
               stories={stories}
               village={village}
             />
+          ))}
+          {homeBlocks.map((block) => (
+            <ChannelHomeBlockView block={block} key={block.id} px={px} />
           ))}
         </div>
       </main>
@@ -762,6 +771,7 @@ function buildStoryCards(media: VillageMediaContent[], village: Village): StoryC
   return cards.concat(
     village.sections
       .filter((section) => !isChannelMenuSection(section))
+      .filter((section) => !isChannelHomeBlockSection(section))
       .slice(0, Math.max(0, 3 - cards.length))
       .map((section) => ({
         date: "0000. 00. 00",

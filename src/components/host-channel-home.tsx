@@ -4,6 +4,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { useEffect, useRef, useState, type ChangeEvent, type ReactNode } from "react";
+import { HostChannelHomeBlocks } from "@/components/host-channel-home-blocks";
 import { nuvioIcons } from "@/components/icons/nuvio-icons";
 import { HostWorkspaceLayout } from "@/components/host-workspace-ui";
 import {
@@ -285,6 +286,7 @@ export function HostChannelHome() {
                 visibleStoryCards={visibleStoryCards}
               />
             ))}
+            <HostChannelHomeBlocks channel={channel} onChannelSaved={setChannel} />
           </section>
         </div>
       </section>

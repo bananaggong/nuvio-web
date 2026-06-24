@@ -383,6 +383,15 @@ function normalizeSections(value: unknown, villageName: string): VillageSection[
       if (!title || !body) return undefined;
 
       return {
+        blockBackgroundColor: asOptionalString(record.blockBackgroundColor),
+        blockImageUrl: asOptionalString(record.blockImageUrl),
+        blockMode: asOptionalString(record.blockMode),
+        blockText: asOptionalString(record.blockText),
+        blockTextAlign: asOptionalString(record.blockTextAlign),
+        blockTextColor: asOptionalString(record.blockTextColor),
+        blockTextPreset: asOptionalString(record.blockTextPreset),
+        blockTextWeight: asOptionalString(record.blockTextWeight),
+        blockVerticalAlign: asOptionalString(record.blockVerticalAlign),
         description: asOptionalString(record.description),
         id: asString(record.id) || `section-${index + 1}`,
         locked: asOptionalBoolean(record.locked),

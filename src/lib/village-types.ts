@@ -20,6 +20,15 @@ export type VillageSectionType =
   | "faq";
 
 export type VillageSection = {
+  blockBackgroundColor?: string;
+  blockImageUrl?: string;
+  blockMode?: string;
+  blockText?: string;
+  blockTextAlign?: string;
+  blockTextColor?: string;
+  blockTextPreset?: string;
+  blockTextWeight?: string;
+  blockVerticalAlign?: string;
   description?: string;
   id: string;
   locked?: boolean;
