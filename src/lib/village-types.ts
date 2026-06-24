@@ -8,6 +8,10 @@ export type VillageLink = {
 };
 
 export type VillageSectionType =
+  | "board"
+  | "free"
+  | "gallery"
+  | "magazine"
   | "story"
   | "programs"
   | "stay"
@@ -16,11 +20,16 @@ export type VillageSectionType =
   | "faq";
 
 export type VillageSection = {
+  description?: string;
   id: string;
+  locked?: boolean;
+  menuKind?: string;
+  order?: number;
   type: VillageSectionType;
   title: string;
   body: string;
   items: string[];
+  visible?: boolean;
 };
 
 export type Village = {

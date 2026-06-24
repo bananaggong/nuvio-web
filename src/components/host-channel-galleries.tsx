@@ -4,11 +4,12 @@ import Image from "next/image";
 import { useSearchParams } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
 import {
+  ChannelEmptyState,
   ChannelProfileHeader,
-  fallbackChannel,
 } from "@/components/host-channel-home";
 import { nuvioIcons } from "@/components/icons/nuvio-icons";
 import { HostWorkspaceLayout } from "@/components/host-workspace-ui";
+import { selectHostChannel } from "@/lib/host-channel-selection";
 import type { VillageMediaContent } from "@/lib/types";
 import { villagePath } from "@/lib/village-routing";
 import type { Village } from "@/lib/village-types";
@@ -28,92 +29,6 @@ type GalleryItem = VillageMediaContent & {
   imageCount?: number;
 };
 
-const galleryFallbackItems: GalleryItem[] = [
-  {
-    body: [
-      "게시물과 함께 작성한 글은 여기에서 자세히 보기처럼 작성됩니다.",
-      "채널 홈에 노출되는 이미지형 콘텐츠를 관리하는 공간입니다.",
-    ],
-    category: "archive",
-    date: "2026-06-12",
-    featured: true,
-    id: "channel-gallery-1",
-    imageCount: 4,
-    provider: "instagram",
-    published: true,
-    sourceName: "호스트 채널",
-    sourceUrl: "/host/channels/galleries",
-    summary: "인스타그램처럼 게시물과 캡션을 함께 적어 올리는 방식으로 운영해요.",
-    thumbnail: "",
-    title: "인스타그램처럼 게시물과 캡션을 함께 적어 올리는 방식으로...",
-    updatedAt: "2026-06-12T00:00:00.000Z",
-    villageSlug: "boseong",
-  },
-  {
-    body: ["목록 게시물 중 이미지 또는 세부 내용을 선택하면 상세형 화면으로 확인할 수 있습니다."],
-    category: "archive",
-    date: "2026-06-09",
-    id: "channel-gallery-2",
-    imageCount: 2,
-    provider: "link",
-    published: true,
-    sourceName: "호스트 채널",
-    sourceUrl: "/host/channels/galleries",
-    summary: "게시물 목록에서 이미지와 짧은 설명을 한눈에 확인합니다.",
-    thumbnail: "",
-    title: "인스타그램처럼 게시물과 캡션을 함께 적어 올리는 방식으로...",
-    updatedAt: "2026-06-09T00:00:00.000Z",
-    villageSlug: "boseong",
-  },
-  {
-    body: ["영상형 콘텐츠는 재생 아이콘과 함께 별도로 구분됩니다."],
-    category: "original",
-    date: "2026-06-06",
-    embedUrl: "https://www.youtube.com/embed/demo",
-    id: "channel-gallery-3",
-    provider: "youtube",
-    published: true,
-    sourceName: "호스트 채널",
-    sourceUrl: "/host/channels/galleries",
-    summary: "영상 게시물은 영상 탭에서 따로 모아볼 수 있어요.",
-    thumbnail: "",
-    title: "인스타그램처럼 게시물과 캡션을 함께 적어 올리는 방식으로...",
-    updatedAt: "2026-06-06T00:00:00.000Z",
-    villageSlug: "boseong",
-  },
-  {
-    body: ["이미지 그리드형 게시물 예시입니다."],
-    category: "broadcast",
-    date: "2026-06-01",
-    id: "channel-gallery-4",
-    provider: "instagram",
-    published: true,
-    sourceName: "호스트 채널",
-    sourceUrl: "/host/channels/galleries",
-    summary: "짧은 캡션과 이미지가 함께 표시됩니다.",
-    thumbnail: "",
-    title: "인스타그램처럼 게시물과 캡션을 함께 적어 올리는 방식으로...",
-    updatedAt: "2026-06-01T00:00:00.000Z",
-    villageSlug: "boseong",
-  },
-  {
-    body: ["영상 또는 이미지가 없는 게시물도 회색 플레이스홀더로 안정적으로 보입니다."],
-    category: "archive",
-    date: "2026-05-28",
-    embedUrl: "https://www.youtube.com/embed/demo2",
-    id: "channel-gallery-5",
-    provider: "youtube",
-    published: true,
-    sourceName: "호스트 채널",
-    sourceUrl: "/host/channels/galleries",
-    summary: "영상형 콘텐츠는 카드 안에 재생 아이콘이 함께 표시됩니다.",
-    thumbnail: "",
-    title: "인스타그램처럼 게시물과 캡션을 함께 적어 올리는 방식으로...",
-    updatedAt: "2026-05-28T00:00:00.000Z",
-    villageSlug: "boseong",
-  },
-];
-
 function normalizeGalleryItem(item: VillageMediaContent): GalleryItem {
   return {
     ...item,
@@ -123,7 +38,7 @@ function normalizeGalleryItem(item: VillageMediaContent): GalleryItem {
 
 function formatGalleryDate(value: string) {
   const date = new Date(value);
-  if (Number.isNaN(date.getTime())) return "2000. 00. 00";
+  if (Number.isNaN(date.getTime())) return "작성일 미정";
   const year = date.getFullYear();
   const month = String(date.getMonth() + 1).padStart(2, "0");
   const day = String(date.getDate()).padStart(2, "0");
@@ -136,9 +51,10 @@ function isVideoItem(item: GalleryItem) {
 
 export function HostChannelGalleries() {
   const searchParams = useSearchParams();
+  const requestedChannelSlug = searchParams.get("channel");
   const galleryDetailParam = searchParams.get("galleryDetail");
-  const [channel, setChannel] = useState<Village>(fallbackChannel);
-  const [items, setItems] = useState<GalleryItem[]>(galleryFallbackItems);
+  const [channel, setChannel] = useState<Village | null>(null);
+  const [items, setItems] = useState<GalleryItem[]>([]);
   const [viewMode, setViewMode] = useState<GalleryViewMode>("grid");
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [saved, setSaved] = useState(false);
@@ -147,24 +63,46 @@ export function HostChannelGalleries() {
     let active = true;
 
     async function load() {
-      const [channelResponse, mediaResponse] = await Promise.allSettled([
-        fetch("/api/host/channels", { cache: "no-store" }),
-        fetch("/api/host/media", { cache: "no-store" }),
-      ]);
+      const channelResponse = await fetch("/api/host/channels", {
+        cache: "no-store",
+      }).catch(() => null);
 
       if (!active) return;
 
-      if (channelResponse.status === "fulfilled" && channelResponse.value.ok) {
-        const payload = (await channelResponse.value.json().catch(() => ({}))) as HostChannelPayload;
-        const firstChannel = Array.isArray(payload.data) ? payload.data[0] : undefined;
-        if (firstChannel) setChannel(firstChannel);
+      if (!channelResponse?.ok) {
+        setChannel(null);
+        setItems([]);
+        return;
       }
 
-      if (mediaResponse.status === "fulfilled" && mediaResponse.value.ok) {
-        const payload = (await mediaResponse.value.json().catch(() => ({}))) as HostMediaPayload;
-        if (Array.isArray(payload.data) && payload.data.length > 0) {
-          setItems(payload.data.map(normalizeGalleryItem));
-        }
+      const channelPayload = (await channelResponse.json().catch(() => ({}))) as HostChannelPayload;
+      const selectedChannel = selectHostChannel(
+        channelPayload.data,
+        requestedChannelSlug,
+      );
+      setChannel(selectedChannel);
+
+      if (!selectedChannel?.slug) {
+        setItems([]);
+        return;
+      }
+
+      const mediaResponse = await fetch(
+        `/api/host/media?villageSlug=${encodeURIComponent(selectedChannel.slug)}`,
+        { cache: "no-store" },
+      ).catch(() => null);
+      if (!active) return;
+
+      if (mediaResponse?.ok) {
+        const payload = (await mediaResponse.json().catch(() => ({}))) as HostMediaPayload;
+        const media = Array.isArray(payload.data) ? payload.data : [];
+        setItems(
+          media
+            .filter((item) => item.villageSlug === selectedChannel.slug)
+            .map(normalizeGalleryItem),
+        );
+      } else {
+        setItems([]);
       }
     }
 
@@ -173,9 +111,9 @@ export function HostChannelGalleries() {
     return () => {
       active = false;
     };
-  }, []);
+  }, [requestedChannelSlug]);
 
-  const publicHref = useMemo(() => villagePath(channel.slug), [channel.slug]);
+  const publicHref = channel?.slug ? villagePath(channel.slug) : "";
   const filteredItems = useMemo(() => {
     if (viewMode === "video") return items.filter(isVideoItem);
     return items;
@@ -203,13 +141,13 @@ export function HostChannelGalleries() {
       imageCount: 0,
       provider: "link",
       published: false,
-      sourceName: "호스트 채널",
+      sourceName: channel?.name || "호스트 채널",
       sourceUrl: "/host/channels/galleries",
       summary: "새 게시물 설명을 입력하세요.",
       thumbnail: "",
       title: "새 갤러리 게시물",
       updatedAt: now,
-      villageSlug: channel.slug || "boseong",
+      villageSlug: channel?.slug || "",
     };
 
     setItems((current) => [nextItem, ...current]);
@@ -251,14 +189,19 @@ export function HostChannelGalleries() {
                 }}
               />
 
-              {showDetail ? (
-                <GalleryDetailView item={selectedItem ?? galleryFallbackItems[0]} items={items} />
-              ) : (
+              {showDetail && selectedItem ? (
+                <GalleryDetailView item={selectedItem} items={items} />
+              ) : filteredItems.length > 0 ? (
                 <GalleryGrid
                   items={filteredItems}
                   onSelect={(item) => {
                     setSelectedId(item.id);
                   }}
+                />
+              ) : (
+                <ChannelEmptyState
+                  description="갤러리 게시물을 추가하면 이미지와 영상 목록이 표시됩니다."
+                  title="아직 등록된 갤러리 게시물이 없습니다."
                 />
               )}
             </div>
@@ -327,7 +270,7 @@ function GalleryGrid({
   items: GalleryItem[];
   onSelect: (item: GalleryItem) => void;
 }) {
-  const visible = items.length > 0 ? items.slice(0, 5) : galleryFallbackItems.slice(0, 5);
+  const visible = items.slice(0, 5);
 
   return (
     <div className="mt-[var(--host-12)] grid w-full grid-cols-[repeat(5,minmax(0,var(--host-222)))] gap-[var(--host-6)]">

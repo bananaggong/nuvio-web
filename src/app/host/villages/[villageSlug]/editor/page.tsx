@@ -1,122 +1,43 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { notFound, redirect } from "next/navigation";
+import { redirect } from "next/navigation";
 import { ArrowRight, LockKeyhole } from "lucide-react";
-import { BoseongPageEditor } from "@/components/boseong-page-editor";
-import { getHostVillageAccess } from "@/lib/host-village-access";
 import {
-  getPublicVillageBySlug,
-  getVillagePrograms,
-  getVillageReviews,
-} from "@/lib/village-db";
-import { launchFeatureFlags } from "@/lib/launch-feature-flags";
-import { listVillageAssets } from "@/lib/village-assets-db";
-import { listPublicVillageMedia } from "@/lib/village-media-db";
-import { listHostVillagePageSections } from "@/lib/village-page-cms";
+  decodeHostVillageSlugParam,
+  getHostVillageAccess,
+} from "@/lib/host-village-access";
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
 
 export const metadata: Metadata = {
   title: "채널 편집 | 누비오",
-  description: "권한이 연결된 채널을 실제 화면 위에서 편집합니다.",
+  description: "채널 편집은 호스트센터 채널 탭에서 관리합니다.",
 };
 
 export default async function HostVillageEditorPage({
   params,
-  searchParams,
 }: {
   params: Promise<{ villageSlug: string }>;
-  searchParams: Promise<{ page?: string }>;
 }) {
-  const { villageSlug } = await params;
+  const { villageSlug: encodedVillageSlug } = await params;
+  const villageSlug = decodeHostVillageSlugParam(encodedVillageSlug);
+  const channelSettingsPath = `/host/channels/settings?channel=${encodeURIComponent(
+    villageSlug,
+  )}`;
   const access = await getHostVillageAccess(villageSlug);
 
   if (!access.allowed && access.reason === "signedOut") {
     redirect(
-      `/login?intent=host&next=${encodeURIComponent(
-        `/host/villages/${villageSlug}/editor`,
-      )}`,
+      `/login?intent=host&next=${encodeURIComponent(channelSettingsPath)}`,
     );
   }
 
   if (!access.allowed) {
-    return (
-      <>
-        <AccessDenied villageSlug={villageSlug} />
-      </>
-    );
+    return <AccessDenied villageSlug={villageSlug} />;
   }
 
-  const village = await getPublicVillageBySlug(villageSlug);
-  if (!village) notFound();
-
-  const { page } = await searchParams;
-  const initialPageKey = normalizeEditorPageKey(page);
-  const programs = await getVillagePrograms(village);
-  const [
-    reviews,
-    media,
-    homeSections,
-    aboutSections,
-    mediaSections,
-    programsSections,
-    reviewsSections,
-    noticeSections,
-    assets,
-  ] = await Promise.all([
-    launchFeatureFlags.reviews ? getVillageReviews(village, programs) : [],
-    listPublicVillageMedia(village.slug, { limit: 12 }),
-    listHostVillagePageSections(village.slug, "home"),
-    listHostVillagePageSections(village.slug, "about"),
-    listHostVillagePageSections(village.slug, "media"),
-    listHostVillagePageSections(village.slug, "programs"),
-    launchFeatureFlags.reviews
-      ? listHostVillagePageSections(village.slug, "reviews")
-      : [],
-    listHostVillagePageSections(village.slug, "notice"),
-    safeListVillageAssets(village.slug),
-  ]);
-
-  return (
-    <BoseongPageEditor
-      assets={assets}
-      initialPageKey={initialPageKey}
-      media={media}
-      programs={programs}
-      reviews={reviews}
-      sectionsByPage={{
-        about: aboutSections,
-        home: homeSections,
-        media: mediaSections,
-        notice: noticeSections,
-        programs: programsSections,
-        reviews: launchFeatureFlags.reviews ? reviewsSections : [],
-      }}
-      village={village}
-    />
-  );
-}
-
-async function safeListVillageAssets(villageSlug: string) {
-  try {
-    return await listVillageAssets(villageSlug);
-  } catch {
-    return [];
-  }
-}
-
-function normalizeEditorPageKey(value?: string) {
-  if (
-    value === "about" ||
-    value === "media" ||
-    value === "programs" ||
-    (launchFeatureFlags.reviews && value === "reviews") ||
-    value === "notice"
-  ) {
-    return value;
-  }
-  return "home";
+  redirect(channelSettingsPath);
 }
 
 function AccessDenied({ villageSlug }: { villageSlug: string }) {
@@ -135,7 +56,7 @@ function AccessDenied({ villageSlug }: { villageSlug: string }) {
           연결 상태를 확인해 주세요.
         </p>
         <div className="mt-5 flex flex-wrap gap-2">
-          <HostLink href={`/host/villages/${villageSlug}`} label="운영 화면" />
+          <HostLink href="/host/channels" label="채널 탭" />
           <HostLink href="/host" label="호스트센터" />
         </div>
       </section>

@@ -287,7 +287,6 @@ function NotificationSettingsContent() {
           {templates.map((template) => (
             <MessageTemplateCard key={template.title} template={template} />
           ))}
-          <NewTemplateCard />
           <button
             className="flex w-fit items-center gap-[var(--host-4)] text-[var(--host-12)] font-normal leading-[1.253] text-[#FF9A3D]"
             type="button"
@@ -385,34 +384,6 @@ function MessageTemplateCard({
   );
 }
 
-function NewTemplateCard() {
-  return (
-    <article className="flex w-full flex-col items-start justify-center rounded-[var(--host-7)] border border-[#F7B267] pb-[var(--host-6)] opacity-60">
-      <div className="flex w-full flex-col gap-[var(--host-4)] rounded-t-[var(--host-7)] bg-[#F3F3F3] px-[var(--host-12)] py-[var(--host-8)]">
-        <div className="flex w-full items-center gap-[var(--host-8)]">
-          <div className="w-[var(--host-254)] max-w-[60%] border-b-[0.8px] border-[#CAC4BC] px-[var(--host-4)] py-[var(--host-4)] text-[var(--host-14)] font-normal leading-[1.253] text-[#D9D9D9]">
-            신규 템플릿 제목
-          </div>
-          <span className="flex flex-1 justify-end gap-[var(--host-8)]">
-            <Pencil
-              aria-hidden
-              className="size-[var(--host-13)] text-[#FE701E]"
-              strokeWidth={1.8}
-            />
-            <IconButton alt="템플릿 삭제" src={nuvioIcons.formItemTrash} />
-          </span>
-        </div>
-        <div className="w-full border-b-[0.8px] border-[#CAC4BC] px-[var(--host-4)] py-[var(--host-4)] text-[var(--host-12)] font-normal leading-[1.253] text-[#D9D9D9]">
-          메세지 사용에 대한 설명 작성
-        </div>
-      </div>
-      <p className="px-[var(--host-12)] py-[var(--host-8)] text-[var(--host-12)] font-normal leading-[1.253] text-[#D9D9D9]">
-        템플릿 메세지 내용 작성
-      </p>
-    </article>
-  );
-}
-
 function TemplateToken({ children }: { children: ReactNode }) {
   return <span className="text-[#FE701E]">{children}</span>;
 }
@@ -432,7 +403,8 @@ function DataSettingsContent() {
           <SelectShell label="프로그램 선택" widthClass="w-[var(--host-222)]" />
           <SelectShell label="기간 선택" widthClass="w-[var(--host-194)]" />
           <button
-            className="h-[var(--host-30)] w-[var(--host-77)] rounded-[var(--host-6)] bg-[#CAC4BC] text-center text-[var(--host-12)] font-bold leading-[1.6] text-[#F3F3F3]"
+            className="h-[var(--host-30)] w-[var(--host-77)] rounded-[var(--host-6)] bg-[#CAC4BC] text-center text-[var(--host-12)] font-bold leading-[1.6] text-[#F3F3F3] disabled:cursor-not-allowed disabled:opacity-70"
+            disabled
             type="button"
           >
             내보내기
@@ -474,18 +446,6 @@ function SelectShell({
         width={10}
       />
     </div>
-  );
-}
-
-function IconButton({ alt, src }: { alt: string; src: string }) {
-  return (
-    <button
-      aria-label={alt}
-      className="grid size-[var(--host-16)] place-items-center"
-      type="button"
-    >
-      <Image alt="" aria-hidden className="size-full" height={16} src={src} width={16} />
-    </button>
   );
 }
 

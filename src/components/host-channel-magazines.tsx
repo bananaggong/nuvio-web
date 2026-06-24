@@ -1,13 +1,15 @@
 "use client";
 
 import Image from "next/image";
-import { useEffect, useMemo, useState } from "react";
+import { useSearchParams } from "next/navigation";
+import { useEffect, useState } from "react";
 import {
+  ChannelEmptyState,
   ChannelProfileHeader,
-  fallbackChannel,
 } from "@/components/host-channel-home";
 import { HostWorkspaceLayout } from "@/components/host-workspace-ui";
 import { nuvioIcons } from "@/components/icons/nuvio-icons";
+import { selectHostChannel } from "@/lib/host-channel-selection";
 import { villagePath } from "@/lib/village-routing";
 import type { Village } from "@/lib/village-types";
 
@@ -22,37 +24,9 @@ type ChannelMagazine = {
   title: string;
 };
 
-const fallbackMagazines: ChannelMagazine[] = [
-  {
-    createdAt: "2026-06-12T00:00:00.000Z",
-    id: "channel-magazine-1",
-    title: "메인 타이틀 제목",
-  },
-  {
-    createdAt: "2026-06-10T00:00:00.000Z",
-    id: "channel-magazine-2",
-    title: "메인 타이틀 제목",
-  },
-  {
-    createdAt: "2026-06-08T00:00:00.000Z",
-    id: "channel-magazine-3",
-    title: "메인 타이틀 제목",
-  },
-  {
-    createdAt: "2026-06-04T00:00:00.000Z",
-    id: "channel-magazine-4",
-    title: "메인 타이틀 제목",
-  },
-  {
-    createdAt: "2026-05-29T00:00:00.000Z",
-    id: "channel-magazine-5",
-    title: "메인 타이틀 제목",
-  },
-];
-
 function formatMagazineDate(value: string) {
   const date = new Date(value);
-  if (Number.isNaN(date.getTime())) return "0000. 00. 00";
+  if (Number.isNaN(date.getTime())) return "작성일 미정";
   const year = date.getFullYear();
   const month = String(date.getMonth() + 1).padStart(2, "0");
   const day = String(date.getDate()).padStart(2, "0");
@@ -60,8 +34,10 @@ function formatMagazineDate(value: string) {
 }
 
 export function HostChannelMagazines() {
-  const [channel, setChannel] = useState<Village>(fallbackChannel);
-  const [items, setItems] = useState<ChannelMagazine[]>(fallbackMagazines);
+  const searchParams = useSearchParams();
+  const requestedChannelSlug = searchParams.get("channel");
+  const [channel, setChannel] = useState<Village | null>(null);
+  const [items, setItems] = useState<ChannelMagazine[]>([]);
   const [saved, setSaved] = useState(false);
 
   useEffect(() => {
@@ -74,8 +50,7 @@ export function HostChannelMagazines() {
       if (!active || !response?.ok) return;
 
       const payload = (await response.json().catch(() => ({}))) as HostChannelPayload;
-      const firstChannel = Array.isArray(payload.data) ? payload.data[0] : undefined;
-      if (firstChannel) setChannel(firstChannel);
+      setChannel(selectHostChannel(payload.data, requestedChannelSlug));
     }
 
     void loadChannel();
@@ -83,9 +58,9 @@ export function HostChannelMagazines() {
     return () => {
       active = false;
     };
-  }, []);
+  }, [requestedChannelSlug]);
 
-  const publicHref = useMemo(() => villagePath(channel.slug), [channel.slug]);
+  const publicHref = channel?.slug ? villagePath(channel.slug) : "";
 
   function addMagazine() {
     const now = new Date().toISOString();
@@ -93,7 +68,7 @@ export function HostChannelMagazines() {
       {
         createdAt: now,
         id: `channel-magazine-draft-${Date.now()}`,
-        title: "메인 타이틀 제목",
+        title: "새 매거진 글",
       },
       ...current,
     ]);
@@ -121,11 +96,20 @@ export function HostChannelMagazines() {
               <Image alt="" height={24} src={nuvioIcons.channelAddCircle} width={24} />
             </button>
 
-            <div className="mx-auto grid w-[var(--host-1103)] max-w-full grid-cols-[repeat(2,var(--host-530))] gap-x-[var(--host-43)] gap-y-[var(--host-43)]">
-              {items.map((item) => (
-                <MagazineCard item={item} key={item.id} />
-              ))}
-            </div>
+            {items.length > 0 ? (
+              <div className="mx-auto grid w-[var(--host-1103)] max-w-full grid-cols-[repeat(2,var(--host-530))] gap-x-[var(--host-43)] gap-y-[var(--host-43)]">
+                {items.map((item) => (
+                  <MagazineCard item={item} key={item.id} />
+                ))}
+              </div>
+            ) : (
+              <div className="mx-auto w-[var(--host-1103)] max-w-full">
+                <ChannelEmptyState
+                  description="매거진 게시물을 추가하면 이 목록에 표시됩니다."
+                  title="아직 작성된 매거진 게시물이 없습니다."
+                />
+              </div>
+            )}
           </section>
 
           <footer className="flex h-[var(--host-69)] items-center gap-[var(--host-12)] border-b border-[#6D7A8A] px-[var(--host-24)]">

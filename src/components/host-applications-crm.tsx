@@ -235,7 +235,10 @@ export function HostApplicationsCrm({
   const formsHref = `${resolvedProgramBasePath}/forms`;
   const messagesHref = `${resolvedProgramBasePath}/messages`;
   const rawSidebarTitle =
-    program?.title ?? selectedApplication?.programTitle ?? project?.title ?? "프로그램 제목";
+    program?.title ??
+    selectedApplication?.programTitle ??
+    project?.title ??
+    (programId ? "프로그램 정보 없음" : "프로그램 미선택");
   const sidebarTitle = selectedApplication
     ? formatProgramDisplayName(rawSidebarTitle, selectedApplication.programId)
     : rawSidebarTitle;
@@ -698,7 +701,7 @@ function ApplicationRow({
         type="button"
       >
         <span className="truncate font-semibold text-[#0D0D0C]">
-          {application.applicantName || "신청자이름"}
+          {application.applicantName || "이름 미입력"}
         </span>
         <span className="font-semibold text-[#0D0D0C]">성별</span>
         <span className="font-normal text-[#6D7A8A]">
@@ -731,6 +734,23 @@ function ApplicationDetailPanel({
   programDraft?: HostProgramDraft;
   programTitle: string;
 }) {
+  if (!application) {
+    return (
+      <section className="min-h-0 min-w-0 flex-1 bg-white pl-[var(--app-20)] pr-[11px] pt-[var(--app-52)]">
+        <div className="flex h-full w-[var(--app-555)] max-w-full items-center justify-center rounded-[6px] border border-dashed border-[#CAC4BC] bg-[#F9F9F9] px-[24px] py-[32px] text-center">
+          <div>
+            <h2 className="text-[16px] font-semibold leading-[1.253] text-[#5B3A29]">
+              아직 선택할 신청자가 없습니다.
+            </h2>
+            <p className="mt-[10px] text-[13px] font-normal leading-[1.6] text-[#6D7A8A]">
+              신청자가 접수되면 이 영역에서 신청 정보와 신청서 응답을 확인할 수 있습니다.
+            </p>
+          </div>
+        </div>
+      </section>
+    );
+  }
+
   const statusMeta = application ? getApplicationStatusMeta(application.status) : undefined;
   const answers = application?.answers ?? {};
   const answerMap = buildApplicationAnswerMap(answers);
@@ -761,9 +781,9 @@ function ApplicationDetailPanel({
   return (
     <section className="min-h-0 min-w-0 flex-1 bg-white pl-[var(--app-20)] pr-[11px] pt-[var(--app-52)]">
       <div className="flex h-[28px] items-start text-[16px] font-semibold leading-[1.253] text-[#0D0D0C]">
-        <span>{application?.applicantName ?? "신청자이름"}</span>
+        <span>{application.applicantName || "이름 미입력"}</span>
         <span className="ml-[28px]">{applicantGender}</span>
-        <span className="ml-[28px]">{application?.phone || "010 - 0000 - 0000"}</span>
+        <span className="ml-[28px]">{application.phone || "연락처 미입력"}</span>
         {statusMeta ? (
           <div className="ml-auto flex items-center gap-[8px] pr-[8px] text-[14px] font-normal">
             <span className="text-[#6D7A8A]">현재 상태</span>
@@ -798,7 +818,7 @@ function ApplicationDetailPanel({
           </div>
           <div className="pt-[10px]">
             <h2 className="line-clamp-2 text-[18px] font-semibold leading-[1.35] text-[#5B3A29]">
-              {programTitle || "프로그램 제목 입력"}
+              {programTitle || "프로그램 미선택"}
             </h2>
             <p className="mt-[12px] text-[12px] font-normal leading-[1.253] text-[#6D7A8A]">
               {programLocation}
@@ -975,7 +995,7 @@ function SendMessageDialog({
                     >
                       <span className="truncate">{template.name}</span>
                       <span className="ml-[8px] shrink-0 font-normal">
-                        작성일 0000. 00. 00
+                        작성일 미정
                       </span>
                     </span>
                     {selected ? (
@@ -1923,10 +1943,10 @@ function getMessageStatus(status: HostApplicationStatus) {
 }
 
 function formatShortDate(value?: string) {
-  if (!value) return "0000. 00. 00";
+  if (!value) return "미정";
 
   const date = new Date(value);
-  if (Number.isNaN(date.getTime())) return "0000. 00. 00";
+  if (Number.isNaN(date.getTime())) return "미정";
 
   const year = date.getFullYear();
   const month = String(date.getMonth() + 1).padStart(2, "0");
@@ -1935,10 +1955,10 @@ function formatShortDate(value?: string) {
 }
 
 function formatReviewManagementDate(value?: string) {
-  if (!value) return "0000년 00월 00일";
+  if (!value) return "날짜 미정";
 
   const date = new Date(value);
-  if (Number.isNaN(date.getTime())) return "0000년 00월 00일";
+  if (Number.isNaN(date.getTime())) return "날짜 미정";
 
   return `${date.getFullYear()}년 ${date.getMonth() + 1}월 ${date.getDate()}일`;
 }

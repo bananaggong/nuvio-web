@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import {
+  type ApiAuthContext,
   applyRateLimit,
   enforceContentLength,
   enforceSameOrigin,
@@ -16,6 +17,7 @@ import {
 } from "@/lib/host-program-db";
 import { getProgramPublishBlockers } from "@/lib/host-program-publish-readiness";
 import {
+  decodeHostVillageSlugParam,
   listManageableHostVillageWorkspaces,
   type HostVillageWorkspace,
 } from "@/lib/host-village-access";
@@ -35,14 +37,10 @@ export async function GET(request: Request) {
   if (limited) return limited;
 
   try {
-    const drafts =
-      auth.profile.role === "admin"
-        ? await listHostProgramDraftsFromDb()
-        : await listHostProgramDraftsFromDb({
-            villageIds: (await listManageableHostVillageWorkspaces(auth)).map(
-              (workspace) => workspace.villageId,
-            ),
-          });
+    const villageScope = await resolveProgramVillageScope(auth, request);
+    const drafts = await listHostProgramDraftsFromDb(
+      villageScope ? { villageIds: villageScope } : {},
+    );
     return NextResponse.json({ data: drafts });
   } catch (error) {
     return NextResponse.json(
@@ -157,6 +155,47 @@ export async function POST(request: Request) {
   }
 }
 
+async function resolveProgramVillageScope(
+  auth: ApiAuthContext,
+  request: Request,
+): Promise<string[] | undefined> {
+  const { searchParams } = new URL(request.url);
+  const requestedVillageId = normalizeIdentifier(
+    searchParams.get("channelId") ?? searchParams.get("villageId"),
+  );
+  const requestedVillageSlug = normalizeIdentifier(
+    decodeHostVillageSlugParam(
+      searchParams.get("channelSlug") ?? searchParams.get("villageSlug") ?? "",
+    ),
+  );
+  const hasRequestedVillage = Boolean(requestedVillageId || requestedVillageSlug);
+
+  if (auth.profile.role === "admin" && !hasRequestedVillage) return undefined;
+
+  const workspaces = await listManageableHostVillageWorkspaces(auth);
+
+  if (!hasRequestedVillage) {
+    return workspaces.map((workspace) => workspace.villageId);
+  }
+
+  const matchedWorkspace = workspaces.find((workspace) => {
+    const workspaceId = normalizeIdentifier(workspace.villageId);
+    const workspaceSlug = normalizeIdentifier(workspace.slug);
+
+    return (
+      Boolean(requestedVillageId && requestedVillageId === workspaceId) ||
+      Boolean(requestedVillageSlug && requestedVillageSlug === workspaceSlug)
+    );
+  });
+
+  if (matchedWorkspace) return [matchedWorkspace.villageId];
+  if (auth.profile.role === "admin" && isUuid(requestedVillageId)) {
+    return [requestedVillageId];
+  }
+
+  return [];
+}
+
 function scopeProgramDraftToHostWorkspace(
   draft: HostProgramDraft,
   workspaces: HostVillageWorkspace[],
@@ -217,7 +256,7 @@ function isLinkedProgramForm(
   );
 }
 
-function normalizeIdentifier(value: string | undefined): string {
+function normalizeIdentifier(value: string | null | undefined): string {
   return (value ?? "").trim().toLowerCase();
 }
 

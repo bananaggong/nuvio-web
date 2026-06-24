@@ -19,32 +19,7 @@ const members: Array<{
   name: string;
   role: string;
   tone: TeamMemberTone;
-}> = [
-  {
-    email: "intume0b@gmail.com",
-    name: "로컬 호스트",
-    role: "호스트",
-    tone: "host",
-  },
-  {
-    email: "aaaa@gmail.com",
-    name: "이르음",
-    role: "운영진",
-    tone: "manager",
-  },
-  {
-    email: "aaaa@gmail.com",
-    name: "이르음",
-    role: "스태프",
-    tone: "staff",
-  },
-  {
-    email: "aaaa@gmail.com",
-    name: "이르음",
-    role: "수락 대기",
-    tone: "pending",
-  },
-];
+}> = [];
 
 const permissionRows: Array<{
   key: PermissionKey;
@@ -125,14 +100,20 @@ export function HostTeamSettingsContent({
           )}
         </div>
         <div className="flex w-full flex-col gap-[var(--host-8)]">
-          {members.map((member) => (
-            <TeamMemberRow
-              canManageRolePermissions={canManageRolePermissions}
-              key={`${member.role}-${member.email}`}
-              member={member}
-              onOpenPermissions={() => setShowPermissionDialog(true)}
-            />
-          ))}
+          {members.length > 0 ? (
+            members.map((member) => (
+              <TeamMemberRow
+                canManageRolePermissions={canManageRolePermissions}
+                key={`${member.role}-${member.email}`}
+                member={member}
+                onOpenPermissions={() => setShowPermissionDialog(true)}
+              />
+            ))
+          ) : (
+            <div className="rounded-[var(--host-4)] border border-dashed border-[#CAC4BC] px-[var(--host-14)] py-[var(--host-18)] text-[var(--host-12)] font-normal leading-[1.6] text-[#6D7A8A]">
+              아직 초대된 팀 멤버가 없습니다.
+            </div>
+          )}
         </div>
       </div>
 

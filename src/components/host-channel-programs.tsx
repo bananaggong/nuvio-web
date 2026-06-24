@@ -2,14 +2,19 @@
 
 import Image from "next/image";
 import Link from "next/link";
+import { useSearchParams } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
 import {
+  ChannelEmptyState,
   ChannelProfileHeader,
-  fallbackChannel,
-  fallbackPrograms,
 } from "@/components/host-channel-home";
 import { nuvioIcons } from "@/components/icons/nuvio-icons";
 import { HostWorkspaceLayout } from "@/components/host-workspace-ui";
+import {
+  filterProgramsForChannel,
+  hostChannelProgramsEndpoint,
+  selectHostChannel,
+} from "@/lib/host-channel-selection";
 import type { HostProgramDraft } from "@/lib/host-program-studio";
 import type { ProgramStatus } from "@/lib/types";
 import { villagePath } from "@/lib/village-routing";
@@ -23,17 +28,6 @@ type HostProgramsPayload = {
   data?: HostProgramDraft[];
 };
 
-const fallbackProgramCards = Array.from({ length: 7 }, (_, index) => ({
-  ...fallbackPrograms[index % fallbackPrograms.length],
-  id: `${fallbackPrograms[index % fallbackPrograms.length].id}-${index}`,
-  title:
-    index === 0
-      ? fallbackPrograms[0].title
-      : index % 2 === 0
-        ? "채널 프로그램 제목"
-        : "호스트 채널 프로그램",
-}));
-
 const filters = [
   { label: "전체", value: "all" },
   { label: "오픈", value: "open" },
@@ -45,8 +39,10 @@ type ProgramFilter = (typeof filters)[number]["value"];
 type SortOrder = "latest" | "oldest";
 
 export function HostChannelPrograms() {
-  const [channel, setChannel] = useState<Village>(fallbackChannel);
-  const [programs, setPrograms] = useState<HostProgramDraft[]>(fallbackProgramCards);
+  const searchParams = useSearchParams();
+  const requestedChannelSlug = searchParams.get("channel");
+  const [channel, setChannel] = useState<Village | null>(null);
+  const [programs, setPrograms] = useState<HostProgramDraft[]>([]);
   const [activeFilter, setActiveFilter] = useState<ProgramFilter>("all");
   const [sortOrder, setSortOrder] = useState<SortOrder>("latest");
 
@@ -54,24 +50,41 @@ export function HostChannelPrograms() {
     let active = true;
 
     async function load() {
-      const [channelResponse, programsResponse] = await Promise.allSettled([
-        fetch("/api/host/channels", { cache: "no-store" }),
-        fetch("/api/host/programs", { cache: "no-store" }),
-      ]);
+      const channelResponse = await fetch("/api/host/channels", {
+        cache: "no-store",
+      }).catch(() => null);
 
       if (!active) return;
 
-      if (channelResponse.status === "fulfilled" && channelResponse.value.ok) {
-        const payload = (await channelResponse.value.json().catch(() => ({}))) as HostChannelPayload;
-        const firstChannel = Array.isArray(payload.data) ? payload.data[0] : undefined;
-        if (firstChannel) setChannel(firstChannel);
+      if (!channelResponse?.ok) {
+        setChannel(null);
+        setPrograms([]);
+        return;
       }
 
-      if (programsResponse.status === "fulfilled" && programsResponse.value.ok) {
-        const payload = (await programsResponse.value.json().catch(() => ({}))) as HostProgramsPayload;
-        if (Array.isArray(payload.data) && payload.data.length > 0) {
-          setPrograms(payload.data);
-        }
+      const channelPayload = (await channelResponse.json().catch(() => ({}))) as HostChannelPayload;
+      const selectedChannel = selectHostChannel(
+        channelPayload.data,
+        requestedChannelSlug,
+      );
+      setChannel(selectedChannel);
+
+      const programsEndpoint = hostChannelProgramsEndpoint(selectedChannel);
+      if (!programsEndpoint) {
+        setPrograms([]);
+        return;
+      }
+
+      const programsResponse = await fetch(programsEndpoint, {
+        cache: "no-store",
+      }).catch(() => null);
+      if (!active) return;
+
+      if (programsResponse?.ok) {
+        const programsPayload = (await programsResponse.json().catch(() => ({}))) as HostProgramsPayload;
+        setPrograms(filterProgramsForChannel(programsPayload.data, selectedChannel));
+      } else {
+        setPrograms([]);
       }
     }
 
@@ -80,9 +93,9 @@ export function HostChannelPrograms() {
     return () => {
       active = false;
     };
-  }, []);
+  }, [requestedChannelSlug]);
 
-  const publicHref = useMemo(() => villagePath(channel.slug), [channel.slug]);
+  const publicHref = channel?.slug ? villagePath(channel.slug) : "";
   const visiblePrograms = useMemo(() => {
     return programs
       .filter((program) => {
@@ -138,11 +151,20 @@ export function HostChannelPrograms() {
               편집을 원하는 프로그램을 클릭 시, 해당 프로그램의 설정 페이지로 이동해요
             </p>
 
-            <div className="mt-[var(--host-30)] grid grid-cols-[repeat(3,var(--host-344))] gap-x-[var(--host-36-7)] gap-y-[var(--host-40)] pl-[var(--host-20)]">
-              {visiblePrograms.map((program, index) => (
-                <ChannelProgramCard key={`${program.id}-${index}`} program={program} />
-              ))}
-            </div>
+            {visiblePrograms.length > 0 ? (
+              <div className="mt-[var(--host-30)] grid grid-cols-[repeat(3,var(--host-344))] gap-x-[var(--host-36-7)] gap-y-[var(--host-40)] pl-[var(--host-20)]">
+                {visiblePrograms.map((program, index) => (
+                  <ChannelProgramCard key={`${program.id}-${index}`} program={program} />
+                ))}
+              </div>
+            ) : (
+              <div className="mt-[var(--host-30)] pl-[var(--host-20)]">
+                <ChannelEmptyState
+                  description="호스트센터에서 프로그램을 생성하고 공개하면 채널 프로그램 목록에 표시됩니다."
+                  title="아직 표시할 프로그램이 없습니다."
+                />
+              </div>
+            )}
           </section>
 
           <footer className="mt-[var(--host-8)] flex h-[var(--host-69)] items-start border-t border-[#6D7A8A] px-[var(--host-28)] pt-[var(--host-20)]">
@@ -196,7 +218,7 @@ function ChannelProgramCard({ program }: { program: HostProgramDraft }) {
   const href = `/host/programs/${encodeURIComponent(program.id)}`;
   const status = program.status === "earlyClosed" ? "closed" : program.status;
   const statusCopy = getProgramStatusCopy(status);
-  const dayCopy = status === "open" ? "D+ 00(오픈날짜)" : "D- 00(오픈일 카운터)";
+  const dayCopy = formatProgramPeriod(program);
   const imageSrc = getDisplayableImage(program.image);
 
   return (
@@ -231,7 +253,7 @@ function ChannelProgramCard({ program }: { program: HostProgramDraft }) {
           />
         </div>
         <h2 className="mt-[var(--host-14)] line-clamp-1 text-[length:var(--host-16)] font-semibold leading-[1.253] text-[#5B3A29]">
-          {program.title || "프로그램 제목 입력"}
+          {program.title || "제목 미입력"}
         </h2>
         <p className="mt-[var(--host-12)] line-clamp-3 text-[length:var(--host-12)] font-normal leading-[1.62] text-[#CAC4BC]">
           {program.summary ||
@@ -243,6 +265,27 @@ function ChannelProgramCard({ program }: { program: HostProgramDraft }) {
       </Link>
     </article>
   );
+}
+
+function formatProgramPeriod(program: HostProgramDraft): string {
+  const start = formatShortDate(program.activityStart);
+  const end = formatShortDate(program.activityEnd);
+
+  if (start && end) return `${start} - ${end}`;
+  if (start) return `${start} 시작`;
+  if (end) return `${end} 종료`;
+
+  return "일정 미정";
+}
+
+function formatShortDate(value?: string): string {
+  if (!value) return "";
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return "";
+
+  return `${String(date.getMonth() + 1).padStart(2, "0")}.${String(
+    date.getDate(),
+  ).padStart(2, "0")}`;
 }
 
 function getDisplayableImage(src: string): string | undefined {

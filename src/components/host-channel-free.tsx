@@ -1,13 +1,15 @@
 "use client";
 
 import Image from "next/image";
-import { useEffect, useMemo, useState } from "react";
+import { useSearchParams } from "next/navigation";
+import { useEffect, useState } from "react";
 import {
+  ChannelEmptyState,
   ChannelProfileHeader,
-  fallbackChannel,
 } from "@/components/host-channel-home";
 import { HostWorkspaceLayout } from "@/components/host-workspace-ui";
 import { nuvioIcons } from "@/components/icons/nuvio-icons";
+import { selectHostChannel } from "@/lib/host-channel-selection";
 import { villagePath } from "@/lib/village-routing";
 import type { Village } from "@/lib/village-types";
 
@@ -21,7 +23,9 @@ type FreeBlock = {
 };
 
 export function HostChannelFree() {
-  const [channel, setChannel] = useState<Village>(fallbackChannel);
+  const searchParams = useSearchParams();
+  const requestedChannelSlug = searchParams.get("channel");
+  const [channel, setChannel] = useState<Village | null>(null);
   const [blocks, setBlocks] = useState<FreeBlock[]>([]);
   const [saved, setSaved] = useState(false);
 
@@ -35,8 +39,7 @@ export function HostChannelFree() {
       if (!active || !response?.ok) return;
 
       const payload = (await response.json().catch(() => ({}))) as HostChannelPayload;
-      const firstChannel = Array.isArray(payload.data) ? payload.data[0] : undefined;
-      if (firstChannel) setChannel(firstChannel);
+      setChannel(selectHostChannel(payload.data, requestedChannelSlug));
     }
 
     void loadChannel();
@@ -44,9 +47,9 @@ export function HostChannelFree() {
     return () => {
       active = false;
     };
-  }, []);
+  }, [requestedChannelSlug]);
 
-  const publicHref = useMemo(() => villagePath(channel.slug), [channel.slug]);
+  const publicHref = channel?.slug ? villagePath(channel.slug) : "";
 
   function addBlock() {
     setBlocks((current) => [
@@ -68,16 +71,6 @@ export function HostChannelFree() {
           <ChannelProfileHeader activeLabel="자유형" channel={channel} publicHref={publicHref} />
 
           <section className="border-b border-[#6D7A8A] pb-[var(--host-8)] pt-[var(--host-8)]">
-            <div className="relative h-[var(--host-56)]">
-              <FreeCanvasTools className="left-[var(--host-18)] top-[var(--host-18)]" onAdd={addBlock} />
-            </div>
-
-            <div className="mt-[var(--host-8)] grid h-[var(--host-56)] grid-cols-3">
-              <FreeSlot onAdd={addBlock} />
-              <FreeSlot onAdd={addBlock} />
-              <FreeSlot onAdd={addBlock} />
-            </div>
-
             {blocks.length > 0 ? (
               <div className="grid grid-cols-3 gap-[var(--host-8)] border-b border-[#F3E2D5] px-[var(--host-18)] py-[var(--host-12)]">
                 {blocks.map((block) => (
@@ -89,7 +82,18 @@ export function HostChannelFree() {
                   </div>
                 ))}
               </div>
-            ) : null}
+            ) : (
+              <div className="px-[var(--host-18)] py-[var(--host-24)]">
+                <ChannelEmptyState
+                  description="블록을 추가하면 자유형 메뉴 페이지에 표시됩니다."
+                  title="아직 구성한 자유형 블록이 없습니다."
+                />
+              </div>
+            )}
+
+            <div className="flex h-[var(--host-56)] items-center px-[var(--host-18)]">
+              <FreeCanvasTools onAdd={addBlock} />
+            </div>
           </section>
 
           <footer className="flex h-[var(--host-69)] items-center gap-[var(--host-12)] border-b border-[#6D7A8A] px-[var(--host-28)]">
@@ -112,23 +116,9 @@ export function HostChannelFree() {
   );
 }
 
-function FreeSlot({ onAdd }: { onAdd: () => void }) {
+function FreeCanvasTools({ onAdd }: { onAdd: () => void }) {
   return (
-    <div className="relative min-w-0">
-      <FreeCanvasTools className="left-[var(--host-18)] top-[var(--host-18)]" onAdd={onAdd} />
-    </div>
-  );
-}
-
-function FreeCanvasTools({
-  className,
-  onAdd,
-}: {
-  className: string;
-  onAdd: () => void;
-}) {
-  return (
-    <div className={`absolute flex items-center gap-[var(--host-13)] ${className}`}>
+    <div className="flex items-center gap-[var(--host-13)]">
       <button
         aria-label="자유 블록 추가"
         className="grid size-[var(--host-20)] place-items-center transition hover:opacity-70"

@@ -50,7 +50,7 @@ export async function listHostVillagesFromDb(): Promise<Village[]> {
 export async function getHostVillageBySlug(
   slug: string,
 ): Promise<Village | undefined> {
-  const key = slug.trim().toLowerCase();
+  const key = normalizeVillageSlugLookup(slug);
   if (!key) return undefined;
 
   try {
@@ -74,7 +74,7 @@ export async function getHostVillageBySlug(
 export async function getPublicVillageBySlug(
   slug: string,
 ): Promise<Village | undefined> {
-  const key = slug.trim().toLowerCase();
+  const key = normalizeVillageSlugLookup(slug);
   if (!key) return undefined;
 
   try {
@@ -220,7 +220,7 @@ export function normalizeHostVillage(input: unknown): Village {
     description:
       asString(value.description) ||
       `${name} 호스트가 신청, 공지, 후기, 보고서 자료를 한곳에서 관리할 수 있는 채널입니다.`,
-    heroImage: asString(value.heroImage) || fallbackImage,
+    heroImage: asString(value.heroImage),
     logoText: asString(value.logoText) || name.slice(0, 2).toUpperCase(),
     brandColor: normalizeColor(asString(value.brandColor), "#0f766e"),
     accentColor: normalizeColor(asString(value.accentColor), "#f59e0b"),
@@ -258,7 +258,7 @@ function mapVillageToInsert(village: Village): VillageInsert {
     summary: village.summary.trim() || village.tagline.trim(),
     description:
       village.description.trim() || village.summary.trim() || village.tagline.trim(),
-    heroImageUrl: village.heroImage.trim() || fallbackImage,
+    heroImageUrl: village.heroImage.trim(),
     logoText: village.logoText?.trim() || null,
     brandColor: normalizeColor(village.brandColor, "#0f766e"),
     accentColor: normalizeColor(village.accentColor, "#f59e0b"),
@@ -314,6 +314,17 @@ function mergeVillages(databaseVillages: Village[], fallbackVillages: Village[])
   return merged;
 }
 
+function normalizeVillageSlugLookup(value: string): string {
+  const trimmed = value.trim();
+  if (!trimmed) return "";
+
+  try {
+    return decodeURIComponent(trimmed).trim().toLowerCase();
+  } catch {
+    return trimmed.toLowerCase();
+  }
+}
+
 function normalizeProgramIds(value: unknown): Array<number | string> {
   if (typeof value === "string") {
     return value
@@ -333,7 +344,7 @@ function normalizeLinks(value: unknown): VillageLink[] {
   if (!Array.isArray(value)) return [];
 
   return value
-    .map((item, index) => {
+    .map((item, index): VillageLink | undefined => {
       if (!item || typeof item !== "object" || Array.isArray(item)) return undefined;
       const record = item as Record<string, unknown>;
       const label = asString(record.label);
@@ -364,7 +375,7 @@ function normalizeSections(value: unknown, villageName: string): VillageSection[
   }
 
   return value
-    .map((item, index) => {
+    .map((item, index): VillageSection | undefined => {
       if (!item || typeof item !== "object" || Array.isArray(item)) return undefined;
       const record = item as Record<string, unknown>;
       const title = asString(record.title);
@@ -372,11 +383,16 @@ function normalizeSections(value: unknown, villageName: string): VillageSection[
       if (!title || !body) return undefined;
 
       return {
+        description: asOptionalString(record.description),
         id: asString(record.id) || `section-${index + 1}`,
+        locked: asOptionalBoolean(record.locked),
+        menuKind: asOptionalString(record.menuKind),
+        order: asOptionalNumber(record.order),
         type: asVillageSectionType(record.type),
         title,
         body,
         items: normalizeStringArray(record.items),
+        visible: asOptionalBoolean(record.visible),
       };
     })
     .filter((item): item is VillageSection => Boolean(item));
@@ -404,7 +420,18 @@ function asVillageLinkType(value: unknown): VillageLink["type"] {
 
 function asVillageSectionType(value: unknown): VillageSection["type"] {
   const text = asString(value);
-  return ["story", "programs", "stay", "community", "notice", "faq"].includes(text)
+  return [
+    "board",
+    "free",
+    "gallery",
+    "magazine",
+    "story",
+    "programs",
+    "stay",
+    "community",
+    "notice",
+    "faq",
+  ].includes(text)
     ? (text as VillageSection["type"])
     : "story";
 }
@@ -418,6 +445,14 @@ function asOptionalString(value: unknown): string | undefined {
   return text || undefined;
 }
 
+function asOptionalBoolean(value: unknown): boolean | undefined {
+  return typeof value === "boolean" ? value : undefined;
+}
+
+function asOptionalNumber(value: unknown): number | undefined {
+  return typeof value === "number" && Number.isFinite(value) ? value : undefined;
+}
+
 function normalizeColor(value: string, fallback: string): string {
   return /^#[0-9a-f]{6}$/iu.test(value) ? value : fallback;
 }
@@ -427,6 +462,3 @@ function isUuid(value: string): boolean {
     value,
   );
 }
-
-const fallbackImage =
-  "https://images.unsplash.com/photo-1500534314209-a25ddb2bd429?auto=format&fit=crop&w=1600&q=82";

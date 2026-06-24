@@ -657,6 +657,11 @@ function RequiredToggle({
 }
 
 function FormPreview({ template }: { template: ApplicationFormTemplate }) {
+  const hasLinkedProgram = Boolean(template.programId || template.programTitle);
+  const previewProgramTitle = hasLinkedProgram
+    ? formatProgramDisplayName(template.programTitle, template.programId)
+    : "연결된 프로그램이 없습니다.";
+
   return (
     <aside className="flex w-[var(--host-557)] shrink-0 flex-col gap-[8px] pt-[var(--host-50)] max-md:w-full max-md:pb-[var(--host-32)]">
       <h2 className="text-[16px] font-semibold leading-[1.35] text-[#0D0D0C]">
@@ -672,13 +677,13 @@ function FormPreview({ template }: { template: ApplicationFormTemplate }) {
               <div className="h-[118px] w-[118px] shrink-0 rounded-[16px] bg-[#D9D9D9]" />
               <div className="pt-[13px]">
                 <p className="line-clamp-2 text-[20px] font-semibold leading-[1.32] text-[#5B3A29]">
-                  {formatProgramDisplayName(template.programTitle, template.programId)}
+                  {previewProgramTitle}
                 </p>
                 <p className="mt-[12px] text-[12px] font-normal leading-[1.55] text-[#6D7A8A]">
-                  프로그램 지역 위치
+                  {hasLinkedProgram ? "프로그램 정보 연동 예정" : "프로그램을 연결하면 지역 정보가 표시됩니다."}
                 </p>
                 <p className="mt-[8px] text-[12px] font-normal leading-[1.55] text-[#6D7A8A]">
-                  호스트명
+                  {hasLinkedProgram ? "호스트 정보 연동 예정" : "채널 또는 프로그램 호스트 정보가 표시됩니다."}
                 </p>
               </div>
               <div className="pt-[20px]">
@@ -702,15 +707,9 @@ function FormPreview({ template }: { template: ApplicationFormTemplate }) {
                 <PreviewBlock block={block} key={block.id} />
               ))
             ) : (
-              <PreviewBlock
-                block={{
-                  id: "placeholder",
-                  label: "질문내용입니다.",
-                  options: [],
-                  required: true,
-                  type: "shortText",
-                }}
-              />
+              <div className="mt-[22px] rounded-[6px] border border-dashed border-[#CAC4BC] bg-white px-[14px] py-[18px] text-[13px] font-normal leading-[1.6] text-[#6D7A8A]">
+                아직 추가된 질문 항목이 없습니다.
+              </div>
             )}
           </div>
         </div>
@@ -726,7 +725,7 @@ function DateSummary({ label }: { label: string }) {
         {label}
       </p>
       <p className="whitespace-nowrap text-[12px] font-semibold leading-[1.35] text-[#6D7A8A]">
-        0000년 00월 00일
+        일정 미정
       </p>
     </div>
   );

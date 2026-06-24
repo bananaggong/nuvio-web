@@ -1,16 +1,18 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { redirect } from "next/navigation";
-import { ArrowRight, LockKeyhole, MapPin } from "lucide-react";
-import { BoseongAdminConsole } from "@/components/boseong-admin-console";
-import { getHostVillageAccess } from "@/lib/host-village-access";
+import { ArrowRight, LockKeyhole } from "lucide-react";
+import {
+  decodeHostVillageSlugParam,
+  getHostVillageAccess,
+} from "@/lib/host-village-access";
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
 
 export const metadata: Metadata = {
   title: "채널 운영 | 누비오 호스트센터",
-  description: "특정 채널 권한을 가진 계정이 운영 화면에 접근합니다.",
+  description: "채널 운영 화면은 호스트센터 채널 탭에서 관리합니다.",
 };
 
 export default async function HostVillageConsolePage({
@@ -18,55 +20,20 @@ export default async function HostVillageConsolePage({
 }: {
   params: Promise<{ villageSlug: string }>;
 }) {
-  const { villageSlug } = await params;
+  const { villageSlug: encodedVillageSlug } = await params;
+  const villageSlug = decodeHostVillageSlugParam(encodedVillageSlug);
+  const channelPath = `/host/channels?channel=${encodeURIComponent(villageSlug)}`;
   const access = await getHostVillageAccess(villageSlug);
 
   if (!access.allowed && access.reason === "signedOut") {
-    redirect(
-      `/login?intent=host&next=${encodeURIComponent(`/host/villages/${villageSlug}`)}`,
-    );
+    redirect(`/login?intent=host&next=${encodeURIComponent(channelPath)}`);
   }
 
   if (!access.allowed) {
-    return (
-      <>
-        <AccessDenied villageSlug={villageSlug} />
-      </>
-    );
+    return <AccessDenied villageSlug={villageSlug} />;
   }
 
-  if (villageSlug === "boseong") {
-    return (
-      <>
-        <BoseongAdminConsole />
-      </>
-    );
-  }
-
-  return (
-    <>
-      <main className="mx-auto max-w-7xl px-4 py-8 md:px-8">
-        <section className="rounded-md border border-slate-200 bg-white p-6">
-          <p className="inline-flex items-center gap-2 text-sm font-black text-[var(--primary)]">
-            <MapPin size={18} />
-            채널 운영
-          </p>
-          <h1 className="mt-3 text-2xl font-black text-slate-950">
-            /{villageSlug} 운영 화면
-          </h1>
-          <p className="mt-2 max-w-2xl text-sm leading-6 text-slate-600">
-            이 채널의 전용 운영 화면은 아직 구성 전입니다. 현재는 공통 채널 정보와
-            프로그램 관리 화면을 먼저 사용할 수 있습니다.
-          </p>
-          <div className="mt-5 flex flex-wrap gap-2">
-            <HostLink href="/host/villages" label="채널 정보 수정" />
-            <HostLink href="/host/programs" label="프로그램" />
-            <HostLink href={`/${villageSlug}`} label="공개 페이지 보기" />
-          </div>
-        </section>
-      </main>
-    </>
-  );
+  redirect(channelPath);
 }
 
 function AccessDenied({ villageSlug }: { villageSlug: string }) {
@@ -81,11 +48,11 @@ function AccessDenied({ villageSlug }: { villageSlug: string }) {
           이 채널을 운영할 수 있는 계정이 아닙니다.
         </h1>
         <p className="mt-2 text-sm leading-6 text-slate-600">
-          /{villageSlug} 운영 권한은 채널별로 연결됩니다. 기존 채널은 권한이
-          연결된 계정으로 접속하거나, 관리자에게 권한 이전을 요청해 주세요.
+          /{villageSlug} 운영 권한은 채널별로 연결됩니다. 권한이 연결된 계정으로
+          접속하거나 관리자에게 권한 이전을 요청해 주세요.
         </p>
         <div className="mt-5 flex flex-wrap gap-2">
-          <HostLink href="/host" label="호스트센터로 이동" />
+          <HostLink href="/host/channels" label="채널 탭으로 이동" />
           <HostLink href="/mypage" label="내 계정 확인" />
         </div>
       </section>

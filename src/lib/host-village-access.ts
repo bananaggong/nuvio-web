@@ -195,6 +195,17 @@ export async function getHostVillageAccess(
       };
 }
 
+export function decodeHostVillageSlugParam(value: string): string {
+  const trimmed = value.trim();
+  if (!trimmed) return "";
+
+  try {
+    return decodeURIComponent(trimmed);
+  } catch {
+    return trimmed;
+  }
+}
+
 export async function canManageHostVillage(
   auth: ApiAuthContext,
   villageSlug: string,
@@ -318,7 +329,7 @@ function normalizeEmail(value: string): string {
 }
 
 function normalizeSlug(value: string): string {
-  return value.trim().toLowerCase();
+  return decodeHostVillageSlugParam(value).trim().toLowerCase();
 }
 
 function canRoleManageVillage(

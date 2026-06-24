@@ -2,6 +2,14 @@
 import Link from "next/link";
 import type { CSSProperties } from "react";
 import { nuvioIcons } from "@/components/icons/nuvio-icons";
+import {
+  channelGuestHref,
+  channelHomeLabel,
+  channelMenuMeta,
+  getVisibleChannelMenuItems,
+  isChannelMenuSection,
+  type ChannelMenuItem,
+} from "@/lib/channel-menu";
 import { villagePath, villageProgramPath } from "@/lib/village-routing";
 import type { Program, Review, VillageMediaContent } from "@/lib/types";
 import type { Village } from "@/lib/village-types";
@@ -115,6 +123,7 @@ export function ChannelGuestHomePage({
   const galleryCards = buildGalleryCards(media, programs).slice(0, 3);
   const stories = buildStoryCards(media, village).slice(0, 3);
   const notices = buildChannelNotices(village, programs).slice(0, 4);
+  const visibleMenuItems = getVisibleChannelMenuItems(village);
 
   return (
     <div
@@ -122,25 +131,21 @@ export function ChannelGuestHomePage({
       style={scaleRootStyle}
     >
       <main className="mx-auto w-full max-w-[1920px]">
-        <section
-          className="relative flex items-center justify-center overflow-hidden bg-[#F3F3F3]"
-          style={{ height: px(560) }}
-        >
-          {village.heroImage ? (
+        {village.heroImage ? (
+          <section
+            className="relative flex items-center justify-center overflow-hidden bg-[#F3F3F3]"
+            style={{ height: px(560) }}
+          >
             <Image
               alt={`${village.name} banner`}
-              className="object-cover opacity-80"
+              className="object-contain object-center"
               fill
               priority
               sizes="100vw"
               src={village.heroImage}
             />
-          ) : null}
-          <div className="absolute inset-0 bg-[#F3F3F3]/35" />
-          <p className="relative text-[length:var(--channel-font-14)] font-normal leading-[1.253] text-[#6D7A8A]">
-            {text.banner}
-          </p>
-        </section>
+          </section>
+        ) : null}
 
         <ChannelProfileHeader homeHref={homeHref} village={village} />
 
@@ -153,10 +158,18 @@ export function ChannelGuestHomePage({
             paddingTop: px(22),
           }}
         >
-          <ChannelProgramSection homeHref={homeHref} programs={programCards} />
-          <ChannelGallerySection homeHref={homeHref} items={galleryCards} />
-          <ChannelStorySection stories={stories} />
-          <ChannelNoticeSection notices={notices} />
+          {visibleMenuItems.map((item) => (
+            <ChannelGuestMenuSection
+              galleryCards={galleryCards}
+              homeHref={homeHref}
+              item={item}
+              key={item.id}
+              notices={notices}
+              programs={programCards}
+              stories={stories}
+              village={village}
+            />
+          ))}
         </div>
       </main>
     </div>
@@ -170,6 +183,8 @@ function ChannelProfileHeader({
   homeHref: string;
   village: Village;
 }) {
+  const menuItems = getVisibleChannelMenuItems(village);
+
   return (
     <section
       className="mx-auto flex items-end border-b border-[#6D7A8A]"
@@ -258,12 +273,14 @@ function ChannelProfileHeader({
             paddingTop: px(14),
           }}
         >
-          <ChannelTab active href={homeHref} label={text.channelHome} />
-          <ChannelTab href={`${homeHref}/programs`} label={text.program} />
-          <ChannelTab href={`${homeHref}/media?type=gallery`} label={text.galleryType} />
-          <ChannelTab href={`${homeHref}/media?type=magazine`} label={text.magazineType} />
-          <ChannelTab href={`${homeHref}/notice`} label={text.boardType} />
-          <ChannelTab href="#channel-free" label={text.freeType} />
+          <ChannelTab active href={homeHref} label={channelHomeLabel} />
+          {menuItems.map((item) => (
+            <ChannelTab
+              href={channelGuestHref(item.kind, village)}
+              key={item.id}
+              label={item.label || channelMenuMeta[item.kind].defaultLabel}
+            />
+          ))}
         </nav>
       </div>
     </section>
@@ -296,16 +313,76 @@ function ChannelTab({
   );
 }
 
+function ChannelGuestMenuSection({
+  galleryCards,
+  homeHref,
+  item,
+  notices,
+  programs,
+  stories,
+  village,
+}: {
+  galleryCards: GalleryCardModel[];
+  homeHref: string;
+  item: ChannelMenuItem;
+  notices: NoticeModel[];
+  programs: ProgramCardModel[];
+  stories: StoryCardModel[];
+  village: Village;
+}) {
+  if (item.kind === "program") {
+    return (
+      <ChannelProgramSection
+        homeHref={homeHref}
+        programs={programs}
+        title={item.label || channelMenuMeta.program.defaultLabel}
+      />
+    );
+  }
+
+  if (item.kind === "gallery") {
+    return (
+      <ChannelGallerySection
+        homeHref={homeHref}
+        items={galleryCards}
+        title={item.label || channelMenuMeta.gallery.defaultLabel}
+      />
+    );
+  }
+
+  if (item.kind === "magazine") {
+    return (
+      <ChannelStorySection
+        stories={stories}
+        title={item.label || channelMenuMeta.magazine.defaultLabel}
+      />
+    );
+  }
+
+  if (item.kind === "board") {
+    return (
+      <ChannelNoticeSection
+        notices={notices}
+        title={item.label || channelMenuMeta.board.defaultLabel}
+      />
+    );
+  }
+
+  return <span className="hidden" id={`channel-${village.slug}-free`} />;
+}
+
 function ChannelProgramSection({
   homeHref,
   programs,
+  title,
 }: {
   homeHref: string;
   programs: ProgramCardModel[];
+  title: string;
 }) {
   return (
     <section>
-      <SectionHeading title={text.program} />
+      <SectionHeading title={title} />
       <div
         className="flex items-center border-b border-[#6D7A8A]"
         style={{
@@ -410,13 +487,15 @@ function MiniProgramCard({ program }: { program: ProgramCardModel }) {
 function ChannelGallerySection({
   homeHref,
   items,
+  title,
 }: {
   homeHref: string;
   items: GalleryCardModel[];
+  title: string;
 }) {
   return (
     <section>
-      <SectionHeading title={text.gallery} />
+      <SectionHeading title={title} />
       <div
         className="grid items-start"
         style={{
@@ -479,10 +558,16 @@ function GalleryTile({ item }: { item: GalleryCardModel }) {
   );
 }
 
-function ChannelStorySection({ stories }: { stories: StoryCardModel[] }) {
+function ChannelStorySection({
+  stories,
+  title,
+}: {
+  stories: StoryCardModel[];
+  title: string;
+}) {
   return (
     <section>
-      <SectionHeading title={text.story} />
+      <SectionHeading title={title} />
       <div
         className="grid"
         style={{
@@ -523,10 +608,16 @@ function ChannelStorySection({ stories }: { stories: StoryCardModel[] }) {
   );
 }
 
-function ChannelNoticeSection({ notices }: { notices: NoticeModel[] }) {
+function ChannelNoticeSection({
+  notices,
+  title,
+}: {
+  notices: NoticeModel[];
+  title: string;
+}) {
   return (
     <section>
-      <SectionHeading title={text.notice} />
+      <SectionHeading title={title} />
       <div className="border-t border-[#F5E1D3]" style={{ margin: `${px(26)} ${px(20)} 0` }}>
         {notices.map((notice, index) => (
           <Link
@@ -669,12 +760,15 @@ function buildStoryCards(media: VillageMediaContent[], village: Village): StoryC
   }));
 
   return cards.concat(
-    village.sections.slice(0, Math.max(0, 3 - cards.length)).map((section) => ({
-      date: "0000. 00. 00",
-      id: section.id,
-      image: village.heroImage,
-      title: section.title || text.storyTitle,
-    })),
+    village.sections
+      .filter((section) => !isChannelMenuSection(section))
+      .slice(0, Math.max(0, 3 - cards.length))
+      .map((section) => ({
+        date: "0000. 00. 00",
+        id: section.id,
+        image: village.heroImage,
+        title: section.title || text.storyTitle,
+      })),
   );
 }
 

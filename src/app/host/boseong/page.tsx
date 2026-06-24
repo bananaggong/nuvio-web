@@ -8,5 +8,5 @@ export const metadata: Metadata = {
 };
 
 export default function HostBoseongPage() {
-  redirect("/host/villages/boseong");
+  redirect("/host/channels?channel=boseong");
 }

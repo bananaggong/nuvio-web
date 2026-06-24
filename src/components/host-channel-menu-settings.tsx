@@ -1,160 +1,109 @@
 "use client";
 
 import Image from "next/image";
-import { useEffect, useState } from "react";
+import Link from "next/link";
+import { useSearchParams } from "next/navigation";
+import { useEffect, useMemo, useState } from "react";
 import { nuvioIcons } from "@/components/icons/nuvio-icons";
 import { HostWorkspaceLayout } from "@/components/host-workspace-ui";
+import {
+  applyChannelMenuItemsToSections,
+  channelHomeLabel,
+  channelMenuMeta,
+  channelMenuTypeOptions,
+  createChannelMenuItem,
+  getChannelMenuItems,
+  type ChannelMenuItem,
+} from "@/lib/channel-menu";
+import { selectHostChannel } from "@/lib/host-channel-selection";
+import { villagePath } from "@/lib/village-routing";
+import type { Village } from "@/lib/village-types";
 
-type ChannelMenuKind = "fixed" | "program" | "gallery" | "magazine" | "board" | "free";
-
-type ChannelMenuItem = {
-  description: string;
-  id: string;
-  kind: ChannelMenuKind;
-  label: string;
-  locked?: boolean;
+type HostChannelPayload = {
+  data?: Village[];
 };
 
-type MenuTypeOption = {
-  description: string;
-  kind: ChannelMenuKind;
-  label: string;
+type SaveChannelPayload = {
+  data?: Village;
+  error?: string;
 };
 
-type StoredChannelMenuItem = Omit<ChannelMenuItem, "kind"> & {
-  kind: ChannelMenuKind | "review" | string;
-};
-
-const defaultMenuItems: ChannelMenuItem[] = [
-  {
-    description: "채널 메인 화면에 쓰는 위치 이동은 불가능해요",
-    id: "home",
-    kind: "fixed",
-    label: "채널 홈",
-    locked: true,
-  },
-  {
-    description: "운영 중인 프로그램 목록이 표시돼요",
-    id: "program",
-    kind: "program",
-    label: "프로그램",
-    locked: true,
-  },
-  {
-    description: "이미지와 영상을 그리드로 표시돼요",
-    id: "gallery",
-    kind: "gallery",
-    label: "갤러리",
-  },
-  {
-    description: "블로그처럼 글을 작성하고 목록은 원페이지 카드로 표시돼요",
-    id: "magazine",
-    kind: "magazine",
-    label: "매거진",
-  },
-  {
-    description: "공지사항과 글 목록이 게시판 형태로 표시돼요",
-    id: "board",
-    kind: "board",
-    label: "게시판",
-  },
-  {
-    description:
-      "소개 페이지 등 원페이지 형태로 자유롭게 구성할 수 있으며, 홈 화면에는 표시되지 않고 메뉴에서만 접근할 수 있어요",
-    id: "free",
-    kind: "free",
-    label: "자유",
-  },
-];
-
-const menuTypeOptions: MenuTypeOption[] = [
-  {
-    description: "이미지와 영상을 그리드로 표시돼요",
-    kind: "gallery",
-    label: "갤러리 형",
-  },
-  {
-    description: "블로그처럼 글을 작성하고 목록은 원페이지 카드로 표시돼요",
-    kind: "magazine",
-    label: "매거진 형",
-  },
-  {
-    description: "공지사항과 글 목록이 게시판 형태로 표시돼요",
-    kind: "board",
-    label: "게시판 형",
-  },
-  {
-    description:
-      "소개 페이지 등 원페이지 형태로 자유롭게 구성할 수 있으며, 홈 화면에는 표시되지 않고 메뉴에서만 접근할 수 있어요",
-    kind: "free",
-    label: "자유 형",
-  },
-];
-
-const typeLabelByKind: Record<ChannelMenuKind, string> = {
-  board: "게시판 형",
-  fixed: "고정 메뉴",
-  free: "자유 형",
-  gallery: "갤러리 형",
-  magazine: "매거진 형",
-  program: "기본 메뉴",
-};
-
-const storageKey = "nuvio-channel-menu-settings";
-
-function getPreviewMenuLabel(item: ChannelMenuItem) {
-  if (["gallery", "magazine", "board", "free"].includes(item.kind)) {
-    return typeLabelByKind[item.kind].replace(/\s/g, "");
-  }
-
-  return item.label;
-}
+type SelectableMenuKind = (typeof channelMenuTypeOptions)[number]["kind"];
 
 export function HostChannelMenuSettings() {
-  const [items, setItems] = useState<ChannelMenuItem[]>(defaultMenuItems);
-  const [selectedKind, setSelectedKind] = useState<ChannelMenuKind>("gallery");
+  const searchParams = useSearchParams();
+  const requestedChannelSlug = searchParams.get("channel");
+  const [channel, setChannel] = useState<Village | null>(null);
+  const [items, setItems] = useState<ChannelMenuItem[]>(() => getChannelMenuItems(null));
+  const [draggingId, setDraggingId] = useState<string | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [isSaving, setIsSaving] = useState(false);
+  const [selectedKind, setSelectedKind] = useState<SelectableMenuKind>("gallery");
+  const [statusMessage, setStatusMessage] = useState("");
   const [typeDialogOpen, setTypeDialogOpen] = useState(false);
-  const [saved, setSaved] = useState(false);
 
   useEffect(() => {
-    try {
-      const stored = window.localStorage.getItem(storageKey);
-      if (!stored) return;
-      const parsed = JSON.parse(stored) as StoredChannelMenuItem[];
-      if (Array.isArray(parsed) && parsed.length > 0) {
-        const normalized = parsed.filter((item): item is ChannelMenuItem =>
-          ["fixed", "program", "gallery", "magazine", "board", "free"].includes(item.kind),
-        );
-        window.setTimeout(() => setItems(normalized.length > 0 ? normalized : defaultMenuItems), 0);
+    let active = true;
+
+    async function loadChannel() {
+      setIsLoading(true);
+      const response = await fetch("/api/host/channels", { cache: "no-store" }).catch(
+        () => null,
+      );
+      if (!active) return;
+
+      if (!response?.ok) {
+        setChannel(null);
+        setItems(getChannelMenuItems(null));
+        setIsLoading(false);
+        return;
       }
-    } catch {
-      // Local draft persistence is optional for this first menu editor frame.
+
+      const payload = (await response.json().catch(() => ({}))) as HostChannelPayload;
+      const selectedChannel = selectHostChannel(payload.data, requestedChannelSlug);
+
+      setChannel(selectedChannel);
+      setItems(getChannelMenuItems(selectedChannel));
+      setIsLoading(false);
     }
-  }, []);
+
+    void loadChannel();
+
+    return () => {
+      active = false;
+    };
+  }, [requestedChannelSlug]);
+
+  const previewItems = useMemo(
+    () => [
+      { id: "channel-home", label: channelHomeLabel },
+      ...items.filter((item) => item.visible).map((item) => ({
+        id: item.id,
+        label: item.label || channelMenuMeta[item.kind].defaultLabel,
+      })),
+    ],
+    [items],
+  );
+
+  const channelName = channel?.name?.trim() || "채널 설정이 필요합니다";
+  const channelRegion = [channel?.region, channel?.city].filter(Boolean).join(" / ");
+  const channelSummary =
+    channel?.tagline?.trim() ||
+    channel?.summary?.trim() ||
+    "채널 설정에서 이름, 지역, 소개를 입력해 주세요";
+  const publicHref = channel?.slug ? villagePath(channel.slug) : "";
+  const publicLinkEnabled = Boolean(channel?.published && publicHref);
 
   function updateItem(id: string, patch: Partial<ChannelMenuItem>) {
     setItems((current) =>
       current.map((item) => (item.id === id ? { ...item, ...patch } : item)),
     );
-    setSaved(false);
-  }
-
-  function duplicateItem(source: ChannelMenuItem) {
-    setItems((current) => [
-      ...current,
-      {
-        ...source,
-        id: `${source.kind}-${current.length + 1}`,
-        label: `${source.label} 복사본`,
-        locked: false,
-      },
-    ]);
-    setSaved(false);
+    setStatusMessage("");
   }
 
   function removeItem(id: string) {
-    setItems((current) => current.filter((item) => item.id !== id));
-    setSaved(false);
+    setItems((current) => current.filter((item) => item.id !== id || item.locked));
+    setStatusMessage("");
   }
 
   function openTypeDialog() {
@@ -163,23 +112,64 @@ export function HostChannelMenuSettings() {
   }
 
   function createMenuItem() {
-    const option = menuTypeOptions.find((item) => item.kind === selectedKind) ?? menuTypeOptions[0];
-    setItems((current) => [
-      ...current,
-      {
-        description: option.description,
-        id: `${option.kind}-${current.length + 1}`,
-        kind: option.kind,
-        label: option.label.replace(" 형", ""),
-      },
-    ]);
+    const nextItem = createChannelMenuItem(selectedKind);
+    setItems((current) => [...current, { ...nextItem, order: current.length }]);
     setTypeDialogOpen(false);
-    setSaved(false);
+    setStatusMessage("");
   }
 
-  function saveDraft() {
-    window.localStorage.setItem(storageKey, JSON.stringify(items));
-    setSaved(true);
+  function reorderItems(sourceId: string, targetId: string) {
+    if (sourceId === targetId) return;
+
+    setItems((current) => {
+      const sourceIndex = current.findIndex((item) => item.id === sourceId);
+      const targetIndex = current.findIndex((item) => item.id === targetId);
+      if (sourceIndex < 0 || targetIndex < 0) return current;
+
+      const next = [...current];
+      const [moved] = next.splice(sourceIndex, 1);
+      next.splice(targetIndex, 0, moved);
+
+      return next.map((item, index) => ({ ...item, order: index }));
+    });
+    setStatusMessage("");
+  }
+
+  async function saveMenu() {
+    if (!channel || isSaving) return;
+
+    setIsSaving(true);
+    setStatusMessage("");
+
+    const nextChannel: Village = {
+      ...channel,
+      sections: applyChannelMenuItemsToSections(channel.sections, items),
+      updatedAt: new Date().toISOString(),
+    };
+
+    try {
+      const response = await fetch("/api/host/channels", {
+        body: JSON.stringify(nextChannel),
+        headers: { "Content-Type": "application/json" },
+        method: "POST",
+      });
+      const payload = (await response.json().catch(() => ({}))) as SaveChannelPayload;
+
+      if (!response.ok || !payload.data) {
+        throw new Error(payload.error || "메뉴 설정을 저장하지 못했습니다.");
+      }
+
+      setChannel(payload.data);
+      setItems(getChannelMenuItems(payload.data));
+      setStatusMessage("저장되었습니다.");
+      window.dispatchEvent(new CustomEvent("nuvio-channel-menu-updated"));
+    } catch (error) {
+      setStatusMessage(
+        error instanceof Error ? error.message : "메뉴 설정을 저장하지 못했습니다.",
+      );
+    } finally {
+      setIsSaving(false);
+    }
   }
 
   return (
@@ -187,59 +177,87 @@ export function HostChannelMenuSettings() {
       <section className="min-w-0 flex-1 overflow-x-hidden">
         <div className="w-full max-w-[var(--host-1230)] max-md:w-full">
           <section className="relative h-[var(--host-156)] border-b border-[#6D7A8A] bg-white">
-            <div className="flex items-start gap-[var(--host-42)] px-[var(--host-58)] pt-[var(--host-14)] max-md:px-0">
-              <div className="size-[var(--host-128)] shrink-0 rounded-full bg-[#D9D9D9]" />
+            <div className="flex items-start gap-[var(--host-42)] px-[var(--host-58)] pt-[var(--host-14)] max-md:px-5">
+              <div className="relative size-[var(--host-128)] shrink-0 overflow-hidden rounded-full bg-[#D9D9D9]">
+                {channel?.heroImage ? (
+                  <Image
+                    alt=""
+                    className="object-cover"
+                    fill
+                    sizes="(min-width: 1920px) 171px, 128px"
+                    src={channel.heroImage}
+                  />
+                ) : null}
+              </div>
               <div className="min-w-0 flex-1">
                 <div className="flex flex-wrap items-end gap-[var(--host-10)] pt-[var(--host-3)]">
                   <h1 className="text-[length:var(--host-24)] font-medium leading-[1.253] text-[#0D0D0C]">
-                    호스트 채널 명
+                    {channelName}
                   </h1>
                   <span className="pb-[var(--host-2)] text-[length:var(--host-14)] font-medium leading-[1.253] text-[#6D7A8A]">
-                    지역명
+                    {channelRegion}
                   </span>
                 </div>
                 <p className="mt-[var(--host-8)] text-[length:var(--host-16)] font-medium leading-[1.253] text-[#6D7A8A]">
-                  호스트 채널 소개내용
+                  {channelSummary}
                 </p>
-                <p className="mt-[var(--host-10)] text-[length:var(--host-16)] font-medium leading-[1.253] text-[#6D7A8A]">
-                  <Image
-                    alt=""
-                    className="mr-[var(--host-8)] inline-block size-[var(--host-16)] align-[-0.12em]"
-                    height={16}
-                    src={nuvioIcons.channelLink}
-                    width={16}
-                  />
-                  이름&nbsp;&nbsp; 연결링크
-                </p>
+                {publicLinkEnabled ? (
+                  <Link
+                    className="mt-[var(--host-10)] inline-flex items-center gap-[var(--host-8)] text-[length:var(--host-16)] font-medium leading-[1.253] text-[#6D7A8A] transition hover:text-[#FE701E]"
+                    href={publicHref}
+                    target="_blank"
+                  >
+                    <Image alt="" height={16} src={nuvioIcons.channelLink} width={16} />
+                    공개 채널 보기
+                  </Link>
+                ) : (
+                  <p className="mt-[var(--host-10)] inline-flex items-center gap-[var(--host-8)] text-[length:var(--host-14)] font-medium leading-[1.253] text-[#AEB8C2]">
+                    <Image alt="" height={16} src={nuvioIcons.channelLink} width={16} />
+                    채널 활성화 후 공개 링크가 표시됩니다
+                  </p>
+                )}
               </div>
             </div>
-            <nav className="absolute left-[var(--host-228)] top-[var(--host-128)] flex items-end gap-[var(--host-40-7)] text-[length:var(--host-16)] font-semibold leading-[1.253] text-[#5B3A29] max-md:static max-md:ml-0 max-md:overflow-x-auto">
-              {items.slice(0, 7).map((item) => (
-                <span className="shrink-0" key={item.id}>
-                  {getPreviewMenuLabel(item)}
+            <nav className="absolute left-[var(--host-228)] top-[var(--host-128)] flex items-end gap-[var(--host-40-7)] overflow-hidden text-[length:var(--host-16)] font-semibold leading-[1.253] text-[#5B3A29] max-md:static max-md:ml-5 max-md:mt-4 max-md:overflow-x-auto">
+              {previewItems.slice(0, 7).map((item, index) => (
+                <span
+                  className={`relative shrink-0 pb-[var(--host-8)] ${
+                    index === 0 ? "text-[#5B3A29]" : ""
+                  }`}
+                  key={item.id}
+                >
+                  {item.label}
+                  {index === 0 ? (
+                    <span className="absolute bottom-0 left-0 h-[var(--host-2)] w-full bg-[#FE701E]" />
+                  ) : null}
                 </span>
               ))}
             </nav>
           </section>
 
-          <section className="h-[var(--host-129)] px-[var(--host-58)] pt-[var(--host-48)] max-md:px-0">
+          <section className="h-[var(--host-129)] px-[var(--host-58)] pt-[var(--host-48)] max-md:px-5">
             <h2 className="text-[length:var(--host-20)] font-semibold leading-[1.253] text-[#6D7A8A]">
               메뉴 설정
             </h2>
             <p className="mt-[var(--host-12)] text-[length:var(--host-16)] font-normal leading-[1.6] text-[#6D7A8A]">
-              채널 네비게이션에 표시되는 메뉴를 관리해요
+              채널 내비게이션과 홈 화면 섹션에 표시되는 메뉴를 관리해요.
             </p>
             <p className="mt-[var(--host-6)] text-[length:var(--host-16)] font-normal leading-[1.6] text-[#6D7A8A]">
-              모든 메뉴 이름은 자유롭게 변경할 수 있어요
+              프로그램 메뉴는 기본 메뉴라 삭제할 수 없고 이름과 순서는 변경할 수 있어요.
             </p>
           </section>
 
-          <section className="h-[var(--host-636)] px-[var(--host-58)] pt-[var(--host-30)] max-md:px-0">
+          <section className="min-h-[var(--host-636)] px-[var(--host-58)] pt-[var(--host-30)] max-md:px-5">
             {items.map((item, index) => (
               <ChannelMenuRow
+                draggingId={draggingId}
                 item={item}
                 key={item.id}
-                onDuplicate={() => duplicateItem(item)}
+                onDragEnd={() => setDraggingId(null)}
+                onDragOver={(targetId) => {
+                  if (draggingId) reorderItems(draggingId, targetId);
+                }}
+                onDragStart={() => setDraggingId(item.id)}
                 onRemove={() => removeItem(item.id)}
                 onUpdate={(patch) => updateItem(item.id, patch)}
                 rowIndex={index}
@@ -253,7 +271,8 @@ export function HostChannelMenuSettings() {
             </span>
             <button
               aria-label="메뉴 추가"
-              className="mt-[var(--host-5)] grid size-[var(--host-28)] place-items-center transition hover:opacity-80"
+              className="mt-[var(--host-5)] grid size-[var(--host-28)] place-items-center transition hover:opacity-80 disabled:cursor-not-allowed disabled:opacity-40"
+              disabled={isLoading || !channel}
               onClick={openTypeDialog}
               type="button"
             >
@@ -263,15 +282,16 @@ export function HostChannelMenuSettings() {
 
           <div className="flex h-[var(--host-69)] items-start border-t border-[#6D7A8A] px-[var(--host-28)] pt-[var(--host-18)]">
             <button
-              className="inline-flex h-[var(--host-29)] w-[var(--host-58)] items-center justify-center rounded-[4px] border border-[#6D7A8A] bg-white text-[length:var(--host-11)] font-medium leading-[1.253] text-[#6D7A8A] transition hover:border-[#FE701E] hover:text-[#FE701E]"
-              onClick={saveDraft}
+              className="inline-flex h-[var(--host-29)] w-[var(--host-58)] items-center justify-center rounded-[4px] border border-[#6D7A8A] bg-white text-[length:var(--host-11)] font-medium leading-[1.253] text-[#6D7A8A] transition hover:border-[#FE701E] hover:text-[#FE701E] disabled:cursor-wait disabled:opacity-50"
+              disabled={isLoading || isSaving || !channel}
+              onClick={saveMenu}
               type="button"
             >
               저장
             </button>
-            {saved ? (
-              <span className="ml-[var(--host-12)] text-[length:var(--host-11)] font-medium leading-[1.253] text-[#7A8B52]">
-                저장되었습니다
+            {statusMessage ? (
+              <span className="ml-[var(--host-12)] text-[length:var(--host-11)] font-medium leading-[1.253] text-[#6D7A8A]">
+                {statusMessage}
               </span>
             ) : null}
           </div>
@@ -291,41 +311,61 @@ export function HostChannelMenuSettings() {
 }
 
 function ChannelMenuRow({
+  draggingId,
   item,
-  onDuplicate,
+  onDragEnd,
+  onDragOver,
+  onDragStart,
   onRemove,
   onUpdate,
   rowIndex,
 }: {
+  draggingId: string | null;
   item: ChannelMenuItem;
-  onDuplicate: () => void;
+  onDragEnd: () => void;
+  onDragOver: (targetId: string) => void;
+  onDragStart: () => void;
   onRemove: () => void;
   onUpdate: (patch: Partial<ChannelMenuItem>) => void;
   rowIndex: number;
 }) {
-  const fixedHome = item.kind === "fixed";
+  const dragging = draggingId === item.id;
 
   return (
     <div
-      className="group relative h-[var(--host-68)] w-full border-b border-[#CAC4BC]"
+      className={`group relative h-[var(--host-68)] w-full border-b border-[#CAC4BC] transition ${
+        dragging ? "opacity-60" : "opacity-100"
+      }`}
+      onDragOver={(event) => {
+        event.preventDefault();
+        onDragOver(item.id);
+      }}
       style={{ marginTop: rowIndex === 0 ? 0 : "var(--host-22)" }}
     >
-      {!fixedHome ? (
-        <span className="absolute left-[var(--host-10)] top-[var(--host-6)] grid size-[var(--host-22)] place-items-center text-[#D9D9D9] transition group-hover:text-[#FE701E]">
-          <span
-            aria-hidden="true"
-            className="block size-[var(--host-22)] bg-current"
-            style={{
-              mask: `url(${nuvioIcons.menuReorder}) center / contain no-repeat`,
-              WebkitMask: `url(${nuvioIcons.menuReorder}) center / contain no-repeat`,
-            }}
-          />
-        </span>
-      ) : null}
+      <button
+        aria-label={`${item.label} 순서 변경`}
+        className="absolute left-[var(--host-10)] top-[var(--host-6)] grid size-[var(--host-22)] cursor-grab place-items-center text-[#D9D9D9] transition active:cursor-grabbing group-hover:text-[#FE701E]"
+        draggable
+        onDragEnd={onDragEnd}
+        onDragStart={(event) => {
+          event.dataTransfer.effectAllowed = "move";
+          onDragStart();
+        }}
+        type="button"
+      >
+        <span
+          aria-hidden="true"
+          className="block size-[var(--host-22)] bg-current"
+          style={{
+            mask: `url(${nuvioIcons.menuReorder}) center / contain no-repeat`,
+            WebkitMask: `url(${nuvioIcons.menuReorder}) center / contain no-repeat`,
+          }}
+        />
+      </button>
       <label
         className="absolute grid gap-[var(--host-6)]"
         style={{
-          left: fixedHome ? "var(--host-10)" : "var(--host-53-5)",
+          left: "var(--host-53-5)",
           top: 0,
           width: "var(--host-507)",
         }}
@@ -341,30 +381,38 @@ function ChannelMenuRow({
       </label>
       <span
         className="absolute top-[var(--host-6)] inline-flex h-[var(--host-22)] w-fit min-w-[var(--host-76)] items-center justify-center rounded-full bg-[#6D7A8A] px-[var(--host-12)] text-[length:var(--host-14)] font-semibold leading-[1.253] text-[#F9F9F9]"
-        style={{ left: fixedHome ? "var(--host-539)" : "var(--host-583)" }}
+        style={{ left: "var(--host-583)" }}
       >
-        {typeLabelByKind[item.kind]}
+        {channelMenuMeta[item.kind].badge}
       </span>
       <span className="absolute right-0 top-[var(--host-8)] flex items-center justify-end gap-[var(--host-11)]">
+        <button
+          aria-label={`${item.label} 숨김 전환`}
+          aria-pressed={item.visible}
+          className="grid h-[var(--host-18)] w-[var(--host-23)] place-items-center"
+          onClick={() => onUpdate({ visible: !item.visible })}
+          type="button"
+        >
+          <Image
+            alt=""
+            height={12}
+            src={
+              item.visible
+                ? nuvioIcons.formRequiredToggleOn
+                : nuvioIcons.formRequiredToggleOff
+            }
+            width={23}
+          />
+        </button>
         {!item.locked ? (
-          <>
-            <button
-              aria-label={`${item.label} 복제`}
-              className="grid size-[var(--host-16)] place-items-center"
-              onClick={onDuplicate}
-              type="button"
-            >
-              <Image alt="" height={16} src={nuvioIcons.formItemCopy} width={16} />
-            </button>
-            <button
-              aria-label={`${item.label} 삭제`}
-              className="grid size-[var(--host-16)] place-items-center"
-              onClick={onRemove}
-              type="button"
-            >
-              <Image alt="" height={16} src={nuvioIcons.formItemTrash} width={16} />
-            </button>
-          </>
+          <button
+            aria-label={`${item.label} 삭제`}
+            className="grid size-[var(--host-16)] place-items-center"
+            onClick={onRemove}
+            type="button"
+          >
+            <Image alt="" height={16} src={nuvioIcons.formItemTrash} width={16} />
+          </button>
         ) : null}
       </span>
     </div>
@@ -379,67 +427,65 @@ function SelectMenuTypeDialog({
 }: {
   onClose: () => void;
   onCreate: () => void;
-  onSelect: (kind: ChannelMenuKind) => void;
-  selectedKind: ChannelMenuKind;
+  onSelect: (kind: SelectableMenuKind) => void;
+  selectedKind: SelectableMenuKind;
 }) {
   return (
     <div
       aria-modal="true"
-      className="fixed inset-0 z-[90] bg-[#F3F3F3] px-[var(--host-24)] py-[var(--host-24)]"
+      className="fixed inset-0 z-[90] flex items-center justify-center bg-[#0D0D0C]/70 px-[var(--host-24)]"
       role="dialog"
     >
-      <div className="ml-[var(--host-48)] w-[var(--host-457)] max-w-[calc(100vw-var(--host-48))]">
-        <section className="flex h-[var(--host-386)] w-full flex-col items-start gap-[var(--host-6)] rounded-[12px] border border-[#D9D9D9] bg-[#F9F9F9] px-[var(--host-18)] py-[var(--host-24)]">
-          <div className="flex w-full justify-end">
-            <button
-              aria-label="닫기"
-              className="grid size-[var(--host-16)] place-items-center transition hover:opacity-70"
-              onClick={onClose}
-              type="button"
-            >
-              <Image alt="" height={16} src={nuvioIcons.modalClose} width={16} />
-            </button>
-          </div>
-          <p className="text-[length:var(--host-14)] font-medium leading-[1.253] text-[#0D0D0C]">
+      <section className="flex h-[var(--host-386)] w-[var(--host-457)] max-w-[calc(100vw-var(--host-48))] flex-col rounded-[12px] border border-[#D9D9D9] bg-[#F9F9F9] px-[var(--host-24)] py-[var(--host-24)] shadow-[0_12px_38px_rgba(0,0,0,0.18)]">
+        <div className="flex items-start justify-between">
+          <h2 className="pt-[var(--host-36)] text-[length:var(--host-16)] font-semibold leading-[1.253] text-[#0D0D0C]">
             페이지 타입 선택
-          </p>
-          <div className="grid gap-[var(--host-6)]">
-            {menuTypeOptions.map((option) => {
-              const selected = selectedKind === option.kind;
+          </h2>
+          <button
+            aria-label="닫기"
+            className="grid size-[var(--host-16)] place-items-center transition hover:opacity-70"
+            onClick={onClose}
+            type="button"
+          >
+            <Image alt="" height={16} src={nuvioIcons.modalClose} width={16} />
+          </button>
+        </div>
+        <div className="mt-[var(--host-14)] grid gap-[var(--host-8)]">
+          {channelMenuTypeOptions.map((option) => {
+            const selected = selectedKind === option.kind;
 
-              return (
-                <button
-                  aria-pressed={selected}
-                  className={`w-[var(--host-415)] rounded-[7px] border-[0.5px] py-[var(--host-8)] pl-[var(--host-12)] pr-[var(--host-20)] text-left transition ${
-                    selected
-                      ? "border-[#F7B267] bg-[#FCFAF7]"
-                      : "border-[#D9D9D9] bg-white hover:border-[#F7B267]"
-                  }`}
-                  key={option.kind}
-                  onClick={() => onSelect(option.kind)}
-                  type="button"
-                >
-                  <span className="block text-[length:var(--host-14)] font-semibold leading-[1.253] text-[#6D7A8A]">
-                    {option.label}
-                  </span>
-                  <span className="mt-[var(--host-4)] block text-[length:var(--host-12)] font-medium leading-[1.253] text-[#CAC4BC]">
-                    {option.description}
-                  </span>
-                </button>
-              );
-            })}
-          </div>
-          <div className="flex w-full items-center justify-end pt-[var(--host-12)]">
-            <button
-              className="inline-flex h-[var(--host-29)] items-center justify-center rounded-[4px] bg-[#FE701E] pb-[var(--host-5)] pl-[var(--host-19)] pr-[var(--host-18)] pt-[var(--host-6)] text-[length:var(--host-12)] font-medium leading-[1.253] text-[#FFF6EC]"
-              onClick={onCreate}
-              type="button"
-            >
-              생성
-            </button>
-          </div>
-        </section>
-      </div>
+            return (
+              <button
+                aria-pressed={selected}
+                className={`w-full rounded-[7px] border-[0.5px] px-[var(--host-16)] py-[var(--host-10)] text-left transition ${
+                  selected
+                    ? "border-[#FE701E] bg-[#FCFAF7]"
+                    : "border-[#D9D9D9] bg-white hover:border-[#F7B267]"
+                }`}
+                key={option.kind}
+                onClick={() => onSelect(option.kind)}
+                type="button"
+              >
+                <span className="block text-[length:var(--host-14)] font-semibold leading-[1.253] text-[#6D7A8A]">
+                  {option.label}
+                </span>
+                <span className="mt-[var(--host-6)] block text-[length:var(--host-12)] font-medium leading-[1.253] text-[#CAC4BC]">
+                  {option.description}
+                </span>
+              </button>
+            );
+          })}
+        </div>
+        <div className="mt-auto flex w-full justify-end">
+          <button
+            className="inline-flex h-[var(--host-38)] items-center justify-center rounded-[4px] bg-[#FE701E] px-[var(--host-27)] text-[length:var(--host-12)] font-medium leading-[1.253] text-[#FFF6EC] transition hover:bg-[#E96418]"
+            onClick={onCreate}
+            type="button"
+          >
+            생성
+          </button>
+        </div>
+      </section>
     </div>
   );
 }

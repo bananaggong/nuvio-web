@@ -1,10 +1,12 @@
 "use client";
 
 import Image from "next/image";
+import { useSearchParams } from "next/navigation";
 import { useEffect, useState } from "react";
 import { fallbackChannel } from "@/components/host-channel-home";
 import { nuvioIcons } from "@/components/icons/nuvio-icons";
 import { HostWorkspaceLayout } from "@/components/host-workspace-ui";
+import { selectHostChannel } from "@/lib/host-channel-selection";
 import type { Village, VillageLink } from "@/lib/village-types";
 
 const defaultLink: VillageLink = {
@@ -18,6 +20,8 @@ const regionOptions = ["전남", "서울", "부산", "강원", "제주"];
 const cityOptions = ["보성군", "목포시", "강릉시", "제주시", "부산 중구"];
 
 export function HostChannelSettings() {
+  const searchParams = useSearchParams();
+  const requestedChannelSlug = searchParams.get("channel");
   const [channel, setChannel] = useState<Village>(fallbackChannel);
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
@@ -33,7 +37,11 @@ export function HostChannelSettings() {
         };
         const channels = Array.isArray(payload.data) ? payload.data : [];
 
-        if (active) setChannel(channels[0] ?? fallbackChannel);
+        if (active) {
+          setChannel(
+            selectHostChannel(channels, requestedChannelSlug) ?? fallbackChannel,
+          );
+        }
       } finally {
         if (active) setIsLoading(false);
       }
@@ -44,7 +52,7 @@ export function HostChannelSettings() {
     return () => {
       active = false;
     };
-  }, []);
+  }, [requestedChannelSlug]);
 
   function updateChannel(patch: Partial<Village>) {
     setChannel((current) => ({ ...current, ...patch, updatedAt: new Date().toISOString() }));

@@ -1,13 +1,15 @@
 "use client";
 
 import Image from "next/image";
-import { useEffect, useMemo, useState } from "react";
+import { useSearchParams } from "next/navigation";
+import { useEffect, useState } from "react";
 import {
+  ChannelEmptyState,
   ChannelProfileHeader,
-  fallbackChannel,
 } from "@/components/host-channel-home";
 import { HostWorkspaceLayout } from "@/components/host-workspace-ui";
 import { nuvioIcons } from "@/components/icons/nuvio-icons";
+import { selectHostChannel } from "@/lib/host-channel-selection";
 import { villagePath } from "@/lib/village-routing";
 import type { Village } from "@/lib/village-types";
 
@@ -23,34 +25,9 @@ type ChannelBoardPost = {
   unread?: boolean;
 };
 
-const fallbackBoardPosts: ChannelBoardPost[] = [
-  {
-    createdAt: "2000-01-01T00:00:00.000Z",
-    id: "channel-board-pinned",
-    pinned: true,
-    title: "제목",
-  },
-  {
-    createdAt: "2000-01-01T00:00:00.000Z",
-    id: "channel-board-new",
-    title: "제목",
-    unread: true,
-  },
-  {
-    createdAt: "2000-01-01T00:00:00.000Z",
-    id: "channel-board-regular-1",
-    title: "제목",
-  },
-  {
-    createdAt: "2000-01-01T00:00:00.000Z",
-    id: "channel-board-regular-2",
-    title: "제목",
-  },
-];
-
 function formatBoardDate(value: string) {
   const date = new Date(value);
-  if (Number.isNaN(date.getTime())) return "2000. 00. 00 00:00";
+  if (Number.isNaN(date.getTime())) return "작성일 미정";
   const year = date.getFullYear();
   const month = String(date.getMonth() + 1).padStart(2, "0");
   const day = String(date.getDate()).padStart(2, "0");
@@ -60,8 +37,10 @@ function formatBoardDate(value: string) {
 }
 
 export function HostChannelBoards() {
-  const [channel, setChannel] = useState<Village>(fallbackChannel);
-  const [posts, setPosts] = useState<ChannelBoardPost[]>(fallbackBoardPosts);
+  const searchParams = useSearchParams();
+  const requestedChannelSlug = searchParams.get("channel");
+  const [channel, setChannel] = useState<Village | null>(null);
+  const [posts, setPosts] = useState<ChannelBoardPost[]>([]);
   const [saved, setSaved] = useState(false);
 
   useEffect(() => {
@@ -74,8 +53,7 @@ export function HostChannelBoards() {
       if (!active || !response?.ok) return;
 
       const payload = (await response.json().catch(() => ({}))) as HostChannelPayload;
-      const firstChannel = Array.isArray(payload.data) ? payload.data[0] : undefined;
-      if (firstChannel) setChannel(firstChannel);
+      setChannel(selectHostChannel(payload.data, requestedChannelSlug));
     }
 
     void loadChannel();
@@ -83,16 +61,16 @@ export function HostChannelBoards() {
     return () => {
       active = false;
     };
-  }, []);
+  }, [requestedChannelSlug]);
 
-  const publicHref = useMemo(() => villagePath(channel.slug), [channel.slug]);
+  const publicHref = channel?.slug ? villagePath(channel.slug) : "";
 
   function addPost() {
     setPosts((current) => [
       {
         createdAt: new Date().toISOString(),
         id: `channel-board-draft-${Date.now()}`,
-        title: "제목",
+        title: "새 게시글",
         unread: true,
       },
       ...current,
@@ -122,9 +100,14 @@ export function HostChannelBoards() {
             </button>
 
             <div className="ml-[var(--host-30)] w-[var(--host-1170)] max-w-[calc(100%-var(--host-60))]">
-              {posts.map((post) => (
-                <BoardPostRow key={post.id} post={post} />
-              ))}
+              {posts.length > 0 ? (
+                posts.map((post) => <BoardPostRow key={post.id} post={post} />)
+              ) : (
+                <ChannelEmptyState
+                  description="게시글을 추가하면 이 목록에 표시됩니다."
+                  title="아직 등록된 게시글이 없습니다."
+                />
+              )}
             </div>
           </section>
 

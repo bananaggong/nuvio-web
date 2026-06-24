@@ -2,6 +2,12 @@ import Image from "next/image";
 import Link from "next/link";
 import type { CSSProperties } from "react";
 import { nuvioIcons } from "@/components/icons/nuvio-icons";
+import {
+  channelGuestHref,
+  channelHomeLabel,
+  channelMenuMeta,
+  getVisibleChannelMenuItems,
+} from "@/lib/channel-menu";
 import { villagePath } from "@/lib/village-routing";
 import type { VillageMediaContent } from "@/lib/types";
 import type { Village } from "@/lib/village-types";
@@ -103,6 +109,8 @@ export function ChannelProfileHeader({
   homeHref: string;
   village: Village;
 }) {
+  const menuItems = getVisibleChannelMenuItems(village);
+
   return (
     <section
       className="mx-auto flex items-end border-b border-[#6D7A8A]"
@@ -195,33 +203,16 @@ export function ChannelProfileHeader({
           <ChannelTab
             active={activeTab === "home"}
             href={homeHref}
-            label={text.channelHome}
+            label={channelHomeLabel}
           />
-          <ChannelTab
-            active={activeTab === "program"}
-            href={`${homeHref}/programs`}
-            label={text.program}
-          />
-          <ChannelTab
-            active={activeTab === "gallery"}
-            href={`${homeHref}/media?type=gallery`}
-            label={text.galleryType}
-          />
-          <ChannelTab
-            active={activeTab === "magazine"}
-            href={`${homeHref}/media?type=magazine`}
-            label={text.magazineType}
-          />
-          <ChannelTab
-            active={activeTab === "board"}
-            href={`${homeHref}/notice`}
-            label={text.boardType}
-          />
-          <ChannelTab
-            active={activeTab === "free"}
-            href={`${homeHref}#channel-free`}
-            label={text.freeType}
-          />
+          {menuItems.map((item) => (
+            <ChannelTab
+              active={activeTab === item.kind}
+              href={channelGuestHref(item.kind, village)}
+              key={item.id}
+              label={item.label || channelMenuMeta[item.kind].defaultLabel}
+            />
+          ))}
         </nav>
       </div>
     </section>

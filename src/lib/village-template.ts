@@ -10,8 +10,12 @@ export type VillageNotice = {
 };
 
 export const sectionTypeLabels: Record<VillageSection["type"], string> = {
+  board: "게시판",
   community: "커뮤니티",
   faq: "안내",
+  free: "자유형",
+  gallery: "갤러리",
+  magazine: "매거진",
   notice: "공지",
   programs: "프로그램",
   stay: "체류",

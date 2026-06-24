@@ -96,7 +96,7 @@ export function HostLocalPageCreate() {
           finalVillage = await attachHeroImage(createdVillage, imageFile);
         } catch (error) {
           setStatusMessage("");
-          setCreatedHref(`/host/villages/${createdVillage.slug}`);
+          setCreatedHref(hostChannelHref(createdVillage.slug));
           setErrorMessage(
             error instanceof Error
               ? `채널은 만들어졌지만 이미지를 저장하지 못했어요. ${error.message}`
@@ -107,9 +107,9 @@ export function HostLocalPageCreate() {
       }
 
       setStatusMessage("채널이 만들어졌어요. 호스트센터로 이동해요.");
-      router.push("/host");
+      router.push(hostChannelHref(finalVillage.slug));
       router.refresh();
-      setCreatedHref(`/host/villages/${finalVillage.slug}`);
+      setCreatedHref(hostChannelHref(finalVillage.slug));
     } catch (error) {
       setErrorMessage(
         error instanceof Error
@@ -326,6 +326,10 @@ async function saveVillage(village: Village): Promise<Village> {
   }
 
   return payload.data;
+}
+
+function hostChannelHref(slug: string): string {
+  return `/host/channels?channel=${encodeURIComponent(slug)}`;
 }
 
 async function attachHeroImage(village: Village, file: File): Promise<Village> {

@@ -17,7 +17,14 @@ import {
 } from "react";
 import { nuvioIcons } from "@/components/icons/nuvio-icons";
 import { formatProgramDisplayCode } from "@/lib/display-code";
+import {
+  channelHomeLabel,
+  channelHostHref,
+  getVisibleChannelMenuItems,
+} from "@/lib/channel-menu";
+import { buildChannelScopedHref, selectHostChannel } from "@/lib/host-channel-selection";
 import { hostProjectPath, type HostProgramOverview } from "@/lib/host-projects";
+import type { Village } from "@/lib/village-types";
 
 const hostWorkspaceScaleStyle = {
   "--host-scale": "clamp(1, calc(min(100vw, 1920px) / 1440), 1.333333)",
@@ -230,6 +237,7 @@ function HostWorkspaceSidebar({ sidebarHeight }: { sidebarHeight: string }) {
   const messagePanel = searchParams.get("panel");
   const messageStatus = searchParams.get("status");
   const messageView = searchParams.get("view");
+  const channelSlug = searchParams.get("channel");
   const activeWorkspaceTab = pathname.startsWith("/host/channels")
     ? "channel"
     : "host";
@@ -280,7 +288,7 @@ function HostWorkspaceSidebar({ sidebarHeight }: { sidebarHeight: string }) {
           </section>
 
           {activeWorkspaceTab === "channel" ? (
-            <HostChannelSidebarNav pathname={pathname} />
+            <HostChannelSidebarNav channelSlug={channelSlug} pathname={pathname} />
           ) : (
             <nav className="mt-[0.833vw] px-[0.833vw] text-[#5B3A29]">
               <section className="flex flex-col gap-[0.417vw]">
@@ -360,34 +368,70 @@ function HostWorkspaceSwitchTab({
   );
 }
 
-const channelSidebarItems = [
-  { href: "/host/channels", label: "채널 홈" },
-  { href: "/host/channels/programs", label: "프로그램" },
-  { href: "/host/channels/galleries", label: "갤러리형" },
-  { href: "/host/channels/magazines", label: "매거진형" },
-  { href: "/host/channels/boards", label: "게시판형" },
-  { href: "/host/channels/free", label: "자유형" },
-  { href: "/host/channels/settings", label: "+메뉴 설정", muted: true },
-];
+function HostChannelSidebarNav({
+  channelSlug,
+  pathname,
+}: {
+  channelSlug: string | null;
+  pathname: string;
+}) {
+  const [channel, setChannel] = useState<Village | null>(null);
 
-function HostChannelSidebarNav({ pathname }: { pathname: string }) {
+  useEffect(() => {
+    let active = true;
+
+    async function loadChannel() {
+      const response = await fetch("/api/host/channels", { cache: "no-store" }).catch(
+        () => null,
+      );
+      if (!active || !response?.ok) return;
+
+      const payload = (await response.json().catch(() => ({}))) as {
+        data?: Village[];
+      };
+      if (!active) return;
+
+      setChannel(selectHostChannel(payload.data, channelSlug));
+    }
+
+    function handleMenuUpdated() {
+      void loadChannel();
+    }
+
+    void loadChannel();
+    window.addEventListener("nuvio-channel-menu-updated", handleMenuUpdated);
+
+    return () => {
+      active = false;
+      window.removeEventListener("nuvio-channel-menu-updated", handleMenuUpdated);
+    };
+  }, [channelSlug]);
+
+  const channelSidebarItems = [
+    { href: "/host/channels", label: channelHomeLabel },
+    ...getVisibleChannelMenuItems(channel).map((item) => ({
+      href: channelHostHref(item.kind),
+      label: item.label,
+    })),
+    { href: "/host/channels/settings", label: "+메뉴 설정" },
+  ];
+
   return (
     <nav className="mt-[0.833vw] px-[0.833vw] text-[#5B3A29]">
       <section className="flex flex-col gap-[0.556vw] border-b-[0.8px] border-[#6D7A8A] pb-[0.833vw]">
         {channelSidebarItems.map((item) => (
           <HostSidebarRootLink
             active={pathname === item.href || (item.href === "/host/channels/settings" && pathname === "/host/channels/menu")}
-            href={item.href}
+            href={buildChannelScopedHref(item.href, channelSlug)}
             key={item.href}
             label={item.label}
-            muted={item.muted}
           />
         ))}
       </section>
       <div className="mt-[0.903vw]">
         <HostSidebarRootLink
           active={pathname === "/host/channels/channel-settings"}
-          href="/host/channels/channel-settings"
+          href={buildChannelScopedHref("/host/channels/channel-settings", channelSlug)}
           label="채널 설정"
         />
       </div>

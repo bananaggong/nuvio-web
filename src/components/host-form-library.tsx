@@ -77,7 +77,7 @@ export function HostFormLibrary({
       const response = await fetch("/api/host/forms", {
         body: JSON.stringify({
           ...createEmptyTemplate("application"),
-          name: "신청서 제목",
+          name: "새 신청서",
         }),
         headers: { "Content-Type": "application/json" },
         method: "POST",
@@ -107,7 +107,7 @@ export function HostFormLibrary({
     try {
       const copiedTemplate = cloneApplicationFormTemplate(template, {
         formKind: "application",
-        name: `${template.name || "신청서 제목"} 복사본`,
+        name: `${template.name || "새 신청서"} 복사본`,
       });
       const response = await fetch("/api/host/forms", {
         body: JSON.stringify(copiedTemplate),

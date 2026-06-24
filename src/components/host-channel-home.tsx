@@ -2,10 +2,21 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import type { ReactNode } from "react";
-import { useEffect, useMemo, useState } from "react";
+import { useSearchParams } from "next/navigation";
+import { useEffect, useRef, useState, type ChangeEvent, type ReactNode } from "react";
 import { nuvioIcons } from "@/components/icons/nuvio-icons";
 import { HostWorkspaceLayout } from "@/components/host-workspace-ui";
+import {
+  channelHomeLabel,
+  channelMenuMeta,
+  getVisibleChannelMenuItems,
+  type ChannelMenuItem,
+} from "@/lib/channel-menu";
+import {
+  filterProgramsForChannel,
+  hostChannelProgramsEndpoint,
+  selectHostChannel,
+} from "@/lib/host-channel-selection";
 import type { HostProgramDraft } from "@/lib/host-program-studio";
 import { villagePath } from "@/lib/village-routing";
 import type { Village } from "@/lib/village-types";
@@ -20,134 +31,91 @@ type HostProgramsPayload = {
   error?: string;
 };
 
+type AssetUploadPayload = {
+  data?: {
+    url?: string;
+  };
+  error?: string;
+};
+
+type SaveChannelPayload = {
+  data?: Village;
+  error?: string;
+};
+
+const maxHeroUploadBytes = 5 * 1024 * 1024;
+
 export const fallbackChannel: Village = {
   accentColor: "#FE701E",
-  address: "전남 보성군",
+  address: "",
   brandColor: "#5B3A29",
-  city: "보성군",
-  contactEmail: "hello@nuvio.kr",
-  contactPhone: "010-0000-0000",
-  description: "차를 매개로 지역의 시간과 사람을 연결하는 채널입니다.",
+  city: "",
+  contactEmail: "",
+  contactPhone: "",
+  description: "",
   heroImage: "",
-  id: "demo-channel",
+  id: "new-channel",
   kakaoUrl: "",
   links: [],
-  name: "호스트 채널 명",
+  name: "",
   programIds: [],
-  published: true,
-  region: "지역명",
+  published: false,
+  region: "",
   sections: [],
-  slug: "host-channel",
-  summary: "호스트 채널 소개내용",
-  tagline: "호스트 채널 소개내용",
+  slug: "",
+  summary: "",
+  tagline: "",
   updatedAt: new Date().toISOString(),
 };
 
-export const fallbackPrograms: HostProgramDraft[] = [
-  {
-    activityEnd: "2026-07-26",
-    activityStart: "2026-07-22",
-    applyUrl: "/programs/mokpo-sea-record-workation-2026/apply",
-    capacity: "12명",
-    city: "목포시",
-    description: "목포 바다와 원도심을 기록하며 나만의 여행 프로젝트를 완성합니다.",
-    detailImages: [],
-    fee: "50,000원",
-    guideInfo: {
-      excludedItems: [],
-      includedItems: [],
-      preparationItems: [],
-      refundRules: [],
-    },
-    hashtags: ["워케이션", "기록", "로컬"],
-    id: "mokpo-sea-record-workation-2026",
-    image:
-      "https://images.unsplash.com/photo-1500530855697-b586d89ba3ee?auto=format&fit=crop&w=900&q=80",
-    itineraryDays: [],
-    periodKey: "week",
-    phone: "010-0000-0000",
-    placeInfo: {
-      accommodationEnabled: false,
-      accommodationMemo: "",
-      accommodationName: "",
-      meetingAddress: "전라남도 목포시 영산로 98",
-      meetingAddressDetail: "목포역 1번 출구 앞",
-      meetingMemo: "",
-      parkingGuide: "",
-      transportGuide: "",
-    },
-    published: true,
-    recruitEnd: "2026-07-05",
-    recruitStart: "2026-06-14",
-    region: "전남",
-    slug: "mokpo-sea-record-workation-2026",
-    sourceName: "전체차LAB 운영팀",
-    sourceUrl: "/boseong",
-    status: "open",
-    subsidyAmount: 0,
-    subsidyLabel: "자유신청",
-    summary: "목포 원도심에서 숙소, 코워킹, 로컬 리서치를 연결하는 5일 워케이션입니다.",
-    target: "기록과 로컬 리서치에 관심 있는 청년",
-    theme: "workation",
-    title: "목포 바다와 기록 워케이션 5일",
-    updatedAt: new Date().toISOString(),
-  },
-];
-
-const galleryCards = [
-  "목포 원도심 산책",
-  "바다 앞 기록 워크숍",
-  "로컬 리서치 노트",
-];
-
-const storyCards = [
-  {
-    body: "목포 바다를 따라 걷고, 오래된 골목에서 지역의 이야기를 수집하는 방법.",
-    title: "기록으로 남기는 원도심",
-  },
-  {
-    body: "숙소와 코워킹 공간을 연결해 하루의 리듬을 만드는 워케이션 운영 노트.",
-    title: "머무는 사람을 위한 동선",
-  },
-  {
-    body: "참여자가 남긴 사진과 문장을 채널 홈에서 다시 읽히게 하는 편집 방식.",
-    title: "콘텐츠가 되는 순간",
-  },
-];
-
-const noticeRows = [
-  { category: "고정", title: "제목", date: "2000. 00. 00 00:00" },
-  { category: "새글", title: "제목", date: "2000. 00. 00 00:00" },
-  { category: "", title: "제목", date: "2000. 00. 00 00:00" },
-  { category: "", title: "제목", date: "2000. 00. 00 00:00" },
-];
-
 export function HostChannelHome() {
-  const [channel, setChannel] = useState<Village>(fallbackChannel);
-  const [programs, setPrograms] = useState<HostProgramDraft[]>(fallbackPrograms);
+  const searchParams = useSearchParams();
+  const requestedChannelSlug = searchParams.get("channel");
+  const [channel, setChannel] = useState<Village | null>(null);
+  const [programs, setPrograms] = useState<HostProgramDraft[]>([]);
+  const [isUploadingHero, setIsUploadingHero] = useState(false);
+  const [uploadMessage, setUploadMessage] = useState("");
+  const heroInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     let active = true;
 
     async function load() {
-      const [channelResponse, programsResponse] = await Promise.allSettled([
-        fetch("/api/host/channels", { cache: "no-store" }),
-        fetch("/api/host/programs", { cache: "no-store" }),
-      ]);
+      const channelResponse = await fetch("/api/host/channels", {
+        cache: "no-store",
+      }).catch(() => null);
 
       if (!active) return;
 
-      if (channelResponse.status === "fulfilled" && channelResponse.value.ok) {
-        const payload = (await channelResponse.value.json().catch(() => ({}))) as HostChannelPayload;
-        const firstChannel = Array.isArray(payload.data) ? payload.data[0] : undefined;
-        if (firstChannel) setChannel(firstChannel);
+      if (!channelResponse?.ok) {
+        setChannel(null);
+        setPrograms([]);
+        return;
       }
 
-      if (programsResponse.status === "fulfilled" && programsResponse.value.ok) {
-        const payload = (await programsResponse.value.json().catch(() => ({}))) as HostProgramsPayload;
-        if (Array.isArray(payload.data) && payload.data.length > 0) {
-          setPrograms(payload.data);
-        }
+      const channelPayload = (await channelResponse.json().catch(() => ({}))) as HostChannelPayload;
+      const selectedChannel = selectHostChannel(
+        channelPayload.data,
+        requestedChannelSlug,
+      );
+      setChannel(selectedChannel);
+
+      const programsEndpoint = hostChannelProgramsEndpoint(selectedChannel);
+      if (!programsEndpoint) {
+        setPrograms([]);
+        return;
+      }
+
+      const programsResponse = await fetch(programsEndpoint, {
+        cache: "no-store",
+      }).catch(() => null);
+      if (!active) return;
+
+      if (programsResponse?.ok) {
+        const programsPayload = (await programsResponse.json().catch(() => ({}))) as HostProgramsPayload;
+        setPrograms(filterProgramsForChannel(programsPayload.data, selectedChannel));
+      } else {
+        setPrograms([]);
       }
     }
 
@@ -156,38 +124,147 @@ export function HostChannelHome() {
     return () => {
       active = false;
     };
-  }, []);
+  }, [requestedChannelSlug]);
 
-  const publicHref = useMemo(() => villagePath(channel.slug), [channel.slug]);
+  const publicHref = channel?.slug ? villagePath(channel.slug) : "";
+  const visibleMenuItems = getVisibleChannelMenuItems(channel);
   const visiblePrograms = programs.slice(0, 8);
+  const visibleGalleryCards: string[] = [];
+  const visibleStoryCards: Array<{ body: string; title: string }> = [];
+  const visibleNoticeRows: Array<{ category: string; date: string; title: string }> = [];
+
+  async function handleHeroFileChange(event: ChangeEvent<HTMLInputElement>) {
+    const file = event.target.files?.[0];
+    event.target.value = "";
+    if (!file || isUploadingHero) return;
+
+    if (!channel?.slug) {
+      setUploadMessage("먼저 채널을 생성하거나 선택해 주세요.");
+      return;
+    }
+
+    if (!file.type.startsWith("image/")) {
+      setUploadMessage("이미지 파일만 업로드할 수 있어요.");
+      return;
+    }
+
+    if (file.size > maxHeroUploadBytes) {
+      setUploadMessage("5MB 이하 이미지만 업로드할 수 있어요.");
+      return;
+    }
+
+    setIsUploadingHero(true);
+    setUploadMessage("업로드 중입니다...");
+
+    try {
+      const formData = new FormData();
+      formData.append("file", file);
+      formData.append("villageSlug", channel.slug);
+      formData.append("usage", "channel-hero");
+      formData.append("altText", `${channel.name || "채널"} 배너 이미지`);
+
+      const uploadResponse = await fetch("/api/host/village-pages/assets", {
+        body: formData,
+        method: "POST",
+      });
+      const uploadPayload = (await uploadResponse.json().catch(() => ({}))) as AssetUploadPayload;
+      const uploadedUrl = uploadPayload.data?.url;
+
+      if (!uploadResponse.ok || !uploadedUrl) {
+        throw new Error(uploadPayload.error || "배너 이미지를 업로드하지 못했습니다.");
+      }
+
+      const nextChannel: Village = {
+        ...channel,
+        heroImage: uploadedUrl,
+        updatedAt: new Date().toISOString(),
+      };
+      const saveResponse = await fetch("/api/host/channels", {
+        body: JSON.stringify(nextChannel),
+        headers: { "Content-Type": "application/json" },
+        method: "POST",
+      });
+      const savePayload = (await saveResponse.json().catch(() => ({}))) as SaveChannelPayload;
+
+      if (!saveResponse.ok || !savePayload.data) {
+        throw new Error(savePayload.error || "업로드한 배너를 저장하지 못했습니다.");
+      }
+
+      setChannel(savePayload.data);
+      setUploadMessage("배너 이미지가 저장되었습니다.");
+    } catch (error) {
+      setUploadMessage(
+        error instanceof Error ? error.message : "배너 이미지를 업로드하지 못했습니다.",
+      );
+    } finally {
+      setIsUploadingHero(false);
+    }
+  }
 
   return (
     <HostWorkspaceLayout sidebarHeight="min-h-[var(--host-3942)]">
       <section className="min-w-0 flex-1 overflow-x-clip bg-white">
         <div className="w-full max-w-[var(--host-1230)]">
-          <section className="grid h-[var(--host-560)] place-items-center border-b border-[#D9D9D9] bg-[#F9F9F9]">
-            <div className="flex flex-col items-center text-center text-[#6D7A8A]">
+          <section className="relative grid h-[var(--host-560)] place-items-center overflow-hidden border-b border-[#D9D9D9] bg-[#F9F9F9]">
+            <input
+              accept="image/gif,image/jpeg,image/png,image/webp"
+              className="sr-only"
+              onChange={handleHeroFileChange}
+              ref={heroInputRef}
+              type="file"
+            />
+            {channel?.heroImage ? (
               <Image
-                alt=""
-                className="size-[var(--host-20)]"
-                height={21}
-                src={nuvioIcons.channelUploadMuted}
-                width={21}
+                alt={`${channel.name || "채널"} 배너 이미지`}
+                className="object-contain object-center"
+                fill
+                priority
+                sizes="(min-width: 1920px) 1640px, 1230px"
+                src={channel.heroImage}
               />
-              <p className="mt-[var(--host-12)] text-[length:var(--host-14)] font-semibold leading-[1.253]">
-                파일 업로드
+            ) : null}
+            <button
+              className={`relative z-10 flex h-full w-full flex-col items-center justify-center text-center transition ${
+                channel?.heroImage ? "bg-black/0 hover:bg-black/10" : "text-[#6D7A8A]"
+              } disabled:cursor-wait disabled:opacity-70`}
+              disabled={isUploadingHero || !channel}
+              onClick={() => heroInputRef.current?.click()}
+              type="button"
+            >
+              {channel?.heroImage ? (
+                <span className="absolute bottom-[var(--host-24)] rounded-[4px] bg-white/90 px-[var(--host-16)] py-[var(--host-8)] text-[length:var(--host-12)] font-semibold leading-[1.253] text-[#5B3A29] shadow-sm">
+                  {isUploadingHero ? "업로드 중..." : "배너 변경"}
+                </span>
+              ) : (
+                <span className="flex flex-col items-center">
+                  <Image
+                    alt=""
+                    className="size-[var(--host-20)]"
+                    height={21}
+                    src={nuvioIcons.channelUploadMuted}
+                    width={21}
+                  />
+                  <span className="mt-[var(--host-12)] text-[length:var(--host-14)] font-semibold leading-[1.253]">
+                    {isUploadingHero ? "업로드 중..." : "파일 업로드"}
+                  </span>
+                  <span className="mt-[var(--host-10)] text-[length:var(--host-12)] font-normal leading-[1.65] text-[#6D7A8A]">
+                    JPG, PNG, WebP, GIF 파일을 5MB 이하로 업로드할 수 있어요
+                  </span>
+                  <span className="mt-[var(--host-12)] text-[length:var(--host-12)] font-normal leading-[1.65] text-[#6D7A8A]">
+                    권장 이미지 사이즈
+                    <br />
+                    가로 : 1920px(해상도상이하)
+                    <br />
+                    세로 : 200px - 560px
+                  </span>
+                </span>
+              )}
+            </button>
+            {uploadMessage ? (
+              <p className="absolute bottom-[var(--host-18)] left-1/2 z-20 -translate-x-1/2 text-[length:var(--host-12)] font-medium leading-[1.253] text-[#6D7A8A]">
+                {uploadMessage}
               </p>
-              <p className="mt-[var(--host-10)] text-[length:var(--host-12)] font-normal leading-[1.65] text-[#6D7A8A]">
-                JPG, PNG, WebP, GIF 파일을 5MB 이하로 업로드할 수 있어요
-              </p>
-              <p className="mt-[var(--host-12)] text-[length:var(--host-12)] font-normal leading-[1.65] text-[#6D7A8A]">
-                권장 이미지 사이즈
-                <br />
-                가로 : 1920px(해상도상이하)
-                <br />
-                세로 : 200px - 560px
-              </p>
-            </div>
+            ) : null}
           </section>
 
           <ChannelProfileHeader
@@ -198,149 +275,16 @@ export function HostChannelHome() {
           />
 
           <section className="px-[var(--host-58)] pb-[var(--host-70)] pt-[var(--host-20)]">
-            <ChannelSectionShell title="프로그램">
-              <div className="mb-[var(--host-24)] flex items-center gap-[var(--host-8)] text-[length:var(--host-12)] font-medium leading-[1.253]">
-                <span className="rounded-full bg-[#FF9A3D] px-[var(--host-16)] py-[var(--host-5)] text-white">
-                  전체
-                </span>
-                <span className="rounded-full bg-[#CAC4BC] px-[var(--host-16)] py-[var(--host-5)] text-white">
-                  오픈
-                </span>
-                <span className="rounded-full bg-[#CAC4BC] px-[var(--host-16)] py-[var(--host-5)] text-white">
-                  예정
-                </span>
-                <span className="rounded-full bg-[#CAC4BC] px-[var(--host-16)] py-[var(--host-5)] text-white">
-                  마감
-                </span>
-              </div>
-              <div className="grid grid-cols-4 gap-[var(--host-36)]">
-                {Array.from({ length: 4 }).map((_, index) => (
-                  <ChannelProgramMiniCard
-                    key={visiblePrograms[index]?.id ?? `program-placeholder-${index}`}
-                    program={visiblePrograms[index]}
-                    variantIndex={index}
-                  />
-                ))}
-              </div>
-            </ChannelSectionShell>
-
-            <ChannelSectionShell actionLabel="전체보기" badge="갤러리형" title="갤러리">
-              <div className="grid grid-cols-3 gap-[var(--host-36)]">
-                {galleryCards.map((title, index) => (
-                  <article key={`${title}-${index}`}>
-                    <div className="relative h-[var(--host-354)] overflow-hidden rounded-[4px] bg-[#D9D9D9]">
-                      {index === 1 ? (
-                        <span className="absolute left-1/2 top-1/2 size-0 -translate-x-1/2 -translate-y-1/2 border-y-[var(--host-12)] border-l-[var(--host-18)] border-y-transparent border-l-white" />
-                      ) : null}
-                      <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/35 to-transparent px-[var(--host-18)] pb-[var(--host-18)] pt-[var(--host-56)]">
-                        <p className="line-clamp-3 text-[length:var(--host-12)] font-medium leading-[1.6] text-white">
-                          {title}를 따라 채널에서 보여줄 이미지와 영상 설명이 표시됩니다.
-                        </p>
-                      </div>
-                      {index !== 1 ? (
-                        <span className="absolute right-[var(--host-12)] top-[var(--host-12)] text-[length:var(--host-12)] font-semibold leading-[1.253] text-white">
-                          +3
-                        </span>
-                      ) : null}
-                    </div>
-                  </article>
-                ))}
-              </div>
-            </ChannelSectionShell>
-
-            <ChannelSectionShell actionLabel="숨김" badge="매거진형" title="이야기" toggleOn={false}>
-              <div className="grid grid-cols-3 gap-[var(--host-36)]">
-                {storyCards.map((card) => (
-                  <article className="min-w-0 overflow-hidden rounded-[8px] bg-[#F9F9F9]" key={card.title}>
-                    <div className="h-[var(--host-288)] rounded-t-[8px] bg-[#D9D9D9]" />
-                    <div className="px-[var(--host-18)] py-[var(--host-16)]">
-                      <h3 className="text-[length:var(--host-14)] font-semibold leading-[1.253] text-[#5B3A29]">
-                        메인 타이틀 제목
-                      </h3>
-                      <p className="mt-[var(--host-4)] text-[length:var(--host-11)] font-normal leading-[1.253] text-[#CAC4BC]">
-                        0000. 00. 00
-                      </p>
-                      <p className="sr-only">{card.body}</p>
-                    </div>
-                  </article>
-                ))}
-              </div>
-            </ChannelSectionShell>
-
-            <ChannelSectionShell actionLabel="숨김" badge="게시판형" title="공지" toggleOn={false}>
-              <div className="border-t border-[#F3E2D5]">
-                {noticeRows.map((row, index) => (
-                  <div
-                    className="grid h-[var(--host-37)] grid-cols-[var(--host-82)_minmax(0,1fr)_var(--host-166)] items-center border-b border-[#F3E2D5] text-[length:var(--host-11)] leading-[1.253]"
-                    key={`${row.category}-${index}`}
-                  >
-                    <div>
-                      {row.category ? (
-                        <span
-                          className={`inline-flex h-[var(--host-16)] items-center rounded-[4px] px-[var(--host-8)] text-[length:var(--host-10)] font-semibold text-white ${
-                            row.category === "고정" ? "bg-[#6BAA50]" : "bg-[#FE701E]"
-                          }`}
-                        >
-                          {row.category}
-                        </span>
-                      ) : null}
-                    </div>
-                    <p className="font-medium text-[#5B3A29]">{row.title}</p>
-                    <p className="text-right font-normal text-[#CAC4BC]">{row.date}</p>
-                  </div>
-                ))}
-              </div>
-            </ChannelSectionShell>
-
-            <ChannelSectionShell badge="블록형" title="자유형">
-              <div className="relative border border-dashed border-[#D9D9D9] px-[var(--host-36)] py-[var(--host-18)] text-center text-[length:var(--host-12)] font-normal leading-[1.45] text-[#6D7A8A]">
-                이미지나 텍스트를 추가해서 자유롭게 꾸밀 수 있어요
-                <br />
-                바뀌두어 섹션 사이 여백(40px)으로 사용 가능해요
-              </div>
-              <div className="relative mt-[var(--host-10)] rounded-[8px] border border-[#F3E2D5] bg-white px-[var(--host-18)] pb-[var(--host-18)] pt-[var(--host-16)]">
-                <p className="text-[length:var(--host-14)] font-semibold leading-[1.253] text-[#5B3A29]">
-                  블록 편집
-                </p>
-                <button
-                  aria-label="close block editor"
-                  className="absolute right-[var(--host-18)] top-[var(--host-16)] size-[var(--host-18)]"
-                  type="button"
-                >
-                  <Image alt="" height={18} src={nuvioIcons.modalClose} width={18} />
-                </button>
-                <div className="mt-[var(--host-16)] text-[length:var(--host-11)] font-medium leading-[1.55] text-[#6D7A8A]">
-                  <p>이미지 업로드 시</p>
-                  <p>가로 최대 사이즈 초과 시 자동 축소</p>
-                  <p>JPG, PNG, WebP, GIF 파일을 5MB 이하로 업로드할 수 있어요</p>
-                </div>
-                <ChannelEditorToolbar />
-                <div className="mt-[var(--host-8)] h-[var(--host-480)] rounded-[4px] border border-[#F3C3A5] bg-[#FFFDFB] px-[var(--host-20)] py-[var(--host-24)] text-[length:var(--host-20)] font-semibold leading-[1.55] text-[#0D0D0C]">
-                  지정 폰트 : Pretendard
-                  <br />
-                  <br />
-                  사이즈
-                  <br />
-                  - 제목 : 20
-                  <br />
-                  - 소제목 : 16
-                  <br />
-                  - 본문 : 14
-                </div>
-                <div className="mt-[var(--host-10)] flex justify-end">
-                  <button
-                    className="inline-flex h-[var(--host-26)] min-w-[var(--host-48)] items-center justify-center rounded-[4px] bg-[#FE701E] px-[var(--host-12)] text-[length:var(--host-11)] font-semibold leading-[1.253] text-white"
-                    type="button"
-                  >
-                    발행
-                  </button>
-                </div>
-              </div>
-              <div className="mt-[var(--host-28)] flex flex-col items-center gap-[var(--host-6)] text-[length:var(--host-11)] font-medium text-[#6D7A8A]">
-                <span>블록 추가</span>
-                <Image alt="" className="size-[var(--host-24)]" height={24} src={nuvioIcons.channelAddCircle} width={24} />
-              </div>
-            </ChannelSectionShell>
+            {visibleMenuItems.map((item) => (
+              <ChannelHomeMenuSection
+                item={item}
+                key={item.id}
+                visibleGalleryCards={visibleGalleryCards}
+                visibleNoticeRows={visibleNoticeRows}
+                visiblePrograms={visiblePrograms}
+                visibleStoryCards={visibleStoryCards}
+              />
+            ))}
           </section>
         </div>
       </section>
@@ -348,67 +292,173 @@ export function HostChannelHome() {
   );
 }
 
-function ChannelEditorToolbar() {
-  const iconButtons = [
-    nuvioIcons.channelUploadMuted,
-  ];
+function ChannelHomeMenuSection({
+  item,
+  visibleGalleryCards,
+  visibleNoticeRows,
+  visiblePrograms,
+  visibleStoryCards,
+}: {
+  item: ChannelMenuItem;
+  visibleGalleryCards: string[];
+  visibleNoticeRows: Array<{ category: string; date: string; title: string }>;
+  visiblePrograms: HostProgramDraft[];
+  visibleStoryCards: Array<{ body: string; title: string }>;
+}) {
+  if (item.kind === "program") {
+    return (
+      <ChannelSectionShell title={item.label || channelMenuMeta.program.defaultLabel}>
+        <div className="mb-[var(--host-24)] flex items-center gap-[var(--host-8)] text-[length:var(--host-12)] font-medium leading-[1.253]">
+          <span className="rounded-full bg-[#FF9A3D] px-[var(--host-16)] py-[var(--host-5)] text-white">
+            전체
+          </span>
+          <span className="rounded-full bg-[#CAC4BC] px-[var(--host-16)] py-[var(--host-5)] text-white">
+            오픈
+          </span>
+          <span className="rounded-full bg-[#CAC4BC] px-[var(--host-16)] py-[var(--host-5)] text-white">
+            예정
+          </span>
+          <span className="rounded-full bg-[#CAC4BC] px-[var(--host-16)] py-[var(--host-5)] text-white">
+            마감
+          </span>
+        </div>
+        {visiblePrograms.length > 0 ? (
+          <div className="grid grid-cols-4 gap-[var(--host-36)]">
+            {visiblePrograms.slice(0, 4).map((program, index) => (
+              <ChannelProgramMiniCard
+                key={program.id ?? `program-${index}`}
+                program={program}
+                variantIndex={index}
+              />
+            ))}
+          </div>
+        ) : (
+          <ChannelEmptyState
+            description="프로그램을 만들고 채널에 연결하면 이 영역에 표시됩니다."
+            title="아직 등록된 프로그램이 없습니다."
+          />
+        )}
+      </ChannelSectionShell>
+    );
+  }
 
-  return (
-    <div className="mt-[var(--host-18)] flex h-[var(--host-38)] items-center gap-[var(--host-10)] text-[length:var(--host-15)] font-semibold leading-[1.253] text-[#6D7A8A]">
-      {iconButtons.map((icon) => (
-        <button
-          className="grid size-[var(--host-28)] place-items-center rounded-[4px] transition hover:bg-[#FFF6EC]"
-          key={icon}
-          type="button"
-        >
-          <Image alt="" className="size-[var(--host-20)] opacity-90" height={20} src={icon} width={20} />
-        </button>
-      ))}
-      <button
-        className="grid size-[var(--host-28)] place-items-center rounded-[4px] bg-[#FF9A3D] text-[length:var(--host-16)] font-bold leading-none text-white"
-        type="button"
+  if (item.kind === "gallery") {
+    return (
+      <ChannelSectionShell
+        actionLabel="전체보기"
+        badge={channelMenuMeta.gallery.badge}
+        title={item.label || channelMenuMeta.gallery.defaultLabel}
       >
-        T
-      </button>
-      <button
-        className="inline-flex h-[var(--host-32)] min-w-[var(--host-116)] items-center justify-between rounded-[4px] border border-[#D9D9D9] bg-white px-[var(--host-12)] text-[length:var(--host-18)] text-[#6D7A8A]"
-        type="button"
+        {visibleGalleryCards.length > 0 ? (
+          <div className="grid grid-cols-3 gap-[var(--host-36)]">
+            {visibleGalleryCards.map((title, index) => (
+              <article key={`${title}-${index}`}>
+                <div className="relative h-[var(--host-354)] overflow-hidden rounded-[4px] bg-[#D9D9D9]">
+                  {index === 1 ? (
+                    <span className="absolute left-1/2 top-1/2 size-0 -translate-x-1/2 -translate-y-1/2 border-y-[var(--host-12)] border-l-[var(--host-18)] border-y-transparent border-l-white" />
+                  ) : null}
+                  <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/35 to-transparent px-[var(--host-18)] pb-[var(--host-18)] pt-[var(--host-56)]">
+                    <p className="line-clamp-3 text-[length:var(--host-12)] font-medium leading-[1.6] text-white">
+                      {title}를 따라 채널에서 보여줄 이미지와 영상 설명이 표시됩니다.
+                    </p>
+                  </div>
+                  {index !== 1 ? (
+                    <span className="absolute right-[var(--host-12)] top-[var(--host-12)] text-[length:var(--host-12)] font-semibold leading-[1.253] text-white">
+                      +3
+                    </span>
+                  ) : null}
+                </div>
+              </article>
+            ))}
+          </div>
+        ) : (
+          <ChannelEmptyState
+            description="이미지나 영상을 추가하면 갤러리형 메뉴에 표시됩니다."
+            title="아직 등록된 갤러리 게시물이 없습니다."
+          />
+        )}
+      </ChannelSectionShell>
+    );
+  }
+
+  if (item.kind === "magazine") {
+    return (
+      <ChannelSectionShell
+        actionLabel="전체보기"
+        badge={channelMenuMeta.magazine.badge}
+        title={item.label || channelMenuMeta.magazine.defaultLabel}
       >
-        제목
-        <Image alt="" className="size-[var(--host-12)]" height={12} src={nuvioIcons.formSelectDropdown} width={12} />
-      </button>
-      <span className="text-[#6D7A8A]">R</span>
-      <span className="text-[#FE701E]">M</span>
-      <span className="text-[#6D7A8A]">B</span>
-      <span className="mx-[var(--host-2)] size-[var(--host-18)] rotate-45 rounded-[2px] bg-[#6D7A8A]" />
-      <span className="mx-[var(--host-2)] size-[var(--host-16)] bg-[#0D0D0C]" />
-      <span className="mx-[var(--host-2)] size-[var(--host-16)] bg-[#D9D9D9]" />
-      <span className="h-[var(--host-28)] w-px bg-[#D9D9D9]" />
-      <button className="h-[var(--host-28)] px-[var(--host-4)] text-[length:var(--host-18)] font-bold text-[#6D7A8A]" type="button">
-        T
-      </button>
-      <button className="h-[var(--host-28)] px-[var(--host-4)] text-[length:var(--host-18)] font-bold" type="button">
-        +
-      </button>
-      <button className="h-[var(--host-28)] px-[var(--host-4)] text-[length:var(--host-18)] font-bold" type="button">
-        ▇
-      </button>
-      <span className="h-[var(--host-28)] w-px bg-[#D9D9D9]" />
-      <button className="h-[var(--host-28)] px-[var(--host-4)] text-[length:var(--host-18)] font-bold text-[#FE701E]" type="button">
-        ≡
-      </button>
-      <button className="h-[var(--host-28)] px-[var(--host-4)] text-[length:var(--host-18)] font-bold" type="button">
-        =
-      </button>
-      <button className="h-[var(--host-28)] px-[var(--host-4)] text-[length:var(--host-18)] font-bold" type="button">
-        ||
-      </button>
-      <span className="h-[var(--host-28)] w-px bg-[#D9D9D9]" />
-      <button className="grid size-[var(--host-28)] place-items-center rounded-[5px] border border-[#6D7A8A] text-[length:var(--host-14)] font-bold text-[#6D7A8A]" type="button">
-        @
-      </button>
-    </div>
-  );
+        {visibleStoryCards.length > 0 ? (
+          <div className="grid grid-cols-3 gap-[var(--host-36)]">
+            {visibleStoryCards.map((card) => (
+              <article
+                className="min-w-0 overflow-hidden rounded-[8px] bg-[#F9F9F9]"
+                key={card.title}
+              >
+                <div className="h-[var(--host-288)] rounded-t-[8px] bg-[#D9D9D9]" />
+                <div className="px-[var(--host-18)] py-[var(--host-16)]">
+                  <h3 className="text-[length:var(--host-14)] font-semibold leading-[1.253] text-[#5B3A29]">
+                    {card.title}
+                  </h3>
+                  <p className="mt-[var(--host-4)] text-[length:var(--host-11)] font-normal leading-[1.253] text-[#CAC4BC]">
+                    작성일 미정
+                  </p>
+                  <p className="sr-only">{card.body}</p>
+                </div>
+              </article>
+            ))}
+          </div>
+        ) : (
+          <ChannelEmptyState
+            description="매거진 글을 작성하면 채널 홈의 이야기 영역에 표시됩니다."
+            title="아직 작성된 이야기가 없습니다."
+          />
+        )}
+      </ChannelSectionShell>
+    );
+  }
+
+  if (item.kind === "board") {
+    return (
+      <ChannelSectionShell
+        actionLabel="전체보기"
+        badge={channelMenuMeta.board.badge}
+        title={item.label || channelMenuMeta.board.defaultLabel}
+      >
+        {visibleNoticeRows.length > 0 ? (
+          <div className="border-t border-[#F3E2D5]">
+            {visibleNoticeRows.map((row, index) => (
+              <div
+                className="grid h-[var(--host-37)] grid-cols-[var(--host-82)_minmax(0,1fr)_var(--host-166)] items-center border-b border-[#F3E2D5] text-[length:var(--host-11)] leading-[1.253]"
+                key={`${row.category}-${index}`}
+              >
+                <div>
+                  {row.category ? (
+                    <span
+                      className={`inline-flex h-[var(--host-16)] items-center rounded-[4px] px-[var(--host-8)] text-[length:var(--host-10)] font-semibold text-white ${
+                        row.category === "고정" ? "bg-[#6BAA50]" : "bg-[#FE701E]"
+                      }`}
+                    >
+                      {row.category}
+                    </span>
+                  ) : null}
+                </div>
+                <p className="font-medium text-[#5B3A29]">{row.title}</p>
+                <p className="text-right font-normal text-[#CAC4BC]">{row.date}</p>
+              </div>
+            ))}
+          </div>
+        ) : (
+          <ChannelEmptyState
+            description="공지나 게시글을 작성하면 게시판형 영역에 표시됩니다."
+            title="아직 등록된 공지가 없습니다."
+          />
+        )}
+      </ChannelSectionShell>
+    );
+  }
+
+  return null;
 }
 
 export function ChannelProfileHeader({
@@ -418,12 +468,32 @@ export function ChannelProfileHeader({
   variant = "section",
 }: {
   activeLabel?: string;
-  channel: Village;
+  channel: Village | null;
   publicHref: string;
   variant?: "home" | "section";
 }) {
-  const menuLabels = ["채널 홈", "프로그램", "갤러리형", "매거진형", "게시판형", "자유형"];
+  const menuLabels = [
+    {
+      active: activeLabel === channelHomeLabel,
+      id: "channel-home",
+      label: channelHomeLabel,
+    },
+    ...getVisibleChannelMenuItems(channel).map((item) => ({
+      active:
+        activeLabel === item.label ||
+        activeLabel === channelMenuMeta[item.kind].defaultLabel,
+      id: item.id,
+      label: item.label || channelMenuMeta[item.kind].defaultLabel,
+    })),
+  ];
   const sectionVariant = variant === "section";
+  const channelName = channel?.name?.trim() || "채널 설정이 필요합니다";
+  const channelRegion = [channel?.region, channel?.city].filter(Boolean).join(" / ");
+  const channelSummary =
+    channel?.tagline?.trim() ||
+    channel?.summary?.trim() ||
+    "채널 설정에서 이름, 지역, 소개를 입력해 주세요.";
+  const publicLinkEnabled = Boolean(channel?.published && channel?.slug && publicHref);
 
   return (
     <section
@@ -437,7 +507,7 @@ export function ChannelProfileHeader({
         }`}
       >
         <div className="relative size-[var(--host-128)] shrink-0 overflow-hidden rounded-full bg-[#D9D9D9]">
-          {channel.heroImage ? (
+          {channel?.heroImage ? (
             <Image
               alt=""
               className="object-cover"
@@ -450,23 +520,30 @@ export function ChannelProfileHeader({
         <div className="min-w-0 flex-1">
           <div className="flex flex-wrap items-end gap-[var(--host-10)] pt-[var(--host-3)]">
             <h1 className="text-[length:var(--host-24)] font-medium leading-[1.253] text-[#0D0D0C]">
-              {channel.name}
+              {channelName}
             </h1>
             <span className="pb-[var(--host-2)] text-[length:var(--host-14)] font-medium leading-[1.253] text-[#6D7A8A]">
-              {channel.region}
+              {channelRegion}
             </span>
           </div>
           <p className="mt-[var(--host-8)] text-[length:var(--host-16)] font-medium leading-[1.253] text-[#6D7A8A]">
-            {channel.tagline || channel.summary}
+            {channelSummary}
           </p>
-          <Link
-            className="mt-[var(--host-10)] inline-flex items-center gap-[var(--host-8)] text-[length:var(--host-16)] font-medium leading-[1.253] text-[#6D7A8A] transition hover:text-[#FE701E]"
-            href={publicHref}
-            target="_blank"
-          >
-            <Image alt="" height={16} src={nuvioIcons.channelLink} width={16} />
-            이름&nbsp;&nbsp; 연결링크
-          </Link>
+          {publicLinkEnabled ? (
+            <Link
+              className="mt-[var(--host-10)] inline-flex items-center gap-[var(--host-8)] text-[length:var(--host-16)] font-medium leading-[1.253] text-[#6D7A8A] transition hover:text-[#FE701E]"
+              href={publicHref}
+              target="_blank"
+            >
+              <Image alt="" height={16} src={nuvioIcons.channelLink} width={16} />
+              공개 채널 보기
+            </Link>
+          ) : (
+            <p className="mt-[var(--host-10)] inline-flex items-center gap-[var(--host-8)] text-[length:var(--host-14)] font-medium leading-[1.253] text-[#AEB8C2]">
+              <Image alt="" height={16} src={nuvioIcons.channelLink} width={16} />
+              채널 활성화 후 공개 링크가 표시됩니다.
+            </p>
+          )}
         </div>
       </div>
       <nav
@@ -474,13 +551,13 @@ export function ChannelProfileHeader({
           sectionVariant ? "top-[var(--host-142)]" : "top-[var(--host-128)]"
         }`}
       >
-        {menuLabels.map((label) => (
+        {menuLabels.map((item) => (
           <span
             className="relative shrink-0 pb-[var(--host-8)] text-[#5B3A29]"
-            key={label}
+            key={item.id}
           >
-            {label}
-            {activeLabel === label ? (
+            {item.label}
+            {item.active ? (
               <span className="absolute bottom-0 left-0 h-[var(--host-2)] w-full bg-[#FE701E]" />
             ) : null}
           </span>
@@ -542,6 +619,25 @@ export function ChannelSectionShell({
   );
 }
 
+export function ChannelEmptyState({
+  description,
+  title,
+}: {
+  description: string;
+  title: string;
+}) {
+  return (
+    <div className="flex min-h-[var(--host-160)] w-full flex-col items-center justify-center rounded-[8px] border border-dashed border-[#D9D9D9] bg-[#FCFCFC] px-[var(--host-24)] py-[var(--host-28)] text-center">
+      <p className="text-[length:var(--host-14)] font-semibold leading-[1.253] text-[#5B3A29]">
+        {title}
+      </p>
+      <p className="mt-[var(--host-8)] text-[length:var(--host-12)] font-normal leading-[1.6] text-[#6D7A8A]">
+        {description}
+      </p>
+    </div>
+  );
+}
+
 function ChannelProgramMiniCard({
   program,
   variantIndex,
@@ -550,9 +646,9 @@ function ChannelProgramMiniCard({
   variantIndex: number;
 }) {
   const href = program ? `/programs/${encodeURIComponent(program.slug || program.id)}` : "/host/channels/programs";
-  const title = program?.title || "프로그램 제목 입력";
-  const statusLabel =
-    variantIndex === 0 ? "오픈" : variantIndex === 1 ? "오픈" : variantIndex === 2 ? "예정" : "마감";
+  const title = program?.title || "제목 미입력";
+  const statusLabel = getMiniProgramStatusLabel(program?.status, variantIndex);
+  const periodLabel = program ? formatMiniProgramPeriod(program) : "일정 미정";
 
   return (
     <article className="min-w-0">
@@ -571,7 +667,7 @@ function ChannelProgramMiniCard({
             {statusLabel}
           </span>
           <span className="truncate text-[length:var(--host-10)] font-normal leading-[1.253] text-[#6D7A8A]">
-            D+ 00일오픈마감
+            {periodLabel}
           </span>
           <Image alt="" className="ml-auto size-[var(--host-16)]" height={16} src={nuvioIcons.bookmark} width={16} />
         </div>
@@ -579,7 +675,7 @@ function ChannelProgramMiniCard({
           {title}
         </h3>
         <p className="mt-[var(--host-8)] line-clamp-3 text-[length:var(--host-10)] font-normal leading-[1.55] text-[#CAC4BC]">
-          프로그램 소개 간략한 후킹을 작성해 주세요. 얼마나 길게 남길지 프레임에 맞춰 표시됩니다.
+          {program?.summary || "프로그램 소개가 아직 입력되지 않았습니다."}
         </p>
         <p className="mt-[var(--host-16)] text-[length:var(--host-10)] font-normal leading-[1.253] text-[#6D7A8A]">
           프로그램 기간
@@ -587,4 +683,33 @@ function ChannelProgramMiniCard({
       </Link>
     </article>
   );
+}
+
+function getMiniProgramStatusLabel(status: HostProgramDraft["status"] | undefined, index: number) {
+  if (status === "open") return "오픈";
+  if (status === "upcoming") return "예정";
+  if (status === "closed" || status === "earlyClosed") return "마감";
+
+  return index === 0 ? "작성중" : "미설정";
+}
+
+function formatMiniProgramPeriod(program: HostProgramDraft) {
+  const start = formatMiniDate(program.activityStart);
+  const end = formatMiniDate(program.activityEnd);
+
+  if (start && end) return `${start} - ${end}`;
+  if (start) return `${start} 시작`;
+  if (end) return `${end} 종료`;
+
+  return "일정 미정";
+}
+
+function formatMiniDate(value?: string) {
+  if (!value) return "";
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return "";
+
+  return `${String(date.getMonth() + 1).padStart(2, "0")}.${String(
+    date.getDate(),
+  ).padStart(2, "0")}`;
 }
