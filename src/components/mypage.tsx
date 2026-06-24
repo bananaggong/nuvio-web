@@ -1885,6 +1885,7 @@ function MemberInformationForm({
   });
   const [status, setStatus] = useState("");
   const [saving, setSaving] = useState(false);
+  const [avatarUploading, setAvatarUploading] = useState(false);
   const [editMode, setEditMode] = useState(
     initialEditMode || initialAddressSearchOpen || Boolean(initialSelectedAddress),
   );
@@ -1895,6 +1896,7 @@ function MemberInformationForm({
   const [addressSearchQuery, setAddressSearchQuery] = useState("");
   const [addressSearchLayerTick, setAddressSearchLayerTick] = useState(0);
   const [postcodeEmbedded, setPostcodeEmbedded] = useState(false);
+  const avatarInputRef = useRef<HTMLInputElement>(null);
   const addressSearchLayerRef = useRef<HTMLDivElement>(null);
   const detailAddressInputRef = useRef<HTMLInputElement>(null);
   const birthDayOptions = getBirthDayOptions(form.birthYear, form.birthMonth);
@@ -1990,6 +1992,42 @@ function MemberInformationForm({
     window.setTimeout(() => detailAddressInputRef.current?.focus(), 0);
   }
 
+  async function uploadAvatar(file: File) {
+    if (!context.signedIn) {
+      window.location.href = "/login?next=/mypage/member-information";
+      return;
+    }
+
+    setAvatarUploading(true);
+    setStatus("");
+    try {
+      const formData = new FormData();
+      formData.append("file", file);
+      const response = await fetch("/api/me/avatar", {
+        body: formData,
+        method: "POST",
+      });
+      const payload = (await response.json()) as {
+        data?: { url?: string };
+        error?: string;
+      };
+      const uploadedUrl = payload.data?.url;
+
+      if (!response.ok || !uploadedUrl) {
+        throw new Error(payload.error ?? "프로필 이미지를 업로드하지 못했어요.");
+      }
+
+      setForm((current) => ({ ...current, avatarUrl: uploadedUrl }));
+      setStatus("프로필 이미지가 업로드됐어요. 저장하기를 눌러 반영해 주세요.");
+    } catch (error) {
+      setStatus(
+        error instanceof Error ? error.message : "프로필 이미지를 업로드하지 못했어요.",
+      );
+    } finally {
+      setAvatarUploading(false);
+      if (avatarInputRef.current) avatarInputRef.current.value = "";
+    }
+  }
   async function saveProfile() {
     if (!context.signedIn) {
       window.location.href = "/login?next=/mypage/member-information";
@@ -2065,26 +2103,79 @@ function MemberInformationForm({
 
   return (
     <>
-      <section className="w-full pt-2 lg:min-h-[620px]">
+      <section className="w-full pt-0 lg:min-h-[546px]">
         <div className="w-full max-w-[1080px]">
-          <div className="mb-[34px] pl-[144px] max-md:pl-0">
-            <button
-              aria-label="프로필 이미지 변경"
-              className="relative block size-[86px] rounded-full bg-[#d9d9d9] bg-cover bg-center !text-[18px] font-semibold text-white"
-              onClick={() => setStatus("프로필 이미지 업로드는 다음 단계에서 연결할게요.")}
-              style={
-                form.avatarUrl ? { backgroundImage: `url(${form.avatarUrl})` } : undefined
-              }
-              type="button"
-            >
-              {form.avatarUrl ? null : getInitial(context.nickname)}
-              <span
-                aria-hidden="true"
-                className="absolute bottom-[3px] right-[3px] grid size-[18px] place-items-center rounded-full bg-[#ff7a1a] !text-[13px] leading-none text-white"
+          <div className="mb-[34px] grid grid-cols-[112px_minmax(0,1fr)] gap-[32px] border-b border-[#eaded6] pb-[30px] max-md:grid-cols-1">
+            <div className="grid content-start justify-items-center gap-3">
+              <button
+                aria-label="프로필 이미지 변경"
+                className="relative grid size-[96px] place-items-center overflow-hidden rounded-full bg-[#d9d9d9] bg-cover bg-center !text-[22px] font-semibold text-white transition disabled:cursor-default"
+                disabled={!editMode || avatarUploading}
+                onClick={() => avatarInputRef.current?.click()}
+                style={
+                  form.avatarUrl ? { backgroundImage: `url(${form.avatarUrl})` } : undefined
+                }
+                type="button"
               >
-                +
-              </span>
-            </button>
+                {form.avatarUrl ? null : getInitial(form.nickname || context.nickname)}
+                {editMode ? (
+                  <span
+                    aria-hidden="true"
+                    className="absolute bottom-[6px] right-[6px] grid size-[22px] place-items-center rounded-full bg-[#ff6f1a] !text-[15px] leading-none text-white shadow-[0_2px_8px_rgba(0,0,0,0.12)]"
+                  >
+                    +
+                  </span>
+                ) : null}
+              </button>
+              {editMode ? (
+                <input
+                  accept="image/gif,image/jpeg,image/png,image/webp"
+                  className="hidden"
+                  onChange={(event) => {
+                    const file = event.target.files?.[0];
+                    if (file) void uploadAvatar(file);
+                  }}
+                  ref={avatarInputRef}
+                  type="file"
+                />
+              ) : null}
+            </div>
+            <div className="grid content-start gap-[14px] pt-[3px]">
+              <div>
+                <h2 className="!text-[20px] font-semibold leading-[1.35] tracking-normal text-[#4B3328]">
+                  회원 정보
+                </h2>
+                <p className="mt-1 !text-[13px] leading-5 text-[#8b98a6]">
+                  누비오에서 사용할 기본 연락처와 프로필 정보를 관리합니다.
+                </p>
+              </div>
+              {editMode ? (
+                <div className="grid max-w-[620px] gap-3 sm:grid-cols-[minmax(0,1fr)_auto_auto] sm:items-center">
+                  <MemberLineInput
+                    onChange={(value) =>
+                      setForm((current) => ({ ...current, avatarUrl: value }))
+                    }
+                    placeholder="프로필 이미지 URL을 입력하거나 이미지를 업로드해 주세요"
+                    value={form.avatarUrl}
+                  />
+                  <MemberSmallButton onClick={() => avatarInputRef.current?.click()}>
+                    {avatarUploading ? "업로드 중" : "이미지 업로드"}
+                  </MemberSmallButton>
+                  <MemberSmallButton
+                    onClick={() => {
+                      setForm((current) => ({ ...current, avatarUrl: "" }));
+                      setStatus("프로필 이미지를 삭제하려면 저장하기를 눌러주세요.");
+                    }}
+                  >
+                    삭제
+                  </MemberSmallButton>
+                </div>
+              ) : (
+                <p className="!text-[14px] font-medium leading-6 text-[#6B5145]">
+                  {form.nickname || form.name || context.nickname}님의 회원 정보입니다.
+                </p>
+              )}
+            </div>
           </div>
 
           {editMode ? (
@@ -2094,7 +2185,7 @@ function MemberInformationForm({
             <MemberLabel>이름</MemberLabel>
             <MemberLineInput
               onChange={(value) => setForm((current) => ({ ...current, name: value }))}
-              placeholder="실명을 입력하세요"
+              placeholder="이름을 입력해 주세요"
               value={form.name}
             />
             <MemberLabel>닉네임</MemberLabel>
@@ -2103,7 +2194,7 @@ function MemberInformationForm({
                 onChange={(value) =>
                   setForm((current) => ({ ...current, nickname: value }))
                 }
-                placeholder="닉네임을 입력하세요"
+                placeholder="누비오에서 사용할 닉네임을 입력해 주세요"
                 value={form.nickname}
               />
               <MemberSmallButton onClick={() => setStatus("사용 가능한 닉네임입니다.")}>
@@ -2123,7 +2214,7 @@ function MemberInformationForm({
                   onClick={() => setForm((current) => ({ ...current, gender }))}
                   type="button"
                 >
-                  {gender === "female" ? "여성" : gender === "male" ? "남성" : "중성"}
+                  {gender === "female" ? "여성" : gender === "male" ? "남성" : "선택 없음"}
                 </button>
               ))}
             </div>
@@ -2137,7 +2228,7 @@ function MemberInformationForm({
                   onChange={(value) =>
                     setForm((current) => ({ ...current, loginId: value }))
                   }
-                  placeholder="아이디를 입력하세요"
+                  placeholder="로그인 아이디를 입력해 주세요"
                   value={form.loginId}
                 />
                 <MemberSmallButton onClick={() => setStatus("사용 가능한 아이디입니다.")}>
@@ -2168,7 +2259,7 @@ function MemberInformationForm({
                 onChange={(value) =>
                   setForm((current) => ({ ...current, emailId: value }))
                 }
-                placeholder="이메일 아이디"
+                placeholder="이메일 앞부분"
                 value={form.emailId}
               />
               <span className="text-[14px] font-semibold text-[#8F7A6C]">@</span>
@@ -2182,7 +2273,7 @@ function MemberInformationForm({
                       : CUSTOM_EMAIL_DOMAIN,
                   }))
                 }
-                placeholder="직접 입력"
+                placeholder="도메인 직접 입력"
                 value={form.emailDomain}
               />
               <MemberLineSelect
@@ -2226,7 +2317,7 @@ function MemberInformationForm({
               onChange={(value) =>
                 setForm((current) => ({ ...current, address: value }))
               }
-              placeholder="주소를 검색하세요"
+              placeholder="주소 검색으로 기본 주소를 선택해 주세요"
               value={form.address}
             />
             <MemberSmallLink
@@ -2244,7 +2335,7 @@ function MemberInformationForm({
               onChange={(value) =>
                 setForm((current) => ({ ...current, detailAddress: value }))
               }
-              placeholder="상세주소 입력"
+              placeholder="건물명, 호수 등 상세주소를 입력해 주세요"
               value={form.detailAddress}
             />
           </div>
@@ -2310,7 +2401,7 @@ function MemberInformationForm({
               onChange={(value) =>
                 setForm((current) => ({ ...current, paymentMethod: value }))
               }
-              placeholder="결제수단"
+              placeholder="자주 사용하는 결제수단을 입력해 주세요"
               value={form.paymentMethod}
             />
           </div>
@@ -2328,7 +2419,7 @@ function MemberInformationForm({
               onChange={(value) =>
                 setForm((current) => ({ ...current, refundAccount: value }))
               }
-              placeholder="계좌번호를 입력하세요"
+              placeholder="환불받을 계좌번호를 입력해 주세요"
               value={form.refundAccount}
             />
           </div>
@@ -3514,7 +3605,7 @@ function composeEmailAddress(id: string, domain: string) {
 function genderLabel(gender: string) {
   if (gender === "female") return "여성";
   if (gender === "male") return "남성";
-  return "중성";
+  return "선택 없음";
 }
 
 function formatBirthDate(year: string, month: string, day: string) {
