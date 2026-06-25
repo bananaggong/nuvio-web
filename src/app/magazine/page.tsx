@@ -37,7 +37,7 @@ export default async function MagazinePage() {
                 key={post.id}
               >
                 <Link
-                  className="group flex h-full w-full flex-col overflow-hidden rounded-[clamp(10px,0.6944vw,13.333px)] bg-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[#FE701E]"
+                  className="group flex h-full w-full flex-col overflow-hidden rounded-[clamp(10px,0.6944vw,13.333px)] bg-[#FCFCFC] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[#FE701E]"
                   href={`/magazine/${post.slug}`}
                 >
                   <MagazineImage
