@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import {
   getUserProfile,
+  isDisplayNameAvailable,
   type ProfileGender,
   updateUserProfile,
 } from "@/lib/auth-profile-db";
@@ -61,9 +62,28 @@ export async function PATCH(request: Request) {
       string,
       unknown
     >;
+    const displayName = normalizeText(body.displayName, 80);
+
+    if (displayName !== undefined && !displayName) {
+      return NextResponse.json(
+        { error: "닉네임을 입력해 주세요." },
+        { status: 400 },
+      );
+    }
+
+    if (displayName) {
+      const available = await isDisplayNameAvailable(displayName, auth.user.id);
+      if (!available) {
+        return NextResponse.json(
+          { error: "이미 사용 중인 닉네임입니다." },
+          { status: 409 },
+        );
+      }
+    }
+
     const profile = await updateUserProfile(auth.user.id, {
       fullName: normalizeText(body.fullName, 80),
-      displayName: normalizeText(body.displayName, 80),
+      displayName,
       loginId: normalizeText(body.loginId, 40),
       phone: normalizeText(body.phone, 40),
       contactEmail: normalizeContactEmail(body.contactEmail),

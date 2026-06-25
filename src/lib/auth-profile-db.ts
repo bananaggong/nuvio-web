@@ -163,6 +163,24 @@ export async function getUserProfileByEmail(
   return row ? mapProfileRow(row) : undefined;
 }
 
+export async function isDisplayNameAvailable(
+  displayName: string,
+  currentUserId: string,
+): Promise<boolean> {
+  const normalized = displayName.trim().replace(/\s+/g, " ").toLowerCase();
+  if (!normalized) return false;
+
+  const [row] = await getDb()
+    .select({ id: profiles.id })
+    .from(profiles)
+    .where(
+      sql`lower(regexp_replace(trim(${profiles.displayName}), '\\s+', ' ', 'g')) = ${normalized} and ${profiles.id} <> ${currentUserId}`,
+    )
+    .limit(1);
+
+  return !row;
+}
+
 export async function updateUserProfile(
   userId: string,
   patch: ProfilePatch,

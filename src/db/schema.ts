@@ -714,6 +714,7 @@ export const savedPrograms = pgTable(
       .references(() => programs.id, { onDelete: "cascade" })
       .notNull(),
     bookmarked: boolean("bookmarked").default(true).notNull(),
+    bookmarkedAt: timestamp("bookmarked_at", { withTimezone: true }),
     alertEnabled: boolean("alert_enabled").default(false).notNull(),
     trackingEnabled: boolean("tracking_enabled").default(false).notNull(),
     createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
@@ -722,6 +723,7 @@ export const savedPrograms = pgTable(
   (table) => [
     primaryKey({ columns: [table.userId, table.programId] }),
     index("saved_programs_program_id_idx").on(table.programId),
+    index("saved_programs_user_bookmarked_at_idx").on(table.userId, table.bookmarkedAt),
     index("saved_programs_user_updated_idx").on(table.userId, table.updatedAt),
   ],
 );

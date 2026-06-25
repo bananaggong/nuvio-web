@@ -6,7 +6,6 @@ import { usePathname, useSearchParams } from "next/navigation";
 import {
   Bookmark,
   CalendarDays,
-  ChevronLeft,
   ChevronRight,
   Gift,
   LogOut,
@@ -90,9 +89,15 @@ type AuthSessionResponse = {
 };
 
 type StateMap = Record<string, boolean>;
+type BookmarkStateDetail = {
+  bookmarkedAt?: string | null;
+  createdAt?: string;
+  updatedAt?: string;
+};
 
 type ProgramStateMaps = {
   alerts: StateMap;
+  bookmarkDetails?: Record<string, BookmarkStateDetail>;
   bookmarks: StateMap;
   tracks: StateMap;
 };
@@ -150,6 +155,11 @@ type MemberInformationFormState = {
   refundBank: string;
 };
 
+type NicknameCheckState = {
+  checkedValue: string;
+  status: "idle" | "checking" | "available" | "duplicate" | "error";
+};
+
 declare global {
   interface Window {
     kakao?: {
@@ -175,6 +185,7 @@ type MypageData = {
 };
 
 type MypageContext = MypageData & {
+  bookmarkedProgramItems: BookmarkedProgramItem[];
   bookmarkedPrograms: Program[];
   nickname: string;
   profileName: string;
@@ -182,6 +193,11 @@ type MypageContext = MypageData & {
   reviewCount: number;
   unreadMessageCount: number;
   visibleTrips: HostApplication[];
+};
+
+type BookmarkedProgramItem = {
+  bookmarkedAt: string | null;
+  program: Program;
 };
 
 type MypageSection =
@@ -241,6 +257,7 @@ let kakaoPostcodeScriptPromise: Promise<void> | null = null;
 
 const EMPTY_PROGRAM_STATE: ProgramStateMaps = {
   alerts: {},
+  bookmarkDetails: {},
   bookmarks: {},
   tracks: {},
 };
@@ -252,6 +269,8 @@ const mypageScaleStyle = {
   "--mypage-gap": "clamp(92px, 6.3889vw, 122.667px)",
   "--mypage-mini-card": "clamp(130px, 9.0278vw, 173.333px)",
   "--mypage-mini-gap": "clamp(40px, 2.7778vw, 53.333px)",
+  "--mypage-bookmark-card": "clamp(186px, 12.9167vw, 248px)",
+  "--mypage-bookmark-gap": "clamp(32px, 2.2222vw, 42.667px)",
   "--mypage-orange": "#FE701E",
   "--mypage-brown": "#5B3A29",
   "--mypage-muted": "#C7BDB5",
@@ -261,11 +280,16 @@ const mypageScaleStyle = {
 
 const nuvioIconSources = {
   bookmark: "/icons/nuvio/bookmark.svg",
+  bookmarkFilled: "/icons/nuvio/bookmark-filled.svg",
   calendar: "/icons/nuvio/calendar.svg",
   mail: "/icons/nuvio/mail.svg",
   message: "/icons/nuvio/message.svg",
+  messageOrange: "/icons/nuvio/message-orange.svg",
+  mypageBack: "/icons/nuvio/mypage-back.svg",
   phone: "/icons/nuvio/phone.svg",
   settings: "/icons/nuvio/settings.svg",
+  summaryCalendar: "/icons/nuvio/summary-calendar.svg",
+  summaryMessage: "/icons/nuvio/summary-message.svg",
   user: "/icons/nuvio/user.svg",
 } as const;
 
@@ -495,29 +519,39 @@ function MypageOverview({ context }: { context: MypageContext }) {
 }
 
 function MypageHomeContent({ context }: { context: MypageContext }) {
-  const tripSlots = Array.from({ length: 4 }, (_, index) => {
-    const application = context.visibleTrips[index];
-    return {
-      application,
-      program: application
-        ? findProgramForApplication(application, context.publicPrograms)
-        : undefined,
-    };
-  });
+  const showTripLoading = context.loading && Boolean(context.authSession.user);
+  const tripSlots = context.visibleTrips.slice(0, 4).map((application) => ({
+    application,
+    program: findProgramForApplication(application, context.publicPrograms),
+  }));
 
   return (
     <>
       <DashboardSection heading="내 여행 프로그램" href="/mypage/trips">
-        <div className="grid gap-[var(--mypage-mini-gap)] sm:grid-cols-2 lg:grid-cols-[repeat(4,var(--mypage-mini-card))]">
-          {tripSlots.map((slot, index) => (
-            <TripMiniCard
-              application={slot.application}
-              key={slot.application?.id ?? `empty-trip-${index}`}
-              loading={context.loading}
-              program={slot.program}
-            />
-          ))}
-        </div>
+        {showTripLoading ? (
+          <div className="grid gap-[var(--mypage-mini-gap)] sm:grid-cols-2 lg:grid-cols-[repeat(4,var(--mypage-mini-card))]">
+            {Array.from({ length: 4 }, (_, index) => (
+              <MiniCardPlaceholder animated key={`loading-trip-${index}`} />
+            ))}
+          </div>
+        ) : tripSlots.length > 0 ? (
+          <div className="grid gap-[var(--mypage-mini-gap)] sm:grid-cols-2 lg:grid-cols-[repeat(4,var(--mypage-mini-card))]">
+            {tripSlots.map((slot) => (
+              <TripMiniCard
+                application={slot.application}
+                key={slot.application.id}
+                loading={false}
+                program={slot.program}
+              />
+            ))}
+          </div>
+        ) : (
+          <DashboardEmptyPanel
+            actionHref="/programs"
+            actionLabel="프로그램 찾아보기"
+            message="아직 여행 프로그램이 없어요"
+          />
+        )}
       </DashboardSection>
 
       <DashboardSection
@@ -679,48 +713,78 @@ function ReviewsContent({ context }: { context: MypageContext }) {
 }
 
 function BookmarksContent({ context }: { context: MypageContext }) {
-  const [filter, setFilter] = useState<"all" | "open" | "upcoming">("all");
-  const visibleSavedPrograms = context.bookmarkedPrograms.filter(
-    (program) => program.status !== "closed" && program.status !== "earlyClosed",
-  );
-  const filteredPrograms = visibleSavedPrograms.filter((program) => {
-    if (filter === "open") return program.status === "open";
-    if (filter === "upcoming") return program.status === "upcoming";
-    return true;
+  const [tab, setTab] = useState<"open" | "closed">("open");
+  const [sort, setSort] = useState<"bookmarked" | "date">("bookmarked");
+  const showBookmarkLoading = context.loading && Boolean(context.authSession.user);
+  const tabItems = [
+    { key: "open" as const, label: "오픈된 여행" },
+    { key: "closed" as const, label: "마감된 여행" },
+  ];
+  const dateSortLabel = tab === "open" ? "출발일 순" : "마감일순";
+  const visibleItems = context.bookmarkedProgramItems.filter(({ program }) => {
+    const closed = program.status === "closed" || program.status === "earlyClosed";
+    return tab === "closed" ? closed : !closed;
+  });
+  const sortedItems = [...visibleItems].sort((a, b) => {
+    if (sort === "bookmarked") {
+      return (
+        parseDateSortValue(b.bookmarkedAt) -
+        parseDateSortValue(a.bookmarkedAt)
+      );
+    }
+
+    const leftDate = tab === "open" ? a.program.activityStart : a.program.recruitEnd;
+    const rightDate = tab === "open" ? b.program.activityStart : b.program.recruitEnd;
+    return tab === "open"
+      ? parseDateSortValue(leftDate) - parseDateSortValue(rightDate)
+      : parseDateSortValue(rightDate) - parseDateSortValue(leftDate);
   });
 
   return (
-    <section>
-      <PageTitle
-        eyebrow="BOOKMARK"
-        title="저장"
-        trailing={`${visibleSavedPrograms.length}개`}
+    <section className="min-h-[clamp(420px,29.1667vw,560px)]">
+      <TripFrameTabs
+        active={tab}
+        items={tabItems}
+        onChange={(nextTab) => {
+          setTab(nextTab);
+          setSort("bookmarked");
+        }}
       />
-      <SegmentedTabs
-        active={filter}
-        items={[
-          { key: "all", label: "전체" },
-          { key: "open", label: "신청 가능" },
-          { key: "upcoming", label: "오픈 예정" },
-        ]}
-        onChange={setFilter}
-      />
-      <div className="mt-6 grid gap-5 sm:grid-cols-2 xl:grid-cols-3">
-        {context.loading ? (
-          <CardSkeleton count={3} />
-        ) : filteredPrograms.length > 0 ? (
-          filteredPrograms.map((program) => (
-            <ProgramWideCard key={program.id} program={program} />
-          ))
-        ) : (
-          <div className="sm:col-span-2 xl:col-span-3">
-            <EmptyState
-              icon={Bookmark}
-              title="아직 저장한 프로그램이 없어요"
-              actionHref="/programs"
-              actionLabel="프로그램 찾아보기"
-            />
+      <div className="flex h-[clamp(31px,2.1528vw,41.333px)] items-center gap-[clamp(10px,0.6944vw,13.333px)] border-b border-[#f7eee7] pl-[clamp(7px,0.4861vw,9.333px)]">
+        <BookmarkSortButton
+          active={sort === "bookmarked"}
+          label="북마크순"
+          onClick={() => setSort("bookmarked")}
+        />
+        <BookmarkSortButton
+          active={sort === "date"}
+          label={dateSortLabel}
+          onClick={() => setSort("date")}
+        />
+      </div>
+      <div className="mt-[clamp(27px,1.875vw,36px)]">
+        {showBookmarkLoading ? (
+          <div className="grid gap-[var(--mypage-bookmark-gap)] sm:grid-cols-2 lg:grid-cols-[repeat(4,var(--mypage-bookmark-card))]">
+            {Array.from({ length: 4 }, (_, index) => (
+              <MiniCardPlaceholder animated key={`bookmark-loading-${index}`} />
+            ))}
           </div>
+        ) : sortedItems.length > 0 ? (
+          <div className="grid gap-[var(--mypage-bookmark-gap)] sm:grid-cols-2 lg:grid-cols-[repeat(4,var(--mypage-bookmark-card))]">
+            {sortedItems.map(({ bookmarkedAt, program }) => (
+              <BookmarkProgramMiniCard
+                bookmarkedAt={bookmarkedAt}
+                key={String(program.id)}
+                program={program}
+              />
+            ))}
+          </div>
+        ) : (
+          <DashboardEmptyPanel
+            actionHref="/programs"
+            actionLabel="프로그램 찾아보기"
+            message="저장한 프로그램이 없어요"
+          />
         )}
       </div>
     </section>
@@ -991,10 +1055,13 @@ function MessagesContent({ context }: { context: MypageContext }) {
           className="flex items-center gap-[19px] rounded-[8px] transition hover:text-[#FE701E] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[#FE701E] min-[1440px]:gap-[1.319vw]"
           href="/mypage"
         >
-          <ChevronLeft
+          <Image
+            alt=""
             aria-hidden="true"
-            className="h-[15px] w-[11px] shrink-0 text-[#FF9A3D]"
-            strokeWidth={2}
+            className="h-[15px] w-[11px] shrink-0 min-[1440px]:h-[1.045vw] min-[1440px]:w-[0.775vw]"
+            height={15}
+            src={nuvioIconSources.mypageBack}
+            width={11}
           />
           <h1 className="min-w-0 flex-1 text-[16px] font-semibold leading-[1.253]">
             메세지
@@ -1902,6 +1969,7 @@ function MemberInformationForm({
   const initialEmail = profile?.contactEmail || accountEmail || DEFAULT_MEMBER_EMAIL;
   const initialEmailParts = splitEmailAddress(initialEmail);
   const initialBirthDateParts = splitBirthDate(profile?.birthDate);
+  const initialNickname = profile?.displayName ?? "";
   const [form, setForm] = useState<MemberInformationFormState>({
     address: initialSelectedAddress || profile?.address || "",
     avatarUrl: profile?.avatarUrl ?? "",
@@ -1923,6 +1991,10 @@ function MemberInformationForm({
     refundAccount: profile?.refundAccount ?? "",
     refundBank: profile?.refundBank ?? "",
   });
+  const [nicknameCheck, setNicknameCheck] = useState<NicknameCheckState>({
+    checkedValue: "",
+    status: "idle",
+  });
   const [status, setStatus] = useState("");
   const [saving, setSaving] = useState(false);
   const [avatarUploading, setAvatarUploading] = useState(false);
@@ -1939,6 +2011,17 @@ function MemberInformationForm({
   const avatarInputRef = useRef<HTMLInputElement>(null);
   const addressSearchLayerRef = useRef<HTMLDivElement>(null);
   const detailAddressInputRef = useRef<HTMLInputElement>(null);
+  const normalizedNickname = normalizeNicknameForCheck(form.nickname);
+  const normalizedInitialNickname = normalizeNicknameForCheck(initialNickname);
+  const nicknameChanged = normalizedNickname !== normalizedInitialNickname;
+  const nicknameCheckPassed =
+    !nicknameChanged ||
+    (nicknameCheck.status === "available" &&
+      nicknameCheck.checkedValue === normalizedNickname);
+  const saveDisabled =
+    saving ||
+    nicknameCheck.status === "checking" ||
+    (nicknameChanged && nicknameCheck.status === "duplicate");
   const birthDayOptions = getBirthDayOptions(form.birthYear, form.birthMonth);
   const fallbackAddressOptions = useMemo(() => {
     const query = addressSearchQuery.trim();
@@ -2032,6 +2115,78 @@ function MemberInformationForm({
     window.setTimeout(() => detailAddressInputRef.current?.focus(), 0);
   }
 
+  function updateNickname(value: string) {
+    setForm((current) => ({ ...current, nickname: value }));
+    setNicknameCheck({ checkedValue: "", status: "idle" });
+    setStatus("");
+  }
+
+  async function checkNicknameDuplicate() {
+    if (!context.signedIn) {
+      window.location.href = "/login?next=/mypage/member-information";
+      return;
+    }
+
+    if (!normalizedNickname) {
+      setNicknameCheck({ checkedValue: "", status: "error" });
+      setStatus("닉네임을 입력해 주세요.");
+      return;
+    }
+
+    if (!nicknameChanged) {
+      setNicknameCheck({
+        checkedValue: normalizedNickname,
+        status: "available",
+      });
+      setStatus("현재 사용 중인 닉네임입니다.");
+      return;
+    }
+
+    setNicknameCheck({
+      checkedValue: normalizedNickname,
+      status: "checking",
+    });
+    setStatus("닉네임을 확인하는 중입니다.");
+
+    try {
+      const response = await fetch(
+        `/api/me/profile/nickname?nickname=${encodeURIComponent(form.nickname.trim())}`,
+      );
+      const payload = (await response.json()) as {
+        data?: { available?: boolean };
+        error?: string;
+      };
+
+      if (!response.ok) {
+        throw new Error(payload.error ?? "닉네임 중복확인을 완료하지 못했어요.");
+      }
+
+      if (payload.data?.available) {
+        setNicknameCheck({
+          checkedValue: normalizedNickname,
+          status: "available",
+        });
+        setStatus("사용 가능한 닉네임입니다.");
+      } else {
+        setNicknameCheck({
+          checkedValue: normalizedNickname,
+          status: "duplicate",
+        });
+        setStatus("이미 사용 중인 닉네임입니다.");
+      }
+    } catch (error) {
+      setNicknameCheck({
+        checkedValue: normalizedNickname,
+        status: "error",
+      });
+      setStatus(
+        error instanceof Error
+          ? error.message
+          : "닉네임 중복확인을 완료하지 못했어요.",
+      );
+    }
+  }
+
   async function uploadAvatar(file: File) {
     if (!context.signedIn) {
       window.location.href = "/login?next=/mypage/member-information";
@@ -2073,6 +2228,21 @@ function MemberInformationForm({
       window.location.href = "/login?next=/mypage/member-information";
       return;
     }
+
+    if (!normalizedNickname) {
+      setStatus("닉네임을 입력해 주세요.");
+      return;
+    }
+
+    if (!nicknameCheckPassed) {
+      setStatus(
+        nicknameCheck.status === "duplicate"
+          ? "이미 사용 중인 닉네임입니다."
+          : "닉네임 중복확인을 완료해 주세요.",
+      );
+      return;
+    }
+
     setSaving(true);
     setStatus("");
     try {
@@ -2129,6 +2299,10 @@ function MemberInformationForm({
         refundAccount: updatedProfile.refundAccount ?? "",
         refundBank: updatedProfile.refundBank ?? "",
       }));
+      setNicknameCheck({
+        checkedValue: normalizeNicknameForCheck(updatedProfile.displayName ?? ""),
+        status: "available",
+      });
       setEditMode(false);
       window.history.replaceState(null, "", "/mypage/member-information");
       setStatus("저장됐어요.");
@@ -2149,19 +2323,25 @@ function MemberInformationForm({
             <div className="grid content-start justify-items-center gap-3">
               <button
                 aria-label="프로필 이미지 변경"
-                className="relative grid size-[clamp(63px,4.375vw,84px)] place-items-center overflow-hidden rounded-full bg-[#d9d9d9] bg-cover bg-center !text-[clamp(18px,1.25vw,24px)] font-semibold text-white transition disabled:cursor-default"
+                className="relative grid size-[clamp(63px,4.375vw,84px)] place-items-center overflow-visible rounded-full !text-[clamp(18px,1.25vw,24px)] font-semibold text-white transition disabled:cursor-default"
                 disabled={!editMode || avatarUploading}
                 onClick={() => avatarInputRef.current?.click()}
-                style={
-                  form.avatarUrl ? { backgroundImage: `url(${form.avatarUrl})` } : undefined
-                }
                 type="button"
               >
-                {form.avatarUrl ? null : getInitial(form.nickname || context.nickname)}
+                <span
+                  className="grid size-full place-items-center overflow-hidden rounded-full bg-[#d9d9d9] bg-cover bg-center"
+                  style={
+                    form.avatarUrl
+                      ? { backgroundImage: `url(${form.avatarUrl})` }
+                      : undefined
+                  }
+                >
+                  {form.avatarUrl ? null : getInitial(form.nickname || context.nickname)}
+                </span>
                 {editMode ? (
                   <span
                     aria-hidden="true"
-                    className="absolute bottom-0 right-[clamp(6px,0.4167vw,8px)] grid size-[clamp(12px,0.8333vw,16px)] place-items-center rounded-full bg-[#ff8a2a] !text-[clamp(11px,0.7639vw,14.667px)] leading-none text-white shadow-[0_2px_8px_rgba(0,0,0,0.12)]"
+                    className="absolute bottom-0 right-0 z-20 grid size-[clamp(15px,1.0417vw,20px)] translate-x-[8%] translate-y-[8%] place-items-center rounded-full border border-white bg-[#ff8a2a] !text-[clamp(13px,0.9028vw,17.333px)] leading-none text-white shadow-[0_2px_8px_rgba(0,0,0,0.16)]"
                   >
                     +
                   </span>
@@ -2221,7 +2401,7 @@ function MemberInformationForm({
           {editMode ? (
             <>
               <div className="grid gap-y-[clamp(13px,0.9028vw,17.333px)] pl-[clamp(15px,1.0417vw,20px)] pt-[clamp(70px,4.8611vw,93.333px)]">
-          <div className="grid gap-x-[clamp(13px,0.9028vw,17.333px)] gap-y-3 md:grid-cols-[clamp(50px,3.4722vw,66.667px)_clamp(145px,10.0694vw,193.333px)_clamp(60px,4.1667vw,80px)_clamp(200px,13.8889vw,266.667px)_clamp(45px,3.125vw,60px)_clamp(160px,11.1111vw,213.333px)] md:items-end">
+          <div className="grid gap-x-[clamp(13px,0.9028vw,17.333px)] gap-y-3 md:grid-cols-[clamp(50px,3.4722vw,66.667px)_clamp(145px,10.0694vw,193.333px)_clamp(60px,4.1667vw,80px)_clamp(145px,10.0694vw,193.333px)_clamp(68px,4.7222vw,90.667px)_clamp(45px,3.125vw,60px)_clamp(180px,12.5vw,240px)] md:items-end">
             <MemberLabel>이름</MemberLabel>
             <MemberLineInput
               onChange={(value) => setForm((current) => ({ ...current, name: value }))}
@@ -2229,18 +2409,17 @@ function MemberInformationForm({
               value={form.name}
             />
             <MemberLabel>닉네임</MemberLabel>
-            <div className="flex min-w-0 items-center gap-[clamp(8px,0.5556vw,10.667px)]">
-              <MemberLineInput
-                onChange={(value) =>
-                  setForm((current) => ({ ...current, nickname: value }))
-                }
-                placeholder="누비오에서 사용할 닉네임을 입력해 주세요"
-                value={form.nickname}
-              />
-              <MemberSmallButton onClick={() => setStatus("사용 가능한 닉네임입니다.")}>
-                중복확인
-              </MemberSmallButton>
-            </div>
+            <MemberLineInput
+              onChange={updateNickname}
+              placeholder="누비오에서 사용할 닉네임을 입력해 주세요"
+              value={form.nickname}
+            />
+            <MemberSmallButton
+              disabled={nicknameCheck.status === "checking"}
+              onClick={() => void checkNicknameDuplicate()}
+            >
+              {nicknameCheck.status === "checking" ? "확인중" : "중복확인"}
+            </MemberSmallButton>
             <MemberLabel>성별</MemberLabel>
             <div className="flex items-center gap-[clamp(5px,0.3472vw,6.667px)]">
               {(["female", "male", "neutral"] as const).map((gender) => (
@@ -2254,7 +2433,11 @@ function MemberInformationForm({
                   onClick={() => setForm((current) => ({ ...current, gender }))}
                   type="button"
                 >
-                  {gender === "female" ? "여성" : gender === "male" ? "남성" : "중성"}
+                  {gender === "female"
+                    ? "여성"
+                    : gender === "male"
+                      ? "남성"
+                      : "선택 안 함"}
                 </button>
               ))}
             </div>
@@ -2480,7 +2663,7 @@ function MemberInformationForm({
           </p>
           <button
             className="h-[42px] w-[112px] rounded-[4px] bg-[#ff6f1a] !text-[14px] font-semibold text-white transition hover:bg-[#f05f0d] disabled:opacity-50 max-md:w-full"
-            disabled={saving}
+            disabled={saveDisabled}
             onClick={saveProfile}
             type="button"
           >
@@ -2610,7 +2793,7 @@ function MemberInformationReadOnly({
   return (
     <>
       <div className="grid gap-y-[clamp(13px,0.9028vw,17.333px)] pl-[clamp(15px,1.0417vw,20px)] pt-[clamp(70px,4.8611vw,93.333px)]">
-        <div className="grid gap-x-[clamp(13px,0.9028vw,17.333px)] gap-y-3 md:grid-cols-[clamp(50px,3.4722vw,66.667px)_clamp(145px,10.0694vw,193.333px)_clamp(60px,4.1667vw,80px)_clamp(200px,13.8889vw,266.667px)_clamp(45px,3.125vw,60px)_clamp(160px,11.1111vw,213.333px)] md:items-end">
+        <div className="grid gap-x-[clamp(13px,0.9028vw,17.333px)] gap-y-3 md:grid-cols-[clamp(50px,3.4722vw,66.667px)_clamp(145px,10.0694vw,193.333px)_clamp(60px,4.1667vw,80px)_clamp(145px,10.0694vw,193.333px)_clamp(45px,3.125vw,60px)_clamp(180px,12.5vw,240px)] md:items-end">
           <MemberLabel>이름</MemberLabel>
           <MemberTextValue>{form.name || "-"}</MemberTextValue>
           <MemberLabel>닉네임</MemberLabel>
@@ -2738,7 +2921,7 @@ function CouponsContent() {
 function SettingsContent() {
   return (
     <section>
-      <PageTitle eyebrow="SETTING" title="설정" />
+      <PageTitle title="설정" />
       <div className="mt-6 grid gap-3">
         <SettingRow label="마케팅 수신 동의" value="미설정" />
         <SettingRow label="프로그램 알림" value="기본값" />
@@ -2753,7 +2936,7 @@ function SupportContent({ context }: { context: MypageContext }) {
 
   return (
     <section>
-      <PageTitle eyebrow="SUPPORT" title="고객센터" />
+      <PageTitle title="고객센터" />
       <SupportContactForm
         initialValues={{
           email: profile?.contactEmail ?? context.authSession.user?.email ?? "",
@@ -2797,11 +2980,15 @@ function ProfileSummaryCard({
         </div>
 
         <div className="grid flex-1 grid-cols-3 gap-y-[clamp(18px,1.25vw,24px)]">
-          <SummaryMetric iconName="calendar" label="예약 일정" value={tripCount} />
+          <SummaryMetric
+            iconName="summaryCalendar"
+            label="예약 일정"
+            value={tripCount}
+          />
           <SummaryMetric iconName="bookmark" label="북마크" value={bookmarkCount} />
           <SummaryMetric
             href="/mypage/messages"
-            iconName="message"
+            iconName="summaryMessage"
             label="메시지"
             value={messageCount}
           />
@@ -2987,15 +3174,19 @@ function PageTitle({
   title,
   trailing,
 }: {
-  eyebrow: string;
+  eyebrow?: string;
   title: string;
   trailing?: string;
 }) {
   return (
     <header className="flex flex-col gap-2 border-b border-[#d9d9d9] pb-5 sm:flex-row sm:items-end sm:justify-between">
       <div>
-        <p className="text-[12px] font-semibold text-[#f7983a]">{eyebrow}</p>
-        <h1 className="mt-1 text-[24px] font-semibold text-[#4B3328]">{title}</h1>
+        {eyebrow ? (
+          <p className="text-[12px] font-semibold text-[#f7983a]">{eyebrow}</p>
+        ) : null}
+        <h1 className={`${eyebrow ? "mt-1" : ""} text-[24px] font-semibold text-[#4B3328]`}>
+          {title}
+        </h1>
       </div>
       {trailing ? (
         <span className="text-[14px] font-semibold text-[#8F7A6C]">{trailing}</span>
@@ -3066,6 +3257,28 @@ function TripFrameTabs<T extends string>({
         </button>
       ))}
     </div>
+  );
+}
+
+function BookmarkSortButton({
+  active,
+  label,
+  onClick,
+}: {
+  active: boolean;
+  label: string;
+  onClick: () => void;
+}) {
+  return (
+    <button
+      className={`text-[clamp(11px,0.7639vw,14.667px)] font-medium leading-none transition ${
+        active ? "text-[#748190]" : "text-[var(--mypage-muted)] hover:text-[#8F7A6C]"
+      }`}
+      onClick={onClick}
+      type="button"
+    >
+      {label}
+    </button>
   );
 }
 
@@ -3240,7 +3453,6 @@ function TripDetailCard({
   const href = program ? programPath(program) : "/mypage/trips";
   const displayTitle =
     program?.title ?? formatProgramDisplayName(application.programTitle, application.programId);
-  const statusLabel = tripStatusLabels[application.status];
   const people = application.answers?.participants;
   const peopleLabel =
     typeof people === "number"
@@ -3320,24 +3532,14 @@ function TripDetailCard({
             strong
             value={formatApplicationDisplayCode(application.id, application.submittedAt)}
           />
-          <div className="mt-[clamp(8px,0.5556vw,10.667px)] flex items-center gap-[clamp(9px,0.625vw,12px)]">
+          <div className="mt-[clamp(8px,0.5556vw,10.667px)] flex h-[clamp(12px,0.8333vw,16px)] w-[clamp(87px,6.0417vw,116px)] items-center justify-between px-[clamp(11px,0.7639vw,14.667px)]">
             <NuvioAssetIcon alt="" name="phone" size={12} />
-            <NuvioAssetIcon alt="" name="mail" size={12} />
-            <NuvioAssetIcon alt="" name="bookmark" size={12} />
+            <NuvioAssetIcon alt="" name="messageOrange" size={12} />
+            <NuvioAssetIcon alt="" name="bookmarkFilled" size={12} />
           </div>
         </div>
         <TripMeta label="예약자 명" value={application.applicantName || "-"} />
         <TripMeta label="연락 번호" value={application.phone || "000-0000-0000"} />
-        <TripMeta label="필요항목" value={statusLabel} />
-        <div className="min-w-0">
-          <TripMeta label="필요항목" value={statusLabel} />
-          <Link
-            className="mt-[clamp(8px,0.5556vw,10.667px)] inline-flex text-[clamp(10px,0.6944vw,13.333px)] font-medium text-[#748190] hover:text-[var(--mypage-orange)]"
-            href={href}
-          >
-            + 인원추가
-          </Link>
-        </div>
       </div>
       {actionLabel ? (
         actionHref ? (
@@ -3385,34 +3587,50 @@ function ProgramMiniCard({ program }: { program: Program }) {
   );
 }
 
-function ProgramWideCard({ program }: { program: Program }) {
+function BookmarkProgramMiniCard({
+  bookmarkedAt,
+  program,
+}: {
+  bookmarkedAt: string | null;
+  program: Program;
+}) {
   return (
     <Link
-      className="group grid min-w-0 gap-4 rounded-[6px] border border-[#d9d9d9] p-4 transition hover:border-[#f7983a]"
+      className="group block min-w-0"
+      data-bookmarked-at={bookmarkedAt ?? undefined}
       href={programPath(program)}
     >
-      <div className="relative aspect-[4/3] overflow-hidden rounded-[12px] bg-[#f3f3f3]">
+      <div className="relative aspect-square w-full overflow-hidden rounded-[clamp(8px,0.5556vw,10.667px)] bg-[#d9d9d9]">
         {program.image ? (
           <Image
             alt={program.title}
-            className="object-cover transition duration-300 group-hover:scale-105"
+            className="object-cover transition duration-300 ease-out group-hover:scale-105"
             fill
-            sizes="(min-width: 1280px) 24vw, (min-width: 640px) 45vw, 90vw"
+            sizes="(min-width: 1920px) 248px, (min-width: 1024px) 13vw, (min-width: 640px) 45vw, 90vw"
             src={program.image}
           />
         ) : null}
+        <span className="absolute bottom-[clamp(9px,0.625vw,12px)] right-[clamp(9px,0.625vw,12px)] grid h-[clamp(18px,1.25vw,24px)] w-[clamp(18px,1.25vw,24px)] place-items-center">
+          <Image
+            alt=""
+            height={24}
+            src={nuvioIconSources.bookmarkFilled}
+            width={24}
+          />
+        </span>
       </div>
-      <div>
-        <p className="text-[12px] font-semibold text-[#f7983a]">
-          {program.region || program.city || "전국"}
-        </p>
-        <h2 className="mt-1 line-clamp-2 min-h-[48px] text-[17px] font-semibold leading-6 text-[#4B3328]">
-          {program.title}
-        </h2>
-        <p className="mt-2 line-clamp-2 text-[13px] leading-6 text-[#8F7A6C]">
-          {program.summary}
-        </p>
-      </div>
+      <p className="mt-[clamp(12px,0.8333vw,16px)] text-[clamp(12px,0.8333vw,16px)] font-medium leading-[1.2] text-[#748190]">
+        {formatBookmarkProgramLocation(program)}
+      </p>
+      <p className="mt-[clamp(12px,0.8333vw,16px)] line-clamp-1 text-[clamp(16px,1.1111vw,21.333px)] font-semibold leading-[1.25] tracking-normal text-[var(--mypage-brown)]">
+        {program.title || "프로그램 제목 입력"}
+      </p>
+      <p className="mt-[clamp(15px,1.0417vw,20px)] line-clamp-2 min-h-[clamp(38px,2.6389vw,50.667px)] text-[clamp(12px,0.8333vw,16px)] font-medium leading-[1.55] tracking-normal text-[#C7BDB5]">
+        {program.summary || "프로그램 소개 간략한 작은글을 작성해 주세요."}
+      </p>
+      <p className="mt-[clamp(17px,1.1806vw,22.667px)] text-[clamp(12px,0.8333vw,16px)] font-semibold leading-[1.2] text-[#748190]">
+        {program.sourceName || "호스트명"}
+      </p>
     </Link>
   );
 }
@@ -3464,11 +3682,32 @@ function EmptyState({
 
 function RecentEmptyState() {
   return (
-    <div className="grid gap-[var(--mypage-mini-gap)] sm:grid-cols-2 lg:grid-cols-[repeat(4,var(--mypage-mini-card))]">
-      {Array.from({ length: 4 }, (_, index) => (
-        <MiniCardPlaceholder key={`recent-placeholder-${index}`} />
-      ))}
-    </div>
+    <DashboardEmptyPanel
+      actionHref="/programs"
+      actionLabel="프로그램 찾아보기"
+      message="아직 최근 본 프로그램이 없어요"
+    />
+  );
+}
+
+function DashboardEmptyPanel({
+  actionHref,
+  actionLabel,
+  message,
+}: {
+  actionHref: string;
+  actionLabel: string;
+  message: string;
+}) {
+  return (
+    <NuvioEmptyState
+      actionHref={actionHref}
+      actionLabel={actionLabel}
+      className="min-h-[clamp(220px,15.2778vw,293.333px)] rounded-[clamp(6px,0.4167vw,8px)] border border-dashed border-[#d9d9d9] bg-white"
+      iconClassName="h-[clamp(42px,2.9167vw,56px)] w-[clamp(37px,2.5694vw,49.333px)]"
+      message={message}
+      textClassName="mt-[clamp(14px,0.9722vw,18.667px)] text-[clamp(13px,0.9028vw,17.333px)] text-[#C7BDB5]"
+    />
   );
 }
 
@@ -3543,14 +3782,17 @@ function MemberLineSelect({
 
 function MemberSmallButton({
   children,
+  disabled = false,
   onClick,
 }: {
   children: ReactNode;
+  disabled?: boolean;
   onClick: () => void;
 }) {
   return (
     <button
-      className="h-[clamp(22px,1.5278vw,29.333px)] shrink-0 rounded-[clamp(3px,0.2083vw,4px)] border border-[#cfc7c0] px-[clamp(9px,0.625vw,12px)] !text-[clamp(11px,0.7639vw,14.667px)] font-semibold text-[#748190] transition hover:border-[#f7983a] hover:text-[#f7983a]"
+      className="h-[clamp(22px,1.5278vw,29.333px)] shrink-0 rounded-[clamp(3px,0.2083vw,4px)] border border-[#cfc7c0] px-[clamp(9px,0.625vw,12px)] !text-[clamp(11px,0.7639vw,14.667px)] font-semibold text-[#748190] transition hover:border-[#f7983a] hover:text-[#f7983a] disabled:cursor-not-allowed disabled:border-[#e2ddd8] disabled:text-[#c7bdb5] disabled:hover:border-[#e2ddd8] disabled:hover:text-[#c7bdb5]"
+      disabled={disabled}
       onClick={onClick}
       type="button"
     >
@@ -3597,15 +3839,6 @@ function ListSkeleton({ count }: { count: number }) {
   ));
 }
 
-function CardSkeleton({ count }: { count: number }) {
-  return Array.from({ length: count }, (_, index) => (
-    <div
-      className="h-[300px] animate-pulse rounded-[6px] border border-[#eeeeee] bg-[#f8f8f8]"
-      key={index}
-    />
-  ));
-}
-
 function useMypageData(): MypageData {
   const [authSession, setAuthSession] = useState<AuthSessionPayload>({
     user: null,
@@ -3638,9 +3871,12 @@ function useMypageData(): MypageData {
         const programPayload = (await programsResponse.json()) as {
           data?: Program[];
         };
-        const reviewPayload = reviewsResponse
-          ? ((await reviewsResponse.json()) as { data?: Review[] })
-          : { data: [] };
+        const reviewPayload =
+          reviewsResponse?.ok
+            ? ((await reviewsResponse.json().catch(() => ({ data: [] }))) as {
+                data?: Review[];
+              })
+            : { data: [] };
         const nextSession = sessionPayload.data ?? {
           profile: null,
           user: null,
@@ -3728,9 +3964,22 @@ function useMypageContext(data: MypageData): MypageContext {
     "ㅇㅇ";
   const nickname = profileName === "ㅇㅇ" ? "닉네임" : profileName;
 
+  const bookmarkedProgramItems = useMemo(
+    () =>
+      resolveProgramStateItems(
+        data.programState.bookmarks,
+        data.publicPrograms,
+        data.programState.bookmarkDetails ?? {},
+      ),
+    [
+      data.programState.bookmarkDetails,
+      data.programState.bookmarks,
+      data.publicPrograms,
+    ],
+  );
   const bookmarkedPrograms = useMemo(
-    () => resolvePrograms(data.programState.bookmarks, data.publicPrograms),
-    [data.programState.bookmarks, data.publicPrograms],
+    () => bookmarkedProgramItems.map((item) => item.program),
+    [bookmarkedProgramItems],
   );
   const recentlyViewedPrograms = useMemo(
     () => resolvePrograms(data.programState.tracks, data.publicPrograms),
@@ -3746,6 +3995,7 @@ function useMypageContext(data: MypageData): MypageContext {
 
   return {
     ...data,
+    bookmarkedProgramItems,
     bookmarkedPrograms,
     nickname,
     profileName,
@@ -3759,18 +4009,62 @@ function useMypageContext(data: MypageData): MypageContext {
 }
 
 function resolvePrograms(state: StateMap, publicPrograms: Program[]): Program[] {
+  return resolveProgramStateItems(state, publicPrograms).map((item) => item.program);
+}
+
+function resolveProgramStateItems(
+  state: StateMap,
+  publicPrograms: Program[],
+  details: Record<string, BookmarkStateDetail> = {},
+): BookmarkedProgramItem[] {
+  const seen = new Set<string>();
   return Object.keys(state)
     .filter((id) => state[id])
     .map((id) => {
-      const program = publicPrograms.find(
-        (item) => String(item.id) === id || item.slug === id,
-      );
-      if (program) return program;
+      const program = findProgramByStateKey(id, publicPrograms);
+      if (!program) return undefined;
 
-      const numericId = Number(id);
-      return Number.isInteger(numericId) ? getProgramById(numericId) : undefined;
+      const identity = getProgramIdentity(program);
+      if (seen.has(identity)) return undefined;
+      seen.add(identity);
+
+      return {
+        bookmarkedAt:
+          details[id]?.bookmarkedAt ?? details[id]?.updatedAt ?? details[id]?.createdAt ?? null,
+        program,
+      };
     })
-    .filter((program): program is Program => Boolean(program));
+    .filter((item): item is BookmarkedProgramItem => Boolean(item));
+}
+
+function findProgramByStateKey(
+  id: string,
+  publicPrograms: Program[],
+): Program | undefined {
+  const program = publicPrograms.find(
+    (item) => String(item.id) === id || item.slug === id,
+  );
+  if (program) return program;
+
+  const numericId = Number(id);
+  return Number.isInteger(numericId) ? getProgramById(numericId) : undefined;
+}
+
+function getProgramIdentity(program: Program): string {
+  return program.slug || String(program.id);
+}
+
+function parseDateSortValue(value: string | null | undefined): number {
+  if (!value) return 0;
+  const timestamp = Date.parse(value);
+  return Number.isNaN(timestamp) ? 0 : timestamp;
+}
+
+function formatBookmarkProgramLocation(program: Program): string {
+  const location = [program.region, program.city]
+    .filter((value, index, values) => value && values.indexOf(value) === index)
+    .join(" ");
+  return location ? `${location} 여행` : "프로그램 지역 위치";
 }
 
 function findProgramForApplication(
@@ -3832,6 +4126,10 @@ function getInitial(name: string) {
   return name.trim().slice(0, 1) || "누";
 }
 
+function normalizeNicknameForCheck(value: string) {
+  return value.trim().replace(/\s+/g, " ").toLowerCase();
+}
+
 function splitEmailAddress(email: string) {
   const [id = "", ...domainParts] = email.split("@");
   return {
@@ -3856,7 +4154,7 @@ function composeEmailAddress(id: string, domain: string) {
 function genderLabel(gender: string) {
   if (gender === "female") return "여성";
   if (gender === "male") return "남성";
-  return "중성";
+  return "선택 안 함";
 }
 
 function formatBirthDate(year: string, month: string, day: string) {

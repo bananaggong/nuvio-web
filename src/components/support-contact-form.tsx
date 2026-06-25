@@ -1,12 +1,12 @@
 "use client";
 
+import Image from "next/image";
 import {
   AlertCircle,
   ArrowRight,
   CheckCircle2,
   ChevronDown,
   Loader2,
-  MessageSquareText,
 } from "lucide-react";
 import { useState, type FormEvent } from "react";
 import {
@@ -264,10 +264,20 @@ export function SupportContactForm({
       </div>
 
       <div className="mt-7 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-        <p className="flex items-center gap-2 text-[12px] font-medium text-[#8F7A6C]">
-          <MessageSquareText size={15} strokeWidth={1.8} />
-          보통 영업일 기준 1~2일 안에 답변드려요.
-        </p>
+        <div className="flex items-start gap-2 text-[12px] font-medium leading-[1.65] text-[#8F7A6C]">
+          <Image
+            alt=""
+            aria-hidden="true"
+            className="mt-[2px] h-[15px] w-[16px] shrink-0"
+            height={15}
+            src="/icons/nuvio/mail.svg"
+            width={16}
+          />
+          <div>
+            <p>보통 영업일 기준 1~2일 안에 답변드려요.</p>
+            <p>문의에 대한 답변은 기입해주신 이메일로 전달드립니다.</p>
+          </div>
+        </div>
         <button
           className="inline-flex h-11 w-full items-center justify-center gap-2 rounded-[5px] bg-[#fe701e] px-5 text-[14px] font-semibold text-white transition hover:bg-[#ef6111] disabled:cursor-not-allowed disabled:bg-[#f7b37f] sm:w-auto"
           disabled={submitting}

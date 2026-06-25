@@ -5,8 +5,15 @@ import { getProgramRecordByIdentifier } from "@/lib/program-db";
 
 export type ProgramStateKind = "bookmarked" | "alertEnabled" | "trackingEnabled";
 
+export type UserProgramStateDetail = {
+  bookmarkedAt: string | null;
+  createdAt: string;
+  updatedAt: string;
+};
+
 export type UserProgramStateMaps = {
   alerts: Record<string, boolean>;
+  bookmarkDetails: Record<string, UserProgramStateDetail>;
   bookmarks: Record<string, boolean>;
   tracks: Record<string, boolean>;
 };
@@ -38,13 +45,23 @@ export async function listUserProgramState(
   return rows.reduce<UserProgramStateMaps>(
     (maps, row) => {
       for (const key of getProgramKeys(row.program)) {
-        if (row.savedProgram.bookmarked) maps.bookmarks[key] = true;
+        if (row.savedProgram.bookmarked) {
+          maps.bookmarks[key] = true;
+          maps.bookmarkDetails[key] = {
+            bookmarkedAt:
+              row.savedProgram.bookmarkedAt?.toISOString() ??
+              row.savedProgram.updatedAt?.toISOString() ??
+              row.savedProgram.createdAt.toISOString(),
+            createdAt: row.savedProgram.createdAt.toISOString(),
+            updatedAt: row.savedProgram.updatedAt.toISOString(),
+          };
+        }
         if (row.savedProgram.alertEnabled) maps.alerts[key] = true;
         if (row.savedProgram.trackingEnabled) maps.tracks[key] = true;
       }
       return maps;
     },
-    { alerts: {}, bookmarks: {}, tracks: {} },
+    { alerts: {}, bookmarkDetails: {}, bookmarks: {}, tracks: {} },
   );
 }
 
@@ -81,6 +98,12 @@ export async function updateUserProgramState(
       trackingEnabled: current?.trackingEnabled ?? false,
       [kind]: enabled,
     };
+    const now = new Date();
+    const nextBookmarkedAt = next.bookmarked
+      ? kind === "bookmarked" && enabled
+        ? now
+        : current?.bookmarkedAt ?? current?.updatedAt ?? now
+      : null;
 
     if (!next.bookmarked && !next.alertEnabled && !next.trackingEnabled) {
       await tx
@@ -96,6 +119,7 @@ export async function updateUserProgramState(
 
     const value = {
       alertEnabled: next.alertEnabled,
+      bookmarkedAt: nextBookmarkedAt,
       bookmarked: next.bookmarked,
       programId: program.id,
       trackingEnabled: next.trackingEnabled,
@@ -112,6 +136,7 @@ export async function updateUserProgramState(
         target: [savedPrograms.userId, savedPrograms.programId],
         set: {
           alertEnabled: value.alertEnabled,
+          bookmarkedAt: value.bookmarkedAt,
           bookmarked: value.bookmarked,
           trackingEnabled: value.trackingEnabled,
           updatedAt: new Date(),
