@@ -227,6 +227,7 @@ function buildMinimalProgramDraft(
     sourceUrl: project?.villageSlug ? `https://nuvio.kr/${project.villageSlug}` : "",
     applyUrl: "",
     phone: "",
+    contactEmail: "",
     hashtags: [],
     image: project?.imageUrl ?? "/brand/nuvio-logo-combined.svg",
     published: false,

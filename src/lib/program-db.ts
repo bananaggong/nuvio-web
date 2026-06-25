@@ -101,6 +101,7 @@ function mapProgramToInsert(program: Program): ProgramInsert {
     sourceUrl: program.sourceUrl,
     applyUrl: program.applyUrl,
     phone: program.phone,
+    contactEmail: program.contactEmail ?? null,
     imageUrl: program.image,
     gallery: program.gallery,
     badges: program.badges,

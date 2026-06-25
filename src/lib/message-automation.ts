@@ -5,6 +5,7 @@ import {
 } from "@/lib/host-operations";
 import { isDemoModeEnabled } from "@/lib/demo-mode";
 import { launchFeatureFlags } from "@/lib/launch-feature-flags";
+import { renderMessageTemplateTokens } from "@/lib/message-template-catalog";
 import type {
   HostApplication,
   HostApplicationStatus,
@@ -193,9 +194,10 @@ export function renderMessageTemplate(
   body: string,
   application: HostApplication,
 ): string {
-  return body
-    .replace(/\{name\}/gu, application.applicantName)
-    .replace(/\{program\}/gu, application.programTitle);
+  return renderMessageTemplateTokens(body, {
+    guestName: application.applicantName,
+    programName: application.programTitle,
+  });
 }
 
 function toLocalDatetimeInputValue(date: Date): string {

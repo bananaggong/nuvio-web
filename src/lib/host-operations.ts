@@ -1,4 +1,5 @@
 import { isDemoModeEnabled } from "@/lib/demo-mode";
+import { defaultHostMessageTemplates } from "@/lib/message-template-catalog";
 
 export type HostApplicationStatus =
   | "submitted"
@@ -164,24 +165,12 @@ export const seedHostApplications: HostApplication[] = [
 ];
 
 export const seedMessageTemplates: MessageTemplate[] = [
-  {
-    id: "msg-accepted",
-    name: "승인 안내",
-    trigger: "승인 처리 직후",
-    body: "{name}님, {program} 참여가 확정되었습니다. 결제와 사전 서명을 오늘 안에 완료해 주세요.",
-  },
-  {
-    id: "msg-reminder",
-    name: "참여 전 리마인더",
-    trigger: "시작 2일 전",
-    body: "{name}님, {program} 시작 전 준비물과 집결 장소를 확인해 주세요. 영수증은 누비오에 저장하면 됩니다.",
-  },
-  {
-    id: "msg-review",
-    name: "리뷰 요청",
-    trigger: "종료 다음 날",
-    body: "{name}님, 참여 후기는 지원 조건 확인과 다음 모집 홍보에 사용됩니다. 오늘 안에 리뷰를 남겨주세요.",
-  },
+  ...defaultHostMessageTemplates.map((template) => ({
+    body: template.body,
+    id: template.id,
+    name: template.name,
+    trigger: template.description,
+  })),
 ];
 
 export function summarizeApplications(applications: HostApplication[]) {

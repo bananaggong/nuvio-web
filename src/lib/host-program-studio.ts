@@ -63,6 +63,7 @@ export type HostProgramDraft = {
   sourceUrl: string;
   applyUrl: string;
   phone: string;
+  contactEmail?: string;
   hashtags: string[];
   image: string;
   detailImages: string[];
@@ -128,6 +129,7 @@ export const seedHostProgramDrafts: HostProgramDraft[] = [
     sourceUrl: "https://example.com/notices/gangneung-workation",
     applyUrl: "https://nuvio.kr/programs/draft-gangneung-wave/apply",
     phone: "033-000-1201",
+    contactEmail: "hello@nuvio.kr",
     hashtags: ["워케이션", "강원", "공유오피스"],
     image:
       "https://images.unsplash.com/photo-1507525428034-b723cf961d3e?auto=format&fit=crop&w=1200&q=80",
@@ -200,6 +202,7 @@ export function createHostProgramDraft(): HostProgramDraft {
     sourceUrl: "https://example.com",
     applyUrl: "https://nuvio.kr/apply",
     phone: "000-0000-0000",
+    contactEmail: "",
     hashtags: ["지역체류", "지원사업"],
     image:
       "https://images.unsplash.com/photo-1500534314209-a25ddb2bd429?auto=format&fit=crop&w=1200&q=80",
@@ -241,7 +244,10 @@ export function buildProgramDraftChecklist(
     {
       id: "contact",
       label: "신청/문의 경로",
-      done: draft.applyUrl.trim().length > 0 && draft.phone.trim().length > 0,
+      done:
+        draft.applyUrl.trim().length > 0 &&
+        (draft.phone.trim().length > 0 ||
+          (draft.contactEmail ?? "").trim().length > 0),
       helper: "신청 링크와 문의 연락처를 확인합니다.",
     },
     {

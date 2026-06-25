@@ -142,6 +142,7 @@ function mapProgramRowToProgram(row: ProgramRow): Program {
     sourceUrl: row.sourceUrl,
     applyUrl: row.applyUrl,
     phone: row.phone,
+    contactEmail: row.contactEmail ?? undefined,
     image,
     gallery: normalizeList(row.gallery, [image]),
     badges: normalizeList(row.badges, hashtags.slice(0, 4)),

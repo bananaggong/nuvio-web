@@ -430,6 +430,17 @@ export function HostProgramStudio() {
                     value={selectedDraft.phone}
                   />
                 </label>
+                <label className="grid gap-2">
+                  <span className="text-sm font-black text-slate-700">문의 수신 이메일</span>
+                  <input
+                    className="h-11 w-full min-w-0 rounded-md border border-slate-200 px-3 text-sm outline-none focus:border-[var(--primary)]"
+                    onChange={(event) =>
+                      updateDraft({ contactEmail: event.target.value })
+                    }
+                    type="email"
+                    value={selectedDraft.contactEmail ?? ""}
+                  />
+                </label>
               </div>
               <label className="grid gap-2">
                 <span className="text-sm font-black text-slate-700">해시태그</span>

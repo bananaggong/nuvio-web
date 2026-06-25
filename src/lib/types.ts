@@ -81,6 +81,7 @@ export type Program = {
   sourceUrl: string;
   applyUrl: string;
   phone: string;
+  contactEmail?: string;
   image: string;
   gallery: string[];
   badges: string[];

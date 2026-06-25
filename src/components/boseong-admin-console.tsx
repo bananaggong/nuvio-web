@@ -693,6 +693,7 @@ function createBoseongProgramDraft(): HostProgramDraft {
     sourceUrl: "https://nuvio.kr/boseong",
     applyUrl: "https://nuvio.kr/boseong/programs",
     phone: "061-000-2026",
+    contactEmail: "",
     hashtags: ["보성", "전체차LAB", "청년마을"],
     image:
       "https://upload.wikimedia.org/wikipedia/commons/b/b3/Boseong_Green_Tea_Field.jpg",

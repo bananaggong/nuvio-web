@@ -2723,6 +2723,7 @@ function mapHostDraftToPreviewProgram(draft: HostProgramDraft): Program {
     itineraryDays: rawItineraryDays,
     periodKey: draft.periodKey,
     phone: draft.phone.trim() || "000-0000-0000",
+    contactEmail: (draft.contactEmail ?? "").trim() || undefined,
     placeInfo: draft.placeInfo,
     recruitEnd: draft.recruitEnd,
     recruitStart: draft.recruitStart,
@@ -3266,9 +3267,10 @@ function PlacePanel({
                 value={draft.phone}
               />
               <FigmaTextInput
-                onChange={(sourceUrl) => updateDraft({ sourceUrl })}
-                placeholder="이메일 또는 문의 URL"
-                value={draft.sourceUrl}
+                inputMode="email"
+                onChange={(contactEmail) => updateDraft({ contactEmail })}
+                placeholder="문의 수신 이메일"
+                value={draft.contactEmail ?? ""}
               />
             </div>
           </div>
@@ -3353,9 +3355,10 @@ function PlacePanel({
                 value={draft.phone}
               />
               <FigmaTextInput
-                onChange={(sourceUrl) => updateDraft({ sourceUrl })}
-                placeholder="이메일 또는 문의 URL"
-                value={draft.sourceUrl}
+                inputMode="email"
+                onChange={(contactEmail) => updateDraft({ contactEmail })}
+                placeholder="문의 수신 이메일"
+                value={draft.contactEmail ?? ""}
               />
             </div>
           </div>

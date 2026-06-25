@@ -23,9 +23,9 @@ import {
   hostStandaloneProgramPath,
 } from "@/lib/host-projects";
 import {
-  readMessageTemplates,
   renderMessageTemplate,
 } from "@/lib/message-automation";
+import { useHostMessageTemplates } from "@/lib/use-host-message-templates";
 import type {
   HostScheduledMessage,
   ScheduledMessageDeliveryStatus,
@@ -79,7 +79,7 @@ export function HostMessageAutomation({
     programs: hostPrograms,
     reportProjects,
   } = useHostOperationsData();
-  const [templates] = useState(readMessageTemplates);
+  const { templates } = useHostMessageTemplates();
   const [scheduledMessages, setScheduledMessages] = useState<
     HostScheduledMessage[]
   >([]);

@@ -361,6 +361,7 @@ export function normalizeHostProgramDraft(input: unknown): HostProgramDraft {
     sourceUrl: asString(value.sourceUrl),
     applyUrl: asString(value.applyUrl),
     phone: asString(value.phone),
+    contactEmail: asString(value.contactEmail),
     hashtags: asStringArray(value.hashtags),
     image: asString(value.image),
     detailImages: normalizeHostProgramDetailImages(
@@ -421,6 +422,7 @@ function mapHostDraftToProgramInsert(draft: HostProgramDraft): ProgramInsert {
     sourceUrl: draft.sourceUrl.trim() || "https://www.nuvio.kr",
     applyUrl: draft.applyUrl.trim() || "https://www.nuvio.kr/apply",
     phone: draft.phone.trim() || "000-0000-0000",
+    contactEmail: (draft.contactEmail ?? "").trim() || null,
     imageUrl: image,
     gallery: [image, ...draft.detailImages, ...itineraryImages],
     badges: hashtags.slice(0, 4),
@@ -462,6 +464,7 @@ function mapProgramRowToHostDraft(row: ProgramRow): HostProgramDraft {
     sourceUrl: row.sourceUrl,
     applyUrl: row.applyUrl,
     phone: row.phone,
+    contactEmail: row.contactEmail ?? "",
     hashtags: row.hashtags,
     image: row.imageUrl,
     detailImages: meta.detailImages,

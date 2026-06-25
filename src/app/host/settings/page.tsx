@@ -1,8 +1,8 @@
 import type { Metadata } from "next";
 import Image from "next/image";
 import Link from "next/link";
-import { Pencil } from "lucide-react";
 import type { ReactNode } from "react";
+import { HostNotificationSettingsContent } from "@/components/host-notification-settings";
 import { nuvioIcons } from "@/components/icons/nuvio-icons";
 import { HostTeamSettingsContent } from "@/components/host-team-permission-settings";
 import {
@@ -50,82 +50,6 @@ const settingSections: Array<{
     href: "/host/settings?panel=data",
     key: "data",
     title: "데이터 관리",
-  },
-];
-
-const channelToggles = [
-  ["브라우저 알람", "off"],
-  ["이메일 알람", "off"],
-  ["앱푸시 알람", "ready"],
-] as const;
-
-const notificationToggles = [
-  "새 신청 접수",
-  "새 메세지",
-  "예약 취소",
-  "후기 등록",
-];
-
-const templates = [
-  {
-    body: (
-      <>
-        <TemplateToken>{"{게스트명}"}</TemplateToken>님,{" "}
-        <TemplateToken>{"{프로그램명}"}</TemplateToken> 신청을 해주셔서
-        감사합니다. 검토 후 결과를 안내드릴게요.
-      </>
-    ),
-    description: (
-      <>
-        프로그램 신청시 <strong>자동 발송</strong>되는 메세지 입니다.
-      </>
-    ),
-    title: "신청 완료 템플릿",
-  },
-  {
-    body: (
-      <>
-        <TemplateToken>{"{게스트명}"}</TemplateToken>님,{" "}
-        <TemplateToken>{"{프로그램명}"}</TemplateToken> 예약이 확정되었습니다.
-      </>
-    ),
-    description: (
-      <>
-        프로그램 예약 확정시 <strong>자동 발송</strong>되는 메세지 입니다.
-      </>
-    ),
-    title: "예약 확정 템플릿",
-  },
-  {
-    body: (
-      <>
-        <TemplateToken>{"{게스트명}"}</TemplateToken>님, 이번
-        <TemplateToken>{"{프로그램명}"}</TemplateToken>에 선정되셨습니다! 🎉
-      </>
-    ),
-    description: (
-      <>
-        프로그램 선정된 게스트에게 <strong>버튼 발송</strong>되는 메세지
-        입니다.
-      </>
-    ),
-    title: "선정 안내 템플릿",
-  },
-  {
-    body: (
-      <>
-        <TemplateToken>{"{게스트명}"}</TemplateToken>님, 아쉽게도 이번
-        <TemplateToken>{"{프로그램명}"}</TemplateToken>에 선정되지
-        못하셨습니다.
-      </>
-    ),
-    description: (
-      <>
-        프로그램 탈락된 게스트에게 <strong>버튼 발송</strong>되는 메세지
-        입니다.
-      </>
-    ),
-    title: "탈락 안내 템플릿",
   },
 ];
 
@@ -182,7 +106,7 @@ export default async function HostSettingsPage({
                   />
                 ) : null}
                 {section.key === "notifications" ? (
-                  <NotificationSettingsContent />
+                  <HostNotificationSettingsContent />
                 ) : null}
                 {section.key === "data" ? <DataSettingsContent /> : null}
               </SettingsAccordion>
@@ -259,133 +183,6 @@ function AccordionIcon({ open }: { open: boolean }) {
       />
     </span>
   );
-}
-
-function NotificationSettingsContent() {
-  return (
-    <>
-      <SettingsSubSection title="알람 수신 채널">
-        {channelToggles.map(([label, state]) => (
-          <ToggleLine key={label} label={label} state={state} />
-        ))}
-      </SettingsSubSection>
-
-      <SettingsSubSection title="알람 수신 항목">
-        {notificationToggles.map((label) => (
-          <ToggleLine key={label} label={label} state="off" />
-        ))}
-      </SettingsSubSection>
-
-      <div className="flex w-[var(--host-546)] max-w-full flex-col gap-[var(--host-14)]">
-        <h2 className="text-[var(--host-16)] font-medium leading-[1.253] text-[#0D0D0C]">
-          메세지 템플릿
-        </h2>
-        <p className="text-[var(--host-14)] font-medium leading-[1.253] text-[#6D7A8A]">
-          발송될 메세지의 내용 수정이 가능해요.
-        </p>
-        <div className="flex w-[var(--host-427)] max-w-full flex-col gap-[var(--host-28)]">
-          {templates.map((template) => (
-            <MessageTemplateCard key={template.title} template={template} />
-          ))}
-          <button
-            className="flex w-fit items-center gap-[var(--host-4)] text-[var(--host-12)] font-normal leading-[1.253] text-[#FF9A3D]"
-            type="button"
-          >
-            <span className="grid size-[var(--host-12)] place-items-center rounded-full bg-[#FF9A3D] text-[10px] font-semibold leading-none text-white">
-              +
-            </span>
-            <span>템플릿 추가</span>
-          </button>
-        </div>
-      </div>
-    </>
-  );
-}
-
-function SettingsSubSection({
-  children,
-  title,
-}: {
-  children: ReactNode;
-  title: string;
-}) {
-  return (
-    <div className="flex w-[var(--host-547)] max-w-full flex-col gap-[var(--host-14)] border-b border-[#D9D9D9] pb-[var(--host-20)]">
-      <h2 className="text-[var(--host-16)] font-medium leading-[1.253] text-[#0D0D0C]">
-        {title}
-      </h2>
-      <div className="flex w-full flex-col gap-[var(--host-7)] px-[var(--host-10)]">
-        {children}
-      </div>
-    </div>
-  );
-}
-
-function ToggleLine({
-  label,
-  state,
-}: {
-  label: string;
-  state: "off" | "on" | "ready";
-}) {
-  return (
-    <div className="flex h-[var(--host-20)] w-[var(--host-281)] items-center gap-[var(--host-7)] text-[var(--host-12)] font-normal leading-[1.253] text-[#0D0D0C]">
-      <span className="min-w-0 flex-1">{label}</span>
-      {state === "ready" ? (
-        <span>준비중</span>
-      ) : (
-        <button aria-pressed={state === "on"} type="button">
-          <Image
-            alt=""
-            aria-hidden
-            className="h-[var(--host-20)] w-[var(--host-23)]"
-            height={20}
-            src={
-              state === "on"
-                ? nuvioIcons.formRequiredToggleOn
-                : nuvioIcons.formRequiredToggleOff
-            }
-            width={23}
-          />
-        </button>
-      )}
-    </div>
-  );
-}
-
-function MessageTemplateCard({
-  template,
-}: {
-  template: (typeof templates)[number];
-}) {
-  return (
-    <article className="flex w-full flex-col items-start justify-center rounded-[var(--host-7)] border border-[#F7B267] pb-[var(--host-6)]">
-      <div className="flex w-full flex-col items-start justify-center rounded-t-[var(--host-7)] bg-[#F3F3F3] px-[var(--host-12)] py-[var(--host-8)]">
-        <div className="flex w-full items-center gap-[var(--host-8)]">
-          <h3 className="shrink-0 text-[var(--host-14)] font-semibold leading-[1.253] text-[#0D0D0C]">
-            {template.title}
-          </h3>
-          <span className="flex flex-1 justify-end">
-            <Pencil
-              aria-hidden
-              className="size-[var(--host-13)] text-[#FE701E]"
-              strokeWidth={1.8}
-            />
-          </span>
-        </div>
-        <p className="mt-[var(--host-4)] text-[var(--host-12)] font-normal leading-[1.253] text-[#6D7A8A]">
-          {template.description}
-        </p>
-      </div>
-      <p className="max-w-full overflow-hidden text-ellipsis whitespace-nowrap px-[var(--host-12)] py-[var(--host-8)] text-[var(--host-12)] font-medium leading-[1.253] text-[#6D7A8A]">
-        {template.body}
-      </p>
-    </article>
-  );
-}
-
-function TemplateToken({ children }: { children: ReactNode }) {
-  return <span className="text-[#FE701E]">{children}</span>;
 }
 
 function DataSettingsContent() {

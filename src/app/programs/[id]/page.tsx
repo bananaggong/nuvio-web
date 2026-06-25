@@ -80,6 +80,7 @@ const dummyProgram: Program = {
   sourceUrl: "https://nuvio.kr",
   applyUrl: "#apply",
   phone: "0000-0000-0000",
+  contactEmail: "contact@nuvio.kr",
   image:
     "https://images.unsplash.com/photo-1500530855697-b586d89ba3ee?auto=format&fit=crop&w=1200&q=80",
   gallery: [
@@ -210,6 +211,7 @@ export default async function ProgramDetailPage({
   const scheduleCards = getProgramScheduleItems(program, galleryImages);
   const placeDetails = getProgramPlaceDetails(program);
   const guideDetails = getProgramGuideDetails(program);
+  const contactEmail = program.contactEmail?.trim();
 
   return (
     <div className="font-pretendard bg-white text-[#2B1E17]">
@@ -329,7 +331,13 @@ export default async function ProgramDetailPage({
                   className="flex items-center gap-[11px] text-sm font-medium leading-[1.253] text-[#6D7A8A]"
                 >
                   <Mail aria-hidden="true" className="size-5 text-[#FF9A3D]" />
-                  {program.sourceName}
+                  {contactEmail ? (
+                    <a className="hover:text-[#FE701E]" href={`mailto:${contactEmail}`}>
+                      {contactEmail}
+                    </a>
+                  ) : (
+                    "문의 수신 이메일 미등록"
+                  )}
                 </p>
               </div>
             </div>

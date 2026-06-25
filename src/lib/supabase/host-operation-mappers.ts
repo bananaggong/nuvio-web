@@ -54,6 +54,7 @@ export function mapProgramDraftToProgramInsert(
     sourceUrl: draft.sourceUrl,
     applyUrl: draft.applyUrl,
     phone: draft.phone,
+    contactEmail: (draft.contactEmail ?? "").trim() || null,
     imageUrl: draft.image,
     gallery: [draft.image],
     badges: draft.hashtags.slice(0, 4),

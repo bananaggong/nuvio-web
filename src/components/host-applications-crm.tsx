@@ -36,9 +36,9 @@ import {
 } from "@/lib/display-code";
 import { launchFeatureFlags } from "@/lib/launch-feature-flags";
 import {
-  readMessageTemplates,
   renderMessageTemplate,
 } from "@/lib/message-automation";
+import { useHostMessageTemplates } from "@/lib/use-host-message-templates";
 import { useHostOperationsData } from "@/lib/use-host-operations-data";
 
 type ReviewTab = "all" | "pending" | "accepted" | "rejected";
@@ -150,7 +150,7 @@ export function HostApplicationsCrm({
   const [checkedApplicationIds, setCheckedApplicationIds] = useState<string[]>([]);
   const [applicationFormTemplates, setApplicationFormTemplates] =
     useState<ApplicationFormTemplate[]>([]);
-  const [messageTemplates] = useState(readMessageTemplates);
+  const { templates: messageTemplates } = useHostMessageTemplates();
   const [hostReviews, setHostReviews] =
     useState<HostReviewManagementItem[]>([]);
   const [isStatusDialogOpen, setIsStatusDialogOpen] = useState(false);

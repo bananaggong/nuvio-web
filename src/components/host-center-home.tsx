@@ -598,6 +598,7 @@ function buildStandaloneNewProgramDraft(
     sourceUrl: `https://nuvio.kr/${workspace.slug}`,
     applyUrl: "",
     phone: "",
+    contactEmail: "",
     hashtags: [],
     image: workspace.heroImage || "",
     itineraryDays: [],

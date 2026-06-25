@@ -74,7 +74,8 @@ export function buildProgramPublishChecklist(
     {
       done:
         hasMeaningfulText(draft.fee, ["TBD", "미정", "가격 미정"]) &&
-        hasMeaningfulText(draft.phone, ["000-0000-0000"]) &&
+        (hasMeaningfulText(draft.phone, ["000-0000-0000"]) ||
+          hasMeaningfulText(draft.contactEmail ?? "", [""])) &&
         hasMeaningfulText(draft.sourceName, ["누비오 Host"]),
       helper: "참가비, 문의 연락처, 운영 기관명을 입력해야 합니다.",
       id: "operation",
