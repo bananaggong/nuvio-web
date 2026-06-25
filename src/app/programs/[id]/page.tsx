@@ -29,7 +29,7 @@ import { programs } from "@/lib/data";
 import { isDemoModeEnabled } from "@/lib/demo-mode";
 import { launchFeatureFlags } from "@/lib/launch-feature-flags";
 import {
-  floatingScheduleItems,
+  fallbackScheduleItems,
   getProgramGalleryImages,
   getProgramGuideDetails,
   getProgramIntroParagraphs,
@@ -267,8 +267,8 @@ export default async function ProgramDetailPage({
           >
             <SectionTitle title="여행 일정" />
             <ProgramScheduleCards
+              fallbackItems={fallbackScheduleItems}
               items={scheduleCards}
-              popupItems={floatingScheduleItems}
             />
           </section>
 
@@ -325,15 +325,12 @@ export default async function ProgramDetailPage({
                   <Phone aria-hidden="true" className="size-5 text-[#FF9A3D]" />
                   {program.phone}
                 </p>
-                <a
+                <p
                   className="flex items-center gap-[11px] text-sm font-medium leading-[1.253] text-[#6D7A8A]"
-                  href={program.sourceUrl || "#"}
-                  rel="noreferrer"
-                  target={program.sourceUrl ? "_blank" : undefined}
                 >
                   <Mail aria-hidden="true" className="size-5 text-[#FF9A3D]" />
                   {program.sourceName}
-                </a>
+                </p>
               </div>
             </div>
 
@@ -363,7 +360,7 @@ export default async function ProgramDetailPage({
                   </button>
                   <div
                     aria-label="환불규정 내용 영역"
-                    className="flex min-h-[188px] w-full flex-col justify-center gap-2 rounded-md bg-[#F7F5F3] px-4 py-5 text-xs font-medium leading-[1.65] text-[#6D7A8A] min-[1440px]:min-h-[13.056vw] max-md:w-full"
+                    className="flex w-full flex-col gap-2 rounded-md bg-[#F7F5F3] px-4 py-5 text-xs font-medium leading-[1.65] text-[#6D7A8A] max-md:w-full"
                   >
                     {guideDetails.refundRules.map((rule, index) => (
                       <p className="break-keep" key={`${rule}-${index}`}>

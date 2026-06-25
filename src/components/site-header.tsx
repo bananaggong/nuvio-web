@@ -387,7 +387,7 @@ function ProfileMenuMetric({
   return (
     <Link
       aria-label={`${label} 바로가기`}
-      className="flex min-w-0 flex-col items-center justify-center gap-[0.278vw] rounded-[0.278vw] text-center transition-colors hover:bg-[#FFF6EC] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[#FF9A3D]"
+      className="flex min-w-0 flex-col items-center justify-center gap-[0.278vw] rounded-[0.278vw] text-center focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[#FF9A3D]"
       href={href}
     >
       <Icon

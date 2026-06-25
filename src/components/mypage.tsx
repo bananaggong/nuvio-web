@@ -26,6 +26,7 @@ import {
   useMemo,
   useRef,
   useState,
+  type CSSProperties,
   type ComponentType,
   type FormEvent,
   type MouseEvent as ReactMouseEvent,
@@ -244,6 +245,28 @@ const EMPTY_PROGRAM_STATE: ProgramStateMaps = {
   tracks: {},
 };
 
+const mypageScaleStyle = {
+  "--mypage-scale": "clamp(1, calc(min(100vw, 1920px) / 1440), 1.333333)",
+  "--mypage-shell": "clamp(1025px, 71.181vw, 1366.667px)",
+  "--mypage-sidebar": "clamp(80px, 5.556vw, 106.667px)",
+  "--mypage-gap": "clamp(50px, 3.472vw, 66.667px)",
+  "--mypage-orange": "#FE701E",
+  "--mypage-brown": "#5B3A29",
+  "--mypage-muted": "#C7BDB5",
+  "--mypage-line": "#F3E2D5",
+  "--mypage-olive": "#7F9154",
+} as CSSProperties;
+
+const nuvioIconSources = {
+  bookmark: "/icons/nuvio/bookmark.svg",
+  calendar: "/icons/nuvio/calendar.svg",
+  mail: "/icons/nuvio/mail.svg",
+  message: "/icons/nuvio/message.svg",
+  phone: "/icons/nuvio/phone.svg",
+  settings: "/icons/nuvio/settings.svg",
+  user: "/icons/nuvio/user.svg",
+} as const;
+
 const tripStatusLabels: Record<HostApplication["status"], string> = {
   accepted: "여행예정",
   checkedIn: "여행중",
@@ -405,17 +428,27 @@ function MypageFrame({
     await fetch("/api/auth/logout", { method: "POST" });
     window.location.href = "/";
   }
+  const topPaddingClass = showOverview
+    ? "pt-[clamp(62px,4.3056vw,82.667px)]"
+    : activeSection === "member"
+      ? "pt-[clamp(8px,0.5556vw,10.667px)]"
+      : "pt-[clamp(32px,2.2222vw,42.667px)]";
 
   return (
-    <div className="font-pretendard min-h-screen bg-white text-[#4B3328]">
-      <main className="mx-auto w-full px-5 pb-24 pt-[clamp(44px,5.694vw,82px)] lg:w-[75vw] lg:max-w-[1440px] lg:px-0">
+    <div
+      className="font-pretendard min-h-screen overflow-x-clip bg-white text-[var(--mypage-brown)]"
+      style={mypageScaleStyle}
+    >
+      <main
+        className={`mx-auto w-full px-5 pb-[clamp(72px,5vw,96px)] lg:w-[var(--mypage-shell)] lg:px-0 ${topPaddingClass}`}
+      >
         {showOverview ? <MypageOverview context={context} /> : null}
 
         <div
           className={
             showOverview
-              ? "mt-[20px] grid gap-10 lg:grid-cols-[80px_minmax(0,1fr)] lg:gap-[50px]"
-              : "grid gap-10 lg:grid-cols-[80px_minmax(0,1fr)] lg:gap-[50px]"
+              ? "mt-[clamp(20px,1.3889vw,26.667px)] grid gap-10 lg:grid-cols-[var(--mypage-sidebar)_minmax(0,1fr)] lg:gap-[var(--mypage-gap)]"
+              : "grid gap-10 lg:grid-cols-[var(--mypage-sidebar)_minmax(0,1fr)] lg:gap-[var(--mypage-gap)]"
           }
         >
           <MypageSideMenu
@@ -434,18 +467,18 @@ function MypageOverview({ context }: { context: MypageContext }) {
   return (
     <>
       <header className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-        <h1 className="text-[24px] font-semibold leading-tight tracking-normal text-[#4B3328]">
+        <h1 className="text-[clamp(24px,1.6667vw,32px)] font-semibold leading-tight tracking-normal text-[var(--mypage-brown)]">
           {context.profileName} 누비어님, 안녕하세요.
         </h1>
         <Link
-          className="inline-flex h-[30px] w-fit items-center justify-center rounded-[4px] border border-[#d9d9d9] px-4 text-[12px] font-medium text-[#6B5145] transition hover:border-[#ffa143] hover:text-[#f7983a]"
+          className="inline-flex h-[clamp(30px,2.0833vw,40px)] w-fit items-center justify-center rounded-[clamp(4px,0.2778vw,5.333px)] border border-[#d9d9d9] px-[clamp(16px,1.1111vw,21.333px)] text-[clamp(12px,0.8333vw,16px)] font-medium text-[#6B5145] transition hover:border-[#ffa143] hover:text-[var(--mypage-orange)]"
           href={context.signedIn ? "/mypage/member-information" : "/login"}
         >
           회원 정보 수정하기
         </Link>
       </header>
 
-      <section className="mt-[32px] grid gap-4 lg:grid-cols-[minmax(0,1fr)_286px]">
+      <section className="mt-[clamp(32px,2.2222vw,42.667px)] grid gap-[clamp(12px,0.8333vw,16px)] lg:grid-cols-[minmax(0,1fr)_clamp(220px,15.2778vw,293.333px)]">
         <ProfileSummaryCard
           avatarUrl={context.authSession.profile?.avatarUrl}
           bookmarkCount={context.bookmarkedPrograms.length}
@@ -473,7 +506,7 @@ function MypageHomeContent({ context }: { context: MypageContext }) {
   return (
     <>
       <DashboardSection heading="내 여행 프로그램" href="/mypage/trips">
-        <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
+        <div className="grid gap-[clamp(26px,1.8056vw,34.667px)] sm:grid-cols-2 lg:grid-cols-[repeat(4,clamp(100px,6.9444vw,133.333px))]">
           {tripSlots.map((slot, index) => (
             <TripMiniCard
               application={slot.application}
@@ -485,9 +518,13 @@ function MypageHomeContent({ context }: { context: MypageContext }) {
         </div>
       </DashboardSection>
 
-      <DashboardSection className="mt-[56px]" heading="최근 본 프로그램" href="/programs">
+      <DashboardSection
+        className="mt-[clamp(56px,3.8889vw,74.667px)]"
+        heading="최근 본 프로그램"
+        href="/programs"
+      >
         {context.recentlyViewedPrograms.length > 0 ? (
-          <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
+          <div className="grid gap-[clamp(26px,1.8056vw,34.667px)] sm:grid-cols-2 lg:grid-cols-[repeat(4,clamp(100px,6.9444vw,133.333px))]">
             {context.recentlyViewedPrograms.slice(0, 4).map((program) => (
               <ProgramMiniCard key={program.id} program={program} />
             ))}
@@ -502,6 +539,7 @@ function MypageHomeContent({ context }: { context: MypageContext }) {
 
 function TripsContent({ context }: { context: MypageContext }) {
   const [tab, setTab] = useState<"planned" | "completed" | "cancelled">("planned");
+  const [readyNoticeOpen, setReadyNoticeOpen] = useState(false);
   const filteredApplications = context.applications.filter((application) => {
     if (tab === "planned") {
       return ["submitted", "screening", "accepted", "checkedIn"].includes(
@@ -511,60 +549,60 @@ function TripsContent({ context }: { context: MypageContext }) {
     if (tab === "completed") return application.status === "completed";
     return application.status === "rejected";
   });
+  const tabItems = [
+    { key: "planned" as const, label: "예정된 여행" },
+    { key: "completed" as const, label: "여행완료" },
+    { key: "cancelled" as const, label: "취소된 여행" },
+  ];
 
   return (
-    <section>
-      <PageTitle
-        eyebrow="MY TRIP"
-        title="내 여행 프로그램"
-        trailing={`${context.applications.length}건`}
-      />
-      <SegmentedTabs
+    <section className="min-h-[clamp(420px,29.1667vw,560px)]">
+      <TripFrameTabs
         active={tab}
-        items={[
-          { key: "planned", label: "예정된 여행" },
-          { key: "completed", label: "여행완료" },
-          { key: "cancelled", label: "취소된 여행" },
-        ]}
+        items={tabItems}
         onChange={setTab}
       />
-      <div className="mt-6 grid gap-4">
+      <div className="mt-[clamp(12px,0.8333vw,16px)]">
         {context.loading ? (
           <ListSkeleton count={3} />
         ) : filteredApplications.length > 0 ? (
-          filteredApplications.map((application) => {
-            const reviewAction =
-              launchFeatureFlags.reviews && tab === "completed"
-                ? getCompletedTripReviewAction(application)
-                : undefined;
-
-            return (
+          <div className="grid gap-0">
+            {filteredApplications.map((application) => (
               <TripDetailCard
-                actionHref={reviewAction?.href}
-                actionLabel={reviewAction?.label}
+                actionLabel={
+                  tab === "completed"
+                    ? application.reviewSubmitted
+                      ? "후기 보기"
+                      : "후기 작성"
+                    : undefined
+                }
                 application={application}
                 key={application.id}
+                onActionClick={
+                  tab === "completed" ? () => setReadyNoticeOpen(true) : undefined
+                }
                 program={findProgramForApplication(application, context.publicPrograms)}
               />
-            );
-          })
+            ))}
+          </div>
         ) : (
-          <EmptyState
-            icon={CalendarDays}
-            title="아직 여행 프로그램이 없어요"
-            actionHref="/programs"
-            actionLabel="프로그램 찾아보기"
+          <TripEmptyPanel
+            message={
+              tab === "cancelled"
+                ? "취소된 여행이 없어요"
+                : tab === "completed"
+                  ? "완료된 여행이 없어요"
+                  : "예정된 여행이 없어요"
+            }
           />
         )}
       </div>
+      <ReadyNoticeToast
+        open={readyNoticeOpen}
+        onClose={() => setReadyNoticeOpen(false)}
+      />
     </section>
   );
-}
-
-function getCompletedTripReviewAction(application: HostApplication) {
-  return application.reviewSubmitted
-    ? { href: "/mypage/reviews", label: "후기 보기" }
-    : { href: "/reviews/new", label: "후기 작성하기" };
 }
 
 function ReviewsContent({ context }: { context: MypageContext }) {
@@ -2103,13 +2141,13 @@ function MemberInformationForm({
 
   return (
     <>
-      <section className="w-full pt-0 lg:min-h-[546px]">
-        <div className="w-full max-w-[1080px]">
-          <div className="mb-[34px] grid grid-cols-[112px_minmax(0,1fr)] gap-[32px] border-b border-[#eaded6] pb-[30px] max-md:grid-cols-1">
+      <section className="w-full pt-0 lg:min-h-[clamp(430px,29.8611vw,573.333px)]">
+        <div className="relative min-h-[clamp(363px,25.2083vw,484px)] w-full max-w-[clamp(724px,50.2778vw,965.333px)]">
+          <div className="absolute left-0 top-0 z-10">
             <div className="grid content-start justify-items-center gap-3">
               <button
                 aria-label="프로필 이미지 변경"
-                className="relative grid size-[96px] place-items-center overflow-hidden rounded-full bg-[#d9d9d9] bg-cover bg-center !text-[22px] font-semibold text-white transition disabled:cursor-default"
+                className="relative grid size-[clamp(63px,4.375vw,84px)] place-items-center overflow-hidden rounded-full bg-[#d9d9d9] bg-cover bg-center !text-[clamp(18px,1.25vw,24px)] font-semibold text-white transition disabled:cursor-default"
                 disabled={!editMode || avatarUploading}
                 onClick={() => avatarInputRef.current?.click()}
                 style={
@@ -2121,7 +2159,7 @@ function MemberInformationForm({
                 {editMode ? (
                   <span
                     aria-hidden="true"
-                    className="absolute bottom-[6px] right-[6px] grid size-[22px] place-items-center rounded-full bg-[#ff6f1a] !text-[15px] leading-none text-white shadow-[0_2px_8px_rgba(0,0,0,0.12)]"
+                    className="absolute bottom-0 right-[clamp(6px,0.4167vw,8px)] grid size-[clamp(12px,0.8333vw,16px)] place-items-center rounded-full bg-[#ff8a2a] !text-[clamp(11px,0.7639vw,14.667px)] leading-none text-white shadow-[0_2px_8px_rgba(0,0,0,0.12)]"
                   >
                     +
                   </span>
@@ -2140,7 +2178,7 @@ function MemberInformationForm({
                 />
               ) : null}
             </div>
-            <div className="grid content-start gap-[14px] pt-[3px]">
+            <div className="hidden">
               <div>
                 <h2 className="!text-[20px] font-semibold leading-[1.35] tracking-normal text-[#4B3328]">
                   회원 정보
@@ -2180,8 +2218,8 @@ function MemberInformationForm({
 
           {editMode ? (
             <>
-              <div className="grid gap-y-[26px]">
-          <div className="grid gap-x-6 gap-y-4 md:grid-cols-[58px_minmax(150px,1fr)_70px_minmax(190px,1.2fr)_50px_132px] md:items-center xl:grid-cols-[64px_minmax(190px,1fr)_76px_minmax(230px,1.2fr)_56px_150px]">
+              <div className="grid gap-y-[clamp(13px,0.9028vw,17.333px)] pl-[clamp(15px,1.0417vw,20px)] pt-[clamp(70px,4.8611vw,93.333px)]">
+          <div className="grid gap-x-[clamp(13px,0.9028vw,17.333px)] gap-y-3 md:grid-cols-[clamp(50px,3.4722vw,66.667px)_clamp(145px,10.0694vw,193.333px)_clamp(60px,4.1667vw,80px)_clamp(200px,13.8889vw,266.667px)_clamp(45px,3.125vw,60px)_clamp(160px,11.1111vw,213.333px)] md:items-center">
             <MemberLabel>이름</MemberLabel>
             <MemberLineInput
               onChange={(value) => setForm((current) => ({ ...current, name: value }))}
@@ -2189,7 +2227,7 @@ function MemberInformationForm({
               value={form.name}
             />
             <MemberLabel>닉네임</MemberLabel>
-            <div className="flex min-w-0 items-center gap-3">
+            <div className="flex min-w-0 items-center gap-[clamp(8px,0.5556vw,10.667px)]">
               <MemberLineInput
                 onChange={(value) =>
                   setForm((current) => ({ ...current, nickname: value }))
@@ -2202,10 +2240,10 @@ function MemberInformationForm({
               </MemberSmallButton>
             </div>
             <MemberLabel>성별</MemberLabel>
-            <div className="flex items-center gap-[5px]">
+            <div className="flex items-center gap-[clamp(5px,0.3472vw,6.667px)]">
               {(["female", "male", "neutral"] as const).map((gender) => (
                 <button
-                  className={`h-[32px] rounded-[4px] px-[11px] !text-[13px] font-medium transition ${
+                  className={`h-[clamp(22px,1.5278vw,29.333px)] shrink-0 whitespace-nowrap rounded-[clamp(3px,0.2083vw,4px)] px-[clamp(8px,0.5556vw,10.667px)] !text-[clamp(11px,0.7639vw,14.667px)] font-medium transition ${
                     form.gender === gender
                       ? "bg-[#ff8a2a] text-white"
                       : "bg-[#f1f1f1] text-[#b5aaa4]"
@@ -2214,16 +2252,16 @@ function MemberInformationForm({
                   onClick={() => setForm((current) => ({ ...current, gender }))}
                   type="button"
                 >
-                  {gender === "female" ? "여성" : gender === "male" ? "남성" : "선택 없음"}
+                  {gender === "female" ? "여성" : gender === "male" ? "남성" : "중성"}
                 </button>
               ))}
             </div>
           </div>
 
-          <div className="grid gap-x-6 gap-y-4 md:grid-cols-[58px_minmax(220px,1fr)_76px_minmax(180px,1.2fr)] md:items-center xl:grid-cols-[64px_minmax(260px,1fr)_86px_minmax(220px,1.2fr)]">
+          <div className="grid gap-x-[clamp(13px,0.9028vw,17.333px)] gap-y-3 md:grid-cols-[clamp(50px,3.4722vw,66.667px)_clamp(220px,15.2778vw,293.333px)_clamp(72px,5vw,96px)_clamp(220px,15.2778vw,293.333px)] md:items-center">
             <MemberLabel>아이디</MemberLabel>
             {isPasswordManagedAccount ? (
-              <div className="flex min-w-0 items-center gap-3">
+              <div className="flex min-w-0 items-center gap-[clamp(8px,0.5556vw,10.667px)]">
                 <MemberLineInput
                   onChange={(value) =>
                     setForm((current) => ({ ...current, loginId: value }))
@@ -2252,9 +2290,9 @@ function MemberInformationForm({
             )}
           </div>
 
-          <div className="grid gap-x-6 gap-y-4 md:grid-cols-[58px_minmax(360px,1.35fr)_76px_minmax(220px,0.8fr)] md:items-center xl:grid-cols-[64px_minmax(440px,1.35fr)_86px_minmax(260px,0.8fr)]">
+          <div className="grid gap-x-[clamp(13px,0.9028vw,17.333px)] gap-y-3 md:grid-cols-[clamp(50px,3.4722vw,66.667px)_clamp(360px,25vw,480px)_clamp(62px,4.3056vw,82.667px)_clamp(190px,13.1944vw,253.333px)] md:items-center">
             <MemberLabel>이메일</MemberLabel>
-            <div className="grid min-w-0 grid-cols-[minmax(90px,0.9fr)_auto_minmax(120px,1fr)_132px] items-center gap-3">
+            <div className="grid min-w-0 grid-cols-[minmax(90px,0.9fr)_auto_minmax(112px,1fr)_minmax(112px,1fr)] items-center gap-[clamp(8px,0.5556vw,10.667px)]">
               <MemberLineInput
                 onChange={(value) =>
                   setForm((current) => ({ ...current, emailId: value }))
@@ -2297,7 +2335,7 @@ function MemberInformationForm({
               </MemberLineSelect>
             </div>
             <MemberLabel>연락처</MemberLabel>
-            <div className="flex min-w-0 items-center gap-3">
+            <div className="flex min-w-0 items-center gap-[clamp(8px,0.5556vw,10.667px)]">
               <MemberLineInput
                 onChange={(value) =>
                   setForm((current) => ({ ...current, phone: value }))
@@ -2311,7 +2349,7 @@ function MemberInformationForm({
             </div>
           </div>
 
-          <div className="grid gap-x-3 gap-y-4 md:grid-cols-[58px_minmax(260px,320px)_86px_minmax(220px,300px)] md:items-center xl:grid-cols-[64px_minmax(300px,360px)_94px_minmax(240px,320px)]">
+          <div className="grid gap-x-[clamp(10px,0.6944vw,13.333px)] gap-y-3 md:grid-cols-[clamp(50px,3.4722vw,66.667px)_clamp(270px,18.75vw,360px)_clamp(75px,5.2083vw,100px)_clamp(260px,18.0556vw,346.667px)] md:items-center">
             <MemberLabel>주소</MemberLabel>
             <MemberLineInput
               onChange={(value) =>
@@ -2340,9 +2378,9 @@ function MemberInformationForm({
             />
           </div>
 
-          <div className="grid gap-x-6 gap-y-4 md:grid-cols-[58px_minmax(260px,1fr)] md:items-center xl:grid-cols-[64px_minmax(320px,1fr)]">
+          <div className="grid gap-x-[clamp(13px,0.9028vw,17.333px)] gap-y-3 md:grid-cols-[clamp(50px,3.4722vw,66.667px)_clamp(330px,22.9167vw,440px)] md:items-center">
             <MemberLabel>생년월일</MemberLabel>
-            <div className="grid max-w-[340px] grid-cols-[minmax(112px,1fr)_minmax(82px,0.7fr)_minmax(82px,0.7fr)] gap-4">
+            <div className="grid grid-cols-[minmax(112px,1fr)_minmax(82px,0.7fr)_minmax(82px,0.7fr)] gap-[clamp(12px,0.8333vw,16px)]">
               <MemberLineSelect
                 ariaLabel="출생 연도"
                 onChange={(value) =>
@@ -2395,7 +2433,7 @@ function MemberInformationForm({
             </div>
           </div>
 
-          <div className="mt-[18px] grid gap-x-6 gap-y-4 md:grid-cols-[58px_minmax(260px,340px)] md:items-center xl:grid-cols-[64px_minmax(300px,380px)]">
+          <div className="mt-[clamp(9px,0.625vw,12px)] grid gap-x-[clamp(13px,0.9028vw,17.333px)] gap-y-3 md:grid-cols-[clamp(50px,3.4722vw,66.667px)_clamp(340px,23.6111vw,453.333px)] md:items-center">
             <MemberLabel>결제정보</MemberLabel>
             <MemberLineInput
               onChange={(value) =>
@@ -2406,7 +2444,7 @@ function MemberInformationForm({
             />
           </div>
 
-          <div className="grid gap-x-4 gap-y-4 md:grid-cols-[58px_minmax(150px,180px)_minmax(240px,320px)] md:items-center xl:grid-cols-[64px_minmax(170px,200px)_minmax(280px,360px)]">
+          <div className="grid gap-x-[clamp(12px,0.8333vw,16px)] gap-y-3 md:grid-cols-[clamp(50px,3.4722vw,66.667px)_clamp(170px,11.8056vw,226.667px)_clamp(300px,20.8333vw,400px)] md:items-center">
             <MemberLabel>환불계좌</MemberLabel>
             <MemberLineInput
               onChange={(value) =>
@@ -2425,7 +2463,7 @@ function MemberInformationForm({
           </div>
         </div>
 
-        <div className="mt-[78px] flex flex-col gap-3 md:flex-row md:items-center md:justify-end">
+        <div className="mt-[clamp(24px,1.6667vw,32px)] flex flex-col gap-3 md:flex-row md:items-center md:justify-end">
           <p className="min-h-5 text-right text-[13px] text-[#8F7A6C] md:mr-4">
             {status}
           </p>
@@ -2560,8 +2598,8 @@ function MemberInformationReadOnly({
 
   return (
     <>
-      <div className="grid gap-y-[24px]">
-        <div className="grid gap-x-6 gap-y-4 md:grid-cols-[64px_minmax(210px,1fr)_76px_minmax(250px,1.2fr)_56px_150px] md:items-center">
+      <div className="grid gap-y-[clamp(13px,0.9028vw,17.333px)] pl-[clamp(15px,1.0417vw,20px)] pt-[clamp(70px,4.8611vw,93.333px)]">
+        <div className="grid gap-x-[clamp(13px,0.9028vw,17.333px)] gap-y-3 md:grid-cols-[clamp(50px,3.4722vw,66.667px)_clamp(145px,10.0694vw,193.333px)_clamp(60px,4.1667vw,80px)_clamp(200px,13.8889vw,266.667px)_clamp(45px,3.125vw,60px)_clamp(160px,11.1111vw,213.333px)] md:items-center">
           <MemberLabel>이름</MemberLabel>
           <MemberTextValue>{form.name || "-"}</MemberTextValue>
           <MemberLabel>닉네임</MemberLabel>
@@ -2570,7 +2608,7 @@ function MemberInformationReadOnly({
           <MemberTextValue>{genderLabel(form.gender)}</MemberTextValue>
         </div>
 
-        <div className="grid gap-x-6 gap-y-4 md:grid-cols-[64px_minmax(260px,1fr)_86px_minmax(220px,1.2fr)] md:items-center">
+        <div className="grid gap-x-[clamp(13px,0.9028vw,17.333px)] gap-y-3 md:grid-cols-[clamp(50px,3.4722vw,66.667px)_clamp(220px,15.2778vw,293.333px)_clamp(72px,5vw,96px)_clamp(220px,15.2778vw,293.333px)] md:items-center">
           <MemberLabel>아이디</MemberLabel>
           <MemberTextValue>
             {isPasswordManagedAccount
@@ -2583,35 +2621,35 @@ function MemberInformationReadOnly({
           </MemberTextValue>
         </div>
 
-        <div className="grid gap-x-6 gap-y-4 md:grid-cols-[64px_minmax(440px,1.35fr)_86px_minmax(260px,0.8fr)] md:items-center">
+        <div className="grid gap-x-[clamp(13px,0.9028vw,17.333px)] gap-y-3 md:grid-cols-[clamp(50px,3.4722vw,66.667px)_clamp(360px,25vw,480px)_clamp(62px,4.3056vw,82.667px)_clamp(190px,13.1944vw,253.333px)] md:items-center">
           <MemberLabel>이메일</MemberLabel>
           <MemberTextValue>{email || "-"}</MemberTextValue>
           <MemberLabel>연락처</MemberLabel>
           <MemberTextValue>{form.phone || "-"}</MemberTextValue>
         </div>
 
-        <div className="grid gap-x-6 gap-y-4 md:grid-cols-[64px_minmax(760px,1fr)] md:items-center">
+        <div className="grid gap-x-[clamp(13px,0.9028vw,17.333px)] gap-y-3 md:grid-cols-[clamp(50px,3.4722vw,66.667px)_minmax(0,1fr)] md:items-center">
           <MemberLabel>주소</MemberLabel>
           <MemberTextValue>{fullAddress || "-"}</MemberTextValue>
         </div>
 
-        <div className="grid gap-x-6 gap-y-4 md:grid-cols-[64px_minmax(320px,1fr)] md:items-center">
+        <div className="grid gap-x-[clamp(13px,0.9028vw,17.333px)] gap-y-3 md:grid-cols-[clamp(50px,3.4722vw,66.667px)_clamp(330px,22.9167vw,440px)] md:items-center">
           <MemberLabel>생년월일</MemberLabel>
           <MemberTextValue>{birthDate || "-"}</MemberTextValue>
         </div>
 
-        <div className="mt-[18px] grid gap-x-6 gap-y-4 md:grid-cols-[64px_minmax(520px,1fr)] md:items-center">
+        <div className="mt-[clamp(9px,0.625vw,12px)] grid gap-x-[clamp(13px,0.9028vw,17.333px)] gap-y-3 md:grid-cols-[clamp(50px,3.4722vw,66.667px)_clamp(340px,23.6111vw,453.333px)] md:items-center">
           <MemberLabel>결제정보</MemberLabel>
           <MemberTextValue>{form.paymentMethod || "-"}</MemberTextValue>
         </div>
 
-        <div className="grid gap-x-6 gap-y-4 md:grid-cols-[64px_minmax(700px,1fr)] md:items-center">
+        <div className="grid gap-x-[clamp(13px,0.9028vw,17.333px)] gap-y-3 md:grid-cols-[clamp(50px,3.4722vw,66.667px)_minmax(0,1fr)] md:items-center">
           <MemberLabel>환불계좌</MemberLabel>
           <MemberTextValue>{refundAccount || "-"}</MemberTextValue>
         </div>
       </div>
 
-      <div className="mt-[78px] flex flex-col gap-3 md:flex-row md:items-center md:justify-end">
+      <div className="mt-[clamp(24px,1.6667vw,32px)] flex flex-col gap-3 md:flex-row md:items-center md:justify-end">
         <p className="min-h-5 text-right text-[13px] text-[#8F7A6C] md:mr-4">
           {status}
         </p>
@@ -2719,29 +2757,29 @@ function ProfileSummaryCard({
   tripCount: number;
 }) {
   return (
-    <section className="rounded-[6px] border border-[#d9d9d9] bg-white px-6 py-6">
-      <div className="flex flex-col gap-7 md:flex-row md:items-center">
-        <div className="flex shrink-0 flex-col items-center gap-3 md:w-[90px]">
+    <section className="rounded-[clamp(4px,0.2778vw,5.333px)] border border-[#d9d9d9] bg-white px-[clamp(48px,3.3333vw,64px)] py-[clamp(24px,1.6667vw,32px)]">
+      <div className="flex flex-col gap-[clamp(36px,2.5vw,48px)] md:flex-row md:items-center">
+        <div className="flex shrink-0 flex-col items-center gap-[clamp(10px,0.6944vw,13.333px)] md:w-[clamp(82px,5.6944vw,109.333px)]">
           <span
             aria-hidden="true"
-            className="grid size-[54px] place-items-center rounded-full bg-[#d9d9d9] bg-cover bg-center text-[14px] font-semibold text-white"
+            className="grid size-[clamp(54px,3.75vw,72px)] place-items-center rounded-full bg-[#d9d9d9] bg-cover bg-center text-[clamp(14px,0.9722vw,18.667px)] font-semibold text-white"
             style={
               avatarUrl ? { backgroundImage: `url(${avatarUrl})` } : undefined
             }
           >
             {avatarUrl ? null : getInitial(nickname)}
           </span>
-          <span className="max-w-[90px] truncate text-[13px] font-semibold text-[#4B3328]">
+          <span className="max-w-[clamp(90px,6.25vw,120px)] truncate text-[clamp(13px,0.9028vw,17.333px)] font-semibold text-[#8F98A3]">
             {nickname}
           </span>
         </div>
 
-        <div className="grid flex-1 grid-cols-2 gap-y-5 sm:grid-cols-3">
-          <SummaryMetric icon={CalendarDays} label="내 여행" value={tripCount} />
-          <SummaryMetric icon={Bookmark} label="저장" value={bookmarkCount} />
+        <div className="grid flex-1 grid-cols-3 gap-y-[clamp(18px,1.25vw,24px)]">
+          <SummaryMetric iconName="calendar" label="예약 일정" value={tripCount} />
+          <SummaryMetric iconName="bookmark" label="북마크" value={bookmarkCount} />
           <SummaryMetric
             href="/mypage/messages"
-            icon={MessageCircle}
+            iconName="message"
             label="메시지"
             value={messageCount}
           />
@@ -2753,15 +2791,9 @@ function ProfileSummaryCard({
 
 function WalletSummaryCard({ pointCount }: { pointCount: number }) {
   return (
-    <section className="rounded-[6px] border border-[#d9d9d9] bg-white px-6 py-6">
-      <div className="grid h-full min-h-[96px] content-center gap-5">
+    <section className="rounded-[clamp(4px,0.2778vw,5.333px)] border border-[#d9d9d9] bg-white px-[clamp(24px,1.6667vw,32px)] py-[clamp(22px,1.5278vw,29.333px)]">
+      <div className="grid h-full min-h-[clamp(96px,6.6667vw,128px)] content-center gap-[clamp(18px,1.25vw,24px)]">
         <WalletLine label="포인트" unit="P" value={pointCount} />
-        {launchFeatureFlags.coupons ? (
-          <>
-            <div className="h-px bg-[#d9d9d9]" />
-            <WalletLine label="쿠폰" unit="개" value={0} />
-          </>
-        ) : null}
       </div>
     </section>
   );
@@ -2769,27 +2801,31 @@ function WalletSummaryCard({ pointCount }: { pointCount: number }) {
 
 function SummaryMetric({
   href,
-  icon: Icon,
+  iconName,
   label,
   value,
 }: {
   href?: string;
-  icon: ComponentType<{ className?: string; size?: number; strokeWidth?: number }>;
+  iconName: keyof typeof nuvioIconSources;
   label: string;
   value: number;
 }) {
   const content = (
     <>
-      <Icon className="text-[#8B9F67]" size={20} strokeWidth={1.8} />
-      <span className="text-[12px] font-medium text-[#6F7E56]">{label}</span>
-      <span className="text-[13px] font-semibold text-[#4B3328]">{value}</span>
+      <NuvioAssetIcon alt="" name={iconName} size={18} />
+      <span className="text-[clamp(12px,0.8333vw,16px)] font-medium text-[#6F7E56]">
+        {label}
+      </span>
+      <span className="text-[clamp(16px,1.1111vw,21.333px)] font-semibold text-[#748190]">
+        {value}
+      </span>
     </>
   );
 
   if (href) {
     return (
       <Link
-        className="flex flex-col items-center gap-2 rounded-[8px] text-center transition hover:text-[#FE701E] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[#FE701E]"
+        className="flex flex-col items-center gap-[clamp(7px,0.4861vw,9.333px)] rounded-[clamp(8px,0.5556vw,10.667px)] text-center transition hover:text-[#FE701E] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[#FE701E]"
         href={href}
       >
         {content}
@@ -2798,7 +2834,7 @@ function SummaryMetric({
   }
 
   return (
-    <div className="flex flex-col items-center gap-2 text-center">
+    <div className="flex flex-col items-center gap-[clamp(7px,0.4861vw,9.333px)] text-center">
       {content}
     </div>
   );
@@ -2814,10 +2850,11 @@ function WalletLine({
   value: number;
 }) {
   return (
-    <div className="flex items-center justify-between text-[16px] font-semibold text-[#4B3328]">
+    <div className="flex items-center justify-between text-[clamp(16px,1.1111vw,21.333px)] font-semibold text-[var(--mypage-brown)]">
       <span>{label}</span>
-      <span className="text-[#f7983a]">
-        {value.toLocaleString("ko-KR")} <span className="text-[#4B3328]">{unit}</span>
+      <span className="text-[var(--mypage-orange)]">
+        {value.toLocaleString("ko-KR")}{" "}
+        <span className="text-[var(--mypage-brown)]">{unit}</span>
       </span>
     </div>
   );
@@ -2836,7 +2873,7 @@ function MypageSideMenu({
   const supportActive = activeSection === "support" || pathname === "/support";
 
   return (
-    <aside className="flex gap-3 overflow-x-auto pb-2 lg:block lg:space-y-[13px] lg:overflow-visible lg:pb-0">
+    <aside className="flex gap-3 overflow-x-auto pb-2 lg:block lg:space-y-[clamp(13px,0.9028vw,17.333px)] lg:overflow-visible lg:pb-0">
       {visibleSideMenuItems.map((item) => (
         <SideMenuLink
           active={item.section === activeSection || pathname === item.href}
@@ -2847,8 +2884,8 @@ function MypageSideMenu({
         />
       ))}
       <Link
-        className={`flex shrink-0 items-center gap-2 text-[14px] font-medium transition lg:w-full ${
-          supportActive ? "text-[#f7983a]" : "text-[#4B3328] hover:text-[#f7983a]"
+        className={`flex shrink-0 items-center gap-2 text-[clamp(14px,0.9722vw,18.667px)] font-medium transition lg:w-full ${
+          supportActive ? "text-[var(--mypage-orange)]" : "text-[var(--mypage-brown)] hover:text-[var(--mypage-orange)]"
         }`}
         href="/support"
       >
@@ -2856,7 +2893,7 @@ function MypageSideMenu({
         고객센터
       </Link>
       <button
-        className="flex shrink-0 items-center gap-2 text-left text-[14px] font-medium text-[#b6a79f] transition hover:text-[#f7983a] disabled:cursor-not-allowed disabled:text-[#d5cbc5] lg:w-full"
+        className="flex shrink-0 items-center gap-2 text-left text-[clamp(14px,0.9722vw,18.667px)] font-medium text-[#b6a79f] transition hover:text-[var(--mypage-orange)] disabled:cursor-not-allowed disabled:text-[#d5cbc5] lg:w-full"
         disabled={!signedIn}
         onClick={onLogout}
         type="button"
@@ -2881,8 +2918,8 @@ function SideMenuLink({
 }) {
   return (
     <Link
-      className={`flex shrink-0 items-center gap-2 text-[14px] font-medium transition lg:w-full ${
-        active ? "text-[#f7983a]" : "text-[#4B3328] hover:text-[#f7983a]"
+      className={`flex shrink-0 items-center gap-2 text-[clamp(14px,0.9722vw,18.667px)] font-medium transition lg:w-full ${
+        active ? "text-[var(--mypage-orange)]" : "text-[var(--mypage-brown)] hover:text-[var(--mypage-orange)]"
       }`}
       href={href}
     >
@@ -2905,13 +2942,13 @@ function DashboardSection({
 }) {
   return (
     <section className={className}>
-      <div className="mb-[20px] grid grid-cols-[auto_minmax(24px,1fr)_auto] items-center gap-4">
-        <h2 className="whitespace-nowrap text-[16px] font-semibold text-[#4B3328]">
+      <div className="mb-[clamp(20px,1.3889vw,26.667px)] grid grid-cols-[auto_minmax(24px,1fr)_auto] items-center gap-[clamp(16px,1.1111vw,21.333px)]">
+        <h2 className="whitespace-nowrap text-[clamp(16px,1.1111vw,21.333px)] font-semibold text-[var(--mypage-brown)]">
           {heading}
         </h2>
-        <span className="h-px bg-[#d9d9d9]" />
+        <span className="h-px bg-[var(--mypage-line)]" />
         <Link
-          className="inline-flex items-center gap-1 text-[12px] font-medium text-[#8F7A6C] transition hover:text-[#f7983a]"
+          className="inline-flex items-center gap-1 text-[clamp(12px,0.8333vw,16px)] font-medium text-[#8F7A6C] transition hover:text-[var(--mypage-orange)]"
           href={href}
         >
           더보기
@@ -2978,6 +3015,126 @@ function SegmentedTabs<T extends string>({
   );
 }
 
+function TripFrameTabs<T extends string>({
+  active,
+  items,
+  onChange,
+}: {
+  active: T;
+  items: Array<{ key: T; label: string }>;
+  onChange: (key: T) => void;
+}) {
+  return (
+    <div className="flex items-end gap-[clamp(28px,1.9444vw,37.333px)] border-b border-[var(--mypage-line)]">
+      {items.map((item) => (
+        <button
+          className={`relative pb-[clamp(11px,0.7639vw,14.667px)] text-[clamp(14px,0.9722vw,18.667px)] font-medium transition ${
+            active === item.key
+              ? "text-[var(--mypage-brown)]"
+              : "text-[var(--mypage-muted)] hover:text-[#8F7A6C]"
+          }`}
+          key={item.key}
+          onClick={() => onChange(item.key)}
+          type="button"
+        >
+          {item.label}
+          {active === item.key ? (
+            <span className="absolute bottom-[-1px] left-0 h-[clamp(2px,0.1389vw,2.667px)] w-full bg-[var(--mypage-orange)]" />
+          ) : null}
+        </button>
+      ))}
+    </div>
+  );
+}
+
+function TripMeta({
+  label,
+  strong = false,
+  value,
+}: {
+  label: string;
+  strong?: boolean;
+  value: string;
+}) {
+  return (
+    <div className="min-w-0">
+      <p className="text-[clamp(12px,0.8333vw,16px)] font-medium leading-[1.2] text-[#748190]">
+        {label}
+      </p>
+      <p
+        className={`mt-[clamp(6px,0.4167vw,8px)] truncate whitespace-nowrap text-[clamp(12px,0.8333vw,16px)] leading-[1.2] ${
+          strong
+            ? "font-semibold text-[var(--mypage-olive)]"
+            : "font-semibold text-[#748190]"
+        }`}
+      >
+        {value}
+      </p>
+    </div>
+  );
+}
+
+function TripEmptyPanel({ message }: { message: string }) {
+  return (
+    <div className="grid min-h-[clamp(300px,20.8333vw,400px)] place-items-center">
+      <NuvioEmptyState
+        className="min-h-0 bg-transparent"
+        compact
+        iconClassName="h-[clamp(34px,2.3611vw,45.333px)] w-[clamp(30px,2.0833vw,40px)]"
+        label={message}
+        textClassName="mt-[clamp(12px,0.8333vw,16px)] text-[clamp(13px,0.9028vw,17.333px)] text-[#C7BDB5]"
+      />
+    </div>
+  );
+}
+
+function ReadyNoticeToast({
+  onClose,
+  open,
+}: {
+  onClose: () => void;
+  open: boolean;
+}) {
+  useEffect(() => {
+    if (!open) return;
+    const timer = window.setTimeout(onClose, 2200);
+    return () => window.clearTimeout(timer);
+  }, [onClose, open]);
+
+  if (!open) return null;
+
+  return (
+    <div className="fixed left-1/2 top-[clamp(92px,6.3889vw,122.667px)] z-50 -translate-x-1/2 rounded-[clamp(6px,0.4167vw,8px)] border border-[var(--mypage-line)] bg-white px-[clamp(22px,1.5278vw,29.333px)] py-[clamp(13px,0.9028vw,17.333px)] text-[clamp(14px,0.9722vw,18.667px)] font-semibold text-[var(--mypage-brown)] shadow-[0_12px_30px_rgba(91,58,41,0.12)]">
+      준비중인 기능입니다.
+    </div>
+  );
+}
+
+function NuvioAssetIcon({
+  alt,
+  name,
+  size,
+}: {
+  alt: string;
+  name: keyof typeof nuvioIconSources;
+  size: number;
+}) {
+  const iconSize = `clamp(${size}px,${(size / 1440) * 100}vw,${size * 4 / 3}px)`;
+
+  return (
+    <Image
+      alt={alt}
+      height={Math.round(size * 1.333)}
+      src={nuvioIconSources[name]}
+      style={{
+        height: iconSize,
+        width: iconSize,
+      }}
+      width={Math.round(size * 1.333)}
+    />
+  );
+}
+
 function TripMiniCard({
   application,
   loading,
@@ -2990,7 +3147,7 @@ function TripMiniCard({
   if (!application && loading) {
     return (
       <article className="min-w-0">
-        <div className="aspect-square w-full animate-pulse rounded-[16px] bg-[#f0f0f0]" />
+        <div className="aspect-square w-full animate-pulse rounded-[clamp(16px,1.1111vw,21.333px)] bg-[#f0f0f0]" />
         <div className="mt-3 h-3 w-20 rounded-full bg-[#eeeeee]" />
         <div className="mt-2 h-4 w-4/5 rounded-full bg-[#eeeeee]" />
       </article>
@@ -3001,7 +3158,7 @@ function TripMiniCard({
     return (
       <article className="min-w-0">
         <NuvioEmptyState
-          className="aspect-square min-h-0 rounded-[16px] bg-[#f3f3f3] px-2 py-0"
+          className="aspect-square min-h-0 rounded-[clamp(16px,1.1111vw,21.333px)] bg-[#f3f3f3] px-2 py-0"
           compact
           iconClassName="h-[30px] w-[26px]"
           label="여행 프로그램"
@@ -3016,7 +3173,7 @@ function TripMiniCard({
 
   return (
     <Link className="group block min-w-0" href={href}>
-      <div className="relative aspect-square w-full overflow-hidden rounded-[16px] bg-[#f3f3f3]">
+      <div className="relative aspect-square w-full overflow-hidden rounded-[clamp(16px,1.1111vw,21.333px)] bg-[#f3f3f3]">
         {image ? (
           <Image
             alt={program?.title ?? formatProgramDisplayName(application.programTitle, application.programId)}
@@ -3031,10 +3188,10 @@ function TripMiniCard({
           </div>
         )}
       </div>
-      <p className="mt-3 text-[12px] font-medium text-[#8F7A6C]">
+      <p className="mt-[clamp(11px,0.7639vw,14.667px)] text-[clamp(12px,0.8333vw,16px)] font-medium text-[var(--mypage-orange)]">
         {tripStatusLabels[application.status]} {formatShortDate(application.submittedAt)}
       </p>
-      <p className="mt-1 line-clamp-2 min-h-[44px] text-[16px] font-semibold leading-[22px] text-[#4B3328] transition group-hover:text-[#f7983a]">
+      <p className="mt-[clamp(4px,0.2778vw,5.333px)] line-clamp-2 min-h-[clamp(44px,3.0556vw,58.667px)] text-[clamp(16px,1.1111vw,21.333px)] font-semibold leading-[1.375] text-[var(--mypage-brown)] transition group-hover:text-[var(--mypage-orange)]">
         {program?.title ?? formatProgramDisplayName(application.programTitle, application.programId)}
       </p>
     </Link>
@@ -3045,19 +3202,36 @@ function TripDetailCard({
   actionHref,
   actionLabel,
   application,
+  onActionClick,
   program,
 }: {
   actionHref?: string;
   actionLabel?: string;
   application: HostApplication;
+  onActionClick?: () => void;
   program?: Program;
 }) {
   const href = program ? programPath(program) : "/mypage/trips";
+  const displayTitle =
+    program?.title ?? formatProgramDisplayName(application.programTitle, application.programId);
+  const statusLabel = tripStatusLabels[application.status];
+  const people = application.answers?.participants;
+  const peopleLabel =
+    typeof people === "number"
+      ? `${String(people).padStart(2, "0")}명`
+      : typeof people === "string" && people.trim()
+        ? people
+        : "00명";
+  const actionButtonClass = `inline-flex h-[clamp(28px,1.9444vw,37.333px)] min-w-[clamp(70px,4.8611vw,93.333px)] items-center justify-center rounded-[clamp(4px,0.2778vw,5.333px)] px-[clamp(14px,0.9722vw,18.667px)] text-[clamp(12px,0.8333vw,16px)] font-semibold text-white transition ${
+    actionLabel?.includes("보기")
+      ? "bg-[var(--mypage-olive)] hover:bg-[#6E7F45]"
+      : "bg-[#FF9A3D] hover:bg-[var(--mypage-orange)]"
+  }`;
 
   return (
-    <article className="grid gap-4 rounded-[6px] border border-[#d9d9d9] px-5 py-5 md:grid-cols-[120px_minmax(0,1fr)_auto] md:items-center">
+    <article className="grid border-b border-[var(--mypage-line)] py-[clamp(16px,1.1111vw,21.333px)] md:grid-cols-[clamp(84px,5.8333vw,112px)_minmax(0,1fr)_auto] md:items-start md:gap-[clamp(18px,1.25vw,24px)]">
       <Link
-        className="relative aspect-square overflow-hidden rounded-[12px] bg-[#f3f3f3]"
+        className="relative aspect-square overflow-hidden rounded-[clamp(10px,0.6944vw,13.333px)] bg-[#d9d9d9]"
         href={href}
       >
         {program?.image ? (
@@ -3065,44 +3239,97 @@ function TripDetailCard({
             alt={program.title}
             className="object-cover"
             fill
-            sizes="120px"
+            sizes="clamp(92px,6.3889vw,122.667px)"
             src={program.image}
           />
         ) : (
-          <div className="grid h-full place-items-center text-[#c7bbb4]">
-            <CalendarDays size={28} strokeWidth={1.6} />
-          </div>
+          <span className="sr-only">{displayTitle}</span>
         )}
       </Link>
-      <div className="min-w-0">
-        <div className="flex flex-wrap items-center gap-2">
-          <span className="rounded-full bg-[#fff7ef] px-3 py-1 text-[12px] font-semibold text-[#f7983a]">
-            {tripStatusLabels[application.status]}
-          </span>
-          <span className="text-[12px] text-[#8F7A6C]">
-            신청번호 {formatApplicationDisplayCode(application.id, application.submittedAt)}
+      <div className="grid min-w-0 gap-x-[clamp(16px,1.1111vw,21.333px)] gap-y-[clamp(10px,0.6944vw,13.333px)] md:w-[clamp(682px,47.3611vw,909.333px)] md:max-w-full md:grid-cols-[clamp(230px,15.9722vw,306.667px)_clamp(130px,9.0278vw,173.333px)_clamp(130px,9.0278vw,173.333px)_clamp(64px,4.4444vw,85.333px)_clamp(64px,4.4444vw,85.333px)] md:items-start">
+        <div className="min-w-0">
+          <p className="text-[clamp(10px,0.6944vw,13.333px)] font-medium leading-[1.2] text-[#748190]">
+            프로그램 지역 위치
+          </p>
+          <Link
+            className="mt-[clamp(4px,0.2778vw,5.333px)] block truncate whitespace-nowrap text-[clamp(16px,1.1111vw,21.333px)] font-semibold leading-[1.25] text-[var(--mypage-brown)] hover:text-[var(--mypage-orange)]"
+            href={href}
+          >
+            {displayTitle}
+          </Link>
+          <p className="mt-[clamp(4px,0.2778vw,5.333px)] text-[clamp(11px,0.7639vw,14.667px)] font-medium text-[#8F7A6C]">
+            {program?.sourceName || "호스트명"}
+          </p>
+        </div>
+        <TripMeta
+          label="시작일"
+          value={program ? formatKoreanDateLabel(program.activityStart) : "0000년 00월 00일"}
+        />
+        <TripMeta
+          label="종료일"
+          value={program ? formatKoreanDateLabel(program.activityEnd) : "0000년 00월 00일"}
+        />
+        <TripMeta label="인원" value={peopleLabel} />
+        <div className="text-right">
+          <span
+            className={`text-[clamp(17px,1.1806vw,22.667px)] font-semibold leading-[1.2] ${
+              application.status === "rejected"
+                ? "text-[#C7BDB5]"
+                : application.status === "completed"
+                  ? "text-[var(--mypage-olive)]"
+                  : "text-[var(--mypage-orange)]"
+            }`}
+          >
+            {application.status === "completed"
+              ? "완료"
+              : application.status === "rejected"
+                ? "취소"
+                : getProgramDday(program)}
           </span>
         </div>
-        <Link
-          className="mt-2 line-clamp-2 text-[18px] font-semibold leading-7 text-[#4B3328] hover:text-[#f7983a]"
-          href={href}
-        >
-          {program?.title ?? formatProgramDisplayName(application.programTitle, application.programId)}
-        </Link>
-        <div className="mt-3 grid gap-1 text-[13px] leading-6 text-[#8F7A6C] sm:grid-cols-2">
-          <span>신청일 {formatDate(application.submittedAt)}</span>
-          <span>누비어 {application.applicantName}</span>
-          <span>지역 {program?.region ?? "-"}</span>
-          <span>기간 {program ? formatProgramPeriod(program) : "-"}</span>
+        <div className="h-px bg-[#D9C8BD] md:col-start-1 md:col-end-6" />
+        <div className="min-w-0">
+          <TripMeta
+            label="예약번호"
+            strong
+            value={formatApplicationDisplayCode(application.id, application.submittedAt)}
+          />
+          <div className="mt-[clamp(8px,0.5556vw,10.667px)] flex items-center gap-[clamp(9px,0.625vw,12px)]">
+            <NuvioAssetIcon alt="" name="phone" size={12} />
+            <NuvioAssetIcon alt="" name="mail" size={12} />
+            <NuvioAssetIcon alt="" name="bookmark" size={12} />
+          </div>
+        </div>
+        <TripMeta label="예약자 명" value={application.applicantName || "-"} />
+        <TripMeta label="연락 번호" value={application.phone || "000-0000-0000"} />
+        <TripMeta label="필요항목" value={statusLabel} />
+        <div className="min-w-0">
+          <TripMeta label="필요항목" value={statusLabel} />
+          <Link
+            className="mt-[clamp(8px,0.5556vw,10.667px)] inline-flex text-[clamp(10px,0.6944vw,13.333px)] font-medium text-[#748190] hover:text-[var(--mypage-orange)]"
+            href={href}
+          >
+            + 인원추가
+          </Link>
         </div>
       </div>
-      {actionHref && actionLabel ? (
-        <Link
-          className="inline-flex h-10 items-center justify-center rounded-[4px] border border-[#d9d9d9] px-4 text-[13px] font-semibold text-[#4B3328] transition hover:border-[#f7983a] hover:text-[#f7983a]"
-          href={actionHref}
-        >
-          {actionLabel}
-        </Link>
+      {actionLabel ? (
+        actionHref ? (
+          <Link
+            className={actionButtonClass}
+            href={actionHref}
+          >
+            {actionLabel}
+          </Link>
+        ) : (
+          <button
+            className={actionButtonClass}
+            onClick={onActionClick}
+            type="button"
+          >
+            {actionLabel}
+          </button>
+        )
       ) : null}
     </article>
   );
@@ -3111,7 +3338,7 @@ function TripDetailCard({
 function ProgramMiniCard({ program }: { program: Program }) {
   return (
     <Link className="group block min-w-0" href={programPath(program)}>
-      <div className="relative aspect-square w-full overflow-hidden rounded-[16px] bg-[#f3f3f3]">
+      <div className="relative aspect-square w-full overflow-hidden rounded-[clamp(16px,1.1111vw,21.333px)] bg-[#f3f3f3]">
         {program.image ? (
           <Image
             alt={program.title}
@@ -3122,10 +3349,10 @@ function ProgramMiniCard({ program }: { program: Program }) {
           />
         ) : null}
       </div>
-      <p className="mt-3 text-[12px] font-medium text-[#8F7A6C]">
+      <p className="mt-[clamp(11px,0.7639vw,14.667px)] text-[clamp(12px,0.8333vw,16px)] font-medium text-[#8F7A6C]">
         {program.region || program.city || "전국"} 여행
       </p>
-      <p className="mt-1 line-clamp-2 min-h-[44px] text-[16px] font-semibold leading-[22px] text-[#4B3328] transition group-hover:text-[#f7983a]">
+      <p className="mt-[clamp(4px,0.2778vw,5.333px)] line-clamp-2 min-h-[clamp(44px,3.0556vw,58.667px)] text-[clamp(16px,1.1111vw,21.333px)] font-semibold leading-[1.375] text-[var(--mypage-brown)] transition group-hover:text-[var(--mypage-orange)]">
         {program.title}
       </p>
     </Link>
@@ -3223,7 +3450,7 @@ function RecentEmptyState() {
 
 function MemberLabel({ children }: { children: ReactNode }) {
   return (
-    <span className="text-[16px] font-semibold tracking-normal text-[#5A3829]">
+    <span className="whitespace-nowrap text-[clamp(14px,0.9722vw,18.667px)] font-semibold tracking-normal text-[#5A3829]">
       {children}
     </span>
   );
@@ -3231,7 +3458,7 @@ function MemberLabel({ children }: { children: ReactNode }) {
 
 function MemberTextValue({ children }: { children: ReactNode }) {
   return (
-    <span className="min-h-[36px] border-b border-transparent px-1 py-[7px] text-[15px] font-medium leading-[22px] text-[#6B5145]">
+    <span className="min-h-[clamp(18px,1.25vw,24px)] min-w-0 truncate border-b border-transparent px-0 py-0 text-[clamp(12px,0.8333vw,16px)] font-medium leading-[1.25] text-[#748190]">
       {children}
     </span>
   );
@@ -3239,7 +3466,7 @@ function MemberTextValue({ children }: { children: ReactNode }) {
 
 function MemberLineDisplay({ children }: { children: ReactNode }) {
   return (
-    <span className="flex h-[36px] min-w-0 items-center border-b border-transparent px-1 !text-[15px] font-medium text-[#76838f]">
+    <span className="flex h-[clamp(18px,1.25vw,24px)] min-w-0 items-center truncate border-b border-transparent px-0 !text-[clamp(12px,0.8333vw,16px)] font-medium text-[#748190]">
       {children}
     </span>
   );
@@ -3258,7 +3485,7 @@ function MemberLineInput({
 }) {
   return (
     <input
-      className="h-[36px] w-full min-w-0 border-0 border-b border-[#cfc7c0] bg-transparent px-1 !text-[15px] font-medium text-[#4B3328] outline-none transition placeholder:text-[#8B98A6] focus:border-[#f7983a]"
+      className="h-[clamp(22px,1.5278vw,29.333px)] w-full min-w-0 border-0 border-b border-[#cfc7c0] bg-transparent px-0 !text-[clamp(12px,0.8333vw,16px)] font-medium text-[#4B3328] outline-none transition placeholder:text-[#8B98A6] focus:border-[#f7983a]"
       onChange={(event) => onChange(event.target.value)}
       placeholder={placeholder}
       ref={inputRef}
@@ -3281,7 +3508,7 @@ function MemberLineSelect({
   return (
     <select
       aria-label={ariaLabel}
-      className="h-[36px] w-full min-w-0 border-0 border-b border-[#cfc7c0] bg-transparent px-1 !text-[15px] font-medium text-[#4B3328] outline-none transition focus:border-[#f7983a]"
+      className="h-[clamp(22px,1.5278vw,29.333px)] w-full min-w-0 border-0 border-b border-[#cfc7c0] bg-transparent px-0 !text-[clamp(12px,0.8333vw,16px)] font-medium text-[#4B3328] outline-none transition focus:border-[#f7983a]"
       onChange={(event) => onChange(event.target.value)}
       value={value}
     >
@@ -3299,7 +3526,7 @@ function MemberSmallButton({
 }) {
   return (
     <button
-      className="h-[36px] shrink-0 rounded-[4px] border border-[#cfc7c0] px-[14px] !text-[13px] font-semibold text-[#748190] transition hover:border-[#f7983a] hover:text-[#f7983a]"
+      className="h-[clamp(22px,1.5278vw,29.333px)] shrink-0 rounded-[clamp(3px,0.2083vw,4px)] border border-[#cfc7c0] px-[clamp(9px,0.625vw,12px)] !text-[clamp(11px,0.7639vw,14.667px)] font-semibold text-[#748190] transition hover:border-[#f7983a] hover:text-[#f7983a]"
       onClick={onClick}
       type="button"
     >
@@ -3319,7 +3546,7 @@ function MemberSmallLink({
 }) {
   return (
     <Link
-      className="inline-flex h-[36px] shrink-0 items-center justify-center rounded-[4px] border border-[#cfc7c0] px-[14px] !text-[13px] font-semibold text-[#748190] transition hover:border-[#f7983a] hover:text-[#f7983a]"
+      className="inline-flex h-[clamp(22px,1.5278vw,29.333px)] shrink-0 items-center justify-center rounded-[clamp(3px,0.2083vw,4px)] border border-[#cfc7c0] px-[clamp(9px,0.625vw,12px)] !text-[clamp(11px,0.7639vw,14.667px)] font-semibold text-[#748190] transition hover:border-[#f7983a] hover:text-[#f7983a]"
       href={href}
       onClick={onClick}
     >
@@ -3605,7 +3832,7 @@ function composeEmailAddress(id: string, domain: string) {
 function genderLabel(gender: string) {
   if (gender === "female") return "여성";
   if (gender === "male") return "남성";
-  return "선택 없음";
+  return "중성";
 }
 
 function formatBirthDate(year: string, month: string, day: string) {
@@ -3797,6 +4024,15 @@ function formatDate(value: string) {
   });
 }
 
+function formatKoreanDateLabel(value: string) {
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return "0000년 00월 00일";
+  return `${date.getFullYear()}년 ${String(date.getMonth() + 1).padStart(
+    2,
+    "0",
+  )}월 ${String(date.getDate()).padStart(2, "0")}일`;
+}
+
 function formatMessageRelativeTime(value: string) {
   const date = new Date(value);
   if (Number.isNaN(date.getTime())) return "-";
@@ -3819,8 +4055,17 @@ function formatMessageRelativeTime(value: string) {
   return formatDate(value);
 }
 
-function formatProgramPeriod(program: Program) {
-  return `${formatShortDate(program.activityStart)} - ${formatShortDate(
-    program.activityEnd,
-  )}`;
+function getProgramDday(program: Program | undefined) {
+  if (!program?.activityStart) return "D-00";
+
+  const today = new Date();
+  const start = new Date(program.activityStart);
+  if (Number.isNaN(start.getTime())) return "D-00";
+
+  today.setHours(0, 0, 0, 0);
+  start.setHours(0, 0, 0, 0);
+
+  const diff = Math.ceil((start.getTime() - today.getTime()) / 86_400_000);
+  if (diff === 0) return "D-DAY";
+  return diff > 0 ? `D-${diff}` : "진행중";
 }

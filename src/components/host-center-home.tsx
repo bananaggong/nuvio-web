@@ -7,6 +7,7 @@ import {
   HostFolderCard,
   HostFolderPlaceholderCard,
   HostProgramRow,
+  HostProgramStatusFrame,
   HostSectionTitle,
   HostSmallButton,
   HostWorkspaceContent,
@@ -112,6 +113,9 @@ export function HostCenterHome({
   const expandedProgramGroupId = getProgramGroupFromStatus(
     searchParams.get("status"),
   );
+  const selectedProgramGroup = expandedProgramGroupId
+    ? groups.find((group) => group.id === expandedProgramGroupId)
+    : null;
   const folderDialogCounts = useMemo(() => {
     return programItems.reduce<Record<FolderProgramFilter, number>>(
       (acc, program) => {
@@ -283,6 +287,19 @@ export function HostCenterHome({
     <HostWorkspaceLayout>
       <HostWorkspaceContent>
         <div className="w-[var(--host-1118)] max-w-full pt-[var(--host-24)] max-md:w-full max-md:pt-5">
+          {selectedProgramGroup ? (
+            <HostProgramStatusFrame
+              action={
+                <HostSmallButton onClick={openProgramDialog}>
+                  새 프로그램 +
+                </HostSmallButton>
+              }
+              actionLabel={selectedProgramGroup.actionLabel}
+              items={selectedProgramGroup.items}
+              status={selectedProgramGroup.id}
+            />
+          ) : (
+            <>
           <section className="w-full">
             <HostSectionTitle
               action={
@@ -326,6 +343,8 @@ export function HostCenterHome({
               ))}
             </div>
           </section>
+            </>
+          )}
         </div>
       </HostWorkspaceContent>
 
@@ -522,7 +541,7 @@ function buildProgramGroups(programs: HostProgramListItem[]): ProgramGroup[] {
 
   return [
     {
-      actionLabel: "등록",
+      actionLabel: "종료",
       id: "open",
       items: openPrograms,
       title: "오픈된 프로그램",

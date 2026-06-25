@@ -35,7 +35,7 @@ const scheduleFallbackItems = [
   },
 ];
 
-export const floatingScheduleItems = [
+export const fallbackScheduleItems = [
   "집결 및 안내",
   "프로그램 진행",
   "휴식 및 이동",

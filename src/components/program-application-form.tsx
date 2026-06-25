@@ -33,10 +33,18 @@ type ApplicationFormState = {
   motivation: string;
   workStyle: string;
   receiptPlan: string;
-  agree: boolean;
+  consentMarketing: boolean;
+  consentPrivacyCollection: boolean;
+  consentTerms: boolean;
+  consentThirdParty: boolean;
 };
 
 type DynamicAnswers = Record<string, string | boolean | string[]>;
+type LegalConsentField =
+  | "consentMarketing"
+  | "consentPrivacyCollection"
+  | "consentTerms"
+  | "consentThirdParty";
 
 const initialFormState: ApplicationFormState = {
   applicantName: "",
@@ -46,7 +54,10 @@ const initialFormState: ApplicationFormState = {
   motivation: "",
   workStyle: "",
   receiptPlan: "",
-  agree: false,
+  consentMarketing: false,
+  consentPrivacyCollection: false,
+  consentTerms: false,
+  consentThirdParty: false,
 };
 
 const applicationInputClassName =
@@ -80,6 +91,10 @@ export function ProgramApplicationForm({
       ? resolveVisibleBlocks(normalizedTemplate.blocks, dynamicAnswers)
       : [];
   const hasTemplate = Boolean(normalizedTemplate && visibleBlocks.length > 0);
+  const requiredLegalConsentsAccepted =
+    form.consentTerms && form.consentPrivacyCollection && form.consentThirdParty;
+  const allLegalConsentsAccepted =
+    requiredLegalConsentsAccepted && form.consentMarketing;
 
   useEffect(() => {
     let active = true;
@@ -146,6 +161,20 @@ export function ProgramApplicationForm({
     setDynamicAnswers((current) => ({ ...current, [fieldId]: value }));
   }
 
+  function updateLegalConsent(field: LegalConsentField, checked: boolean) {
+    setForm((current) => ({ ...current, [field]: checked }));
+  }
+
+  function updateAllLegalConsents(checked: boolean) {
+    setForm((current) => ({
+      ...current,
+      consentMarketing: checked,
+      consentPrivacyCollection: checked,
+      consentTerms: checked,
+      consentThirdParty: checked,
+    }));
+  }
+
   function buildMemo(): string {
     if (form.motivation.trim()) return form.motivation.slice(0, 72);
 
@@ -159,14 +188,48 @@ export function ProgramApplicationForm({
   }
 
   function buildAnswers(): Record<string, unknown> {
+    const capturedAt = new Date().toISOString();
     const legalConsent = {
-      agreed: form.agree,
-      agreedAt: new Date().toISOString(),
+      agreed: requiredLegalConsentsAccepted,
+      agreedAt: requiredLegalConsentsAccepted ? capturedAt : null,
       documents: [
-        { title: "이용약관", href: "/terms" },
-        { title: "개인정보 수집 및 이용", href: "/privacy" },
-        { title: "개인정보 제3자 제공 동의", href: "/privacy/third-party" },
+        {
+          agreed: form.consentTerms,
+          agreedAt: form.consentTerms ? capturedAt : null,
+          href: "/terms",
+          key: "terms",
+          required: true,
+          title: "이용약관",
+        },
+        {
+          agreed: form.consentPrivacyCollection,
+          agreedAt: form.consentPrivacyCollection ? capturedAt : null,
+          href: "/privacy",
+          key: "privacyCollection",
+          required: true,
+          title: "개인정보 수집 및 이용",
+        },
+        {
+          agreed: form.consentThirdParty,
+          agreedAt: form.consentThirdParty ? capturedAt : null,
+          href: "/privacy/third-party",
+          key: "thirdParty",
+          required: true,
+          title: "개인정보 제3자 제공 동의",
+        },
+        {
+          agreed: form.consentMarketing,
+          agreedAt: form.consentMarketing ? capturedAt : null,
+          href: null,
+          key: "marketing",
+          required: false,
+          title: "마케팅 정보 수신 동의",
+        },
       ],
+      marketingAgreed: form.consentMarketing,
+      privacyCollectionAgreed: form.consentPrivacyCollection,
+      termsAgreed: form.consentTerms,
+      thirdPartyAgreed: form.consentThirdParty,
     };
 
     if (normalizedTemplate && hasTemplate) {
@@ -260,31 +323,36 @@ export function ProgramApplicationForm({
     );
 
     return (
-      <section className="mx-auto max-w-3xl px-4 py-10 md:px-8">
-        <div className="rounded-md border border-teal-200 bg-white p-6 text-center shadow-sm">
-          <CheckCircle2 className="mx-auto text-[var(--primary)]" size={42} />
-          <h1 className="mt-4 text-2xl font-black text-slate-950">
+      <section className="mx-auto max-w-[820px] px-4 py-8 md:px-8">
+        <div className="rounded-[8px] border border-[#F5E1D3] bg-white px-[24px] py-[34px] text-center shadow-[0_16px_36px_rgba(91,58,41,0.08)]">
+          <div className="mx-auto grid size-[44px] place-items-center rounded-full border border-[#FE701E] bg-[#FFF6EC] text-[#FE701E]">
+            <CheckCircle2 aria-hidden="true" size={24} strokeWidth={2.4} />
+          </div>
+          <h1 className="mt-[18px] text-[24px] font-semibold leading-[1.35] text-[#5B3A29]">
             신청서가 접수됐어요
           </h1>
-          <p className="mt-3 text-sm leading-6 text-slate-600">
-            신청 내용은 호스트 콘솔의 신청자 파이프라인에 반영돼요. 접수번호는{" "}
-            <span className="font-mono font-black text-slate-900">{displayCode}</span>
-            입니다.
+          <p className="mx-auto mt-[12px] max-w-[520px] text-[14px] font-normal leading-[1.65] text-[#6D7A8A]">
+            접수번호{" "}
+            <span className="font-mono font-semibold text-[#5B3A29]">
+              {displayCode}
+            </span>
+            로 신청이 완료됐습니다. 선정 여부와 안내 메시지는 마이페이지에서
+            확인할 수 있어요.
           </p>
           {submitError ? (
-            <p className="mt-3 rounded-md bg-amber-50 px-3 py-2 text-sm font-bold text-amber-800">
+            <p className="mx-auto mt-[14px] max-w-[520px] rounded-[4px] border border-[#F5E1D3] bg-[#FFF6EC] px-[12px] py-[10px] text-[13px] font-semibold leading-[1.55] text-[#FE701E]">
               {submitError}
             </p>
           ) : null}
-          <div className="mt-6 grid gap-2 sm:grid-cols-2">
+          <div className="mx-auto mt-[26px] grid max-w-[560px] gap-[8px] sm:grid-cols-2">
             <Link
-              className="inline-flex h-11 items-center justify-center rounded-md bg-[var(--primary)] px-4 text-sm font-black text-white"
+              className="inline-flex h-[44px] items-center justify-center rounded-[4px] bg-[#FE701E] px-[18px] text-[14px] font-semibold text-white"
               href="/mypage"
             >
               내 여행 프로그램 보기
             </Link>
             <Link
-              className="inline-flex h-11 items-center justify-center rounded-md border border-slate-200 px-4 text-sm font-black text-slate-700"
+              className="inline-flex h-[44px] items-center justify-center rounded-[4px] border border-[#E8E7E2] bg-white px-[18px] text-[14px] font-semibold text-[#5B3A29]"
               href={programPath(program)}
             >
               프로그램으로 돌아가기
@@ -397,31 +465,62 @@ export function ProgramApplicationForm({
             </>
           )}
 
-          <label className="flex gap-[10px] border-b border-dashed border-[#F3D7C4] py-[18px] text-[13px] font-normal leading-[1.65] text-[#5B3A29]">
-            <input
-              checked={form.agree}
-              className="mt-[4px] size-[14px] accent-[#FE701E]"
-              onChange={(event) => updateField("agree", event.target.checked)}
-              required
-              type="checkbox"
-            />
-            <span>
-              <span className="block font-semibold">
-                이용약관, 개인정보 수집 및 이용, 개인정보 제3자 제공 동의에 모두 동의합니다.
-              </span>
-              <span className="mt-[6px] flex flex-wrap gap-x-[12px] gap-y-[4px] text-[12px] font-semibold text-[#FE701E]">
-                <Link href="/terms" target="_blank">
-                  이용약관
-                </Link>
-                <Link href="/privacy" target="_blank">
-                  개인정보 수집 및 이용
-                </Link>
-                <Link href="/privacy/third-party" target="_blank">
-                  개인정보 제3자 제공 동의
-                </Link>
-              </span>
-            </span>
-          </label>
+          <div className="border-b border-dashed border-[#F3D7C4] py-[18px] text-[13px] font-normal leading-[1.65] text-[#5B3A29]">
+            <div className="flex items-start gap-[10px]">
+              <input
+                checked={allLegalConsentsAccepted}
+                className="mt-[4px] size-[14px] accent-[#FE701E]"
+                id="application-consent-all"
+                onChange={(event) => updateAllLegalConsents(event.target.checked)}
+                type="checkbox"
+              />
+              <label
+                className="font-semibold"
+                htmlFor="application-consent-all"
+              >
+                전체 동의
+              </label>
+            </div>
+            <div className="mt-[12px] grid gap-[10px] pl-[24px]">
+              <LegalConsentRow
+                checked={form.consentTerms}
+                href="/terms"
+                id="application-consent-terms"
+                label="이용약관 동의"
+                onChange={(checked) => updateLegalConsent("consentTerms", checked)}
+                required
+              />
+              <LegalConsentRow
+                checked={form.consentPrivacyCollection}
+                href="/privacy"
+                id="application-consent-privacy"
+                label="개인정보 수집 및 이용 동의"
+                onChange={(checked) =>
+                  updateLegalConsent("consentPrivacyCollection", checked)
+                }
+                required
+              />
+              <LegalConsentRow
+                checked={form.consentThirdParty}
+                href="/privacy/third-party"
+                id="application-consent-third-party"
+                label="개인정보 제3자 제공 동의"
+                onChange={(checked) =>
+                  updateLegalConsent("consentThirdParty", checked)
+                }
+                required
+              />
+              <LegalConsentRow
+                checked={form.consentMarketing}
+                description="프로그램 추천, 이벤트, 혜택 안내 등 마케팅 정보를 받을 수 있습니다."
+                id="application-consent-marketing"
+                label="마케팅 정보 수신 동의"
+                onChange={(checked) =>
+                  updateLegalConsent("consentMarketing", checked)
+                }
+              />
+            </div>
+          </div>
 
           {submitError ? (
             <p className="mt-[18px] rounded-[4px] border border-[#FE701E] bg-white px-[12px] py-[10px] text-[13px] font-semibold leading-[1.55] text-[#FE701E]">
@@ -565,11 +664,7 @@ function DynamicBlock({
   }
 
   if (block.type === "pageBreak") {
-    return (
-      <div className="border-b border-dashed border-[#F3D7C4] py-[18px] text-[12px] font-semibold leading-[1.45] text-[#FE701E]">
-        다음 페이지: {block.label}
-      </div>
-    );
+    return null;
   }
 
   if (block.type === "checkbox") {
@@ -676,6 +771,60 @@ function DynamicBlock({
         </span>
       ) : null}
     </FieldBlock>
+  );
+}
+
+function LegalConsentRow({
+  checked,
+  description,
+  href,
+  id,
+  label,
+  onChange,
+  required,
+}: {
+  checked: boolean;
+  description?: string;
+  href?: string;
+  id: string;
+  label: string;
+  onChange: (checked: boolean) => void;
+  required?: boolean;
+}) {
+  return (
+    <div className="flex items-start gap-[10px]">
+      <input
+        checked={checked}
+        className="mt-[4px] size-[14px] accent-[#FE701E]"
+        id={id}
+        onChange={(event) => onChange(event.target.checked)}
+        required={required}
+        type="checkbox"
+      />
+      <div className="min-w-0">
+        <label className="font-semibold" htmlFor={id}>
+          {label}
+          <span className="ml-[6px] text-[12px] text-[#FE701E]">
+            {required ? "*필수항목" : "선택"}
+          </span>
+        </label>
+        {href ? (
+          <Link
+            className="ml-[10px] text-[12px] font-semibold text-[#FE701E]"
+            href={href}
+            rel="noreferrer"
+            target="_blank"
+          >
+            보기
+          </Link>
+        ) : null}
+        {description ? (
+          <p className="mt-[4px] text-[12px] font-normal leading-[1.6] text-[#6D7A8A]">
+            {description}
+          </p>
+        ) : null}
+      </div>
+    </div>
   );
 }
 

@@ -164,11 +164,44 @@ function validateApplicationPayload(
   if (
     !legalConsent ||
     typeof legalConsent !== "object" ||
-    Array.isArray(legalConsent) ||
-    (legalConsent as Record<string, unknown>).agreed !== true
+    Array.isArray(legalConsent)
   ) {
     throw new Error("Required consent is missing.");
   }
+
+  const consentRecord = legalConsent as Record<string, unknown>;
+  if (
+    !isRequiredLegalConsentAgreed(consentRecord, "terms") ||
+    !isRequiredLegalConsentAgreed(consentRecord, "privacyCollection") ||
+    !isRequiredLegalConsentAgreed(consentRecord, "thirdParty")
+  ) {
+    throw new Error("Required consent is missing.");
+  }
+}
+
+function isRequiredLegalConsentAgreed(
+  consent: Record<string, unknown>,
+  key: "privacyCollection" | "terms" | "thirdParty",
+): boolean {
+  const directKey = {
+    privacyCollection: "privacyCollectionAgreed",
+    terms: "termsAgreed",
+    thirdParty: "thirdPartyAgreed",
+  }[key];
+
+  if (consent[directKey] === true) return true;
+
+  const documents = consent.documents;
+  if (!Array.isArray(documents)) return false;
+
+  return documents.some((document) => {
+    if (!document || typeof document !== "object" || Array.isArray(document)) {
+      return false;
+    }
+
+    const record = document as Record<string, unknown>;
+    return record.key === key && record.agreed === true;
+  });
 }
 
 function normalizeText(value: unknown, maxLength: number): string {

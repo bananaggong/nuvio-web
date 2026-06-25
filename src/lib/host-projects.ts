@@ -49,6 +49,7 @@ export type HostProgramOverview = {
   imageUrl: string;
   missingEvidenceCount: number;
   pendingCount: number;
+  periodLabel?: string;
   readiness: number;
   slug?: string;
   status?: ProgramStatus;
@@ -327,6 +328,7 @@ function buildProgramOverviewFromDraft(
     imageUrl: program.image || resolveProgramImage(program.title),
     missingEvidenceCount: countMissingEvidence(programApplications),
     pendingCount,
+    periodLabel: formatProgramDraftPeriod(program),
     readiness: applicationSummary.reportReadiness,
     slug: program.slug,
     status: program.status,
@@ -361,6 +363,7 @@ function buildStandaloneProgramOverviewFromDraft(
     imageUrl: program.image || resolveProgramImage(program.title),
     missingEvidenceCount: countMissingEvidence(programApplications),
     pendingCount,
+    periodLabel: formatProgramDraftPeriod(program),
     readiness: applicationSummary.reportReadiness,
     slug: program.slug,
     status: program.status,
@@ -394,6 +397,7 @@ function buildProgramOverviewFromTitle(
     imageUrl: resolveProgramImage(title),
     missingEvidenceCount: countMissingEvidence(programApplications),
     pendingCount,
+    periodLabel: project.periodLabel,
     readiness: applicationSummary.reportReadiness,
     status: "open",
     title,
@@ -424,6 +428,7 @@ function buildStandaloneProgramOverviewFromTitle(
     imageUrl: resolveProgramImage(title),
     missingEvidenceCount: countMissingEvidence(programApplications),
     pendingCount,
+    periodLabel: "",
     readiness: applicationSummary.reportReadiness,
     status: "open",
     title,
@@ -437,6 +442,27 @@ function countMissingEvidence(applications: HostApplication[]): number {
       sum + (application.receiptCount > 0 || application.status === "rejected" ? 0 : 1),
     0,
   );
+}
+
+function formatProgramDraftPeriod(program: HostProgramDraft): string {
+  const start = formatShortProgramDate(program.activityStart || program.recruitStart);
+  const end = formatShortProgramDate(program.activityEnd || program.recruitEnd);
+
+  if (start && end) return `${start} - ${end}`;
+  if (start) return `${start} - 기간 미정`;
+  if (end) return `기간 미정 - ${end}`;
+  return "";
+}
+
+function formatShortProgramDate(value?: string): string {
+  if (!value) return "";
+
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return "";
+
+  return `${String(date.getMonth() + 1).padStart(2, "0")}.${String(
+    date.getDate(),
+  ).padStart(2, "0")}`;
 }
 
 function resolveProjectImage(

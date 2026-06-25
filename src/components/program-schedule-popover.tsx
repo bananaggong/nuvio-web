@@ -1,6 +1,6 @@
 "use client";
 
-import { ChevronLeft, ChevronRight, ChevronUp, X } from "lucide-react";
+import { ChevronLeft, ChevronRight } from "lucide-react";
 import { useState } from "react";
 
 export type ProgramScheduleItem = {
@@ -11,97 +11,59 @@ export type ProgramScheduleItem = {
 };
 
 export function ProgramScheduleCards({
+  fallbackItems,
   items,
-  popupItems,
 }: {
+  fallbackItems: string[];
   items: ProgramScheduleItem[];
-  popupItems: string[];
 }) {
-  const [openDay, setOpenDay] = useState<string | null>(null);
-  const activeItem = items.find((item) => item.day === openDay) ??
-    items[0] ?? {
-      body: "",
-      day: "일정",
-    };
-  const activeTimetable = activeItem?.timetable?.filter(Boolean) ?? [];
-  const activeSchedule =
-    activeTimetable.length > 0 ? activeTimetable : popupItems;
+  const [openItemKey, setOpenItemKey] = useState<string | null>(null);
 
   return (
-    <>
-      <div className="flex w-full flex-col gap-[18px]">
-        {items.map((item, index) => (
+    <div className="flex w-full flex-col gap-[18px]">
+      {items.map((item, index) => {
+        const itemKey = `${item.day}-${index}`;
+        const timetable = item.timetable?.filter(Boolean) ?? [];
+        const scheduleItems = (
+          timetable.length > 0 ? timetable : fallbackItems
+        ).filter(Boolean);
+
+        return (
           <ScheduleCard
+            isOpen={openItemKey === itemKey}
             item={item}
-            key={`${item.day}-${index}`}
-            onOpen={() => setOpenDay(item.day)}
+            key={itemKey}
+            onToggle={() =>
+              setOpenItemKey((current) => (current === itemKey ? null : itemKey))
+            }
+            panelId={`program-schedule-${index}`}
+            scheduleItems={
+              scheduleItems.length > 0 ? scheduleItems : ["세부 일정은 추후 안내됩니다."]
+            }
           />
-        ))}
-      </div>
-
-      {openDay ? (
-        <div
-          aria-modal="true"
-          className="fixed inset-0 z-[80] flex items-center justify-center bg-black/20 px-5 py-10"
-          role="dialog"
-        >
-          <div className="w-[280px] rounded-md border border-[#F5E1D3] bg-white p-6 shadow-[0_18px_48px_rgba(91,58,41,0.16)]">
-            <div className="flex items-center justify-between">
-              <button
-                className="inline-flex items-center gap-1 border-0 bg-transparent p-0 text-sm font-medium leading-[1.6] text-[#FF9A3D]"
-                onClick={() => setOpenDay(null)}
-                type="button"
-              >
-                <ChevronUp aria-hidden="true" className="size-[13px]" />
-                일정 닫기
-              </button>
-              <button
-                aria-label="일정 팝업 닫기"
-                className="inline-flex size-7 items-center justify-center rounded-full border border-[#F5E1D3] bg-white text-[#6D7A8A]"
-                onClick={() => setOpenDay(null)}
-                type="button"
-              >
-                <X aria-hidden="true" className="size-4" />
-              </button>
-            </div>
-
-            <h3 className="mt-5 text-base font-semibold leading-[1.253] text-[#5B3A29]">
-              {activeItem.day} 일정
-            </h3>
-
-            <div className="mt-5 flex flex-col gap-2">
-              {activeSchedule.map((item, index) => {
-                const scheduleLine = splitScheduleLine(item, index);
-                return (
-                  <p className="flex flex-col gap-0.5" key={`${item}-${index}`}>
-                    <strong className="text-xs font-semibold leading-[1.253] text-[#FE701E]">
-                      {scheduleLine.time}
-                    </strong>
-                    <span className="text-xs font-medium leading-[1.253] text-[#6D7A8A]">
-                      {scheduleLine.label}
-                    </span>
-                  </p>
-                );
-              })}
-            </div>
-          </div>
-        </div>
-      ) : null}
-    </>
+        );
+      })}
+    </div>
   );
 }
 
 function ScheduleCard({
+  isOpen,
   item,
-  onOpen,
+  onToggle,
+  panelId,
+  scheduleItems,
 }: {
+  isOpen: boolean;
   item: ProgramScheduleItem;
-  onOpen: () => void;
+  onToggle: () => void;
+  panelId: string;
+  scheduleItems: string[];
 }) {
   const hasImage = Boolean(item.image && isDisplayableImage(item.image));
 
   return (
-    <div className="flex h-[200px] w-[687px] items-start gap-3 overflow-hidden rounded-md border border-[#F3F3F3] bg-white max-md:h-auto max-md:w-full max-md:flex-col">
+    <div className="flex min-h-[200px] w-[687px] items-start gap-3 overflow-hidden rounded-md border border-[#F3F3F3] bg-white max-md:h-auto max-md:w-full max-md:flex-col">
       <div
         className="group/image flex h-[200px] w-[310px] shrink-0 items-center justify-between bg-[#7A8B52] bg-cover bg-center px-2.5 max-md:w-full"
         style={
@@ -133,13 +95,44 @@ function ScheduleCard({
           {item.body}
         </p>
         <button
+          aria-controls={panelId}
+          aria-expanded={isOpen}
           className="inline-flex items-center gap-1 border-0 bg-transparent p-0 text-xs font-normal leading-[1.6] text-[#FE701E]"
-          onClick={onOpen}
+          onClick={onToggle}
           type="button"
         >
-          <ChevronRight aria-hidden="true" className="h-3.5 w-[11px]" />
-          일정 보기
+          <ChevronRight
+            aria-hidden="true"
+            className={`h-3.5 w-[11px] transition-transform ${
+              isOpen ? "-rotate-90" : ""
+            }`}
+          />
+          {isOpen ? "일정 닫기" : "일정 보기"}
         </button>
+        {isOpen ? (
+          <div
+            className="flex w-full max-w-[359px] flex-col gap-[10px] pt-0.5"
+            id={panelId}
+          >
+            {scheduleItems.map((scheduleItem, index) => {
+              const scheduleLine = splitScheduleLine(scheduleItem, index);
+
+              return (
+                <p
+                  className="grid grid-cols-[54px_1fr] items-start gap-2 text-xs leading-[1.253]"
+                  key={`${scheduleItem}-${index}`}
+                >
+                  <strong className="font-semibold text-[#FE701E]">
+                    {scheduleLine.time}
+                  </strong>
+                  <span className="break-keep font-medium text-[#6D7A8A]">
+                    {scheduleLine.label}
+                  </span>
+                </p>
+              );
+            })}
+          </div>
+        ) : null}
       </div>
     </div>
   );
@@ -149,17 +142,17 @@ function splitScheduleLine(
   value: string,
   index: number,
 ): { label: string; time: string } {
-  const match = /^(\d{1,2}[:：]\d{2})\s*(.*)$/.exec(value);
+  const match = /^(\d{1,2}\s*[:：]\s*\d{2})\s*(.*)$/u.exec(value);
   if (match) {
     return {
       label: match[2] || value,
-      time: match[1],
+      time: match[1].replace(/\s+/gu, ""),
     };
   }
 
   return {
     label: value,
-    time: `${String(index * 2).padStart(2, "0")} : 00`,
+    time: `${String(index * 2).padStart(2, "0")}:00`,
   };
 }
 
@@ -168,7 +161,7 @@ function isDisplayableImage(value: string): boolean {
     value.startsWith("http://") ||
     value.startsWith("https://") ||
     value.startsWith("/") ||
-    /^data:image\/(png|jpe?g|webp|gif);base64,/i.test(value)
+    /^data:image\/(png|jpe?g|webp|gif);base64,/iu.test(value)
   );
 }
 

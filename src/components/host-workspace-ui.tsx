@@ -250,6 +250,7 @@ function HostWorkspaceSidebar({ sidebarHeight }: { sidebarHeight: string }) {
     messageStatus === "end" ||
     messagePanel === "ended" ||
     messagePanel === "end";
+  const hostProgramStatus = getHostProgramStatusParam(searchParams.get("status"));
   const ongoingMessagesActive = onMessagesPage && !endedMessagesRequested;
   const endedMessagesActive = onMessagesPage && endedMessagesRequested;
 
@@ -299,9 +300,21 @@ function HostWorkspaceSidebar({ sidebarHeight }: { sidebarHeight: string }) {
                   내 프로그램
                 </Link>
                 <div className="flex w-full flex-col gap-[3px] border-b-[0.8px] border-[#6D7A8A] pb-[0.833vw] pl-[0.417vw]">
-                  <HostSidebarSubLink href="/host?status=open" label="오픈 프로그램" />
-                  <HostSidebarSubLink href="/host?status=upcoming" label="예정 프로그램" />
-                  <HostSidebarSubLink href="/host?status=closed" label="마감 프로그램" />
+                  <HostSidebarSubLink
+                    active={pathname === "/host" && hostProgramStatus === "open"}
+                    href="/host?status=open"
+                    label="오픈 프로그램"
+                  />
+                  <HostSidebarSubLink
+                    active={pathname === "/host" && hostProgramStatus === "upcoming"}
+                    href="/host?status=upcoming"
+                    label="예정 프로그램"
+                  />
+                  <HostSidebarSubLink
+                    active={pathname === "/host" && hostProgramStatus === "closed"}
+                    href="/host?status=closed"
+                    label="마감 프로그램"
+                  />
                 </div>
               </section>
               <div className="mt-[0.903vw] grid gap-[0.903vw]">
@@ -485,6 +498,14 @@ function HostSidebarSubLink({
       {label}
     </Link>
   );
+}
+
+function getHostProgramStatusParam(value: string | null) {
+  if (value === "open" || value === "upcoming" || value === "closed") {
+    return value;
+  }
+
+  return null;
 }
 
 export function HostWorkspaceContent({
@@ -728,6 +749,98 @@ export function HostProgramRow({
   );
 }
 
+export type HostProgramStatusFrameKind = "open" | "upcoming" | "closed";
+
+const hostProgramStatusFrameCopy: Record<
+  HostProgramStatusFrameKind,
+  {
+    tabs: [string, string];
+    title: string;
+  }
+> = {
+  closed: {
+    tabs: ["마감일순", "종료일순"],
+    title: "마감된 프로그램",
+  },
+  open: {
+    tabs: ["출발일순", "오픈일순"],
+    title: "오픈된 프로그램",
+  },
+  upcoming: {
+    tabs: ["예정일순", "등록일순"],
+    title: "예정된 프로그램",
+  },
+};
+
+export function HostProgramStatusFrame({
+  action,
+  actionLabel,
+  items,
+  status,
+}: {
+  action?: ReactNode;
+  actionLabel: string;
+  items: HostProgramListItem[];
+  status: HostProgramStatusFrameKind;
+}) {
+  const copy = hostProgramStatusFrameCopy[status];
+  const displayItems = items.length > 0 ? items : [];
+
+  return (
+    <section className="w-[var(--host-1118)] max-w-full">
+      <div className="flex h-[var(--host-29)] items-center">
+        <Link
+          aria-label="내 프로그램으로 돌아가기"
+          className="mr-[var(--host-14)] inline-flex h-[var(--host-20)] w-[var(--host-10)] items-center justify-center transition hover:opacity-70"
+          href="/host"
+        >
+          <Image
+            alt=""
+            className="h-[var(--host-16)] w-auto"
+            height={16}
+            src={nuvioIcons.formEditorBack}
+            width={10}
+          />
+        </Link>
+        <h1 className="text-[length:var(--host-16)] font-medium leading-[1.253] text-[#6D7A8A]">
+          {copy.title} ({String(items.length).padStart(2, "0")})
+        </h1>
+        {action ? <div className="ml-[var(--host-14)]">{action}</div> : null}
+      </div>
+
+      <div className="mt-[var(--host-12)] flex h-[var(--host-27)] items-start gap-[var(--host-12)] pl-[var(--host-13)]">
+        {copy.tabs.map((tab, index) => (
+          <button
+            className={`h-[var(--host-27)] px-0 text-[length:var(--host-12)] leading-[1.253] ${
+              index === 0
+                ? "border-b-2 border-[#FE701E] font-medium text-[#6D7A8A]"
+                : "font-normal text-[#CAC4BC]"
+            }`}
+            key={tab}
+            type="button"
+          >
+            {tab}
+          </button>
+        ))}
+      </div>
+
+      <div className="mt-[var(--host-12)] flex flex-wrap gap-x-[clamp(26px,1.806vw,34.667px)] gap-y-[var(--host-16)]">
+        {displayItems.length > 0
+          ? displayItems.map((program) => (
+              <HostMiniProgramCard
+                actionLabel={actionLabel}
+                key={`${program.projectId ?? "standalone"}-${program.id}`}
+                program={program}
+              />
+            ))
+          : Array.from({ length: 4 }).map((_, index) => (
+              <HostMiniProgramCardPlaceholder key={index} />
+            ))}
+      </div>
+    </section>
+  );
+}
+
 export function HostMiniProgramCard({
   actionLabel,
   program,
@@ -756,19 +869,22 @@ export function HostMiniProgramCard({
         </div>
         <div className="flex min-w-0 flex-col gap-[var(--host-4)] text-[#0D0D0C]">
           <p className="truncate text-[length:var(--host-12)] font-normal leading-[1.253]">
-            프로그램 코드{" "}
+            프로그램 넘버{" "}
             <span className="text-[#FE701E]">{formatProgramDisplayCode(program.id)}</span>
           </p>
           <p className="line-clamp-1 text-[length:var(--host-14)] font-medium leading-[1.253]">
             {program.title}
           </p>
           <p className="truncate text-[length:var(--host-12)] font-normal leading-[1.253]">
-            모집금액 : {program.applicationCount.toLocaleString("ko-KR")}명
+            {program.periodLabel || "프로그램 기간"}
+          </p>
+          <p className="truncate text-[length:var(--host-12)] font-normal leading-[1.253]">
+            {getHostMiniCardStatusText(program.status)}
           </p>
         </div>
         <div className="col-span-2 mt-auto flex items-center gap-[var(--host-6)] text-[length:var(--host-12)] font-normal leading-[1.253]">
           <span className="min-w-0 flex-1 truncate text-[#0D0D0C]">
-            신청 {program.applicationCount}명 · 조회 {program.readiness}
+            신청 {program.applicationCount}/00&nbsp;&nbsp; 조회 00&nbsp;&nbsp; 저장 00
           </span>
           <span className="inline-flex h-[var(--host-29)] shrink-0 items-center justify-center rounded-[4px] border-[0.8px] border-[#FE701E] bg-[#FCFCFC] px-[var(--host-18)] text-[length:var(--host-12)] font-normal leading-[1.253] text-[#FE701E]">
             {actionLabel}
@@ -777,6 +893,12 @@ export function HostMiniProgramCard({
       </Link>
     </article>
   );
+}
+
+function getHostMiniCardStatusText(status?: string) {
+  if (status === "upcoming") return "예정 :";
+  if (status === "closed" || status === "earlyClosed") return "마감 :";
+  return "오픈 :";
 }
 
 function hostProgramHref(program: HostProgramListItem): string {
