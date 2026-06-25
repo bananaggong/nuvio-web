@@ -31,7 +31,7 @@ export default async function MagazinePage() {
           />
         ) : (
           <div className="mt-[clamp(40px,2.778vw,53.333px)] grid w-[min(100%,clamp(1085px,75.3472vw,1446.667px))] grid-cols-2 gap-x-[clamp(25px,1.7361vw,33.333px)] gap-y-[clamp(16px,1.1111vw,21.333px)] max-md:w-[88vw] max-md:grid-cols-1 max-md:gap-y-6">
-            {posts.map((post) => (
+            {posts.map((post, index) => (
               <article
                 className="h-[clamp(550px,38.1944vw,733.333px)] min-w-0 text-center"
                 key={post.id}
@@ -49,11 +49,11 @@ export default async function MagazinePage() {
                       post.excerpt ||
                       "누비어에게 전하는 프로그램과 지역 소식을 모았어요."}
                   </p>
-                  <h2 className="mt-[clamp(20px,1.3889vw,26.667px)] line-clamp-2 px-[clamp(32px,2.2222vw,42.667px)] text-[clamp(14px,0.9722vw,18.667px)] font-normal leading-[1.253] text-black max-md:text-[14px]">
+                  <h2 className="font-gangwon-saeeum mt-[clamp(20px,1.3889vw,26.667px)] line-clamp-2 px-[clamp(32px,2.2222vw,42.667px)] text-[clamp(20px,1.3889vw,26.667px)] font-medium leading-[1.253] text-black max-md:text-[18px]">
                     {post.title}
                   </h2>
                   <p className="mt-auto pb-[clamp(28px,1.9444vw,37.333px)] text-[clamp(14px,0.9722vw,18.667px)] font-normal leading-[1.253] text-black max-md:text-[14px]">
-                    {post.authorName || "NUVIO"}
+                    #{String(index + 1).padStart(2, "0")}
                   </p>
                 </Link>
               </article>

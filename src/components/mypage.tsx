@@ -247,9 +247,11 @@ const EMPTY_PROGRAM_STATE: ProgramStateMaps = {
 
 const mypageScaleStyle = {
   "--mypage-scale": "clamp(1, calc(min(100vw, 1920px) / 1440), 1.333333)",
-  "--mypage-shell": "clamp(1025px, 71.181vw, 1366.667px)",
+  "--mypage-shell": "clamp(1060px, 73.6111vw, 1413.333px)",
   "--mypage-sidebar": "clamp(80px, 5.556vw, 106.667px)",
-  "--mypage-gap": "clamp(50px, 3.472vw, 66.667px)",
+  "--mypage-gap": "clamp(92px, 6.3889vw, 122.667px)",
+  "--mypage-mini-card": "clamp(130px, 9.0278vw, 173.333px)",
+  "--mypage-mini-gap": "clamp(40px, 2.7778vw, 53.333px)",
   "--mypage-orange": "#FE701E",
   "--mypage-brown": "#5B3A29",
   "--mypage-muted": "#C7BDB5",
@@ -429,7 +431,7 @@ function MypageFrame({
     window.location.href = "/";
   }
   const topPaddingClass = showOverview
-    ? "pt-[clamp(62px,4.3056vw,82.667px)]"
+    ? "pt-[clamp(82px,5.6944vw,109.333px)]"
     : activeSection === "member"
       ? "pt-[clamp(8px,0.5556vw,10.667px)]"
       : "pt-[clamp(32px,2.2222vw,42.667px)]";
@@ -478,7 +480,7 @@ function MypageOverview({ context }: { context: MypageContext }) {
         </Link>
       </header>
 
-      <section className="mt-[clamp(32px,2.2222vw,42.667px)] grid gap-[clamp(12px,0.8333vw,16px)] lg:grid-cols-[minmax(0,1fr)_clamp(220px,15.2778vw,293.333px)]">
+      <section className="mt-[clamp(52px,3.6111vw,69.333px)] grid gap-[clamp(12px,0.8333vw,16px)] lg:grid-cols-[minmax(0,1fr)_clamp(220px,15.2778vw,293.333px)]">
         <ProfileSummaryCard
           avatarUrl={context.authSession.profile?.avatarUrl}
           bookmarkCount={context.bookmarkedPrograms.length}
@@ -506,7 +508,7 @@ function MypageHomeContent({ context }: { context: MypageContext }) {
   return (
     <>
       <DashboardSection heading="내 여행 프로그램" href="/mypage/trips">
-        <div className="grid gap-[clamp(26px,1.8056vw,34.667px)] sm:grid-cols-2 lg:grid-cols-[repeat(4,clamp(100px,6.9444vw,133.333px))]">
+        <div className="grid gap-[var(--mypage-mini-gap)] sm:grid-cols-2 lg:grid-cols-[repeat(4,var(--mypage-mini-card))]">
           {tripSlots.map((slot, index) => (
             <TripMiniCard
               application={slot.application}
@@ -524,7 +526,7 @@ function MypageHomeContent({ context }: { context: MypageContext }) {
         href="/programs"
       >
         {context.recentlyViewedPrograms.length > 0 ? (
-          <div className="grid gap-[clamp(26px,1.8056vw,34.667px)] sm:grid-cols-2 lg:grid-cols-[repeat(4,clamp(100px,6.9444vw,133.333px))]">
+          <div className="grid gap-[var(--mypage-mini-gap)] sm:grid-cols-2 lg:grid-cols-[repeat(4,var(--mypage-mini-card))]">
             {context.recentlyViewedPrograms.slice(0, 4).map((program) => (
               <ProgramMiniCard key={program.id} program={program} />
             ))}
@@ -2219,7 +2221,7 @@ function MemberInformationForm({
           {editMode ? (
             <>
               <div className="grid gap-y-[clamp(13px,0.9028vw,17.333px)] pl-[clamp(15px,1.0417vw,20px)] pt-[clamp(70px,4.8611vw,93.333px)]">
-          <div className="grid gap-x-[clamp(13px,0.9028vw,17.333px)] gap-y-3 md:grid-cols-[clamp(50px,3.4722vw,66.667px)_clamp(145px,10.0694vw,193.333px)_clamp(60px,4.1667vw,80px)_clamp(200px,13.8889vw,266.667px)_clamp(45px,3.125vw,60px)_clamp(160px,11.1111vw,213.333px)] md:items-center">
+          <div className="grid gap-x-[clamp(13px,0.9028vw,17.333px)] gap-y-3 md:grid-cols-[clamp(50px,3.4722vw,66.667px)_clamp(145px,10.0694vw,193.333px)_clamp(60px,4.1667vw,80px)_clamp(200px,13.8889vw,266.667px)_clamp(45px,3.125vw,60px)_clamp(160px,11.1111vw,213.333px)] md:items-end">
             <MemberLabel>이름</MemberLabel>
             <MemberLineInput
               onChange={(value) => setForm((current) => ({ ...current, name: value }))}
@@ -2258,7 +2260,13 @@ function MemberInformationForm({
             </div>
           </div>
 
-          <div className="grid gap-x-[clamp(13px,0.9028vw,17.333px)] gap-y-3 md:grid-cols-[clamp(50px,3.4722vw,66.667px)_clamp(220px,15.2778vw,293.333px)_clamp(72px,5vw,96px)_clamp(220px,15.2778vw,293.333px)] md:items-center">
+          <div
+            className={`grid gap-x-[clamp(13px,0.9028vw,17.333px)] gap-y-3 md:items-end ${
+              isPasswordManagedAccount
+                ? "md:grid-cols-[clamp(50px,3.4722vw,66.667px)_clamp(220px,15.2778vw,293.333px)_clamp(72px,5vw,96px)_clamp(220px,15.2778vw,293.333px)]"
+                : "md:grid-cols-[clamp(50px,3.4722vw,66.667px)_clamp(300px,20.8333vw,400px)]"
+            }`}
+          >
             <MemberLabel>아이디</MemberLabel>
             {isPasswordManagedAccount ? (
               <div className="flex min-w-0 items-center gap-[clamp(8px,0.5556vw,10.667px)]">
@@ -2276,23 +2284,23 @@ function MemberInformationForm({
             ) : (
               <MemberLineDisplay>{socialProviderLabel} 로그인 계정</MemberLineDisplay>
             )}
-            <MemberLabel>비밀번호</MemberLabel>
             {isPasswordManagedAccount ? (
-              <button
-                className="w-fit text-left text-[14px] font-medium text-[#76838f] underline underline-offset-2 transition hover:text-[#f7983a]"
-                onClick={() => setStatus("비밀번호 변경은 인증 화면과 함께 연결할게요.")}
-                type="button"
-              >
-                변경하기
-              </button>
-            ) : (
-              <MemberLineDisplay>소셜 계정에서 관리</MemberLineDisplay>
-            )}
+              <>
+                <MemberLabel>비밀번호</MemberLabel>
+                <button
+                  className="w-fit self-end text-left !text-[clamp(12px,0.8333vw,16px)] font-medium leading-none text-[#748190] underline underline-offset-2 transition hover:text-[#f7983a]"
+                  onClick={() => setStatus("비밀번호 변경은 인증 화면과 함께 연결할게요.")}
+                  type="button"
+                >
+                  변경하기
+                </button>
+              </>
+            ) : null}
           </div>
 
-          <div className="grid gap-x-[clamp(13px,0.9028vw,17.333px)] gap-y-3 md:grid-cols-[clamp(50px,3.4722vw,66.667px)_clamp(360px,25vw,480px)_clamp(62px,4.3056vw,82.667px)_clamp(190px,13.1944vw,253.333px)] md:items-center">
+          <div className="grid gap-x-[clamp(13px,0.9028vw,17.333px)] gap-y-3 md:grid-cols-[clamp(50px,3.4722vw,66.667px)_clamp(520px,36.1111vw,693.333px)] md:items-end">
             <MemberLabel>이메일</MemberLabel>
-            <div className="grid min-w-0 grid-cols-[minmax(90px,0.9fr)_auto_minmax(112px,1fr)_minmax(112px,1fr)] items-center gap-[clamp(8px,0.5556vw,10.667px)]">
+            <div className="grid min-w-0 grid-cols-[minmax(90px,0.9fr)_auto_minmax(112px,1fr)_minmax(112px,1fr)] items-end gap-[clamp(8px,0.5556vw,10.667px)]">
               <MemberLineInput
                 onChange={(value) =>
                   setForm((current) => ({ ...current, emailId: value }))
@@ -2300,7 +2308,7 @@ function MemberInformationForm({
                 placeholder="이메일 앞부분"
                 value={form.emailId}
               />
-              <span className="text-[14px] font-semibold text-[#8F7A6C]">@</span>
+              <span className="self-end pb-[clamp(3px,0.2083vw,4px)] text-[14px] font-semibold leading-none text-[#8F7A6C]">@</span>
               <MemberLineInput
                 onChange={(value) =>
                   setForm((current) => ({
@@ -2334,8 +2342,11 @@ function MemberInformationForm({
                 ))}
               </MemberLineSelect>
             </div>
+          </div>
+
+          <div className="grid gap-x-[clamp(13px,0.9028vw,17.333px)] gap-y-3 md:grid-cols-[clamp(50px,3.4722vw,66.667px)_clamp(260px,18.0556vw,346.667px)] md:items-end">
             <MemberLabel>연락처</MemberLabel>
-            <div className="flex min-w-0 items-center gap-[clamp(8px,0.5556vw,10.667px)]">
+            <div className="flex min-w-0 items-end gap-[clamp(8px,0.5556vw,10.667px)]">
               <MemberLineInput
                 onChange={(value) =>
                   setForm((current) => ({ ...current, phone: value }))
@@ -2349,7 +2360,7 @@ function MemberInformationForm({
             </div>
           </div>
 
-          <div className="grid gap-x-[clamp(10px,0.6944vw,13.333px)] gap-y-3 md:grid-cols-[clamp(50px,3.4722vw,66.667px)_clamp(270px,18.75vw,360px)_clamp(75px,5.2083vw,100px)_clamp(260px,18.0556vw,346.667px)] md:items-center">
+          <div className="grid gap-x-[clamp(10px,0.6944vw,13.333px)] gap-y-3 md:grid-cols-[clamp(50px,3.4722vw,66.667px)_clamp(270px,18.75vw,360px)_clamp(75px,5.2083vw,100px)_clamp(260px,18.0556vw,346.667px)] md:items-end">
             <MemberLabel>주소</MemberLabel>
             <MemberLineInput
               onChange={(value) =>
@@ -2378,9 +2389,9 @@ function MemberInformationForm({
             />
           </div>
 
-          <div className="grid gap-x-[clamp(13px,0.9028vw,17.333px)] gap-y-3 md:grid-cols-[clamp(50px,3.4722vw,66.667px)_clamp(330px,22.9167vw,440px)] md:items-center">
+          <div className="grid gap-x-[clamp(13px,0.9028vw,17.333px)] gap-y-3 md:grid-cols-[clamp(50px,3.4722vw,66.667px)_clamp(330px,22.9167vw,440px)] md:items-end">
             <MemberLabel>생년월일</MemberLabel>
-            <div className="grid grid-cols-[minmax(112px,1fr)_minmax(82px,0.7fr)_minmax(82px,0.7fr)] gap-[clamp(12px,0.8333vw,16px)]">
+            <div className="grid grid-cols-[minmax(112px,1fr)_minmax(82px,0.7fr)_minmax(82px,0.7fr)] items-end gap-[clamp(12px,0.8333vw,16px)]">
               <MemberLineSelect
                 ariaLabel="출생 연도"
                 onChange={(value) =>
@@ -2433,7 +2444,7 @@ function MemberInformationForm({
             </div>
           </div>
 
-          <div className="mt-[clamp(9px,0.625vw,12px)] grid gap-x-[clamp(13px,0.9028vw,17.333px)] gap-y-3 md:grid-cols-[clamp(50px,3.4722vw,66.667px)_clamp(340px,23.6111vw,453.333px)] md:items-center">
+          <div className="mt-[clamp(9px,0.625vw,12px)] grid gap-x-[clamp(13px,0.9028vw,17.333px)] gap-y-3 md:grid-cols-[clamp(50px,3.4722vw,66.667px)_clamp(340px,23.6111vw,453.333px)] md:items-end">
             <MemberLabel>결제정보</MemberLabel>
             <MemberLineInput
               onChange={(value) =>
@@ -2444,7 +2455,7 @@ function MemberInformationForm({
             />
           </div>
 
-          <div className="grid gap-x-[clamp(12px,0.8333vw,16px)] gap-y-3 md:grid-cols-[clamp(50px,3.4722vw,66.667px)_clamp(170px,11.8056vw,226.667px)_clamp(300px,20.8333vw,400px)] md:items-center">
+          <div className="grid gap-x-[clamp(12px,0.8333vw,16px)] gap-y-3 md:grid-cols-[clamp(50px,3.4722vw,66.667px)_clamp(170px,11.8056vw,226.667px)_clamp(300px,20.8333vw,400px)] md:items-end">
             <MemberLabel>환불계좌</MemberLabel>
             <MemberLineInput
               onChange={(value) =>
@@ -2461,7 +2472,7 @@ function MemberInformationForm({
               value={form.refundAccount}
             />
           </div>
-        </div>
+          </div>
 
         <div className="mt-[clamp(24px,1.6667vw,32px)] flex flex-col gap-3 md:flex-row md:items-center md:justify-end">
           <p className="min-h-5 text-right text-[13px] text-[#8F7A6C] md:mr-4">
@@ -2599,7 +2610,7 @@ function MemberInformationReadOnly({
   return (
     <>
       <div className="grid gap-y-[clamp(13px,0.9028vw,17.333px)] pl-[clamp(15px,1.0417vw,20px)] pt-[clamp(70px,4.8611vw,93.333px)]">
-        <div className="grid gap-x-[clamp(13px,0.9028vw,17.333px)] gap-y-3 md:grid-cols-[clamp(50px,3.4722vw,66.667px)_clamp(145px,10.0694vw,193.333px)_clamp(60px,4.1667vw,80px)_clamp(200px,13.8889vw,266.667px)_clamp(45px,3.125vw,60px)_clamp(160px,11.1111vw,213.333px)] md:items-center">
+        <div className="grid gap-x-[clamp(13px,0.9028vw,17.333px)] gap-y-3 md:grid-cols-[clamp(50px,3.4722vw,66.667px)_clamp(145px,10.0694vw,193.333px)_clamp(60px,4.1667vw,80px)_clamp(200px,13.8889vw,266.667px)_clamp(45px,3.125vw,60px)_clamp(160px,11.1111vw,213.333px)] md:items-end">
           <MemberLabel>이름</MemberLabel>
           <MemberTextValue>{form.name || "-"}</MemberTextValue>
           <MemberLabel>닉네임</MemberLabel>
@@ -2608,42 +2619,53 @@ function MemberInformationReadOnly({
           <MemberTextValue>{genderLabel(form.gender)}</MemberTextValue>
         </div>
 
-        <div className="grid gap-x-[clamp(13px,0.9028vw,17.333px)] gap-y-3 md:grid-cols-[clamp(50px,3.4722vw,66.667px)_clamp(220px,15.2778vw,293.333px)_clamp(72px,5vw,96px)_clamp(220px,15.2778vw,293.333px)] md:items-center">
+        <div
+          className={`grid gap-x-[clamp(13px,0.9028vw,17.333px)] gap-y-3 md:items-end ${
+            isPasswordManagedAccount
+              ? "md:grid-cols-[clamp(50px,3.4722vw,66.667px)_clamp(220px,15.2778vw,293.333px)_clamp(72px,5vw,96px)_clamp(220px,15.2778vw,293.333px)]"
+              : "md:grid-cols-[clamp(50px,3.4722vw,66.667px)_clamp(300px,20.8333vw,400px)]"
+          }`}
+        >
           <MemberLabel>아이디</MemberLabel>
           <MemberTextValue>
             {isPasswordManagedAccount
               ? form.loginId || "-"
               : `${socialProviderLabel} 로그인 계정`}
           </MemberTextValue>
-          <MemberLabel>비밀번호</MemberLabel>
-          <MemberTextValue>
-            {isPasswordManagedAccount ? "변경하기" : "소셜 계정에서 관리"}
-          </MemberTextValue>
+          {isPasswordManagedAccount ? (
+            <>
+              <MemberLabel>비밀번호</MemberLabel>
+              <MemberTextValue>변경하기</MemberTextValue>
+            </>
+          ) : null}
         </div>
 
-        <div className="grid gap-x-[clamp(13px,0.9028vw,17.333px)] gap-y-3 md:grid-cols-[clamp(50px,3.4722vw,66.667px)_clamp(360px,25vw,480px)_clamp(62px,4.3056vw,82.667px)_clamp(190px,13.1944vw,253.333px)] md:items-center">
+        <div className="grid gap-x-[clamp(13px,0.9028vw,17.333px)] gap-y-3 md:grid-cols-[clamp(50px,3.4722vw,66.667px)_clamp(520px,36.1111vw,693.333px)] md:items-end">
           <MemberLabel>이메일</MemberLabel>
           <MemberTextValue>{email || "-"}</MemberTextValue>
+        </div>
+
+        <div className="grid gap-x-[clamp(13px,0.9028vw,17.333px)] gap-y-3 md:grid-cols-[clamp(50px,3.4722vw,66.667px)_clamp(260px,18.0556vw,346.667px)] md:items-end">
           <MemberLabel>연락처</MemberLabel>
           <MemberTextValue>{form.phone || "-"}</MemberTextValue>
         </div>
 
-        <div className="grid gap-x-[clamp(13px,0.9028vw,17.333px)] gap-y-3 md:grid-cols-[clamp(50px,3.4722vw,66.667px)_minmax(0,1fr)] md:items-center">
+        <div className="grid gap-x-[clamp(13px,0.9028vw,17.333px)] gap-y-3 md:grid-cols-[clamp(50px,3.4722vw,66.667px)_minmax(0,1fr)] md:items-end">
           <MemberLabel>주소</MemberLabel>
           <MemberTextValue>{fullAddress || "-"}</MemberTextValue>
         </div>
 
-        <div className="grid gap-x-[clamp(13px,0.9028vw,17.333px)] gap-y-3 md:grid-cols-[clamp(50px,3.4722vw,66.667px)_clamp(330px,22.9167vw,440px)] md:items-center">
+        <div className="grid gap-x-[clamp(13px,0.9028vw,17.333px)] gap-y-3 md:grid-cols-[clamp(50px,3.4722vw,66.667px)_clamp(330px,22.9167vw,440px)] md:items-end">
           <MemberLabel>생년월일</MemberLabel>
           <MemberTextValue>{birthDate || "-"}</MemberTextValue>
         </div>
 
-        <div className="mt-[clamp(9px,0.625vw,12px)] grid gap-x-[clamp(13px,0.9028vw,17.333px)] gap-y-3 md:grid-cols-[clamp(50px,3.4722vw,66.667px)_clamp(340px,23.6111vw,453.333px)] md:items-center">
+        <div className="mt-[clamp(9px,0.625vw,12px)] grid gap-x-[clamp(13px,0.9028vw,17.333px)] gap-y-3 md:grid-cols-[clamp(50px,3.4722vw,66.667px)_clamp(340px,23.6111vw,453.333px)] md:items-end">
           <MemberLabel>결제정보</MemberLabel>
           <MemberTextValue>{form.paymentMethod || "-"}</MemberTextValue>
         </div>
 
-        <div className="grid gap-x-[clamp(13px,0.9028vw,17.333px)] gap-y-3 md:grid-cols-[clamp(50px,3.4722vw,66.667px)_minmax(0,1fr)] md:items-center">
+        <div className="grid gap-x-[clamp(13px,0.9028vw,17.333px)] gap-y-3 md:grid-cols-[clamp(50px,3.4722vw,66.667px)_minmax(0,1fr)] md:items-end">
           <MemberLabel>환불계좌</MemberLabel>
           <MemberTextValue>{refundAccount || "-"}</MemberTextValue>
         </div>
@@ -3135,6 +3157,24 @@ function NuvioAssetIcon({
   );
 }
 
+function MiniCardPlaceholder({ animated = false }: { animated?: boolean }) {
+  const pulseClass = animated ? "animate-pulse" : "";
+
+  return (
+    <article className="block min-w-0">
+      <div
+        className={`aspect-square w-full rounded-[clamp(9px,0.625vw,12px)] bg-[#d9d9d9] ${pulseClass}`}
+      />
+      <p className="mt-[clamp(11px,0.7639vw,14.667px)] text-[clamp(12px,0.8333vw,16px)] font-medium leading-none text-[var(--mypage-orange)]">
+        여행예정 00/00
+      </p>
+      <p className="mt-[clamp(6px,0.4167vw,8px)] line-clamp-2 min-h-[clamp(46px,3.1944vw,61.333px)] text-[clamp(16px,1.1111vw,21.333px)] font-semibold leading-[1.42] text-[var(--mypage-brown)]">
+        프로그램 제목 입력
+      </p>
+    </article>
+  );
+}
+
 function TripMiniCard({
   application,
   loading,
@@ -3146,26 +3186,12 @@ function TripMiniCard({
 }) {
   if (!application && loading) {
     return (
-      <article className="min-w-0">
-        <div className="aspect-square w-full animate-pulse rounded-[clamp(16px,1.1111vw,21.333px)] bg-[#f0f0f0]" />
-        <div className="mt-3 h-3 w-20 rounded-full bg-[#eeeeee]" />
-        <div className="mt-2 h-4 w-4/5 rounded-full bg-[#eeeeee]" />
-      </article>
+      <MiniCardPlaceholder animated />
     );
   }
 
   if (!application) {
-    return (
-      <article className="min-w-0">
-        <NuvioEmptyState
-          className="aspect-square min-h-0 rounded-[clamp(16px,1.1111vw,21.333px)] bg-[#f3f3f3] px-2 py-0"
-          compact
-          iconClassName="h-[30px] w-[26px]"
-          label="여행 프로그램"
-          textClassName="mt-3 text-[12px]"
-        />
-      </article>
-    );
+    return <MiniCardPlaceholder />;
   }
 
   const image = program?.image;
@@ -3173,7 +3199,7 @@ function TripMiniCard({
 
   return (
     <Link className="group block min-w-0" href={href}>
-      <div className="relative aspect-square w-full overflow-hidden rounded-[clamp(16px,1.1111vw,21.333px)] bg-[#f3f3f3]">
+      <div className="relative aspect-square w-full overflow-hidden rounded-[clamp(9px,0.625vw,12px)] bg-[#d9d9d9]">
         {image ? (
           <Image
             alt={program?.title ?? formatProgramDisplayName(application.programTitle, application.programId)}
@@ -3191,7 +3217,7 @@ function TripMiniCard({
       <p className="mt-[clamp(11px,0.7639vw,14.667px)] text-[clamp(12px,0.8333vw,16px)] font-medium text-[var(--mypage-orange)]">
         {tripStatusLabels[application.status]} {formatShortDate(application.submittedAt)}
       </p>
-      <p className="mt-[clamp(4px,0.2778vw,5.333px)] line-clamp-2 min-h-[clamp(44px,3.0556vw,58.667px)] text-[clamp(16px,1.1111vw,21.333px)] font-semibold leading-[1.375] text-[var(--mypage-brown)] transition group-hover:text-[var(--mypage-orange)]">
+      <p className="mt-[clamp(4px,0.2778vw,5.333px)] line-clamp-2 min-h-[clamp(46px,3.1944vw,61.333px)] text-[clamp(16px,1.1111vw,21.333px)] font-semibold leading-[1.42] text-[var(--mypage-brown)] transition group-hover:text-[var(--mypage-orange)]">
         {program?.title ?? formatProgramDisplayName(application.programTitle, application.programId)}
       </p>
     </Link>
@@ -3338,7 +3364,7 @@ function TripDetailCard({
 function ProgramMiniCard({ program }: { program: Program }) {
   return (
     <Link className="group block min-w-0" href={programPath(program)}>
-      <div className="relative aspect-square w-full overflow-hidden rounded-[clamp(16px,1.1111vw,21.333px)] bg-[#f3f3f3]">
+      <div className="relative aspect-square w-full overflow-hidden rounded-[clamp(9px,0.625vw,12px)] bg-[#d9d9d9]">
         {program.image ? (
           <Image
             alt={program.title}
@@ -3352,7 +3378,7 @@ function ProgramMiniCard({ program }: { program: Program }) {
       <p className="mt-[clamp(11px,0.7639vw,14.667px)] text-[clamp(12px,0.8333vw,16px)] font-medium text-[#8F7A6C]">
         {program.region || program.city || "전국"} 여행
       </p>
-      <p className="mt-[clamp(4px,0.2778vw,5.333px)] line-clamp-2 min-h-[clamp(44px,3.0556vw,58.667px)] text-[clamp(16px,1.1111vw,21.333px)] font-semibold leading-[1.375] text-[var(--mypage-brown)] transition group-hover:text-[var(--mypage-orange)]">
+      <p className="mt-[clamp(4px,0.2778vw,5.333px)] line-clamp-2 min-h-[clamp(46px,3.1944vw,61.333px)] text-[clamp(16px,1.1111vw,21.333px)] font-semibold leading-[1.42] text-[var(--mypage-brown)] transition group-hover:text-[var(--mypage-orange)]">
         {program.title}
       </p>
     </Link>
@@ -3438,19 +3464,17 @@ function EmptyState({
 
 function RecentEmptyState() {
   return (
-    <div className="rounded-[6px] bg-white">
-      <NuvioEmptyState
-        className="min-h-[220px]"
-        label="최근 본 프로그램"
-        textClassName="text-[16px]"
-      />
+    <div className="grid gap-[var(--mypage-mini-gap)] sm:grid-cols-2 lg:grid-cols-[repeat(4,var(--mypage-mini-card))]">
+      {Array.from({ length: 4 }, (_, index) => (
+        <MiniCardPlaceholder key={`recent-placeholder-${index}`} />
+      ))}
     </div>
   );
 }
 
 function MemberLabel({ children }: { children: ReactNode }) {
   return (
-    <span className="whitespace-nowrap text-[clamp(14px,0.9722vw,18.667px)] font-semibold tracking-normal text-[#5A3829]">
+    <span className="inline-flex h-[clamp(22px,1.5278vw,29.333px)] items-end whitespace-nowrap pb-[clamp(2px,0.1389vw,2.667px)] text-[clamp(14px,0.9722vw,18.667px)] font-semibold leading-none tracking-normal text-[#5A3829]">
       {children}
     </span>
   );
@@ -3458,7 +3482,7 @@ function MemberLabel({ children }: { children: ReactNode }) {
 
 function MemberTextValue({ children }: { children: ReactNode }) {
   return (
-    <span className="min-h-[clamp(18px,1.25vw,24px)] min-w-0 truncate border-b border-transparent px-0 py-0 text-[clamp(12px,0.8333vw,16px)] font-medium leading-[1.25] text-[#748190]">
+    <span className="inline-flex h-[clamp(22px,1.5278vw,29.333px)] min-w-0 items-end truncate border-b border-transparent px-0 pb-[clamp(3px,0.2083vw,4px)] text-[clamp(12px,0.8333vw,16px)] font-medium leading-none text-[#748190]">
       {children}
     </span>
   );
@@ -3466,7 +3490,7 @@ function MemberTextValue({ children }: { children: ReactNode }) {
 
 function MemberLineDisplay({ children }: { children: ReactNode }) {
   return (
-    <span className="flex h-[clamp(18px,1.25vw,24px)] min-w-0 items-center truncate border-b border-transparent px-0 !text-[clamp(12px,0.8333vw,16px)] font-medium text-[#748190]">
+    <span className="flex h-[clamp(22px,1.5278vw,29.333px)] min-w-0 items-end truncate border-b border-transparent px-0 pb-[clamp(3px,0.2083vw,4px)] !text-[clamp(12px,0.8333vw,16px)] font-medium leading-none text-[#748190]">
       {children}
     </span>
   );
@@ -3485,7 +3509,7 @@ function MemberLineInput({
 }) {
   return (
     <input
-      className="h-[clamp(22px,1.5278vw,29.333px)] w-full min-w-0 border-0 border-b border-[#cfc7c0] bg-transparent px-0 !text-[clamp(12px,0.8333vw,16px)] font-medium text-[#4B3328] outline-none transition placeholder:text-[#8B98A6] focus:border-[#f7983a]"
+      className="h-[clamp(22px,1.5278vw,29.333px)] w-full min-w-0 border-0 border-b border-[#cfc7c0] bg-transparent px-0 pb-[clamp(3px,0.2083vw,4px)] !text-[clamp(12px,0.8333vw,16px)] font-medium leading-none text-[#4B3328] outline-none transition placeholder:text-[#8B98A6] focus:border-[#f7983a]"
       onChange={(event) => onChange(event.target.value)}
       placeholder={placeholder}
       ref={inputRef}
@@ -3508,7 +3532,7 @@ function MemberLineSelect({
   return (
     <select
       aria-label={ariaLabel}
-      className="h-[clamp(22px,1.5278vw,29.333px)] w-full min-w-0 border-0 border-b border-[#cfc7c0] bg-transparent px-0 !text-[clamp(12px,0.8333vw,16px)] font-medium text-[#4B3328] outline-none transition focus:border-[#f7983a]"
+      className="h-[clamp(22px,1.5278vw,29.333px)] w-full min-w-0 border-0 border-b border-[#cfc7c0] bg-transparent px-0 pb-[clamp(3px,0.2083vw,4px)] !text-[clamp(12px,0.8333vw,16px)] font-medium leading-none text-[#4B3328] outline-none transition focus:border-[#f7983a]"
       onChange={(event) => onChange(event.target.value)}
       value={value}
     >
