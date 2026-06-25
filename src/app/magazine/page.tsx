@@ -20,7 +20,7 @@ export default async function MagazinePage() {
   return (
     <div className="font-pretendard bg-white">
       <section className="flex min-h-screen w-full flex-col items-center px-[2.083vw] pb-[6.25vw] pt-[4.514vw] max-md:pt-10">
-        <h1 className="text-[1.042vw] font-medium leading-none text-[#5B3A29] max-md:text-sm">
+        <h1 className="text-[32px] font-medium leading-none text-[#5B3A29]">
           누비오 소식지
         </h1>
 
@@ -41,14 +41,14 @@ export default async function MagazinePage() {
                     alt={post.coverImageAlt || post.title}
                     src={post.coverImageUrl}
                   />
-                  <h2 className="mt-[1.25vw] line-clamp-2 text-[0.833vw] font-semibold leading-tight text-[#2B1E17] transition group-hover:text-[#fe701e] max-md:text-[12px]">
-                    {post.title}
-                  </h2>
-                  <p className="mt-[0.764vw] line-clamp-2 text-[0.729vw] font-medium leading-normal text-[#2B1E17] max-md:text-[11px]">
+                  <p className="mt-[clamp(24px,1.563vw,30px)] line-clamp-1 text-[clamp(14px,0.833vw,16px)] font-normal leading-[1.253] text-black max-md:text-[13px]">
                     {post.subtitle ||
                       post.excerpt ||
                       "누비어에게 전하는 프로그램과 지역 소식을 모았어요."}
                   </p>
+                  <h2 className="font-gangwon-saeeum mt-[clamp(12px,0.833vw,16px)] line-clamp-2 text-[clamp(20px,1.25vw,24px)] font-medium leading-[1.253] text-black transition group-hover:text-[#fe701e] max-md:text-[20px]">
+                    {post.title}
+                  </h2>
                 </Link>
               </article>
             ))}

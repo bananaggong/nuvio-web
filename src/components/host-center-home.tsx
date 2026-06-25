@@ -450,7 +450,7 @@ export function HostCenterHome({
           <form
             aria-modal="true"
             aria-labelledby="new-program-title"
-            className="flex w-[var(--host-603)] max-w-[calc(100vw-32px)] flex-col gap-[var(--host-6)] rounded-[12px] border border-[#D9D9D9] bg-[#F9F9F9] px-[var(--host-18)] py-[var(--host-24)] shadow-[0_18px_48px_rgba(91,58,41,0.14)] max-md:w-full max-md:min-w-0 max-md:p-5"
+            className="flex min-h-[clamp(187px,12.986vw,249.333px)] w-[clamp(457px,31.736vw,609.333px)] max-w-[calc(100vw-32px)] flex-col rounded-[12px] border border-[#D9D9D9] bg-[#F9F9F9] px-[var(--host-18)] py-[var(--host-24)] shadow-[0_18px_48px_rgba(91,58,41,0.14)] max-md:w-full max-md:min-w-0 max-md:p-5"
             onSubmit={(event) => {
               event.preventDefault();
               void createProgram();
@@ -467,46 +467,39 @@ export function HostCenterHome({
                 <X className="size-[var(--host-16)]" strokeWidth={2.2} />
               </button>
             </div>
-            <div className="flex w-full flex-col gap-[var(--host-21)]">
+            <div className="mt-[var(--host-6)] flex w-full flex-col gap-[var(--host-21)]">
               <label
                 className="text-[var(--host-14)] font-medium leading-[1.253] text-[#0D0D0C]"
                 htmlFor="new-program-name"
                 id="new-program-title"
               >
-                새 프로그램
+                새 프로그램 만들기
               </label>
-              <p className="text-[var(--host-12)] font-medium leading-[1.6] text-[#6D7A8A]">
-                프로그램 이름을 입력하고 생성하면 대시보드에서 본격적으로 작성할 수 있습니다.
-              </p>
               <input
                 autoFocus
-                className="h-[var(--host-30)] w-full rounded-[7px] border-[0.5px] border-[#F7B267] bg-transparent px-[var(--host-12)] text-[var(--host-12)] font-medium leading-[1.253] text-[#0D0D0C] outline-none placeholder:text-[#D9D9D9] focus:border-[#FE701E]"
+                className="h-[var(--host-31)] w-full rounded-[7px] border-[0.5px] border-[#F7B267] bg-transparent px-[var(--host-12)] text-[var(--host-12)] font-medium leading-[1.253] text-[#0D0D0C] outline-none placeholder:text-[#D9D9D9] focus:border-[#FE701E]"
                 id="new-program-name"
                 onChange={(event) => setProgramName(event.target.value)}
-                placeholder="프로그램 이름을 입력해주세요."
+                placeholder="프로그램 이름을 입력하세요."
                 value={programName}
               />
             </div>
             {programError ? (
-              <p className="text-[13px] font-bold text-red-600">{programError}</p>
+              <p className="mt-[var(--host-6)] text-[13px] font-bold text-red-600">
+                {programError}
+              </p>
             ) : null}
-            <div className="flex w-full justify-end gap-[var(--host-8)] pt-[var(--host-12)]">
+            <div className="mt-[var(--host-6)] flex w-full justify-end">
               <button
-                className="inline-flex h-[var(--host-29)] items-center justify-center rounded-[4px] border border-[#D9D9D9] bg-white px-[var(--host-18)] text-[var(--host-12)] font-medium leading-[1.253] text-[#6D7A8A]"
-                onClick={closeProgramDialog}
-                type="button"
-              >
-                취소
-              </button>
-              <button
-                className="inline-flex h-[var(--host-29)] items-center justify-center gap-[var(--host-6)] rounded-[4px] bg-[#FE701E] px-[var(--host-18)] text-[var(--host-12)] font-medium leading-[1.253] text-[#FFF6EC] disabled:opacity-40"
-                disabled={!trimmedProgramName || isProgramSaving}
+                aria-disabled={!trimmedProgramName || isProgramSaving}
+                className="inline-flex h-[var(--host-29)] items-center justify-center gap-[var(--host-6)] rounded-[4px] bg-[#FE701E] px-[var(--host-18)] text-[var(--host-12)] font-medium leading-[1.253] text-[#FFF6EC] transition hover:bg-[#E96418] disabled:cursor-wait disabled:opacity-60"
+                disabled={isProgramSaving}
                 type="submit"
               >
                 {isProgramSaving ? (
                   <Loader2 className="size-[var(--host-14)] animate-spin" />
                 ) : null}
-                생성하기
+                생성
               </button>
             </div>
           </form>

@@ -1,6 +1,18 @@
 @import url("https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/static/pretendard.css");
 @import "tailwindcss";
 
+@font-face {
+  font-family: "GangwonEduSaeeum";
+  font-display: swap;
+  font-style: normal;
+  font-weight: 500;
+  src:
+    url("https://cdn.jsdelivr.net/gh/fonts-archive/GangwonEduSaeeum/GangwonEduSaeeum.woff2")
+      format("woff2"),
+    url("https://cdn.jsdelivr.net/gh/fonts-archive/GangwonEduSaeeum/GangwonEduSaeeum.woff")
+      format("woff");
+}
+
 :root {
   --background: #f9f9f9;
   --foreground: #0d0d0c;
@@ -89,6 +101,17 @@ a {
 
 .font-pretendard {
   font-family:
+    Pretendard,
+    "Pretendard Variable",
+    ui-sans-serif,
+    system-ui,
+    sans-serif;
+}
+
+.font-gangwon-saeeum {
+  font-family:
+    "GangwonEduSaeeum",
+    "GangwonEdu Saeeum",
     Pretendard,
     "Pretendard Variable",
     ui-sans-serif,

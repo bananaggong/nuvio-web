@@ -16,7 +16,7 @@ import type { AuthProfile } from "@/lib/auth-profile-db";
 import { createSupabaseBrowserClient } from "@/lib/supabase/client";
 
 export type LoginMode = "choice" | "email";
-export type LoginIntent = "participant" | "host";
+export type LoginIntent = "apply" | "participant" | "host";
 
 type ProfileRole = AuthProfile["role"];
 
@@ -64,7 +64,8 @@ function getPostLoginPath(
   if (!isProfileOnboardingComplete(profile)) {
     if (nextPath?.startsWith("/onboarding")) return nextPath;
     const params = new URLSearchParams();
-    if (intent) params.set("intent", intent);
+    const onboardingIntent = getOnboardingIntent(intent);
+    if (onboardingIntent) params.set("intent", onboardingIntent);
     if (nextPath) params.set("next", nextPath);
     const query = params.toString();
     return query ? `/onboarding?${query}` : "/onboarding";
@@ -79,6 +80,39 @@ function getSignupPath(nextPath: string | null, intent: LoginIntent | null) {
   if (nextPath) params.set("next", nextPath);
   const query = params.toString();
   return query ? `/signup?${query}` : "/signup";
+}
+
+function getOnboardingIntent(
+  intent: LoginIntent | null,
+): "participant" | "host" | null {
+  if (intent === "host") return "host";
+  if (intent === "apply" || intent === "participant") return "participant";
+  return null;
+}
+
+function getEffectiveLoginIntent(
+  intent: LoginIntent | null,
+  nextPath: string | null,
+): LoginIntent {
+  if (intent) return intent;
+  if (nextPath?.startsWith("/host")) return "host";
+
+  const nextRoute = nextPath?.split(/[?#]/u)[0] ?? "";
+  if (/^\/programs\/[^/]+\/apply$/u.test(nextRoute)) return "apply";
+
+  return "participant";
+}
+
+function getLoginHeroLines(intent: LoginIntent): [string, string] {
+  if (intent === "host") {
+    return ["채널 운영을", "누비오에서 시작해보세요"];
+  }
+
+  if (intent === "apply") {
+    return ["프로그램 신청을", "누비오에서 이어가세요"];
+  }
+
+  return ["새로운 라이프스타일,", "여기서 시작해봐요"];
 }
 
 export function LoginPanel({
@@ -97,6 +131,8 @@ export function LoginPanel({
   const [mode, setMode] = useState<LoginMode>(authParams.mode);
   const nextPath = authParams.nextPath;
   const intent = authParams.intent;
+  const effectiveIntent = getEffectiveLoginIntent(intent, nextPath);
+  const [heroLine1, heroLine2] = getLoginHeroLines(effectiveIntent);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [authProfile, setAuthProfile] = useState<AuthProfile | null>(null);
@@ -315,15 +351,6 @@ export function LoginPanel({
                 회원가입
               </Link>
             </p>
-            <p className="mt-2 text-[13px] font-medium text-[#888]">
-              프로그램을 운영하고 있나요?{" "}
-              <Link
-                className="font-semibold text-[#378ADD] hover:underline"
-                href="/login?intent=host&next=/host"
-              >
-                호스트로 시작하기
-              </Link>
-            </p>
           </div>
         </div>
       </div>
@@ -335,19 +362,9 @@ export function LoginPanel({
       <AuthHeader />
       <div className="mx-auto flex w-full max-w-sm flex-col items-center px-6 py-14">
         <h1 className="text-center text-[26px] font-bold leading-snug text-[#111111]">
-          {intent === "host" ? (
-            <>
-              채널 운영을
-              <br />
-              누비오에서 시작해보세요
-            </>
-          ) : (
-            <>
-              새로운 라이프스타일,
-              <br />
-              여기서 시작해봐요
-            </>
-          )}
+          {heroLine1}
+          <br />
+          {heroLine2}
         </h1>
 
         {authProfile ? (
@@ -419,36 +436,6 @@ export function LoginPanel({
             {message}
           </p>
         ) : null}
-
-        <div className="relative mt-8 w-full">
-          <div aria-hidden="true" className="absolute inset-0 flex items-center">
-            <div className="w-full border-t border-neutral-100" />
-          </div>
-          <div className="relative flex justify-center text-[13px]">
-            <span className="bg-white px-4 text-[#aaa]">또는</span>
-          </div>
-        </div>
-
-        <div className="mt-5 text-center">
-          <p className="text-[13px] font-medium text-[#888]">
-            처음인가요?{" "}
-            <Link
-              className="font-semibold text-[#378ADD] hover:underline"
-              href={signupPath}
-            >
-              가입하기
-            </Link>
-          </p>
-          <p className="mt-2 text-[13px] font-medium text-[#888]">
-            프로그램을 운영하고 있나요?{" "}
-            <Link
-              className="font-semibold text-[#378ADD] hover:underline"
-              href="/login?intent=host&next=/host"
-            >
-              호스트로 시작하기
-            </Link>
-          </p>
-        </div>
 
         <div className="fixed bottom-6 left-0 right-0 w-full text-center lg:static lg:mt-8">
           <button

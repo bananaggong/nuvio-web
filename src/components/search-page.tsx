@@ -5,24 +5,6 @@ import { useRouter } from "next/navigation";
 import { Search, X } from "lucide-react";
 import { useState } from "react";
 
-const popularPrograms = [
-  "제주 한달살기",
-  "강릉 워케이션",
-  "보성 청년마을",
-  "지리산 홀로여행",
-];
-
-const themeOptions = [
-  "한달살기",
-  "주말체험",
-  "지원사업",
-  "자연힐링",
-  "문화예술",
-  "농촌어촌",
-  "워케이션",
-  "커뮤니티",
-];
-
 const regionOptions = [
   "수도권",
   "강원",
@@ -35,21 +17,10 @@ const regionOptions = [
   "제주",
 ];
 
-const monthOptions = [
-  "5월",
-  "6월",
-  "7월",
-  "8월",
-  "9월",
-  "10월",
-  "11월",
-  "12월",
-];
-
-export function SearchPage() {
+export function SearchPage({ currentMonth }: { currentMonth: number }) {
   const router = useRouter();
+  const monthOptions = getVisibleMonthOptions(currentMonth);
   const [keyword, setKeyword] = useState("");
-  const [selectedTheme, setSelectedTheme] = useState("");
   const [selectedRegion, setSelectedRegion] = useState("");
   const [selectedMonth, setSelectedMonth] = useState("");
   const [showDetailedDates, setShowDetailedDates] = useState(false);
@@ -58,7 +29,6 @@ export function SearchPage() {
 
   function resetSearch() {
     setKeyword("");
-    setSelectedTheme("");
     setSelectedRegion("");
     setSelectedMonth("");
     setShowDetailedDates(false);
@@ -69,7 +39,6 @@ export function SearchPage() {
   function submitSearch() {
     const params = new URLSearchParams();
     if (keyword.trim()) params.set("q", keyword.trim());
-    if (selectedTheme) params.set("theme", selectedTheme);
     if (selectedRegion) params.set("region", selectedRegion);
     if (selectedMonth) params.set("month", selectedMonth);
     if (showDetailedDates && startDate) params.set("start", startDate);
@@ -116,18 +85,6 @@ export function SearchPage() {
           </label>
         </div>
 
-        <FilterSection
-          items={popularPrograms}
-          onSelect={(value) => setKeyword(value)}
-          selectedValue={keyword}
-          title="지금 인기있는 프로그램"
-        />
-        <FilterSection
-          items={themeOptions}
-          onSelect={(value) => setSelectedTheme(toggleValue(selectedTheme, value))}
-          selectedValue={selectedTheme}
-          title="프로그램 테마"
-        />
         <FilterSection
           items={regionOptions}
           onSelect={(value) => setSelectedRegion(toggleValue(selectedRegion, value))}
@@ -255,4 +212,18 @@ function FilterButton({
 
 function toggleValue(current: string, next: string): string {
   return current === next ? "" : next;
+}
+
+function getVisibleMonthOptions(currentMonth: number): string[] {
+  const firstProgramMonth = 5;
+  const lastProgramMonth = 12;
+  const normalizedMonth = Number.isFinite(currentMonth) ? currentMonth : firstProgramMonth;
+  const startMonth = Math.max(firstProgramMonth, normalizedMonth);
+
+  if (startMonth > lastProgramMonth) return [];
+
+  return Array.from(
+    { length: lastProgramMonth - startMonth + 1 },
+    (_, index) => `${startMonth + index}월`,
+  );
 }

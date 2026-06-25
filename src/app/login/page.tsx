@@ -40,5 +40,7 @@ function getSafeNextPath(value: string | undefined): string | null {
 }
 
 function normalizeIntent(value: string | undefined): LoginIntent | null {
-  return value === "participant" || value === "host" ? value : null;
+  return value === "apply" || value === "participant" || value === "host"
+    ? value
+    : null;
 }

@@ -7,7 +7,7 @@ import { AuthHeader, ChevronRightIcon } from "@/components/auth-ui";
 import { createSupabaseBrowserClient } from "@/lib/supabase/client";
 
 type AgreementKey = "terms" | "privacy" | "age" | "event";
-type SignupIntent = "participant" | "host";
+type SignupIntent = "apply" | "participant" | "host";
 
 function getSafeNextPath(value: string | null): string | null {
   if (!value || !value.startsWith("/") || value.startsWith("//")) return null;
@@ -15,7 +15,9 @@ function getSafeNextPath(value: string | null): string | null {
 }
 
 function getSafeSignupIntent(value: string | null): SignupIntent | null {
-  return value === "participant" || value === "host" ? value : null;
+  return value === "apply" || value === "participant" || value === "host"
+    ? value
+    : null;
 }
 
 function getInitialSignupParams() {
@@ -44,7 +46,10 @@ function getLoginPath(nextPath: string | null, intent: SignupIntent | null) {
 
 function getPostSignupPath(nextPath: string | null, intent: SignupIntent | null) {
   const params = new URLSearchParams();
-  if (intent) params.set("intent", intent);
+  if (intent === "host") params.set("intent", "host");
+  if (intent === "apply" || intent === "participant") {
+    params.set("intent", "participant");
+  }
   if (nextPath) params.set("next", nextPath);
   const query = params.toString();
   return query ? `/onboarding?${query}` : "/onboarding";
