@@ -75,15 +75,19 @@ export function HostCenterHome({
     () => buildHostProjectOverviews(applications, reportProjects, programs),
     [applications, programs, reportProjects],
   );
+  const folderProgramItems = useMemo(
+    () =>
+      folders.flatMap((folder) =>
+        buildHostProgramOverviews(folder, applications).map((program) => ({
+          ...program,
+          projectId: folder.id,
+          projectTitle: folder.title,
+          villageName: folder.villageName,
+        })),
+      ),
+    [applications, folders],
+  );
   const programItems = useMemo(() => {
-    const folderProgramItems: HostProgramListItem[] = folders.flatMap((folder) =>
-      buildHostProgramOverviews(folder, applications).map((program) => ({
-        ...program,
-        projectId: folder.id,
-        projectTitle: folder.title,
-        villageName: folder.villageName,
-      })),
-    );
     const standaloneProgramItems: HostProgramListItem[] =
       buildStandaloneHostProgramOverviews(
         applications,
@@ -96,18 +100,18 @@ export function HostCenterHome({
         villageName: workspace.title,
       }));
 
-    return [...folderProgramItems, ...standaloneProgramItems].sort(
+    return standaloneProgramItems.sort(
       (a, b) => Date.parse(b.updatedAt) - Date.parse(a.updatedAt),
     );
-  }, [applications, folders, programs, reportProjects, workspace.title]);
+  }, [applications, programs, reportProjects, workspace.title]);
   const programsByFolder = useMemo(
     () =>
-      programItems.reduce<Record<string, HostProgramListItem[]>>((acc, program) => {
+      folderProgramItems.reduce<Record<string, HostProgramListItem[]>>((acc, program) => {
         if (!program.projectId) return acc;
         acc[program.projectId] = [...(acc[program.projectId] ?? []), program];
         return acc;
       }, {}),
-    [programItems],
+    [folderProgramItems],
   );
   const groups = useMemo(() => buildProgramGroups(programItems), [programItems]);
   const expandedProgramGroupId = getProgramGroupFromStatus(
@@ -205,7 +209,7 @@ export function HostCenterHome({
       ownerName: "운영 담당자",
       periodLabel: "운영 기간 미정",
       programId: primaryProgram?.id ?? "",
-      programTitle: primaryProgram?.title ?? trimmedFolderName,
+      programTitle: primaryProgram?.title ?? "전체 프로그램",
       title: trimmedFolderName,
       updatedAt: now,
       villageName: workspace.title,

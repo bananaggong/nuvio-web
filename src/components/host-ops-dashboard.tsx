@@ -9,10 +9,8 @@ import {
 import { useMemo } from "react";
 import { NuvioEmptyState } from "@/components/nuvio-empty-state";
 import {
-  buildHostProgramOverviews,
   buildHostProjectOverviews,
   buildStandaloneHostProgramOverviews,
-  hostProgramPath,
   hostStandaloneProgramPath,
   type HostProgramOverview,
 } from "@/lib/host-projects";
@@ -33,14 +31,6 @@ export function HostOpsDashboard() {
   );
   const programItems = useMemo(
     () => {
-      const projectProgramItems: ProgramListItem[] = projects.flatMap((project) =>
-        buildHostProgramOverviews(project, applications).map((program) => ({
-          ...program,
-          projectId: project.id,
-          projectTitle: project.title,
-          villageName: project.villageName,
-        })),
-      );
       const standaloneProgramItems: ProgramListItem[] = buildStandaloneHostProgramOverviews(
         applications,
         reportProjects,
@@ -52,9 +42,9 @@ export function HostOpsDashboard() {
         villageName: "독립 프로그램",
       }));
 
-      return [...projectProgramItems, ...standaloneProgramItems];
+      return standaloneProgramItems;
     },
-    [applications, programs, projects, reportProjects],
+    [applications, programs, reportProjects],
   );
   const createProgramHref = "/host/programs/new";
 
@@ -106,9 +96,7 @@ export function HostOpsDashboard() {
 }
 
 function ProgramCard({ program }: { program: ProgramListItem }) {
-  const href = program.projectId
-    ? hostProgramPath(program.projectId, program.id)
-    : hostStandaloneProgramPath(program.id);
+  const href = hostStandaloneProgramPath(program.id);
 
   return (
     <article className="group min-w-0">

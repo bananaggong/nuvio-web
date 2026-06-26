@@ -786,25 +786,33 @@ export function normalizeReportProjectModel(input: unknown): ReportProject {
   const connectedProgramTitles = normalizeStringArray(value.connectedProgramTitles);
   const legacyProgramTitle = asString(value.programTitle);
   const id = asString(value.id) || `operation-${Date.now()}`;
+  const title = asString(value.title) || asString(value.name) || "운영 폴더";
   const normalizedConnectedProgramTitles =
     connectedProgramTitles.length > 0
       ? connectedProgramTitles
       : legacyProgramTitle && legacyProgramTitle !== "전체 프로그램"
         ? [legacyProgramTitle]
         : [];
+  const normalizedConnectedProgramIds = Array.from(
+    new Set([programId, ...connectedProgramIds].filter(Boolean)),
+  );
+  const cleanedConnectedProgramTitles =
+    normalizedConnectedProgramIds.length === 0 &&
+    normalizedConnectedProgramTitles.length === 1 &&
+    normalizeReportTextKey(normalizedConnectedProgramTitles[0]) ===
+      normalizeReportTextKey(title)
+      ? []
+      : normalizedConnectedProgramTitles;
   const migratedConnectedProgramTitles =
     id === "operation-boseong-2026"
       ? Array.from(
           new Set([
-            ...normalizedConnectedProgramTitles,
+            ...cleanedConnectedProgramTitles,
             "나를 담는 차 실험실",
             "로컬살롱",
           ]),
         )
-      : normalizedConnectedProgramTitles;
-  const normalizedConnectedProgramIds = Array.from(
-    new Set([programId, ...connectedProgramIds].filter(Boolean)),
-  );
+      : cleanedConnectedProgramTitles;
 
   return {
     activityEvents: normalizeActivityEvents(value.activityEvents),
@@ -823,7 +831,7 @@ export function normalizeReportProjectModel(input: unknown): ReportProject {
     programId,
     sections: normalizeSections(value.sections),
     status: asReportStatus(value.status),
-    title: asString(value.title) || asString(value.name) || "운영 폴더",
+    title,
     updatedAt: asString(value.updatedAt) || new Date().toISOString(),
     villageId: asString(value.villageId),
     villageName:
@@ -1017,6 +1025,10 @@ function asRecord(value: unknown): Record<string, unknown> | undefined {
 
 function asString(value: unknown): string {
   return typeof value === "string" ? value.trim() : "";
+}
+
+function normalizeReportTextKey(value: string): string {
+  return value.normalize("NFKC").replace(/\s+/gu, "").toLowerCase();
 }
 
 function asNumber(value: unknown): number {

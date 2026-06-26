@@ -108,34 +108,29 @@ export function buildHostProgramOverviews(
 
 export function buildStandaloneHostProgramOverviews(
   applications: HostApplication[],
-  reportProjects: ReportProject[],
+  _reportProjects: ReportProject[],
   programDrafts: HostProgramDraft[] = [],
 ): HostProgramOverview[] {
-  const { connectedIds, connectedTitles } = collectConnectedProgramKeys(reportProjects);
   const standaloneDrafts = uniquePrograms(
-    programDrafts.filter((program) => {
-      if (connectedIds.has(program.id)) return false;
-      if (connectedTitles.has(normalizeTitle(program.title))) return false;
-      return true;
-    }),
+    programDrafts,
   );
   const draftPrograms = standaloneDrafts.map((program) =>
     buildStandaloneProgramOverviewFromDraft(program, applications),
   );
+  const draftIds = new Set(draftPrograms.map((program) => program.id));
   const draftTitles = new Set(
     draftPrograms.map((program) => normalizeTitle(program.title)),
   );
   const legacyPrograms = applications
     .filter(
       (application) =>
-        !application.programId || !connectedIds.has(application.programId),
+        !application.programId || !draftIds.has(application.programId),
     )
     .map((application) => application.programTitle)
     .filter((title) => {
       const normalizedTitle = normalizeTitle(title);
       if (!normalizedTitle) return false;
       if (draftTitles.has(normalizedTitle)) return false;
-      if (connectedTitles.has(normalizedTitle)) return false;
       return true;
     })
     .filter((title, index, titles) => titles.indexOf(title) === index)
@@ -523,11 +518,16 @@ function resolveProjectProgramDrafts(
   const connectedIds = new Set(
     [project.programId, ...project.connectedProgramIds].filter(Boolean),
   );
+  if (connectedIds.size > 0) {
+    return uniquePrograms(
+      programDrafts.filter((program) => connectedIds.has(program.id)),
+    );
+  }
+
   const connectedTitles = new Set(
     project.connectedProgramTitles.map((title) => normalizeTitle(title)),
   );
   const matchedPrograms = programDrafts.filter((program) => {
-    if (connectedIds.has(program.id)) return true;
     if (connectedTitles.has(normalizeTitle(program.title))) return true;
     return false;
   });
@@ -572,26 +572,4 @@ function resolveProjectProgramTitles(project: HostProjectOverview): string[] {
         : [];
 
   return Array.from(new Set(titles));
-}
-
-function collectConnectedProgramKeys(reportProjects: ReportProject[]): {
-  connectedIds: Set<string>;
-  connectedTitles: Set<string>;
-} {
-  const connectedIds = new Set<string>();
-  const connectedTitles = new Set<string>();
-
-  for (const project of reportProjects) {
-    for (const id of [project.programId, ...project.connectedProgramIds]) {
-      if (id) connectedIds.add(id);
-    }
-    for (const title of project.connectedProgramTitles) {
-      const normalizedTitle = normalizeTitle(title);
-      if (normalizedTitle && normalizedTitle !== normalizeTitle("전체 프로그램")) {
-        connectedTitles.add(normalizedTitle);
-      }
-    }
-  }
-
-  return { connectedIds, connectedTitles };
 }

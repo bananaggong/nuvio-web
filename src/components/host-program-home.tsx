@@ -48,17 +48,20 @@ export function HostProgramHome() {
     () => buildHostProjectOverviews(applications, reportProjects, programs),
     [applications, programs, reportProjects],
   );
+  const folderProgramItems = useMemo<ProgramListItem[]>(
+    () =>
+      folders.flatMap((folder) =>
+        buildHostProgramOverviews(folder, applications).map((program) => ({
+          ...program,
+          projectId: folder.id,
+          projectTitle: folder.title,
+          villageName: folder.villageName,
+        })),
+      ),
+    [applications, folders],
+  );
   const programItems = useMemo(
     () => {
-      const folderProgramItems: ProgramListItem[] = folders
-        .flatMap((folder) =>
-          buildHostProgramOverviews(folder, applications).map((program) => ({
-            ...program,
-            projectId: folder.id,
-            projectTitle: folder.title,
-            villageName: folder.villageName,
-          })),
-        )
       const standaloneProgramItems: ProgramListItem[] = buildStandaloneHostProgramOverviews(
         applications,
         reportProjects,
@@ -70,20 +73,20 @@ export function HostProgramHome() {
         villageName: "독립 프로그램",
       }));
 
-      return [...folderProgramItems, ...standaloneProgramItems].sort(
+      return standaloneProgramItems.sort(
         (a, b) => Date.parse(b.updatedAt) - Date.parse(a.updatedAt),
       );
     },
-    [applications, folders, programs, reportProjects],
+    [applications, programs, reportProjects],
   );
   const programsByFolder = useMemo(
     () =>
-      programItems.reduce<Record<string, ProgramListItem[]>>((acc, program) => {
+      folderProgramItems.reduce<Record<string, ProgramListItem[]>>((acc, program) => {
         if (!program.projectId) return acc;
         acc[program.projectId] = [...(acc[program.projectId] ?? []), program];
         return acc;
       }, {}),
-    [programItems],
+    [folderProgramItems],
   );
   const createProgramHref = "/host/programs/new";
   const trimmedFolderName = folderName.trim();
