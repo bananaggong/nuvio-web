@@ -228,7 +228,7 @@ export function HostChannelHome() {
             <button
               className={`relative z-10 flex h-full w-full flex-col items-center justify-center text-center transition ${
                 channel?.heroImage ? "bg-black/0 hover:bg-black/10" : "text-[#6D7A8A]"
-              } disabled:cursor-wait disabled:opacity-70`}
+              } disabled:cursor-not-allowed disabled:opacity-70`}
               disabled={isUploadingHero || !channel}
               onClick={() => heroInputRef.current?.click()}
               type="button"

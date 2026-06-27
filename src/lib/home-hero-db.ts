@@ -20,55 +20,7 @@ type HomeHeroSlideRow = typeof homepageHeroSlidesTable.$inferSelect;
 const fallbackImageUrl =
   "https://images.unsplash.com/photo-1500534314209-a25ddb2bd429?auto=format&fit=crop&w=1600&q=82";
 
-export const defaultHomeHeroSlides: HomeHeroSlide[] = [
-  {
-    id: "demo-namhae-workation",
-    eyebrow: "추천 프로그램",
-    title: "남해 바다 워케이션 7일",
-    subtitle:
-      "남해 바다 앞 공유 작업공간에서 7일간 일하고 쉬며 로컬 클래스를 경험하는 워케이션 프로그램입니다.",
-    imageUrl: fallbackImageUrl,
-    href: "/programs/namhae-blue-workation-2026",
-    sortOrder: 0,
-    published: true,
-  },
-  {
-    id: "demo-daon-local-lab",
-    eyebrow: "채널",
-    title: "다온 로컬랩",
-    subtitle:
-      "빈집과 공유 작업공간, 지역 클래스를 연결해 남해 체류 경험을 운영하는 첫 번째 누비오 채널입니다.",
-    imageUrl:
-      "https://images.unsplash.com/photo-1507525428034-b723cf961d3e?auto=format&fit=crop&w=1600&q=82",
-    href: "/daon-local-lab",
-    sortOrder: 1,
-    published: true,
-  },
-  {
-    id: "demo-local-stays",
-    eyebrow: "새로운 체류",
-    title: "로컬 체류 프로그램 모아보기",
-    subtitle:
-      "일주일 워케이션부터 지역 클래스까지, 지금 신청 가능한 누비오 프로그램을 한 번에 확인해보세요.",
-    imageUrl:
-      "https://images.unsplash.com/photo-1493246507139-91e8fad9978e?auto=format&fit=crop&w=1600&q=82",
-    href: "/",
-    sortOrder: 2,
-    published: true,
-  },
-  {
-    id: "demo-host-center",
-    eyebrow: "호스트 공간",
-    title: "호스트센터에서 프로그램을 운영하세요",
-    subtitle:
-      "채널, 프로그램 등록, 신청자 관리까지 운영 흐름을 한 화면에서 이어갈 수 있어요.",
-    imageUrl:
-      "https://images.unsplash.com/photo-1518005020951-eccb494ad742?auto=format&fit=crop&w=1600&q=82",
-    href: "/host",
-    sortOrder: 3,
-    published: true,
-  },
-];
+export const defaultHomeHeroSlides: HomeHeroSlide[] = [];
 
 export async function listPublishedHomeHeroSlides(): Promise<HomeHeroSlide[]> {
   try {

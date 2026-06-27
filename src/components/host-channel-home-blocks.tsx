@@ -310,7 +310,7 @@ function HostChannelHomeBlocksInner({
       <div className="mt-[var(--host-16)] flex justify-center">
         <button
           aria-label="블록 추가"
-          className="grid size-[var(--host-18)] place-items-center text-[#FF9A3D] transition hover:text-[#FE701E] disabled:cursor-wait disabled:opacity-50"
+          className="grid size-[var(--host-18)] place-items-center text-[#FF9A3D] transition hover:text-[#FE701E] disabled:cursor-not-allowed disabled:opacity-50"
           disabled={saving || !channel}
           onClick={addBlock}
           type="button"
@@ -589,7 +589,7 @@ function BlockEditor({
 
       <div className="mt-[var(--host-16)] flex justify-end">
         <button
-          className="inline-flex h-[var(--host-29)] items-center justify-center rounded-[4px] bg-[#FE701E] px-[var(--host-18)] text-[length:var(--host-12)] font-medium leading-[1.253] text-[#FFF6EC] transition hover:bg-[#E96418] disabled:cursor-wait disabled:opacity-60"
+          className="inline-flex h-[var(--host-29)] items-center justify-center rounded-[4px] bg-[#FE701E] px-[var(--host-18)] text-[length:var(--host-12)] font-medium leading-[1.253] text-[#FFF6EC] transition hover:bg-[#E96418] disabled:cursor-not-allowed disabled:opacity-60"
           disabled={saving}
           onClick={onCommit}
           type="button"
