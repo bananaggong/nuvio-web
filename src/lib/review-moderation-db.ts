@@ -4,6 +4,7 @@ import {
   programs as programsTable,
   reviewHostReplies,
   reviewReports,
+  reviewRequests,
   reviews as reviewsTable,
 } from "@/db/schema";
 
@@ -11,6 +12,7 @@ export type ReviewModerationSummary = {
   draftCount: number;
   hiddenCount: number;
   openReportCount: number;
+  openRequestCount: number;
   pendingCount: number;
   publishedCount: number;
   totalCount: number;
@@ -29,6 +31,7 @@ export async function getHostReviewModerationSummary(options: {
   }
 
   const baseAccessConditions = buildReviewAccessConditions(options);
+  const requestAccessConditions = buildReviewRequestAccessConditions(options);
   const [
     totalCount,
     draftCount,
@@ -36,6 +39,7 @@ export async function getHostReviewModerationSummary(options: {
     publishedCount,
     hiddenCount,
     openReportCount,
+    openRequestCount,
     unansweredPublishedCount,
   ] = await Promise.all([
     countReviews(baseAccessConditions),
@@ -44,6 +48,7 @@ export async function getHostReviewModerationSummary(options: {
     countReviews([...baseAccessConditions, eq(reviewsTable.status, "published")]),
     countReviews([...baseAccessConditions, eq(reviewsTable.status, "hidden")]),
     countOpenReports(baseAccessConditions),
+    countOpenRequests(requestAccessConditions),
     countUnansweredPublished(baseAccessConditions),
   ]);
 
@@ -51,6 +56,7 @@ export async function getHostReviewModerationSummary(options: {
     draftCount,
     hiddenCount,
     openReportCount,
+    openRequestCount,
     pendingCount,
     publishedCount,
     totalCount,
@@ -81,6 +87,23 @@ async function countOpenReports(reviewAccessConditions: SQL[]): Promise<number> 
     .from(reviewReports)
     .innerJoin(reviewsTable, eq(reviewReports.reviewId, reviewsTable.id))
     .leftJoin(programsTable, eq(reviewsTable.programId, programsTable.id));
+
+  const [row] = conditions.length > 0
+    ? await query.where(and(...conditions))
+    : await query;
+
+  return row?.value ?? 0;
+}
+
+async function countOpenRequests(requestAccessConditions: SQL[]): Promise<number> {
+  const conditions = [
+    ...requestAccessConditions,
+    inArray(reviewRequests.status, ["pending", "sent", "opened"]),
+  ];
+  const query = getDb()
+    .select({ value: count() })
+    .from(reviewRequests)
+    .leftJoin(programsTable, eq(reviewRequests.programId, programsTable.id));
 
   const [row] = conditions.length > 0
     ? await query.where(and(...conditions))
@@ -129,11 +152,32 @@ function buildReviewAccessConditions(options: {
   return accessPredicate ? [accessPredicate] : [];
 }
 
+function buildReviewRequestAccessConditions(options: {
+  allowedVillageIds?: string[];
+  allowedVillageSlugs?: string[];
+}): SQL[] {
+  const accessConditions: SQL[] = [];
+
+  if (options.allowedVillageSlugs) {
+    accessConditions.push(inArray(reviewRequests.villageSlug, options.allowedVillageSlugs));
+  }
+  if (options.allowedVillageIds) {
+    accessConditions.push(inArray(programsTable.villageId, options.allowedVillageIds));
+  }
+
+  if (accessConditions.length === 0) return [];
+  if (accessConditions.length === 1) return [accessConditions[0]];
+
+  const accessPredicate = or(...accessConditions);
+  return accessPredicate ? [accessPredicate] : [];
+}
+
 function emptySummary(): ReviewModerationSummary {
   return {
     draftCount: 0,
     hiddenCount: 0,
     openReportCount: 0,
+    openRequestCount: 0,
     pendingCount: 0,
     publishedCount: 0,
     totalCount: 0,

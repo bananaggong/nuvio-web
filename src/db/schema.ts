@@ -640,6 +640,44 @@ export const reviewReports = pgTable(
     index("review_reports_created_at_idx").on(table.createdAt),
   ],
 );
+export const reviewRequests = pgTable(
+  "review_requests",
+  {
+    id: uuid("id").defaultRandom().primaryKey(),
+    applicationId: uuid("application_id")
+      .notNull()
+      .references(() => programApplications.id, { onDelete: "cascade" }),
+    programId: uuid("program_id")
+      .references(() => programs.id, { onDelete: "set null" }),
+    programRunId: uuid("program_run_id").references(() => programRuns.id, {
+      onDelete: "set null",
+    }),
+    villageSlug: text("village_slug"),
+    recipientEmail: text("recipient_email").notNull(),
+    recipientName: text("recipient_name").notNull(),
+    status: text("status").default("pending").notNull(),
+    requestCount: integer("request_count").default(0).notNull(),
+    lastRequestedAt: timestamp("last_requested_at", { withTimezone: true }),
+    nextReminderAt: timestamp("next_reminder_at", { withTimezone: true }),
+    expiresAt: timestamp("expires_at", { withTimezone: true }),
+    cancelledAt: timestamp("cancelled_at", { withTimezone: true }),
+    completedAt: timestamp("completed_at", { withTimezone: true }),
+    reviewId: uuid("review_id").references(() => reviews.id, {
+      onDelete: "set null",
+    }),
+    createdBy: uuid("created_by"),
+    createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+    updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
+  },
+  (table) => [
+    uniqueIndex("review_requests_application_id_unique_idx").on(table.applicationId),
+    index("review_requests_program_id_idx").on(table.programId),
+    index("review_requests_program_run_id_idx").on(table.programRunId),
+    index("review_requests_village_slug_idx").on(table.villageSlug),
+    index("review_requests_status_idx").on(table.status),
+    index("review_requests_last_requested_at_idx").on(table.lastRequestedAt),
+  ],
+);
 export const villageMediaContents = pgTable(
   "village_media_contents",
   {

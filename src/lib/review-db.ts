@@ -3,6 +3,7 @@ import { getDb } from "@/db/client";
 import {
   programApplications,
   programs as programsTable,
+  reviewRequests,
   reviews as reviewsTable,
   villages,
 } from "@/db/schema";
@@ -332,6 +333,16 @@ export async function createParticipantReview(
       .set({ reviewSubmitted: true, updatedAt: now })
       .where(eq(programApplications.id, application.applicationId));
 
+    await tx
+      .update(reviewRequests)
+      .set({
+        completedAt: now,
+        reviewId: createdReview.id,
+        status: "completed",
+        updatedAt: now,
+      })
+      .where(eq(reviewRequests.applicationId, application.applicationId));
+
     return [createdReview];
   });
 
@@ -409,10 +420,21 @@ export async function deleteParticipantReview(
     await tx.delete(reviewsTable).where(eq(reviewsTable.id, reviewId));
 
     if (existing.review.applicationId) {
+      const now = new Date();
       await tx
         .update(programApplications)
-        .set({ reviewSubmitted: false, updatedAt: new Date() })
+        .set({ reviewSubmitted: false, updatedAt: now })
         .where(eq(programApplications.id, existing.review.applicationId));
+
+      await tx
+        .update(reviewRequests)
+        .set({
+          completedAt: null,
+          reviewId: null,
+          status: "pending",
+          updatedAt: now,
+        })
+        .where(eq(reviewRequests.applicationId, existing.review.applicationId));
     }
   });
 
