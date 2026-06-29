@@ -575,6 +575,29 @@ export const reviews = pgTable(
   ],
 );
 
+export const reviewModerationChecks = pgTable(
+  "review_moderation_checks",
+  {
+    id: uuid("id").defaultRandom().primaryKey(),
+    reviewId: uuid("review_id")
+      .notNull()
+      .references(() => reviews.id, { onDelete: "cascade" }),
+    riskLevel: text("risk_level").default("low").notNull(),
+    riskScore: integer("risk_score").default(0).notNull(),
+    flags: jsonb("flags").$type<string[]>().default(emptyArray).notNull(),
+    matchedTerms: jsonb("matched_terms").$type<string[]>().default(emptyArray).notNull(),
+    metadata: jsonb("metadata").$type<Record<string, unknown>>().default(emptyObject).notNull(),
+    checkedBy: uuid("checked_by"),
+    checkedAt: timestamp("checked_at", { withTimezone: true }).defaultNow().notNull(),
+    createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+    updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
+  },
+  (table) => [
+    uniqueIndex("review_moderation_checks_review_id_unique_idx").on(table.reviewId),
+    index("review_moderation_checks_risk_level_idx").on(table.riskLevel),
+    index("review_moderation_checks_checked_at_idx").on(table.checkedAt),
+  ],
+);
 export const reviewHostReplies = pgTable(
   "review_host_replies",
   {

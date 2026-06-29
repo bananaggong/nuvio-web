@@ -3,6 +3,7 @@ import { getDb } from "@/db/client";
 import {
   programs as programsTable,
   reviewHostReplies,
+  reviewModerationChecks,
   reviewReports,
   reviewRequests,
   reviews as reviewsTable,
@@ -10,6 +11,7 @@ import {
 
 export type ReviewModerationSummary = {
   draftCount: number;
+  flaggedPendingCount: number;
   hiddenCount: number;
   openReportCount: number;
   openRequestCount: number;
@@ -40,6 +42,7 @@ export async function getHostReviewModerationSummary(options: {
     hiddenCount,
     openReportCount,
     openRequestCount,
+    flaggedPendingCount,
     unansweredPublishedCount,
   ] = await Promise.all([
     countReviews(baseAccessConditions),
@@ -49,11 +52,13 @@ export async function getHostReviewModerationSummary(options: {
     countReviews([...baseAccessConditions, eq(reviewsTable.status, "hidden")]),
     countOpenReports(baseAccessConditions),
     countOpenRequests(requestAccessConditions),
+    countFlaggedPending(baseAccessConditions),
     countUnansweredPublished(baseAccessConditions),
   ]);
 
   return {
     draftCount,
+    flaggedPendingCount,
     hiddenCount,
     openReportCount,
     openRequestCount,
@@ -104,6 +109,25 @@ async function countOpenRequests(requestAccessConditions: SQL[]): Promise<number
     .select({ value: count() })
     .from(reviewRequests)
     .leftJoin(programsTable, eq(reviewRequests.programId, programsTable.id));
+
+  const [row] = conditions.length > 0
+    ? await query.where(and(...conditions))
+    : await query;
+
+  return row?.value ?? 0;
+}
+
+async function countFlaggedPending(reviewAccessConditions: SQL[]): Promise<number> {
+  const conditions = [
+    ...reviewAccessConditions,
+    eq(reviewsTable.status, "pending"),
+    inArray(reviewModerationChecks.riskLevel, ["medium", "high"]),
+  ];
+  const query = getDb()
+    .select({ value: count() })
+    .from(reviewModerationChecks)
+    .innerJoin(reviewsTable, eq(reviewModerationChecks.reviewId, reviewsTable.id))
+    .leftJoin(programsTable, eq(reviewsTable.programId, programsTable.id));
 
   const [row] = conditions.length > 0
     ? await query.where(and(...conditions))
@@ -175,6 +199,7 @@ function buildReviewRequestAccessConditions(options: {
 function emptySummary(): ReviewModerationSummary {
   return {
     draftCount: 0,
+    flaggedPendingCount: 0,
     hiddenCount: 0,
     openReportCount: 0,
     openRequestCount: 0,

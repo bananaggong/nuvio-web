@@ -9,6 +9,7 @@ import {
 } from "@/db/schema";
 import type { ApiAuthContext } from "@/lib/api-security";
 import { safeCreateAuditLog } from "@/lib/audit-log-db";
+import { refreshReviewModerationCheck } from "@/lib/review-moderation-check-db";
 import type {
   Review,
   ReviewCategory,
@@ -358,6 +359,7 @@ export async function createParticipantReview(
       status: "pending",
     },
   });
+  await safeRefreshModerationCheck(row.id, auth.user.id);
 
   return mapReviewRowToHostDraft(row);
 }
@@ -401,6 +403,7 @@ export async function updateParticipantReview(
       status: row.status,
     },
   });
+  await safeRefreshModerationCheck(row.id, auth.user.id);
 
   return mapReviewRowToHostDraft(row, existing.programLegacyId ?? undefined);
 }
@@ -525,6 +528,7 @@ export async function upsertHostReviewDraft(
           entityType: "review",
           metadata: { status: updatedRow.status, source: updatedRow.source },
         });
+        await safeRefreshModerationCheck(updatedRow.id, options.actorId);
         return mapReviewRowToHostDraft(updatedRow, draft.programLegacyId);
       }
     }
@@ -543,6 +547,7 @@ export async function upsertHostReviewDraft(
     entityType: "review",
     metadata: { status: row.status, source: row.source },
   });
+  await safeRefreshModerationCheck(row.id, options.actorId);
   return mapReviewRowToHostDraft(row, draft.programLegacyId);
 }
 
@@ -613,6 +618,7 @@ export async function updateHostReviewStatus(
     },
   });
 
+  await safeRefreshModerationCheck(row.id, options.actorId);
   return mapReviewRowToHostDraft(row, existing.programLegacyId ?? undefined);
 }
 
@@ -1092,6 +1098,16 @@ function maskNameToken(value: string): string {
   return `${token[0]}*${token[token.length - 1]}`;
 }
 
+async function safeRefreshModerationCheck(
+  reviewId: string,
+  actorId?: string,
+): Promise<void> {
+  try {
+    await refreshReviewModerationCheck(reviewId, { actorId });
+  } catch {
+    // Moderation checks should not block review writes.
+  }
+}
 function parseDateOrFallback(value: string | undefined, fallback: Date): Date {
   if (!value) return fallback;
   const date = new Date(value);
