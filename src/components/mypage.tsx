@@ -651,10 +651,7 @@ function ReviewsContent({ context }: { context: MypageContext }) {
   const writtenTrips = context.applications.filter(
     (application) => application.reviewSubmitted,
   );
-  const profileName = context.profileName;
-  const matchedReviews = context.reviews.filter(
-    (review) => review.author === profileName || review.author === context.nickname,
-  );
+  const matchedReviews = context.reviews;
 
   return (
     <section>
@@ -672,7 +669,7 @@ function ReviewsContent({ context }: { context: MypageContext }) {
           writableTrips.length > 0 ? (
             writableTrips.map((application) => (
               <TripDetailCard
-                actionHref="/reviews/new"
+                actionHref={`/reviews/new?applicationId=${application.id}`}
                 actionLabel="후기 작성하기"
                 application={application}
                 key={application.id}
@@ -3863,7 +3860,7 @@ function useMypageData(): MypageData {
             fetch("/api/auth/session", { cache: "no-store" }),
             fetch("/api/programs", { cache: "no-store" }),
             launchFeatureFlags.reviews
-              ? fetch("/api/reviews", { cache: "no-store" })
+              ? fetch("/api/me/reviews", { cache: "no-store" })
               : undefined,
           ]);
         const sessionPayload =

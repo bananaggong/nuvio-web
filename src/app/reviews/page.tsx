@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { ReviewFeed } from "@/components/review-feed";
 import { launchFeatureFlags } from "@/lib/launch-feature-flags";
+import { listPublicReviewsFromDb } from "@/lib/review-db";
 import { createSeoMetadata } from "@/lib/seo";
 
 export const metadata: Metadata = createSeoMetadata({
@@ -11,8 +12,9 @@ export const metadata: Metadata = createSeoMetadata({
   keywords: ["여행지원금 후기", "지원금 선정 후기", "여행 신청 팁"],
 });
 
-export default function ReviewsPage() {
+export default async function ReviewsPage() {
   if (!launchFeatureFlags.reviews) notFound();
 
-  return <ReviewFeed />;
+  const reviews = await listPublicReviewsFromDb();
+  return <ReviewFeed reviews={reviews} />;
 }

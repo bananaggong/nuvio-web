@@ -2,14 +2,14 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { Heart, MessageCircle, Plus, Search, Share2 } from "lucide-react";
+import { Heart, MessageCircle, Search, Share2 } from "lucide-react";
 import { useMemo, useState } from "react";
 import { NuvioEmptyState } from "@/components/nuvio-empty-state";
-import { getProgramById, reviewCategories, reviews } from "@/lib/data";
+import { getProgramById, reviewCategories } from "@/lib/data";
 import { formatDateTime } from "@/lib/format";
-import type { ReviewCategory } from "@/lib/types";
+import type { Review, ReviewCategory } from "@/lib/types";
 
-export function ReviewFeed() {
+export function ReviewFeed({ reviews, showWriteButton = false }: { reviews: Review[]; showWriteButton?: boolean }) {
   const [keyword, setKeyword] = useState("");
   const [category, setCategory] = useState<"all" | ReviewCategory>("all");
 
@@ -26,7 +26,7 @@ export function ReviewFeed() {
           .includes(normalized);
       return matchesCategory && matchesKeyword;
     });
-  }, [category, keyword]);
+  }, [category, keyword, reviews]);
 
   return (
     <div>
@@ -157,14 +157,15 @@ export function ReviewFeed() {
             />
           ) : null}
         </div>
-
-        <Link
-          aria-label="후기 작성"
-          className="fixed bottom-24 right-5 z-30 inline-flex size-14 items-center justify-center rounded-md bg-[var(--primary)] text-white shadow-lg hover:bg-[var(--primary-strong)] md:bottom-8"
-          href="/reviews/new"
-        >
-          <Plus size={24} />
-        </Link>
+        {showWriteButton ? (
+          <Link
+            aria-label="review write"
+            className="fixed bottom-24 right-5 z-30 inline-flex size-14 items-center justify-center rounded-md bg-[var(--primary)] text-white shadow-lg hover:bg-[var(--primary-strong)] md:bottom-8"
+            href="/reviews/new"
+          >
+            <span className="text-2xl leading-none">+</span>
+          </Link>
+        ) : null}
       </section>
     </div>
   );

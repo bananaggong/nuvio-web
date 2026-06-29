@@ -102,20 +102,32 @@ export type ReviewCategory =
   | "free"
   | "question";
 
+export type ReviewStatus = "draft" | "pending" | "published" | "hidden";
+
+export type ReviewSource = "participant" | "host" | "admin" | "imported";
+
 export type Review = {
   id: number | string;
+  applicationId?: string;
   title: string;
   category: ReviewCategory;
   programId?: number;
+  programUuid?: string;
+  programRunId?: string;
   villageSlug?: string;
   author: string;
   date: string;
   excerpt: string;
   body: string;
   images: string[];
+  rating?: number;
   likes: number;
   comments: number;
   badge?: string;
+  source?: ReviewSource;
+  status?: ReviewStatus;
+  submittedAt?: string;
+  publishedAt?: string;
 };
 
 export type AnnouncementType = "close" | "change" | "notice" | "open";

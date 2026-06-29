@@ -8,44 +8,17 @@ import {
 } from "@/lib/api-security";
 import { launchFeatureFlags } from "@/lib/launch-feature-flags";
 import {
-  createParticipantReview,
-  DuplicateReviewError,
-  listPublicReviewsFromDb,
+  deleteParticipantReview,
   ReviewEligibilityError,
+  updateParticipantReview,
 } from "@/lib/review-db";
 
 export const runtime = "nodejs";
 
-export async function GET(request: Request) {
-  if (!launchFeatureFlags.reviews) {
-    return NextResponse.json({ error: "Reviews are disabled." }, { status: 404 });
-  }
-
-  const limited = applyRateLimit(request, {
-    key: "public-reviews:list",
-    limit: 240,
-    windowMs: 15 * 60 * 1000,
-  });
-  if (limited) return limited;
-
-  try {
-    const url = new URL(request.url);
-    const villageSlug = url.searchParams.get("villageSlug")?.trim() || undefined;
-    const limit = Number(url.searchParams.get("limit") ?? "300");
-    const databaseReviews = await listPublicReviewsFromDb({ limit, villageSlug });
-    return NextResponse.json({ data: databaseReviews });
-  } catch (error) {
-    return NextResponse.json(
-      {
-        error:
-          error instanceof Error ? error.message : "Failed to load reviews.",
-      },
-      { status: 500 },
-    );
-  }
-}
-
-export async function POST(request: Request) {
+export async function PATCH(
+  request: Request,
+  { params }: { params: Promise<{ id: string }> },
+) {
   if (!launchFeatureFlags.reviews) {
     return NextResponse.json({ error: "Reviews are disabled." }, { status: 404 });
   }
@@ -53,27 +26,25 @@ export async function POST(request: Request) {
   const auth = await requireAuthenticatedUser();
   if (isApiAuthError(auth)) return auth.response;
 
-  const payloadTooLarge = enforceContentLength(request, 32 * 1024);
-  if (payloadTooLarge) return payloadTooLarge;
+  const contentLengthError = enforceContentLength(request, 32 * 1024);
+  if (contentLengthError) return contentLengthError;
 
   const crossOrigin = enforceSameOrigin(request);
   if (crossOrigin) return crossOrigin;
 
   const limited = applyRateLimit(request, {
-    key: "review:create",
-    limit: 5,
+    key: "me-review:update",
+    limit: 20,
     windowMs: 15 * 60 * 1000,
   });
   if (limited) return limited;
 
   try {
+    const { id } = await params;
     const body = await request.json().catch(() => ({}));
-    const savedDraft = await createParticipantReview(body, auth);
-    return NextResponse.json({ data: savedDraft }, { status: 201 });
+    const review = await updateParticipantReview(id, body, auth);
+    return NextResponse.json({ data: review });
   } catch (error) {
-    if (error instanceof DuplicateReviewError) {
-      return NextResponse.json({ error: error.message }, { status: 409 });
-    }
     if (error instanceof ReviewEligibilityError) {
       return NextResponse.json({ error: error.message }, { status: 403 });
     }
@@ -81,7 +52,47 @@ export async function POST(request: Request) {
     return NextResponse.json(
       {
         error:
-          error instanceof Error ? error.message : "Failed to create review.",
+          error instanceof Error ? error.message : "Failed to update review.",
+      },
+      { status: 400 },
+    );
+  }
+}
+
+export async function DELETE(
+  request: Request,
+  { params }: { params: Promise<{ id: string }> },
+) {
+  if (!launchFeatureFlags.reviews) {
+    return NextResponse.json({ error: "Reviews are disabled." }, { status: 404 });
+  }
+
+  const auth = await requireAuthenticatedUser();
+  if (isApiAuthError(auth)) return auth.response;
+
+  const crossOrigin = enforceSameOrigin(request);
+  if (crossOrigin) return crossOrigin;
+
+  const limited = applyRateLimit(request, {
+    key: "me-review:delete",
+    limit: 10,
+    windowMs: 15 * 60 * 1000,
+  });
+  if (limited) return limited;
+
+  try {
+    const { id } = await params;
+    const result = await deleteParticipantReview(id, auth);
+    return NextResponse.json({ data: result });
+  } catch (error) {
+    if (error instanceof ReviewEligibilityError) {
+      return NextResponse.json({ error: error.message }, { status: 403 });
+    }
+
+    return NextResponse.json(
+      {
+        error:
+          error instanceof Error ? error.message : "Failed to delete review.",
       },
       { status: 400 },
     );

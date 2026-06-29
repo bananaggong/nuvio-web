@@ -4,7 +4,7 @@ import Link from "next/link";
 import { Loader2, Send } from "lucide-react";
 import { FormEvent, useState } from "react";
 
-export function ReviewWriter() {
+export function ReviewWriter({ applicationId = "" }: { applicationId?: string }) {
   const [submitted, setSubmitted] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
@@ -66,6 +66,7 @@ export function ReviewWriter() {
         className="mt-6 grid gap-4 rounded-md border border-slate-200 bg-white p-5"
         onSubmit={submit}
       >
+        <input name="applicationId" type="hidden" value={applicationId} />
         <label className="grid gap-2 text-sm font-black text-slate-700">
           카테고리
           <select

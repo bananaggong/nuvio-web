@@ -67,6 +67,7 @@ export const reviewCategoryEnum = pgEnum("review_category", [
 ]);
 export const reviewStatusEnum = pgEnum("review_status", [
   "draft",
+  "pending",
   "published",
   "hidden",
 ]);
@@ -531,7 +532,13 @@ export const reviews = pgTable(
   {
     id: uuid("id").defaultRandom().primaryKey(),
     legacyId: integer("legacy_id").unique(),
+    applicationId: uuid("application_id").references(() => programApplications.id, {
+      onDelete: "set null",
+    }),
     programId: uuid("program_id").references(() => programs.id, {
+      onDelete: "set null",
+    }),
+    programRunId: uuid("program_run_id").references(() => programRuns.id, {
       onDelete: "set null",
     }),
     villageSlug: text("village_slug"),
@@ -542,20 +549,97 @@ export const reviews = pgTable(
     excerpt: text("excerpt").notNull(),
     body: text("body").notNull(),
     images: jsonb("images").$type<string[]>().default(emptyArray).notNull(),
+    rating: integer("rating"),
     likes: integer("likes").default(0).notNull(),
     comments: integer("comments").default(0).notNull(),
     badge: text("badge"),
-    status: reviewStatusEnum("status").default("published").notNull(),
+    source: text("source").default("host").notNull(),
+    status: reviewStatusEnum("status").default("pending").notNull(),
+    submittedAt: timestamp("submitted_at", { withTimezone: true }),
+    publishedAt: timestamp("published_at", { withTimezone: true }),
+    hiddenAt: timestamp("hidden_at", { withTimezone: true }),
+    moderationNote: text("moderation_note"),
+    hiddenReason: text("hidden_reason"),
     createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
     updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
   },
   (table) => [
+    uniqueIndex("reviews_application_id_unique_idx").on(table.applicationId),
+    index("reviews_application_id_idx").on(table.applicationId),
     index("reviews_program_id_idx").on(table.programId),
+    index("reviews_program_run_id_idx").on(table.programRunId),
+    index("reviews_user_id_idx").on(table.userId),
     index("reviews_village_slug_idx").on(table.villageSlug),
     index("reviews_status_idx").on(table.status),
+    index("reviews_published_at_idx").on(table.publishedAt),
   ],
 );
 
+export const reviewHostReplies = pgTable(
+  "review_host_replies",
+  {
+    id: uuid("id").defaultRandom().primaryKey(),
+    reviewId: uuid("review_id")
+      .notNull()
+      .references(() => reviews.id, { onDelete: "cascade" }),
+    authorId: uuid("author_id"),
+    authorName: text("author_name").notNull(),
+    body: text("body").notNull(),
+    status: text("status").default("published").notNull(),
+    hiddenAt: timestamp("hidden_at", { withTimezone: true }),
+    createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+    updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
+  },
+  (table) => [
+    uniqueIndex("review_host_replies_review_id_unique_idx").on(table.reviewId),
+    index("review_host_replies_author_id_idx").on(table.authorId),
+    index("review_host_replies_status_idx").on(table.status),
+    index("review_host_replies_created_at_idx").on(table.createdAt),
+  ],
+);
+export const reviewHelpfulVotes = pgTable(
+  "review_helpful_votes",
+  {
+    reviewId: uuid("review_id")
+      .notNull()
+      .references(() => reviews.id, { onDelete: "cascade" }),
+    userId: uuid("user_id").notNull(),
+    createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+  },
+  (table) => [
+    primaryKey({ columns: [table.reviewId, table.userId] }),
+    index("review_helpful_votes_user_id_idx").on(table.userId),
+  ],
+);
+export const reviewReports = pgTable(
+  "review_reports",
+  {
+    id: uuid("id").defaultRandom().primaryKey(),
+    reviewId: uuid("review_id")
+      .notNull()
+      .references(() => reviews.id, { onDelete: "cascade" }),
+    reporterId: uuid("reporter_id"),
+    reporterEmail: text("reporter_email"),
+    reason: text("reason").notNull(),
+    message: text("message"),
+    status: text("status").default("open").notNull(),
+    resolutionNote: text("resolution_note"),
+    resolvedBy: uuid("resolved_by"),
+    resolvedAt: timestamp("resolved_at", { withTimezone: true }),
+    createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+    updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
+  },
+  (table) => [
+    uniqueIndex("review_reports_review_reporter_unique_idx").on(
+      table.reviewId,
+      table.reporterId,
+    ),
+    index("review_reports_review_id_idx").on(table.reviewId),
+    index("review_reports_reporter_id_idx").on(table.reporterId),
+    index("review_reports_status_idx").on(table.status),
+    index("review_reports_created_at_idx").on(table.createdAt),
+  ],
+);
 export const villageMediaContents = pgTable(
   "village_media_contents",
   {

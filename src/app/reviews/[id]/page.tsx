@@ -4,10 +4,11 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { Heart, MessageCircle, Share2 } from "lucide-react";
 import { JsonLdScript } from "@/components/json-ld";
-import { getProgramById, getReviewById, reviewCategories, reviews } from "@/lib/data";
+import { getProgramById, reviewCategories } from "@/lib/data";
 import { formatDateTime } from "@/lib/format";
 import { launchFeatureFlags } from "@/lib/launch-feature-flags";
 import { programPath } from "@/lib/program-routing";
+import { getPublicReviewFromDb } from "@/lib/review-db";
 import {
   breadcrumbJsonLd,
   createSeoMetadata,
@@ -15,9 +16,7 @@ import {
 } from "@/lib/seo";
 
 export function generateStaticParams() {
-  if (!launchFeatureFlags.reviews) return [];
-
-  return reviews.map((review) => ({ id: String(review.id) }));
+  return [];
 }
 
 export async function generateMetadata({
@@ -28,8 +27,9 @@ export async function generateMetadata({
   if (!launchFeatureFlags.reviews) return {};
 
   const { id } = await params;
-  const review = getReviewById(id);
+  const review = await getPublicReviewFromDb(id);
   if (!review) return {};
+
   return createSeoMetadata({
     title: review.title,
     description: review.excerpt,
@@ -46,7 +46,7 @@ export default async function ReviewDetailPage({
   if (!launchFeatureFlags.reviews) notFound();
 
   const { id } = await params;
-  const review = getReviewById(id);
+  const review = await getPublicReviewFromDb(id);
   if (!review) notFound();
 
   const program = review.programId ? getProgramById(review.programId) : undefined;
@@ -61,7 +61,7 @@ export default async function ReviewDetailPage({
           reviewJsonLd(review, canonicalPath, program?.title ?? "누비오 후기"),
           breadcrumbJsonLd([
             { name: "홈", path: "/" },
-            { name: "지원금 후기", path: "/reviews" },
+            { name: "후기", path: "/reviews" },
             { name: review.title, path: canonicalPath },
           ]),
         ]}
@@ -82,6 +82,7 @@ export default async function ReviewDetailPage({
             </div>
           </div>
           <div className="flex gap-3 text-sm font-bold text-slate-500">
+            {review.rating ? <span>{review.rating}.0</span> : null}
             <span className="inline-flex items-center gap-1">
               <Heart size={16} /> {review.likes}
             </span>
@@ -121,10 +122,6 @@ export default async function ReviewDetailPage({
 
         <div className="mt-6 space-y-4 text-base leading-8 text-slate-700">
           <p>{review.body}</p>
-          <p>
-            경험은 프로그램 회차, 호스트, 개인 일정에 따라 달라질 수 있습니다.
-            신청 전 공식 공고와 최신 공지를 함께 확인해 주세요.
-          </p>
         </div>
       </article>
     </div>

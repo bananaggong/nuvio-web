@@ -10,8 +10,13 @@ export const metadata: Metadata = createSeoMetadata({
   path: "/reviews/new",
 });
 
-export default function NewReviewPage() {
+export default async function NewReviewPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ applicationId?: string }>;
+}) {
   if (!launchFeatureFlags.reviews) notFound();
 
-  return <ReviewWriter />;
+  const { applicationId } = await searchParams;
+  return <ReviewWriter applicationId={applicationId} />;
 }
