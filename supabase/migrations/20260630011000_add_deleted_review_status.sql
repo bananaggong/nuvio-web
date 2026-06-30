@@ -1,0 +1,1 @@
+alter type public.review_status add value if not exists 'deleted';

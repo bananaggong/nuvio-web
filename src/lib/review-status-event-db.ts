@@ -192,6 +192,7 @@ export function getStatusEventAction(
   toStatus: ReviewStatus,
 ): ReviewStatusEventAction {
   if (!fromStatus) return "created";
+  if (toStatus === "deleted") return "deleted";
   if (fromStatus === "hidden" && toStatus !== "hidden") return "restored";
   if (toStatus === "published") return "published";
   if (toStatus === "hidden") return "hidden";

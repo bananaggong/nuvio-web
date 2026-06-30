@@ -438,7 +438,13 @@ async function getReviewRequestContext(applicationId: string): Promise<ReviewReq
     .from(programApplications)
     .leftJoin(programsTable, eq(programApplications.programId, programsTable.id))
     .leftJoin(villages, eq(programsTable.villageId, villages.id))
-    .leftJoin(reviewsTable, eq(reviewsTable.applicationId, programApplications.id))
+    .leftJoin(
+      reviewsTable,
+      and(
+        eq(reviewsTable.applicationId, programApplications.id),
+        sql`${reviewsTable.status} <> 'deleted'`,
+      ),
+    )
     .where(eq(programApplications.id, applicationId))
     .limit(1);
 

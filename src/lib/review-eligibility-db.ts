@@ -1,4 +1,4 @@
-import { and, desc, eq, inArray, or, type SQL } from "drizzle-orm";
+import { and, desc, eq, inArray, or, sql, type SQL } from "drizzle-orm";
 import { getDb } from "@/db/client";
 import {
   programApplications,
@@ -70,7 +70,13 @@ export async function listMyReviewEligibilitiesFromDb(
     .from(programApplications)
     .leftJoin(programsTable, eq(programApplications.programId, programsTable.id))
     .leftJoin(villages, eq(programsTable.villageId, villages.id))
-    .leftJoin(reviewsTable, eq(reviewsTable.applicationId, programApplications.id))
+    .leftJoin(
+      reviewsTable,
+      and(
+        eq(reviewsTable.applicationId, programApplications.id),
+        sql`${reviewsTable.status} <> 'deleted'`,
+      ),
+    )
     .where(and(...conditions))
     .orderBy(desc(programApplications.submittedAt))
     .limit(clampLimit(options.limit, options.applicationId ? 1 : 100));

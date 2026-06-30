@@ -122,7 +122,7 @@ const reviewCategories: ReviewCategory[] = [
   "question",
 ];
 
-const reviewStatuses: ReviewStatus[] = ["draft", "pending", "published", "hidden"];
+const reviewStatuses: ReviewStatus[] = ["draft", "pending", "published", "hidden", "deleted"];
 const reviewSources: ReviewSource[] = ["participant", "host", "admin", "imported"];
 const participantReviewStatuses = new Set(["accepted", "checkedIn", "completed"]);
 const maxReviewImages = 6;
@@ -211,7 +211,7 @@ export async function listMyReviewsFromDb(auth: ApiAuthContext): Promise<HostRev
     .from(reviewsTable)
     .leftJoin(programsTable, eq(reviewsTable.programId, programsTable.id))
     .leftJoin(programApplications, eq(reviewsTable.applicationId, programApplications.id))
-    .where(ownerPredicate)
+    .where(and(ownerPredicate, sql`${reviewsTable.status} <> 'deleted'`))
     .orderBy(desc(reviewsTable.updatedAt))
     .limit(100);
 
@@ -247,7 +247,11 @@ export async function listHostReviewDraftsFromDb(
     const accessPredicate = or(...accessConditions);
     if (accessPredicate) conditions.push(accessPredicate);
   }
-  if (options.status) conditions.push(eq(reviewsTable.status, options.status));
+  if (options.status) {
+    conditions.push(eq(reviewsTable.status, options.status));
+  } else {
+    conditions.push(sql`${reviewsTable.status} <> 'deleted'`);
+  }
   if (options.source) conditions.push(eq(reviewsTable.source, options.source));
 
   const baseQuery = getDb()
@@ -302,7 +306,12 @@ export async function createParticipantReview(
     const [existingReview] = await tx
       .select({ id: reviewsTable.id })
       .from(reviewsTable)
-      .where(eq(reviewsTable.applicationId, application.applicationId))
+      .where(
+        and(
+          eq(reviewsTable.applicationId, application.applicationId),
+          sql`${reviewsTable.status} <> 'deleted'`,
+        ),
+      )
       .limit(1);
 
     if (existingReview) {
@@ -467,11 +476,21 @@ export async function deleteParticipantReview(
     throw new ReviewEligibilityError("Deletable review was not found for this account.");
   }
 
-  await getDb().transaction(async (tx) => {
-    await tx.delete(reviewsTable).where(eq(reviewsTable.id, reviewId));
+  const now = new Date();
+  const [row] = await getDb().transaction(async (tx) => {
+    const [deletedReview] = await tx
+      .update(reviewsTable)
+      .set({
+        hiddenAt: now,
+        hiddenReason: "participant_deleted",
+        moderationNote: null,
+        status: "deleted",
+        updatedAt: now,
+      })
+      .where(eq(reviewsTable.id, reviewId))
+      .returning();
 
     if (existing.review.applicationId) {
-      const now = new Date();
       await tx
         .update(programApplications)
         .set({ reviewSubmitted: false, updatedAt: now })
@@ -487,6 +506,8 @@ export async function deleteParticipantReview(
         })
         .where(eq(reviewRequests.applicationId, existing.review.applicationId));
     }
+
+    return [deletedReview];
   });
 
   void safeCreateAuditLog({
@@ -496,8 +517,21 @@ export async function deleteParticipantReview(
     entityType: "review",
     metadata: {
       applicationId: existing.review.applicationId,
-      status: existing.review.status,
+      status: row.status,
     },
+  });
+  await safeRecordReviewStatusEvent({
+    action: "deleted",
+    actorId: auth.user.id,
+    actorRole: auth.profile.role,
+    fromStatus: existing.review.status,
+    metadata: {
+      applicationId: existing.review.applicationId,
+      source: "participant_delete",
+    },
+    reason: "participant_deleted",
+    reviewId: row.id,
+    toStatus: row.status,
   });
 
   return { deleted: true };
@@ -531,6 +565,9 @@ export async function upsertHostReviewDraft(
       if (existingRow.source === "participant") {
         throw new HostReviewAccessError();
       }
+      if (existingRow.status === "deleted" && options.actorRole !== "admin") {
+        throw new HostReviewAccessError();
+      }
 
       assertReviewVillageAccess(existingRow.villageSlug, allowedVillageSlugs);
 
@@ -539,7 +576,7 @@ export async function upsertHostReviewDraft(
         applicationId: insertValue.applicationId ?? existingRow.applicationId,
         comments: existingRow.comments,
         hiddenAt:
-          insertValue.status === "hidden"
+          insertValue.status === "hidden" || insertValue.status === "deleted"
             ? insertValue.hiddenAt ?? now
             : existingRow.hiddenAt,
         likes: existingRow.likes,
@@ -687,6 +724,9 @@ export async function updateHostReviewStatus(
   if (!existing) {
     throw new Error("Review was not found.");
   }
+  if (existing.review.status === "deleted" && status !== "deleted" && options.actorRole !== "admin") {
+    throw new HostReviewAccessError();
+  }
 
   assertReviewManageAccess({
     allowedVillageIds,
@@ -707,7 +747,7 @@ export async function updateHostReviewStatus(
     updateValue.publishedAt = existing.review.publishedAt ?? now;
     updateValue.hiddenAt = null;
   }
-  if (status === "hidden") {
+  if (status === "hidden" || status === "deleted") {
     updateValue.hiddenAt = now;
   }
 
@@ -940,7 +980,7 @@ async function mapHostDraftToReviewInsert(
     status,
     submittedAt: draft.submittedAt ? new Date(draft.submittedAt) : now,
     publishedAt: status === "published" ? parseDateOrFallback(draft.publishedAt, now) : null,
-    hiddenAt: status === "hidden" ? now : null,
+    hiddenAt: status === "hidden" || status === "deleted" ? now : null,
     moderationNote: draft.moderationNote?.trim() || null,
     hiddenReason: draft.hiddenReason?.trim() || null,
   };

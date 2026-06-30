@@ -24,7 +24,7 @@ import {
 export const runtime = "nodejs";
 
 const MAX_REVIEW_PAYLOAD_BYTES = 128 * 1024;
-const hostReviewStatuses: ReviewStatus[] = ["draft", "pending", "published", "hidden"];
+const hostReviewStatuses: ReviewStatus[] = ["draft", "pending", "published", "hidden", "deleted"];
 const hostReviewSources: ReviewSource[] = ["participant", "host", "admin", "imported"];
 
 export async function GET(request: Request) {

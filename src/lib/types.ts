@@ -102,7 +102,7 @@ export type ReviewCategory =
   | "free"
   | "question";
 
-export type ReviewStatus = "draft" | "pending" | "published" | "hidden";
+export type ReviewStatus = "draft" | "pending" | "published" | "hidden" | "deleted";
 
 export type ReviewSource = "participant" | "host" | "admin" | "imported";
 

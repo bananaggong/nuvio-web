@@ -71,6 +71,7 @@ export const reviewStatusEnum = pgEnum("review_status", [
   "pending",
   "published",
   "hidden",
+  "deleted",
 ]);
 export const magazinePostStatusEnum = pgEnum("magazine_post_status", [
   "draft",
