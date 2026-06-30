@@ -1,4 +1,4 @@
-import { and, count, eq, inArray, isNull, ne, or, type SQL } from "drizzle-orm";
+import { and, count, eq, inArray, isNull, ne, or, sql, type SQL } from "drizzle-orm";
 import { getDb } from "@/db/client";
 import {
   programs as programsTable,
@@ -6,6 +6,7 @@ import {
   reviewModerationChecks,
   reviewReports,
   reviewRequests,
+  reviewVisibilityHolds,
   reviews as reviewsTable,
 } from "@/db/schema";
 
@@ -19,6 +20,7 @@ export type ReviewModerationSummary = {
   publishedCount: number;
   totalCount: number;
   unansweredPublishedCount: number;
+  visibilityHoldCount: number;
 };
 
 export async function getHostReviewModerationSummary(options: {
@@ -44,6 +46,7 @@ export async function getHostReviewModerationSummary(options: {
     openRequestCount,
     flaggedPendingCount,
     unansweredPublishedCount,
+    visibilityHoldCount,
   ] = await Promise.all([
     countReviews(baseAccessConditions),
     countReviews([...baseAccessConditions, eq(reviewsTable.status, "draft")]),
@@ -54,6 +57,7 @@ export async function getHostReviewModerationSummary(options: {
     countOpenRequests(requestAccessConditions),
     countFlaggedPending(baseAccessConditions),
     countUnansweredPublished(baseAccessConditions),
+    countActiveVisibilityHolds(baseAccessConditions),
   ]);
 
   return {
@@ -66,6 +70,7 @@ export async function getHostReviewModerationSummary(options: {
     publishedCount,
     totalCount,
     unansweredPublishedCount,
+    visibilityHoldCount,
   };
 }
 
@@ -127,6 +132,24 @@ async function countFlaggedPending(reviewAccessConditions: SQL[]): Promise<numbe
     .select({ value: count() })
     .from(reviewModerationChecks)
     .innerJoin(reviewsTable, eq(reviewModerationChecks.reviewId, reviewsTable.id))
+    .leftJoin(programsTable, eq(reviewsTable.programId, programsTable.id));
+
+  const [row] = conditions.length > 0
+    ? await query.where(and(...conditions))
+    : await query;
+
+  return row?.value ?? 0;
+}
+
+async function countActiveVisibilityHolds(reviewAccessConditions: SQL[]): Promise<number> {
+  const conditions = [
+    ...reviewAccessConditions,
+    eq(reviewVisibilityHolds.status, "active"),
+  ];
+  const query = getDb()
+    .select({ value: sql<number>`count(distinct ${reviewVisibilityHolds.reviewId})` })
+    .from(reviewVisibilityHolds)
+    .innerJoin(reviewsTable, eq(reviewVisibilityHolds.reviewId, reviewsTable.id))
     .leftJoin(programsTable, eq(reviewsTable.programId, programsTable.id));
 
   const [row] = conditions.length > 0
@@ -207,5 +230,6 @@ function emptySummary(): ReviewModerationSummary {
     publishedCount: 0,
     totalCount: 0,
     unansweredPublishedCount: 0,
+    visibilityHoldCount: 0,
   };
 }

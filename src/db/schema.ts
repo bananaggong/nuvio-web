@@ -599,6 +599,33 @@ export const reviewModerationChecks = pgTable(
     index("review_moderation_checks_checked_at_idx").on(table.checkedAt),
   ],
 );
+export const reviewVisibilityHolds = pgTable(
+  "review_visibility_holds",
+  {
+    id: uuid("id").defaultRandom().primaryKey(),
+    reviewId: uuid("review_id")
+      .notNull()
+      .references(() => reviews.id, { onDelete: "cascade" }),
+    sourceType: text("source_type").notNull(),
+    sourceId: uuid("source_id"),
+    reason: text("reason").notNull(),
+    status: text("status").default("active").notNull(),
+    heldAt: timestamp("held_at", { withTimezone: true }).defaultNow().notNull(),
+    releasedAt: timestamp("released_at", { withTimezone: true }),
+    metadata: jsonb("metadata")
+      .$type<Record<string, unknown>>()
+      .default(emptyObject)
+      .notNull(),
+    createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+    updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
+  },
+  (table) => [
+    index("review_visibility_holds_review_id_idx").on(table.reviewId),
+    index("review_visibility_holds_status_idx").on(table.status),
+    index("review_visibility_holds_reason_idx").on(table.reason),
+    index("review_visibility_holds_source_idx").on(table.sourceType, table.sourceId),
+  ],
+);
 export const reviewStatusEvents = pgTable(
   "review_status_events",
   {
