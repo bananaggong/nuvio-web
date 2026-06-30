@@ -4,6 +4,7 @@ import {
   programApplications,
   programs as programsTable,
   reviewRequests,
+  reviewVisibilityHolds,
   reviews as reviewsTable,
   villages,
 } from "@/db/schema";
@@ -93,8 +94,8 @@ type ParticipantApplicationRow = {
 };
 
 export class HostReviewAccessError extends Error {
-  constructor() {
-    super("You do not have permission to manage this review.");
+  constructor(message = "You do not have permission to manage this review.") {
+    super(message);
     this.name = "HostReviewAccessError";
   }
 }
@@ -575,6 +576,15 @@ export async function upsertHostReviewDraft(
       }
 
       assertReviewVillageAccess(existingRow.villageSlug, allowedVillageSlugs);
+      if (
+        insertValue.status === "published" &&
+        existingRow.status !== "published" &&
+        (await hasActiveReviewVisibilityHold(existingRow.id))
+      ) {
+        throw new HostReviewAccessError(
+          "Active review visibility holds must be released before publishing this review.",
+        );
+      }
 
       const updateValue: Partial<ReviewInsert> = {
         ...insertValue,
@@ -742,6 +752,15 @@ export async function updateHostReviewStatus(
     programVillageId: existing.programVillageId ?? undefined,
     villageSlug: existing.review.villageSlug,
   });
+  if (
+    status === "published" &&
+    existing.review.status !== "published" &&
+    (await hasActiveReviewVisibilityHold(existing.review.id))
+  ) {
+    throw new HostReviewAccessError(
+      "Active review visibility holds must be released before publishing this review.",
+    );
+  }
 
   const now = new Date();
   const updateValue: Partial<ReviewInsert> = {
@@ -1229,6 +1248,21 @@ function normalizeAllowedValues(
   return values
     ? Array.from(new Set(values.map((value) => value.trim()).filter(Boolean)))
     : undefined;
+}
+
+async function hasActiveReviewVisibilityHold(reviewId: string): Promise<boolean> {
+  const [row] = await getDb()
+    .select({ id: reviewVisibilityHolds.id })
+    .from(reviewVisibilityHolds)
+    .where(
+      and(
+        eq(reviewVisibilityHolds.reviewId, reviewId),
+        eq(reviewVisibilityHolds.status, "active"),
+      ),
+    )
+    .limit(1);
+
+  return Boolean(row);
 }
 
 function assertReviewVillageAccess(
