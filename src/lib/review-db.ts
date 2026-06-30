@@ -9,6 +9,7 @@ import {
 } from "@/db/schema";
 import type { ApiAuthContext } from "@/lib/api-security";
 import { safeCreateAuditLog } from "@/lib/audit-log-db";
+import { safeEnrichLatestReviewContentVersion } from "@/lib/review-content-version-db";
 import { refreshReviewModerationCheck } from "@/lib/review-moderation-check-db";
 import { buildPublicReviewVisibilityConditions } from "@/lib/review-public-visibility-db";
 import { safeRecordReviewStatusEvent } from "@/lib/review-status-event-db";
@@ -373,6 +374,17 @@ export async function createParticipantReview(
     reviewId: row.id,
     toStatus: row.status,
   });
+  await safeEnrichLatestReviewContentVersion({
+    actorId: auth.user.id,
+    actorRole: auth.profile.role,
+    changeSource: "participant_submission",
+    metadata: {
+      applicationId: application.applicationId,
+      programId: application.programId,
+      source: "participant_submission",
+    },
+    reviewId: row.id,
+  });
   await safeRefreshModerationCheck(row.id, auth.user.id);
 
   return mapReviewRowToHostDraft(row);
@@ -428,6 +440,16 @@ export async function updateParticipantReview(
     },
     reviewId: row.id,
     toStatus: row.status,
+  });
+  await safeEnrichLatestReviewContentVersion({
+    actorId: auth.user.id,
+    actorRole: auth.profile.role,
+    changeSource: "participant_update",
+    metadata: {
+      applicationId: row.applicationId,
+      source: "participant_update",
+    },
+    reviewId: row.id,
   });
   await safeRefreshModerationCheck(row.id, auth.user.id);
 
@@ -571,6 +593,21 @@ export async function upsertHostReviewDraft(
           allowedVillageIds,
           allowedVillageSlugs,
         });
+        await safeEnrichLatestReviewContentVersion({
+          actorId: options.actorId,
+          actorRole: options.actorRole,
+          changeSource: "host_review_update",
+          metadata: {
+            source: "host_review_update",
+            reviewSource: updatedRow.source,
+          },
+          reviewId: updatedRow.id,
+        }, {
+          actorId: options.actorId,
+          actorRole: options.actorRole,
+          allowedVillageIds,
+          allowedVillageSlugs,
+        });
         await safeRefreshModerationCheck(updatedRow.id, options.actorId);
         return mapReviewRowToHostDraft(updatedRow, draft.programLegacyId);
       }
@@ -599,6 +636,21 @@ export async function upsertHostReviewDraft(
     },
     reviewId: row.id,
     toStatus: row.status,
+  }, {
+    actorId: options.actorId,
+    actorRole: options.actorRole,
+    allowedVillageIds,
+    allowedVillageSlugs,
+  });
+  await safeEnrichLatestReviewContentVersion({
+    actorId: options.actorId,
+    actorRole: options.actorRole,
+    changeSource: "host_review_create",
+    metadata: {
+      source: "host_review_create",
+      reviewSource: row.source,
+    },
+    reviewId: row.id,
   }, {
     actorId: options.actorId,
     actorRole: options.actorRole,

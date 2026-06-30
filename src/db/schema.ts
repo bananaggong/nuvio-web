@@ -576,6 +576,43 @@ export const reviews = pgTable(
   ],
 );
 
+export const reviewContentVersions = pgTable(
+  "review_content_versions",
+  {
+    id: uuid("id").defaultRandom().primaryKey(),
+    reviewId: uuid("review_id")
+      .notNull()
+      .references(() => reviews.id, { onDelete: "cascade" }),
+    version: integer("version").notNull(),
+    title: text("title").notNull(),
+    category: reviewCategoryEnum("category").$type<ReviewCategory>().notNull(),
+    authorName: text("author_name").notNull(),
+    excerpt: text("excerpt").notNull(),
+    body: text("body").notNull(),
+    images: jsonb("images").$type<string[]>().default(emptyArray).notNull(),
+    rating: integer("rating"),
+    source: text("source").notNull(),
+    status: reviewStatusEnum("status").$type<ReviewStatus>().notNull(),
+    changeSource: text("change_source").default("database_trigger").notNull(),
+    changedBy: uuid("changed_by"),
+    changedByRole: text("changed_by_role"),
+    metadata: jsonb("metadata")
+      .$type<Record<string, unknown>>()
+      .default(emptyObject)
+      .notNull(),
+    createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+  },
+  (table) => [
+    uniqueIndex("review_content_versions_review_version_idx").on(
+      table.reviewId,
+      table.version,
+    ),
+    index("review_content_versions_review_id_idx").on(table.reviewId),
+    index("review_content_versions_created_at_idx").on(table.createdAt),
+    index("review_content_versions_changed_by_idx").on(table.changedBy),
+  ],
+);
+
 export const reviewModerationChecks = pgTable(
   "review_moderation_checks",
   {
