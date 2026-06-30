@@ -9,6 +9,7 @@ import {
 } from "@/db/schema";
 import type { ApiAuthContext } from "@/lib/api-security";
 import { safeCreateAuditLog } from "@/lib/audit-log-db";
+import { safeRecordReviewRequestEvent } from "@/lib/review-request-event-db";
 import type { ReviewStatus } from "@/lib/types";
 
 export type ReviewRequestStatus =
@@ -73,6 +74,7 @@ type ListHostReviewRequestOptions = {
 
 type ReviewRequestAccessOptions = {
   actorId?: string;
+  actorRole?: string;
   allowedVillageIds?: string[];
   allowedVillageSlugs?: string[];
 };
@@ -241,6 +243,26 @@ export async function requestHostReviewForApplication(
     },
   });
 
+  const requestStatus = asReviewRequestStatus(row.status);
+  await safeRecordReviewRequestEvent({
+    action:
+      requestStatus === "completed"
+        ? "completed"
+        : row.requestCount > 1
+          ? "resent"
+          : "requested",
+    actorId: options.actorId,
+    actorRole: options.actorRole,
+    metadata: {
+      applicationId: row.applicationId,
+      requestCount: row.requestCount,
+      source: "host_request_upsert",
+      status: row.status,
+    },
+    requestId: row.id,
+    toStatus: requestStatus,
+  }, options);
+
   return hydrateReviewRequest(row.id);
 }
 
@@ -304,6 +326,17 @@ export async function updateHostReviewRequestStatus(
       status: row.status,
     },
   });
+
+  await safeRecordReviewRequestEvent({
+    actorId: options.actorId,
+    actorRole: options.actorRole,
+    fromStatus: asReviewRequestStatus(existing.request.status),
+    metadata: {
+      source: "host_status_update",
+    },
+    requestId: row.id,
+    toStatus: asReviewRequestStatus(row.status),
+  }, options);
 
   return hydrateReviewRequest(row.id);
 }

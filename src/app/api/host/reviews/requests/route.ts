@@ -109,9 +109,10 @@ export async function POST(request: Request) {
         : await listManageableHostVillageWorkspaces(auth);
     const accessOptions =
       auth.profile.role === "admin"
-        ? { actorId: auth.user.id }
+        ? { actorId: auth.user.id, actorRole: auth.profile.role }
         : {
             actorId: auth.user.id,
+            actorRole: auth.profile.role,
             allowedVillageIds: workspaces.map((workspace) => workspace.villageId),
             allowedVillageSlugs: workspaces.map((workspace) => workspace.slug),
           };

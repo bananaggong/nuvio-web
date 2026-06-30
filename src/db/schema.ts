@@ -793,6 +793,33 @@ export const reviewRequests = pgTable(
     index("review_requests_last_requested_at_idx").on(table.lastRequestedAt),
   ],
 );
+
+export const reviewRequestEvents = pgTable(
+  "review_request_events",
+  {
+    id: uuid("id").defaultRandom().primaryKey(),
+    requestId: uuid("request_id")
+      .notNull()
+      .references(() => reviewRequests.id, { onDelete: "cascade" }),
+    fromStatus: text("from_status"),
+    toStatus: text("to_status").notNull(),
+    action: text("action").notNull(),
+    actorId: uuid("actor_id"),
+    actorRole: text("actor_role"),
+    note: text("note"),
+    metadata: jsonb("metadata")
+      .$type<Record<string, unknown>>()
+      .default(emptyObject)
+      .notNull(),
+    createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+  },
+  (table) => [
+    index("review_request_events_request_id_idx").on(table.requestId),
+    index("review_request_events_created_at_idx").on(table.createdAt),
+    index("review_request_events_action_idx").on(table.action),
+    index("review_request_events_actor_id_idx").on(table.actorId),
+  ],
+);
 export const villageMediaContents = pgTable(
   "village_media_contents",
   {
