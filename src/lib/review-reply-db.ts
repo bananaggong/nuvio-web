@@ -8,6 +8,7 @@ import {
 import type { ApiAuthContext } from "@/lib/api-security";
 import { safeCreateAuditLog } from "@/lib/audit-log-db";
 import { publicReviewSafetyPredicate } from "@/lib/review-public-visibility-db";
+import { safeRecordReviewHostReplyEvent } from "@/lib/review-reply-event-db";
 
 export type ReviewHostReplyStatus = "published" | "hidden";
 
@@ -86,6 +87,8 @@ export async function upsertHostReviewReply(
 
   const authorName = normalizeAuthorName(auth);
   const now = new Date();
+  let eventFromStatus: ReviewHostReplyStatus | null = null;
+  let shouldRecordEvent = true;
 
   const [row] = await getDb().transaction(async (tx) => {
     const [existing] = await tx
@@ -96,6 +99,12 @@ export async function upsertHostReviewReply(
 
     if (existing) {
       const nextStatus = normalized.status;
+      eventFromStatus = asReplyStatus(existing.status);
+      shouldRecordEvent =
+        eventFromStatus !== nextStatus
+        || existing.body !== normalized.body
+        || existing.authorName !== authorName;
+
       const [updated] = await tx
         .update(reviewHostReplies)
         .set({
@@ -135,6 +144,25 @@ export async function upsertHostReviewReply(
       status: row.status,
     },
   });
+
+  if (shouldRecordEvent) {
+    await safeRecordReviewHostReplyEvent({
+      actorId: auth.user.id,
+      actorRole: auth.profile.role,
+      fromStatus: eventFromStatus,
+      metadata: {
+        source: "host_reply_upsert",
+      },
+      replyId: row.id,
+      reviewId,
+      toStatus: asReplyStatus(row.status),
+    }, {
+      actorId: auth.user.id,
+      actorRole: auth.profile.role,
+      allowedVillageIds: options.allowedVillageIds,
+      allowedVillageSlugs: options.allowedVillageSlugs,
+    });
+  }
 
   return mapReply(row);
 }
@@ -185,6 +213,25 @@ export async function updateHostReviewReplyStatus(
       status: row.status,
     },
   });
+
+  if (existing.status !== row.status) {
+    await safeRecordReviewHostReplyEvent({
+      actorId: auth.user.id,
+      actorRole: auth.profile.role,
+      fromStatus: asReplyStatus(existing.status),
+      metadata: {
+        source: "host_reply_status_update",
+      },
+      replyId: row.id,
+      reviewId,
+      toStatus: asReplyStatus(row.status),
+    }, {
+      actorId: auth.user.id,
+      actorRole: auth.profile.role,
+      allowedVillageIds: options.allowedVillageIds,
+      allowedVillageSlugs: options.allowedVillageSlugs,
+    });
+  }
 
   return mapReply(row);
 }

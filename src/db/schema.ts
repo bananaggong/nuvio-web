@@ -726,6 +726,39 @@ export const reviewHelpfulVotes = pgTable(
     index("review_helpful_votes_user_id_idx").on(table.userId),
   ],
 );
+export const reviewHostReplyEvents = pgTable(
+  "review_host_reply_events",
+  {
+    id: uuid("id").defaultRandom().primaryKey(),
+    replyId: uuid("reply_id")
+      .notNull()
+      .references(() => reviewHostReplies.id, { onDelete: "cascade" }),
+    reviewId: uuid("review_id")
+      .notNull()
+      .references(() => reviews.id, { onDelete: "cascade" }),
+    fromStatus: text("from_status"),
+    toStatus: text("to_status").notNull(),
+    action: text("action").notNull(),
+    actorId: uuid("actor_id"),
+    actorRole: text("actor_role"),
+    authorName: text("author_name").notNull(),
+    body: text("body").notNull(),
+    note: text("note"),
+    metadata: jsonb("metadata")
+      .$type<Record<string, unknown>>()
+      .default(emptyObject)
+      .notNull(),
+    createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+  },
+  (table) => [
+    index("review_host_reply_events_reply_id_idx").on(table.replyId),
+    index("review_host_reply_events_review_id_idx").on(table.reviewId),
+    index("review_host_reply_events_created_at_idx").on(table.createdAt),
+    index("review_host_reply_events_action_idx").on(table.action),
+    index("review_host_reply_events_actor_id_idx").on(table.actorId),
+  ],
+);
+
 export const reviewReports = pgTable(
   "review_reports",
   {

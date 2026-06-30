@@ -9,7 +9,7 @@ type ProgramDisplayNameOptions = {
 };
 
 const UUID_PATTERN =
-  /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{12}$/iu;
+  /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/iu;
 const LONG_HASH_PATTERN = /^[0-9a-f]{16,}$/iu;
 const DASHED_HASH_PATTERN = /^[0-9a-f]{6,}(?:-[0-9a-f]{3,})+$/iu;
 const SLUG_IDENTIFIER_PATTERN = /^[a-z0-9]+(?:-[a-z0-9]+){2,}$/u;
