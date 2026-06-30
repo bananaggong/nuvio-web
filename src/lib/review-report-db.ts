@@ -8,6 +8,7 @@ import {
 import type { ApiAuthContext } from "@/lib/api-security";
 import { safeCreateAuditLog } from "@/lib/audit-log-db";
 import { buildPublicReviewVisibilityConditions } from "@/lib/review-public-visibility-db";
+import { safeReleaseReviewVisibilityHoldsBySourceFromDb } from "@/lib/review-visibility-hold-db";
 
 export type ReviewReportReason =
   | "inappropriate"
@@ -179,6 +180,7 @@ export async function updateReviewReportStatus(
   input: unknown,
   options: {
     actorId: string;
+    actorRole?: string;
     allowedVillageIds?: string[];
     allowedVillageSlugs?: string[];
   },
@@ -239,6 +241,21 @@ export async function updateReviewReportStatus(
       reviewId: row.reviewId,
     },
   });
+
+  if (row.status === "resolved" || row.status === "dismissed") {
+    await safeReleaseReviewVisibilityHoldsBySourceFromDb({
+      note: row.resolutionNote,
+      releaseSource: `report_${row.status}`,
+      reviewId: row.reviewId,
+      sourceId: row.id,
+      sourceType: "review_report",
+    }, {
+      actorId: options.actorId,
+      actorRole: options.actorRole,
+      allowedVillageIds: options.allowedVillageIds,
+      allowedVillageSlugs: options.allowedVillageSlugs,
+    });
+  }
 
   return mapReviewReportRow(row, existing.review);
 }

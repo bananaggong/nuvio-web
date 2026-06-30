@@ -87,6 +87,7 @@ export async function PATCH(request: Request) {
         : await listManageableHostVillageWorkspaces(auth);
     const report = await updateReviewReportStatus(body, {
       actorId: auth.user.id,
+      actorRole: auth.profile.role,
       allowedVillageIds:
         auth.profile.role === "admin"
           ? undefined
