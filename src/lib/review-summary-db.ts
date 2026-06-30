@@ -6,6 +6,7 @@ import {
   reviews as reviewsTable,
   villages,
 } from "@/db/schema";
+import { buildPublicReviewVisibilityConditions } from "@/lib/review-public-visibility-db";
 import type { ReviewSource } from "@/lib/types";
 
 export type PublicReviewSummary = {
@@ -116,7 +117,7 @@ function buildPublicReviewConditions(options: {
   programIdentifier?: string;
   villageSlug?: string;
 }): SQL[] {
-  const conditions: SQL[] = [eq(reviewsTable.status, "published")];
+  const conditions: SQL[] = buildPublicReviewVisibilityConditions();
   const programIdentifier = options.programIdentifier?.trim();
   const villageSlug = options.villageSlug?.trim();
 

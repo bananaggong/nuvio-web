@@ -3,6 +3,7 @@ import { getDb } from "@/db/client";
 import { reviewHelpfulVotes, reviews as reviewsTable } from "@/db/schema";
 import type { ApiAuthContext } from "@/lib/api-security";
 import { safeCreateAuditLog } from "@/lib/audit-log-db";
+import { buildPublicReviewVisibilityConditions } from "@/lib/review-public-visibility-db";
 
 export type ReviewHelpfulResult = {
   helpful: boolean;
@@ -32,10 +33,10 @@ export async function setReviewHelpful(
       userId: reviewsTable.userId,
     })
     .from(reviewsTable)
-    .where(eq(reviewsTable.id, reviewId))
+    .where(and(eq(reviewsTable.id, reviewId), ...buildPublicReviewVisibilityConditions()))
     .limit(1);
 
-  if (!review || review.status !== "published") {
+  if (!review) {
     throw new ReviewInteractionError("Published review was not found.");
   }
   if (review.userId === auth.user.id) {

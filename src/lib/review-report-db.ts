@@ -7,6 +7,7 @@ import {
 } from "@/db/schema";
 import type { ApiAuthContext } from "@/lib/api-security";
 import { safeCreateAuditLog } from "@/lib/audit-log-db";
+import { buildPublicReviewVisibilityConditions } from "@/lib/review-public-visibility-db";
 
 export type ReviewReportReason =
   | "inappropriate"
@@ -78,7 +79,7 @@ export async function createReviewReport(
       villageSlug: reviewsTable.villageSlug,
     })
     .from(reviewsTable)
-    .where(and(eq(reviewsTable.id, normalized.reviewId), eq(reviewsTable.status, "published")))
+    .where(and(eq(reviewsTable.id, normalized.reviewId), ...buildPublicReviewVisibilityConditions()))
     .limit(1);
 
   if (!review) {

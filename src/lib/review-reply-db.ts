@@ -7,6 +7,7 @@ import {
 } from "@/db/schema";
 import type { ApiAuthContext } from "@/lib/api-security";
 import { safeCreateAuditLog } from "@/lib/audit-log-db";
+import { publicReviewSafetyPredicate } from "@/lib/review-public-visibility-db";
 
 export type ReviewHostReplyStatus = "published" | "hidden";
 
@@ -60,6 +61,7 @@ export async function listPublicReviewHostReplies(
         eq(reviewHostReplies.reviewId, reviewId),
         eq(reviewHostReplies.status, "published"),
         eq(reviewsTable.status, "published"),
+        publicReviewSafetyPredicate(),
       ),
     )
     .orderBy(desc(reviewHostReplies.createdAt))

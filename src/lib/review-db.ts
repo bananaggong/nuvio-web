@@ -10,6 +10,7 @@ import {
 import type { ApiAuthContext } from "@/lib/api-security";
 import { safeCreateAuditLog } from "@/lib/audit-log-db";
 import { refreshReviewModerationCheck } from "@/lib/review-moderation-check-db";
+import { buildPublicReviewVisibilityConditions } from "@/lib/review-public-visibility-db";
 import { safeRecordReviewStatusEvent } from "@/lib/review-status-event-db";
 import type {
   Review,
@@ -129,7 +130,7 @@ export async function listPublicReviewsFromDb(options: {
   limit?: number;
   villageSlug?: string;
 } = {}): Promise<Review[]> {
-  const conditions: SQL[] = [eq(reviewsTable.status, "published")];
+  const conditions: SQL[] = buildPublicReviewVisibilityConditions();
   const limit = clampLimit(options.limit, 300);
 
   if (options.villageSlug) {
@@ -165,7 +166,7 @@ export async function listPublicProgramReviewsFromDb(
     })
     .from(reviewsTable)
     .leftJoin(programsTable, eq(reviewsTable.programId, programsTable.id))
-    .where(and(eq(reviewsTable.status, "published"), programPredicate))
+    .where(and(...buildPublicReviewVisibilityConditions(), programPredicate))
     .orderBy(desc(reviewsTable.publishedAt), desc(reviewsTable.createdAt))
     .limit(clampLimit(limit, 80));
 
@@ -184,7 +185,7 @@ export async function getPublicReviewFromDb(id: string): Promise<Review | null> 
     })
     .from(reviewsTable)
     .leftJoin(programsTable, eq(reviewsTable.programId, programsTable.id))
-    .where(and(eq(reviewsTable.id, id), eq(reviewsTable.status, "published")))
+    .where(and(eq(reviewsTable.id, id), ...buildPublicReviewVisibilityConditions()))
     .limit(1);
 
   return row ? mapReviewRowToReview(row.review, row.programLegacyId ?? undefined) : null;
