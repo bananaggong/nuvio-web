@@ -478,6 +478,8 @@ export async function deleteParticipantReview(
 
   const now = new Date();
   const [row] = await getDb().transaction(async (tx) => {
+    await tx.execute(sql`select set_config('app.review_delete_allowed', 'true', true)`);
+
     const [deletedReview] = await tx
       .update(reviewsTable)
       .set({
@@ -552,6 +554,9 @@ export async function upsertHostReviewDraft(
   const insertValue = await mapHostDraftToReviewInsert(draft, {
     allowedVillageIds,
   });
+  if (insertValue.status === "deleted") {
+    throw new HostReviewAccessError();
+  }
   const now = new Date();
 
   if (isUuid(draft.id)) {
@@ -576,7 +581,7 @@ export async function upsertHostReviewDraft(
         applicationId: insertValue.applicationId ?? existingRow.applicationId,
         comments: existingRow.comments,
         hiddenAt:
-          insertValue.status === "hidden" || insertValue.status === "deleted"
+          insertValue.status === "hidden"
             ? insertValue.hiddenAt ?? now
             : existingRow.hiddenAt,
         likes: existingRow.likes,
@@ -724,6 +729,9 @@ export async function updateHostReviewStatus(
   if (!existing) {
     throw new Error("Review was not found.");
   }
+  if (status === "deleted" && options.actorRole !== "admin") {
+    throw new HostReviewAccessError();
+  }
   if (existing.review.status === "deleted" && status !== "deleted" && options.actorRole !== "admin") {
     throw new HostReviewAccessError();
   }
@@ -751,11 +759,19 @@ export async function updateHostReviewStatus(
     updateValue.hiddenAt = now;
   }
 
-  const [row] = await getDb()
-    .update(reviewsTable)
-    .set(updateValue)
-    .where(eq(reviewsTable.id, input.id))
-    .returning();
+  const row = await getDb().transaction(async (tx) => {
+    if (status === "deleted") {
+      await tx.execute(sql`select set_config('app.review_delete_allowed', 'true', true)`);
+    }
+
+    const [updatedReview] = await tx
+      .update(reviewsTable)
+      .set(updateValue)
+      .where(eq(reviewsTable.id, input.id))
+      .returning();
+
+    return updatedReview;
+  });
 
   void safeCreateAuditLog({
     action: "review.status.update",
