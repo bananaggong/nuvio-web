@@ -1061,15 +1061,25 @@ function normalizeImages(value: unknown): string[] {
     new Set(
       value
         .map((item) => (typeof item === "string" ? item.trim() : ""))
-        .filter(isSafeImageUrl)
-        .slice(0, maxReviewImages),
+        .filter(isSafeImageUrl),
     ),
-  );
+  ).slice(0, maxReviewImages);
 }
 
 function isSafeImageUrl(value: string): boolean {
   if (!value || value.length > 2048) return false;
-  return value.startsWith("https://") || value.startsWith("http://") || value.startsWith("/");
+  if (/[\u0000-\u001f\u007f\s<>"'@\\]/u.test(value)) return false;
+
+  if (value.startsWith("/")) {
+    return !value.startsWith("//");
+  }
+
+  try {
+    const url = new URL(value);
+    return url.protocol === "https:" && !url.username && !url.password;
+  } catch {
+    return false;
+  }
 }
 
 function asString(value: unknown): string {
