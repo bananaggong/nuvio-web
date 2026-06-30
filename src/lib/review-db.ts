@@ -10,6 +10,7 @@ import {
 import type { ApiAuthContext } from "@/lib/api-security";
 import { safeCreateAuditLog } from "@/lib/audit-log-db";
 import { refreshReviewModerationCheck } from "@/lib/review-moderation-check-db";
+import { safeRecordReviewStatusEvent } from "@/lib/review-status-event-db";
 import type {
   Review,
   ReviewCategory,
@@ -65,6 +66,7 @@ type UpsertHostReviewDraftOptions = {
   allowedVillageIds?: string[];
   allowedVillageSlugs?: string[];
   actorId?: string;
+  actorRole?: string;
 };
 
 type UpdateHostReviewStatusInput = {
@@ -359,6 +361,17 @@ export async function createParticipantReview(
       status: "pending",
     },
   });
+  await safeRecordReviewStatusEvent({
+    actorId: auth.user.id,
+    actorRole: auth.profile.role,
+    metadata: {
+      applicationId: application.applicationId,
+      programId: application.programId,
+      source: "participant_submission",
+    },
+    reviewId: row.id,
+    toStatus: row.status,
+  });
   await safeRefreshModerationCheck(row.id, auth.user.id);
 
   return mapReviewRowToHostDraft(row);
@@ -402,6 +415,18 @@ export async function updateParticipantReview(
       applicationId: row.applicationId,
       status: row.status,
     },
+  });
+  await safeRecordReviewStatusEvent({
+    action: "updated",
+    actorId: auth.user.id,
+    actorRole: auth.profile.role,
+    fromStatus: existing.review.status,
+    metadata: {
+      applicationId: row.applicationId,
+      source: "participant_update",
+    },
+    reviewId: row.id,
+    toStatus: row.status,
   });
   await safeRefreshModerationCheck(row.id, auth.user.id);
 
@@ -528,6 +553,23 @@ export async function upsertHostReviewDraft(
           entityType: "review",
           metadata: { status: updatedRow.status, source: updatedRow.source },
         });
+        await safeRecordReviewStatusEvent({
+          action: existingRow.status === updatedRow.status ? "updated" : undefined,
+          actorId: options.actorId,
+          actorRole: options.actorRole,
+          fromStatus: existingRow.status,
+          metadata: {
+            source: "host_review_update",
+            reviewSource: updatedRow.source,
+          },
+          reviewId: updatedRow.id,
+          toStatus: updatedRow.status,
+        }, {
+          actorId: options.actorId,
+          actorRole: options.actorRole,
+          allowedVillageIds,
+          allowedVillageSlugs,
+        });
         await safeRefreshModerationCheck(updatedRow.id, options.actorId);
         return mapReviewRowToHostDraft(updatedRow, draft.programLegacyId);
       }
@@ -546,6 +588,21 @@ export async function upsertHostReviewDraft(
     entityId: row.id,
     entityType: "review",
     metadata: { status: row.status, source: row.source },
+  });
+  await safeRecordReviewStatusEvent({
+    actorId: options.actorId,
+    actorRole: options.actorRole,
+    metadata: {
+      source: "host_review_create",
+      reviewSource: row.source,
+    },
+    reviewId: row.id,
+    toStatus: row.status,
+  }, {
+    actorId: options.actorId,
+    actorRole: options.actorRole,
+    allowedVillageIds,
+    allowedVillageSlugs,
   });
   await safeRefreshModerationCheck(row.id, options.actorId);
   return mapReviewRowToHostDraft(row, draft.programLegacyId);
@@ -618,6 +675,24 @@ export async function updateHostReviewStatus(
     },
   });
 
+  await safeRecordReviewStatusEvent({
+    actorId: options.actorId,
+    actorRole: options.actorRole,
+    fromStatus: existing.review.status,
+    metadata: {
+      source: "host_status_update",
+      reviewSource: row.source,
+    },
+    note: input.moderationNote,
+    reason: input.hiddenReason,
+    reviewId: row.id,
+    toStatus: row.status,
+  }, {
+    actorId: options.actorId,
+    actorRole: options.actorRole,
+    allowedVillageIds,
+    allowedVillageSlugs,
+  });
   await safeRefreshModerationCheck(row.id, options.actorId);
   return mapReviewRowToHostDraft(row, existing.programLegacyId ?? undefined);
 }

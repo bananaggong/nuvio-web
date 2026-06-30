@@ -130,6 +130,7 @@ export async function POST(request: Request) {
       allowedVillageIds,
       allowedVillageSlugs,
       actorId: auth.user.id,
+      actorRole: auth.profile.role,
     });
 
     return NextResponse.json({ data: savedDraft }, { status: 201 });
@@ -192,6 +193,7 @@ export async function PATCH(request: Request) {
         allowedVillageIds,
         allowedVillageSlugs,
         actorId: auth.user.id,
+        actorRole: auth.profile.role,
       },
     );
 

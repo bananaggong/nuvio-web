@@ -18,6 +18,7 @@ import type {
   PeriodKey,
   ProgramStatus,
   ReviewCategory,
+  ReviewStatus,
   ThemeKey,
   VillageMediaCategory,
 } from "@/lib/types";
@@ -596,6 +597,33 @@ export const reviewModerationChecks = pgTable(
     uniqueIndex("review_moderation_checks_review_id_unique_idx").on(table.reviewId),
     index("review_moderation_checks_risk_level_idx").on(table.riskLevel),
     index("review_moderation_checks_checked_at_idx").on(table.checkedAt),
+  ],
+);
+export const reviewStatusEvents = pgTable(
+  "review_status_events",
+  {
+    id: uuid("id").defaultRandom().primaryKey(),
+    reviewId: uuid("review_id")
+      .notNull()
+      .references(() => reviews.id, { onDelete: "cascade" }),
+    fromStatus: reviewStatusEnum("from_status").$type<ReviewStatus>(),
+    toStatus: reviewStatusEnum("to_status").$type<ReviewStatus>().notNull(),
+    action: text("action").notNull(),
+    actorId: uuid("actor_id"),
+    actorRole: text("actor_role"),
+    note: text("note"),
+    reason: text("reason"),
+    metadata: jsonb("metadata")
+      .$type<Record<string, unknown>>()
+      .default(emptyObject)
+      .notNull(),
+    createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+  },
+  (table) => [
+    index("review_status_events_review_id_idx").on(table.reviewId),
+    index("review_status_events_created_at_idx").on(table.createdAt),
+    index("review_status_events_action_idx").on(table.action),
+    index("review_status_events_actor_id_idx").on(table.actorId),
   ],
 );
 export const reviewHostReplies = pgTable(
