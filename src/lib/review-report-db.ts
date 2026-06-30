@@ -66,6 +66,13 @@ export class ReviewReportAccessError extends Error {
   }
 }
 
+export class ReviewReportSelfReportError extends Error {
+  constructor() {
+    super("You cannot report your own review.");
+    this.name = "ReviewReportSelfReportError";
+  }
+}
+
 export async function createReviewReport(
   input: unknown,
   auth: ApiAuthContext,
@@ -77,6 +84,7 @@ export async function createReviewReport(
       id: reviewsTable.id,
       programId: reviewsTable.programId,
       title: reviewsTable.title,
+      userId: reviewsTable.userId,
       villageSlug: reviewsTable.villageSlug,
     })
     .from(reviewsTable)
@@ -85,6 +93,9 @@ export async function createReviewReport(
 
   if (!review) {
     throw new Error("Published review was not found.");
+  }
+  if (review.userId === auth.user.id) {
+    throw new ReviewReportSelfReportError();
   }
 
   const [row] = await getDb().transaction(async (tx) => {

@@ -10,6 +10,7 @@ import { launchFeatureFlags } from "@/lib/launch-feature-flags";
 import {
   createReviewReport,
   DuplicateReviewReportError,
+  ReviewReportSelfReportError,
 } from "@/lib/review-report-db";
 
 export const runtime = "nodejs";
@@ -46,6 +47,9 @@ export async function POST(
   } catch (error) {
     if (error instanceof DuplicateReviewReportError) {
       return NextResponse.json({ error: error.message }, { status: 409 });
+    }
+    if (error instanceof ReviewReportSelfReportError) {
+      return NextResponse.json({ error: error.message }, { status: 403 });
     }
 
     return NextResponse.json(
