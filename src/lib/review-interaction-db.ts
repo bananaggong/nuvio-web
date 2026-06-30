@@ -1,4 +1,4 @@
-import { and, eq, sql } from "drizzle-orm";
+import { and, eq } from "drizzle-orm";
 import { getDb } from "@/db/client";
 import { reviewHelpfulVotes, reviews as reviewsTable } from "@/db/schema";
 import type { ApiAuthContext } from "@/lib/api-security";
@@ -28,7 +28,6 @@ export async function setReviewHelpful(
   const [review] = await getDb()
     .select({
       id: reviewsTable.id,
-      likes: reviewsTable.likes,
       status: reviewsTable.status,
       userId: reviewsTable.userId,
     })
@@ -63,29 +62,12 @@ async function addHelpfulVote(
   auth: ApiAuthContext,
 ): Promise<ReviewHelpfulResult> {
   return getDb().transaction(async (tx) => {
-    const inserted = await tx
+    await tx
       .insert(reviewHelpfulVotes)
       .values({ reviewId, userId: auth.user.id })
-      .onConflictDoNothing()
-      .returning({ reviewId: reviewHelpfulVotes.reviewId });
+      .onConflictDoNothing();
 
-    if (inserted.length > 0) {
-      const [updated] = await tx
-        .update(reviewsTable)
-        .set({ likes: sql`${reviewsTable.likes} + 1`, updatedAt: new Date() })
-        .where(eq(reviewsTable.id, reviewId))
-        .returning({ likes: reviewsTable.likes });
-
-      return { helpful: true, likes: updated?.likes ?? 0, reviewId };
-    }
-
-    const [current] = await tx
-      .select({ likes: reviewsTable.likes })
-      .from(reviewsTable)
-      .where(eq(reviewsTable.id, reviewId))
-      .limit(1);
-
-    return { helpful: true, likes: current?.likes ?? 0, reviewId };
+    return { helpful: true, likes: await readReviewLikeCount(tx, reviewId), reviewId };
   });
 }
 
@@ -94,37 +76,30 @@ async function removeHelpfulVote(
   auth: ApiAuthContext,
 ): Promise<ReviewHelpfulResult> {
   return getDb().transaction(async (tx) => {
-    const deleted = await tx
+    await tx
       .delete(reviewHelpfulVotes)
       .where(
         and(
           eq(reviewHelpfulVotes.reviewId, reviewId),
           eq(reviewHelpfulVotes.userId, auth.user.id),
         ),
-      )
-      .returning({ reviewId: reviewHelpfulVotes.reviewId });
+      );
 
-    if (deleted.length > 0) {
-      const [updated] = await tx
-        .update(reviewsTable)
-        .set({
-          likes: sql`greatest(${reviewsTable.likes} - 1, 0)`,
-          updatedAt: new Date(),
-        })
-        .where(eq(reviewsTable.id, reviewId))
-        .returning({ likes: reviewsTable.likes });
-
-      return { helpful: false, likes: updated?.likes ?? 0, reviewId };
-    }
-
-    const [current] = await tx
-      .select({ likes: reviewsTable.likes })
-      .from(reviewsTable)
-      .where(eq(reviewsTable.id, reviewId))
-      .limit(1);
-
-    return { helpful: false, likes: current?.likes ?? 0, reviewId };
+    return { helpful: false, likes: await readReviewLikeCount(tx, reviewId), reviewId };
   });
+}
+
+async function readReviewLikeCount(
+  tx: Parameters<Parameters<ReturnType<typeof getDb>["transaction"]>[0]>[0],
+  reviewId: string,
+): Promise<number> {
+  const [current] = await tx
+    .select({ likes: reviewsTable.likes })
+    .from(reviewsTable)
+    .where(eq(reviewsTable.id, reviewId))
+    .limit(1);
+
+  return current?.likes ?? 0;
 }
 
 function isUuid(value: string): boolean {

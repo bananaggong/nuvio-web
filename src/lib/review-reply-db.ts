@@ -1,4 +1,4 @@
-import { and, desc, eq, inArray, or, sql, type SQL } from "drizzle-orm";
+import { and, desc, eq, inArray, or, type SQL } from "drizzle-orm";
 import { getDb } from "@/db/client";
 import {
   programs as programsTable,
@@ -26,7 +26,6 @@ type ReplyRow = typeof reviewHostReplies.$inferSelect;
 
 type ReviewAccessRow = {
   id: string;
-  comments: number;
   programVillageId: string | null;
   status: string;
   title: string;
@@ -96,7 +95,6 @@ export async function upsertHostReviewReply(
       .limit(1);
 
     if (existing) {
-      const wasPublished = existing.status === "published";
       const nextStatus = normalized.status;
       const [updated] = await tx
         .update(reviewHostReplies)
@@ -110,8 +108,6 @@ export async function upsertHostReviewReply(
         })
         .where(eq(reviewHostReplies.id, existing.id))
         .returning();
-
-      await syncReviewCommentCount(tx, reviewId, wasPublished, nextStatus === "published");
       return [updated];
     }
 
@@ -126,8 +122,6 @@ export async function upsertHostReviewReply(
         status: normalized.status,
       })
       .returning();
-
-    await syncReviewCommentCount(tx, reviewId, false, normalized.status === "published");
     return [created];
   });
 
@@ -177,13 +171,6 @@ export async function updateHostReviewReplyStatus(
       .where(eq(reviewHostReplies.id, existing.id))
       .returning();
 
-    await syncReviewCommentCount(
-      tx,
-      reviewId,
-      existing.status === "published",
-      nextStatus === "published",
-    );
-
     return [updated];
   });
 
@@ -226,7 +213,6 @@ async function getReviewForReplyAccess(
 
   const [row] = await getDb()
     .select({
-      comments: reviewsTable.comments,
       id: reviewsTable.id,
       programVillageId: programsTable.villageId,
       status: reviewsTable.status,
@@ -239,25 +225,6 @@ async function getReviewForReplyAccess(
     .limit(1);
 
   return row ?? null;
-}
-
-async function syncReviewCommentCount(
-  tx: Parameters<Parameters<ReturnType<typeof getDb>["transaction"]>[0]>[0],
-  reviewId: string,
-  wasPublished: boolean,
-  isPublished: boolean,
-) {
-  if (wasPublished === isPublished) return;
-
-  await tx
-    .update(reviewsTable)
-    .set({
-      comments: isPublished
-        ? sql`${reviewsTable.comments} + 1`
-        : sql`greatest(${reviewsTable.comments} - 1, 0)`,
-      updatedAt: new Date(),
-    })
-    .where(eq(reviewsTable.id, reviewId));
 }
 
 function normalizeReplyInput(input: unknown): {
