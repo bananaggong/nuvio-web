@@ -113,6 +113,8 @@ export type Review = {
   category: ReviewCategory;
   programId?: number;
   programUuid?: string;
+  programSlug?: string;
+  programTitle?: string;
   programRunId?: string;
   villageSlug?: string;
   author: string;

@@ -143,6 +143,8 @@ export async function listPublicReviewsFromDb(options: {
     .select({
       review: reviewsTable,
       programLegacyId: programsTable.legacyId,
+      programSlug: programsTable.slug,
+      programTitle: programsTable.title,
     })
     .from(reviewsTable)
     .leftJoin(programsTable, eq(reviewsTable.programId, programsTable.id))
@@ -150,8 +152,8 @@ export async function listPublicReviewsFromDb(options: {
     .orderBy(desc(reviewsTable.publishedAt), desc(reviewsTable.createdAt))
     .limit(limit);
 
-  return rows.map(({ review, programLegacyId }) =>
-    mapReviewRowToReview(review, programLegacyId ?? undefined),
+  return rows.map(({ review, programLegacyId, programSlug, programTitle }) =>
+    mapReviewRowToReview(review, programLegacyId ?? undefined, programSlug, programTitle),
   );
 }
 
@@ -165,6 +167,8 @@ export async function listPublicProgramReviewsFromDb(
     .select({
       review: reviewsTable,
       programLegacyId: programsTable.legacyId,
+      programSlug: programsTable.slug,
+      programTitle: programsTable.title,
     })
     .from(reviewsTable)
     .leftJoin(programsTable, eq(reviewsTable.programId, programsTable.id))
@@ -172,8 +176,8 @@ export async function listPublicProgramReviewsFromDb(
     .orderBy(desc(reviewsTable.publishedAt), desc(reviewsTable.createdAt))
     .limit(clampLimit(limit, 80));
 
-  return rows.map(({ review, programLegacyId }) =>
-    mapReviewRowToReview(review, programLegacyId ?? undefined),
+  return rows.map(({ review, programLegacyId, programSlug, programTitle }) =>
+    mapReviewRowToReview(review, programLegacyId ?? undefined, programSlug, programTitle),
   );
 }
 
@@ -184,13 +188,22 @@ export async function getPublicReviewFromDb(id: string): Promise<Review | null> 
     .select({
       review: reviewsTable,
       programLegacyId: programsTable.legacyId,
+      programSlug: programsTable.slug,
+      programTitle: programsTable.title,
     })
     .from(reviewsTable)
     .leftJoin(programsTable, eq(reviewsTable.programId, programsTable.id))
     .where(and(eq(reviewsTable.id, id), ...buildPublicReviewVisibilityConditions()))
     .limit(1);
 
-  return row ? mapReviewRowToReview(row.review, row.programLegacyId ?? undefined) : null;
+  return row
+    ? mapReviewRowToReview(
+        row.review,
+        row.programLegacyId ?? undefined,
+        row.programSlug,
+        row.programTitle,
+      )
+    : null;
 }
 
 export async function listMyReviewsFromDb(auth: ApiAuthContext): Promise<HostReviewDraft[]> {
@@ -208,6 +221,8 @@ export async function listMyReviewsFromDb(auth: ApiAuthContext): Promise<HostRev
     .select({
       review: reviewsTable,
       programLegacyId: programsTable.legacyId,
+      programSlug: programsTable.slug,
+      programTitle: programsTable.title,
     })
     .from(reviewsTable)
     .leftJoin(programsTable, eq(reviewsTable.programId, programsTable.id))
@@ -259,6 +274,8 @@ export async function listHostReviewDraftsFromDb(
     .select({
       review: reviewsTable,
       programLegacyId: programsTable.legacyId,
+      programSlug: programsTable.slug,
+      programTitle: programsTable.title,
     })
     .from(reviewsTable)
     .leftJoin(programsTable, eq(reviewsTable.programId, programsTable.id));
@@ -729,6 +746,8 @@ export async function updateHostReviewStatus(
     .select({
       review: reviewsTable,
       programLegacyId: programsTable.legacyId,
+      programSlug: programsTable.slug,
+      programTitle: programsTable.title,
       programVillageId: programsTable.villageId,
     })
     .from(reviewsTable)
@@ -939,6 +958,8 @@ async function getOwnedMutableReview(
     .select({
       review: reviewsTable,
       programLegacyId: programsTable.legacyId,
+      programSlug: programsTable.slug,
+      programTitle: programsTable.title,
     })
     .from(reviewsTable)
     .leftJoin(programsTable, eq(reviewsTable.programId, programsTable.id))
@@ -1064,6 +1085,8 @@ async function resolveProgramByPredicate(
 function mapReviewRowToReview(
   row: ReviewRow,
   programLegacyId?: number,
+  programSlug?: string | null,
+  programTitle?: string | null,
 ): Review {
   return {
     id: row.id,
@@ -1072,6 +1095,8 @@ function mapReviewRowToReview(
     category: row.category,
     programId: programLegacyId,
     programUuid: row.programId ?? undefined,
+    programSlug: programSlug ?? undefined,
+    programTitle: programTitle ?? undefined,
     programRunId: row.programRunId ?? undefined,
     villageSlug: row.villageSlug ?? undefined,
     author: row.authorName,

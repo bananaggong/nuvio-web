@@ -17,10 +17,11 @@ export function ReviewFeed({ reviews, showWriteButton = false }: { reviews: Revi
     const normalized = keyword.trim().toLowerCase();
     return reviews.filter((review) => {
       const program = review.programId ? getProgramById(review.programId) : undefined;
+      const programTitle = review.programTitle ?? program?.title;
       const matchesCategory = category === "all" || review.category === category;
       const matchesKeyword =
         !normalized ||
-        [review.title, review.excerpt, review.body, review.author, program?.title ?? ""]
+        [review.title, review.excerpt, review.body, review.author, programTitle ?? ""]
           .join(" ")
           .toLowerCase()
           .includes(normalized);
@@ -73,6 +74,7 @@ export function ReviewFeed({ reviews, showWriteButton = false }: { reviews: Revi
         <div className="mt-4 grid gap-4">
           {filteredReviews.map((review) => {
             const program = review.programId ? getProgramById(review.programId) : undefined;
+            const programTitle = review.programTitle ?? program?.title;
             const categoryLabel =
               reviewCategories.find((item) => item.key === review.category)?.label ?? "후기";
             return (
@@ -96,9 +98,9 @@ export function ReviewFeed({ reviews, showWriteButton = false }: { reviews: Revi
                       </span>
                     ) : null}
                   </div>
-                  {program ? (
+                  {programTitle ? (
                     <p className="mt-2 text-sm font-bold text-slate-500">
-                      연결 프로그램: {program.title}
+                      연결 프로그램: {programTitle}
                     </p>
                   ) : null}
                   <p className="mt-3 line-clamp-3 text-sm leading-6 text-slate-600">

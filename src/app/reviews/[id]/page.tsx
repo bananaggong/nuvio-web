@@ -50,6 +50,12 @@ export default async function ReviewDetailPage({
   if (!review) notFound();
 
   const program = review.programId ? getProgramById(review.programId) : undefined;
+  const programTitle = program?.title ?? review.programTitle;
+  const programHref = program
+    ? programPath(program)
+    : review.programSlug || review.programUuid
+      ? `/programs/${review.programSlug ?? review.programUuid}`
+      : undefined;
   const categoryLabel =
     reviewCategories.find((item) => item.key === review.category)?.label ?? "후기";
   const canonicalPath = `/reviews/${review.id}`;
@@ -58,7 +64,7 @@ export default async function ReviewDetailPage({
     <div className="mx-auto max-w-3xl px-5 py-8 md:px-8">
       <JsonLdScript
         data={[
-          reviewJsonLd(review, canonicalPath, program?.title ?? "누비오 후기"),
+          reviewJsonLd(review, canonicalPath, programTitle ?? "누비오 후기"),
           breadcrumbJsonLd([
             { name: "홈", path: "/" },
             { name: "후기", path: "/reviews" },
@@ -94,14 +100,17 @@ export default async function ReviewDetailPage({
             </span>
           </div>
         </div>
-
-        {program ? (
+        {programTitle && programHref ? (
           <Link
             className="mt-5 block rounded-md border border-teal-100 bg-teal-50 p-4 text-sm font-bold text-[var(--primary-strong)]"
-            href={programPath(program)}
+            href={programHref}
           >
-            연결 프로그램: {program.title}
+            연결 프로그램: {programTitle}
           </Link>
+        ) : programTitle ? (
+          <div className="mt-5 rounded-md border border-teal-100 bg-teal-50 p-4 text-sm font-bold text-[var(--primary-strong)]">
+            연결 프로그램: {programTitle}
+          </div>
         ) : null}
 
         {review.images.length > 0 ? (
