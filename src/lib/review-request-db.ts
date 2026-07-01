@@ -570,7 +570,7 @@ function isWithinCooldown(value: Date | null, now: Date): boolean {
 function getVerifiedAccountEmails(auth: ApiAuthContext): string[] {
   return Array.from(
     new Set(
-      [auth.user.email, auth.profile.email]
+      [auth.user.email]
         .map((email) => String(email ?? "").trim().toLowerCase())
         .filter(isValidEmail),
     ),

@@ -1061,7 +1061,7 @@ async function getParticipantReviewApplication(input: {
 }): Promise<ParticipantApplicationRow | null> {
   const ownerConditions: SQL[] = [eq(programApplications.submittedBy, input.userId)];
   if (input.emails.length > 0) {
-    ownerConditions.push(inArray(programApplications.email, input.emails));
+    ownerConditions.push(inArray(sql<string>`lower(${programApplications.email})`, input.emails));
   }
   const ownerPredicate = or(...ownerConditions);
   if (!ownerPredicate) return null;
@@ -1412,7 +1412,7 @@ function assertReviewManageAccess(input: {
 function getVerifiedAccountEmails(auth: ApiAuthContext): string[] {
   return Array.from(
     new Set(
-      [auth.user.email, auth.profile.email]
+      [auth.user.email]
         .map((email) => String(email ?? "").trim().toLowerCase())
         .filter(isValidEmail),
     ),

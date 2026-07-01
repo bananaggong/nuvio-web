@@ -144,7 +144,7 @@ function buildApplicationOwnerPredicate(auth: ApiAuthContext): SQL | undefined {
 function getVerifiedAccountEmails(auth: ApiAuthContext): string[] {
   return Array.from(
     new Set(
-      [auth.user.email, auth.profile.email]
+      [auth.user.email]
         .map((email) => String(email ?? "").trim().toLowerCase())
         .filter(isValidEmail),
     ),
