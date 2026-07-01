@@ -3,12 +3,17 @@ import { getDb } from "@/db/client";
 import { reviewHelpfulVotes, reviews as reviewsTable } from "@/db/schema";
 import type { ApiAuthContext } from "@/lib/api-security";
 import { safeCreateAuditLog } from "@/lib/audit-log-db";
+import { safeRecordReviewHelpfulVoteEvent } from "@/lib/review-helpful-vote-event-db";
 import { buildPublicReviewVisibilityConditions } from "@/lib/review-public-visibility-db";
 
 export type ReviewHelpfulResult = {
   helpful: boolean;
   likes: number;
   reviewId: string;
+};
+
+type ReviewHelpfulMutationResult = ReviewHelpfulResult & {
+  changed: boolean;
 };
 
 export class ReviewInteractionError extends Error {
@@ -46,46 +51,73 @@ export async function setReviewHelpful(
     ? await addHelpfulVote(reviewId, auth)
     : await removeHelpfulVote(reviewId, auth);
 
-  void safeCreateAuditLog({
-    action: helpful ? "review.helpful.add" : "review.helpful.remove",
-    actorId: auth.user.id,
-    entityId: reviewId,
-    entityType: "review",
-    metadata: { helpful: result.helpful, likes: result.likes },
-  });
+  if (result.changed) {
+    void safeCreateAuditLog({
+      action: helpful ? "review.helpful.add" : "review.helpful.remove",
+      actorId: auth.user.id,
+      entityId: reviewId,
+      entityType: "review",
+      metadata: { helpful: result.helpful, likes: result.likes },
+    });
 
-  return result;
+    await safeRecordReviewHelpfulVoteEvent({
+      action: helpful ? "added" : "removed",
+      actorId: auth.user.id,
+      actorRole: auth.profile.role,
+      metadata: {
+        helpful: result.helpful,
+        likes: result.likes,
+        source: "review_helpful_mutation",
+      },
+      reviewId,
+      userId: auth.user.id,
+    });
+  }
+
+  return { helpful: result.helpful, likes: result.likes, reviewId: result.reviewId };
 }
 
 async function addHelpfulVote(
   reviewId: string,
   auth: ApiAuthContext,
-): Promise<ReviewHelpfulResult> {
+): Promise<ReviewHelpfulMutationResult> {
   return getDb().transaction(async (tx) => {
-    await tx
+    const inserted = await tx
       .insert(reviewHelpfulVotes)
       .values({ reviewId, userId: auth.user.id })
-      .onConflictDoNothing();
+      .onConflictDoNothing()
+      .returning({ reviewId: reviewHelpfulVotes.reviewId });
 
-    return { helpful: true, likes: await readReviewLikeCount(tx, reviewId), reviewId };
+    return {
+      changed: inserted.length > 0,
+      helpful: true,
+      likes: await readReviewLikeCount(tx, reviewId),
+      reviewId,
+    };
   });
 }
 
 async function removeHelpfulVote(
   reviewId: string,
   auth: ApiAuthContext,
-): Promise<ReviewHelpfulResult> {
+): Promise<ReviewHelpfulMutationResult> {
   return getDb().transaction(async (tx) => {
-    await tx
+    const deleted = await tx
       .delete(reviewHelpfulVotes)
       .where(
         and(
           eq(reviewHelpfulVotes.reviewId, reviewId),
           eq(reviewHelpfulVotes.userId, auth.user.id),
         ),
-      );
+      )
+      .returning({ reviewId: reviewHelpfulVotes.reviewId });
 
-    return { helpful: false, likes: await readReviewLikeCount(tx, reviewId), reviewId };
+    return {
+      changed: deleted.length > 0,
+      helpful: false,
+      likes: await readReviewLikeCount(tx, reviewId),
+      reviewId,
+    };
   });
 }
 
