@@ -237,16 +237,14 @@ export async function updateReviewReportStatus(
   });
 
   const now = new Date();
+  const finalStatus = normalized.status === "resolved" || normalized.status === "dismissed";
   const updateValue: Partial<ReviewReportInsert> = {
-    resolutionNote: normalized.resolutionNote,
+    resolutionNote: finalStatus ? normalized.resolutionNote : null,
+    resolvedAt: finalStatus ? existing.report.resolvedAt ?? now : null,
+    resolvedBy: finalStatus ? existing.report.resolvedBy ?? options.actorId : null,
     status: normalized.status,
     updatedAt: now,
   };
-
-  if (normalized.status === "resolved" || normalized.status === "dismissed") {
-    updateValue.resolvedAt = now;
-    updateValue.resolvedBy = options.actorId;
-  }
 
   const [row] = await getDb()
     .update(reviewReports)
