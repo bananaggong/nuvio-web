@@ -1,4 +1,4 @@
-import { and, desc, eq, inArray, or, type SQL } from "drizzle-orm";
+import { and, desc, eq, inArray, or, sql, type SQL } from "drizzle-orm";
 import { getDb } from "@/db/client";
 import {
   programs as programsTable,
@@ -107,33 +107,39 @@ export async function refreshReviewModerationCheck(
 
   const analysis = analyzeReviewModeration(review);
   const now = new Date();
-  const [row] = await getDb()
-    .insert(reviewModerationChecks)
-    .values({
-      checkedAt: now,
-      checkedBy: options.actorId ?? null,
-      flags: analysis.flags,
-      matchedTerms: analysis.matchedTerms,
-      metadata: analysis.metadata,
-      reviewId,
-      riskLevel: analysis.riskLevel,
-      riskScore: analysis.riskScore,
-      updatedAt: now,
-    })
-    .onConflictDoUpdate({
-      target: reviewModerationChecks.reviewId,
-      set: {
+  const [row] = await getDb().transaction(async (tx) => {
+    await tx.execute(
+      sql`select set_config('app.review_moderation_write_allowed', 'true', true)`,
+    );
+
+    return tx
+      .insert(reviewModerationChecks)
+      .values({
         checkedAt: now,
         checkedBy: options.actorId ?? null,
         flags: analysis.flags,
         matchedTerms: analysis.matchedTerms,
         metadata: analysis.metadata,
+        reviewId,
         riskLevel: analysis.riskLevel,
         riskScore: analysis.riskScore,
         updatedAt: now,
-      },
-    })
-    .returning();
+      })
+      .onConflictDoUpdate({
+        target: reviewModerationChecks.reviewId,
+        set: {
+          checkedAt: now,
+          checkedBy: options.actorId ?? null,
+          flags: analysis.flags,
+          matchedTerms: analysis.matchedTerms,
+          metadata: analysis.metadata,
+          riskLevel: analysis.riskLevel,
+          riskScore: analysis.riskScore,
+          updatedAt: now,
+        },
+      })
+      .returning();
+  });
 
   void safeCreateAuditLog({
     action: "review.moderation_check.refresh",
