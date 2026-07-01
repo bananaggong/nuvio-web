@@ -456,9 +456,7 @@ function MypageFrame({
   }
   const topPaddingClass = showOverview
     ? "pt-[clamp(82px,5.6944vw,109.333px)]"
-    : activeSection === "member"
-      ? "pt-[clamp(8px,0.5556vw,10.667px)]"
-      : "pt-[clamp(32px,2.2222vw,42.667px)]";
+    : "pt-[clamp(32px,2.2222vw,42.667px)]";
 
   return (
     <div
@@ -603,23 +601,34 @@ function TripsContent({ context }: { context: MypageContext }) {
           <ListSkeleton count={3} />
         ) : filteredApplications.length > 0 ? (
           <div className="grid gap-0">
-            {filteredApplications.map((application) => (
-              <TripDetailCard
-                actionLabel={
-                  tab === "completed"
-                    ? application.reviewSubmitted
-                      ? "후기 보기"
-                      : "후기 작성"
-                    : undefined
-                }
-                application={application}
-                key={application.id}
-                onActionClick={
-                  tab === "completed" ? () => setReadyNoticeOpen(true) : undefined
-                }
-                program={findProgramForApplication(application, context.publicPrograms)}
-              />
-            ))}
+            {filteredApplications.map((application) => {
+              const program = findProgramForApplication(
+                application,
+                context.publicPrograms,
+              );
+
+              return (
+                <TripDetailCard
+                  actionLabel={
+                    tab === "completed"
+                      ? application.reviewSubmitted
+                        ? "후기 보기"
+                        : "후기 작성"
+                      : undefined
+                  }
+                  application={application}
+                  isBookmarked={isProgramBookmarked(
+                    program,
+                    context.bookmarkedPrograms,
+                  )}
+                  key={application.id}
+                  onActionClick={
+                    tab === "completed" ? () => setReadyNoticeOpen(true) : undefined
+                  }
+                  program={program}
+                />
+              );
+            })}
           </div>
         ) : (
           <TripEmptyPanel
@@ -2870,7 +2879,7 @@ function MemberInformationReadOnly({
 function PointsContent() {
   return (
     <section>
-      <PageTitle eyebrow="POINT" title="포인트" trailing="0 P" />
+      <PageTitle title="포인트" trailing="0 P" />
       <div className="mt-6 rounded-[6px] border border-[#d9d9d9] px-5 py-6">
         <div className="flex items-center justify-between border-b border-[#d9d9d9] pb-5">
           <span className="text-[16px] font-semibold">보유 포인트</span>
@@ -3313,7 +3322,7 @@ function TripEmptyPanel({ message }: { message: string }) {
         className="min-h-0 bg-transparent"
         compact
         iconClassName="h-[clamp(34px,2.3611vw,45.333px)] w-[clamp(30px,2.0833vw,40px)]"
-        label={message}
+        message={message}
         textClassName="mt-[clamp(12px,0.8333vw,16px)] text-[clamp(13px,0.9028vw,17.333px)] text-[#C7BDB5]"
       />
     </div>
@@ -3434,16 +3443,22 @@ function TripMiniCard({
   );
 }
 
+function normalizeTelHref(phone: string) {
+  return phone.replace(/[^\d+]/g, "");
+}
+
 function TripDetailCard({
   actionHref,
   actionLabel,
   application,
+  isBookmarked = false,
   onActionClick,
   program,
 }: {
   actionHref?: string;
   actionLabel?: string;
   application: HostApplication;
+  isBookmarked?: boolean;
   onActionClick?: () => void;
   program?: Program;
 }) {
@@ -3462,6 +3477,21 @@ function TripDetailCard({
       ? "bg-[var(--mypage-olive)] hover:bg-[#6E7F45]"
       : "bg-[#FF9A3D] hover:bg-[var(--mypage-orange)]"
   }`;
+  const hostPhone = program?.phone?.trim() ?? "";
+  const normalizedHostPhone = normalizeTelHref(hostPhone);
+  const phoneHref = normalizedHostPhone ? `tel:${normalizedHostPhone}` : "";
+  const messageSearchParams = new URLSearchParams();
+  const programId = application.programId || program?.id;
+
+  if (programId) {
+    messageSearchParams.set("programId", String(programId));
+  }
+
+  messageSearchParams.set("applicationId", application.id);
+
+  const messageHref = `/mypage/messages?${messageSearchParams.toString()}`;
+  const quickActionClass =
+    "grid size-[clamp(20px,1.3889vw,26.667px)] place-items-center rounded-full transition hover:bg-[#FFF3EA] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--mypage-orange)] disabled:cursor-not-allowed disabled:opacity-40";
 
   return (
     <article className="grid border-b border-[var(--mypage-line)] py-[clamp(16px,1.1111vw,21.333px)] md:grid-cols-[clamp(84px,5.8333vw,112px)_minmax(0,1fr)_auto] md:items-start md:gap-[clamp(18px,1.25vw,24px)]">
@@ -3529,10 +3559,51 @@ function TripDetailCard({
             strong
             value={formatApplicationDisplayCode(application.id, application.submittedAt)}
           />
-          <div className="mt-[clamp(8px,0.5556vw,10.667px)] flex h-[clamp(12px,0.8333vw,16px)] w-[clamp(87px,6.0417vw,116px)] items-center justify-between px-[clamp(11px,0.7639vw,14.667px)]">
-            <NuvioAssetIcon alt="" name="phone" size={12} />
-            <NuvioAssetIcon alt="" name="messageOrange" size={12} />
-            <NuvioAssetIcon alt="" name="bookmarkFilled" size={12} />
+          <div className="mt-[clamp(4px,0.2778vw,5.333px)] flex h-[clamp(20px,1.3889vw,26.667px)] w-[clamp(87px,6.0417vw,116px)] items-center justify-between">
+            {phoneHref ? (
+              <a
+                aria-label={`${displayTitle} 전화 문의`}
+                className={quickActionClass}
+                href={phoneHref}
+                title={`전화 문의 ${hostPhone}`}
+              >
+                <NuvioAssetIcon alt="" name="phone" size={12} />
+              </a>
+            ) : (
+              <button
+                aria-label="전화 문의 연락처 없음"
+                className={quickActionClass}
+                disabled
+                title="전화 문의 연락처 없음"
+                type="button"
+              >
+                <NuvioAssetIcon alt="" name="phone" size={12} />
+              </button>
+            )}
+            <Link
+              aria-label={`${displayTitle} 메시지 문의`}
+              className={quickActionClass}
+              href={messageHref}
+              title="메시지 문의"
+            >
+              <NuvioAssetIcon alt="" name="messageOrange" size={12} />
+            </Link>
+            <Link
+              aria-label={
+                isBookmarked
+                  ? "저장한 프로그램으로 이동"
+                  : "저장하지 않은 프로그램입니다. 저장 목록으로 이동"
+              }
+              className={quickActionClass}
+              href="/mypage/bookmarks"
+              title={isBookmarked ? "저장됨" : "저장하지 않음"}
+            >
+              <NuvioAssetIcon
+                alt=""
+                name={isBookmarked ? "bookmarkFilled" : "bookmark"}
+                size={12}
+              />
+            </Link>
           </div>
         </div>
         <TripMeta label="예약자 명" value={application.applicantName || "-"} />
@@ -4049,6 +4120,21 @@ function findProgramByStateKey(
 
 function getProgramIdentity(program: Program): string {
   return program.slug || String(program.id);
+}
+
+function isProgramBookmarked(
+  program: Program | undefined,
+  bookmarkedPrograms: Program[],
+) {
+  if (!program) return false;
+
+  const identity = getProgramIdentity(program);
+  return bookmarkedPrograms.some(
+    (bookmarkedProgram) =>
+      getProgramIdentity(bookmarkedProgram) === identity ||
+      String(bookmarkedProgram.id) === String(program.id) ||
+      bookmarkedProgram.slug === program.slug,
+  );
 }
 
 function parseDateSortValue(value: string | null | undefined): number {
