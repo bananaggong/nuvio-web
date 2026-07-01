@@ -1,4 +1,4 @@
-import { and, desc, eq, gte, isNull } from "drizzle-orm";
+import { and, desc, eq, gte, isNull, sql } from "drizzle-orm";
 import { getDb } from "@/db/client";
 import {
   programs as programsTable,
@@ -114,21 +114,25 @@ export async function recordReviewStatusEvent(
     : null;
 
   if (recentTriggerEvent) {
-    const [updated] = await getDb()
-      .update(reviewStatusEvents)
-      .set({
-        actorId,
-        actorRole,
-        metadata: {
-          ...asRecord(recentTriggerEvent.metadata),
-          ...metadata,
-          enrichedBy: "application_service",
-        },
-        note: normalizeOptionalText(input.note) ?? recentTriggerEvent.note,
-        reason: normalizeOptionalText(input.reason) ?? recentTriggerEvent.reason,
-      })
-      .where(eq(reviewStatusEvents.id, recentTriggerEvent.id))
-      .returning();
+    const [updated] = await getDb().transaction(async (tx) => {
+      await tx.execute(sql`select set_config('app.review_audit_enrich_allowed', 'true', true)`);
+
+      return tx
+        .update(reviewStatusEvents)
+        .set({
+          actorId,
+          actorRole,
+          metadata: {
+            ...asRecord(recentTriggerEvent.metadata),
+            ...metadata,
+            enrichedBy: "application_service",
+          },
+          note: normalizeOptionalText(input.note) ?? recentTriggerEvent.note,
+          reason: normalizeOptionalText(input.reason) ?? recentTriggerEvent.reason,
+        })
+        .where(eq(reviewStatusEvents.id, recentTriggerEvent.id))
+        .returning();
+    });
 
     if (updated) {
       void safeCreateAuditLog({
@@ -146,20 +150,24 @@ export async function recordReviewStatusEvent(
     }
   }
 
-  const [row] = await getDb()
-    .insert(reviewStatusEvents)
-    .values({
-      action,
-      actorId,
-      actorRole,
-      fromStatus: input.fromStatus ?? null,
-      metadata,
-      note: normalizeOptionalText(input.note),
-      reason: normalizeOptionalText(input.reason),
-      reviewId: input.reviewId,
-      toStatus: input.toStatus,
-    })
-    .returning();
+  const [row] = await getDb().transaction(async (tx) => {
+    await tx.execute(sql`select set_config('app.review_audit_insert_allowed', 'true', true)`);
+
+    return tx
+      .insert(reviewStatusEvents)
+      .values({
+        action,
+        actorId,
+        actorRole,
+        fromStatus: input.fromStatus ?? null,
+        metadata,
+        note: normalizeOptionalText(input.note),
+        reason: normalizeOptionalText(input.reason),
+        reviewId: input.reviewId,
+        toStatus: input.toStatus,
+      })
+      .returning();
+  });
 
   void safeCreateAuditLog({
     action: "review.status_event.create",

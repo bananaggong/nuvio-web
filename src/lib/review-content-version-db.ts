@@ -1,4 +1,4 @@
-import { and, desc, eq, gte, isNull } from "drizzle-orm";
+import { and, desc, eq, gte, isNull, sql } from "drizzle-orm";
 import { getDb } from "@/db/client";
 import {
   programs as programsTable,
@@ -112,16 +112,20 @@ export async function enrichLatestReviewContentVersion(
     enrichedBy: "application_service",
   };
 
-  const [row] = await getDb()
-    .update(reviewContentVersions)
-    .set({
-      changedBy: actorId,
-      changedByRole: actorRole,
-      changeSource: normalizeChangeSource(input.changeSource),
-      metadata,
-    })
-    .where(eq(reviewContentVersions.id, recentVersion.id))
-    .returning();
+  const [row] = await getDb().transaction(async (tx) => {
+    await tx.execute(sql`select set_config('app.review_audit_enrich_allowed', 'true', true)`);
+
+    return tx
+      .update(reviewContentVersions)
+      .set({
+        changedBy: actorId,
+        changedByRole: actorRole,
+        changeSource: normalizeChangeSource(input.changeSource),
+        metadata,
+      })
+      .where(eq(reviewContentVersions.id, recentVersion.id))
+      .returning();
+  });
 
   if (!row) return null;
 
