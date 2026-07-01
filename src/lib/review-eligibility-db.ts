@@ -135,7 +135,7 @@ function buildApplicationOwnerPredicate(auth: ApiAuthContext): SQL | undefined {
   const emails = getVerifiedAccountEmails(auth);
 
   if (emails.length > 0) {
-    ownerConditions.push(inArray(programApplications.email, emails));
+    ownerConditions.push(inArray(sql<string>`lower(${programApplications.email})`, emails));
   }
 
   return or(...ownerConditions);

@@ -174,7 +174,7 @@ export async function findExistingProgramApplication(input: {
     .where(
       and(
         eq(programApplications.programId, program.id),
-        inArray(programApplications.email, emails),
+        inArray(sql<string>`lower(${programApplications.email})`, emails),
       ),
     )
     .orderBy(desc(programApplications.submittedAt))
@@ -242,7 +242,7 @@ export async function listHostApplications(
     );
   }
   if (options.emails) {
-    ownerConditions.push(inArray(programApplications.email, emails));
+    ownerConditions.push(inArray(sql<string>`lower(${programApplications.email})`, emails));
   }
   if (ownerConditions.length === 1) {
     conditions.push(ownerConditions[0]);

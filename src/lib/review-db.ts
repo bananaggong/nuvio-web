@@ -221,7 +221,7 @@ export async function listMyReviewsFromDb(auth: ApiAuthContext): Promise<HostRev
   const emails = getVerifiedAccountEmails(auth);
 
   if (emails.length > 0) {
-    ownerConditions.push(inArray(programApplications.email, emails));
+    ownerConditions.push(inArray(sql<string>`lower(${programApplications.email})`, emails));
   }
 
   const ownerPredicate = or(...ownerConditions);
@@ -1027,7 +1027,7 @@ async function getOwnedMutableReview(
   const emails = getVerifiedAccountEmails(auth);
 
   if (emails.length > 0) {
-    ownerConditions.push(inArray(programApplications.email, emails));
+    ownerConditions.push(inArray(sql<string>`lower(${programApplications.email})`, emails));
   }
 
   const ownerPredicate = or(...ownerConditions);
