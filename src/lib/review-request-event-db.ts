@@ -1,4 +1,4 @@
-import { and, desc, eq, gte, isNull } from "drizzle-orm";
+import { and, desc, eq, gte, isNull, sql } from "drizzle-orm";
 import { getDb } from "@/db/client";
 import {
   programs as programsTable,
@@ -134,20 +134,24 @@ export async function recordReviewRequestEvent(
     : null;
 
   if (recentTriggerEvent) {
-    const [updated] = await getDb()
-      .update(reviewRequestEvents)
-      .set({
-        actorId,
-        actorRole,
-        metadata: {
-          ...asRecord(recentTriggerEvent.metadata),
-          ...metadata,
-          enrichedBy: "application_service",
-        },
-        note: normalizeOptionalText(input.note) ?? recentTriggerEvent.note,
-      })
-      .where(eq(reviewRequestEvents.id, recentTriggerEvent.id))
-      .returning();
+    const [updated] = await getDb().transaction(async (tx) => {
+      await tx.execute(sql`select set_config('app.review_audit_enrich_allowed', 'true', true)`);
+
+      return tx
+        .update(reviewRequestEvents)
+        .set({
+          actorId,
+          actorRole,
+          metadata: {
+            ...asRecord(recentTriggerEvent.metadata),
+            ...metadata,
+            enrichedBy: "application_service",
+          },
+          note: normalizeOptionalText(input.note) ?? recentTriggerEvent.note,
+        })
+        .where(eq(reviewRequestEvents.id, recentTriggerEvent.id))
+        .returning();
+    });
 
     if (updated) {
       void safeCreateAuditLog({
@@ -165,19 +169,23 @@ export async function recordReviewRequestEvent(
     }
   }
 
-  const [row] = await getDb()
-    .insert(reviewRequestEvents)
-    .values({
-      action,
-      actorId,
-      actorRole,
-      fromStatus: input.fromStatus ?? null,
-      metadata,
-      note: normalizeOptionalText(input.note),
-      requestId: input.requestId,
-      toStatus: input.toStatus,
-    })
-    .returning();
+  const [row] = await getDb().transaction(async (tx) => {
+    await tx.execute(sql`select set_config('app.review_audit_insert_allowed', 'true', true)`);
+
+    return tx
+      .insert(reviewRequestEvents)
+      .values({
+        action,
+        actorId,
+        actorRole,
+        fromStatus: input.fromStatus ?? null,
+        metadata,
+        note: normalizeOptionalText(input.note),
+        requestId: input.requestId,
+        toStatus: input.toStatus,
+      })
+      .returning();
+  });
 
   void safeCreateAuditLog({
     action: "review.request_event.create",
