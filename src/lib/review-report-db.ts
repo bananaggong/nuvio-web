@@ -8,6 +8,7 @@ import {
 import type { ApiAuthContext } from "@/lib/api-security";
 import { safeCreateAuditLog } from "@/lib/audit-log-db";
 import { buildPublicReviewVisibilityConditions } from "@/lib/review-public-visibility-db";
+import { safeRecordReviewReportEvent } from "@/lib/review-report-event-db";
 import { safeReleaseReviewVisibilityHoldsBySourceFromDb } from "@/lib/review-visibility-hold-db";
 
 export type ReviewReportReason =
@@ -136,6 +137,18 @@ export async function createReviewReport(
     },
   });
 
+  await safeRecordReviewReportEvent({
+    actorId: auth.user.id,
+    actorRole: auth.profile.role,
+    message: row.message,
+    metadata: { source: "application_service", trigger: "create_report" },
+    reason: asReportReason(row.reason),
+    reportId: row.id,
+    resolutionNote: row.resolutionNote,
+    reviewId: row.reviewId,
+    toStatus: asReportStatus(row.status),
+  });
+
   return mapReviewReportRow(row, review);
 }
 
@@ -252,6 +265,32 @@ export async function updateReviewReportStatus(
       reviewId: row.reviewId,
     },
   });
+
+  const reportChanged = existing.report.status !== row.status
+    || (existing.report.resolutionNote ?? null) !== (row.resolutionNote ?? null);
+  if (reportChanged) {
+    await safeRecordReviewReportEvent({
+      actorId: options.actorId,
+      actorRole: options.actorRole,
+      fromStatus: asReportStatus(existing.report.status),
+      message: row.message,
+      metadata: {
+        source: "application_service",
+        trigger: "update_report_status",
+        previousStatus: existing.report.status,
+      },
+      reason: asReportReason(row.reason),
+      reportId: row.id,
+      resolutionNote: row.resolutionNote,
+      reviewId: row.reviewId,
+      toStatus: asReportStatus(row.status),
+    }, {
+      actorId: options.actorId,
+      actorRole: options.actorRole,
+      allowedVillageIds: options.allowedVillageIds,
+      allowedVillageSlugs: options.allowedVillageSlugs,
+    });
+  }
 
   if (row.status === "resolved" || row.status === "dismissed") {
     await safeReleaseReviewVisibilityHoldsBySourceFromDb({

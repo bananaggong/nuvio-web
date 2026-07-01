@@ -789,6 +789,38 @@ export const reviewReports = pgTable(
     index("review_reports_created_at_idx").on(table.createdAt),
   ],
 );
+export const reviewReportEvents = pgTable(
+  "review_report_events",
+  {
+    id: uuid("id").defaultRandom().primaryKey(),
+    reportId: uuid("report_id")
+      .notNull()
+      .references(() => reviewReports.id, { onDelete: "cascade" }),
+    reviewId: uuid("review_id")
+      .notNull()
+      .references(() => reviews.id, { onDelete: "cascade" }),
+    fromStatus: text("from_status"),
+    toStatus: text("to_status").notNull(),
+    action: text("action").notNull(),
+    actorId: uuid("actor_id"),
+    actorRole: text("actor_role"),
+    reason: text("reason").notNull(),
+    message: text("message"),
+    resolutionNote: text("resolution_note"),
+    metadata: jsonb("metadata")
+      .$type<Record<string, unknown>>()
+      .default(emptyObject)
+      .notNull(),
+    createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+  },
+  (table) => [
+    index("review_report_events_report_id_idx").on(table.reportId),
+    index("review_report_events_review_id_idx").on(table.reviewId),
+    index("review_report_events_created_at_idx").on(table.createdAt),
+    index("review_report_events_action_idx").on(table.action),
+    index("review_report_events_actor_id_idx").on(table.actorId),
+  ],
+);
 export const reviewRequests = pgTable(
   "review_requests",
   {
