@@ -1,4 +1,4 @@
-import { and, desc, eq, inArray, isNull, or, type SQL } from "drizzle-orm";
+import { and, desc, eq, inArray, isNull, or, sql, type SQL } from "drizzle-orm";
 import { getDb } from "@/db/client";
 import {
   programs as programsTable,
@@ -251,16 +251,22 @@ async function releaseVisibilityHoldContext(
     releaseSource: input.releaseSource,
   });
 
-  const [row] = await getDb()
-    .update(reviewVisibilityHolds)
-    .set({
-      metadata,
-      releasedAt: context.hold.releasedAt ?? now,
-      status: "released",
-      updatedAt: now,
-    })
-    .where(eq(reviewVisibilityHolds.id, context.hold.id))
-    .returning();
+  const [row] = await getDb().transaction(async (tx) => {
+    await tx.execute(
+      sql`select set_config('app.review_visibility_hold_write_allowed', 'true', true)`,
+    );
+
+    return tx
+      .update(reviewVisibilityHolds)
+      .set({
+        metadata,
+        releasedAt: context.hold.releasedAt ?? now,
+        status: "released",
+        updatedAt: now,
+      })
+      .where(eq(reviewVisibilityHolds.id, context.hold.id))
+      .returning();
+  });
 
   if (!row) throw new ReviewVisibilityHoldError("Review visibility hold was not found.");
 
