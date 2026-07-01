@@ -6,6 +6,7 @@ import {
   reviewVisibilityHolds,
 } from "@/db/schema";
 import { safeCreateAuditLog } from "@/lib/audit-log-db";
+import { safeRecordReviewVisibilityHoldEvent } from "@/lib/review-visibility-hold-event-db";
 
 export type ReviewVisibilityHoldReason =
   | "high_risk_moderation"
@@ -275,6 +276,23 @@ async function releaseVisibilityHoldContext(
       sourceId: row.sourceId,
       sourceType: row.sourceType,
     },
+  });
+
+  await safeRecordReviewVisibilityHoldEvent({
+    actorId: input.actorId,
+    actorRole: input.actorRole,
+    fromStatus: asStatus(context.hold.status),
+    holdId: row.id,
+    metadata: {
+      releaseSource: input.releaseSource,
+      source: "visibility_hold_release",
+    },
+    note: input.note,
+    reason: asReason(row.reason),
+    reviewId: row.reviewId,
+    sourceId: row.sourceId,
+    sourceType: asSourceType(row.sourceType),
+    toStatus: asStatus(row.status),
   });
 
   return mapHold(row, context.reviewTitle, context.villageSlug);

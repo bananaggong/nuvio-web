@@ -664,6 +664,39 @@ export const reviewVisibilityHolds = pgTable(
     index("review_visibility_holds_source_idx").on(table.sourceType, table.sourceId),
   ],
 );
+export const reviewVisibilityHoldEvents = pgTable(
+  "review_visibility_hold_events",
+  {
+    id: uuid("id").defaultRandom().primaryKey(),
+    holdId: uuid("hold_id")
+      .notNull()
+      .references(() => reviewVisibilityHolds.id, { onDelete: "cascade" }),
+    reviewId: uuid("review_id")
+      .notNull()
+      .references(() => reviews.id, { onDelete: "cascade" }),
+    fromStatus: text("from_status"),
+    toStatus: text("to_status").notNull(),
+    action: text("action").notNull(),
+    actorId: uuid("actor_id"),
+    actorRole: text("actor_role"),
+    sourceType: text("source_type").notNull(),
+    sourceId: uuid("source_id"),
+    reason: text("reason").notNull(),
+    note: text("note"),
+    metadata: jsonb("metadata")
+      .$type<Record<string, unknown>>()
+      .default(emptyObject)
+      .notNull(),
+    createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+  },
+  (table) => [
+    index("review_visibility_hold_events_hold_id_idx").on(table.holdId),
+    index("review_visibility_hold_events_review_id_idx").on(table.reviewId),
+    index("review_visibility_hold_events_created_at_idx").on(table.createdAt),
+    index("review_visibility_hold_events_action_idx").on(table.action),
+    index("review_visibility_hold_events_actor_id_idx").on(table.actorId),
+  ],
+);
 export const reviewStatusEvents = pgTable(
   "review_status_events",
   {
