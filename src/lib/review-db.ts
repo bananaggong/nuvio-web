@@ -13,6 +13,8 @@ import { safeCreateAuditLog } from "@/lib/audit-log-db";
 import { safeEnrichLatestReviewContentVersion } from "@/lib/review-content-version-db";
 import { refreshReviewModerationCheck } from "@/lib/review-moderation-check-db";
 import { buildPublicReviewVisibilityConditions } from "@/lib/review-public-visibility-db";
+import { safeRecordReviewRequestEvent } from "@/lib/review-request-event-db";
+import type { ReviewRequestStatus } from "@/lib/review-request-db";
 import { safeRecordReviewStatusEvent } from "@/lib/review-status-event-db";
 import type {
   Review,
@@ -125,6 +127,14 @@ const reviewCategories: ReviewCategory[] = [
 
 const reviewStatuses: ReviewStatus[] = ["draft", "pending", "published", "hidden", "deleted"];
 const reviewSources: ReviewSource[] = ["participant", "host", "admin", "imported"];
+const reviewRequestStatuses: ReviewRequestStatus[] = [
+  "pending",
+  "sent",
+  "opened",
+  "completed",
+  "cancelled",
+  "expired",
+];
 const participantReviewStatuses = new Set(["accepted", "checkedIn", "completed"]);
 const maxReviewImages = 6;
 
@@ -316,7 +326,7 @@ export async function createParticipantReview(
   );
   const now = new Date();
 
-  const [row] = await getDb().transaction(async (tx) => {
+  const [row, completedRequest] = await getDb().transaction(async (tx) => {
     await tx.execute(
       sql`select pg_advisory_xact_lock(hashtext(${`review:${application.applicationId}`}))`,
     );
@@ -335,6 +345,12 @@ export async function createParticipantReview(
     if (existingReview) {
       throw new DuplicateReviewError();
     }
+
+    const [requestBeforeCompletion] = await tx
+      .select({ id: reviewRequests.id, status: reviewRequests.status })
+      .from(reviewRequests)
+      .where(eq(reviewRequests.applicationId, application.applicationId))
+      .limit(1);
 
     const [createdReview] = await tx
       .insert(reviewsTable)
@@ -365,17 +381,27 @@ export async function createParticipantReview(
       .set({ reviewSubmitted: true, updatedAt: now })
       .where(eq(programApplications.id, application.applicationId));
 
-    await tx
-      .update(reviewRequests)
-      .set({
-        completedAt: now,
-        reviewId: createdReview.id,
-        status: "completed",
-        updatedAt: now,
-      })
-      .where(eq(reviewRequests.applicationId, application.applicationId));
+    if (requestBeforeCompletion) {
+      await tx
+        .update(reviewRequests)
+        .set({
+          completedAt: now,
+          reviewId: createdReview.id,
+          status: "completed",
+          updatedAt: now,
+        })
+        .where(eq(reviewRequests.id, requestBeforeCompletion.id));
+    }
 
-    return [createdReview];
+    return [
+      createdReview,
+      requestBeforeCompletion
+        ? {
+            id: requestBeforeCompletion.id,
+            previousStatus: asReviewRequestStatus(requestBeforeCompletion.status),
+          }
+        : null,
+    ] as const;
   });
 
   void safeCreateAuditLog({
@@ -401,6 +427,21 @@ export async function createParticipantReview(
     reviewId: row.id,
     toStatus: row.status,
   });
+  if (completedRequest && completedRequest.previousStatus !== "completed") {
+    await safeRecordReviewRequestEvent({
+      action: "completed",
+      actorId: auth.user.id,
+      actorRole: auth.profile.role,
+      fromStatus: completedRequest.previousStatus,
+      metadata: {
+        applicationId: application.applicationId,
+        reviewId: row.id,
+        source: "participant_submission",
+      },
+      requestId: completedRequest.id,
+      toStatus: "completed",
+    });
+  }
   await safeEnrichLatestReviewContentVersion({
     actorId: auth.user.id,
     actorRole: auth.profile.role,
@@ -495,8 +536,23 @@ export async function deleteParticipantReview(
   }
 
   const now = new Date();
-  const [row] = await getDb().transaction(async (tx) => {
+  const [row, reopenedRequest] = await getDb().transaction(async (tx) => {
     await tx.execute(sql`select set_config('app.review_delete_allowed', 'true', true)`);
+
+    let requestBeforeReopen: { id: string; status: string } | null = null;
+    if (existing.review.applicationId) {
+      const [matchedRequest] = await tx
+        .select({ id: reviewRequests.id, status: reviewRequests.status })
+        .from(reviewRequests)
+        .where(
+          and(
+            eq(reviewRequests.applicationId, existing.review.applicationId),
+            eq(reviewRequests.status, "completed"),
+          ),
+        )
+        .limit(1);
+      requestBeforeReopen = matchedRequest ?? null;
+    }
 
     const [deletedReview] = await tx
       .update(reviewsTable)
@@ -527,7 +583,15 @@ export async function deleteParticipantReview(
         .where(eq(reviewRequests.applicationId, existing.review.applicationId));
     }
 
-    return [deletedReview];
+    return [
+      deletedReview,
+      requestBeforeReopen
+        ? {
+            id: requestBeforeReopen.id,
+            previousStatus: asReviewRequestStatus(requestBeforeReopen.status),
+          }
+        : null,
+    ] as const;
   });
 
   void safeCreateAuditLog({
@@ -553,6 +617,21 @@ export async function deleteParticipantReview(
     reviewId: row.id,
     toStatus: row.status,
   });
+  if (reopenedRequest && reopenedRequest.previousStatus === "completed") {
+    await safeRecordReviewRequestEvent({
+      action: "reopened",
+      actorId: auth.user.id,
+      actorRole: auth.profile.role,
+      fromStatus: "completed",
+      metadata: {
+        applicationId: existing.review.applicationId,
+        reviewId: row.id,
+        source: "participant_delete",
+      },
+      requestId: reopenedRequest.id,
+      toStatus: "pending",
+    });
+  }
 
   return { deleted: true };
 }
@@ -1183,6 +1262,12 @@ function asReviewSource(value: unknown, fallback: ReviewSource): ReviewSource {
   return reviewSources.includes(text as ReviewSource)
     ? (text as ReviewSource)
     : fallback;
+}
+function asReviewRequestStatus(value: unknown): ReviewRequestStatus {
+  const text = asString(value);
+  return reviewRequestStatuses.includes(text as ReviewRequestStatus)
+    ? (text as ReviewRequestStatus)
+    : "pending";
 }
 
 function normalizeBody(value: string): string {
