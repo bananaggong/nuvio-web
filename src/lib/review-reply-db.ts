@@ -25,6 +25,8 @@ export type ReviewHostReply = {
   hiddenAt?: string;
 };
 
+export type PublicReviewHostReply = Omit<ReviewHostReply, "status" | "hiddenAt">;
+
 type ReplyRow = typeof reviewHostReplies.$inferSelect;
 
 type ReviewAccessRow = {
@@ -53,7 +55,7 @@ export class ReviewReplyError extends Error {
 
 export async function listPublicReviewHostReplies(
   reviewId: string,
-): Promise<ReviewHostReply[]> {
+): Promise<PublicReviewHostReply[]> {
   if (!isUuid(reviewId)) return [];
 
   const rows = await getDb()
@@ -71,7 +73,7 @@ export async function listPublicReviewHostReplies(
     .orderBy(desc(reviewHostReplies.createdAt))
     .limit(10);
 
-  return rows.map(({ reply }) => mapReply(reply));
+  return rows.map(({ reply }) => mapPublicReply(reply));
 }
 
 export async function upsertHostReviewReply(
@@ -351,6 +353,17 @@ function normalizeAuthorName(auth: ApiAuthContext): string {
   )
     .trim()
     .slice(0, 80);
+}
+
+function mapPublicReply(row: ReplyRow): PublicReviewHostReply {
+  return {
+    id: row.id,
+    reviewId: row.reviewId,
+    authorName: row.authorName,
+    body: row.body,
+    createdAt: row.createdAt.toISOString(),
+    updatedAt: row.updatedAt.toISOString(),
+  };
 }
 
 function mapReply(row: ReplyRow): ReviewHostReply {
