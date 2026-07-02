@@ -1443,6 +1443,8 @@ function assertReviewManageAccess(input: {
 }
 
 function getVerifiedAccountEmails(auth: ApiAuthContext): string[] {
+  if (!auth.user.email_confirmed_at && !auth.user.confirmed_at) return [];
+
   return Array.from(
     new Set(
       [auth.user.email]
