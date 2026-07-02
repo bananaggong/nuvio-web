@@ -1,6 +1,7 @@
-import { count, eq } from "drizzle-orm";
+import { and, count, eq } from "drizzle-orm";
 import { getDb } from "@/db/client";
 import { adminAuditLogs, notificationEvents, userNotifications } from "@/db/schema";
+import { getEmailDeliveryReadiness } from "@/lib/email-provider";
 
 export type SystemHealthStatus = "fail" | "ok" | "warn";
 
@@ -24,6 +25,7 @@ export type SystemHealthSnapshot = {
 };
 
 export async function getSystemHealthSnapshot(): Promise<SystemHealthSnapshot> {
+  const emailReadiness = getEmailDeliveryReadiness();
   const checks: SystemHealthCheck[] = [
     envCheck("database-url", "Database URL", hasEnv("DATABASE_URL", "DIRECT_DATABASE_URL")),
     envCheck(
@@ -44,6 +46,17 @@ export async function getSystemHealthSnapshot(): Promise<SystemHealthSnapshot> {
         missingStatus: process.env.NODE_ENV === "production" ? "fail" : "warn",
       },
     ),
+    {
+      detail: emailReadiness.detail,
+      id: "email-delivery",
+      label: "Email delivery",
+      status:
+        emailReadiness.configured && emailReadiness.productionSafe
+          ? "ok"
+          : process.env.NODE_ENV === "production"
+            ? "fail"
+            : "warn",
+    },
   ];
 
   const metrics: SystemHealthMetric[] = [];
@@ -53,6 +66,19 @@ export async function getSystemHealthSnapshot(): Promise<SystemHealthSnapshot> {
       .select({ value: count() })
       .from(notificationEvents)
       .where(eq(notificationEvents.status, "pending"));
+    const [pendingEmailNotifications] = await getDb()
+      .select({ value: count() })
+      .from(notificationEvents)
+      .where(
+        and(
+          eq(notificationEvents.status, "pending"),
+          eq(notificationEvents.channel, "email"),
+        ),
+      );
+    const [failedNotifications] = await getDb()
+      .select({ value: count() })
+      .from(notificationEvents)
+      .where(eq(notificationEvents.status, "failed"));
     const [userNotificationCount] = await getDb()
       .select({ value: count() })
       .from(userNotifications);
@@ -68,6 +94,14 @@ export async function getSystemHealthSnapshot(): Promise<SystemHealthSnapshot> {
       {
         label: "Pending notification events",
         value: pendingNotifications?.value ?? 0,
+      },
+      {
+        label: "Pending email notification events",
+        value: pendingEmailNotifications?.value ?? 0,
+      },
+      {
+        label: "Failed notification events",
+        value: failedNotifications?.value ?? 0,
       },
       {
         label: "User notifications",

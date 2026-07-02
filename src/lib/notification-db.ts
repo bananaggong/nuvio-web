@@ -21,6 +21,10 @@ import {
   isBrowserPushConfigured,
   sendBrowserPushNotification,
 } from "@/lib/browser-push";
+import {
+  isEmailDeliveryConfigured,
+  sendEmailMessage,
+} from "@/lib/email-provider";
 import type { HostApplicationStatus } from "@/lib/host-operations";
 import {
   deleteBrowserPushSubscriptionByEndpoint,
@@ -655,6 +659,10 @@ async function processNotificationEvent(
     return deliverInAppEvent(event);
   }
 
+  if (event.channel === "email") {
+    return deliverEmailEvent(event);
+  }
+
   if (event.channel === "browserPush") {
     return deliverBrowserPushEvent(event);
   }
@@ -770,6 +778,57 @@ async function deliverBrowserPushEvent(
     skippedCount === results.length ? "skipped" : "failed",
     message,
   );
+}
+
+async function deliverEmailEvent(
+  event: NotificationEventRow,
+): Promise<NotificationProcessSummary["details"][number]> {
+  const recipient = await resolveEmailRecipient(event);
+
+  if (!recipient) {
+    return markNotificationEvent(
+      event,
+      "skipped",
+      "Email notification requires a recipient.",
+    );
+  }
+
+  const userId = event.recipientUserId ?? (await findProfileIdByEmail(recipient));
+  if (userId) {
+    const preference = await getNotificationPreference(userId);
+    const disabledReason = getDisabledReason(preference, "email", event.eventType);
+    if (disabledReason) {
+      return markNotificationEvent(event, "skipped", disabledReason);
+    }
+  }
+
+  if (!isEmailDeliveryConfigured()) {
+    return markNotificationEvent(
+      event,
+      "failed",
+      "Email delivery provider is not configured.",
+    );
+  }
+
+  await sendEmailMessage({
+    html: renderNotificationEmailHtml(event),
+    metadata: event.metadata,
+    subject: event.title,
+    text: renderNotificationEmailText(event),
+    to: recipient,
+  });
+
+  return markNotificationEvent(event, "sent", "Delivered as email notification.");
+}
+
+async function resolveEmailRecipient(
+  event: NotificationEventRow,
+): Promise<string> {
+  const explicitRecipient = normalizeEmail(event.recipient);
+  if (explicitRecipient) return explicitRecipient;
+
+  if (!event.recipientUserId) return "";
+  return (await findProfileEmailById(event.recipientUserId)) ?? "";
 }
 
 async function skipExternalEvent(
@@ -1040,6 +1099,18 @@ async function findProfileIdByEmail(email?: string | null): Promise<string | und
   return row?.id;
 }
 
+async function findProfileEmailById(userId: string): Promise<string | undefined> {
+  if (!isUuid(userId)) return undefined;
+
+  const [row] = await getDb()
+    .select({ email: profiles.email })
+    .from(profiles)
+    .where(eq(profiles.id, userId))
+    .limit(1);
+
+  return normalizeEmail(row?.email);
+}
+
 function getDisabledReason(
   preference: NotificationPreference,
   channel: NotificationChannel,
@@ -1047,6 +1118,10 @@ function getDisabledReason(
 ): string {
   if (!isEventTypeEnabled(preference, eventType)) {
     return "Notification type is disabled by user preference.";
+  }
+
+  if (channel === "email" && isTransactionalEmailEvent(eventType)) {
+    return "";
   }
 
   if (!isChannelEnabled(preference, channel)) {
@@ -1097,6 +1172,76 @@ function isChannelEnabled(
 
 function normalizeEmail(email?: string | null): string {
   return String(email ?? "").trim().toLowerCase();
+}
+
+function isTransactionalEmailEvent(eventType: string): boolean {
+  return (
+    eventType === "application.submitted" ||
+    eventType === "application.statusChanged" ||
+    eventType === "review.reply.created" ||
+    eventType.startsWith("review.request.")
+  );
+}
+
+function renderNotificationEmailText(event: NotificationEventRow): string {
+  const lines = [event.title, "", event.body];
+  const href = resolveEmailHref(event.href);
+  if (href) lines.push("", href);
+  return lines.join("\n");
+}
+
+function renderNotificationEmailHtml(event: NotificationEventRow): string {
+  const href = resolveEmailHref(event.href);
+  const actionHtml = href
+    ? `<p style="margin:24px 0 0"><a href="${escapeHtmlAttribute(href)}" style="display:inline-block;border-radius:6px;background:#ff6b1a;color:#ffffff;padding:12px 18px;text-decoration:none;font-weight:700">Open Nuvio</a></p>`
+    : "";
+
+  return `<!doctype html><html lang="ko"><body style="margin:0;background:#f7f4f0;padding:24px;font-family:Arial,sans-serif;color:#2d211b"><main style="max-width:560px;margin:0 auto;border-radius:10px;background:#ffffff;padding:28px;border:1px solid #eadfd6"><p style="margin:0 0 16px;color:#ff6b1a;font-weight:700">Nuvio</p><h1 style="margin:0 0 16px;font-size:22px;line-height:1.35;color:#2d211b">${escapeHtml(event.title)}</h1><p style="margin:0;font-size:15px;line-height:1.7;color:#56443a;white-space:pre-line">${escapeHtml(event.body)}</p>${actionHtml}</main></body></html>`;
+}
+
+function resolveEmailHref(href?: string | null): string {
+  const value = href?.trim();
+  if (!value) return "";
+
+  try {
+    const parsedUrl = new URL(value);
+    return isHttpUrl(parsedUrl) ? parsedUrl.toString() : "";
+  } catch {
+    const baseUrl = normalizeSiteUrl(
+      process.env.NEXT_PUBLIC_SITE_URL ||
+        process.env.SITE_URL ||
+        process.env.VERCEL_PROJECT_PRODUCTION_URL ||
+        process.env.VERCEL_URL ||
+        "https://nuvio.kr",
+    );
+    const parsedUrl = new URL(value, baseUrl);
+    return isHttpUrl(parsedUrl) ? parsedUrl.toString() : "";
+  }
+}
+
+function isHttpUrl(url: URL): boolean {
+  return url.protocol === "https:" || url.protocol === "http:";
+}
+
+function normalizeSiteUrl(value: string): string {
+  const trimmed = value.trim() || "https://nuvio.kr";
+  const withProtocol = /^https?:\/\//iu.test(trimmed)
+    ? trimmed
+    : `https://${trimmed}`;
+  return withProtocol.endsWith("/") ? withProtocol : `${withProtocol}/`;
+}
+
+function escapeHtml(value: string): string {
+  return value
+    .replace(/&/gu, "&amp;")
+    .replace(/</gu, "&lt;")
+    .replace(/>/gu, "&gt;")
+    .replace(/"/gu, "&quot;")
+    .replace(/'/gu, "&#39;");
+}
+
+function escapeHtmlAttribute(value: string): string {
+  return escapeHtml(value);
 }
 
 function isUuid(value: string): boolean {
