@@ -116,6 +116,7 @@ export const notificationChannelEnum = pgEnum("notification_channel", [
   "email",
   "sms",
   "kakao",
+  "browserPush",
 ]);
 export const notificationEventStatusEnum = pgEnum("notification_event_status", [
   "pending",
@@ -1469,6 +1470,7 @@ export const notificationPreferences = pgTable("notification_preferences", {
   emailEnabled: boolean("email_enabled").default(false).notNull(),
   smsEnabled: boolean("sms_enabled").default(false).notNull(),
   kakaoEnabled: boolean("kakao_enabled").default(false).notNull(),
+  browserPushEnabled: boolean("browser_push_enabled").default(true).notNull(),
   programDeadlineEnabled: boolean("program_deadline_enabled").default(true).notNull(),
   applicationStatusEnabled: boolean("application_status_enabled")
     .default(true)
@@ -1480,6 +1482,30 @@ export const notificationPreferences = pgTable("notification_preferences", {
   createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
   updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
 });
+
+export const pushSubscriptions = pgTable(
+  "push_subscriptions",
+  {
+    id: uuid("id").defaultRandom().primaryKey(),
+    userId: uuid("user_id")
+      .references(() => profiles.id, { onDelete: "cascade" })
+      .notNull(),
+    endpoint: text("endpoint").notNull(),
+    p256dh: text("p256dh").notNull(),
+    auth: text("auth").notNull(),
+    userAgent: text("user_agent"),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .defaultNow()
+      .notNull(),
+    updatedAt: timestamp("updated_at", { withTimezone: true })
+      .defaultNow()
+      .notNull(),
+  },
+  (table) => [
+    uniqueIndex("push_subscriptions_endpoint_idx").on(table.endpoint),
+    index("push_subscriptions_user_id_idx").on(table.userId),
+  ],
+);
 
 export const userNotifications = pgTable(
   "user_notifications",

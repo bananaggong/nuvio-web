@@ -17,14 +17,28 @@ import {
   profiles,
   userNotifications,
 } from "@/db/schema";
+import {
+  isBrowserPushConfigured,
+  sendBrowserPushNotification,
+} from "@/lib/browser-push";
 import type { HostApplicationStatus } from "@/lib/host-operations";
+import {
+  deleteBrowserPushSubscriptionByEndpoint,
+  listBrowserPushSubscriptions,
+} from "@/lib/push-subscription-db";
 
-export type NotificationChannel = "inApp" | "email" | "sms" | "kakao";
+export type NotificationChannel =
+  | "inApp"
+  | "email"
+  | "sms"
+  | "kakao"
+  | "browserPush";
 export type NotificationEventStatus = "pending" | "sent" | "failed" | "skipped";
 
 export type NotificationPreference = {
   announcementEnabled: boolean;
   applicationStatusEnabled: boolean;
+  browserPushEnabled: boolean;
   emailEnabled: boolean;
   inAppEnabled: boolean;
   kakaoEnabled: boolean;
@@ -123,6 +137,7 @@ export async function updateNotificationPreference(
       NotificationPreference,
       | "announcementEnabled"
       | "applicationStatusEnabled"
+      | "browserPushEnabled"
       | "emailEnabled"
       | "inAppEnabled"
       | "kakaoEnabled"
@@ -217,19 +232,28 @@ export async function createUserNotification(input: {
 
 export async function queueNotificationEvent(
   input: NotificationEventInput,
-): Promise<void> {
-  await getDb().insert(notificationEvents).values({
-    body: input.body,
-    channel: input.channel,
-    eventType: input.eventType,
-    href: input.href,
-    metadata: input.metadata ?? {},
-    recipient: input.recipient,
-    recipientUserId: input.recipientUserId,
-    scheduledFor: input.scheduledFor,
-    status: "pending",
-    title: input.title,
-  });
+): Promise<NotificationEventRow> {
+  const [row] = await getDb()
+    .insert(notificationEvents)
+    .values({
+      body: input.body,
+      channel: input.channel,
+      eventType: input.eventType,
+      href: input.href,
+      metadata: input.metadata ?? {},
+      recipient: input.recipient,
+      recipientUserId: input.recipientUserId,
+      scheduledFor: input.scheduledFor,
+      status: "pending",
+      title: input.title,
+    })
+    .returning();
+
+  if (!row) {
+    throw new Error("Notification event could not be queued.");
+  }
+
+  return row;
 }
 
 export async function processPendingNotificationEvents(
@@ -312,9 +336,10 @@ export async function queueApplicationSubmittedNotification(input: {
 
   if (recipientUserId) {
     await createInAppNotificationIfEnabled(recipientUserId, applicantMessage);
+    await queueBrowserPushNotification(recipientUserId, applicantMessage);
   }
 
-  await notifyHostUsersAboutSubmittedApplication({
+  await notifyHostUsersAboutSubmittedApplicationWithPush({
     applicantName: input.applicantName,
     applicationId: input.applicationId,
     programCreatedBy: input.programCreatedBy,
@@ -356,7 +381,78 @@ export async function queueApplicationStatusNotification(input: {
 
   if (recipientUserId) {
     await createInAppNotificationIfEnabled(recipientUserId, applicantMessage);
+    await queueBrowserPushNotification(recipientUserId, applicantMessage);
   }
+}
+
+export async function queueProgramInquiryCreatedNotification(input: {
+  applicantName?: string;
+  inquiryId: string;
+  programCreatedBy?: string;
+  programTitle: string;
+  villageId?: string;
+}) {
+  await notifyHostUsersAboutInquiryMessage({
+    applicantName: input.applicantName,
+    body: `${input.programTitle}에 새 문의가 도착했어요.`,
+    href: "/host/messages",
+    inquiryId: input.inquiryId,
+    programCreatedBy: input.programCreatedBy,
+    programTitle: input.programTitle,
+    title: "새 프로그램 문의가 도착했어요",
+    type: "message.programInquiry.host",
+    villageId: input.villageId,
+  });
+}
+
+export async function queueProgramInquiryUserMessageNotification(input: {
+  inquiryId: string;
+  programCreatedBy?: string;
+  programTitle: string;
+  senderName?: string;
+  villageId?: string;
+}) {
+  const senderName = input.senderName?.trim() || "사용자";
+  await notifyHostUsersAboutInquiryMessage({
+    applicantName: senderName,
+    body: `${input.programTitle} 문의함에 ${senderName}님의 새 메시지가 도착했어요.`,
+    href: "/host/messages",
+    inquiryId: input.inquiryId,
+    programCreatedBy: input.programCreatedBy,
+    programTitle: input.programTitle,
+    title: "새 문의 메시지가 도착했어요",
+    type: "message.programInquiry.host",
+    villageId: input.villageId,
+  });
+}
+
+export async function queueProgramInquiryHostReplyNotification(input: {
+  inquiryId: string;
+  programTitle: string;
+  recipientEmail?: string;
+  recipientUserId?: string;
+  senderName?: string;
+}) {
+  const recipientEmail = normalizeEmail(input.recipientEmail);
+  const recipientUserId =
+    input.recipientUserId ?? (await findProfileIdByEmail(recipientEmail));
+  if (!recipientUserId) return;
+
+  const senderName = input.senderName?.trim() || "호스트";
+  const message: NotificationMessage = {
+    body: `${input.programTitle} 문의에 ${senderName}님의 답장이 도착했어요.`,
+    href: "/mypage/messages",
+    metadata: {
+      inquiryId: input.inquiryId,
+      programTitle: input.programTitle,
+      senderName,
+    },
+    title: "문의 답장이 도착했어요",
+    type: "message.programInquiry.user",
+  };
+
+  await createInAppNotificationIfEnabled(recipientUserId, message);
+  await queueBrowserPushNotification(recipientUserId, message);
 }
 
 async function processNotificationEvent(
@@ -364,6 +460,10 @@ async function processNotificationEvent(
 ): Promise<NotificationProcessSummary["details"][number]> {
   if (event.channel === "inApp") {
     return deliverInAppEvent(event);
+  }
+
+  if (event.channel === "browserPush") {
+    return deliverBrowserPushEvent(event);
   }
 
   return skipExternalEvent(event);
@@ -398,6 +498,85 @@ async function deliverInAppEvent(
   });
 
   return markNotificationEvent(event, "sent", "Delivered as in-app notification.");
+}
+
+async function deliverBrowserPushEvent(
+  event: NotificationEventRow,
+): Promise<NotificationProcessSummary["details"][number]> {
+  const userId = event.recipientUserId ?? (await findProfileIdByEmail(event.recipient));
+
+  if (!userId) {
+    return markNotificationEvent(
+      event,
+      "skipped",
+      "Browser push notification requires a matching user.",
+    );
+  }
+
+  const preference = await getNotificationPreference(userId);
+  const disabledReason = getDisabledReason(
+    preference,
+    "browserPush",
+    event.eventType,
+  );
+  if (disabledReason) {
+    return markNotificationEvent(event, "skipped", disabledReason);
+  }
+
+  const subscriptions = await listBrowserPushSubscriptions(userId);
+  if (subscriptions.length === 0) {
+    return markNotificationEvent(
+      event,
+      "skipped",
+      "No browser push subscription is registered.",
+    );
+  }
+
+  if (!isBrowserPushConfigured()) {
+    return markNotificationEvent(
+      event,
+      "skipped",
+      "Browser push VAPID keys are not configured.",
+    );
+  }
+
+  const results = await Promise.all(
+    subscriptions.map(async (subscription) => {
+      const result = await sendBrowserPushNotification(subscription, {
+        body: event.body,
+        href: event.href ?? undefined,
+        tag: event.id,
+        title: event.title,
+        type: event.eventType,
+      });
+
+      if (result.status === "expired") {
+        await deleteBrowserPushSubscriptionByEndpoint(subscription.endpoint);
+      }
+
+      return result;
+    }),
+  );
+
+  const sentCount = results.filter((result) => result.status === "sent").length;
+  if (sentCount > 0) {
+    return markNotificationEvent(
+      event,
+      "sent",
+      `Delivered to ${sentCount}/${subscriptions.length} browser subscription(s).`,
+    );
+  }
+
+  const skippedCount = results.filter(
+    (result) => result.status === "skipped" || result.status === "expired",
+  ).length;
+  const message = results[0]?.message ?? "Browser push delivery failed.";
+
+  return markNotificationEvent(
+    event,
+    skippedCount === results.length ? "skipped" : "failed",
+    message,
+  );
 }
 
 async function skipExternalEvent(
@@ -472,6 +651,101 @@ async function createInAppNotificationIfEnabled(
   });
 }
 
+async function queueBrowserPushNotification(
+  userId: string,
+  message: NotificationMessage,
+) {
+  const event = await queueNotificationEvent({
+    body: message.body,
+    channel: "browserPush",
+    eventType: message.type,
+    href: message.href,
+    metadata: message.metadata,
+    recipientUserId: userId,
+    title: message.title,
+  });
+
+  await processNotificationEvent(event).catch(async (error) => {
+    await markNotificationEvent(event, "failed", normalizeError(error));
+  });
+}
+
+async function notifyHostUsersAboutSubmittedApplicationWithPush(input: {
+  applicantName?: string;
+  applicationId: string;
+  programCreatedBy?: string;
+  programTitle: string;
+  villageId?: string;
+}) {
+  const recipients = await listHostNotificationRecipients({
+    programCreatedBy: input.programCreatedBy,
+    villageId: input.villageId,
+  });
+  if (recipients.length === 0) return;
+
+  const applicantName = input.applicantName?.trim() || "신청자";
+  await Promise.all(
+    recipients.map(async (recipient) => {
+      const message: NotificationMessage = {
+        body: `${input.programTitle}에 ${applicantName}님의 새 신청서가 들어왔어요.`,
+        href: `/host/applications/${input.applicationId}`,
+        metadata: {
+          applicationId: input.applicationId,
+          applicantName,
+          programTitle: input.programTitle,
+          villageId: input.villageId,
+        },
+        title: "새 신청서가 접수됐어요",
+        type: "application.submitted.host",
+      };
+
+      await createInAppNotificationIfEnabled(recipient.id, message);
+      await queueBrowserPushNotification(recipient.id, message);
+    }),
+  );
+}
+
+async function notifyHostUsersAboutInquiryMessage(input: {
+  applicantName?: string;
+  body: string;
+  href: string;
+  inquiryId: string;
+  programCreatedBy?: string;
+  programTitle: string;
+  title: string;
+  type: string;
+  villageId?: string;
+}) {
+  const recipients = await listHostNotificationRecipients({
+    programCreatedBy: input.programCreatedBy,
+    villageId: input.villageId,
+  });
+  if (recipients.length === 0) return;
+
+  const applicantName = input.applicantName?.trim() || "사용자";
+  await Promise.all(
+    recipients.map(async (recipient) => {
+      const message: NotificationMessage = {
+        body: input.body,
+        href: input.href,
+        metadata: {
+          applicantName,
+          inquiryId: input.inquiryId,
+          programTitle: input.programTitle,
+          villageId: input.villageId,
+        },
+        title: input.title,
+        type: input.type,
+      };
+
+      await createInAppNotificationIfEnabled(recipient.id, message);
+      await queueBrowserPushNotification(recipient.id, message);
+    }),
+  );
+}
+
+// Legacy fallback kept until the older mojibake notification copy is fully removed.
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 async function notifyHostUsersAboutSubmittedApplication(input: {
   applicantName?: string;
   applicationId: string;
@@ -616,6 +890,7 @@ function isChannelEnabled(
   preference: NotificationPreference,
   channel: NotificationChannel,
 ): boolean {
+  if (channel === "browserPush") return preference.browserPushEnabled;
   if (channel === "email") return preference.emailEnabled;
   if (channel === "inApp") return preference.inAppEnabled;
   if (channel === "kakao") return preference.kakaoEnabled;
@@ -644,6 +919,7 @@ function mapPreference(
   return {
     announcementEnabled: row.announcementEnabled,
     applicationStatusEnabled: row.applicationStatusEnabled,
+    browserPushEnabled: row.browserPushEnabled,
     emailEnabled: row.emailEnabled,
     inAppEnabled: row.inAppEnabled,
     kakaoEnabled: row.kakaoEnabled,
@@ -673,6 +949,7 @@ function mapNotification(
 }
 
 const channelLabels: Record<NotificationChannel, string> = {
+  browserPush: "Browser push",
   email: "Email",
   inApp: "In-app",
   kakao: "Kakao",

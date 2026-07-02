@@ -19,6 +19,7 @@ type PreferencePatch = Partial<
     NotificationPreference,
     | "announcementEnabled"
     | "applicationStatusEnabled"
+    | "browserPushEnabled"
     | "emailEnabled"
     | "inAppEnabled"
     | "kakaoEnabled"
@@ -105,6 +106,7 @@ function normalizeTime(value: string): string {
 const booleanPreferenceKeys = [
   "announcementEnabled",
   "applicationStatusEnabled",
+  "browserPushEnabled",
   "emailEnabled",
   "inAppEnabled",
   "kakaoEnabled",

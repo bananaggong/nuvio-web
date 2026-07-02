@@ -11,6 +11,8 @@ import {
   createProgramInquiryMessage,
   getUserProgramInquiryFromDb,
 } from "@/lib/host-inquiry-db";
+import { queueProgramInquiryUserMessageNotification } from "@/lib/notification-db";
+import { getProgramRecordByIdentifier } from "@/lib/program-db";
 
 export const runtime = "nodejs";
 
@@ -81,6 +83,17 @@ export async function POST(
     if (!savedMessage) {
       return apiError("Closed inquiries cannot receive new messages.", 409);
     }
+
+    const programRecord = inquiry.programId
+      ? await getProgramRecordByIdentifier(inquiry.programId)
+      : undefined;
+    await queueProgramInquiryUserMessageNotification({
+      inquiryId: inquiry.id,
+      programCreatedBy: programRecord?.createdBy ?? undefined,
+      programTitle: inquiry.programTitle || programRecord?.title || "프로그램",
+      senderName: savedMessage.senderName || inquiry.contactName,
+      villageId: inquiry.villageId || programRecord?.villageId || undefined,
+    });
 
     return NextResponse.json({ data: savedMessage }, { status: 201 });
   } catch (error) {

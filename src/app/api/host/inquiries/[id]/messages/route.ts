@@ -12,6 +12,7 @@ import {
   getHostInquiryFromDb,
 } from "@/lib/host-inquiry-db";
 import { listManageableHostVillageWorkspaces } from "@/lib/host-village-access";
+import { queueProgramInquiryHostReplyNotification } from "@/lib/notification-db";
 
 export const runtime = "nodejs";
 
@@ -89,6 +90,14 @@ export async function POST(
     if (!savedMessage) {
       return apiError("Closed inquiries cannot receive new messages.", 409);
     }
+
+    await queueProgramInquiryHostReplyNotification({
+      inquiryId: inquiry.id,
+      programTitle: inquiry.programTitle || "프로그램",
+      recipientEmail: inquiry.contactEmail,
+      recipientUserId: inquiry.submittedBy || undefined,
+      senderName: savedMessage.senderName,
+    });
 
     return NextResponse.json({ data: savedMessage }, { status: 201 });
   } catch (error) {

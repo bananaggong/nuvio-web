@@ -12,6 +12,12 @@ import {
 } from "react";
 import { nuvioIcons } from "@/components/icons/nuvio-icons";
 import {
+  disableBrowserPushNotifications,
+  enableBrowserPushNotifications,
+  getBrowserNotificationPermission,
+  isBrowserPushSupported,
+} from "@/lib/browser-push-client";
+import {
   defaultHostMessageTemplates,
   joinMessageTemplateParts,
   messageTemplateVariables,
@@ -57,6 +63,8 @@ export function HostNotificationSettingsContent() {
   const [templates, setTemplates] = useState<TemplateRecord[]>(
     defaultHostMessageTemplates,
   );
+  const [browserPushMessage, setBrowserPushMessage] = useState("");
+  const [isBrowserPushBusy, setIsBrowserPushBusy] = useState(false);
 
   useEffect(() => {
     window.localStorage.setItem(
@@ -67,6 +75,56 @@ export function HostNotificationSettingsContent() {
       }),
     );
   }, [channelStates, notificationStates]);
+
+  useEffect(() => {
+    let isMounted = true;
+
+    async function loadBrowserPushPreference() {
+      if (!isBrowserPushSupported()) {
+        if (isMounted) {
+          setChannelStates((current) => ({ ...current, browser: false }));
+          setBrowserPushMessage("이 브라우저에서는 브라우저 알림을 사용할 수 없어요.");
+        }
+        return;
+      }
+
+      const permission = getBrowserNotificationPermission();
+      if (permission === "denied") {
+        if (isMounted) {
+          setChannelStates((current) => ({ ...current, browser: false }));
+          setBrowserPushMessage("브라우저에서 누비오 알림 권한이 차단되어 있어요.");
+        }
+        return;
+      }
+
+      try {
+        const response = await fetch("/api/me/notification-preferences", {
+          cache: "no-store",
+        });
+        const payload = (await response.json().catch(() => ({}))) as {
+          data?: { browserPushEnabled?: boolean };
+        };
+
+        if (!isMounted || !response.ok) return;
+
+        setChannelStates((current) => ({
+          ...current,
+          browser:
+            Boolean(payload.data?.browserPushEnabled) && permission === "granted",
+        }));
+      } catch {
+        if (isMounted) {
+          setBrowserPushMessage("브라우저 알림 설정을 불러오지 못했어요.");
+        }
+      }
+    }
+
+    void loadBrowserPushPreference();
+
+    return () => {
+      isMounted = false;
+    };
+  }, []);
 
   useEffect(() => {
     let isMounted = true;
@@ -107,7 +165,44 @@ export function HostNotificationSettingsContent() {
   );
 
   function toggleChannel(key: string) {
+    if (key === "browser") {
+      void toggleBrowserPushChannel();
+      return;
+    }
+
     setChannelStates((current) => ({ ...current, [key]: !current[key] }));
+  }
+
+  async function toggleBrowserPushChannel() {
+    if (isBrowserPushBusy) return;
+
+    setIsBrowserPushBusy(true);
+    setBrowserPushMessage("");
+
+    try {
+      if (channelStates.browser) {
+        const result = await disableBrowserPushNotifications();
+        setChannelStates((current) => ({ ...current, browser: false }));
+        setBrowserPushMessage(result.message);
+        return;
+      }
+
+      const result = await enableBrowserPushNotifications();
+      setChannelStates((current) => ({
+        ...current,
+        browser: result.status === "subscribed",
+      }));
+      setBrowserPushMessage(result.message);
+    } catch (error) {
+      setChannelStates((current) => ({ ...current, browser: false }));
+      setBrowserPushMessage(
+        error instanceof Error
+          ? error.message
+          : "브라우저 알림 설정을 변경하지 못했어요.",
+      );
+    } finally {
+      setIsBrowserPushBusy(false);
+    }
   }
 
   function toggleNotification(key: string) {
@@ -219,10 +314,12 @@ export function HostNotificationSettingsContent() {
         {channelToggles.map((toggle) => (
           <ToggleLine
             key={toggle.key}
-            label={toggle.label}
+            label={getChannelToggleLabel(toggle.key, toggle.label)}
             onToggle={() => toggleChannel(toggle.key)}
             state={
-              toggle.state === "ready"
+              toggle.key === "browser" && isBrowserPushBusy
+                ? "ready"
+                : toggle.state === "ready"
                 ? "ready"
                 : channelStates[toggle.key]
                   ? "on"
@@ -230,13 +327,18 @@ export function HostNotificationSettingsContent() {
             }
           />
         ))}
+        {browserPushMessage ? (
+          <p className="px-[var(--host-10)] text-[var(--host-11)] font-medium leading-[1.45] text-[#6D7A8A]">
+            {browserPushMessage}
+          </p>
+        ) : null}
       </SettingsSubSection>
 
       <SettingsSubSection title="알람 수신 항목">
         {notificationToggles.map((toggle) => (
           <ToggleLine
             key={toggle.key}
-            label={toggle.label}
+            label={getNotificationToggleLabel(toggle.key, toggle.label)}
             onToggle={() => toggleNotification(toggle.key)}
             state={notificationStates[toggle.key] ? "on" : "off"}
           />
@@ -568,6 +670,27 @@ function readStoredNotificationSettings(): {
   } catch {
     return { channels: {}, notifications: {} };
   }
+}
+
+function getChannelToggleLabel(key: string, fallback: string): string {
+  const labels: Record<string, string> = {
+    browser: "브라우저 알림",
+    email: "이메일 알림",
+    push: "카카오 알림",
+  };
+
+  return labels[key] ?? fallback;
+}
+
+function getNotificationToggleLabel(key: string, fallback: string): string {
+  const labels: Record<string, string> = {
+    newApplication: "새 신청 접수",
+    newMessage: "새 메시지",
+    reservationCanceled: "예약 취소",
+    reviewCreated: "후기 등록",
+  };
+
+  return labels[key] ?? fallback;
 }
 
 function isUuid(value: string): boolean {

@@ -8,6 +8,7 @@ import {
 } from "@/lib/api-security";
 import { createProgramInquiry } from "@/lib/host-inquiry-db";
 import { normalizeHostInquiry } from "@/lib/host-inquiries";
+import { queueProgramInquiryCreatedNotification } from "@/lib/notification-db";
 import { getProgramRecordByIdentifier } from "@/lib/program-db";
 import { getPublicProgramByIdentifier } from "@/lib/public-program-db";
 import { sanitizeJsonRecord } from "@/lib/safe-json";
@@ -94,6 +95,14 @@ export async function POST(request: Request) {
       title: truncateText(inquiry.title || "문의", 120),
       updatedAt: new Date().toISOString(),
       villageId: programRecord?.villageId ?? "",
+    });
+
+    await queueProgramInquiryCreatedNotification({
+      applicantName: savedInquiry.contactName,
+      inquiryId: savedInquiry.id,
+      programCreatedBy: programRecord?.createdBy ?? undefined,
+      programTitle: savedInquiry.programTitle || "프로그램",
+      villageId: savedInquiry.villageId || programRecord?.villageId || undefined,
     });
 
     return NextResponse.json({ data: savedInquiry }, { status: 201 });
