@@ -168,6 +168,7 @@ export async function markMyReviewRequestOpenedFromDb(
   auth: ApiAuthContext,
 ): Promise<ReviewRequestRecord | null> {
   if (!isUuid(applicationId)) return null;
+  await expireStaleReviewRequests();
 
   const ownerPredicate = buildApplicationOwnerPredicate(auth);
   if (!ownerPredicate) return null;
@@ -185,7 +186,13 @@ export async function markMyReviewRequestOpenedFromDb(
       })
       .from(reviewRequests)
       .innerJoin(programApplications, eq(reviewRequests.applicationId, programApplications.id))
-      .where(and(eq(reviewRequests.applicationId, applicationId), ownerPredicate))
+      .where(
+        and(
+          eq(reviewRequests.applicationId, applicationId),
+          ownerPredicate,
+          sql`(${reviewRequests.expiresAt} is null or ${reviewRequests.expiresAt} > now())`,
+        ),
+      )
       .limit(1);
 
     if (!existing) return null;
@@ -616,7 +623,7 @@ async function safeQueueReviewRequestNotification(
 async function expireStaleReviewRequests(): Promise<void> {
   await getDb()
     .update(reviewRequests)
-    .set({ status: "expired", updatedAt: new Date() })
+    .set({ nextReminderAt: null, status: "expired", updatedAt: new Date() })
     .where(
       and(
         inArray(reviewRequests.status, activeReviewRequestStatuses),
