@@ -1,4 +1,4 @@
-import { and, desc, eq, inArray, or, sql, type SQL } from "drizzle-orm";
+import { and, asc, desc, eq, inArray, lte, or, sql, type SQL } from "drizzle-orm";
 import { getDb } from "@/db/client";
 import {
   programApplications,
@@ -9,6 +9,7 @@ import {
 } from "@/db/schema";
 import type { ApiAuthContext } from "@/lib/api-security";
 import { safeCreateAuditLog } from "@/lib/audit-log-db";
+import { queueReviewRequestNotification } from "@/lib/notification-db";
 import { safeRecordReviewRequestEvent } from "@/lib/review-request-event-db";
 import type { ReviewStatus } from "@/lib/types";
 
@@ -48,7 +49,21 @@ export type ReviewRequestRecord = {
   writeUrl?: string;
 };
 
+export type ReviewRequestReminderProcessSummary = {
+  details: Array<{
+    applicationId: string;
+    id: string;
+    message: string;
+    queued: boolean;
+    requestCount: number;
+    status: ReviewRequestStatus;
+  }>;
+  failed: number;
+  processed: number;
+  queued: number;
+};
 type ReviewRequestInsert = typeof reviewRequests.$inferInsert;
+type ReviewRequestRow = typeof reviewRequests.$inferSelect;
 type ReviewRequestContext = {
   applicantName: string;
   applicationId: string;
@@ -92,6 +107,7 @@ const reviewRequestStatuses: ReviewRequestStatus[] = [
 const requestCooldownMs = 24 * 60 * 60 * 1000;
 const defaultReminderDelayMs = 7 * 24 * 60 * 60 * 1000;
 const defaultExpiryMs = 60 * 24 * 60 * 60 * 1000;
+const maxReviewRequestCount = 4;
 
 export class ReviewRequestAccessError extends Error {
   constructor() {
@@ -145,6 +161,124 @@ export async function listMyReviewRequestsFromDb(
 
   const rows = await selectReviewRequests(conditions, clampLimit(options.limit, 100));
   return rows.map(mapReviewRequestRow);
+}
+
+export async function processDueReviewRequestReminders(
+  options: { limit?: number } = {},
+): Promise<ReviewRequestReminderProcessSummary> {
+  await expireStaleReviewRequests();
+
+  const limit = clampLimit(options.limit, 100);
+  const now = new Date();
+  const nextReminderAt = new Date(now.getTime() + defaultReminderDelayMs);
+
+  const dueRows = await getDb().transaction(async (tx) => {
+    await tx.execute(
+      sql`select pg_advisory_xact_lock(hashtext('nuvio:process-review-request-reminders'))`,
+    );
+
+    await tx
+      .update(reviewRequests)
+      .set({ nextReminderAt: null, updatedAt: now })
+      .where(
+        and(
+          inArray(reviewRequests.status, activeReviewRequestStatuses),
+          sql`${reviewRequests.nextReminderAt} is not null`,
+          lte(reviewRequests.nextReminderAt, now),
+          sql`${reviewRequests.requestCount} >= ${maxReviewRequestCount}`,
+        ),
+      );
+
+    const rows = await tx
+      .select({ request: reviewRequests, programTitle: programsTable.title })
+      .from(reviewRequests)
+      .leftJoin(programsTable, eq(reviewRequests.programId, programsTable.id))
+      .where(
+        and(
+          inArray(reviewRequests.status, activeReviewRequestStatuses),
+          sql`${reviewRequests.nextReminderAt} is not null`,
+          lte(reviewRequests.nextReminderAt, now),
+          sql`${reviewRequests.requestCount} < ${maxReviewRequestCount}`,
+          sql`${reviewRequests.reviewId} is null`,
+          sql`(${reviewRequests.expiresAt} is null or ${reviewRequests.expiresAt} > ${now})`,
+        ),
+      )
+      .orderBy(asc(reviewRequests.nextReminderAt))
+      .limit(limit);
+
+    const updatedRows: Array<{
+      programTitle: string | null;
+      request: ReviewRequestRow;
+    }> = [];
+
+    for (const row of rows) {
+      const previousStatus = asReviewRequestStatus(row.request.status);
+      const [updated] = await tx
+        .update(reviewRequests)
+        .set({
+          lastRequestedAt: now,
+          nextReminderAt,
+          requestCount: sql`${reviewRequests.requestCount} + 1`,
+          status: previousStatus === "opened" ? "opened" : "sent",
+          updatedAt: now,
+        })
+        .where(eq(reviewRequests.id, row.request.id))
+        .returning();
+
+      if (updated) {
+        updatedRows.push({
+          programTitle: row.programTitle,
+          request: updated,
+        });
+      }
+    }
+
+    return updatedRows;
+  });
+
+  const summary: ReviewRequestReminderProcessSummary = {
+    details: [],
+    failed: 0,
+    processed: 0,
+    queued: 0,
+  };
+
+  for (const row of dueRows) {
+    const requestStatus = asReviewRequestStatus(row.request.status);
+    await safeRecordReviewRequestEvent({
+      action: "resent",
+      metadata: {
+        applicationId: row.request.applicationId,
+        requestCount: row.request.requestCount,
+        source: "review_request_reminder_cron",
+        status: row.request.status,
+      },
+      requestId: row.request.id,
+      toStatus: requestStatus,
+    });
+
+    const queued = await safeQueueReviewRequestNotification(row.request, {
+      programTitle: row.programTitle,
+      reminder: true,
+    });
+
+    summary.processed += 1;
+    if (queued) summary.queued += 1;
+    else summary.failed += 1;
+
+    summary.details.push({
+      applicationId: row.request.applicationId,
+      id: row.request.id,
+      message: queued
+        ? "Review request reminder queued."
+        : "Review request reminder could not be queued.",
+      queued,
+      requestCount: row.request.requestCount,
+      status: requestStatus,
+    });
+  }
+
+  return summary;
 }
 
 export async function requestHostReviewForApplication(
@@ -263,6 +397,11 @@ export async function requestHostReviewForApplication(
     toStatus: requestStatus,
   }, options);
 
+  await safeQueueReviewRequestNotification(row, {
+    programTitle: context.programTitle,
+    reminder: row.requestCount > 1,
+  });
+
   return hydrateReviewRequest(row.id);
 }
 
@@ -370,6 +509,43 @@ export async function reopenReviewRequestForApplication(applicationId: string): 
       updatedAt: new Date(),
     })
     .where(and(eq(reviewRequests.applicationId, applicationId), eq(reviewRequests.status, "completed")));
+}
+
+async function safeQueueReviewRequestNotification(
+  request: ReviewRequestRow,
+  options: { programTitle?: string | null; reminder?: boolean } = {},
+): Promise<boolean> {
+  if (!activeReviewRequestStatuses.includes(asReviewRequestStatus(request.status))) {
+    return false;
+  }
+  if (request.reviewId || !isValidEmail(request.recipientEmail)) return false;
+
+  try {
+    await queueReviewRequestNotification({
+      applicationId: request.applicationId,
+      programId: request.programId,
+      programTitle: options.programTitle?.trim() || "누비오 프로그램",
+      recipientEmail: request.recipientEmail,
+      recipientName: request.recipientName,
+      reminder: options.reminder === true,
+      requestCount: request.requestCount,
+      requestId: request.id,
+      writeUrl: `/reviews/new?applicationId=${request.applicationId}`,
+    });
+    return true;
+  } catch (error) {
+    await safeCreateAuditLog({
+      action: "review.request.notification_failed",
+      entityId: request.id,
+      entityType: "review_request",
+      metadata: {
+        applicationId: request.applicationId,
+        error: normalizeError(error),
+        requestCount: request.requestCount,
+      },
+    });
+    return false;
+  }
 }
 
 async function expireStaleReviewRequests(): Promise<void> {
@@ -584,6 +760,10 @@ function isValidEmail(value: string): boolean {
 function asUuid(value: unknown): string | undefined {
   const text = typeof value === "string" ? value.trim() : "";
   return isUuid(text) ? text : undefined;
+}
+
+function normalizeError(error: unknown): string {
+  return error instanceof Error ? error.message : "Review request notification failed.";
 }
 
 function isUuid(value: string): boolean {

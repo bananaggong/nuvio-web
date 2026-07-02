@@ -915,6 +915,10 @@ export const reviewRequests = pgTable(
     index("review_requests_program_run_id_idx").on(table.programRunId),
     index("review_requests_village_slug_idx").on(table.villageSlug),
     index("review_requests_status_idx").on(table.status),
+    index("review_requests_status_next_reminder_idx").on(
+      table.status,
+      table.nextReminderAt,
+    ),
     index("review_requests_last_requested_at_idx").on(table.lastRequestedAt),
   ],
 );

@@ -385,6 +385,56 @@ export async function queueApplicationStatusNotification(input: {
   }
 }
 
+export async function queueReviewRequestNotification(input: {
+  applicationId: string;
+  programId?: string | null;
+  programTitle: string;
+  recipientEmail: string;
+  recipientName?: string | null;
+  reminder?: boolean;
+  requestCount?: number;
+  requestId: string;
+  scheduledFor?: Date;
+  writeUrl?: string;
+}) {
+  const recipientEmail = normalizeEmail(input.recipientEmail);
+  if (!recipientEmail) return;
+
+  const recipientUserId = await findProfileIdByEmail(recipientEmail);
+  const eventType = input.reminder
+    ? "review.request.reminder"
+    : "review.request.created";
+  const recipientName = input.recipientName?.trim() || "참여자";
+  const message: NotificationMessage = {
+    body: `${recipientName}님, ${input.programTitle} 참여 경험을 후기로 남겨주세요.`,
+    href: input.writeUrl ?? `/reviews/new?applicationId=${input.applicationId}`,
+    metadata: {
+      applicationId: input.applicationId,
+      programId: input.programId ?? undefined,
+      programTitle: input.programTitle,
+      reminder: input.reminder === true,
+      requestCount: input.requestCount ?? 1,
+      requestId: input.requestId,
+    },
+    title: input.reminder ? "후기 작성 리마인드" : "후기 작성을 부탁드려요",
+    type: eventType,
+  };
+
+  await queueNotificationEvent({
+    ...message,
+    channel: "email",
+    eventType,
+    recipient: recipientEmail,
+    recipientUserId,
+    scheduledFor: input.scheduledFor,
+  });
+
+  if (recipientUserId) {
+    await createInAppNotificationIfEnabled(recipientUserId, message);
+    await queueBrowserPushNotification(recipientUserId, message);
+  }
+}
+
 export async function queueProgramReminderNotification(input: {
   body: string;
   href: string;
@@ -404,6 +454,7 @@ export async function queueProgramReminderNotification(input: {
   await createInAppNotificationIfEnabled(input.userId, message);
   await queueBrowserPushNotification(input.userId, message);
 }
+
 export async function queueProgramInquiryCreatedNotification(input: {
   applicantName?: string;
   inquiryId: string;
