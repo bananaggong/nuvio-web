@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { refreshExternalAnnouncementPipeline } from "@/lib/announcement-refresh";
 import { authorizeCronRequest } from "@/lib/cron-security";
+import { processPendingNotificationEvents } from "@/lib/notification-db";
 
 export const runtime = "nodejs";
 export const maxDuration = 60;
@@ -13,10 +14,18 @@ export async function GET(request: Request) {
   }
 
   try {
-    const result = await refreshExternalAnnouncementPipeline();
+    const [announcements, pendingNotifications] = await Promise.all([
+      refreshExternalAnnouncementPipeline(),
+      processPendingNotificationEvents({ limit: 100 }),
+    ]);
 
     return NextResponse.json(
-      { data: result },
+      {
+        data: {
+          announcements,
+          pendingNotifications,
+        },
+      },
       {
         headers: {
           "Cache-Control": "no-store",
