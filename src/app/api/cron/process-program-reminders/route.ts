@@ -5,6 +5,7 @@ import {
 } from "@/lib/cron-security";
 import { processDueHostProgramRiskNotifications } from "@/lib/host-program-risk-notifications";
 import { processDueHostOperationReminderNotifications } from "@/lib/host-operation-reminder-notifications";
+import { processDueHostReportRiskNotifications } from "@/lib/host-report-risk-notifications";
 import { processPendingNotificationEvents } from "@/lib/notification-db";
 import { processDueProgramReminderNotifications } from "@/lib/program-reminder-notifications";
 import { processDueScheduledSmsMessages } from "@/lib/scheduled-message-db";
@@ -28,11 +29,17 @@ async function handleReminderCron(request: Request) {
 
   try {
     const limit = readCronLimit(request, { defaultLimit: 100, maxLimit: 300 });
-    const [programReminders, hostOperationReminders, hostProgramRisks] =
+    const [
+      programReminders,
+      hostOperationReminders,
+      hostProgramRisks,
+      hostReportRisks,
+    ] =
       await Promise.all([
         processDueProgramReminderNotifications({ limit }),
         processDueHostOperationReminderNotifications({ limit }),
         processDueHostProgramRiskNotifications({ limit }),
+        processDueHostReportRiskNotifications({ limit }),
       ]);
     const pendingNotifications = await processPendingNotificationEvents({
       limit: Math.min(limit, 100),
@@ -46,6 +53,7 @@ async function handleReminderCron(request: Request) {
         data: {
           hostOperationReminders,
           hostProgramRisks,
+          hostReportRisks,
           pendingNotifications,
           programReminders,
           scheduledSmsMessages,
