@@ -52,6 +52,12 @@ import {
 } from "@/lib/display-code";
 import { launchFeatureFlags } from "@/lib/launch-feature-flags";
 import { programPath } from "@/lib/program-routing";
+import {
+  disableBrowserPushNotifications,
+  enableBrowserPushNotifications,
+  getBrowserNotificationPermission,
+  isBrowserPushSupported,
+} from "@/lib/browser-push-client";
 import type { Program, Review } from "@/lib/types";
 
 type AuthProfile = {
@@ -2930,11 +2936,162 @@ function SettingsContent() {
       <PageTitle title="설정" />
       <div className="mt-6 grid gap-3">
         <SettingRow label="마케팅 수신 동의" value="미설정" />
-        <SettingRow label="프로그램 알림" value="기본값" />
+        <BrowserPushSettingRow />
         <SettingRow label="계정 보안" value="소셜 로그인" />
       </div>
     </section>
   );
+}
+
+type BrowserPushSettingState =
+  | "denied"
+  | "loading"
+  | "off"
+  | "on"
+  | "unsupported";
+
+function BrowserPushSettingRow() {
+  const [state, setState] = useState<BrowserPushSettingState>("loading");
+  const [message, setMessage] = useState("");
+  const [busy, setBusy] = useState(false);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    async function loadBrowserPushState() {
+      if (!isBrowserPushSupported()) {
+        if (!cancelled) {
+          setState("unsupported");
+          setMessage("이 브라우저에서는 알림을 사용할 수 없어요.");
+        }
+        return;
+      }
+
+      const permission = getBrowserNotificationPermission();
+      if (permission === "denied") {
+        if (!cancelled) {
+          setState("denied");
+          setMessage("브라우저에서 누비오 알림 권한이 차단되어 있어요.");
+        }
+        return;
+      }
+
+      try {
+        const response = await fetch("/api/me/notification-preferences", {
+          cache: "no-store",
+        });
+        const payload = (await response.json()) as {
+          data?: { browserPushEnabled?: boolean };
+        };
+        if (!response.ok) throw new Error("Failed to load preferences.");
+
+        if (!cancelled) {
+          const enabled =
+            Boolean(payload.data?.browserPushEnabled) && permission === "granted";
+          setState(enabled ? "on" : "off");
+          setMessage(
+            enabled
+              ? "신청 결과와 메시지 답장을 브라우저 알림으로 받아요."
+              : "브라우저 권한을 허용하면 신청 결과와 메시지 답장을 받을 수 있어요.",
+          );
+        }
+      } catch {
+        if (!cancelled) {
+          setState("off");
+          setMessage("알림 설정을 불러오지 못했어요.");
+        }
+      }
+    }
+
+    void loadBrowserPushState();
+
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  async function handleToggle() {
+    if (busy || state === "unsupported" || state === "denied") return;
+
+    setBusy(true);
+    setMessage("");
+
+    try {
+      const enabling = state !== "on";
+      const result = enabling
+        ? await enableBrowserPushNotifications()
+        : await disableBrowserPushNotifications();
+      const succeeded = enabling
+        ? result.status === "subscribed"
+        : result.status === "unsubscribed";
+
+      if (!succeeded) {
+        setMessage(result.message ?? "브라우저 알림 설정을 변경하지 못했어요.");
+        if (getBrowserNotificationPermission() === "denied") setState("denied");
+        return;
+      }
+
+      setState(enabling ? "on" : "off");
+      setMessage(
+        enabling
+          ? "브라우저 알림을 켰어요."
+          : "브라우저 알림을 껐어요.",
+      );
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  const enabled = state === "on";
+  const disabled = busy || state === "loading" || state === "unsupported" || state === "denied";
+  const valueLabel = getBrowserPushSettingLabel(state);
+
+  return (
+    <div className="rounded-[6px] border border-[#d9d9d9] px-5 py-4">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <div>
+          <p className="text-[14px] font-semibold text-[#4B3328]">프로그램 알림</p>
+          <p className="mt-1 text-[13px] text-[#8F7A6C]">
+            새 메시지, 신청 접수와 결과 변경을 브라우저 알림으로 받아요.
+          </p>
+          {message ? (
+            <p className="mt-2 text-[12px] text-[#748190]">{message}</p>
+          ) : null}
+        </div>
+        <div className="flex shrink-0 items-center gap-3">
+          <span className="text-[13px] text-[#8F7A6C]">{valueLabel}</span>
+          <button
+            aria-pressed={enabled}
+            className={[
+              "relative h-7 w-12 rounded-full border transition",
+              enabled
+                ? "border-[#ff6b1a] bg-[#ff6b1a]"
+                : "border-[#cfc7c0] bg-[#f4f1ee]",
+              disabled ? "cursor-not-allowed opacity-50" : "",
+            ].join(" ")}
+            disabled={disabled}
+            onClick={handleToggle}
+            type="button"
+          >
+            <span
+              className={[
+                "absolute top-1/2 h-5 w-5 -translate-y-1/2 rounded-full bg-white shadow-sm transition",
+                enabled ? "left-6" : "left-1",
+              ].join(" ")}
+            />
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function getBrowserPushSettingLabel(state: BrowserPushSettingState) {
+  if (state === "loading") return "확인 중";
+  if (state === "on") return "사용 중";
+  if (state === "denied") return "권한 차단";
+  if (state === "unsupported") return "지원 안 함";
+  return "꺼짐";
 }
 
 function SupportContent({ context }: { context: MypageContext }) {
