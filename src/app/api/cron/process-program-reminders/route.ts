@@ -3,6 +3,7 @@ import {
   authorizeCronRequest,
   readCronLimit,
 } from "@/lib/cron-security";
+import { processDueHostProgramRiskNotifications } from "@/lib/host-program-risk-notifications";
 import { processDueHostOperationReminderNotifications } from "@/lib/host-operation-reminder-notifications";
 import { processDueProgramReminderNotifications } from "@/lib/program-reminder-notifications";
 
@@ -25,15 +26,17 @@ async function handleReminderCron(request: Request) {
 
   try {
     const limit = readCronLimit(request, { defaultLimit: 100, maxLimit: 300 });
-    const [programReminders, hostOperationReminders] = await Promise.all([
+    const [programReminders, hostOperationReminders, hostProgramRisks] = await Promise.all([
       processDueProgramReminderNotifications({ limit }),
       processDueHostOperationReminderNotifications({ limit }),
+      processDueHostProgramRiskNotifications({ limit }),
     ]);
 
     return NextResponse.json(
       {
         data: {
           hostOperationReminders,
+          hostProgramRisks,
           programReminders,
         },
       },
