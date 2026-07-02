@@ -385,6 +385,25 @@ export async function queueApplicationStatusNotification(input: {
   }
 }
 
+export async function queueProgramReminderNotification(input: {
+  body: string;
+  href: string;
+  metadata?: Record<string, unknown>;
+  title: string;
+  type: string;
+  userId: string;
+}) {
+  const message: NotificationMessage = {
+    body: input.body,
+    href: input.href,
+    metadata: input.metadata,
+    title: input.title,
+    type: input.type,
+  };
+
+  await createInAppNotificationIfEnabled(input.userId, message);
+  await queueBrowserPushNotification(input.userId, message);
+}
 export async function queueProgramInquiryCreatedNotification(input: {
   applicantName?: string;
   inquiryId: string;
@@ -875,7 +894,10 @@ function isEventTypeEnabled(
     return preference.announcementEnabled;
   }
 
-  if (eventType.startsWith("program.deadline")) {
+  if (
+    eventType.startsWith("program.deadline") ||
+    eventType.startsWith("program.reminder")
+  ) {
     return preference.programDeadlineEnabled;
   }
 
