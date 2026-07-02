@@ -2,12 +2,28 @@
 
 import Link from "next/link";
 import { Loader2, Send } from "lucide-react";
-import { FormEvent, useState } from "react";
+import { FormEvent, useEffect, useState } from "react";
 
 export function ReviewWriter({ applicationId = "" }: { applicationId?: string }) {
   const [submitted, setSubmitted] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
+  useEffect(() => {
+    const id = applicationId.trim();
+    if (!isUuid(id)) return;
+
+    const controller = new AbortController();
+    void fetch("/api/me/reviews/requests", {
+      body: JSON.stringify({ applicationId: id }),
+      headers: { "Content-Type": "application/json" },
+      method: "POST",
+      signal: controller.signal,
+    }).catch(() => {
+      // Opening telemetry should not block review writing.
+    });
+
+    return () => controller.abort();
+  }, [applicationId]);
 
   async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -121,5 +137,10 @@ export function ReviewWriter({ applicationId = "" }: { applicationId?: string })
         후기 목록으로 돌아가기
       </Link>
     </div>
+  );
+}
+function isUuid(value: string): boolean {
+  return /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{12}$/iu.test(
+    value,
   );
 }

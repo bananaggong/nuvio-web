@@ -163,6 +163,71 @@ export async function listMyReviewRequestsFromDb(
   return rows.map(mapReviewRequestRow);
 }
 
+export async function markMyReviewRequestOpenedFromDb(
+  applicationId: string,
+  auth: ApiAuthContext,
+): Promise<ReviewRequestRecord | null> {
+  if (!isUuid(applicationId)) return null;
+
+  const ownerPredicate = buildApplicationOwnerPredicate(auth);
+  if (!ownerPredicate) return null;
+
+  const updateResult = await getDb().transaction(async (tx) => {
+    await tx.execute(
+      sql`select pg_advisory_xact_lock(hashtext(${`review-request-open:${applicationId}`}))`,
+    );
+
+    const [existing] = await tx
+      .select({
+        id: reviewRequests.id,
+        reviewId: reviewRequests.reviewId,
+        status: reviewRequests.status,
+      })
+      .from(reviewRequests)
+      .innerJoin(programApplications, eq(reviewRequests.applicationId, programApplications.id))
+      .where(and(eq(reviewRequests.applicationId, applicationId), ownerPredicate))
+      .limit(1);
+
+    if (!existing) return null;
+
+    const previousStatus = asReviewRequestStatus(existing.status);
+    if (
+      existing.reviewId ||
+      (previousStatus !== "pending" && previousStatus !== "sent")
+    ) {
+      return { changed: false, id: existing.id, previousStatus };
+    }
+
+    const [updated] = await tx
+      .update(reviewRequests)
+      .set({ status: "opened", updatedAt: new Date() })
+      .where(eq(reviewRequests.id, existing.id))
+      .returning({ id: reviewRequests.id });
+
+    return updated
+      ? { changed: true, id: updated.id, previousStatus }
+      : { changed: false, id: existing.id, previousStatus };
+  });
+
+  if (!updateResult) return null;
+
+  if (updateResult.changed) {
+    await safeRecordReviewRequestEvent({
+      action: "opened",
+      actorId: auth.user.id,
+      actorRole: auth.profile.role,
+      fromStatus: updateResult.previousStatus,
+      metadata: {
+        applicationId,
+        source: "participant_review_writer_open",
+      },
+      requestId: updateResult.id,
+      toStatus: "opened",
+    });
+  }
+
+  return hydrateReviewRequest(updateResult.id);
+}
 export async function processDueReviewRequestReminders(
   options: { limit?: number } = {},
 ): Promise<ReviewRequestReminderProcessSummary> {
