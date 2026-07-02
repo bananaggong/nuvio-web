@@ -7,6 +7,7 @@ import { processDueHostProgramRiskNotifications } from "@/lib/host-program-risk-
 import { processDueHostOperationReminderNotifications } from "@/lib/host-operation-reminder-notifications";
 import { processPendingNotificationEvents } from "@/lib/notification-db";
 import { processDueProgramReminderNotifications } from "@/lib/program-reminder-notifications";
+import { processDueScheduledSmsMessages } from "@/lib/scheduled-message-db";
 
 export const runtime = "nodejs";
 export const maxDuration = 60;
@@ -36,6 +37,9 @@ async function handleReminderCron(request: Request) {
     const pendingNotifications = await processPendingNotificationEvents({
       limit: Math.min(limit, 100),
     });
+    const scheduledSmsMessages = await processDueScheduledSmsMessages({
+      limit: Math.min(limit, 100),
+    });
 
     return NextResponse.json(
       {
@@ -44,6 +48,7 @@ async function handleReminderCron(request: Request) {
           hostProgramRisks,
           pendingNotifications,
           programReminders,
+          scheduledSmsMessages,
         },
       },
       {

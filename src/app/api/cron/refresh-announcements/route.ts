@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { refreshExternalAnnouncementPipeline } from "@/lib/announcement-refresh";
 import { authorizeCronRequest } from "@/lib/cron-security";
 import { processPendingNotificationEvents } from "@/lib/notification-db";
+import { processDueScheduledSmsMessages } from "@/lib/scheduled-message-db";
 
 export const runtime = "nodejs";
 export const maxDuration = 60;
@@ -14,9 +15,10 @@ export async function GET(request: Request) {
   }
 
   try {
-    const [announcements, pendingNotifications] = await Promise.all([
+    const [announcements, pendingNotifications, scheduledSmsMessages] = await Promise.all([
       refreshExternalAnnouncementPipeline(),
       processPendingNotificationEvents({ limit: 100 }),
+      processDueScheduledSmsMessages({ limit: 100 }),
     ]);
 
     return NextResponse.json(
@@ -24,6 +26,7 @@ export async function GET(request: Request) {
         data: {
           announcements,
           pendingNotifications,
+          scheduledSmsMessages,
         },
       },
       {
