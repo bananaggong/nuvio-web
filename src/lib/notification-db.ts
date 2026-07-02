@@ -435,6 +435,129 @@ export async function queueReviewRequestNotification(input: {
   }
 }
 
+export async function queueReviewSubmittedNotification(input: {
+  authorName?: string | null;
+  programCreatedBy?: string | null;
+  programId?: string | null;
+  programTitle?: string | null;
+  reviewId: string;
+  reviewTitle: string;
+  villageId?: string | null;
+}) {
+  const recipients = await listHostNotificationRecipients({
+    programCreatedBy: input.programCreatedBy ?? undefined,
+    villageId: input.villageId ?? undefined,
+  });
+  if (recipients.length === 0) return;
+
+  const authorName = input.authorName?.trim() || "참여자";
+  const programTitle = input.programTitle?.trim() || "누비오 프로그램";
+  await Promise.all(
+    recipients.map(async (recipient) => {
+      const message: NotificationMessage = {
+        body: `${authorName}님이 ${programTitle} 후기를 남겼습니다. 검토 후 공개 여부를 결정해 주세요.`,
+        href: "/host/applications?panel=reviews",
+        metadata: {
+          authorName,
+          programId: input.programId ?? undefined,
+          programTitle,
+          reviewId: input.reviewId,
+          reviewTitle: input.reviewTitle,
+          villageId: input.villageId ?? undefined,
+        },
+        title: "새 후기가 접수됐어요",
+        type: "review.submitted.host",
+      };
+
+      await createInAppNotificationIfEnabled(recipient.id, message);
+      await queueBrowserPushNotification(recipient.id, message);
+    }),
+  );
+}
+
+export async function queueReviewReportCreatedNotification(input: {
+  programCreatedBy?: string | null;
+  programId?: string | null;
+  programTitle?: string | null;
+  reason: string;
+  reportId: string;
+  reviewId: string;
+  reviewTitle: string;
+  villageId?: string | null;
+}) {
+  const recipients = await listHostNotificationRecipients({
+    programCreatedBy: input.programCreatedBy ?? undefined,
+    villageId: input.villageId ?? undefined,
+  });
+  if (recipients.length === 0) return;
+
+  const programTitle = input.programTitle?.trim() || "누비오 프로그램";
+  await Promise.all(
+    recipients.map(async (recipient) => {
+      const message: NotificationMessage = {
+        body: `${programTitle} 후기 신고가 접수됐습니다. 신고 사유를 확인해 주세요.`,
+        href: "/host/applications?panel=reviews",
+        metadata: {
+          programId: input.programId ?? undefined,
+          programTitle,
+          reason: input.reason,
+          reportId: input.reportId,
+          reviewId: input.reviewId,
+          reviewTitle: input.reviewTitle,
+          villageId: input.villageId ?? undefined,
+        },
+        title: "후기 신고가 접수됐어요",
+        type: "review.report.created.host",
+      };
+
+      await createInAppNotificationIfEnabled(recipient.id, message);
+      await queueBrowserPushNotification(recipient.id, message);
+    }),
+  );
+}
+
+export async function queueReviewHostReplyNotification(input: {
+  authorName?: string | null;
+  recipientEmail?: string | null;
+  recipientUserId?: string | null;
+  replyId: string;
+  reviewId: string;
+  reviewTitle: string;
+}) {
+  const recipientEmail = normalizeEmail(input.recipientEmail);
+  const recipientUserId =
+    input.recipientUserId ?? (await findProfileIdByEmail(recipientEmail));
+  if (!recipientUserId && !recipientEmail) return;
+
+  const authorName = input.authorName?.trim() || "호스트";
+  const message: NotificationMessage = {
+    body: `${input.reviewTitle} 후기에 ${authorName}님의 답변이 등록됐습니다.`,
+    href: `/mypage/reviews`,
+    metadata: {
+      authorName,
+      replyId: input.replyId,
+      reviewId: input.reviewId,
+      reviewTitle: input.reviewTitle,
+    },
+    title: "후기에 답변이 등록됐어요",
+    type: "review.reply.created",
+  };
+
+  if (recipientEmail) {
+    await queueNotificationEvent({
+      ...message,
+      channel: "email",
+      eventType: message.type,
+      recipient: recipientEmail,
+      recipientUserId,
+    });
+  }
+
+  if (recipientUserId) {
+    await createInAppNotificationIfEnabled(recipientUserId, message);
+    await queueBrowserPushNotification(recipientUserId, message);
+  }
+}
 export async function queueProgramReminderNotification(input: {
   body: string;
   href: string;

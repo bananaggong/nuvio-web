@@ -7,6 +7,7 @@ import {
 } from "@/db/schema";
 import type { ApiAuthContext } from "@/lib/api-security";
 import { safeCreateAuditLog } from "@/lib/audit-log-db";
+import { queueReviewReportCreatedNotification } from "@/lib/notification-db";
 import { buildPublicReviewVisibilityConditions } from "@/lib/review-public-visibility-db";
 import { safeRecordReviewReportEvent } from "@/lib/review-report-event-db";
 import { safeReleaseReviewVisibilityHoldsBySourceFromDb } from "@/lib/review-visibility-hold-db";
@@ -83,12 +84,16 @@ export async function createReviewReport(
   const [review] = await getDb()
     .select({
       id: reviewsTable.id,
+      programCreatedBy: programsTable.createdBy,
       programId: reviewsTable.programId,
+      programTitle: programsTable.title,
+      programVillageId: programsTable.villageId,
       title: reviewsTable.title,
       userId: reviewsTable.userId,
       villageSlug: reviewsTable.villageSlug,
     })
     .from(reviewsTable)
+    .leftJoin(programsTable, eq(reviewsTable.programId, programsTable.id))
     .where(and(eq(reviewsTable.id, normalized.reviewId), ...buildPublicReviewVisibilityConditions()))
     .limit(1);
 
@@ -136,6 +141,8 @@ export async function createReviewReport(
       reviewId: row.reviewId,
     },
   });
+
+  await safeQueueReviewReportCreatedNotification(row, review);
 
   await safeRecordReviewReportEvent({
     actorId: auth.user.id,
@@ -267,7 +274,8 @@ export async function updateReviewReportStatus(
   const reportChanged = existing.report.status !== row.status
     || (existing.report.resolutionNote ?? null) !== (row.resolutionNote ?? null);
   if (reportChanged) {
-    await safeRecordReviewReportEvent({
+
+  await safeRecordReviewReportEvent({
       actorId: options.actorId,
       actorRole: options.actorRole,
       fromStatus: asReportStatus(existing.report.status),
@@ -308,6 +316,42 @@ export async function updateReviewReportStatus(
   return mapReviewReportRow(row, existing.review);
 }
 
+async function safeQueueReviewReportCreatedNotification(
+  report: ReviewReportRow,
+  review: {
+    id: string;
+    programCreatedBy?: string | null;
+    programId: string | null;
+    programTitle?: string | null;
+    programVillageId?: string | null;
+    title: string;
+    villageSlug: string | null;
+  },
+): Promise<void> {
+  try {
+    await queueReviewReportCreatedNotification({
+      programCreatedBy: review.programCreatedBy,
+      programId: review.programId,
+      programTitle: review.programTitle,
+      reason: report.reason,
+      reportId: report.id,
+      reviewId: report.reviewId,
+      reviewTitle: review.title,
+      villageId: review.programVillageId,
+    });
+  } catch (error) {
+    await safeCreateAuditLog({
+      action: "review.report.notification_failed",
+      entityId: report.id,
+      entityType: "review_report",
+      metadata: {
+        error: normalizeError(error),
+        notificationType: "review.report.created.host",
+        reviewId: report.reviewId,
+      },
+    });
+  }
+}
 function normalizeCreateReviewReportInput(input: unknown): {
   message: string;
   reason: ReviewReportReason;
@@ -399,6 +443,9 @@ function getPrimaryEmail(auth: ApiAuthContext): string {
   return String(auth.user.email || auth.profile.email || "").trim().toLowerCase();
 }
 
+function normalizeError(error: unknown): string {
+  return error instanceof Error ? error.message : "Review report notification failed.";
+}
 function asString(value: unknown): string {
   return typeof value === "string" ? value.trim() : "";
 }

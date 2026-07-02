@@ -1,12 +1,14 @@
 import { and, desc, eq, inArray, or, type SQL } from "drizzle-orm";
 import { getDb } from "@/db/client";
 import {
+  programApplications,
   programs as programsTable,
   reviewHostReplies,
   reviews as reviewsTable,
 } from "@/db/schema";
 import type { ApiAuthContext } from "@/lib/api-security";
 import { safeCreateAuditLog } from "@/lib/audit-log-db";
+import { queueReviewHostReplyNotification } from "@/lib/notification-db";
 import { publicReviewSafetyPredicate } from "@/lib/review-public-visibility-db";
 import { safeRecordReviewHostReplyEvent } from "@/lib/review-reply-event-db";
 
@@ -26,10 +28,12 @@ export type ReviewHostReply = {
 type ReplyRow = typeof reviewHostReplies.$inferSelect;
 
 type ReviewAccessRow = {
+  applicationEmail: string | null;
   id: string;
   programVillageId: string | null;
   status: string;
   title: string;
+  userId: string | null;
   villageSlug: string | null;
 };
 
@@ -164,6 +168,10 @@ export async function upsertHostReviewReply(
     });
   }
 
+  if (row.status === "published" && eventFromStatus !== "published") {
+    await safeQueueReviewHostReplyNotification(row, review);
+  }
+
   return mapReply(row);
 }
 
@@ -233,9 +241,39 @@ export async function updateHostReviewReplyStatus(
     });
   }
 
+  if (existing.status !== "published" && row.status === "published") {
+    await safeQueueReviewHostReplyNotification(row, review);
+  }
+
   return mapReply(row);
 }
 
+async function safeQueueReviewHostReplyNotification(
+  reply: ReplyRow,
+  review: ReviewAccessRow,
+): Promise<void> {
+  try {
+    await queueReviewHostReplyNotification({
+      authorName: reply.authorName,
+      recipientEmail: review.applicationEmail,
+      recipientUserId: review.userId,
+      replyId: reply.id,
+      reviewId: review.id,
+      reviewTitle: review.title,
+    });
+  } catch (error) {
+    await safeCreateAuditLog({
+      action: "review.host_reply.notification_failed",
+      entityId: reply.id,
+      entityType: "review_host_reply",
+      metadata: {
+        error: normalizeError(error),
+        notificationType: "review.reply.created",
+        reviewId: review.id,
+      },
+    });
+  }
+}
 async function getReviewForReplyAccess(
   reviewId: string,
   options: { allowedVillageIds?: string[]; allowedVillageSlugs?: string[] },
@@ -260,14 +298,17 @@ async function getReviewForReplyAccess(
 
   const [row] = await getDb()
     .select({
+      applicationEmail: programApplications.email,
       id: reviewsTable.id,
       programVillageId: programsTable.villageId,
       status: reviewsTable.status,
       title: reviewsTable.title,
+      userId: reviewsTable.userId,
       villageSlug: reviewsTable.villageSlug,
     })
     .from(reviewsTable)
     .leftJoin(programsTable, eq(reviewsTable.programId, programsTable.id))
+    .leftJoin(programApplications, eq(reviewsTable.applicationId, programApplications.id))
     .where(and(...conditions))
     .limit(1);
 
@@ -325,6 +366,9 @@ function mapReply(row: ReplyRow): ReviewHostReply {
   };
 }
 
+function normalizeError(error: unknown): string {
+  return error instanceof Error ? error.message : "Review reply notification failed.";
+}
 function isUuid(value: string): boolean {
   return /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/iu.test(
     value,

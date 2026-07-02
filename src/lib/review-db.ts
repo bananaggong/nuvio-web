@@ -10,6 +10,7 @@ import {
 } from "@/db/schema";
 import type { ApiAuthContext } from "@/lib/api-security";
 import { safeCreateAuditLog } from "@/lib/audit-log-db";
+import { queueReviewSubmittedNotification } from "@/lib/notification-db";
 import { safeEnrichLatestReviewContentVersion } from "@/lib/review-content-version-db";
 import { refreshReviewModerationCheck } from "@/lib/review-moderation-check-db";
 import { buildPublicReviewVisibilityConditions } from "@/lib/review-public-visibility-db";
@@ -88,9 +89,11 @@ type ParticipantApplicationRow = {
   applicantName: string;
   applicationId: string;
   email: string;
+  programCreatedBy: string | null;
   programId: string;
   programRunId: string | null;
   programTitle: string | null;
+  programVillageId: string | null;
   status: string;
   villageSlug: string | null;
 };
@@ -454,6 +457,7 @@ export async function createParticipantReview(
     reviewId: row.id,
   });
   await safeRefreshModerationCheck(row.id, auth.user.id);
+  await safeQueueReviewSubmittedNotification(row, application);
 
   return mapReviewRowToHostDraft(row);
 }
@@ -1071,9 +1075,11 @@ async function getParticipantReviewApplication(input: {
       applicantName: programApplications.applicantName,
       applicationId: programApplications.id,
       email: programApplications.email,
+      programCreatedBy: programsTable.createdBy,
       programId: programApplications.programId,
       programRunId: programApplications.programRunId,
       programTitle: programsTable.title,
+      programVillageId: programsTable.villageId,
       status: programApplications.status,
       villageSlug: villages.slug,
     })
@@ -1086,6 +1092,34 @@ async function getParticipantReviewApplication(input: {
   return row ?? null;
 }
 
+async function safeQueueReviewSubmittedNotification(
+  review: ReviewRow,
+  application: ParticipantApplicationRow,
+): Promise<void> {
+  try {
+    await queueReviewSubmittedNotification({
+      authorName: review.authorName,
+      programCreatedBy: application.programCreatedBy,
+      programId: application.programId,
+      programTitle: application.programTitle,
+      reviewId: review.id,
+      reviewTitle: review.title,
+      villageId: application.programVillageId,
+    });
+  } catch (error) {
+    await safeCreateAuditLog({
+      action: "review.notification_failed",
+      entityId: review.id,
+      entityType: "review",
+      metadata: {
+        applicationId: application.applicationId,
+        error: normalizeError(error),
+        notificationType: "review.submitted.host",
+        programId: application.programId,
+      },
+    });
+  }
+}
 async function mapHostDraftToReviewInsert(
   draft: HostReviewDraft,
   options: { allowedVillageIds?: string[] } = {},
@@ -1457,6 +1491,9 @@ function clampLimit(limit: number | undefined, fallback: number): number {
   return Math.min(Math.max(Math.trunc(limit), 1), 300);
 }
 
+function normalizeError(error: unknown): string {
+  return error instanceof Error ? error.message : "Review notification failed.";
+}
 function isUuid(value: string): boolean {
   return /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/iu.test(
     value,
