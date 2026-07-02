@@ -53,8 +53,8 @@ export default async function ReviewDetailPage({
   const programTitle = program?.title ?? review.programTitle;
   const programHref = program
     ? programPath(program)
-    : review.programSlug || review.programUuid
-      ? `/programs/${review.programSlug ?? review.programUuid}`
+    : review.programSlug
+      ? `/programs/${review.programSlug}`
       : undefined;
   const categoryLabel =
     reviewCategories.find((item) => item.key === review.category)?.label ?? "후기";

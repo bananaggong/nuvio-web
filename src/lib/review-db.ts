@@ -98,6 +98,11 @@ type ParticipantApplicationRow = {
   villageSlug: string | null;
 };
 
+export type PublicReview = Omit<
+  Review,
+  "applicationId" | "programUuid" | "programRunId" | "source" | "status" | "submittedAt"
+>;
+
 export class HostReviewAccessError extends Error {
   constructor(message = "You do not have permission to manage this review.") {
     super(message);
@@ -144,7 +149,7 @@ const maxReviewImages = 6;
 export async function listPublicReviewsFromDb(options: {
   limit?: number;
   villageSlug?: string;
-} = {}): Promise<Review[]> {
+} = {}): Promise<PublicReview[]> {
   const conditions: SQL[] = buildPublicReviewVisibilityConditions();
   const limit = clampLimit(options.limit, 300);
 
@@ -166,14 +171,14 @@ export async function listPublicReviewsFromDb(options: {
     .limit(limit);
 
   return rows.map(({ review, programLegacyId, programSlug, programTitle }) =>
-    mapReviewRowToReview(review, programLegacyId ?? undefined, programSlug, programTitle),
+    mapReviewRowToPublicReview(review, programLegacyId ?? undefined, programSlug, programTitle),
   );
 }
 
 export async function listPublicProgramReviewsFromDb(
   programIdentifier: number | string,
   limit = 80,
-): Promise<Review[]> {
+): Promise<PublicReview[]> {
   const programPredicate = buildProgramIdentifierPredicate(programIdentifier);
 
   const rows = await getDb()
@@ -190,11 +195,11 @@ export async function listPublicProgramReviewsFromDb(
     .limit(clampLimit(limit, 80));
 
   return rows.map(({ review, programLegacyId, programSlug, programTitle }) =>
-    mapReviewRowToReview(review, programLegacyId ?? undefined, programSlug, programTitle),
+    mapReviewRowToPublicReview(review, programLegacyId ?? undefined, programSlug, programTitle),
   );
 }
 
-export async function getPublicReviewFromDb(id: string): Promise<Review | null> {
+export async function getPublicReviewFromDb(id: string): Promise<PublicReview | null> {
   if (!isUuid(id)) return null;
 
   const [row] = await getDb()
@@ -210,7 +215,7 @@ export async function getPublicReviewFromDb(id: string): Promise<Review | null> 
     .limit(1);
 
   return row
-    ? mapReviewRowToReview(
+    ? mapReviewRowToPublicReview(
         row.review,
         row.programLegacyId ?? undefined,
         row.programSlug,
@@ -1195,22 +1200,19 @@ async function resolveProgramByPredicate(
   return { programId: row?.id ?? null, villageSlug: row?.villageSlug ?? null };
 }
 
-function mapReviewRowToReview(
+function mapReviewRowToPublicReview(
   row: ReviewRow,
   programLegacyId?: number,
   programSlug?: string | null,
   programTitle?: string | null,
-): Review {
+): PublicReview {
   return {
     id: row.id,
-    applicationId: row.applicationId ?? undefined,
     title: row.title,
     category: row.category,
     programId: programLegacyId,
-    programUuid: row.programId ?? undefined,
     programSlug: programSlug ?? undefined,
     programTitle: programTitle ?? undefined,
-    programRunId: row.programRunId ?? undefined,
     villageSlug: row.villageSlug ?? undefined,
     author: row.authorName,
     date: (row.publishedAt ?? row.createdAt).toISOString(),
@@ -1221,9 +1223,6 @@ function mapReviewRowToReview(
     likes: row.likes,
     comments: row.comments,
     badge: row.badge ?? undefined,
-    source: asReviewSource(row.source, "host"),
-    status: row.status,
-    submittedAt: row.submittedAt?.toISOString(),
     publishedAt: row.publishedAt?.toISOString(),
   };
 }

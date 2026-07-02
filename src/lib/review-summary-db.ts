@@ -7,7 +7,6 @@ import {
   villages,
 } from "@/db/schema";
 import { buildPublicReviewVisibilityConditions } from "@/lib/review-public-visibility-db";
-import type { ReviewSource } from "@/lib/types";
 
 export type PublicReviewSummary = {
   averageRating: number | null;
@@ -23,7 +22,6 @@ export type PublicReviewSummary = {
     type: "all" | "program" | "village";
     villageSlug?: string;
   };
-  sourceCounts: Partial<Record<ReviewSource, number>>;
 };
 
 export async function getPublicReviewSummaryFromDb(options: {
@@ -47,7 +45,7 @@ export async function getPublicReviewSummaryFromDb(options: {
     .leftJoin(villages, eq(programsTable.villageId, villages.id))
     .where(whereClause);
 
-  const [ratingRows, sourceRows, hostReplyCount] = await Promise.all([
+  const [ratingRows, hostReplyCount] = await Promise.all([
     getDb()
       .select({
         rating: reviewsTable.rating,
@@ -58,16 +56,6 @@ export async function getPublicReviewSummaryFromDb(options: {
       .leftJoin(villages, eq(programsTable.villageId, villages.id))
       .where(and(whereClause, sql`${reviewsTable.rating} between 1 and 5`))
       .groupBy(reviewsTable.rating),
-    getDb()
-      .select({
-        source: reviewsTable.source,
-        value: count(),
-      })
-      .from(reviewsTable)
-      .leftJoin(programsTable, eq(reviewsTable.programId, programsTable.id))
-      .leftJoin(villages, eq(programsTable.villageId, villages.id))
-      .where(whereClause)
-      .groupBy(reviewsTable.source),
     countPublishedHostReplies(conditions),
   ]);
 
@@ -81,13 +69,6 @@ export async function getPublicReviewSummaryFromDb(options: {
   for (const row of ratingRows) {
     if (row.rating && row.rating >= 1 && row.rating <= 5) {
       ratingDistribution[row.rating as 1 | 2 | 3 | 4 | 5] = toNumber(row.value);
-    }
-  }
-
-  const sourceCounts: Partial<Record<ReviewSource, number>> = {};
-  for (const row of sourceRows) {
-    if (isReviewSource(row.source)) {
-      sourceCounts[row.source] = toNumber(row.value);
     }
   }
 
@@ -109,7 +90,6 @@ export async function getPublicReviewSummaryFromDb(options: {
           : "all",
       villageSlug: options.villageSlug,
     },
-    sourceCounts,
   };
 }
 
@@ -168,15 +148,6 @@ function normalizeAverage(value: string | number | null): number | null {
 function toNumber(value: unknown): number {
   const numberValue = Number(value ?? 0);
   return Number.isFinite(numberValue) ? numberValue : 0;
-}
-
-function isReviewSource(value: string): value is ReviewSource {
-  return (
-    value === "participant" ||
-    value === "host" ||
-    value === "admin" ||
-    value === "imported"
-  );
 }
 
 function isUuid(value: string): boolean {
