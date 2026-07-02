@@ -25,7 +25,14 @@ async function handleReviewRequestCron(request: Request) {
   }
 
   if (!launchFeatureFlags.reviews) {
-    return NextResponse.json({ error: "Reviews are disabled." }, { status: 404 });
+    return NextResponse.json(
+      { data: { reason: "Reviews are disabled.", skipped: true } },
+      {
+        headers: {
+          "Cache-Control": "no-store",
+        },
+      },
+    );
   }
 
   try {
