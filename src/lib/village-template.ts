@@ -1,3 +1,4 @@
+import { launchFeatureFlags } from "@/lib/launch-feature-flags";
 import { villagePath, villageProgramPath } from "@/lib/village-routing";
 import type { Program } from "@/lib/types";
 import type { Village, VillageSection } from "@/lib/village-types";
@@ -47,6 +48,16 @@ export function buildVillageNotices(
     title: `${program.title} 신청 접수 안내`,
     type: "모집",
   }));
+  const reviewNotices: VillageNotice[] = launchFeatureFlags.reviews
+    ? [
+        {
+          date: village.updatedAt,
+          href: `${villagePath(village.slug)}/reviews`,
+          title: "활동 후기와 만족도 조사 제출 안내",
+          type: "후기",
+        },
+      ]
+    : [];
 
   return [
     ...programNotices,
@@ -56,12 +67,7 @@ export function buildVillageNotices(
       title: "선정자 대상 OT, 숙소 위치, 공지방 입장 안내",
       type: "공지",
     },
-    {
-      date: village.updatedAt,
-      href: `${villagePath(village.slug)}/reviews`,
-      title: "활동 후기와 만족도 조사 제출 안내",
-      type: "후기",
-    },
+    ...reviewNotices,
   ].slice(0, 6);
 }
 
