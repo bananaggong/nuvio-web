@@ -359,6 +359,9 @@ export async function createParticipantReview(
   let actorId: string | undefined;
   let actorRole: string | undefined;
   let userId: string | null = null;
+  const requestTokenHash = normalized.requestToken
+    ? hashReviewRequestToken(normalized.requestToken)
+    : null;
   let submissionSource = "participant_submission";
 
   if (normalized.requestToken) {
@@ -432,11 +435,29 @@ export async function createParticipantReview(
       throw new DuplicateReviewError();
     }
 
+    const requestBeforeCompletionConditions = [
+      eq(reviewRequests.applicationId, application.applicationId),
+    ];
+    if (requestTokenHash) {
+      requestBeforeCompletionConditions.push(
+        eq(reviewRequests.requestTokenHash, requestTokenHash),
+        inArray(reviewRequests.status, ["pending", "sent", "opened"]),
+        sql`${reviewRequests.reviewId} is null`,
+        sql`${reviewRequests.requestTokenExpiresAt} is not null`,
+        sql`${reviewRequests.requestTokenExpiresAt} > now()`,
+        sql`(${reviewRequests.expiresAt} is null or ${reviewRequests.expiresAt} > now())`,
+      );
+    }
+
     const [requestBeforeCompletion] = await tx
       .select({ id: reviewRequests.id, status: reviewRequests.status })
       .from(reviewRequests)
-      .where(eq(reviewRequests.applicationId, application.applicationId))
+      .where(and(...requestBeforeCompletionConditions))
       .limit(1);
+
+    if (requestTokenHash && !requestBeforeCompletion) {
+      throw new ReviewEligibilityError("Review request was not found or has expired.");
+    }
 
     const [createdReview] = await tx
       .insert(reviewsTable)
