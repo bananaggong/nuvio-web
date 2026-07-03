@@ -8,11 +8,14 @@ import {
   getVillageReviews,
 } from "@/lib/village-db";
 import { launchFeatureFlags } from "@/lib/launch-feature-flags";
+import { getPublicReviewFromDb } from "@/lib/review-db";
 import {
   breadcrumbJsonLd,
   createSeoMetadata,
   reviewJsonLd,
 } from "@/lib/seo";
+import type { Program, Review } from "@/lib/types";
+import type { Village } from "@/lib/village-types";
 import { isReservedVillageSlug } from "@/lib/village-routing";
 
 export const dynamic = "force-dynamic";
@@ -32,10 +35,7 @@ export async function generateMetadata({
   if (!village) return {};
 
   const programs = await getVillagePrograms(village);
-  const reviews = await getVillageReviews(village, programs);
-  const review = reviews.find(
-    (item) => String(item.id) === reviewId,
-  );
+  const review = await resolveVillageReview(village, programs, reviewId);
   if (!review) return {};
 
   return createSeoMetadata({
@@ -60,10 +60,7 @@ export default async function VillageReviewDetailRoute({
   if (!village) notFound();
 
   const programs = await getVillagePrograms(village);
-  const reviews = await getVillageReviews(village, programs);
-  const review = reviews.find(
-    (item) => String(item.id) === reviewId,
-  );
+  const review = await resolveVillageReview(village, programs, reviewId);
   if (!review) notFound();
   const canonicalPath = `/${village.slug}/reviews/${review.id}`;
 
@@ -87,4 +84,33 @@ export default async function VillageReviewDetailRoute({
       />
     </>
   );
+}
+
+async function resolveVillageReview(
+  village: Village,
+  programs: Program[],
+  reviewId: string,
+): Promise<Review | undefined> {
+  const review = await getPublicReviewFromDb(reviewId);
+  if (review && reviewBelongsToVillage(review, village.slug, programs)) {
+    return review;
+  }
+
+  const fallbackReviews = await getVillageReviews(village, programs, { limit: 300 });
+  return fallbackReviews.find((item) => String(item.id) === reviewId);
+}
+
+function reviewBelongsToVillage(
+  review: Review,
+  villageSlug: string,
+  programs: Program[],
+): boolean {
+  if (review.villageSlug === villageSlug) return true;
+
+  return programs.some((program) => {
+    if (review.programId !== undefined && String(program.id) === String(review.programId)) {
+      return true;
+    }
+    return Boolean(review.programSlug && program.slug === review.programSlug);
+  });
 }
