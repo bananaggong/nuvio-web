@@ -120,6 +120,7 @@ export const notificationChannelEnum = pgEnum("notification_channel", [
 ]);
 export const notificationEventStatusEnum = pgEnum("notification_event_status", [
   "pending",
+  "processing",
   "sent",
   "failed",
   "skipped",
@@ -1557,6 +1558,11 @@ export const notificationEvents = pgTable(
       .notNull(),
     scheduledFor: timestamp("scheduled_for", { withTimezone: true }),
     deliveredAt: timestamp("delivered_at", { withTimezone: true }),
+    attemptCount: integer("attempt_count").default(0).notNull(),
+    maxAttempts: integer("max_attempts").default(5).notNull(),
+    lastAttemptAt: timestamp("last_attempt_at", { withTimezone: true }),
+    nextAttemptAt: timestamp("next_attempt_at", { withTimezone: true }),
+    providerMessageId: text("provider_message_id"),
     error: text("error"),
     createdAt: timestamp("created_at", { withTimezone: true })
       .defaultNow()
@@ -1567,6 +1573,12 @@ export const notificationEvents = pgTable(
   },
   (table) => [
     index("notification_events_status_idx").on(table.status, table.scheduledFor),
+    index("notification_events_delivery_due_idx").on(
+      table.status,
+      table.nextAttemptAt,
+      table.scheduledFor,
+      table.createdAt,
+    ),
     index("notification_events_recipient_user_idx").on(table.recipientUserId),
     index("notification_events_event_type_idx").on(table.eventType),
   ],

@@ -37,7 +37,12 @@ export type NotificationChannel =
   | "sms"
   | "kakao"
   | "browserPush";
-export type NotificationEventStatus = "pending" | "sent" | "failed" | "skipped";
+export type NotificationEventStatus =
+  | "pending"
+  | "processing"
+  | "sent"
+  | "failed"
+  | "skipped";
 
 export type NotificationPreference = {
   announcementEnabled: boolean;
@@ -101,6 +106,10 @@ type NotificationMessage = {
   title: string;
   type: string;
 };
+
+const notificationProcessingTimeoutMs = 30 * 60 * 1000;
+const notificationRetryBaseDelayMs = 5 * 60 * 1000;
+const notificationRetryMaxDelayMs = 6 * 60 * 60 * 1000;
 
 export async function getNotificationPreference(
   userId: string,
@@ -264,14 +273,86 @@ export async function processPendingNotificationEvents(
   options: { limit?: number } = {},
 ): Promise<NotificationProcessSummary> {
   const limit = Math.min(Math.max(options.limit ?? 50, 1), 100);
+  const rows = await claimDueNotificationEvents(limit);
+  const summary: NotificationProcessSummary = {
+    details: [],
+    failed: 0,
+    processed: rows.length,
+    sent: 0,
+    skipped: 0,
+  };
+
+  for (const event of rows) {
+    const detail = await processNotificationEvent(event).catch(async (error) =>
+      markNotificationDeliveryFailure(event, normalizeError(error)),
+    );
+
+    summary.details.push(detail);
+    if (detail.status === "sent") summary.sent += 1;
+    if (detail.status === "skipped") summary.skipped += 1;
+    if (detail.status === "failed") summary.failed += 1;
+  }
+
+  return summary;
+}
+
+async function claimNotificationEventForImmediateProcessing(
+  event: NotificationEventRow,
+): Promise<NotificationEventRow> {
+  if (event.status !== "pending") return event;
+
   const now = new Date();
+  const [claimed] = await getDb()
+    .update(notificationEvents)
+    .set({
+      attemptCount: sql`${notificationEvents.attemptCount} + 1`,
+      error: null,
+      lastAttemptAt: now,
+      nextAttemptAt: null,
+      status: "processing",
+      updatedAt: now,
+    })
+    .where(
+      and(
+        eq(notificationEvents.id, event.id),
+        eq(notificationEvents.status, "pending"),
+      ),
+    )
+    .returning();
+
+  return claimed ?? event;
+}
+
+async function claimDueNotificationEvents(
+  limit: number,
+): Promise<NotificationEventRow[]> {
+  const now = new Date();
+  const staleProcessingBefore = new Date(
+    now.getTime() - notificationProcessingTimeoutMs,
+  );
+
   return getDb().transaction(async (tx) => {
     await tx.execute(
       sql`select pg_advisory_xact_lock(hashtext('nuvio:process-notification-events'))`,
     );
 
-    const rows = await tx
-      .select()
+    await tx
+      .update(notificationEvents)
+      .set({
+        error: "Recovered stale notification processing claim.",
+        nextAttemptAt: now,
+        status: "pending",
+        updatedAt: now,
+      })
+      .where(
+        and(
+          eq(notificationEvents.status, "processing"),
+          lte(notificationEvents.updatedAt, staleProcessingBefore),
+        ),
+      );
+
+    const dueRows = await tx
+      .select({ id: notificationEvents.id })
       .from(notificationEvents)
       .where(
         and(
@@ -280,31 +361,30 @@ export async function processPendingNotificationEvents(
             isNull(notificationEvents.scheduledFor),
             lte(notificationEvents.scheduledFor, now),
           ),
+          or(
+            isNull(notificationEvents.nextAttemptAt),
+            lte(notificationEvents.nextAttemptAt, now),
+          ),
         ),
       )
       .orderBy(asc(notificationEvents.createdAt))
       .limit(limit);
 
-    const summary: NotificationProcessSummary = {
-      details: [],
-      failed: 0,
-      processed: rows.length,
-      sent: 0,
-      skipped: 0,
-    };
+    const ids = dueRows.map((row) => row.id);
+    if (ids.length === 0) return [];
 
-    for (const event of rows) {
-      const detail = await processNotificationEvent(event).catch(async (error) =>
-        markNotificationEvent(event, "failed", normalizeError(error)),
-      );
-
-      summary.details.push(detail);
-      if (detail.status === "sent") summary.sent += 1;
-      if (detail.status === "skipped") summary.skipped += 1;
-      if (detail.status === "failed") summary.failed += 1;
-    }
-
-    return summary;
+    return tx
+      .update(notificationEvents)
+      .set({
+        attemptCount: sql`${notificationEvents.attemptCount} + 1`,
+        error: null,
+        lastAttemptAt: now,
+        nextAttemptAt: null,
+        status: "processing",
+        updatedAt: now,
+      })
+      .where(inArray(notificationEvents.id, ids))
+      .returning();
   });
 }
 
@@ -773,11 +853,11 @@ async function deliverBrowserPushEvent(
   ).length;
   const message = results[0]?.message ?? "Browser push delivery failed.";
 
-  return markNotificationEvent(
-    event,
-    skippedCount === results.length ? "skipped" : "failed",
-    message,
-  );
+  if (skippedCount === results.length) {
+    return markNotificationEvent(event, "skipped", message);
+  }
+
+  return markNotificationDeliveryFailure(event, message);
 }
 
 async function deliverEmailEvent(
@@ -810,7 +890,7 @@ async function deliverEmailEvent(
     );
   }
 
-  await sendEmailMessage({
+  const result = await sendEmailMessage({
     html: renderNotificationEmailHtml(event),
     metadata: event.metadata,
     subject: event.title,
@@ -818,7 +898,12 @@ async function deliverEmailEvent(
     to: recipient,
   });
 
-  return markNotificationEvent(event, "sent", "Delivered as email notification.");
+  return markNotificationEvent(
+    event,
+    "sent",
+    "Delivered as email notification.",
+    { providerMessageId: result.providerMessageId },
+  );
 }
 
 async function resolveEmailRecipient(
@@ -861,15 +946,18 @@ async function skipExternalEvent(
 
 async function markNotificationEvent(
   event: NotificationEventRow,
-  status: Exclude<NotificationEventStatus, "pending">,
+  status: Exclude<NotificationEventStatus, "pending" | "processing">,
   message: string,
+  options: { providerMessageId?: string } = {},
 ): Promise<NotificationProcessSummary["details"][number]> {
   const now = new Date();
   await getDb()
     .update(notificationEvents)
     .set({
-      deliveredAt: status === "sent" || status === "skipped" ? now : undefined,
+      deliveredAt: status === "sent" || status === "skipped" ? now : null,
       error: message,
+      nextAttemptAt: null,
+      providerMessageId: options.providerMessageId,
       status,
       updatedAt: now,
     })
@@ -882,6 +970,52 @@ async function markNotificationEvent(
     message,
     status,
   };
+}
+
+async function markNotificationDeliveryFailure(
+  event: NotificationEventRow,
+  message: string,
+): Promise<NotificationProcessSummary["details"][number]> {
+  const now = new Date();
+  const attemptCount = Math.max(event.attemptCount, 1);
+  const maxAttempts = Math.max(event.maxAttempts, 1);
+
+  if (attemptCount >= maxAttempts) {
+    return markNotificationEvent(
+      event,
+      "failed",
+      `${message} Max attempts reached (${attemptCount}/${maxAttempts}).`,
+    );
+  }
+
+  const nextAttemptAt = getNextNotificationAttemptAt(attemptCount, now);
+  const retryMessage = `${message} Retrying at ${nextAttemptAt.toISOString()} (${attemptCount}/${maxAttempts}).`;
+
+  await getDb()
+    .update(notificationEvents)
+    .set({
+      deliveredAt: null,
+      error: retryMessage,
+      nextAttemptAt,
+      status: "pending",
+      updatedAt: now,
+    })
+    .where(eq(notificationEvents.id, event.id));
+
+  return {
+    channel: event.channel,
+    eventType: event.eventType,
+    id: event.id,
+    message: retryMessage,
+    status: "failed",
+  };
+}
+
+function getNextNotificationAttemptAt(attemptCount: number, now: Date): Date {
+  const exponentialDelayMs = notificationRetryBaseDelayMs * 2 ** (attemptCount - 1);
+  const cappedDelayMs = Math.min(exponentialDelayMs, notificationRetryMaxDelayMs);
+  const jitterMs = Math.floor(Math.random() * notificationRetryBaseDelayMs);
+  return new Date(now.getTime() + cappedDelayMs + jitterMs);
 }
 
 async function createInAppNotificationIfEnabled(
@@ -917,8 +1051,9 @@ async function queueBrowserPushNotification(
     title: message.title,
   });
 
-  await processNotificationEvent(event).catch(async (error) => {
-    await markNotificationEvent(event, "failed", normalizeError(error));
+  const claimedEvent = await claimNotificationEventForImmediateProcessing(event);
+  await processNotificationEvent(claimedEvent).catch(async (error) => {
+    await markNotificationDeliveryFailure(claimedEvent, normalizeError(error));
   });
 }
 

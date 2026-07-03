@@ -75,6 +75,10 @@ export async function getSystemHealthSnapshot(): Promise<SystemHealthSnapshot> {
           eq(notificationEvents.channel, "email"),
         ),
       );
+    const [processingNotifications] = await getDb()
+      .select({ value: count() })
+      .from(notificationEvents)
+      .where(eq(notificationEvents.status, "processing"));
     const [failedNotifications] = await getDb()
       .select({ value: count() })
       .from(notificationEvents)
@@ -98,6 +102,10 @@ export async function getSystemHealthSnapshot(): Promise<SystemHealthSnapshot> {
       {
         label: "Pending email notification events",
         value: pendingEmailNotifications?.value ?? 0,
+      },
+      {
+        label: "Processing notification events",
+        value: processingNotifications?.value ?? 0,
       },
       {
         label: "Failed notification events",
