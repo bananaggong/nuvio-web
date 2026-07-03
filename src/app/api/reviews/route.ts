@@ -3,11 +3,11 @@ import {
   applyPersistentRateLimit,
   enforceContentLength,
   enforceSameOrigin,
-  isApiAuthError,
   readJsonWithLimit,
-  requireAuthenticatedUser,
+  getOptionalAuthenticatedUser,
 } from "@/lib/api-security";
 import { launchFeatureFlags } from "@/lib/launch-feature-flags";
+import { hashReviewRequestToken } from "@/lib/review-request-token";
 import {
   createParticipantReview,
   DuplicateReviewError,
@@ -57,27 +57,34 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Reviews are disabled." }, { status: 404 });
   }
 
-  const auth = await requireAuthenticatedUser();
-  if (isApiAuthError(auth)) return auth.response;
-
   const payloadTooLarge = enforceContentLength(request, 32 * 1024);
   if (payloadTooLarge) return payloadTooLarge;
 
   const crossOrigin = enforceSameOrigin(request);
   if (crossOrigin) return crossOrigin;
 
-  const limited = await applyPersistentRateLimit(request, {
-    identity: auth.user.id,
-    key: "review:create",
-    limit: 5,
-    windowMs: 15 * 60 * 1000,
-  });
-  if (limited) return limited;
-
   try {
     const parsedBody = await readJsonWithLimit(request, 32 * 1024);
     if (parsedBody.response) return parsedBody.response;
+
     const body = parsedBody.body as Parameters<typeof createParticipantReview>[0];
+    const auth = await getOptionalAuthenticatedUser();
+    const requestTokenHash = hashReviewRequestToken(
+      (body as { requestToken?: unknown }).requestToken,
+    );
+
+    if (!auth && !requestTokenHash) {
+      return NextResponse.json({ error: "Unauthorized." }, { status: 401 });
+    }
+
+    const limited = await applyPersistentRateLimit(request, {
+      identity: auth?.user.id ?? `review-request-token:${requestTokenHash}`,
+      key: "review:create",
+      limit: 5,
+      windowMs: 15 * 60 * 1000,
+    });
+    if (limited) return limited;
+
     const savedDraft = await createParticipantReview(body, auth);
     return NextResponse.json({ data: savedDraft }, { status: 201 });
   } catch (error) {

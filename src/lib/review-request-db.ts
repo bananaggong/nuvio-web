@@ -11,6 +11,7 @@ import type { ApiAuthContext } from "@/lib/api-security";
 import { safeCreateAuditLog } from "@/lib/audit-log-db";
 import { queueReviewRequestNotification } from "@/lib/notification-db";
 import { safeRecordReviewRequestEvent } from "@/lib/review-request-event-db";
+import { createReviewRequestToken } from "@/lib/review-request-token";
 import type { ReviewStatus } from "@/lib/types";
 
 export type ReviewRequestStatus =
@@ -281,16 +282,23 @@ export async function processDueReviewRequestReminders(
     const updatedRows: Array<{
       programTitle: string | null;
       request: ReviewRequestRow;
+      token: string;
     }> = [];
 
     for (const row of rows) {
       const previousStatus = asReviewRequestStatus(row.request.status);
+      const requestToken = createReviewRequestToken();
+      const requestTokenExpiresAt = row.request.expiresAt && row.request.expiresAt > now
+        ? row.request.expiresAt
+        : new Date(now.getTime() + defaultExpiryMs);
       const [updated] = await tx
         .update(reviewRequests)
         .set({
           lastRequestedAt: now,
           nextReminderAt,
           requestCount: sql`${reviewRequests.requestCount} + 1`,
+          requestTokenExpiresAt,
+          requestTokenHash: requestToken.hash,
           status: previousStatus === "opened" ? "opened" : "sent",
           updatedAt: now,
         })
@@ -301,6 +309,7 @@ export async function processDueReviewRequestReminders(
         updatedRows.push({
           programTitle: row.programTitle,
           request: updated,
+          token: requestToken.token,
         });
       }
     }
@@ -332,6 +341,7 @@ export async function processDueReviewRequestReminders(
     const queued = await safeQueueReviewRequestNotification(row.request, {
       programTitle: row.programTitle,
       reminder: true,
+      requestToken: row.token,
     });
 
     summary.processed += 1;
@@ -368,6 +378,9 @@ export async function requestHostReviewForApplication(
   }
 
   const now = new Date();
+  const requestExpiresAt = new Date(now.getTime() + defaultExpiryMs);
+  const nextReminderAt = new Date(now.getTime() + defaultReminderDelayMs);
+  const requestToken = createReviewRequestToken();
   const [row] = await getDb().transaction(async (tx) => {
     await tx.execute(
       sql`select pg_advisory_xact_lock(hashtext(${`review-request:${context.applicationId}`}))`,
@@ -386,6 +399,8 @@ export async function requestHostReviewForApplication(
           .set({
             completedAt: existing.completedAt ?? now,
             nextReminderAt: null,
+            requestTokenExpiresAt: null,
+            requestTokenHash: null,
             reviewId: context.reviewId ?? existing.reviewId,
             status: "completed",
             updatedAt: now,
@@ -404,10 +419,12 @@ export async function requestHostReviewForApplication(
         .set({
           cancelledAt: null,
           completedAt: null,
-          expiresAt: new Date(now.getTime() + defaultExpiryMs),
+          expiresAt: requestExpiresAt,
           lastRequestedAt: now,
-          nextReminderAt: new Date(now.getTime() + defaultReminderDelayMs),
+          nextReminderAt,
           requestCount: sql`${reviewRequests.requestCount} + 1`,
+          requestTokenExpiresAt: requestExpiresAt,
+          requestTokenHash: requestToken.hash,
           reviewId: null,
           status: existing.status === "opened" ? "opened" : "sent",
           updatedAt: now,
@@ -421,14 +438,16 @@ export async function requestHostReviewForApplication(
       applicationId: context.applicationId,
       completedAt: context.reviewId ? now : null,
       createdBy: options.actorId ?? null,
-      expiresAt: new Date(now.getTime() + defaultExpiryMs),
+      expiresAt: requestExpiresAt,
       lastRequestedAt: now,
-      nextReminderAt: context.reviewId ? null : new Date(now.getTime() + defaultReminderDelayMs),
+      nextReminderAt: context.reviewId ? null : nextReminderAt,
       programId: context.programId,
       programRunId: context.programRunId,
       recipientEmail: context.email.trim().toLowerCase(),
       recipientName: context.applicantName.trim() || "Participant",
       requestCount: context.reviewId ? 0 : 1,
+      requestTokenExpiresAt: context.reviewId ? null : requestExpiresAt,
+      requestTokenHash: context.reviewId ? null : requestToken.hash,
       reviewId: context.reviewId,
       status: context.reviewId ? "completed" : "sent",
       villageSlug: context.villageSlug,
@@ -473,6 +492,7 @@ export async function requestHostReviewForApplication(
   await safeQueueReviewRequestNotification(row, {
     programTitle: context.programTitle,
     reminder: row.requestCount > 1,
+    requestToken: requestStatus === "completed" ? undefined : requestToken.token,
   });
 
   return hydrateReviewRequest(row.id);
@@ -512,6 +532,7 @@ export async function updateHostReviewRequestStatus(
   );
 
   const nextStatus = normalized.status;
+  const nextStatusIsActive = activeReviewRequestStatuses.includes(nextStatus);
   const now = new Date();
   if (existing.request.status === "completed" && nextStatus !== "completed") {
     throw new ReviewRequestEligibilityError("Completed review requests cannot be reopened.");
@@ -522,9 +543,13 @@ export async function updateHostReviewRequestStatus(
     .set({
       cancelledAt: nextStatus === "cancelled" ? now : null,
       completedAt: nextStatus === "completed" ? existing.request.completedAt ?? now : null,
-      nextReminderAt: activeReviewRequestStatuses.includes(nextStatus)
+      nextReminderAt: nextStatusIsActive
         ? existing.request.nextReminderAt
         : null,
+      requestTokenExpiresAt: nextStatusIsActive
+        ? existing.request.requestTokenExpiresAt
+        : null,
+      requestTokenHash: nextStatusIsActive ? existing.request.requestTokenHash : null,
       status: nextStatus,
       updatedAt: now,
     })
@@ -567,6 +592,8 @@ export async function markReviewRequestCompletedForApplication(
     .set({
       completedAt: new Date(),
       nextReminderAt: null,
+      requestTokenExpiresAt: null,
+      requestTokenHash: null,
       reviewId,
       status: "completed",
       updatedAt: new Date(),
@@ -582,6 +609,8 @@ export async function reopenReviewRequestForApplication(applicationId: string): 
     .set({
       completedAt: null,
       reviewId: null,
+      requestTokenExpiresAt: null,
+      requestTokenHash: null,
       status: "pending",
       updatedAt: new Date(),
     })
@@ -590,7 +619,7 @@ export async function reopenReviewRequestForApplication(applicationId: string): 
 
 async function safeQueueReviewRequestNotification(
   request: ReviewRequestRow,
-  options: { programTitle?: string | null; reminder?: boolean } = {},
+  options: { programTitle?: string | null; reminder?: boolean; requestToken?: string } = {},
 ): Promise<boolean> {
   if (!activeReviewRequestStatuses.includes(asReviewRequestStatus(request.status))) {
     return false;
@@ -607,7 +636,7 @@ async function safeQueueReviewRequestNotification(
       reminder: options.reminder === true,
       requestCount: request.requestCount,
       requestId: request.id,
-      writeUrl: `/reviews/new?applicationId=${request.applicationId}`,
+      writeUrl: buildReviewRequestWriteUrl(request.applicationId, options.requestToken),
     });
     return true;
   } catch (error) {
@@ -628,7 +657,13 @@ async function safeQueueReviewRequestNotification(
 async function expireStaleReviewRequests(): Promise<void> {
   await getDb()
     .update(reviewRequests)
-    .set({ nextReminderAt: null, status: "expired", updatedAt: new Date() })
+    .set({
+      nextReminderAt: null,
+      requestTokenExpiresAt: null,
+      requestTokenHash: null,
+      status: "expired",
+      updatedAt: new Date(),
+    })
     .where(
       and(
         inArray(reviewRequests.status, activeReviewRequestStatuses),
@@ -736,8 +771,14 @@ function mapReviewRequestRow(row: Awaited<ReturnType<typeof selectReviewRequests
     status: asReviewRequestStatus(request.status),
     updatedAt: request.updatedAt.toISOString(),
     villageSlug: request.villageSlug ?? undefined,
-    writeUrl: active && !hasReview ? `/reviews/new?applicationId=${request.applicationId}` : undefined,
+    writeUrl: active && !hasReview ? buildReviewRequestWriteUrl(request.applicationId) : undefined,
   };
+}
+
+function buildReviewRequestWriteUrl(applicationId: string, requestToken?: string): string {
+  const params = new URLSearchParams({ applicationId });
+  if (requestToken) params.set("requestToken", requestToken);
+  return `/reviews/new?${params.toString()}`;
 }
 
 function buildReviewRequestAccessConditions(options: {

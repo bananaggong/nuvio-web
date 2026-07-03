@@ -15,6 +15,7 @@ import { safeEnrichLatestReviewContentVersion } from "@/lib/review-content-versi
 import { refreshReviewModerationCheck } from "@/lib/review-moderation-check-db";
 import { buildPublicReviewVisibilityConditions } from "@/lib/review-public-visibility-db";
 import { safeRecordReviewRequestEvent } from "@/lib/review-request-event-db";
+import { hashReviewRequestToken, normalizeReviewRequestToken } from "@/lib/review-request-token";
 import type { ReviewRequestStatus } from "@/lib/review-request-db";
 import { safeRecordReviewStatusEvent } from "@/lib/review-status-event-db";
 import type {
@@ -57,6 +58,7 @@ export type ParticipantReviewInput = {
   body?: string;
   images?: string[];
   rating?: number;
+  requestToken?: string;
 };
 type NormalizedParticipantReviewInput = {
   applicationId: string;
@@ -66,6 +68,7 @@ type NormalizedParticipantReviewInput = {
   body: string;
   images: string[];
   rating?: number;
+  requestToken?: string;
 };
 
 type UpsertHostReviewDraftOptions = {
@@ -95,6 +98,7 @@ type ParticipantApplicationRow = {
   programTitle: string | null;
   programVillageId: string | null;
   status: string;
+  submittedBy: string | null;
   villageSlug: string | null;
 };
 
@@ -348,25 +352,63 @@ export async function listHostReviewDraftsFromDb(
 
 export async function createParticipantReview(
   input: ParticipantReviewInput,
-  auth: ApiAuthContext,
+  auth?: ApiAuthContext | null,
 ): Promise<HostReviewDraft> {
   const normalized = normalizeParticipantReviewInput(input);
-  const emails = getVerifiedAccountEmails(auth);
-  const application = await getParticipantReviewApplication({
-    applicationId: normalized.applicationId,
-    emails,
-    userId: auth.user.id,
-  });
+  let application: ParticipantApplicationRow | null = null;
+  let actorId: string | undefined;
+  let actorRole: string | undefined;
+  let userId: string | null = null;
+  let submissionSource = "participant_submission";
+
+  if (normalized.requestToken) {
+    application = await getParticipantReviewApplicationByRequestToken({
+      applicationId: normalized.applicationId,
+      requestToken: normalized.requestToken,
+    });
+    submissionSource = "participant_request_token_submission";
+
+    if (!application) {
+      throw new ReviewEligibilityError("Review request was not found or has expired.");
+    }
+
+    if (auth && authOwnsParticipantApplication(application, auth)) {
+      actorId = auth.user.id;
+      actorRole = auth.profile.role;
+      userId = auth.user.id;
+    }
+  } else {
+    if (!auth) {
+      throw new ReviewEligibilityError("Authentication is required to write this review.");
+    }
+
+    const emails = getVerifiedAccountEmails(auth);
+    application = await getParticipantReviewApplication({
+      applicationId: normalized.applicationId,
+      emails,
+      userId: auth.user.id,
+    });
+
+    if (!application) {
+      throw new ReviewEligibilityError("Application was not found for this account.");
+    }
+
+    actorId = auth.user.id;
+    actorRole = auth.profile.role;
+    userId = auth.user.id;
+  }
 
   if (!application) {
-    throw new ReviewEligibilityError("Application was not found for this account.");
+    throw new ReviewEligibilityError("Application was not found.");
   }
   if (!participantReviewStatuses.has(application.status)) {
     throw new ReviewEligibilityError();
   }
 
   const authorName = maskKoreanName(
-    auth.profile.displayName || auth.profile.fullName || application.applicantName,
+    actorId && auth
+      ? auth.profile.displayName || auth.profile.fullName || application.applicantName
+      : application.applicantName,
   );
   const now = new Date();
 
@@ -403,7 +445,7 @@ export async function createParticipantReview(
         programId: application.programId,
         programRunId: application.programRunId,
         villageSlug: application.villageSlug,
-        userId: auth.user.id,
+        userId,
         title: normalized.title,
         category: normalized.category,
         authorName,
@@ -430,6 +472,8 @@ export async function createParticipantReview(
         .update(reviewRequests)
         .set({
           completedAt: now,
+          requestTokenExpiresAt: null,
+          requestTokenHash: null,
           reviewId: createdReview.id,
           status: "completed",
           updatedAt: now,
@@ -450,7 +494,7 @@ export async function createParticipantReview(
 
   void safeCreateAuditLog({
     action: "review.create",
-    actorId: auth.user.id,
+    actorId,
     entityId: row.id,
     entityType: "review",
     metadata: {
@@ -461,12 +505,12 @@ export async function createParticipantReview(
     },
   });
   await safeRecordReviewStatusEvent({
-    actorId: auth.user.id,
-    actorRole: auth.profile.role,
+    actorId,
+    actorRole,
     metadata: {
       applicationId: application.applicationId,
       programId: application.programId,
-      source: "participant_submission",
+      source: submissionSource,
     },
     reviewId: row.id,
     toStatus: row.status,
@@ -474,30 +518,30 @@ export async function createParticipantReview(
   if (completedRequest && completedRequest.previousStatus !== "completed") {
     await safeRecordReviewRequestEvent({
       action: "completed",
-      actorId: auth.user.id,
-      actorRole: auth.profile.role,
+      actorId,
+      actorRole,
       fromStatus: completedRequest.previousStatus,
       metadata: {
         applicationId: application.applicationId,
         reviewId: row.id,
-        source: "participant_submission",
+        source: submissionSource,
       },
       requestId: completedRequest.id,
       toStatus: "completed",
     });
   }
   await safeEnrichLatestReviewContentVersion({
-    actorId: auth.user.id,
-    actorRole: auth.profile.role,
-    changeSource: "participant_submission",
+    actorId,
+    actorRole,
+    changeSource: submissionSource,
     metadata: {
       applicationId: application.applicationId,
       programId: application.programId,
-      source: "participant_submission",
+      source: submissionSource,
     },
     reviewId: row.id,
   });
-  await safeRefreshModerationCheck(row.id, auth.user.id);
+  await safeRefreshModerationCheck(row.id, actorId);
   await safeQueueReviewSubmittedNotification(row, application);
 
   return mapReviewRowToHostDraft(row);
@@ -1049,6 +1093,7 @@ export function normalizeParticipantReviewInput(input: unknown): NormalizedParti
     body,
     images: normalizeImages(value.images),
     rating: asOptionalRating(value.rating),
+    requestToken: normalizeReviewRequestToken(value.requestToken) ?? undefined,
   };
 }
 
@@ -1100,6 +1145,59 @@ async function getOwnedMutableReview(
 
   return row ?? null;
 }
+async function getParticipantReviewApplicationByRequestToken(input: {
+  applicationId: string;
+  requestToken: string;
+}): Promise<ParticipantApplicationRow | null> {
+  if (!isUuid(input.applicationId)) return null;
+
+  const requestTokenHash = hashReviewRequestToken(input.requestToken);
+  if (!requestTokenHash) return null;
+
+  const [row] = await getDb()
+    .select({
+      applicantName: programApplications.applicantName,
+      applicationId: programApplications.id,
+      email: programApplications.email,
+      programCreatedBy: programsTable.createdBy,
+      programId: programApplications.programId,
+      programRunId: programApplications.programRunId,
+      programTitle: programsTable.title,
+      programVillageId: programsTable.villageId,
+      status: programApplications.status,
+      submittedBy: programApplications.submittedBy,
+      villageSlug: villages.slug,
+    })
+    .from(reviewRequests)
+    .innerJoin(programApplications, eq(reviewRequests.applicationId, programApplications.id))
+    .leftJoin(programsTable, eq(programApplications.programId, programsTable.id))
+    .leftJoin(villages, eq(programsTable.villageId, villages.id))
+    .where(
+      and(
+        eq(reviewRequests.applicationId, input.applicationId),
+        eq(reviewRequests.requestTokenHash, requestTokenHash),
+        inArray(reviewRequests.status, ["pending", "sent", "opened"]),
+        sql`${reviewRequests.reviewId} is null`,
+        sql`${reviewRequests.requestTokenExpiresAt} is not null`,
+        sql`${reviewRequests.requestTokenExpiresAt} > now()`,
+        sql`(${reviewRequests.expiresAt} is null or ${reviewRequests.expiresAt} > now())`,
+      ),
+    )
+    .limit(1);
+
+  return row ?? null;
+}
+
+function authOwnsParticipantApplication(
+  application: ParticipantApplicationRow,
+  auth: ApiAuthContext,
+): boolean {
+  if (application.submittedBy === auth.user.id) return true;
+
+  const emails = getVerifiedAccountEmails(auth);
+  return emails.includes(application.email.trim().toLowerCase());
+}
+
 async function getParticipantReviewApplication(input: {
   applicationId: string;
   emails: string[];
@@ -1123,6 +1221,7 @@ async function getParticipantReviewApplication(input: {
       programTitle: programsTable.title,
       programVillageId: programsTable.villageId,
       status: programApplications.status,
+      submittedBy: programApplications.submittedBy,
       villageSlug: villages.slug,
     })
     .from(programApplications)

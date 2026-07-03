@@ -16,10 +16,10 @@ export const metadata: Metadata = createSeoMetadata({
 export default async function NewReviewPage({
   searchParams,
 }: {
-  searchParams: Promise<{ applicationId?: string }>;
+  searchParams: Promise<{ applicationId?: string; requestToken?: string }>;
 }) {
   if (!launchFeatureFlags.reviews) notFound();
 
-  const { applicationId } = await searchParams;
-  return <ReviewWriter applicationId={applicationId} />;
+  const { applicationId, requestToken } = await searchParams;
+  return <ReviewWriter applicationId={applicationId} requestToken={requestToken} />;
 }

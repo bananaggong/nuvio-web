@@ -913,6 +913,8 @@ export const reviewRequests = pgTable(
     lastRequestedAt: timestamp("last_requested_at", { withTimezone: true }),
     nextReminderAt: timestamp("next_reminder_at", { withTimezone: true }),
     expiresAt: timestamp("expires_at", { withTimezone: true }),
+    requestTokenHash: text("request_token_hash"),
+    requestTokenExpiresAt: timestamp("request_token_expires_at", { withTimezone: true }),
     cancelledAt: timestamp("cancelled_at", { withTimezone: true }),
     completedAt: timestamp("completed_at", { withTimezone: true }),
     reviewId: uuid("review_id").references(() => reviews.id, {
@@ -933,6 +935,9 @@ export const reviewRequests = pgTable(
       table.nextReminderAt,
     ),
     index("review_requests_last_requested_at_idx").on(table.lastRequestedAt),
+    uniqueIndex("review_requests_token_hash_unique_idx")
+      .on(table.requestTokenHash)
+      .where(sql`${table.requestTokenHash} is not null`),
   ],
 );
 
