@@ -654,6 +654,7 @@ export async function upsertHostReviewDraft(
   draft: HostReviewDraft,
   options: UpsertHostReviewDraftOptions = {},
 ): Promise<HostReviewDraft> {
+  const normalizedDraft = options.actorRole === "admin" ? draft : { ...draft, source: "host" as const };
   const allowedVillageSlugs = normalizeAllowedValues(options.allowedVillageSlugs);
   const allowedVillageIds = normalizeAllowedValues(options.allowedVillageIds);
   if (options.allowedVillageSlugs && allowedVillageSlugs?.length === 0) {
@@ -663,7 +664,7 @@ export async function upsertHostReviewDraft(
     throw new HostReviewAccessError();
   }
 
-  const insertValue = await mapHostDraftToReviewInsert(draft, {
+  const insertValue = await mapHostDraftToReviewInsert(normalizedDraft, {
     allowedVillageIds,
   });
   if (insertValue.status === "deleted") {
