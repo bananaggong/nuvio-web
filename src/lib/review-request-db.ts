@@ -11,7 +11,10 @@ import type { ApiAuthContext } from "@/lib/api-security";
 import { safeCreateAuditLog } from "@/lib/audit-log-db";
 import { queueReviewRequestNotification } from "@/lib/notification-db";
 import { safeRecordReviewRequestEvent } from "@/lib/review-request-event-db";
-import { createReviewRequestToken } from "@/lib/review-request-token";
+import {
+  createReviewRequestToken,
+  hashReviewRequestToken,
+} from "@/lib/review-request-token";
 import type { ReviewStatus } from "@/lib/types";
 
 export type ReviewRequestStatus =
@@ -236,6 +239,83 @@ export async function markMyReviewRequestOpenedFromDb(
 
   return hydrateReviewRequest(updateResult.id);
 }
+
+export async function markReviewRequestOpenedByTokenFromDb(input: {
+  applicationId: string;
+  requestToken: string;
+}): Promise<ReviewRequestRecord | null> {
+  const applicationId = input.applicationId.trim();
+  if (!isUuid(applicationId)) return null;
+
+  const requestTokenHash = hashReviewRequestToken(input.requestToken);
+  if (!requestTokenHash) return null;
+
+  await expireStaleReviewRequests();
+
+  const updateResult = await getDb().transaction(async (tx) => {
+    await tx.execute(
+      sql`select pg_advisory_xact_lock(hashtext(${`review-request-token-open:${applicationId}`}))`,
+    );
+
+    const [existing] = await tx
+      .select({
+        id: reviewRequests.id,
+        reviewId: reviewRequests.reviewId,
+        status: reviewRequests.status,
+      })
+      .from(reviewRequests)
+      .where(
+        and(
+          eq(reviewRequests.applicationId, applicationId),
+          eq(reviewRequests.requestTokenHash, requestTokenHash),
+          inArray(reviewRequests.status, activeReviewRequestStatuses),
+          sql`${reviewRequests.reviewId} is null`,
+          sql`${reviewRequests.requestTokenExpiresAt} is not null`,
+          sql`${reviewRequests.requestTokenExpiresAt} > now()`,
+          sql`(${reviewRequests.expiresAt} is null or ${reviewRequests.expiresAt} > now())`,
+        ),
+      )
+      .limit(1);
+
+    if (!existing) return null;
+
+    const previousStatus = asReviewRequestStatus(existing.status);
+    if (
+      existing.reviewId ||
+      (previousStatus !== "pending" && previousStatus !== "sent")
+    ) {
+      return { changed: false, id: existing.id, previousStatus };
+    }
+
+    const [updated] = await tx
+      .update(reviewRequests)
+      .set({ status: "opened", updatedAt: new Date() })
+      .where(eq(reviewRequests.id, existing.id))
+      .returning({ id: reviewRequests.id });
+
+    return updated
+      ? { changed: true, id: updated.id, previousStatus }
+      : { changed: false, id: existing.id, previousStatus };
+  });
+
+  if (!updateResult) return null;
+
+  if (updateResult.changed) {
+    await safeRecordReviewRequestEvent({
+      action: "opened",
+      fromStatus: updateResult.previousStatus,
+      metadata: {
+        applicationId,
+        source: "review_request_token_open",
+      },
+      requestId: updateResult.id,
+      toStatus: "opened",
+    });
+  }
+
+  return hydrateReviewRequest(updateResult.id);
+}
+
 export async function processDueReviewRequestReminders(
   options: { limit?: number } = {},
 ): Promise<ReviewRequestReminderProcessSummary> {

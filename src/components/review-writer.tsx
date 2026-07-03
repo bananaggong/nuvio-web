@@ -18,9 +18,12 @@ export function ReviewWriter({
     const id = applicationId.trim();
     if (!isUuid(id)) return;
 
+    const token = requestToken.trim();
     const controller = new AbortController();
-    void fetch("/api/me/reviews/requests", {
-      body: JSON.stringify({ applicationId: id }),
+    void fetch(token ? "/api/reviews/requests/open" : "/api/me/reviews/requests", {
+      body: JSON.stringify(
+        token ? { applicationId: id, requestToken: token } : { applicationId: id },
+      ),
       headers: { "Content-Type": "application/json" },
       method: "POST",
       signal: controller.signal,
@@ -29,7 +32,7 @@ export function ReviewWriter({
     });
 
     return () => controller.abort();
-  }, [applicationId]);
+  }, [applicationId, requestToken]);
 
   async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
