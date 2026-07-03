@@ -34,7 +34,7 @@ export async function GET(request: Request) {
     const url = new URL(request.url);
     const villageSlug = url.searchParams.get("villageSlug")?.trim() || undefined;
     const cursor = url.searchParams.get("cursor")?.trim() || undefined;
-    const limit = Number(url.searchParams.get("limit") ?? "300");
+    const limit = Number(url.searchParams.get("limit") ?? "60");
     const page = await listPublicReviewsPageFromDb({ cursor, limit, villageSlug });
     return NextResponse.json(page);
   } catch (error) {

@@ -1,8 +1,9 @@
 import type { MetadataRoute } from "next";
-import { announcements, reviews } from "@/lib/data";
+import { announcements } from "@/lib/data";
 import { launchFeatureFlags } from "@/lib/launch-feature-flags";
 import { programPath } from "@/lib/program-routing";
 import { listPublicPrograms } from "@/lib/public-program-db";
+import { listPublicReviewsFromDb } from "@/lib/review-db";
 import { absoluteUrl } from "@/lib/seo";
 import {
   getVillagePrograms,
@@ -111,9 +112,12 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const announcementRoutes = announcements.map((announcement) =>
     route(`/announcements/${announcement.id}`, "weekly", 0.45, announcement.date),
   );
-  const reviewRoutes = launchFeatureFlags.reviews
-    ? reviews.map((review) => route(`/reviews/${review.id}`, "weekly", 0.45, review.date))
+  const globalReviews = launchFeatureFlags.reviews
+    ? await listSitemapPublicReviews()
     : [];
+  const reviewRoutes = globalReviews.map((review) =>
+    route(`/reviews/${review.id}`, "weekly", 0.45, review.date),
+  );
 
   return uniqueRoutes([
     ...staticRoutes,
@@ -127,6 +131,14 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   ]);
 }
 
+
+async function listSitemapPublicReviews() {
+  try {
+    return await listPublicReviewsFromDb({ limit: 100 });
+  } catch {
+    return [];
+  }
+}
 function route(
   path: string,
   changeFrequency: MetadataRoute.Sitemap[number]["changeFrequency"],

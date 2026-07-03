@@ -161,6 +161,8 @@ const reviewRequestStatuses: ReviewRequestStatus[] = [
 ];
 const participantReviewStatuses = new Set(["accepted", "checkedIn", "completed"]);
 const maxReviewImages = 6;
+const defaultPublicReviewPageSize = 60;
+const maxPublicReviewPageSize = 100;
 
 export async function listPublicReviewsFromDb(options: {
   limit?: number;
@@ -176,7 +178,7 @@ export async function listPublicReviewsPageFromDb(options: {
   villageSlug?: string;
 } = {}): Promise<PublicReviewPage> {
   const conditions: SQL[] = buildPublicReviewVisibilityConditions();
-  const limit = clampLimit(options.limit, 300);
+  const limit = clampPublicReviewLimit(options.limit);
   const cursor = decodePublicReviewCursor(options.cursor);
 
   if (options.villageSlug) {
@@ -1701,6 +1703,11 @@ function parseDateOrFallback(value: string | undefined, fallback: Date): Date {
   if (!value) return fallback;
   const date = new Date(value);
   return Number.isNaN(date.getTime()) ? fallback : date;
+}
+
+function clampPublicReviewLimit(limit: number | undefined): number {
+  if (!limit || !Number.isFinite(limit)) return defaultPublicReviewPageSize;
+  return Math.min(Math.max(Math.trunc(limit), 1), maxPublicReviewPageSize);
 }
 
 function clampLimit(limit: number | undefined, fallback: number): number {
