@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import {
   apiError,
-  applyRateLimit,
+  applyPersistentRateLimit,
   enforceContentLength,
   enforceSameOrigin,
   isApiAuthError,
@@ -36,10 +36,11 @@ export async function PUT(
     const contentLengthError = enforceContentLength(request, 16 * 1024);
     if (contentLengthError) return contentLengthError;
 
-    const limited = applyRateLimit(request, {
+    const limited = await applyPersistentRateLimit(request, {
       key: "host-review-reply:upsert",
       limit: 60,
       windowMs: 15 * 60 * 1000,
+      identity: auth.user.id,
     });
     if (limited) return limited;
 
@@ -84,10 +85,11 @@ export async function PATCH(
     const contentLengthError = enforceContentLength(request, 4 * 1024);
     if (contentLengthError) return contentLengthError;
 
-    const limited = applyRateLimit(request, {
+    const limited = await applyPersistentRateLimit(request, {
       key: "host-review-reply:status",
       limit: 120,
       windowMs: 15 * 60 * 1000,
+      identity: auth.user.id,
     });
     if (limited) return limited;
 

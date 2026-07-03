@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import {
   apiError,
-  applyRateLimit,
+  applyPersistentRateLimit,
   enforceSameOrigin,
   isApiAuthError,
   requireHostRole,
@@ -28,10 +28,11 @@ export async function GET(
   const auth = await requireHostRole();
   if (isApiAuthError(auth)) return auth.response;
 
-  const limited = applyRateLimit(request, {
+  const limited = await applyPersistentRateLimit(request, {
     key: "host-review-moderation:get",
     limit: 120,
     windowMs: 15 * 60 * 1000,
+      identity: auth.user.id,
   });
   if (limited) return limited;
 
@@ -82,10 +83,11 @@ export async function POST(
   const crossOrigin = enforceSameOrigin(request);
   if (crossOrigin) return crossOrigin;
 
-  const limited = applyRateLimit(request, {
+  const limited = await applyPersistentRateLimit(request, {
     key: "host-review-moderation:refresh",
     limit: 80,
     windowMs: 15 * 60 * 1000,
+      identity: auth.user.id,
   });
   if (limited) return limited;
 

@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import {
   apiError,
-  applyRateLimit,
+  applyPersistentRateLimit,
   enforceContentLength,
   enforceSameOrigin,
   isApiAuthError,
@@ -34,10 +34,11 @@ export async function PATCH(
   const contentLengthError = enforceContentLength(request, 8 * 1024);
   if (contentLengthError) return contentLengthError;
 
-  const limited = applyRateLimit(request, {
+  const limited = await applyPersistentRateLimit(request, {
     key: "host-review-requests:update",
     limit: 80,
     windowMs: 15 * 60 * 1000,
+      identity: auth.user.id,
   });
   if (limited) return limited;
 
