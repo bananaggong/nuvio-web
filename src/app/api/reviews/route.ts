@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import {
-  applyRateLimit,
+  applyPersistentRateLimit,
   enforceContentLength,
   enforceSameOrigin,
   isApiAuthError,
@@ -21,7 +21,7 @@ export async function GET(request: Request) {
     return NextResponse.json({ error: "Reviews are disabled." }, { status: 404 });
   }
 
-  const limited = applyRateLimit(request, {
+  const limited = await applyPersistentRateLimit(request, {
     key: "public-reviews:list",
     limit: 240,
     windowMs: 15 * 60 * 1000,
@@ -59,7 +59,8 @@ export async function POST(request: Request) {
   const crossOrigin = enforceSameOrigin(request);
   if (crossOrigin) return crossOrigin;
 
-  const limited = applyRateLimit(request, {
+  const limited = await applyPersistentRateLimit(request, {
+    identity: auth.user.id,
     key: "review:create",
     limit: 5,
     windowMs: 15 * 60 * 1000,

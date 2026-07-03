@@ -1,8 +1,9 @@
+import { createHash } from "node:crypto";
 import type { User } from "@supabase/supabase-js";
-import { and, eq, isNull } from "drizzle-orm";
+import { and, eq, isNull, sql } from "drizzle-orm";
 import { NextResponse } from "next/server";
 import { getDb } from "@/db/client";
-import { hostVillageMemberships } from "@/db/schema";
+import { apiRateLimits, hostVillageMemberships } from "@/db/schema";
 import {
   ensureUserProfile,
   getUserProfile,
@@ -21,6 +22,7 @@ export type ApiAuthContext = {
 export type ApiAuthResult = ApiAuthContext | { response: NextResponse };
 
 type RateLimitOptions = {
+  identity?: string;
   key: string;
   limit: number;
   windowMs: number;
@@ -143,8 +145,8 @@ export function applyRateLimit(
   options: RateLimitOptions,
 ): NextResponse | null {
   const now = Date.now();
-  const ip = getClientIp(request);
-  const key = `${options.key}:${ip}`;
+  const identity = options.identity || getClientIp(request);
+  const key = `${options.key}:${identity}`;
   const current = rateLimitStore.get(key);
 
   if (!current || current.resetAt <= now) {
@@ -172,12 +174,94 @@ export function applyRateLimit(
   });
 }
 
+export async function applyPersistentRateLimit(
+  request: Request,
+  options: RateLimitOptions,
+): Promise<NextResponse | null> {
+  const nowMs = Date.now();
+  const windowStartMs = Math.floor(nowMs / options.windowMs) * options.windowMs;
+  const resetAtMs = windowStartMs + options.windowMs;
+  const scope = normalizeRateLimitScope(options.key);
+  const identity = normalizeRateLimitIdentity(options.identity || getClientIp(request));
+  const identityHash = hashRateLimitValue(`${scope}:${identity}`);
+  const bucketKey = hashRateLimitValue(`${scope}:${identityHash}:${windowStartMs}`);
+  const now = new Date(nowMs);
+  const windowStart = new Date(windowStartMs);
+  const resetAt = new Date(resetAtMs);
+
+  try {
+    const [row] = await getDb()
+      .insert(apiRateLimits)
+      .values({
+        bucketKey,
+        count: 1,
+        identityHash,
+        resetAt,
+        scope,
+        updatedAt: now,
+        windowStart,
+      })
+      .onConflictDoUpdate({
+        target: apiRateLimits.bucketKey,
+        set: {
+          count: sql`${apiRateLimits.count} + 1`,
+          updatedAt: now,
+        },
+      })
+      .returning({ count: apiRateLimits.count, resetAt: apiRateLimits.resetAt });
+
+    maybeCleanupPersistentRateLimits(nowMs);
+
+    if (!row || row.count <= options.limit) return null;
+
+    const retryAfterSeconds = Math.max(
+      1,
+      Math.ceil((row.resetAt.getTime() - nowMs) / 1000),
+    );
+
+    return apiError("Too many requests. Please try again later.", 429, {
+      "Retry-After": String(retryAfterSeconds),
+      "X-RateLimit-Limit": String(options.limit),
+      "X-RateLimit-Remaining": "0",
+      "X-RateLimit-Reset": String(Math.ceil(row.resetAt.getTime() / 1000)),
+    });
+  } catch {
+    return applyRateLimit(request, options);
+  }
+}
+
 export function apiError(
   message: string,
   status: number,
   headers?: HeadersInit,
 ): NextResponse {
   return NextResponse.json({ error: message }, { headers, status });
+}
+
+let lastPersistentRateLimitCleanupAt = 0;
+
+function maybeCleanupPersistentRateLimits(nowMs: number) {
+  if (nowMs - lastPersistentRateLimitCleanupAt < 60_000) return;
+  if (Math.random() > 0.02) return;
+
+  lastPersistentRateLimitCleanupAt = nowMs;
+  const expiredBefore = new Date(nowMs - 60_000);
+  void getDb()
+    .delete(apiRateLimits)
+    .where(sql`${apiRateLimits.resetAt} < ${expiredBefore}`)
+    .catch(() => undefined);
+}
+
+function normalizeRateLimitScope(value: string): string {
+  return value.trim().replace(/[^a-z0-9_.:-]/giu, ":").slice(0, 120) || "default";
+}
+
+function normalizeRateLimitIdentity(value: string): string {
+  return value.trim().toLowerCase().slice(0, 240) || "unknown";
+}
+
+function hashRateLimitValue(value: string): string {
+  return createHash("sha256").update(value).digest("hex");
 }
 
 function getClientIp(request: Request): string {

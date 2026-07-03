@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { applyRateLimit } from "@/lib/api-security";
+import { applyPersistentRateLimit } from "@/lib/api-security";
 import { launchFeatureFlags } from "@/lib/launch-feature-flags";
 import { getPublicReviewSummaryFromDb } from "@/lib/review-summary-db";
 
@@ -10,7 +10,7 @@ export async function GET(request: Request) {
     return NextResponse.json({ error: "Reviews are disabled." }, { status: 404 });
   }
 
-  const limited = applyRateLimit(request, {
+  const limited = await applyPersistentRateLimit(request, {
     key: "public-reviews-summary:get",
     limit: 240,
     windowMs: 15 * 60 * 1000,

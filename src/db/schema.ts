@@ -1467,6 +1467,24 @@ export const adminAuditLogs = pgTable(
   ],
 );
 
+export const apiRateLimits = pgTable(
+  "api_rate_limits",
+  {
+    bucketKey: text("bucket_key").primaryKey(),
+    scope: text("scope").notNull(),
+    identityHash: text("identity_hash").notNull(),
+    windowStart: timestamp("window_start", { withTimezone: true }).notNull(),
+    resetAt: timestamp("reset_at", { withTimezone: true }).notNull(),
+    count: integer("count").default(1).notNull(),
+    createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+    updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
+  },
+  (table) => [
+    index("api_rate_limits_reset_at_idx").on(table.resetAt),
+    index("api_rate_limits_scope_reset_idx").on(table.scope, table.resetAt),
+  ],
+);
+
 export const notificationPreferences = pgTable("notification_preferences", {
   userId: uuid("user_id")
     .references(() => profiles.id, { onDelete: "cascade" })

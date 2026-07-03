@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import {
-  applyRateLimit,
+  applyPersistentRateLimit,
   enforceContentLength,
   enforceSameOrigin,
   isApiAuthError,
@@ -32,7 +32,8 @@ export async function POST(
   const crossOrigin = enforceSameOrigin(request);
   if (crossOrigin) return crossOrigin;
 
-  const limited = applyRateLimit(request, {
+  const limited = await applyPersistentRateLimit(request, {
+    identity: auth.user.id,
     key: "review-report:create",
     limit: 5,
     windowMs: 15 * 60 * 1000,

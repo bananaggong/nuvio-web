@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import {
-  applyRateLimit,
+  applyPersistentRateLimit,
   enforceContentLength,
   enforceSameOrigin,
   isApiAuthError,
@@ -22,7 +22,8 @@ export async function GET(request: Request) {
   const auth = await requireAuthenticatedUser();
   if (isApiAuthError(auth)) return auth.response;
 
-  const limited = applyRateLimit(request, {
+  const limited = await applyPersistentRateLimit(request, {
+    identity: auth.user.id,
     key: "me-review-requests:list",
     limit: 120,
     windowMs: 15 * 60 * 1000,
@@ -62,7 +63,8 @@ export async function POST(request: Request) {
   const contentLengthError = enforceContentLength(request, 8 * 1024);
   if (contentLengthError) return contentLengthError;
 
-  const limited = applyRateLimit(request, {
+  const limited = await applyPersistentRateLimit(request, {
+    identity: auth.user.id,
     key: "me-review-requests:opened",
     limit: 80,
     windowMs: 15 * 60 * 1000,

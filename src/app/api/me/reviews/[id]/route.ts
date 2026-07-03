@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import {
-  applyRateLimit,
+  applyPersistentRateLimit,
   enforceContentLength,
   enforceSameOrigin,
   isApiAuthError,
@@ -32,7 +32,8 @@ export async function PATCH(
   const crossOrigin = enforceSameOrigin(request);
   if (crossOrigin) return crossOrigin;
 
-  const limited = applyRateLimit(request, {
+  const limited = await applyPersistentRateLimit(request, {
+    identity: auth.user.id,
     key: "me-review:update",
     limit: 20,
     windowMs: 15 * 60 * 1000,
@@ -73,7 +74,8 @@ export async function DELETE(
   const crossOrigin = enforceSameOrigin(request);
   if (crossOrigin) return crossOrigin;
 
-  const limited = applyRateLimit(request, {
+  const limited = await applyPersistentRateLimit(request, {
+    identity: auth.user.id,
     key: "me-review:delete",
     limit: 10,
     windowMs: 15 * 60 * 1000,

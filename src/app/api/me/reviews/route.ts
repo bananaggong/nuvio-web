@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import {
-  applyRateLimit,
+  applyPersistentRateLimit,
   isApiAuthError,
   requireAuthenticatedUser,
 } from "@/lib/api-security";
@@ -17,7 +17,8 @@ export async function GET(request: Request) {
   const auth = await requireAuthenticatedUser();
   if (isApiAuthError(auth)) return auth.response;
 
-  const limited = applyRateLimit(request, {
+  const limited = await applyPersistentRateLimit(request, {
+    identity: auth.user.id,
     key: "me-reviews:list",
     limit: 120,
     windowMs: 15 * 60 * 1000,

@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { applyRateLimit } from "@/lib/api-security";
+import { applyPersistentRateLimit } from "@/lib/api-security";
 import { launchFeatureFlags } from "@/lib/launch-feature-flags";
 import { listPublicReviewHostReplies } from "@/lib/review-reply-db";
 
@@ -13,7 +13,7 @@ export async function GET(
     return NextResponse.json({ error: "Reviews are disabled." }, { status: 404 });
   }
 
-  const limited = applyRateLimit(request, {
+  const limited = await applyPersistentRateLimit(request, {
     key: "review-replies:list",
     limit: 240,
     windowMs: 15 * 60 * 1000,
