@@ -576,6 +576,12 @@ export const reviews = pgTable(
     index("reviews_village_slug_idx").on(table.villageSlug),
     index("reviews_status_idx").on(table.status),
     index("reviews_published_at_idx").on(table.publishedAt),
+    index("reviews_public_published_idx")
+      .on(table.publishedAt, table.createdAt)
+      .where(sql`${table.status} = 'published'`),
+    index("reviews_public_village_published_idx")
+      .on(table.villageSlug, table.publishedAt, table.createdAt)
+      .where(sql`${table.status} = 'published' and ${table.villageSlug} is not null`),
   ],
 );
 
