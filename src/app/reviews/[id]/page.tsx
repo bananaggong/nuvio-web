@@ -15,9 +15,9 @@ import {
   reviewJsonLd,
 } from "@/lib/seo";
 
-export function generateStaticParams() {
-  return [];
-}
+export const dynamic = "force-dynamic";
+export const runtime = "nodejs";
+
 
 export async function generateMetadata({
   params,
