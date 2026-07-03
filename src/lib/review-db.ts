@@ -154,7 +154,12 @@ export async function listPublicReviewsFromDb(options: {
   const limit = clampLimit(options.limit, 300);
 
   if (options.villageSlug) {
-    conditions.push(eq(reviewsTable.villageSlug, options.villageSlug.trim()));
+    const villageSlug = options.villageSlug.trim();
+    const villagePredicate = or(
+      eq(reviewsTable.villageSlug, villageSlug),
+      eq(villages.slug, villageSlug),
+    );
+    if (villagePredicate) conditions.push(villagePredicate);
   }
 
   const rows = await getDb()
@@ -166,6 +171,7 @@ export async function listPublicReviewsFromDb(options: {
     })
     .from(reviewsTable)
     .leftJoin(programsTable, eq(reviewsTable.programId, programsTable.id))
+    .leftJoin(villages, eq(programsTable.villageId, villages.id))
     .where(and(...conditions))
     .orderBy(desc(reviewsTable.publishedAt), desc(reviewsTable.createdAt))
     .limit(limit);

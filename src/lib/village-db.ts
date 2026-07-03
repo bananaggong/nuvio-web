@@ -131,7 +131,10 @@ export async function getVillageReviews(
 
   let databaseReviews: Review[] = [];
   try {
-    databaseReviews = await listPublicReviewsFromDb();
+    databaseReviews = await listPublicReviewsFromDb({
+      limit: options.limit,
+      villageSlug: village.slug,
+    });
   } catch {
     databaseReviews = [];
   }
