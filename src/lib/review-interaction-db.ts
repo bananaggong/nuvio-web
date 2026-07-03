@@ -1,6 +1,10 @@
 import { and, eq } from "drizzle-orm";
 import { getDb } from "@/db/client";
-import { reviewHelpfulVotes, reviews as reviewsTable } from "@/db/schema";
+import {
+  programs as programsTable,
+  reviewHelpfulVotes,
+  reviews as reviewsTable,
+} from "@/db/schema";
 import type { ApiAuthContext } from "@/lib/api-security";
 import { safeCreateAuditLog } from "@/lib/audit-log-db";
 import { safeRecordReviewHelpfulVoteEvent } from "@/lib/review-helpful-vote-event-db";
@@ -33,17 +37,19 @@ export async function setReviewHelpful(
   const [review] = await getDb()
     .select({
       id: reviewsTable.id,
+      programCreatedBy: programsTable.createdBy,
       status: reviewsTable.status,
       userId: reviewsTable.userId,
     })
     .from(reviewsTable)
+    .leftJoin(programsTable, eq(reviewsTable.programId, programsTable.id))
     .where(and(eq(reviewsTable.id, reviewId), ...buildPublicReviewVisibilityConditions()))
     .limit(1);
 
   if (!review) {
     throw new ReviewInteractionError("Published review was not found.");
   }
-  if (review.userId === auth.user.id) {
+  if (review.userId === auth.user.id || review.programCreatedBy === auth.user.id) {
     throw new ReviewInteractionError("You cannot mark your own review as helpful.");
   }
 

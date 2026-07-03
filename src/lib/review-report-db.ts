@@ -100,7 +100,7 @@ export async function createReviewReport(
   if (!review) {
     throw new Error("Published review was not found.");
   }
-  if (review.userId === auth.user.id) {
+  if (review.userId === auth.user.id || review.programCreatedBy === auth.user.id) {
     throw new ReviewReportSelfReportError();
   }
 
