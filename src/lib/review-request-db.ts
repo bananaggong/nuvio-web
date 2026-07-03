@@ -611,17 +611,24 @@ export async function updateHostReviewRequestStatus(
     options,
   );
 
+  const previousStatus = asReviewRequestStatus(existing.request.status);
   const nextStatus = normalized.status;
   const nextStatusIsActive = activeReviewRequestStatuses.includes(nextStatus);
   const now = new Date();
-  if (existing.request.status === "completed" && nextStatus !== "completed") {
-    throw new ReviewRequestEligibilityError("Completed review requests cannot be reopened.");
+  if (previousStatus === "completed") {
+    throw new ReviewRequestEligibilityError("Completed review requests cannot be updated manually.");
+  }
+  if (previousStatus === "cancelled" && nextStatus === "cancelled") {
+    return hydrateReviewRequest(existing.request.id);
+  }
+  if (!activeReviewRequestStatuses.includes(previousStatus)) {
+    throw new ReviewRequestEligibilityError("Only active review requests can be cancelled manually.");
   }
 
   const [row] = await getDb()
     .update(reviewRequests)
     .set({
-      cancelledAt: nextStatus === "cancelled" ? now : null,
+      cancelledAt: nextStatus === "cancelled" ? existing.request.cancelledAt ?? now : null,
       completedAt: nextStatus === "completed" ? existing.request.completedAt ?? now : null,
       nextReminderAt: nextStatusIsActive
         ? existing.request.nextReminderAt
@@ -650,7 +657,7 @@ export async function updateHostReviewRequestStatus(
   await safeRecordReviewRequestEvent({
     actorId: options.actorId,
     actorRole: options.actorRole,
-    fromStatus: asReviewRequestStatus(existing.request.status),
+    fromStatus: previousStatus,
     metadata: {
       source: "host_status_update",
     },
@@ -923,9 +930,18 @@ function normalizeUpdateReviewRequestInput(input: unknown): { id: string; status
   const id = asUuid(value.id);
   if (!id) throw new Error("A valid review request id is required.");
 
-  const status = asReviewRequestStatus(value.status);
+  if (!reviewRequestStatuses.includes(value.status as ReviewRequestStatus)) {
+    throw new ReviewRequestEligibilityError("A valid review request status is required.");
+  }
+
+  const status = value.status as ReviewRequestStatus;
   if (status === "completed") {
-    throw new Error("Review requests are completed by review submission.");
+    throw new ReviewRequestEligibilityError("Review requests are completed by review submission.");
+  }
+  if (status !== "cancelled") {
+    throw new ReviewRequestEligibilityError(
+      "Review request status can only be cancelled manually. Send a new review request to reactivate it.",
+    );
   }
 
   return { id, status };
