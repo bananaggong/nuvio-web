@@ -103,6 +103,18 @@ export type PublicReview = Omit<
   "applicationId" | "programUuid" | "programRunId" | "source" | "status" | "submittedAt"
 >;
 
+export type PublicReviewPage = {
+  data: PublicReview[];
+  nextCursor?: string;
+};
+
+export class PublicReviewCursorError extends Error {
+  constructor(message = "Invalid review cursor.") {
+    super(message);
+    this.name = "PublicReviewCursorError";
+  }
+}
+
 export class HostReviewAccessError extends Error {
   constructor(message = "You do not have permission to manage this review.") {
     super(message);
@@ -150,8 +162,18 @@ export async function listPublicReviewsFromDb(options: {
   limit?: number;
   villageSlug?: string;
 } = {}): Promise<PublicReview[]> {
+  const page = await listPublicReviewsPageFromDb(options);
+  return page.data;
+}
+
+export async function listPublicReviewsPageFromDb(options: {
+  cursor?: string;
+  limit?: number;
+  villageSlug?: string;
+} = {}): Promise<PublicReviewPage> {
   const conditions: SQL[] = buildPublicReviewVisibilityConditions();
   const limit = clampLimit(options.limit, 300);
+  const cursor = decodePublicReviewCursor(options.cursor);
 
   if (options.villageSlug) {
     const villageSlug = options.villageSlug.trim();
@@ -161,6 +183,7 @@ export async function listPublicReviewsFromDb(options: {
     );
     if (villagePredicate) conditions.push(villagePredicate);
   }
+  if (cursor) conditions.push(buildPublicReviewCursorPredicate(cursor));
 
   const rows = await getDb()
     .select({
@@ -173,12 +196,19 @@ export async function listPublicReviewsFromDb(options: {
     .leftJoin(programsTable, eq(reviewsTable.programId, programsTable.id))
     .leftJoin(villages, eq(programsTable.villageId, villages.id))
     .where(and(...conditions))
-    .orderBy(desc(reviewsTable.publishedAt), desc(reviewsTable.createdAt))
-    .limit(limit);
+    .orderBy(desc(reviewsTable.publishedAt), desc(reviewsTable.createdAt), desc(reviewsTable.id))
+    .limit(limit + 1);
 
-  return rows.map(({ review, programLegacyId, programSlug, programTitle }) =>
+  const pageRows = rows.slice(0, limit);
+  const data = pageRows.map(({ review, programLegacyId, programSlug, programTitle }) =>
     mapReviewRowToPublicReview(review, programLegacyId ?? undefined, programSlug, programTitle),
   );
+  const lastRow = pageRows.at(-1)?.review;
+
+  return {
+    data,
+    nextCursor: rows.length > limit && lastRow ? encodePublicReviewCursor(lastRow) : undefined,
+  };
 }
 
 export async function listPublicProgramReviewsFromDb(
@@ -1272,6 +1302,65 @@ function buildProgramIdentifierPredicate(programIdentifier: number | string): SQ
   return Number.isInteger(numericId)
     ? eq(programsTable.legacyId, numericId)
     : eq(programsTable.slug, key);
+}
+type PublicReviewCursor = {
+  createdAt: Date;
+  id: string;
+  publishedAt: Date;
+};
+
+function encodePublicReviewCursor(review: ReviewRow): string {
+  const payload = JSON.stringify({
+    createdAt: review.createdAt.toISOString(),
+    id: review.id,
+    publishedAt: (review.publishedAt ?? review.createdAt).toISOString(),
+  });
+  return Buffer.from(payload, "utf8").toString("base64url");
+}
+
+function decodePublicReviewCursor(value: string | undefined): PublicReviewCursor | undefined {
+  const cursor = value?.trim();
+  if (!cursor) return undefined;
+
+  try {
+    const payload = JSON.parse(Buffer.from(cursor, "base64url").toString("utf8")) as {
+      createdAt?: unknown;
+      id?: unknown;
+      publishedAt?: unknown;
+    };
+    const createdAt = parseCursorDate(payload.createdAt);
+    const publishedAt = parseCursorDate(payload.publishedAt);
+    const id = typeof payload.id === "string" && isUuid(payload.id) ? payload.id : "";
+    if (!createdAt || !publishedAt || !id) throw new Error("Invalid cursor payload.");
+
+    return { createdAt, id, publishedAt };
+  } catch {
+    throw new PublicReviewCursorError();
+  }
+}
+
+function parseCursorDate(value: unknown): Date | undefined {
+  if (typeof value !== "string") return undefined;
+  const date = new Date(value);
+  return Number.isNaN(date.getTime()) ? undefined : date;
+}
+
+function buildPublicReviewCursorPredicate(cursor: PublicReviewCursor): SQL {
+  const publishedAt = cursor.publishedAt.toISOString();
+  const createdAt = cursor.createdAt.toISOString();
+
+  return sql`(
+    ${reviewsTable.publishedAt} < ${publishedAt}::timestamptz
+    or (
+      ${reviewsTable.publishedAt} = ${publishedAt}::timestamptz
+      and ${reviewsTable.createdAt} < ${createdAt}::timestamptz
+    )
+    or (
+      ${reviewsTable.publishedAt} = ${publishedAt}::timestamptz
+      and ${reviewsTable.createdAt} = ${createdAt}::timestamptz
+      and ${reviewsTable.id} < ${cursor.id}
+    )
+  )`;
 }
 
 function asReviewCategory(value: unknown): ReviewCategory {

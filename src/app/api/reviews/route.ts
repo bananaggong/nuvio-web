@@ -11,7 +11,8 @@ import { launchFeatureFlags } from "@/lib/launch-feature-flags";
 import {
   createParticipantReview,
   DuplicateReviewError,
-  listPublicReviewsFromDb,
+  listPublicReviewsPageFromDb,
+  PublicReviewCursorError,
   ReviewEligibilityError,
 } from "@/lib/review-db";
 
@@ -32,10 +33,15 @@ export async function GET(request: Request) {
   try {
     const url = new URL(request.url);
     const villageSlug = url.searchParams.get("villageSlug")?.trim() || undefined;
+    const cursor = url.searchParams.get("cursor")?.trim() || undefined;
     const limit = Number(url.searchParams.get("limit") ?? "300");
-    const databaseReviews = await listPublicReviewsFromDb({ limit, villageSlug });
-    return NextResponse.json({ data: databaseReviews });
+    const page = await listPublicReviewsPageFromDb({ cursor, limit, villageSlug });
+    return NextResponse.json(page);
   } catch (error) {
+    if (error instanceof PublicReviewCursorError) {
+      return NextResponse.json({ error: error.message }, { status: 400 });
+    }
+
     return NextResponse.json(
       {
         error:
