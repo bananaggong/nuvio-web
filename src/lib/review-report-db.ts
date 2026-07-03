@@ -131,7 +131,7 @@ export async function createReviewReport(
     toStatus: asReportStatus(row.status),
   });
 
-  return mapReviewReportRow(row, review);
+  return mapReviewReportRow(row, review, { includeReporterEmail: true });
 }
 
 async function createReportRow(
@@ -180,6 +180,7 @@ async function createReportRow(
 export async function listHostReviewReports(options: {
   allowedVillageIds?: string[];
   allowedVillageSlugs?: string[];
+  includeReporterEmail?: boolean;
   limit?: number;
 } = {}): Promise<ReviewReport[]> {
   if (options.allowedVillageIds && options.allowedVillageIds.length === 0) return [];
@@ -222,7 +223,11 @@ export async function listHostReviewReports(options: {
         .orderBy(desc(reviewReports.createdAt))
         .limit(clampLimit(options.limit, 100));
 
-  return rows.map(({ report, review }) => mapReviewReportRow(report, review));
+  return rows.map(({ report, review }) =>
+    mapReviewReportRow(report, review, {
+      includeReporterEmail: options.includeReporterEmail === true,
+    }),
+  );
 }
 
 export async function updateReviewReportStatus(
@@ -232,6 +237,7 @@ export async function updateReviewReportStatus(
     actorRole?: string;
     allowedVillageIds?: string[];
     allowedVillageSlugs?: string[];
+    includeReporterEmail?: boolean;
   },
 ): Promise<ReviewReport> {
   const normalized = normalizeUpdateReviewReportInput(input);
@@ -331,7 +337,9 @@ export async function updateReviewReportStatus(
     });
   }
 
-  return mapReviewReportRow(row, existing.review);
+  return mapReviewReportRow(row, existing.review, {
+    includeReporterEmail: options.includeReporterEmail === true,
+  });
 }
 
 async function safeQueueReviewReportCreatedNotification(
@@ -413,6 +421,7 @@ function normalizeUpdateReviewReportInput(input: unknown): {
 function mapReviewReportRow(
   row: ReviewReportRow,
   review: { id: string; programId: string | null; title: string; villageSlug: string | null },
+  options: { includeReporterEmail?: boolean } = {},
 ): ReviewReport {
   return {
     id: row.id,
@@ -420,7 +429,9 @@ function mapReviewReportRow(
     reviewTitle: review.title,
     villageSlug: review.villageSlug ?? undefined,
     programId: review.programId ?? undefined,
-    reporterEmail: row.reporterEmail ?? "",
+    reporterEmail: options.includeReporterEmail
+      ? row.reporterEmail ?? ""
+      : maskEmail(row.reporterEmail),
     reason: asReportReason(row.reason),
     message: row.message ?? "",
     status: asReportStatus(row.status),
@@ -431,6 +442,16 @@ function mapReviewReportRow(
   };
 }
 
+function maskEmail(value: string | null): string {
+  const email = String(value ?? "").trim().toLowerCase();
+  if (!email) return "";
+
+  const [local = "", domain = ""] = email.split("@");
+  if (!domain) return "***";
+  if (local.length <= 2) return `${local.slice(0, 1)}*@${domain}`;
+
+  return `${local.slice(0, 2)}***@${domain}`;
+}
 function assertReportAccess(input: {
   allowedVillageIds?: string[];
   allowedVillageSlugs?: string[];

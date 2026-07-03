@@ -41,10 +41,11 @@ export async function GET(request: Request) {
         : await listManageableHostVillageWorkspaces(auth);
     const reports = await listHostReviewReports(
       auth.profile.role === "admin"
-        ? {}
+        ? { includeReporterEmail: true }
         : {
             allowedVillageIds: workspaces.map((workspace) => workspace.villageId),
             allowedVillageSlugs: workspaces.map((workspace) => workspace.slug),
+            includeReporterEmail: false,
           },
     );
 
@@ -101,6 +102,7 @@ export async function PATCH(request: Request) {
         auth.profile.role === "admin"
           ? undefined
           : workspaces.map((workspace) => workspace.slug),
+      includeReporterEmail: auth.profile.role === "admin",
     });
 
     return NextResponse.json({ data: report });
