@@ -385,6 +385,7 @@ export async function requestHostReviewForApplication(
           .update(reviewRequests)
           .set({
             completedAt: existing.completedAt ?? now,
+            nextReminderAt: null,
             reviewId: context.reviewId ?? existing.reviewId,
             status: "completed",
             updatedAt: now,
@@ -408,7 +409,7 @@ export async function requestHostReviewForApplication(
           nextReminderAt: new Date(now.getTime() + defaultReminderDelayMs),
           requestCount: sql`${reviewRequests.requestCount} + 1`,
           reviewId: null,
-          status: "pending",
+          status: existing.status === "opened" ? "opened" : "sent",
           updatedAt: now,
         })
         .where(eq(reviewRequests.id, existing.id))
@@ -429,7 +430,7 @@ export async function requestHostReviewForApplication(
       recipientName: context.applicantName.trim() || "Participant",
       requestCount: context.reviewId ? 0 : 1,
       reviewId: context.reviewId,
-      status: context.reviewId ? "completed" : "pending",
+      status: context.reviewId ? "completed" : "sent",
       villageSlug: context.villageSlug,
     };
 
@@ -521,6 +522,9 @@ export async function updateHostReviewRequestStatus(
     .set({
       cancelledAt: nextStatus === "cancelled" ? now : null,
       completedAt: nextStatus === "completed" ? existing.request.completedAt ?? now : null,
+      nextReminderAt: activeReviewRequestStatuses.includes(nextStatus)
+        ? existing.request.nextReminderAt
+        : null,
       status: nextStatus,
       updatedAt: now,
     })
@@ -562,6 +566,7 @@ export async function markReviewRequestCompletedForApplication(
     .update(reviewRequests)
     .set({
       completedAt: new Date(),
+      nextReminderAt: null,
       reviewId,
       status: "completed",
       updatedAt: new Date(),
