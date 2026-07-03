@@ -6,6 +6,7 @@ import { useSearchParams } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
 import { nuvioIcons } from "@/components/icons/nuvio-icons";
 import { HostWorkspaceLayout } from "@/components/host-workspace-ui";
+import { UnsavedChangesGuard } from "@/components/unsaved-changes-guard";
 import {
   applyChannelMenuItemsToSections,
   channelHomeLabel,
@@ -30,6 +31,20 @@ type SaveChannelPayload = {
 
 type SelectableMenuKind = (typeof channelMenuTypeOptions)[number]["kind"];
 
+function createChannelMenuSignature(items: ChannelMenuItem[]) {
+  return JSON.stringify(
+    items.map((item) => ({
+      description: item.description,
+      id: item.id,
+      kind: item.kind,
+      label: item.label,
+      locked: item.locked,
+      order: item.order,
+      visible: item.visible,
+    })),
+  );
+}
+
 export function HostChannelMenuSettings() {
   const searchParams = useSearchParams();
   const requestedChannelSlug = searchParams.get("channel");
@@ -41,6 +56,13 @@ export function HostChannelMenuSettings() {
   const [selectedKind, setSelectedKind] = useState<SelectableMenuKind>("gallery");
   const [statusMessage, setStatusMessage] = useState("");
   const [typeDialogOpen, setTypeDialogOpen] = useState(false);
+  const currentMenuSignature = useMemo(() => createChannelMenuSignature(items), [items]);
+  const [savedMenuSignature, setSavedMenuSignature] = useState(currentMenuSignature);
+  const hasUnsavedMenuChanges =
+    Boolean(channel) &&
+    !isLoading &&
+    !isSaving &&
+    currentMenuSignature !== savedMenuSignature;
 
   useEffect(() => {
     let active = true;
@@ -53,17 +75,21 @@ export function HostChannelMenuSettings() {
       if (!active) return;
 
       if (!response?.ok) {
+        const fallbackItems = getChannelMenuItems(null);
         setChannel(null);
-        setItems(getChannelMenuItems(null));
+        setItems(fallbackItems);
+        setSavedMenuSignature(createChannelMenuSignature(fallbackItems));
         setIsLoading(false);
         return;
       }
 
       const payload = (await response.json().catch(() => ({}))) as HostChannelPayload;
       const selectedChannel = selectHostChannel(payload.data, requestedChannelSlug);
+      const loadedItems = getChannelMenuItems(selectedChannel);
 
       setChannel(selectedChannel);
-      setItems(getChannelMenuItems(selectedChannel));
+      setItems(loadedItems);
+      setSavedMenuSignature(createChannelMenuSignature(loadedItems));
       setIsLoading(false);
     }
 
@@ -160,7 +186,9 @@ export function HostChannelMenuSettings() {
       }
 
       setChannel(payload.data);
-      setItems(getChannelMenuItems(payload.data));
+      const savedItems = getChannelMenuItems(payload.data);
+      setItems(savedItems);
+      setSavedMenuSignature(createChannelMenuSignature(savedItems));
       setStatusMessage("저장되었습니다.");
       window.dispatchEvent(new CustomEvent("nuvio-channel-menu-updated"));
     } catch (error) {
@@ -174,6 +202,7 @@ export function HostChannelMenuSettings() {
 
   return (
     <HostWorkspaceLayout sidebarHeight="min-h-[var(--host-1086)]">
+      <UnsavedChangesGuard when={hasUnsavedMenuChanges} />
       <section className="min-w-0 flex-1 overflow-x-hidden">
         <div className="w-full max-w-[var(--host-1230)] max-md:w-full">
           <section className="relative h-[var(--host-156)] border-b border-[#6D7A8A] bg-white">

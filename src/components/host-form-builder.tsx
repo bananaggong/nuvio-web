@@ -25,6 +25,7 @@ import {
   HostWorkspaceLayout,
 } from "@/components/host-workspace-ui";
 import { nuvioIcons } from "@/components/icons/nuvio-icons";
+import { UnsavedChangesGuard } from "@/components/unsaved-changes-guard";
 import { formatProgramDisplayName } from "@/lib/display-code";
 
 type HostProgramOption = {
@@ -46,6 +47,19 @@ const editableBlockTypes: Array<{
   { label: "동의 항목", type: "checkbox" },
 ];
 
+function createApplicationFormTemplateSignature(template: ApplicationFormTemplate) {
+  return JSON.stringify({
+    blocks: template.blocks,
+    description: template.description,
+    fields: template.fields,
+    formKind: template.formKind,
+    id: template.id,
+    name: template.name,
+    programId: template.programId,
+    programTitle: template.programTitle,
+  });
+}
+
 export function HostFormBuilder({
   formId,
 }: {
@@ -66,6 +80,24 @@ export function HostFormBuilder({
       (!formId ? templates[0] : undefined),
     [formId, templates],
   );
+  const selectedTemplateSignature = useMemo(
+    () =>
+      selectedTemplate
+        ? createApplicationFormTemplateSignature(selectedTemplate)
+        : "",
+    [selectedTemplate],
+  );
+  const [savedTemplateSignatures, setSavedTemplateSignatures] = useState<
+    Record<string, string>
+  >({});
+  const savedSelectedTemplateSignature = selectedTemplate
+    ? savedTemplateSignatures[selectedTemplate.id]
+    : undefined;
+  const hasUnsavedFormChanges =
+    Boolean(selectedTemplate) &&
+    !isSaving &&
+    Boolean(savedSelectedTemplateSignature) &&
+    selectedTemplateSignature !== savedSelectedTemplateSignature;
 
   useEffect(() => {
     let isMounted = true;
@@ -88,6 +120,13 @@ export function HostFormBuilder({
           setTemplates((currentTemplates) =>
             mergeApplicationFormTemplates(databaseTemplates, currentTemplates),
           );
+          setSavedTemplateSignatures((current) => {
+            const next = { ...current };
+            for (const template of databaseTemplates) {
+              next[template.id] = createApplicationFormTemplateSignature(template);
+            }
+            return next;
+          });
         }
       } catch {
         if (isMounted) setError("신청서 양식을 불러오지 못했습니다.");
@@ -141,6 +180,15 @@ export function HostFormBuilder({
     if (!selectedTemplate) return;
     setMessage("");
     setError("");
+    setSavedTemplateSignatures((current) =>
+      current[selectedTemplate.id]
+        ? current
+        : {
+            ...current,
+            [selectedTemplate.id]:
+              createApplicationFormTemplateSignature(selectedTemplate),
+          },
+    );
 
     setTemplates((currentTemplates) =>
       currentTemplates.map((template) => {
@@ -223,6 +271,10 @@ export function HostFormBuilder({
           currentTemplates.filter((template) => template.id !== selectedTemplate.id),
         ),
       );
+      setSavedTemplateSignatures((current) => ({
+        ...current,
+        [savedTemplate.id]: createApplicationFormTemplateSignature(savedTemplate),
+      }));
       setMessage("저장되었습니다.");
     } catch (saveError) {
       setError(saveError instanceof Error ? saveError.message : "저장하지 못했습니다.");
@@ -257,6 +309,7 @@ export function HostFormBuilder({
 
   return (
     <HostWorkspaceLayout sidebarHeight="min-h-[var(--host-1864)]">
+      <UnsavedChangesGuard when={hasUnsavedFormChanges} />
       <section className="min-w-0 flex-1 overflow-x-auto pl-[var(--host-28)] pr-[var(--host-22)] max-md:px-5">
         <div className="grid min-w-[var(--host-1158)] grid-cols-[var(--host-577)_var(--host-557)] gap-[var(--host-24)] max-md:min-w-0 max-md:grid-cols-1">
           <section className="min-h-[var(--host-1864)] border-r border-[#6D7A8A] pr-[var(--host-30)] max-md:min-h-0 max-md:border-r-0 max-md:pr-0">
@@ -472,7 +525,7 @@ function getBlockTypeChangePatch(
       nextType === "singleSelect" || nextType === "multiSelect"
         ? currentOptions.length > 0
           ? currentOptions
-          : ["선택지 항목1", "선택지 항목2"]
+          : ["", ""]
         : [],
     type: nextType,
   };
@@ -589,7 +642,7 @@ function EditableBlockCard({
           <button
             className="w-fit text-[var(--host-12)] font-medium leading-[1.253] text-[#FF9A3D]"
             onClick={() =>
-              onUpdate({ options: [...options, `선택지 항목${options.length + 1}`] })
+              onUpdate({ options: [...options, ""] })
             }
             type="button"
           >

@@ -93,6 +93,7 @@ export function SearchPage({ currentMonth }: { currentMonth: number }) {
         />
         <FilterSection
           items={monthOptions}
+          className="pb-4"
           onSelect={(value) => setSelectedMonth(toggleValue(selectedMonth, value))}
           selectedValue={selectedMonth}
           title="일정"
@@ -155,18 +156,20 @@ export function SearchPage({ currentMonth }: { currentMonth: number }) {
 }
 
 function FilterSection({
+  className = "",
   items,
   onSelect,
   selectedValue,
   title,
 }: {
+  className?: string;
   items: string[];
   onSelect: (value: string) => void;
   selectedValue: string;
   title: string;
 }) {
   return (
-    <section className="flex w-full flex-col items-center">
+    <section className={`flex w-full flex-col items-center ${className}`}>
       <div className="flex w-full items-center p-4">
         <h2 className="text-center text-sm font-semibold leading-[1.253] text-[#5B3A29]">
           {title}
@@ -215,15 +218,7 @@ function toggleValue(current: string, next: string): string {
 }
 
 function getVisibleMonthOptions(currentMonth: number): string[] {
-  const firstProgramMonth = 5;
-  const lastProgramMonth = 12;
-  const normalizedMonth = Number.isFinite(currentMonth) ? currentMonth : firstProgramMonth;
-  const startMonth = Math.max(firstProgramMonth, normalizedMonth);
+  void currentMonth;
 
-  if (startMonth > lastProgramMonth) return [];
-
-  return Array.from(
-    { length: lastProgramMonth - startMonth + 1 },
-    (_, index) => `${startMonth + index}월`,
-  );
+  return Array.from({ length: 12 }, (_, index) => `${index + 1}월`);
 }

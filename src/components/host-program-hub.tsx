@@ -28,6 +28,7 @@ import {
 import { nuvioIcons } from "@/components/icons/nuvio-icons";
 import { KakaoMap } from "@/components/kakao-map";
 import { HostProgramSidebar } from "@/components/host-program-sidebar";
+import { UnsavedChangesGuard } from "@/components/unsaved-changes-guard";
 import { formatProgramDisplayCode } from "@/lib/display-code";
 import {
   useEffect,
@@ -120,6 +121,45 @@ type ProgramDashboardDialog =
   | "onboarding-required"
   | "open-schedule"
   | null;
+
+function createHostProgramDraftSignature(draft: HostProgramDraft | undefined) {
+  if (!draft) return "";
+
+  return JSON.stringify({
+    activityEnd: draft.activityEnd,
+    activityStart: draft.activityStart,
+    applyUrl: draft.applyUrl,
+    capacity: draft.capacity,
+    city: draft.city,
+    contactEmail: draft.contactEmail,
+    description: draft.description,
+    detailImages: draft.detailImages,
+    fee: draft.fee,
+    guideInfo: draft.guideInfo,
+    hashtags: draft.hashtags,
+    id: draft.id,
+    image: draft.image,
+    itineraryDays: draft.itineraryDays,
+    periodKey: draft.periodKey,
+    phone: draft.phone,
+    placeInfo: draft.placeInfo,
+    published: draft.published,
+    recruitEnd: draft.recruitEnd,
+    recruitStart: draft.recruitStart,
+    region: draft.region,
+    sourceName: draft.sourceName,
+    sourceUrl: draft.sourceUrl,
+    slug: draft.slug,
+    status: draft.status,
+    subsidyAmount: draft.subsidyAmount,
+    subsidyLabel: draft.subsidyLabel,
+    summary: draft.summary,
+    target: draft.target,
+    theme: draft.theme,
+    title: draft.title,
+    villageId: draft.villageId,
+  });
+}
 type DashboardDeadlineMode = "auto" | "manual";
 
 const figmaScaleStyle = {
@@ -370,6 +410,14 @@ export function HostProgramHub({
     () => findProgramDraft(hostPrograms, programId, program),
     [hostPrograms, program, programId],
   );
+  const currentDraftSignature = useMemo(
+    () => createHostProgramDraftSignature(draft),
+    [draft],
+  );
+  const [savedDraftSnapshot, setSavedDraftSnapshot] = useState({
+    draftId: draft?.id,
+    signature: currentDraftSignature,
+  });
   const projectPath = projectId ? hostProjectPath(projectId) : "/host/programs";
   const programPath =
     projectId && program
@@ -420,6 +468,12 @@ export function HostProgramHub({
     readyToPublish,
   );
   const canDeleteBeforeOnboarding = Boolean(draft && !readyToPublish);
+  const hasUnsavedProgramChanges =
+    Boolean(draft) &&
+    savedDraftSnapshot.draftId === draft?.id &&
+    !isSaving &&
+    !isDeleting &&
+    currentDraftSignature !== savedDraftSnapshot.signature;
 
   useEffect(() => {
     let isMounted = true;
@@ -479,6 +533,14 @@ export function HostProgramHub({
 
   function updateDraft(patch: Partial<HostProgramDraft>) {
     if (!draft) return;
+    setSavedDraftSnapshot((current) =>
+      current.draftId === draft.id
+        ? current
+        : {
+            draftId: draft.id,
+            signature: createHostProgramDraftSignature(draft),
+          },
+    );
 
     const nextDraft = {
       ...draft,
@@ -532,6 +594,10 @@ export function HostProgramHub({
           current.filter((item) => item.id !== nextDraft.id),
         ),
       );
+      setSavedDraftSnapshot({
+        draftId: payload.data.id,
+        signature: createHostProgramDraftSignature(payload.data as HostProgramDraft),
+      });
       setSaveMessage(successMessage);
     } catch (error) {
       setSaveError(
@@ -764,6 +830,7 @@ export function HostProgramHub({
       data-host-program-scale
       style={figmaScaleStyle}
     >
+      <UnsavedChangesGuard when={hasUnsavedProgramChanges} />
       <HostProgramFigmaScaleOverrides />
       <div className="flex min-h-[calc(100vh-4.861vw)] max-md:flex-col">
         <HostProgramSidebar

@@ -215,7 +215,7 @@ export function normalizeApplicationFormBlocks(
         imageUrl: asString(block.imageUrl),
         imageWidth: clampNumber(block.imageWidth, 20, 100, 100),
         id: asString(block.id) || `block-${index}-${Date.now()}`,
-        label: asString(block.label) || defaultBlockLabel(type),
+        label: asString(block.label),
         options: asStringArray(block.options),
         required: Boolean(block.required),
         type,
@@ -280,17 +280,17 @@ export function createEmptyBlock(
   type: ApplicationFormBlockType = "shortText",
 ): ApplicationFormBlock {
   return {
-    body: type === "description" ? "설명을 입력하세요." : "",
+    body: "",
     branches: [],
     helper: "",
     imageAlt: "",
     imageUrl: "",
     imageWidth: 100,
     id: `block-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
-    label: defaultBlockLabel(type),
+    label: "",
     options:
       type === "singleSelect" || type === "multiSelect"
-        ? ["선택지 1", "선택지 2"]
+        ? ["", ""]
         : [],
     required: false,
     type,
@@ -401,26 +401,6 @@ function blockTypeToLegacyFieldType(
   if (type === "singleSelect" || type === "multiSelect") return "select";
   if (type === "checkbox") return "checkbox";
   return "text";
-}
-
-function defaultBlockLabel(type: ApplicationFormBlockType): string {
-  const labels: Record<ApplicationFormBlockType, string> = {
-    checkbox: "동의 항목",
-    date: "날짜",
-    description: "설명",
-    divider: "구분선",
-    image: "이미지",
-    email: "이메일",
-    longText: "긴 답변",
-    multiSelect: "복수 선택",
-    pageBreak: "페이지",
-    phone: "연락처",
-    shortText: "짧은 답변",
-    singleSelect: "단일 선택",
-    title: "제목",
-  };
-
-  return labels[type];
 }
 
 function defaultTemplateName(formKind: ApplicationFormKind): string {

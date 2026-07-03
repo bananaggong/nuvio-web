@@ -35,6 +35,7 @@ import {
 import { getProgramById } from "@/lib/data";
 import { NuvioEmptyState } from "@/components/nuvio-empty-state";
 import { SupportContactForm } from "@/components/support-contact-form";
+import { UnsavedChangesGuard } from "@/components/unsaved-changes-guard";
 import type { HostApplication } from "@/lib/host-operations";
 import type {
   HostInquiry,
@@ -165,6 +166,28 @@ type NicknameCheckState = {
   checkedValue: string;
   status: "idle" | "checking" | "available" | "duplicate" | "error";
 };
+
+function createMemberInformationSnapshot(form: MemberInformationFormState) {
+  return JSON.stringify({
+    address: form.address,
+    avatarUrl: form.avatarUrl,
+    birthDay: form.birthDay,
+    birthMonth: form.birthMonth,
+    birthYear: form.birthYear,
+    detailAddress: form.detailAddress,
+    emailDomain: form.emailDomain,
+    emailDomainPreset: form.emailDomainPreset,
+    emailId: form.emailId,
+    gender: form.gender,
+    loginId: form.loginId,
+    name: form.name,
+    nickname: form.nickname,
+    paymentMethod: form.paymentMethod,
+    phone: form.phone,
+    refundAccount: form.refundAccount,
+    refundBank: form.refundBank,
+  });
+}
 
 declare global {
   interface Window {
@@ -1060,11 +1083,14 @@ function MessagesContent({ context }: { context: MypageContext }) {
   }
 
   return (
-    <section className="font-pretendard min-h-[calc(100vh-70px)] bg-white pb-24 pt-3 text-[#5B3A29]">
-      <div className="mx-auto w-full max-w-[1025px] px-5 lg:px-0 min-[1440px]:w-[71.181vw] min-[1440px]:max-w-none">
+    <section
+      className="font-pretendard overflow-hidden bg-white text-[#5B3A29]"
+      style={{ height: "calc(100dvh - max(56px, 4.861vw))" }}
+    >
+      <div className="mx-auto flex h-full min-h-0 w-full max-w-[1025px] flex-col px-5 pb-5 pt-3 lg:px-0 min-[1440px]:w-[71.181vw] min-[1440px]:max-w-none min-[1440px]:pb-[1.389vw] min-[1440px]:pt-[0.833vw]">
         <Link
           aria-label="마이페이지로 돌아가기"
-          className="flex items-center gap-[19px] rounded-[8px] transition hover:text-[#FE701E] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[#FE701E] min-[1440px]:gap-[1.319vw]"
+          className="flex shrink-0 items-center gap-[19px] rounded-[8px] transition hover:text-[#FE701E] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[#FE701E] min-[1440px]:gap-[1.319vw]"
           href="/mypage"
         >
           <Image
@@ -1080,25 +1106,27 @@ function MessagesContent({ context }: { context: MypageContext }) {
           </h1>
         </Link>
 
-        <div className="flex w-full items-start justify-center gap-4 py-5 max-lg:flex-col min-[1440px]:gap-[1.111vw] min-[1440px]:py-[1.389vw]">
-          <aside className="flex w-[357px] shrink-0 flex-col gap-[6px] self-stretch border-r-[3px] border-[#F3F3F3] pr-5 max-lg:w-full max-lg:border-b-[3px] max-lg:border-r-0 max-lg:pb-5 max-lg:pr-0 min-[1440px]:w-[24.792vw] min-[1440px]:gap-[0.417vw] min-[1440px]:border-r-[0.208vw] min-[1440px]:pr-[1.389vw]">
+        <div className="flex min-h-0 w-full flex-1 items-stretch justify-center gap-4 py-5 max-lg:flex-col min-[1440px]:gap-[1.111vw] min-[1440px]:py-[1.389vw]">
+          <aside className="flex h-full min-h-0 w-[357px] shrink-0 flex-col gap-[6px] border-r-[3px] border-[#F3F3F3] pr-5 max-lg:h-[42dvh] max-lg:w-full max-lg:border-b-[3px] max-lg:border-r-0 max-lg:pb-5 max-lg:pr-0 min-[1440px]:w-[24.792vw] min-[1440px]:gap-[0.417vw] min-[1440px]:border-r-[0.208vw] min-[1440px]:pr-[1.389vw]">
             <MessageThreadSearch value={threadQuery} onChange={setThreadQuery} />
-            {context.loading && threads.length === 0 ? (
-              <MessageListSkeleton />
-            ) : visibleThreads.length > 0 ? (
-              visibleThreads.map((thread) => (
-                <MessageThreadRow
-                  active={thread.id === activeThread?.id}
-                  key={thread.id}
-                  onSelect={() => {
-                    markThreadRead(thread.id);
-                    setActiveThreadId(thread.id);
-                    setConversationSearchOpen(false);
-                  }}
-                  thread={thread}
-                />
-              ))
-            ) : null}
+            <div className="flex min-h-0 flex-1 flex-col gap-[6px] overflow-y-auto pr-1 min-[1440px]:gap-[0.417vw] min-[1440px]:pr-[0.278vw]">
+              {context.loading && threads.length === 0 ? (
+                <MessageListSkeleton />
+              ) : visibleThreads.length > 0 ? (
+                visibleThreads.map((thread) => (
+                  <MessageThreadRow
+                    active={thread.id === activeThread?.id}
+                    key={thread.id}
+                    onSelect={() => {
+                      markThreadRead(thread.id);
+                      setActiveThreadId(thread.id);
+                      setConversationSearchOpen(false);
+                    }}
+                    thread={thread}
+                  />
+                ))
+              ) : null}
+            </div>
           </aside>
 
           <MessageConversationPanel
@@ -2023,6 +2051,13 @@ function MemberInformationForm({
   const avatarInputRef = useRef<HTMLInputElement>(null);
   const addressSearchLayerRef = useRef<HTMLDivElement>(null);
   const detailAddressInputRef = useRef<HTMLInputElement>(null);
+  const currentFormSnapshot = useMemo(
+    () => createMemberInformationSnapshot(form),
+    [form],
+  );
+  const [savedFormSnapshot, setSavedFormSnapshot] = useState(currentFormSnapshot);
+  const hasUnsavedMemberChanges =
+    editMode && !saving && currentFormSnapshot !== savedFormSnapshot;
   const normalizedNickname = normalizeNicknameForCheck(form.nickname);
   const normalizedInitialNickname = normalizeNicknameForCheck(initialNickname);
   const nicknameChanged = normalizedNickname !== normalizedInitialNickname;
@@ -2287,10 +2322,7 @@ function MemberInformationForm({
       const updatedProfile = payload.data;
       const updatedEmailParts = splitEmailAddress(updatedProfile.contactEmail ?? "");
       const updatedBirthDateParts = splitBirthDate(updatedProfile.birthDate);
-
-      context.updateProfile(updatedProfile);
-      setForm((current) => ({
-        ...current,
+      const nextFormState: MemberInformationFormState = {
         address: updatedProfile.address ?? "",
         detailAddress: updatedProfile.addressDetail ?? "",
         avatarUrl: updatedProfile.avatarUrl ?? "",
@@ -2310,7 +2342,11 @@ function MemberInformationForm({
         phone: updatedProfile.phone ?? "",
         refundAccount: updatedProfile.refundAccount ?? "",
         refundBank: updatedProfile.refundBank ?? "",
-      }));
+      };
+
+      context.updateProfile(updatedProfile);
+      setForm(nextFormState);
+      setSavedFormSnapshot(createMemberInformationSnapshot(nextFormState));
       setNicknameCheck({
         checkedValue: normalizeNicknameForCheck(updatedProfile.displayName ?? ""),
         status: "available",
@@ -2329,6 +2365,7 @@ function MemberInformationForm({
 
   return (
     <>
+      <UnsavedChangesGuard when={hasUnsavedMemberChanges} />
       <section className="w-full pt-0 lg:min-h-[clamp(430px,29.8611vw,573.333px)]">
         <div className="relative min-h-[clamp(363px,25.2083vw,484px)] w-full max-w-[clamp(724px,50.2778vw,965.333px)]">
           <div className="absolute left-0 top-0 z-10">

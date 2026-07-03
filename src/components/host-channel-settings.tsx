@@ -2,10 +2,11 @@
 
 import Image from "next/image";
 import { useSearchParams } from "next/navigation";
-import { useEffect, useRef, useState, type ChangeEvent } from "react";
+import { useEffect, useMemo, useRef, useState, type ChangeEvent } from "react";
 import { fallbackChannel } from "@/components/host-channel-home";
 import { nuvioIcons } from "@/components/icons/nuvio-icons";
 import { HostWorkspaceLayout } from "@/components/host-workspace-ui";
+import { UnsavedChangesGuard } from "@/components/unsaved-changes-guard";
 import { selectHostChannel } from "@/lib/host-channel-selection";
 import type { Village, VillageLink } from "@/lib/village-types";
 
@@ -33,6 +34,19 @@ type SaveChannelPayload = {
   error?: string;
 };
 
+function createChannelSettingsSignature(channel: Village) {
+  return JSON.stringify({
+    city: channel.city,
+    links: channel.links,
+    name: channel.name,
+    profileImage: channel.profileImage,
+    published: channel.published,
+    region: channel.region,
+    summary: channel.summary,
+    tagline: channel.tagline,
+  });
+}
+
 export function HostChannelSettings() {
   const searchParams = useSearchParams();
   const requestedChannelSlug = searchParams.get("channel");
@@ -42,6 +56,18 @@ export function HostChannelSettings() {
   const [isUploadingProfile, setIsUploadingProfile] = useState(false);
   const [profileMessage, setProfileMessage] = useState("");
   const profileInputRef = useRef<HTMLInputElement>(null);
+  const currentChannelSignature = useMemo(
+    () => createChannelSettingsSignature(channel),
+    [channel],
+  );
+  const [savedChannelSignature, setSavedChannelSignature] = useState(
+    currentChannelSignature,
+  );
+  const hasUnsavedChannelChanges =
+    !isLoading &&
+    !isSaving &&
+    !isUploadingProfile &&
+    currentChannelSignature !== savedChannelSignature;
 
   useEffect(() => {
     let active = true;
@@ -55,9 +81,10 @@ export function HostChannelSettings() {
         const channels = Array.isArray(payload.data) ? payload.data : [];
 
         if (active) {
-          setChannel(
-            selectHostChannel(channels, requestedChannelSlug) ?? fallbackChannel,
-          );
+          const selectedChannel =
+            selectHostChannel(channels, requestedChannelSlug) ?? fallbackChannel;
+          setChannel(selectedChannel);
+          setSavedChannelSignature(createChannelSettingsSignature(selectedChannel));
         }
       } finally {
         if (active) setIsLoading(false);
@@ -158,6 +185,7 @@ export function HostChannelSettings() {
       }
 
       setChannel(savePayload.data);
+      setSavedChannelSignature(createChannelSettingsSignature(savePayload.data));
       setProfileMessage("프로필 이미지가 저장되었습니다.");
     } catch (error) {
       setProfileMessage(
@@ -183,7 +211,10 @@ export function HostChannelSettings() {
         data?: Village;
       };
 
-      if (response.ok && payload.data) setChannel(payload.data);
+      if (response.ok && payload.data) {
+        setChannel(payload.data);
+        setSavedChannelSignature(createChannelSettingsSignature(payload.data));
+      }
     } finally {
       setIsSaving(false);
     }
@@ -193,6 +224,7 @@ export function HostChannelSettings() {
 
   return (
     <HostWorkspaceLayout sidebarHeight="min-h-[var(--host-1076)]">
+      <UnsavedChangesGuard when={hasUnsavedChannelChanges} />
       <section className="min-w-0 flex-1 overflow-x-clip bg-white">
         <div className="flex min-h-[var(--host-1076)] w-full max-w-[var(--host-1230)] flex-col">
           <div className="h-[var(--host-1007)] shrink-0">

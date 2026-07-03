@@ -589,7 +589,7 @@ function buildStandaloneNewProgramDraft(
     city: workspace.city,
     summary: "",
     description: "",
-    recruitStart: new Date().toISOString().slice(0, 10),
+    recruitStart: "",
     recruitEnd: "",
     activityStart: "",
     activityEnd: "",
