@@ -4,6 +4,7 @@ import {
   enforceContentLength,
   enforceSameOrigin,
   isApiAuthError,
+  readJsonWithLimit,
   requireAuthenticatedUser,
 } from "@/lib/api-security";
 import { ReviewInteractionError, setReviewHelpful } from "@/lib/review-interaction-db";
@@ -38,7 +39,9 @@ export async function POST(
 
   try {
     const { id } = await params;
-    const body = await request.json().catch(() => ({}));
+    const parsedBody = await readJsonWithLimit(request, 4 * 1024);
+    if (parsedBody.response) return parsedBody.response;
+    const body = parsedBody.body;
     const helpful = body && typeof body === "object" && "helpful" in body
       ? (body as { helpful?: unknown }).helpful !== false
       : true;

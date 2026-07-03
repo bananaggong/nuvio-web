@@ -230,6 +230,61 @@ export async function applyPersistentRateLimit(
   }
 }
 
+export function asJsonRecord(input: unknown): Record<string, unknown> {
+  return input && typeof input === "object" && !Array.isArray(input)
+    ? (input as Record<string, unknown>)
+    : {};
+}
+export async function readJsonWithLimit(
+  request: Request,
+  maxBytes: number,
+): Promise<{ body: unknown; response: NextResponse | null }> {
+  const contentLengthError = enforceContentLength(request, maxBytes);
+  if (contentLengthError) return { body: {}, response: contentLengthError };
+  if (!request.body) return { body: {}, response: null };
+
+  const reader = request.body.getReader();
+  const chunks: Uint8Array[] = [];
+  let receivedBytes = 0;
+
+  while (true) {
+    const { done, value } = await reader.read();
+    if (done) break;
+    if (!value) continue;
+
+    receivedBytes += value.byteLength;
+    if (receivedBytes > maxBytes) {
+      await reader.cancel().catch(() => undefined);
+      return { body: {}, response: apiError("Payload is too large.", 413) };
+    }
+
+    chunks.push(value);
+  }
+
+  if (receivedBytes === 0) return { body: {}, response: null };
+
+  const rawBody = new TextDecoder().decode(concatBytes(chunks, receivedBytes)).trim();
+  if (!rawBody) return { body: {}, response: null };
+
+  try {
+    return { body: JSON.parse(rawBody) as unknown, response: null };
+  } catch {
+    return { body: {}, response: null };
+  }
+}
+
+function concatBytes(chunks: Uint8Array[], totalBytes: number): Uint8Array {
+  const output = new Uint8Array(totalBytes);
+  let offset = 0;
+
+  for (const chunk of chunks) {
+    output.set(chunk, offset);
+    offset += chunk.byteLength;
+  }
+
+  return output;
+}
+
 export function apiError(
   message: string,
   status: number,

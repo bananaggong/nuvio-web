@@ -5,6 +5,7 @@ import {
   enforceContentLength,
   enforceSameOrigin,
   isApiAuthError,
+  readJsonWithLimit,
   requireHostRole,
 } from "@/lib/api-security";
 import { listManageableHostVillageWorkspaces } from "@/lib/host-village-access";
@@ -82,7 +83,9 @@ export async function PATCH(request: Request) {
     });
     if (limited) return limited;
 
-    const body = await request.json().catch(() => ({}));
+    const parsedBody = await readJsonWithLimit(request, 32 * 1024);
+    if (parsedBody.response) return parsedBody.response;
+    const body = parsedBody.body;
     const workspaces =
       auth.profile.role === "admin"
         ? []

@@ -1,10 +1,12 @@
 import { NextResponse } from "next/server";
 import {
   apiError,
+  asJsonRecord,
   applyPersistentRateLimit,
   enforceContentLength,
   enforceSameOrigin,
   isApiAuthError,
+  readJsonWithLimit,
   requireHostRole,
 } from "@/lib/api-security";
 import {
@@ -104,7 +106,9 @@ export async function POST(request: Request) {
     });
     if (rateLimitError) return rateLimitError;
 
-    const body = await request.json().catch(() => ({}));
+    const parsedBody = await readJsonWithLimit(request, MAX_REVIEW_PAYLOAD_BYTES);
+    if (parsedBody.response) return parsedBody.response;
+    const body = parsedBody.body;
     let draft = normalizeHostReviewDraft(body);
     let allowedVillageIds: string[] | undefined;
     let allowedVillageSlugs: string[] | undefined;
@@ -173,7 +177,9 @@ export async function PATCH(request: Request) {
     });
     if (rateLimitError) return rateLimitError;
 
-    const body = await request.json().catch(() => ({}));
+    const parsedBody = await readJsonWithLimit(request, MAX_REVIEW_PAYLOAD_BYTES);
+    if (parsedBody.response) return parsedBody.response;
+    const body = asJsonRecord(parsedBody.body);
     let allowedVillageIds: string[] | undefined;
     let allowedVillageSlugs: string[] | undefined;
 
@@ -190,7 +196,7 @@ export async function PATCH(request: Request) {
         id: typeof body.id === "string" ? body.id : "",
         moderationNote:
           typeof body.moderationNote === "string" ? body.moderationNote : undefined,
-        status: typeof body.status === "string" ? body.status : "pending",
+        status: hostReviewStatuses.includes(body.status as ReviewStatus) ? (body.status as ReviewStatus) : "pending",
       },
       {
         allowedVillageIds,

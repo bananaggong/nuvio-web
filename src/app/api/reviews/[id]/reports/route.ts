@@ -1,9 +1,11 @@
 import { NextResponse } from "next/server";
 import {
   applyPersistentRateLimit,
+  asJsonRecord,
   enforceContentLength,
   enforceSameOrigin,
   isApiAuthError,
+  readJsonWithLimit,
   requireAuthenticatedUser,
 } from "@/lib/api-security";
 import { launchFeatureFlags } from "@/lib/launch-feature-flags";
@@ -42,7 +44,9 @@ export async function POST(
 
   try {
     const { id } = await params;
-    const body = await request.json().catch(() => ({}));
+    const parsedBody = await readJsonWithLimit(request, 16 * 1024);
+    if (parsedBody.response) return parsedBody.response;
+    const body = asJsonRecord(parsedBody.body);
     const report = await createReviewReport({ ...body, reviewId: id }, auth);
     return NextResponse.json({ data: report }, { status: 201 });
   } catch (error) {

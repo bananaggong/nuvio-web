@@ -5,6 +5,7 @@ import {
   enforceContentLength,
   enforceSameOrigin,
   isApiAuthError,
+  readJsonWithLimit,
   requireHostRole,
 } from "@/lib/api-security";
 import { listManageableHostVillageWorkspaces } from "@/lib/host-village-access";
@@ -45,7 +46,9 @@ export async function PUT(
     if (limited) return limited;
 
     const { id } = await params;
-    const body = await request.json().catch(() => ({}));
+    const parsedBody = await readJsonWithLimit(request, 16 * 1024);
+    if (parsedBody.response) return parsedBody.response;
+    const body = parsedBody.body;
     const options = await buildAccessOptions(auth);
     const reply = await upsertHostReviewReply(id, body, auth, options);
     return NextResponse.json({ data: reply });
@@ -94,7 +97,9 @@ export async function PATCH(
     if (limited) return limited;
 
     const { id } = await params;
-    const body = await request.json().catch(() => ({}));
+    const parsedBody = await readJsonWithLimit(request, 16 * 1024);
+    if (parsedBody.response) return parsedBody.response;
+    const body = parsedBody.body;
     const status =
       body &&
       typeof body === "object" &&

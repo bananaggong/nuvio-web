@@ -4,6 +4,7 @@ import {
   enforceContentLength,
   enforceSameOrigin,
   isApiAuthError,
+  readJsonWithLimit,
   requireAuthenticatedUser,
 } from "@/lib/api-security";
 import { launchFeatureFlags } from "@/lib/launch-feature-flags";
@@ -73,9 +74,9 @@ export async function POST(request: Request) {
   if (limited) return limited;
 
   try {
-    const body = (await request.json().catch(() => ({}))) as {
-      applicationId?: unknown;
-    };
+    const parsedBody = await readJsonWithLimit(request, 8 * 1024);
+    if (parsedBody.response) return parsedBody.response;
+    const body = parsedBody.body as { applicationId?: unknown };
     const applicationId =
       typeof body.applicationId === "string" ? body.applicationId.trim() : "";
 

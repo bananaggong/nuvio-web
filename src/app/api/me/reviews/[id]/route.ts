@@ -4,6 +4,7 @@ import {
   enforceContentLength,
   enforceSameOrigin,
   isApiAuthError,
+  readJsonWithLimit,
   requireAuthenticatedUser,
 } from "@/lib/api-security";
 import { launchFeatureFlags } from "@/lib/launch-feature-flags";
@@ -42,7 +43,9 @@ export async function PATCH(
 
   try {
     const { id } = await params;
-    const body = await request.json().catch(() => ({}));
+    const parsedBody = await readJsonWithLimit(request, 32 * 1024);
+    if (parsedBody.response) return parsedBody.response;
+    const body = parsedBody.body as Parameters<typeof updateParticipantReview>[1];
     const review = await updateParticipantReview(id, body, auth);
     return NextResponse.json({ data: review });
   } catch (error) {

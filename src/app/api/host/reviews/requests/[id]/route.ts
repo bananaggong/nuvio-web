@@ -2,9 +2,11 @@ import { NextResponse } from "next/server";
 import {
   apiError,
   applyPersistentRateLimit,
+  asJsonRecord,
   enforceContentLength,
   enforceSameOrigin,
   isApiAuthError,
+  readJsonWithLimit,
   requireHostRole,
 } from "@/lib/api-security";
 import { listManageableHostVillageWorkspaces } from "@/lib/host-village-access";
@@ -44,7 +46,9 @@ export async function PATCH(
 
   try {
     const { id } = await params;
-    const body = await request.json().catch(() => ({}));
+    const parsedBody = await readJsonWithLimit(request, 8 * 1024);
+    if (parsedBody.response) return parsedBody.response;
+    const body = asJsonRecord(parsedBody.body);
     const workspaces =
       auth.profile.role === "admin"
         ? []
