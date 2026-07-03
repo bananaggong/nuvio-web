@@ -47,9 +47,7 @@ export async function setReviewHelpful(
     throw new ReviewInteractionError("You cannot mark your own review as helpful.");
   }
 
-  const result = helpful
-    ? await addHelpfulVote(reviewId, auth)
-    : await removeHelpfulVote(reviewId, auth);
+  const result = await mutateHelpfulVote(reviewId, helpful, auth);
 
   if (result.changed) {
     void safeCreateAuditLog({
@@ -75,6 +73,23 @@ export async function setReviewHelpful(
   }
 
   return { helpful: result.helpful, likes: result.likes, reviewId: result.reviewId };
+}
+
+async function mutateHelpfulVote(
+  reviewId: string,
+  helpful: boolean,
+  auth: ApiAuthContext,
+): Promise<ReviewHelpfulMutationResult> {
+  try {
+    return helpful
+      ? await addHelpfulVote(reviewId, auth)
+      : await removeHelpfulVote(reviewId, auth);
+  } catch (error) {
+    if (isReviewConstraintError(error)) {
+      throw new ReviewInteractionError("Review interaction is no longer available.");
+    }
+    throw error;
+  }
 }
 
 async function addHelpfulVote(
@@ -132,6 +147,12 @@ async function readReviewLikeCount(
     .limit(1);
 
   return current?.likes ?? 0;
+}
+
+function isReviewConstraintError(error: unknown): boolean {
+  if (!error || typeof error !== "object") return false;
+  const databaseError = error as { code?: unknown };
+  return databaseError.code === "23514";
 }
 
 function isUuid(value: string): boolean {

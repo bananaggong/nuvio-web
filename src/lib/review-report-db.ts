@@ -104,32 +104,7 @@ export async function createReviewReport(
     throw new ReviewReportSelfReportError();
   }
 
-  const [row] = await getDb().transaction(async (tx) => {
-    const [existing] = await tx
-      .select({ id: reviewReports.id })
-      .from(reviewReports)
-      .where(
-        and(
-          eq(reviewReports.reviewId, normalized.reviewId),
-          eq(reviewReports.reporterId, auth.user.id),
-        ),
-      )
-      .limit(1);
-
-    if (existing) throw new DuplicateReviewReportError();
-
-    return tx
-      .insert(reviewReports)
-      .values({
-        reviewId: normalized.reviewId,
-        reporterId: auth.user.id,
-        reporterEmail: getPrimaryEmail(auth),
-        reason: normalized.reason,
-        message: normalized.message,
-        status: "open",
-      })
-      .returning();
-  });
+  const [row] = await createReportRow(normalized, auth);
 
   void safeCreateAuditLog({
     action: "review.report.create",
@@ -157,6 +132,49 @@ export async function createReviewReport(
   });
 
   return mapReviewReportRow(row, review);
+}
+
+async function createReportRow(
+  normalized: {
+    message: string;
+    reason: ReviewReportReason;
+    reviewId: string;
+  },
+  auth: ApiAuthContext,
+): Promise<ReviewReportRow[]> {
+  try {
+    return await getDb().transaction(async (tx) => {
+      const [existing] = await tx
+        .select({ id: reviewReports.id })
+        .from(reviewReports)
+        .where(
+          and(
+            eq(reviewReports.reviewId, normalized.reviewId),
+            eq(reviewReports.reporterId, auth.user.id),
+          ),
+        )
+        .limit(1);
+
+      if (existing) throw new DuplicateReviewReportError();
+
+      return tx
+        .insert(reviewReports)
+        .values({
+          reviewId: normalized.reviewId,
+          reporterId: auth.user.id,
+          reporterEmail: getPrimaryEmail(auth),
+          reason: normalized.reason,
+          message: normalized.message,
+          status: "open",
+        })
+        .returning();
+    });
+  } catch (error) {
+    if (isUniqueReviewReportConflict(error)) {
+      throw new DuplicateReviewReportError();
+    }
+    throw error;
+  }
 }
 
 export async function listHostReviewReports(options: {
@@ -441,6 +459,13 @@ function asReportStatus(value: unknown): ReviewReportStatus {
 
 function getPrimaryEmail(auth: ApiAuthContext): string {
   return String(auth.user.email || auth.profile.email || "").trim().toLowerCase();
+}
+
+function isUniqueReviewReportConflict(error: unknown): boolean {
+  if (!error || typeof error !== "object") return false;
+  const databaseError = error as { code?: unknown; constraint_name?: unknown };
+  return databaseError.code === "23505"
+    && databaseError.constraint_name === "review_reports_review_reporter_unique_idx";
 }
 
 function normalizeError(error: unknown): string {
