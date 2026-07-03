@@ -10,6 +10,7 @@ import { launchFeatureFlags } from "@/lib/launch-feature-flags";
 import {
   listMyReviewRequestsFromDb,
   markMyReviewRequestOpenedFromDb,
+  type ReviewRequestRecord,
 } from "@/lib/review-request-db";
 
 export const runtime = "nodejs";
@@ -35,7 +36,7 @@ export async function GET(request: Request) {
     const includeCompleted = url.searchParams.get("includeCompleted") === "true";
     const limit = Number(url.searchParams.get("limit") ?? "100");
     const data = await listMyReviewRequestsFromDb(auth, { includeCompleted, limit });
-    return NextResponse.json({ data });
+    return NextResponse.json({ data: data.map(mapMyReviewRequestResponse) });
   } catch (error) {
     return NextResponse.json(
       {
@@ -86,7 +87,7 @@ export async function POST(request: Request) {
     }
 
     const data = await markMyReviewRequestOpenedFromDb(applicationId, auth);
-    return NextResponse.json({ data });
+    return NextResponse.json({ data: data ? mapMyReviewRequestResponse(data) : null });
   } catch (error) {
     return NextResponse.json(
       {
@@ -98,4 +99,12 @@ export async function POST(request: Request) {
       { status: 500 },
     );
   }
+}
+type MyReviewRequestResponse = Omit<ReviewRequestRecord, "recipientEmail" | "recipientName">;
+
+function mapMyReviewRequestResponse(record: ReviewRequestRecord): MyReviewRequestResponse {
+  const { recipientEmail: _recipientEmail, recipientName: _recipientName, ...safeRecord } = record;
+  void _recipientEmail;
+  void _recipientName;
+  return safeRecord;
 }
