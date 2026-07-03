@@ -8,6 +8,7 @@ import {
   getVillageReviews,
   listPublicVillages,
 } from "@/lib/village-db";
+import { launchFeatureFlags } from "@/lib/launch-feature-flags";
 import { listPublicVillageMedia } from "@/lib/village-media-db";
 import {
   breadcrumbJsonLd,
@@ -53,7 +54,9 @@ export default async function VillagePage({
   if (!village) notFound();
 
   const programs = await getVillagePrograms(village);
-  const reviews = await getVillageReviews(village, programs, { limit: 6 });
+  const reviews = launchFeatureFlags.reviews
+    ? await getVillageReviews(village, programs, { limit: 6 })
+    : [];
   const media = await listPublicVillageMedia(village.slug, { limit: 6 });
 
   return (
