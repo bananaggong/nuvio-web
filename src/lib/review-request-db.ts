@@ -755,7 +755,22 @@ async function expireStaleReviewRequests(): Promise<void> {
       and(
         inArray(reviewRequests.status, activeReviewRequestStatuses),
         sql`${reviewRequests.expiresAt} is not null`,
-        sql`${reviewRequests.expiresAt} < now()`,
+        sql`${reviewRequests.expiresAt} <= now()`,
+      ),
+    );
+
+  await getDb()
+    .update(reviewRequests)
+    .set({
+      requestTokenExpiresAt: null,
+      requestTokenHash: null,
+      updatedAt: new Date(),
+    })
+    .where(
+      and(
+        inArray(reviewRequests.status, activeReviewRequestStatuses),
+        sql`${reviewRequests.requestTokenExpiresAt} is not null`,
+        sql`${reviewRequests.requestTokenExpiresAt} <= now()`,
       ),
     );
 }
