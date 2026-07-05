@@ -96,6 +96,7 @@ export async function enrichLatestReviewContentVersion(
       and(
         eq(reviewContentVersions.reviewId, input.reviewId),
         isNull(reviewContentVersions.changedBy),
+        sql`${reviewContentVersions.metadata}->>'source' = 'database_trigger'`,
         gte(reviewContentVersions.createdAt, new Date(Date.now() - 60_000)),
       ),
     )
