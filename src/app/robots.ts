@@ -1,4 +1,5 @@
 import type { MetadataRoute } from "next";
+import { launchFeatureFlags } from "@/lib/launch-feature-flags";
 import { absoluteUrl } from "@/lib/seo";
 
 export default function robots(): MetadataRoute.Robots {
@@ -15,8 +16,7 @@ export default function robots(): MetadataRoute.Robots {
         "/me",
         "/mypage",
         "/programs/*/apply",
-        "/reviews",
-        "/reviews/",
+        ...(launchFeatureFlags.reviews ? [] : ["/reviews", "/reviews/"]),
         "/reviews/new",
         "/signup",
       ],
