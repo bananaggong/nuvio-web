@@ -79,6 +79,7 @@ const holdReasons: ReviewVisibilityHoldReason[] = [
   "privacy_report",
   "inappropriate_report",
   "spam_report",
+  "false_information_report",
 ];
 const holdSourceTypes: ReviewVisibilityHoldSourceType[] = [
   "moderation_check",

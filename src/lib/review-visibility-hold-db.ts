@@ -12,7 +12,8 @@ export type ReviewVisibilityHoldReason =
   | "high_risk_moderation"
   | "privacy_report"
   | "inappropriate_report"
-  | "spam_report";
+  | "spam_report"
+  | "false_information_report";
 
 export type ReviewVisibilityHoldSourceType =
   | "moderation_check"
@@ -71,6 +72,7 @@ const holdReasons: ReviewVisibilityHoldReason[] = [
   "privacy_report",
   "inappropriate_report",
   "spam_report",
+  "false_information_report",
 ];
 const holdStatuses: ReviewVisibilityHoldStatus[] = ["active", "released"];
 const holdSourceTypes: ReviewVisibilityHoldSourceType[] = [
