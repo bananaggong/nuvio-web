@@ -1001,6 +1001,7 @@ async function markNotificationEvent(
     .set({
       deliveredAt: status === "sent" || status === "skipped" ? now : null,
       error: message,
+      href: getTerminalNotificationHref(event),
       nextAttemptAt: null,
       providerMessageId: options.providerMessageId,
       status,
@@ -1361,6 +1362,36 @@ function isTransactionalEmailEvent(eventType: string): boolean {
     eventType === "review.reply.created" ||
     eventType.startsWith("review.request.")
   );
+}
+
+function getTerminalNotificationHref(event: NotificationEventRow): string | null {
+  const href = event.href?.trim();
+  if (!href) return null;
+  if (!event.eventType.startsWith("review.request.")) return href;
+
+  return removeSensitiveQueryParam(href, "requestToken");
+}
+
+function removeSensitiveQueryParam(href: string, param: string): string {
+  try {
+    const absoluteInput = /^https?:\/\//iu.test(href);
+    const url = new URL(href, "https://nuvio.local");
+    url.searchParams.delete(param);
+
+    return absoluteInput
+      ? url.toString()
+      : `${url.pathname}${url.search}${url.hash}`;
+  } catch {
+    const pattern = new RegExp(`([?&])${escapeRegExp(param)}=[^&]*`, "giu");
+    return href
+      .replace(pattern, "$1")
+      .replace("?&", "?")
+      .replace(/[?&]$/u, "");
+  }
+}
+
+function escapeRegExp(value: string): string {
+  return value.replace(/[.*+?^${}()|[\]\\]/gu, "\\$&");
 }
 
 function renderNotificationEmailText(event: NotificationEventRow): string {
