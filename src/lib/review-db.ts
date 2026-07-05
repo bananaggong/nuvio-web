@@ -689,6 +689,11 @@ export async function deleteParticipantReview(
         .update(reviewRequests)
         .set({
           completedAt: null,
+          expiresAt: null,
+          lastRequestedAt: null,
+          nextReminderAt: null,
+          requestTokenExpiresAt: null,
+          requestTokenHash: null,
           reviewId: null,
           status: "pending",
           updatedAt: now,

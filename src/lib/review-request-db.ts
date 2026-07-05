@@ -695,9 +695,12 @@ export async function reopenReviewRequestForApplication(applicationId: string): 
     .update(reviewRequests)
     .set({
       completedAt: null,
-      reviewId: null,
+      expiresAt: null,
+      lastRequestedAt: null,
+      nextReminderAt: null,
       requestTokenExpiresAt: null,
       requestTokenHash: null,
+      reviewId: null,
       status: "pending",
       updatedAt: new Date(),
     })
