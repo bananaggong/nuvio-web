@@ -146,14 +146,12 @@ export async function recordReviewReportEvent(
   const actorId = input.actorId ?? options.actorId ?? null;
   const actorRole = normalizeOptionalText(input.actorRole ?? options.actorRole);
   const metadata = sanitizeMetadata(input.metadata);
-  const recentTriggerEvent = actorId
-    ? await findRecentTriggerEvent({
-        action,
-        fromStatus: input.fromStatus ?? null,
-        reportId: input.reportId,
-        toStatus: input.toStatus,
-      })
-    : null;
+  const recentTriggerEvent = await findRecentTriggerEvent({
+    action,
+    fromStatus: input.fromStatus ?? null,
+    reportId: input.reportId,
+    toStatus: input.toStatus,
+  });
 
   if (recentTriggerEvent) {
     const [updated] = await getDb().transaction(async (tx) => {
@@ -271,6 +269,7 @@ async function findRecentTriggerEvent(input: {
         eq(reviewReportEvents.toStatus, input.toStatus),
         eq(reviewReportEvents.action, input.action),
         isNull(reviewReportEvents.actorId),
+        sql`${reviewReportEvents.metadata}->>'source' = 'database_trigger'`,
         gte(reviewReportEvents.createdAt, new Date(Date.now() - 60_000)),
       ),
     )

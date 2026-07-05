@@ -145,14 +145,12 @@ export async function recordReviewVisibilityHoldEvent(
   const actorId = input.actorId ?? options.actorId ?? null;
   const actorRole = normalizeOptionalText(input.actorRole ?? options.actorRole);
   const metadata = sanitizeMetadata(input.metadata);
-  const recentTriggerEvent = actorId
-    ? await findRecentTriggerEvent({
-        action,
-        fromStatus: input.fromStatus ?? null,
-        holdId: input.holdId,
-        toStatus: input.toStatus,
-      })
-    : null;
+  const recentTriggerEvent = await findRecentTriggerEvent({
+    action,
+    fromStatus: input.fromStatus ?? null,
+    holdId: input.holdId,
+    toStatus: input.toStatus,
+  });
 
   if (recentTriggerEvent) {
     const [updated] = await getDb().transaction(async (tx) => {
@@ -270,6 +268,7 @@ async function findRecentTriggerEvent(input: {
         eq(reviewVisibilityHoldEvents.toStatus, input.toStatus),
         eq(reviewVisibilityHoldEvents.action, input.action),
         isNull(reviewVisibilityHoldEvents.actorId),
+        sql`${reviewVisibilityHoldEvents.metadata}->>'source' = 'database_trigger'`,
         gte(reviewVisibilityHoldEvents.createdAt, new Date(Date.now() - 60_000)),
       ),
     )
