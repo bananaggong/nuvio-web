@@ -86,7 +86,7 @@ export async function POST(request: Request) {
     if (limited) return limited;
 
     const savedDraft = await createParticipantReview(body, auth);
-    return NextResponse.json({ data: savedDraft }, { status: 201 });
+    return NextResponse.json({ data: mapReviewSubmissionResponse(savedDraft) }, { status: 201 });
   } catch (error) {
     if (error instanceof DuplicateReviewError) {
       return NextResponse.json({ error: error.message }, { status: 409 });
@@ -103,4 +103,15 @@ export async function POST(request: Request) {
       { status: 400 },
     );
   }
+}
+type ReviewSubmissionResult = Awaited<ReturnType<typeof createParticipantReview>>;
+
+function mapReviewSubmissionResponse(review: ReviewSubmissionResult) {
+  return {
+    id: review.id,
+    title: review.title,
+    status: review.status,
+    submittedAt: review.submittedAt,
+    updatedAt: review.updatedAt,
+  };
 }
