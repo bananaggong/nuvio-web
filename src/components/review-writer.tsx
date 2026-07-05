@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { Loader2, Send } from "lucide-react";
+import { Loader2, Send, Star } from "lucide-react";
 import { FormEvent, useEffect, useState } from "react";
 
 export function ReviewWriter({
@@ -14,6 +14,7 @@ export function ReviewWriter({
   const [submitted, setSubmitted] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
+  const [rating, setRating] = useState<number | "">("");
   useEffect(() => {
     const id = applicationId.trim();
     if (!isUuid(id)) return;
@@ -58,6 +59,7 @@ export function ReviewWriter({
 
       setSubmitted(true);
       formElement.reset();
+      setRating("");
     } catch (error) {
       setErrorMessage(
         error instanceof Error
@@ -109,14 +111,40 @@ export function ReviewWriter({
             <option value="question">질문</option>
           </select>
         </label>
-        <label className="grid gap-2 text-sm font-black text-slate-700">
-          작성자명
-          <input
-            className="h-11 rounded-md border border-slate-200 px-3 font-semibold"
-            name="author"
-            placeholder="미입력 시 익명"
-          />
-        </label>
+        <div className="grid gap-2 text-sm font-black text-slate-700">
+          <input name="rating" type="hidden" value={rating} />
+          <span>평점</span>
+          <div aria-label="후기 평점" className="flex items-center gap-1" role="radiogroup">
+            {[1, 2, 3, 4, 5].map((value) => {
+              const selected = rating !== "" && rating >= value;
+              return (
+                <button
+                  aria-checked={rating === value}
+                  aria-label={`${value}점`}
+                  className="inline-flex size-9 items-center justify-center rounded-md text-slate-300 transition hover:bg-orange-50 hover:text-[var(--primary)]"
+                  key={value}
+                  onClick={() => setRating(value)}
+                  role="radio"
+                  type="button"
+                >
+                  <Star
+                    className={selected ? "fill-[var(--primary)] text-[var(--primary)]" : undefined}
+                    size={22}
+                  />
+                </button>
+              );
+            })}
+            {rating ? (
+              <button
+                className="ml-2 h-8 rounded-md border border-slate-200 px-3 text-xs font-bold text-slate-500 hover:border-[var(--primary)] hover:text-[var(--primary)]"
+                onClick={() => setRating("")}
+                type="button"
+              >
+                선택 해제
+              </button>
+            ) : null}
+          </div>
+        </div>
         <label className="grid gap-2 text-sm font-black text-slate-700">
           제목
           <input
