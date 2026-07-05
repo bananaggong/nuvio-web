@@ -568,7 +568,9 @@ export const reviews = pgTable(
     updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
   },
   (table) => [
-    uniqueIndex("reviews_application_id_unique_idx").on(table.applicationId),
+    uniqueIndex("reviews_application_id_unique_idx")
+      .on(table.applicationId)
+      .where(sql`${table.applicationId} is not null and ${table.status} <> 'deleted'`),
     index("reviews_application_id_idx").on(table.applicationId),
     index("reviews_program_id_idx").on(table.programId),
     index("reviews_program_run_id_idx").on(table.programRunId),
