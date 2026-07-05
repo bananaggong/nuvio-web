@@ -853,10 +853,9 @@ export const reviewReports = pgTable(
     updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
   },
   (table) => [
-    uniqueIndex("review_reports_review_reporter_unique_idx").on(
-      table.reviewId,
-      table.reporterId,
-    ),
+    uniqueIndex("review_reports_review_reporter_unique_idx")
+      .on(table.reviewId, table.reporterId)
+      .where(sql`${table.reporterId} is not null`),
     index("review_reports_review_id_idx").on(table.reviewId),
     index("review_reports_reporter_id_idx").on(table.reporterId),
     index("review_reports_status_idx").on(table.status),
