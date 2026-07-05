@@ -9,7 +9,10 @@ import {
 import type { ApiAuthContext } from "@/lib/api-security";
 import { safeCreateAuditLog } from "@/lib/audit-log-db";
 import { queueReviewHostReplyNotification } from "@/lib/notification-db";
-import { publicReviewSafetyPredicate } from "@/lib/review-public-visibility-db";
+import {
+  buildPublicReviewVisibilityConditions,
+  publicReviewSafetyPredicate,
+} from "@/lib/review-public-visibility-db";
 import { safeRecordReviewHostReplyEvent } from "@/lib/review-reply-event-db";
 
 export type ReviewHostReplyStatus = "published" | "hidden";
@@ -74,6 +77,41 @@ export async function listPublicReviewHostReplies(
     .limit(10);
 
   return rows.map(({ reply }) => mapPublicReply(reply));
+}
+
+export async function queuePublishedReviewHostReplyNotificationForReview(
+  reviewId: string,
+): Promise<void> {
+  if (!isUuid(reviewId)) return;
+
+  const [row] = await getDb()
+    .select({
+      reply: reviewHostReplies,
+      review: {
+        applicationEmail: programApplications.email,
+        id: reviewsTable.id,
+        programVillageId: programsTable.villageId,
+        status: reviewsTable.status,
+        title: reviewsTable.title,
+        userId: reviewsTable.userId,
+        villageSlug: reviewsTable.villageSlug,
+      },
+    })
+    .from(reviewHostReplies)
+    .innerJoin(reviewsTable, eq(reviewHostReplies.reviewId, reviewsTable.id))
+    .leftJoin(programsTable, eq(reviewsTable.programId, programsTable.id))
+    .leftJoin(programApplications, eq(reviewsTable.applicationId, programApplications.id))
+    .where(
+      and(
+        eq(reviewHostReplies.reviewId, reviewId),
+        eq(reviewHostReplies.status, "published"),
+        ...buildPublicReviewVisibilityConditions(),
+      ),
+    )
+    .orderBy(desc(reviewHostReplies.updatedAt))
+    .limit(1);
+
+  if (row) await safeQueueReviewHostReplyNotification(row.reply, row.review);
 }
 
 export async function upsertHostReviewReply(
@@ -255,6 +293,8 @@ async function safeQueueReviewHostReplyNotification(
   review: ReviewAccessRow,
 ): Promise<void> {
   try {
+    if (!(await isReviewPubliclyVisibleForReply(review.id))) return;
+
     await queueReviewHostReplyNotification({
       authorName: reply.authorName,
       recipientEmail: review.applicationEmail,
@@ -276,6 +316,17 @@ async function safeQueueReviewHostReplyNotification(
     });
   }
 }
+
+async function isReviewPubliclyVisibleForReply(reviewId: string): Promise<boolean> {
+  const [row] = await getDb()
+    .select({ id: reviewsTable.id })
+    .from(reviewsTable)
+    .where(and(eq(reviewsTable.id, reviewId), ...buildPublicReviewVisibilityConditions()))
+    .limit(1);
+
+  return Boolean(row);
+}
+
 async function getReviewForReplyAccess(
   reviewId: string,
   options: { allowedVillageIds?: string[]; allowedVillageSlugs?: string[] },

@@ -16,6 +16,7 @@ import { refreshReviewModerationCheck } from "@/lib/review-moderation-check-db";
 import { buildPublicReviewVisibilityConditions } from "@/lib/review-public-visibility-db";
 import { safeRecordReviewRequestEvent } from "@/lib/review-request-event-db";
 import { hashReviewRequestToken, normalizeReviewRequestToken } from "@/lib/review-request-token";
+import { queuePublishedReviewHostReplyNotificationForReview } from "@/lib/review-reply-db";
 import type { ReviewRequestStatus } from "@/lib/review-request-db";
 import { safeRecordReviewStatusEvent } from "@/lib/review-status-event-db";
 import type {
@@ -1032,6 +1033,10 @@ export async function updateHostReviewStatus(
     allowedVillageIds,
     allowedVillageSlugs,
   });
+  if (row.status === "published" && existing.review.status !== "published") {
+    await queuePublishedReviewHostReplyNotificationForReview(row.id);
+  }
+
   await safeRefreshModerationCheck(row.id, options.actorId);
   return mapReviewRowToHostDraft(row, existing.programLegacyId ?? undefined);
 }

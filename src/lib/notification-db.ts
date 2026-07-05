@@ -617,6 +617,12 @@ export async function queueReviewHostReplyNotification(input: {
   const recipientUserId =
     input.recipientUserId ?? (await findProfileIdByEmail(recipientEmail));
   if (!recipientUserId && !recipientEmail) return;
+  if (await hasQueuedReviewHostReplyNotification({
+    recipientUserId,
+    replyId: input.replyId,
+  })) {
+    return;
+  }
 
   const authorName = input.authorName?.trim() || "호스트";
   const message: NotificationMessage = {
@@ -647,6 +653,40 @@ export async function queueReviewHostReplyNotification(input: {
     await queueBrowserPushNotification(recipientUserId, message);
   }
 }
+
+async function hasQueuedReviewHostReplyNotification(input: {
+  recipientUserId?: string | null;
+  replyId: string;
+}): Promise<boolean> {
+  const [event] = await getDb()
+    .select({ id: notificationEvents.id })
+    .from(notificationEvents)
+    .where(
+      and(
+        eq(notificationEvents.eventType, "review.reply.created"),
+        sql`${notificationEvents.metadata}->>'replyId' = ${input.replyId}`,
+      ),
+    )
+    .limit(1);
+
+  if (event) return true;
+  if (!input.recipientUserId) return false;
+
+  const [notification] = await getDb()
+    .select({ id: userNotifications.id })
+    .from(userNotifications)
+    .where(
+      and(
+        eq(userNotifications.userId, input.recipientUserId),
+        eq(userNotifications.type, "review.reply.created"),
+        sql`${userNotifications.metadata}->>'replyId' = ${input.replyId}`,
+      ),
+    )
+    .limit(1);
+
+  return Boolean(notification);
+}
+
 export async function queueProgramReminderNotification(input: {
   body: string;
   href: string;
