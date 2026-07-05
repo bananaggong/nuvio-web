@@ -223,6 +223,7 @@ export function ProgramExplorer({
           ) : null}
         </section>
 
+        {/* Temporarily hidden: all programs section.
         <section className="mx-auto mt-[5.556vw] w-[74.583vw] max-md:mt-14 max-md:w-full">
           <div>
             <h2 className="text-[1.389vw] font-semibold leading-none text-[#5B3A29] max-md:text-xl">
@@ -276,6 +277,7 @@ export function ProgramExplorer({
             />
           ) : null}
         </section>
+        */}
       </section>
     </div>
   );

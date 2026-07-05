@@ -14,6 +14,7 @@ import {
 } from "lucide-react";
 import { useEffect, useRef, useState, type RefObject } from "react";
 import { nuvioIcons } from "@/components/icons/nuvio-icons";
+import { NotificationBellPopover } from "@/components/notification-bell-popover";
 import { launchFeatureFlags } from "@/lib/launch-feature-flags";
 
 const navItems = [
@@ -237,20 +238,7 @@ function DesktopAuthAction({
           aria-hidden="true"
           className="h-[1.736vw] min-h-[25px] w-px bg-[#F7B267]"
         />
-        <Link
-          aria-label="알림"
-          className="inline-flex size-[2.153vw] min-h-[26px] min-w-[26px] items-center justify-center transition-opacity hover:opacity-75"
-          href="/mypage"
-        >
-          <Image
-            alt=""
-            aria-hidden="true"
-            className="size-[1.389vw] min-h-[20px] min-w-[20px]"
-            height={21}
-            src={nuvioIcons.bell}
-            width={20}
-          />
-        </Link>
+        <NotificationBellPopover signedIn={signedIn} />
         <button
           aria-expanded={menuOpen}
           aria-label="마이페이지 메뉴"

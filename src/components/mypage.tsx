@@ -346,7 +346,7 @@ const sideMenuItems: Array<{
   { href: "/mypage/reviews", label: "후기", icon: Star, section: "reviews" },
   {
     href: "/mypage/bookmarks",
-    label: "저장",
+    label: "북마크",
     icon: Bookmark,
     section: "bookmarks",
   },
@@ -3181,11 +3181,17 @@ function ProfileSummaryCard({
 
         <div className="grid flex-1 grid-cols-3 gap-y-[clamp(18px,1.25vw,24px)]">
           <SummaryMetric
+            href="/mypage/trips"
             iconName="summaryCalendar"
             label="예약 일정"
             value={tripCount}
           />
-          <SummaryMetric iconName="bookmark" label="북마크" value={bookmarkCount} />
+          <SummaryMetric
+            href="/mypage/bookmarks"
+            iconName="bookmark"
+            label="북마크"
+            value={bookmarkCount}
+          />
           <SummaryMetric
             href="/mypage/messages"
             iconName="summaryMessage"
