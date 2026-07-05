@@ -510,7 +510,13 @@ function ParticipantReviewSection({
     .filter(isRenderableImage)
     .slice(0, 6);
   const visibleReviews = rankedReviews.slice(0, 3);
-  const ratingText = reviews.length > 0 ? "5.0" : "0.00";
+  const ratingValues = reviews
+    .map((review) => review.rating)
+    .filter((rating): rating is number => typeof rating === "number");
+  const averageRating = ratingValues.length
+    ? ratingValues.reduce((sum, rating) => sum + rating, 0) / ratingValues.length
+    : null;
+  const ratingText = averageRating === null ? "0.0" : averageRating.toFixed(1);
   const countText = String(reviews.length).padStart(2, "0");
 
   return (
