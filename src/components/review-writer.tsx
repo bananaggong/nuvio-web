@@ -15,6 +15,7 @@ export function ReviewWriter({
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
   const [rating, setRating] = useState<number | "">("");
+
   useEffect(() => {
     const id = applicationId.trim();
     if (!isUuid(id)) return;
@@ -64,7 +65,7 @@ export function ReviewWriter({
       setErrorMessage(
         error instanceof Error
           ? error.message
-          : "잠깐 문제가 생겼어요. 다시 시도해 주세요.",
+          : "알 수 없는 문제가 생겼어요. 다시 시도해 주세요.",
       );
     } finally {
       setIsSubmitting(false);
@@ -75,7 +76,7 @@ export function ReviewWriter({
     <div className="mx-auto max-w-2xl px-5 py-8 md:px-8">
       <h1 className="text-3xl font-black text-slate-950">후기 작성</h1>
       <p className="mt-2 text-sm text-slate-500">
-        작성한 후기는 검토 대기 상태로 저장돼요. 호스트가 확인한 뒤 공개할 수 있어요.
+        참여하신 프로그램 경험을 남겨주세요. 제출된 후기는 검토 후 공개될 수 있어요.
       </p>
 
       {submitted ? (
@@ -94,9 +95,7 @@ export function ReviewWriter({
         onSubmit={submit}
       >
         <input name="applicationId" type="hidden" value={applicationId} />
-        {requestToken ? (
-          <input name="requestToken" type="hidden" value={requestToken} />
-        ) : null}
+        {requestToken ? <input name="requestToken" type="hidden" value={requestToken} /> : null}
         <label className="grid gap-2 text-sm font-black text-slate-700">
           카테고리
           <select
@@ -179,6 +178,7 @@ export function ReviewWriter({
     </div>
   );
 }
+
 function isUuid(value: string): boolean {
   return /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{12}$/iu.test(
     value,
