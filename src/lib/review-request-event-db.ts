@@ -315,6 +315,8 @@ function sanitizeRequestEventMetadata(value: unknown): Record<string, unknown> {
 
   copyString(metadata, safe, "source");
   copyString(metadata, safe, "enrichedBy");
+  copyString(metadata, safe, "reason");
+  copyString(metadata, safe, "applicationStatus");
   copyString(metadata, safe, "status");
   copyString(metadata, safe, "previousStatus");
   copyNumber(metadata, safe, "requestCount");
