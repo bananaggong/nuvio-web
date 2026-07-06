@@ -74,6 +74,7 @@ export type UserNotification = {
 export type NotificationEventInput = {
   body: string;
   channel: NotificationChannel;
+  dedupeKey?: string;
   eventType: string;
   href?: string;
   metadata?: Record<string, unknown>;
@@ -246,11 +247,13 @@ export async function createUserNotification(input: {
 export async function queueNotificationEvent(
   input: NotificationEventInput,
 ): Promise<NotificationEventRow> {
+  const dedupeKey = normalizeNotificationDedupeKey(input.dedupeKey);
   const [row] = await getDb()
     .insert(notificationEvents)
     .values({
       body: input.body,
       channel: input.channel,
+      dedupeKey,
       eventType: input.eventType,
       href: input.href,
       metadata: input.metadata ?? {},
@@ -260,13 +263,22 @@ export async function queueNotificationEvent(
       status: "pending",
       title: input.title,
     })
+    .onConflictDoNothing()
     .returning();
 
-  if (!row) {
-    throw new Error("Notification event could not be queued.");
+  if (row) return row;
+
+  if (dedupeKey) {
+    const [existing] = await getDb()
+      .select()
+      .from(notificationEvents)
+      .where(eq(notificationEvents.dedupeKey, dedupeKey))
+      .limit(1);
+
+    if (existing) return existing;
   }
 
-  return row;
+  throw new Error("Notification event could not be queued.");
 }
 
 export async function processPendingNotificationEvents(
@@ -512,6 +524,12 @@ export async function queueReviewRequestNotification(input: {
   await queueNotificationEvent({
     ...emailMessage,
     channel: "email",
+    dedupeKey: buildReviewRequestNotificationDedupeKey({
+      channel: "email",
+      eventType,
+      requestCount: input.requestCount,
+      requestId: input.requestId,
+    }),
     eventType,
     recipient: recipientEmail,
     recipientUserId,
@@ -1310,6 +1328,30 @@ function getDisabledReason(
   }
 
   return "";
+}
+
+function buildReviewRequestNotificationDedupeKey(input: {
+  channel: NotificationChannel;
+  eventType: string;
+  requestCount?: number;
+  requestId: string;
+}): string {
+  const requestCount = Number.isInteger(input.requestCount)
+    ? input.requestCount
+    : 1;
+  return [
+    "review-request",
+    input.channel,
+    input.eventType,
+    input.requestId,
+    String(requestCount),
+  ].join(":");
+}
+
+function normalizeNotificationDedupeKey(value?: string): string | undefined {
+  const text = value?.trim();
+  if (!text) return undefined;
+  return text.slice(0, 240);
 }
 
 function isEventTypeEnabled(

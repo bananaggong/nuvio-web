@@ -1588,6 +1588,7 @@ export const notificationEvents = pgTable(
     title: text("title").notNull(),
     body: text("body").notNull(),
     href: text("href"),
+    dedupeKey: text("dedupe_key"),
     metadata: jsonb("metadata")
       .$type<Record<string, unknown>>()
       .default(emptyObject)
@@ -1617,5 +1618,8 @@ export const notificationEvents = pgTable(
     ),
     index("notification_events_recipient_user_idx").on(table.recipientUserId),
     index("notification_events_event_type_idx").on(table.eventType),
+    uniqueIndex("notification_events_dedupe_key_unique_idx")
+      .on(table.dedupeKey)
+      .where(sql`${table.dedupeKey} is not null`),
   ],
 );
