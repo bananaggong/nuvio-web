@@ -29,7 +29,6 @@ export type ReviewReportEventReason =
 
 export type ReviewReportEvent = {
   action: ReviewReportEventAction;
-  actorId?: string;
   actorRole?: string;
   createdAt: string;
   fromStatus?: ReviewReportEventStatus;
@@ -326,19 +325,40 @@ function mapReportEvent(
 ): ReviewReportEvent {
   return {
     action: asReportEventAction(row.action),
-    actorId: row.actorId ?? undefined,
     actorRole: row.actorRole ?? undefined,
     createdAt: row.createdAt.toISOString(),
     fromStatus: row.fromStatus ? asReportStatus(row.fromStatus) : undefined,
     id: row.id,
     message: row.message ?? undefined,
-    metadata: asRecord(row.metadata),
+    metadata: sanitizeReportEventMetadata(row.metadata),
     reason: asReportReason(row.reason),
     reportId: row.reportId,
     resolutionNote: row.resolutionNote ?? undefined,
     reviewId: row.reviewId,
     toStatus: asReportStatus(row.toStatus),
   };
+}
+
+function sanitizeReportEventMetadata(value: unknown): Record<string, unknown> {
+  const metadata = asRecord(value);
+  const safe: Record<string, unknown> = {};
+
+  copyString(metadata, safe, "source");
+  copyString(metadata, safe, "enrichedBy");
+  copyString(metadata, safe, "trigger");
+  copyString(metadata, safe, "previousStatus");
+  copyString(metadata, safe, "status");
+  copyString(metadata, safe, "reason");
+
+  return safe;
+}
+
+function copyString(
+  source: Record<string, unknown>,
+  target: Record<string, unknown>,
+  key: string,
+): void {
+  if (typeof source[key] === "string") target[key] = source[key];
 }
 
 function sanitizeMetadata(value: unknown): Record<string, unknown> {

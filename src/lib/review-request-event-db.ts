@@ -22,7 +22,6 @@ export type ReviewRequestEventAction =
 
 export type ReviewRequestEvent = {
   action: ReviewRequestEventAction;
-  actorId?: string;
   actorRole?: string;
   createdAt: string;
   fromStatus?: ReviewRequestStatus;
@@ -299,16 +298,45 @@ function mapRequestEvent(
 ): ReviewRequestEvent {
   return {
     action: asReviewRequestEventAction(row.action),
-    actorId: row.actorId ?? undefined,
     actorRole: row.actorRole ?? undefined,
     createdAt: row.createdAt.toISOString(),
     fromStatus: row.fromStatus ? asReviewRequestStatus(row.fromStatus) : undefined,
     id: row.id,
-    metadata: asRecord(row.metadata),
+    metadata: sanitizeRequestEventMetadata(row.metadata),
     note: row.note ?? undefined,
     requestId: row.requestId,
     toStatus: asReviewRequestStatus(row.toStatus),
   };
+}
+
+function sanitizeRequestEventMetadata(value: unknown): Record<string, unknown> {
+  const metadata = asRecord(value);
+  const safe: Record<string, unknown> = {};
+
+  copyString(metadata, safe, "source");
+  copyString(metadata, safe, "enrichedBy");
+  copyString(metadata, safe, "status");
+  copyString(metadata, safe, "previousStatus");
+  copyNumber(metadata, safe, "requestCount");
+
+  return safe;
+}
+
+function copyString(
+  source: Record<string, unknown>,
+  target: Record<string, unknown>,
+  key: string,
+): void {
+  if (typeof source[key] === "string") target[key] = source[key];
+}
+
+function copyNumber(
+  source: Record<string, unknown>,
+  target: Record<string, unknown>,
+  key: string,
+): void {
+  const value = source[key];
+  if (typeof value === "number" && Number.isFinite(value)) target[key] = value;
 }
 
 function sanitizeMetadata(value: unknown): Record<string, unknown> {
