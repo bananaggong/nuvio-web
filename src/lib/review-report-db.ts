@@ -131,7 +131,7 @@ export async function createReviewReport(
     toStatus: asReportStatus(row.status),
   });
 
-  return mapReviewReportRow(row, review, { includeReporterEmail: true });
+  return mapReviewReportRow(row, review);
 }
 
 async function createReportRow(
