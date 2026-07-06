@@ -214,7 +214,14 @@ export function getReviewRequestEventAction(
   fromStatus: ReviewRequestStatus | null | undefined,
   toStatus: ReviewRequestStatus,
 ): ReviewRequestEventAction {
-  if (!fromStatus) return "created";
+  if (!fromStatus) {
+    if (toStatus === "sent") return "requested";
+    if (toStatus === "completed") return "completed";
+    if (toStatus === "opened") return "opened";
+    if (toStatus === "cancelled") return "cancelled";
+    if (toStatus === "expired") return "expired";
+    return "created";
+  }
   if (fromStatus === "completed" && toStatus !== "completed") return "reopened";
   if (toStatus === "sent") return "sent";
   if (toStatus === "opened") return "opened";
@@ -320,6 +327,7 @@ function sanitizeRequestEventMetadata(value: unknown): Record<string, unknown> {
   copyString(metadata, safe, "status");
   copyString(metadata, safe, "previousStatus");
   copyNumber(metadata, safe, "requestCount");
+  copyNumber(metadata, safe, "previousRequestCount");
 
   return safe;
 }
