@@ -1098,12 +1098,12 @@ export function normalizeHostReviewDraft(input: unknown): HostReviewDraft {
     programUuid: asOptionalUuid(value.programUuid ?? value.programId),
     programRunId: asOptionalUuid(value.programRunId),
     villageSlug: asOptionalString(value.villageSlug),
-    author: maskKoreanName(asString(value.author) || "\uc775\uba85"),
+    author: normalizeAuthorName(value.author),
     excerpt: normalizeExcerpt(excerpt),
     body: normalizeBody(body || excerpt),
     images: normalizeImages(value.images),
     rating: asOptionalRating(value.rating),
-    badge: asOptionalString(value.badge),
+    badge: normalizeBadge(value.badge),
     published: status === "published",
     status,
     source: asReviewSource(value.source, "host"),
@@ -1323,14 +1323,14 @@ async function mapHostDraftToReviewInsert(
     villageSlug: draft.villageSlug?.trim() || programContext.villageSlug || null,
     title: normalizeTitle(draft.title),
     category: draft.category,
-    authorName: maskKoreanName(draft.author.trim() || "\uc775\uba85"),
+    authorName: normalizeAuthorName(draft.author),
     excerpt: normalizeExcerpt(draft.excerpt || draft.body.slice(0, 180)),
     body: normalizeBody(draft.body || draft.excerpt),
     images: normalizeImages(draft.images),
     rating: draft.rating ?? null,
     likes: 0,
     comments: 0,
-    badge: draft.badge?.trim() || null,
+    badge: normalizeBadge(draft.badge) ?? null,
     source: draft.source,
     status,
     submittedAt: draft.submittedAt ? new Date(draft.submittedAt) : now,
@@ -1575,6 +1575,24 @@ function normalizeTitle(value: string): string {
   const text = value.trim();
   if (text.length < 2) throw new Error("Review title must be at least 2 characters.");
   if (text.length > 120) throw new Error("Review title must be 120 characters or less.");
+  return text;
+}
+
+function normalizeAuthorName(value: unknown): string {
+  const authorName = maskKoreanName(asString(value) || "\uc775\uba85").trim();
+  if (!authorName) return "\uc775\uba85";
+  if (authorName.length > 120) {
+    throw new Error("Review author name must be 120 characters or less.");
+  }
+  return authorName;
+}
+
+function normalizeBadge(value: unknown): string | undefined {
+  const text = asString(value);
+  if (!text) return undefined;
+  if (text.length > 80) {
+    throw new Error("Review badge must be 80 characters or less.");
+  }
   return text;
 }
 
