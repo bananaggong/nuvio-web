@@ -76,6 +76,13 @@ export class ReviewReportSelfReportError extends Error {
   }
 }
 
+export class ReviewReportStateError extends Error {
+  constructor(message = "Closed review reports cannot be reopened.") {
+    super(message);
+    this.name = "ReviewReportStateError";
+  }
+}
+
 export async function createReviewReport(
   input: unknown,
   auth: ApiAuthContext,
@@ -273,6 +280,10 @@ export async function updateReviewReportStatus(
 
   const now = new Date();
   const finalStatus = normalized.status === "resolved" || normalized.status === "dismissed";
+  if (isTerminalReportStatus(existing.report.status) && normalized.status !== existing.report.status) {
+    throw new ReviewReportStateError();
+  }
+
   const updateValue: Partial<ReviewReportInsert> = {
     resolutionNote: finalStatus ? normalized.resolutionNote : null,
     resolvedAt: finalStatus ? existing.report.resolvedAt ?? now : null,
@@ -302,8 +313,7 @@ export async function updateReviewReportStatus(
   const reportChanged = existing.report.status !== row.status
     || (existing.report.resolutionNote ?? null) !== (row.resolutionNote ?? null);
   if (reportChanged) {
-
-  await safeRecordReviewReportEvent({
+    await safeRecordReviewReportEvent({
       actorId: options.actorId,
       actorRole: options.actorRole,
       fromStatus: asReportStatus(existing.report.status),
@@ -501,6 +511,10 @@ function asOptionalReportStatus(value: unknown): ReviewReportStatus | undefined 
 
 function asReportStatus(value: unknown): ReviewReportStatus {
   return asOptionalReportStatus(value) ?? "open";
+}
+
+function isTerminalReportStatus(value: unknown): boolean {
+  return value === "resolved" || value === "dismissed";
 }
 
 function authOwnsReportedReview(

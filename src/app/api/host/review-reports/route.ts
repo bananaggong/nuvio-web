@@ -13,6 +13,7 @@ import { launchFeatureFlags } from "@/lib/launch-feature-flags";
 import {
   listHostReviewReports,
   ReviewReportAccessError,
+  ReviewReportStateError,
   updateReviewReportStatus,
 } from "@/lib/review-report-db";
 
@@ -30,7 +31,7 @@ export async function GET(request: Request) {
     key: "host-review-reports:list",
     limit: 120,
     windowMs: 15 * 60 * 1000,
-      identity: auth.user.id,
+    identity: auth.user.id,
   });
   if (limited) return limited;
 
@@ -109,6 +110,9 @@ export async function PATCH(request: Request) {
   } catch (error) {
     if (error instanceof ReviewReportAccessError) {
       return apiError(error.message, 403);
+    }
+    if (error instanceof ReviewReportStateError) {
+      return apiError(error.message, 409);
     }
 
     return NextResponse.json(
