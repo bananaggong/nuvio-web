@@ -158,6 +158,7 @@ const reviewCategories: ReviewCategory[] = [
 ];
 
 const reviewStatuses: ReviewStatus[] = ["draft", "pending", "published", "hidden", "deleted"];
+const hostModerationStatuses: ReviewStatus[] = ["pending", "published", "hidden", "deleted"];
 const reviewSources: ReviewSource[] = ["participant", "host", "admin", "imported"];
 const reviewRequestStatuses: ReviewRequestStatus[] = [
   "pending",
@@ -952,7 +953,9 @@ export async function updateHostReviewStatus(
     throw new Error("Invalid review id.");
   }
 
-  const status = asReviewStatus(input.status, "pending");
+  const status = normalizeHostModerationStatus(input.status);
+  const moderationNote = normalizeOptionalText(input.moderationNote);
+  const hiddenReason = normalizeHostHiddenReason(input.hiddenReason, status);
   const allowedVillageSlugs = normalizeAllowedValues(options.allowedVillageSlugs);
   const allowedVillageIds = normalizeAllowedValues(options.allowedVillageIds);
 
@@ -998,8 +1001,8 @@ export async function updateHostReviewStatus(
   const now = new Date();
   const updateValue: Partial<ReviewInsert> = {
     status,
-    moderationNote: normalizeOptionalText(input.moderationNote),
-    hiddenReason: normalizeOptionalText(input.hiddenReason),
+    moderationNote,
+    hiddenReason,
     updatedAt: now,
   };
 
@@ -1047,8 +1050,8 @@ export async function updateHostReviewStatus(
       source: "host_status_update",
       reviewSource: row.source,
     },
-    note: input.moderationNote,
-    reason: input.hiddenReason,
+    note: moderationNote,
+    reason: hiddenReason,
     reviewId: row.id,
     toStatus: row.status,
   }, {
@@ -1344,8 +1347,8 @@ async function mapHostDraftToReviewInsert(
     submittedAt: draft.submittedAt ? new Date(draft.submittedAt) : now,
     publishedAt: status === "published" ? parseDateOrFallback(draft.publishedAt, now) : null,
     hiddenAt: status === "hidden" || status === "deleted" ? now : null,
-    moderationNote: draft.moderationNote?.trim() || null,
-    hiddenReason: draft.hiddenReason?.trim() || null,
+    moderationNote: normalizeOptionalText(draft.moderationNote),
+    hiddenReason: normalizeHostHiddenReason(draft.hiddenReason, status),
   };
 }
 
@@ -1554,8 +1557,25 @@ function asOptionalReviewStatus(value: unknown): ReviewStatus | undefined {
     : undefined;
 }
 
-function asReviewStatus(value: unknown, fallback: ReviewStatus): ReviewStatus {
-  return asOptionalReviewStatus(value) ?? fallback;
+function normalizeHostModerationStatus(value: unknown): ReviewStatus {
+  const status = asOptionalReviewStatus(value);
+  if (!status || !hostModerationStatuses.includes(status)) {
+    throw new Error("Review status is invalid.");
+  }
+  return status;
+}
+
+function normalizeHostHiddenReason(
+  value: unknown,
+  status: ReviewStatus,
+): string | null {
+  if (status !== "hidden" && status !== "deleted") return null;
+
+  const reason = normalizeOptionalText(value);
+  if (!reason) {
+    throw new Error("Hidden or deleted reviews require a moderation reason.");
+  }
+  return reason;
 }
 
 function asStatusFromPublished(value: unknown): ReviewStatus {

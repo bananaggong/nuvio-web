@@ -27,6 +27,7 @@ export const runtime = "nodejs";
 
 const MAX_REVIEW_PAYLOAD_BYTES = 128 * 1024;
 const hostReviewStatuses: ReviewStatus[] = ["draft", "pending", "published", "hidden", "deleted"];
+const hostReviewModerationStatuses: ReviewStatus[] = ["pending", "published", "hidden", "deleted"];
 const hostReviewSources: ReviewSource[] = ["participant", "host", "admin", "imported"];
 
 export async function GET(request: Request) {
@@ -180,6 +181,13 @@ export async function PATCH(request: Request) {
     const parsedBody = await readJsonWithLimit(request, MAX_REVIEW_PAYLOAD_BYTES);
     if (parsedBody.response) return parsedBody.response;
     const body = asJsonRecord(parsedBody.body);
+    const status =
+      typeof body.status === "string" &&
+      hostReviewModerationStatuses.includes(body.status as ReviewStatus)
+        ? (body.status as ReviewStatus)
+        : undefined;
+    if (!status) return apiError("Review status is invalid.", 400);
+
     let allowedVillageIds: string[] | undefined;
     let allowedVillageSlugs: string[] | undefined;
 
@@ -196,7 +204,7 @@ export async function PATCH(request: Request) {
         id: typeof body.id === "string" ? body.id : "",
         moderationNote:
           typeof body.moderationNote === "string" ? body.moderationNote : undefined,
-        status: hostReviewStatuses.includes(body.status as ReviewStatus) ? (body.status as ReviewStatus) : "pending",
+        status,
       },
       {
         allowedVillageIds,
