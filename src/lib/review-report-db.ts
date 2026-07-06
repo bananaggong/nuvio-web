@@ -1,6 +1,7 @@
 import { and, desc, eq, inArray, or, type SQL } from "drizzle-orm";
 import { getDb } from "@/db/client";
 import {
+  programApplications,
   programs as programsTable,
   reviewReports,
   reviews as reviewsTable,
@@ -83,6 +84,8 @@ export async function createReviewReport(
 
   const [review] = await getDb()
     .select({
+      applicationEmail: programApplications.email,
+      applicationSubmittedBy: programApplications.submittedBy,
       id: reviewsTable.id,
       programCreatedBy: programsTable.createdBy,
       programId: reviewsTable.programId,
@@ -94,13 +97,14 @@ export async function createReviewReport(
     })
     .from(reviewsTable)
     .leftJoin(programsTable, eq(reviewsTable.programId, programsTable.id))
+    .leftJoin(programApplications, eq(reviewsTable.applicationId, programApplications.id))
     .where(and(eq(reviewsTable.id, normalized.reviewId), ...buildPublicReviewVisibilityConditions()))
     .limit(1);
 
   if (!review) {
     throw new Error("Published review was not found.");
   }
-  if (review.userId === auth.user.id || review.programCreatedBy === auth.user.id) {
+  if (authOwnsReportedReview(review, auth)) {
     throw new ReviewReportSelfReportError();
   }
 
@@ -476,6 +480,42 @@ function asReportStatus(value: unknown): ReviewReportStatus {
   return reportStatuses.includes(text as ReviewReportStatus)
     ? (text as ReviewReportStatus)
     : "open";
+}
+
+function authOwnsReportedReview(
+  review: {
+    applicationEmail: string | null;
+    applicationSubmittedBy: string | null;
+    programCreatedBy: string | null;
+    userId: string | null;
+  },
+  auth: ApiAuthContext,
+): boolean {
+  if (review.userId === auth.user.id) return true;
+  if (review.programCreatedBy === auth.user.id) return true;
+  if (review.applicationSubmittedBy === auth.user.id) return true;
+
+  const applicationEmail = review.applicationEmail?.trim().toLowerCase();
+  return Boolean(
+    applicationEmail &&
+      getVerifiedAccountEmails(auth).includes(applicationEmail),
+  );
+}
+
+function getVerifiedAccountEmails(auth: ApiAuthContext): string[] {
+  if (!auth.user.email_confirmed_at && !auth.user.confirmed_at) return [];
+
+  return Array.from(
+    new Set(
+      [auth.user.email]
+        .map((email) => String(email ?? "").trim().toLowerCase())
+        .filter(isValidEmail),
+    ),
+  );
+}
+
+function isValidEmail(value: string): boolean {
+  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/u.test(value);
 }
 
 function getPrimaryEmail(auth: ApiAuthContext): string {

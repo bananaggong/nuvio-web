@@ -1,6 +1,7 @@
 import { and, eq } from "drizzle-orm";
 import { getDb } from "@/db/client";
 import {
+  programApplications,
   programs as programsTable,
   reviewHelpfulVotes,
   reviews as reviewsTable,
@@ -36,6 +37,8 @@ export async function setReviewHelpful(
 
   const [review] = await getDb()
     .select({
+      applicationEmail: programApplications.email,
+      applicationSubmittedBy: programApplications.submittedBy,
       id: reviewsTable.id,
       programCreatedBy: programsTable.createdBy,
       status: reviewsTable.status,
@@ -43,13 +46,14 @@ export async function setReviewHelpful(
     })
     .from(reviewsTable)
     .leftJoin(programsTable, eq(reviewsTable.programId, programsTable.id))
+    .leftJoin(programApplications, eq(reviewsTable.applicationId, programApplications.id))
     .where(and(eq(reviewsTable.id, reviewId), ...buildPublicReviewVisibilityConditions()))
     .limit(1);
 
   if (!review) {
     throw new ReviewInteractionError("Published review was not found.");
   }
-  if (review.userId === auth.user.id || review.programCreatedBy === auth.user.id) {
+  if (authOwnsReviewInteraction(review, auth)) {
     throw new ReviewInteractionError("You cannot mark your own review as helpful.");
   }
 
@@ -159,6 +163,42 @@ function isReviewConstraintError(error: unknown): boolean {
   if (!error || typeof error !== "object") return false;
   const databaseError = error as { code?: unknown };
   return databaseError.code === "23514";
+}
+
+function authOwnsReviewInteraction(
+  review: {
+    applicationEmail: string | null;
+    applicationSubmittedBy: string | null;
+    programCreatedBy: string | null;
+    userId: string | null;
+  },
+  auth: ApiAuthContext,
+): boolean {
+  if (review.userId === auth.user.id) return true;
+  if (review.programCreatedBy === auth.user.id) return true;
+  if (review.applicationSubmittedBy === auth.user.id) return true;
+
+  const applicationEmail = review.applicationEmail?.trim().toLowerCase();
+  return Boolean(
+    applicationEmail &&
+      getVerifiedAccountEmails(auth).includes(applicationEmail),
+  );
+}
+
+function getVerifiedAccountEmails(auth: ApiAuthContext): string[] {
+  if (!auth.user.email_confirmed_at && !auth.user.confirmed_at) return [];
+
+  return Array.from(
+    new Set(
+      [auth.user.email]
+        .map((email) => String(email ?? "").trim().toLowerCase())
+        .filter(isValidEmail),
+    ),
+  );
+}
+
+function isValidEmail(value: string): boolean {
+  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/u.test(value);
 }
 
 function isUuid(value: string): boolean {
