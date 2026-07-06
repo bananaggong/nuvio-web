@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import {
   applyPersistentRateLimit,
+  asJsonRecord,
   enforceContentLength,
   enforceSameOrigin,
   readJsonWithLimit,
@@ -69,10 +70,9 @@ export async function POST(request: Request) {
     if (parsedBody.response) return parsedBody.response;
 
     const body = parsedBody.body as Parameters<typeof createParticipantReview>[0];
+    const bodyRecord = asJsonRecord(parsedBody.body);
     const auth = await getOptionalAuthenticatedUser();
-    const requestTokenHash = hashReviewRequestToken(
-      (body as { requestToken?: unknown }).requestToken,
-    );
+    const requestTokenHash = hashReviewRequestToken(bodyRecord.requestToken);
 
     if (!auth && !requestTokenHash) {
       return NextResponse.json({ error: "Unauthorized." }, { status: 401 });

@@ -1077,13 +1077,14 @@ export function normalizeParticipantReviewUpdateInput(input: unknown): Omit<Norm
 
   return {
     title,
-    category: asReviewCategory(value.category),
+    category: normalizeParticipantReviewCategory(value.category),
     excerpt,
     body,
-    images: normalizeImages(value.images),
+    images: normalizeParticipantImages(value.images),
     rating: asOptionalRating(value.rating),
   };
 }
+
 export function normalizeHostReviewDraft(input: unknown): HostReviewDraft {
   if (!input || typeof input !== "object" || Array.isArray(input)) {
     throw new Error("Review payload is required.");
@@ -1140,10 +1141,10 @@ export function normalizeParticipantReviewInput(input: unknown): NormalizedParti
   return {
     applicationId,
     title,
-    category: asReviewCategory(value.category),
+    category: normalizeParticipantReviewCategory(value.category),
     excerpt,
     body,
-    images: normalizeImages(value.images),
+    images: normalizeParticipantImages(value.images),
     rating: asOptionalRating(value.rating),
     requestToken: normalizeReviewRequestToken(value.requestToken) ?? undefined,
   };
@@ -1529,6 +1530,16 @@ function buildPublicReviewCursorPredicate(cursor: PublicReviewCursor): SQL {
   )`;
 }
 
+function normalizeParticipantReviewCategory(value: unknown): ReviewCategory {
+  if (value === undefined || value === null) return "trip";
+  if (typeof value !== "string") throw new Error("Review category is invalid.");
+
+  const text = value.trim();
+  if (!text) return "trip";
+  if (reviewCategories.includes(text as ReviewCategory)) return text as ReviewCategory;
+  throw new Error("Review category is invalid.");
+}
+
 function asReviewCategory(value: unknown): ReviewCategory {
   const text = asString(value);
   return reviewCategories.includes(text as ReviewCategory)
@@ -1602,6 +1613,29 @@ function normalizeBadge(value: unknown): string | undefined {
     throw new Error("Review badge must be 80 characters or less.");
   }
   return text;
+}
+
+function normalizeParticipantImages(value: unknown): string[] {
+  if (value === undefined || value === null) return [];
+  if (!Array.isArray(value)) throw new Error("Review images must be an array.");
+  if (value.length > maxReviewImages) {
+    throw new Error(`Review images must include ${maxReviewImages} items or fewer.`);
+  }
+
+  const images: string[] = [];
+  const seen = new Set<string>();
+  for (const item of value) {
+    if (typeof item !== "string") throw new Error("Review image URL is invalid.");
+
+    const image = item.trim();
+    if (!isSafeImageUrl(image)) throw new Error("Review image URL is invalid.");
+    if (seen.has(image)) throw new Error("Review images cannot contain duplicates.");
+
+    seen.add(image);
+    images.push(image);
+  }
+
+  return images;
 }
 
 function normalizeImages(value: unknown): string[] {
