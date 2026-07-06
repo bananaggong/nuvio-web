@@ -29,6 +29,7 @@ type ReviewModerationAccessOptions = {
 
 type ReviewForModeration = {
   body: string;
+  contentHash: string;
   excerpt: string;
   id: string;
   images: string[];
@@ -159,6 +160,7 @@ export async function refreshReviewModerationCheck(
 
 export function analyzeReviewModeration(review: {
   body: string;
+  contentHash?: string;
   excerpt: string;
   images?: string[];
   source?: string;
@@ -239,7 +241,8 @@ export function analyzeReviewModeration(review: {
     matchedTerms: Array.from(matchedTerms).slice(0, 10),
     metadata: {
       characterCount: content.length,
-      checkedVersion: 1,
+      checkedVersion: 2,
+      ...(review.contentHash ? { contentHash: review.contentHash } : {}),
       imageCount,
       linkCount: links.length,
       source: "application_service",
@@ -270,6 +273,12 @@ async function getReviewForModeration(reviewId: string): Promise<ReviewForModera
   const [row] = await getDb()
     .select({
       body: reviewsTable.body,
+      contentHash: sql<string>`public.review_moderation_content_hash(
+        ${reviewsTable.title},
+        ${reviewsTable.excerpt},
+        ${reviewsTable.body},
+        ${reviewsTable.images}
+      )`,
       excerpt: reviewsTable.excerpt,
       id: reviewsTable.id,
       images: reviewsTable.images,
