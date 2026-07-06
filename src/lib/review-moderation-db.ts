@@ -48,7 +48,7 @@ export async function getHostReviewModerationSummary(options: {
     unansweredPublishedCount,
     visibilityHoldCount,
   ] = await Promise.all([
-    countReviews(baseAccessConditions),
+    countReviews([...baseAccessConditions, sql`${reviewsTable.status} <> 'deleted'`]),
     countReviews([...baseAccessConditions, eq(reviewsTable.status, "draft")]),
     countReviews([...baseAccessConditions, eq(reviewsTable.status, "pending")]),
     countReviews([...baseAccessConditions, eq(reviewsTable.status, "published")]),
@@ -90,6 +90,7 @@ async function countReviews(conditions: SQL[]): Promise<number> {
 async function countOpenReports(reviewAccessConditions: SQL[]): Promise<number> {
   const conditions = [
     ...reviewAccessConditions,
+    sql`${reviewsTable.status} <> 'deleted'`,
     inArray(reviewReports.status, ["open", "reviewing"]),
   ];
   const query = getDb()
@@ -144,6 +145,7 @@ async function countFlaggedPending(reviewAccessConditions: SQL[]): Promise<numbe
 async function countActiveVisibilityHolds(reviewAccessConditions: SQL[]): Promise<number> {
   const conditions = [
     ...reviewAccessConditions,
+    sql`${reviewsTable.status} <> 'deleted'`,
     eq(reviewVisibilityHolds.status, "active"),
   ];
   const query = getDb()
