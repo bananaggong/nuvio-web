@@ -798,8 +798,10 @@ export async function upsertHostReviewDraft(
       if (existingRow.source === "participant") {
         throw new HostReviewAccessError();
       }
-      if (existingRow.status === "deleted" && options.actorRole !== "admin") {
-        throw new HostReviewAccessError();
+      if (existingRow.status === "deleted") {
+        throw new HostReviewAccessError(
+          "Deleted reviews can only be restored through status updates.",
+        );
       }
 
       assertReviewVillageAccess(existingRow.villageSlug, allowedVillageSlugs);
