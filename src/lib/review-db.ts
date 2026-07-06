@@ -160,6 +160,7 @@ const reviewCategories: ReviewCategory[] = [
 const reviewStatuses: ReviewStatus[] = ["draft", "pending", "published", "hidden", "deleted"];
 const hostModerationStatuses: ReviewStatus[] = ["pending", "published", "hidden", "deleted"];
 const reviewSources: ReviewSource[] = ["participant", "host", "admin", "imported"];
+const completableReviewRequestStatuses: ReviewRequestStatus[] = ["pending", "sent", "opened"];
 const reviewRequestStatuses: ReviewRequestStatus[] = [
   "pending",
   "sent",
@@ -452,17 +453,17 @@ export async function createParticipantReview(
       throw new DuplicateReviewError();
     }
 
-    const requestBeforeCompletionConditions = [
+    const requestBeforeCompletionConditions: SQL[] = [
       eq(reviewRequests.applicationId, application.applicationId),
+      inArray(reviewRequests.status, completableReviewRequestStatuses),
+      sql`${reviewRequests.reviewId} is null`,
+      sql`(${reviewRequests.expiresAt} is null or ${reviewRequests.expiresAt} > now())`,
     ];
     if (requestTokenHash) {
       requestBeforeCompletionConditions.push(
         eq(reviewRequests.requestTokenHash, requestTokenHash),
-        inArray(reviewRequests.status, ["pending", "sent", "opened"]),
-        sql`${reviewRequests.reviewId} is null`,
         sql`${reviewRequests.requestTokenExpiresAt} is not null`,
         sql`${reviewRequests.requestTokenExpiresAt} > now()`,
-        sql`(${reviewRequests.expiresAt} is null or ${reviewRequests.expiresAt} > now())`,
       );
     }
 

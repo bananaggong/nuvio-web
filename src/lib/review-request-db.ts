@@ -100,6 +100,7 @@ type ReviewRequestAccessOptions = {
 
 const eligibleApplicationStatuses = new Set(["accepted", "checkedIn", "completed"]);
 const activeReviewRequestStatuses: ReviewRequestStatus[] = ["pending", "sent", "opened"];
+const terminalReviewRequestStatuses = new Set<ReviewRequestStatus>(["cancelled", "expired"]);
 const reviewRequestStatuses: ReviewRequestStatus[] = [
   "pending",
   "sent",
@@ -471,7 +472,7 @@ export async function requestHostReviewForApplication(
   const requestExpiresAt = new Date(now.getTime() + defaultExpiryMs);
   const nextReminderAt = new Date(now.getTime() + defaultReminderDelayMs);
   const requestToken = createReviewRequestToken();
-  const [row, previousStatus] = await getDb().transaction(async (tx) => {
+  const [row, previousStatus, changed] = await getDb().transaction(async (tx) => {
     await tx.execute(
       sql`select pg_advisory_xact_lock(hashtext(${`review-request:${context.applicationId}`}))`,
     );
@@ -486,6 +487,10 @@ export async function requestHostReviewForApplication(
       const previousStatus = asReviewRequestStatus(existing.status);
 
       if (context.reviewId || existing.status === "completed") {
+        if (terminalReviewRequestStatuses.has(previousStatus)) {
+          return [existing, previousStatus, false] as const;
+        }
+
         const [updatedCompleted] = await tx
           .update(reviewRequests)
           .set({
@@ -500,7 +505,7 @@ export async function requestHostReviewForApplication(
           })
           .where(eq(reviewRequests.id, existing.id))
           .returning();
-        return [updatedCompleted, previousStatus] as const;
+        return [updatedCompleted, previousStatus, true] as const;
       }
 
       if (existing.requestCount >= maxReviewRequestCount) {
@@ -528,7 +533,7 @@ export async function requestHostReviewForApplication(
         })
         .where(eq(reviewRequests.id, existing.id))
         .returning();
-      return [updated, previousStatus] as const;
+      return [updated, previousStatus, true] as const;
     }
 
     const insertValue: ReviewRequestInsert = {
@@ -551,8 +556,12 @@ export async function requestHostReviewForApplication(
     };
 
     const [created] = await tx.insert(reviewRequests).values(insertValue).returning();
-    return [created, null] as const;
+    return [created, null, true] as const;
   });
+
+  if (!changed) {
+    return hydrateReviewRequest(row.id);
+  }
 
   void safeCreateAuditLog({
     action: "review.request.upsert",
@@ -704,7 +713,12 @@ export async function markReviewRequestCompletedForApplication(
       status: "completed",
       updatedAt: new Date(),
     })
-    .where(eq(reviewRequests.applicationId, applicationId));
+    .where(
+      and(
+        eq(reviewRequests.applicationId, applicationId),
+        inArray(reviewRequests.status, activeReviewRequestStatuses),
+      ),
+    );
 }
 
 export async function reopenReviewRequestForApplication(applicationId: string): Promise<void> {
