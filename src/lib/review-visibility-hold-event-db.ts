@@ -24,7 +24,6 @@ export type ReviewVisibilityHoldEventAction =
 
 export type ReviewVisibilityHoldEvent = {
   action: ReviewVisibilityHoldEventAction;
-  actorId?: string;
   actorRole?: string;
   createdAt: string;
   fromStatus?: ReviewVisibilityHoldStatus;
@@ -330,7 +329,6 @@ function mapHoldEvent(
 ): ReviewVisibilityHoldEvent {
   return {
     action: asHoldEventAction(row.action),
-    actorId: row.actorId ?? undefined,
     actorRole: row.actorRole ?? undefined,
     createdAt: row.createdAt.toISOString(),
     fromStatus: row.fromStatus ? asHoldStatus(row.fromStatus) : undefined,
