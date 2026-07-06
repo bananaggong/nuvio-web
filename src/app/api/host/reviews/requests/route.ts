@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import {
   apiError,
   applyPersistentRateLimit,
+  asJsonRecord,
   enforceContentLength,
   enforceSameOrigin,
   isApiAuthError,
@@ -42,16 +43,20 @@ export async function GET(request: Request) {
     key: "host-review-requests:list",
     limit: 120,
     windowMs: 15 * 60 * 1000,
-      identity: auth.user.id,
+    identity: auth.user.id,
   });
   if (limited) return limited;
 
   try {
     const url = new URL(request.url);
     const requestedStatus = url.searchParams.get("status")?.trim();
-    const status = reviewRequestStatuses.includes(requestedStatus as ReviewRequestStatus)
-      ? (requestedStatus as ReviewRequestStatus)
-      : undefined;
+    if (
+      requestedStatus &&
+      !reviewRequestStatuses.includes(requestedStatus as ReviewRequestStatus)
+    ) {
+      return apiError("A valid review request status is required.", 400);
+    }
+    const status = requestedStatus as ReviewRequestStatus | undefined;
     const limit = Number(url.searchParams.get("limit") ?? "200");
     const workspaces =
       auth.profile.role === "admin"
@@ -100,14 +105,14 @@ export async function POST(request: Request) {
     key: "host-review-requests:create",
     limit: 40,
     windowMs: 15 * 60 * 1000,
-      identity: auth.user.id,
+    identity: auth.user.id,
   });
   if (limited) return limited;
 
   try {
     const parsedBody = await readJsonWithLimit(request, 32 * 1024);
     if (parsedBody.response) return parsedBody.response;
-    const body = parsedBody.body;
+    const body = asJsonRecord(parsedBody.body);
     const workspaces =
       auth.profile.role === "admin"
         ? []
@@ -122,16 +127,14 @@ export async function POST(request: Request) {
             allowedVillageSlugs: workspaces.map((workspace) => workspace.slug),
           };
 
-    const applicationIds = Array.isArray((body as { applicationIds?: unknown }).applicationIds)
-      ? (body as { applicationIds: unknown[] }).applicationIds
-      : undefined;
+    const applicationIds = normalizeApplicationIdBatch(body.applicationIds);
 
     if (applicationIds) {
       const force = (body as { force?: unknown }).force === true;
       const data: Awaited<ReturnType<typeof requestHostReviewForApplication>>[] = [];
       const errors: ReviewRequestBatchError[] = [];
 
-      for (const applicationId of applicationIds.slice(0, 50)) {
+      for (const applicationId of applicationIds) {
         try {
           data.push(
             await requestHostReviewForApplication(
@@ -176,6 +179,35 @@ export async function POST(request: Request) {
     );
   }
 }
+
+function normalizeApplicationIdBatch(value: unknown): string[] | undefined {
+  if (value === undefined) return undefined;
+  if (!Array.isArray(value)) {
+    throw new ReviewRequestEligibilityError("applicationIds must be an array.");
+  }
+  if (value.length === 0) {
+    throw new ReviewRequestEligibilityError("At least one application id is required.");
+  }
+  if (value.length > 50) {
+    throw new ReviewRequestEligibilityError(
+      "Review request batch can include up to 50 applications.",
+    );
+  }
+
+  const applicationIds = value.map((item) =>
+    typeof item === "string" ? item.trim() : "",
+  );
+  if (applicationIds.some((applicationId) => !applicationId)) {
+    throw new ReviewRequestEligibilityError("A valid application id is required.");
+  }
+
+  if (new Set(applicationIds).size !== applicationIds.length) {
+    throw new ReviewRequestEligibilityError("Duplicate application ids are not allowed.");
+  }
+
+  return applicationIds;
+}
+
 type ReviewRequestBatchError = {
   applicationId: string;
   code: "access_denied" | "cooldown" | "ineligible" | "unknown";
@@ -187,7 +219,8 @@ function mapBatchReviewRequestError(
   error: unknown,
 ): ReviewRequestBatchError {
   return {
-    applicationId: typeof applicationId === "string" ? applicationId : String(applicationId ?? ""),
+    applicationId:
+      typeof applicationId === "string" ? applicationId : String(applicationId ?? ""),
     code: getBatchErrorCode(error),
     error: error instanceof Error ? error.message : "Failed to create review request.",
   };

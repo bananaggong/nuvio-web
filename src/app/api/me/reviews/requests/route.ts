@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import {
   applyPersistentRateLimit,
+  asJsonRecord,
   enforceContentLength,
   enforceSameOrigin,
   isApiAuthError,
@@ -76,7 +77,7 @@ export async function POST(request: Request) {
   try {
     const parsedBody = await readJsonWithLimit(request, 8 * 1024);
     if (parsedBody.response) return parsedBody.response;
-    const body = parsedBody.body as { applicationId?: unknown };
+    const body = asJsonRecord(parsedBody.body);
     const applicationId =
       typeof body.applicationId === "string" ? body.applicationId.trim() : "";
 
