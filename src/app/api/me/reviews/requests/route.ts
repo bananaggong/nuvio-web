@@ -108,6 +108,7 @@ type MyReviewRequestResponse = {
   completedAt?: string;
   expiresAt?: string;
   id: string;
+  openedAt?: string;
   programLegacyId?: number;
   programSlug?: string;
   programTitle: string;
@@ -124,6 +125,7 @@ function mapMyReviewRequestResponse(record: ReviewRequestRecord): MyReviewReques
     completedAt: record.completedAt,
     expiresAt: record.expiresAt,
     id: record.id,
+    openedAt: record.openedAt,
     programLegacyId: record.programLegacyId,
     programSlug: record.programSlug,
     programTitle: record.programTitle,

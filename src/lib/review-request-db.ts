@@ -35,6 +35,7 @@ export type ReviewRequestRecord = {
   expiresAt?: string;
   lastRequestedAt?: string;
   nextReminderAt?: string;
+  openedAt?: string;
   programId: string;
   programLegacyId?: number;
   programRunId?: string;
@@ -193,6 +194,7 @@ export async function markMyReviewRequestOpenedFromDb(
     const [existing] = await tx
       .select({
         id: reviewRequests.id,
+        openedAt: reviewRequests.openedAt,
         reviewId: reviewRequests.reviewId,
         status: reviewRequests.status,
       })
@@ -217,9 +219,14 @@ export async function markMyReviewRequestOpenedFromDb(
       return { changed: false, id: existing.id, previousStatus };
     }
 
+    const now = new Date();
     const [updated] = await tx
       .update(reviewRequests)
-      .set({ status: "opened", updatedAt: new Date() })
+      .set({
+        openedAt: existing.openedAt ?? now,
+        status: "opened",
+        updatedAt: now,
+      })
       .where(eq(reviewRequests.id, existing.id))
       .returning({ id: reviewRequests.id });
 
@@ -268,6 +275,7 @@ export async function markReviewRequestOpenedByTokenFromDb(input: {
     const [existing] = await tx
       .select({
         id: reviewRequests.id,
+        openedAt: reviewRequests.openedAt,
         reviewId: reviewRequests.reviewId,
         status: reviewRequests.status,
       })
@@ -295,9 +303,14 @@ export async function markReviewRequestOpenedByTokenFromDb(input: {
       return { changed: false, id: existing.id, previousStatus };
     }
 
+    const now = new Date();
     const [updated] = await tx
       .update(reviewRequests)
-      .set({ status: "opened", updatedAt: new Date() })
+      .set({
+        openedAt: existing.openedAt ?? now,
+        status: "opened",
+        updatedAt: now,
+      })
       .where(eq(reviewRequests.id, existing.id))
       .returning({ id: reviewRequests.id });
 
@@ -524,6 +537,7 @@ export async function requestHostReviewForApplication(
           expiresAt: requestExpiresAt,
           lastRequestedAt: now,
           nextReminderAt,
+          openedAt: existing.status === "opened" ? existing.openedAt ?? now : null,
           requestCount: sql`${reviewRequests.requestCount} + 1`,
           requestTokenExpiresAt: requestExpiresAt,
           requestTokenHash: requestToken.hash,
@@ -733,6 +747,7 @@ export async function reopenReviewRequestForApplication(applicationId: string): 
       expiresAt: null,
       lastRequestedAt: null,
       nextReminderAt: null,
+      openedAt: null,
       requestTokenExpiresAt: null,
       requestTokenHash: null,
       reviewId: null,
@@ -895,6 +910,7 @@ function mapReviewRequestRow(row: Awaited<ReturnType<typeof selectReviewRequests
     expiresAt: request.expiresAt?.toISOString(),
     lastRequestedAt: request.lastRequestedAt?.toISOString(),
     nextReminderAt: request.nextReminderAt?.toISOString(),
+    openedAt: request.openedAt?.toISOString(),
     programId: request.programId ?? "",
     programLegacyId: row.programLegacyId ?? undefined,
     programRunId: request.programRunId ?? undefined,

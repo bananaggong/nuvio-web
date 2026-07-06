@@ -708,6 +708,7 @@ export async function deleteParticipantReview(
           expiresAt: null,
           lastRequestedAt: null,
           nextReminderAt: null,
+          openedAt: null,
           requestTokenExpiresAt: null,
           requestTokenHash: null,
           reviewId: null,
