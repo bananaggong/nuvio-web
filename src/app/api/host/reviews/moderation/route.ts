@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import {
+  apiError,
   applyPersistentRateLimit,
   isApiAuthError,
   requireHostRole,
@@ -37,6 +38,10 @@ export async function GET(request: Request) {
     const riskLevel = riskLevels.includes(requestedRiskLevel as ReviewModerationRiskLevel)
       ? (requestedRiskLevel as ReviewModerationRiskLevel)
       : undefined;
+    if (requestedRiskLevel && !riskLevel) {
+      return apiError("Invalid review moderation risk level.", 400);
+    }
+
     const limit = Number(url.searchParams.get("limit") ?? "200");
     const workspaces =
       auth.profile.role === "admin"
