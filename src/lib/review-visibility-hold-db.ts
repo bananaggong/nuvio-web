@@ -164,6 +164,7 @@ export async function releaseReviewVisibilityHoldsBySourceFromDb(
   const conditions: SQL[] = [
     eq(reviewVisibilityHolds.reviewId, input.reviewId),
     eq(reviewVisibilityHolds.sourceType, input.sourceType),
+    eq(reviewVisibilityHolds.status, "active"),
   ];
   if (input.sourceId !== undefined) {
     conditions.push(
@@ -244,6 +245,10 @@ async function releaseVisibilityHoldContext(
     releaseSource: string;
   },
 ): Promise<ReviewVisibilityHold> {
+  if (context.hold.status !== "active") {
+    throw new ReviewVisibilityHoldError("Review visibility hold is already released.");
+  }
+
   const now = new Date();
   const metadata = buildReleaseMetadata(context.hold.metadata, {
     actorId: input.actorId,
@@ -340,10 +345,14 @@ function normalizeReleaseVisibilityHoldInput(input: unknown): ReleaseVisibilityH
   const value = input as Record<string, unknown>;
   const id = asUuid(value.id);
   if (!id) throw new ReviewVisibilityHoldError("A valid visibility hold id is required.");
+  const note = normalizeOptionalText(value.note);
+  if (!note) {
+    throw new ReviewVisibilityHoldError("A release note is required.");
+  }
 
   return {
     id,
-    note: normalizeOptionalText(value.note),
+    note,
     reviewId: asUuid(value.reviewId),
   };
 }

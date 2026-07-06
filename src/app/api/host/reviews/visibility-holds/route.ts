@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import {
+  apiError,
   applyPersistentRateLimit,
   isApiAuthError,
   requireHostRole,
@@ -33,9 +34,15 @@ export async function GET(request: Request) {
   try {
     const url = new URL(request.url);
     const limit = Number(url.searchParams.get("limit") ?? "100");
-    const reason = asVisibilityHoldReason(url.searchParams.get("reason"));
-    const status = asVisibilityHoldStatus(url.searchParams.get("status") ?? "active");
+    const requestedReason = url.searchParams.get("reason");
+    const requestedStatus = url.searchParams.get("status") ?? "active";
+    const reason = asVisibilityHoldReason(requestedReason);
+    const status = asVisibilityHoldStatus(requestedStatus);
     const reviewId = url.searchParams.get("reviewId")?.trim() || undefined;
+    if (requestedReason && !reason) return apiError("Invalid visibility hold reason.", 400);
+    if (!status) return apiError("Invalid visibility hold status.", 400);
+    if (reviewId && !isUuid(reviewId)) return apiError("Invalid review id.", 400);
+
     const workspaces =
       auth.profile.role === "admin"
         ? []
@@ -65,4 +72,10 @@ export async function GET(request: Request) {
       { status: 500 },
     );
   }
+}
+
+function isUuid(value: string): boolean {
+  return /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{12}$/iu.test(
+    value,
+  );
 }

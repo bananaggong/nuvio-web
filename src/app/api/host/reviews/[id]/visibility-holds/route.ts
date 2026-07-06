@@ -43,7 +43,10 @@ export async function GET(
   try {
     const { id } = await params;
     const url = new URL(request.url);
-    const status = asVisibilityHoldStatus(url.searchParams.get("status") ?? "active");
+    const requestedStatus = url.searchParams.get("status") ?? "active";
+    const status = asVisibilityHoldStatus(requestedStatus);
+    if (!status) return apiError("Invalid visibility hold status.", 400);
+
     const workspaces =
       auth.profile.role === "admin"
         ? []
@@ -122,7 +125,17 @@ export async function PATCH(
     return NextResponse.json({ data });
   } catch (error) {
     if (error instanceof ReviewVisibilityHoldAccessError) return apiError(error.message, 403);
-    if (error instanceof ReviewVisibilityHoldError) return apiError(error.message, 404);
+    if (error instanceof ReviewVisibilityHoldError) {
+      const status = error.message.includes("already released")
+        ? 409
+        : error.message.includes("required") || error.message.includes("valid")
+          ? 400
+          : 404;
+      return apiError(
+        error.message,
+        status,
+      );
+    }
 
     return NextResponse.json(
       {
