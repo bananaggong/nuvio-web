@@ -100,6 +100,7 @@ export async function recordReviewStatusEvent(
   assertAccess(review, options);
 
   const action = input.action ?? getStatusEventAction(input.fromStatus ?? null, input.toStatus);
+  assertStatusEventActionMatchesTransition(action, input.fromStatus ?? null, input.toStatus);
   const actorId = input.actorId ?? options.actorId ?? null;
   const actorRole = normalizeOptionalText(input.actorRole ?? options.actorRole);
   const metadata = sanitizeMetadata(input.metadata);
@@ -197,6 +198,7 @@ export function getStatusEventAction(
   toStatus: ReviewStatus,
 ): ReviewStatusEventAction {
   if (!fromStatus) return "created";
+  if (fromStatus === toStatus) return "updated";
   if (toStatus === "deleted") return "deleted";
   if (fromStatus === "hidden" && toStatus !== "hidden") return "restored";
   if (toStatus === "published") return "published";
@@ -204,6 +206,24 @@ export function getStatusEventAction(
   if (toStatus === "pending") return "moved_to_pending";
   if (toStatus === "draft") return "moved_to_draft";
   return "status_changed";
+}
+
+function assertStatusEventActionMatchesTransition(
+  action: ReviewStatusEventAction,
+  fromStatus: ReviewStatus | null,
+  toStatus: ReviewStatus,
+): void {
+  if (action === "updated" || action === "moderation_checked") {
+    if (fromStatus && fromStatus === toStatus) return;
+    throw new ReviewStatusEventError(
+      "Review status event action does not match the status transition.",
+    );
+  }
+
+  if (action === getStatusEventAction(fromStatus, toStatus)) return;
+  throw new ReviewStatusEventError(
+    "Review status event action does not match the status transition.",
+  );
 }
 
 async function findRecentTriggerEvent(input: {
