@@ -48,7 +48,7 @@ export async function POST(
     if (parsedBody.response) return parsedBody.response;
     const body = asJsonRecord(parsedBody.body);
     const report = await createReviewReport({ ...body, reviewId: id }, auth);
-    return NextResponse.json({ data: report }, { status: 201 });
+    return NextResponse.json({ data: mapReviewReportSubmissionResponse(report) }, { status: 201 });
   } catch (error) {
     if (error instanceof DuplicateReviewReportError) {
       return NextResponse.json({ error: error.message }, { status: 409 });
@@ -65,4 +65,14 @@ export async function POST(
       { status: 400 },
     );
   }
+}
+type ReviewReportSubmissionResult = Awaited<ReturnType<typeof createReviewReport>>;
+
+function mapReviewReportSubmissionResponse(report: ReviewReportSubmissionResult) {
+  return {
+    id: report.id,
+    reason: report.reason,
+    status: report.status,
+    createdAt: report.createdAt,
+  };
 }
