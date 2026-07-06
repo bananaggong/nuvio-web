@@ -1559,6 +1559,7 @@ export const userNotifications = pgTable(
     title: text("title").notNull(),
     body: text("body").notNull(),
     href: text("href"),
+    dedupeKey: text("dedupe_key"),
     metadata: jsonb("metadata")
       .$type<Record<string, unknown>>()
       .default(emptyObject)
@@ -1571,6 +1572,9 @@ export const userNotifications = pgTable(
   (table) => [
     index("user_notifications_user_created_idx").on(table.userId, table.createdAt),
     index("user_notifications_user_read_idx").on(table.userId, table.readAt),
+    uniqueIndex("user_notifications_dedupe_key_unique_idx")
+      .on(table.dedupeKey)
+      .where(sql`${table.dedupeKey} is not null`),
   ],
 );
 

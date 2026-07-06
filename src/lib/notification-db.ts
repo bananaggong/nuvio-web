@@ -223,25 +223,41 @@ export async function markUserNotificationsRead(
 
 export async function createUserNotification(input: {
   body: string;
+  dedupeKey?: string;
   href?: string;
   metadata?: Record<string, unknown>;
   title: string;
   type: string;
   userId: string;
 }): Promise<UserNotification> {
+  const dedupeKey = normalizeNotificationDedupeKey(input.dedupeKey);
   const [row] = await getDb()
     .insert(userNotifications)
     .values({
       body: input.body,
+      dedupeKey,
       href: input.href,
       metadata: input.metadata ?? {},
       title: input.title,
       type: input.type,
       userId: input.userId,
     })
+    .onConflictDoNothing()
     .returning();
 
-  return mapNotification(row);
+  if (row) return mapNotification(row);
+
+  if (dedupeKey) {
+    const [existing] = await getDb()
+      .select()
+      .from(userNotifications)
+      .where(eq(userNotifications.dedupeKey, dedupeKey))
+      .limit(1);
+
+    if (existing) return mapNotification(existing);
+  }
+
+  throw new Error("User notification could not be created.");
 }
 
 export async function queueNotificationEvent(
@@ -310,8 +326,8 @@ export async function processPendingNotificationEvents(
 
 async function claimNotificationEventForImmediateProcessing(
   event: NotificationEventRow,
-): Promise<NotificationEventRow> {
-  if (event.status !== "pending") return event;
+): Promise<NotificationEventRow | null> {
+  if (event.status !== "pending") return null;
 
   const now = new Date();
   const [claimed] = await getDb()
@@ -332,7 +348,7 @@ async function claimNotificationEventForImmediateProcessing(
     )
     .returning();
 
-  return claimed ?? event;
+  return claimed ?? null;
 }
 
 async function claimDueNotificationEvents(
@@ -537,8 +553,22 @@ export async function queueReviewRequestNotification(input: {
   });
 
   if (recipientUserId) {
-    await createInAppNotificationIfEnabled(recipientUserId, baseMessage);
-    await queueBrowserPushNotification(recipientUserId, baseMessage);
+    await createInAppNotificationIfEnabled(recipientUserId, baseMessage, {
+      dedupeKey: buildReviewRequestNotificationDedupeKey({
+        channel: "inApp",
+        eventType,
+        requestCount: input.requestCount,
+        requestId: input.requestId,
+      }),
+    });
+    await queueBrowserPushNotification(recipientUserId, baseMessage, {
+      dedupeKey: buildReviewRequestNotificationDedupeKey({
+        channel: "browserPush",
+        eventType,
+        requestCount: input.requestCount,
+        requestId: input.requestId,
+      }),
+    });
   }
 }
 
@@ -1085,6 +1115,7 @@ function getNextNotificationAttemptAt(attemptCount: number, now: Date): Date {
 async function createInAppNotificationIfEnabled(
   userId: string,
   message: NotificationMessage,
+  options: { dedupeKey?: string } = {},
 ) {
   const preference = await getNotificationPreference(userId);
   const disabledReason = getDisabledReason(preference, "inApp", message.type);
@@ -1093,6 +1124,7 @@ async function createInAppNotificationIfEnabled(
 
   await createUserNotification({
     body: message.body,
+    dedupeKey: options.dedupeKey,
     href: message.href,
     metadata: message.metadata,
     title: message.title,
@@ -1104,10 +1136,12 @@ async function createInAppNotificationIfEnabled(
 async function queueBrowserPushNotification(
   userId: string,
   message: NotificationMessage,
+  options: { dedupeKey?: string } = {},
 ) {
   const event = await queueNotificationEvent({
     body: message.body,
     channel: "browserPush",
+    dedupeKey: options.dedupeKey,
     eventType: message.type,
     href: message.href,
     metadata: message.metadata,
@@ -1116,6 +1150,7 @@ async function queueBrowserPushNotification(
   });
 
   const claimedEvent = await claimNotificationEventForImmediateProcessing(event);
+  if (!claimedEvent) return;
   await processNotificationEvent(claimedEvent).catch(async (error) => {
     await markNotificationDeliveryFailure(claimedEvent, normalizeError(error));
   });
