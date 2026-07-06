@@ -8,6 +8,7 @@ import { launchFeatureFlags } from "@/lib/launch-feature-flags";
 import {
   getMyReviewEligibilityFromDb,
   listMyReviewEligibilitiesFromDb,
+  type ReviewEligibility,
 } from "@/lib/review-eligibility-db";
 
 export const runtime = "nodejs";
@@ -35,11 +36,15 @@ export async function GET(request: Request) {
 
     if (applicationId) {
       const eligibility = await getMyReviewEligibilityFromDb(applicationId, auth);
-      return NextResponse.json({ data: eligibility });
+      return NextResponse.json({
+        data: eligibility ? mapMyReviewEligibilityResponse(eligibility) : null,
+      });
     }
 
     const eligibilities = await listMyReviewEligibilitiesFromDb(auth, { limit });
-    return NextResponse.json({ data: eligibilities });
+    return NextResponse.json({
+      data: eligibilities.map(mapMyReviewEligibilityResponse),
+    });
   } catch (error) {
     return NextResponse.json(
       {
@@ -51,4 +56,31 @@ export async function GET(request: Request) {
       { status: 500 },
     );
   }
+}
+type MyReviewEligibilityResponse = {
+  applicationId: string;
+  eligible: boolean;
+  existingReview?: ReviewEligibility["existingReview"];
+  programSlug?: string;
+  programTitle: string;
+  reason: ReviewEligibility["reason"];
+  status: string;
+  villageSlug?: string;
+  writeUrl?: string;
+};
+
+function mapMyReviewEligibilityResponse(
+  eligibility: ReviewEligibility,
+): MyReviewEligibilityResponse {
+  return {
+    applicationId: eligibility.applicationId,
+    eligible: eligibility.eligible,
+    existingReview: eligibility.existingReview,
+    programSlug: eligibility.programSlug,
+    programTitle: eligibility.programTitle,
+    reason: eligibility.reason,
+    status: eligibility.status,
+    villageSlug: eligibility.villageSlug,
+    writeUrl: eligibility.writeUrl,
+  };
 }
