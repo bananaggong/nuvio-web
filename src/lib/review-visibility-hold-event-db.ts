@@ -336,7 +336,7 @@ function mapHoldEvent(
     fromStatus: row.fromStatus ? asHoldStatus(row.fromStatus) : undefined,
     holdId: row.holdId,
     id: row.id,
-    metadata: asRecord(row.metadata),
+    metadata: sanitizeVisibilityHoldEventMetadata(row.metadata),
     note: row.note ?? undefined,
     reason: asHoldReason(row.reason),
     reviewId: row.reviewId,
@@ -344,6 +344,75 @@ function mapHoldEvent(
     sourceType: asHoldSourceType(row.sourceType),
     toStatus: asHoldStatus(row.toStatus),
   };
+}
+
+function sanitizeVisibilityHoldEventMetadata(value: unknown): Record<string, unknown> {
+  const metadata = asRecord(value);
+  const safe: Record<string, unknown> = {};
+
+  copyString(metadata, safe, "source");
+  copyString(metadata, safe, "enrichedBy");
+  copyString(metadata, safe, "releaseSource");
+
+  const holdMetadata = sanitizeVisibilityHoldMetadata(metadata.holdMetadata);
+  if (Object.keys(holdMetadata).length > 0) safe.holdMetadata = holdMetadata;
+
+  return safe;
+}
+
+function sanitizeVisibilityHoldMetadata(value: unknown): Record<string, unknown> {
+  const metadata = asRecord(value);
+  const safe: Record<string, unknown> = {};
+
+  copyString(metadata, safe, "source");
+  copyString(metadata, safe, "riskLevel");
+  copyNumber(metadata, safe, "riskScore");
+  copyStringArray(metadata, safe, "flags");
+  copyString(metadata, safe, "checkedAt");
+  copyString(metadata, safe, "reason");
+  copyString(metadata, safe, "status");
+  copyString(metadata, safe, "reportedAt");
+  copyString(metadata, safe, "reportId");
+
+  const release = asRecord(metadata.release);
+  if (Object.keys(release).length > 0) {
+    const safeRelease: Record<string, unknown> = {};
+    copyString(release, safeRelease, "source");
+    copyString(release, safeRelease, "releasedAt");
+    copyString(release, safeRelease, "note");
+    if (Object.keys(safeRelease).length > 0) safe.release = safeRelease;
+  }
+
+  return safe;
+}
+
+function copyString(
+  source: Record<string, unknown>,
+  target: Record<string, unknown>,
+  key: string,
+): void {
+  if (typeof source[key] === "string") target[key] = source[key];
+}
+
+function copyNumber(
+  source: Record<string, unknown>,
+  target: Record<string, unknown>,
+  key: string,
+): void {
+  const value = source[key];
+  if (typeof value === "number" && Number.isFinite(value)) target[key] = value;
+}
+
+function copyStringArray(
+  source: Record<string, unknown>,
+  target: Record<string, unknown>,
+  key: string,
+): void {
+  const value = source[key];
+  if (Array.isArray(value)) {
+    const values = value.filter((item): item is string => typeof item === "string");
+    if (values.length > 0) target[key] = values;
+  }
 }
 
 function sanitizeMetadata(value: unknown): Record<string, unknown> {

@@ -379,7 +379,7 @@ function mapHold(
     createdAt: row.createdAt.toISOString(),
     heldAt: row.heldAt.toISOString(),
     id: row.id,
-    metadata: asRecord(row.metadata),
+    metadata: sanitizeVisibilityHoldMetadata(row.metadata),
     reason: asReason(row.reason),
     releasedAt: row.releasedAt?.toISOString(),
     reviewId: row.reviewId,
@@ -390,6 +390,61 @@ function mapHold(
     updatedAt: row.updatedAt.toISOString(),
     villageSlug: villageSlug ?? undefined,
   };
+}
+
+function sanitizeVisibilityHoldMetadata(value: unknown): Record<string, unknown> {
+  const metadata = asRecord(value);
+  const safe: Record<string, unknown> = {};
+
+  copyString(metadata, safe, "source");
+  copyString(metadata, safe, "riskLevel");
+  copyNumber(metadata, safe, "riskScore");
+  copyStringArray(metadata, safe, "flags");
+  copyString(metadata, safe, "checkedAt");
+  copyString(metadata, safe, "reason");
+  copyString(metadata, safe, "status");
+  copyString(metadata, safe, "reportedAt");
+  copyString(metadata, safe, "reportId");
+
+  const release = asRecord(metadata.release);
+  if (Object.keys(release).length > 0) {
+    const safeRelease: Record<string, unknown> = {};
+    copyString(release, safeRelease, "source");
+    copyString(release, safeRelease, "releasedAt");
+    copyString(release, safeRelease, "note");
+    if (Object.keys(safeRelease).length > 0) safe.release = safeRelease;
+  }
+
+  return safe;
+}
+
+function copyString(
+  source: Record<string, unknown>,
+  target: Record<string, unknown>,
+  key: string,
+): void {
+  if (typeof source[key] === "string") target[key] = source[key];
+}
+
+function copyNumber(
+  source: Record<string, unknown>,
+  target: Record<string, unknown>,
+  key: string,
+): void {
+  const value = source[key];
+  if (typeof value === "number" && Number.isFinite(value)) target[key] = value;
+}
+
+function copyStringArray(
+  source: Record<string, unknown>,
+  target: Record<string, unknown>,
+  key: string,
+): void {
+  const value = source[key];
+  if (Array.isArray(value)) {
+    const values = value.filter((item): item is string => typeof item === "string");
+    if (values.length > 0) target[key] = values;
+  }
 }
 
 function asReason(value: string): ReviewVisibilityHoldReason {
