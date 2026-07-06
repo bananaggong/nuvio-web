@@ -12,7 +12,6 @@ export type ReviewContentVersion = {
   authorName: string;
   body: string;
   category: ReviewCategory;
-  changedBy?: string;
   changedByRole?: string;
   changeSource: string;
   createdAt: string;
@@ -192,14 +191,13 @@ function mapContentVersion(
     authorName: row.authorName,
     body: row.body,
     category: row.category,
-    changedBy: row.changedBy ?? undefined,
     changedByRole: row.changedByRole ?? undefined,
     changeSource: row.changeSource,
     createdAt: row.createdAt.toISOString(),
     excerpt: row.excerpt,
     id: row.id,
     images: Array.isArray(row.images) ? row.images : [],
-    metadata: asRecord(row.metadata),
+    metadata: sanitizeContentVersionMetadata(row.metadata),
     rating: row.rating ?? undefined,
     reviewId: row.reviewId,
     source: asReviewSource(row.source),
@@ -213,6 +211,25 @@ function asReviewSource(value: string): ReviewSource {
   return value === "participant" || value === "admin" || value === "imported"
     ? value
     : "host";
+}
+
+function sanitizeContentVersionMetadata(value: unknown): Record<string, unknown> {
+  const metadata = asRecord(value);
+  const safe: Record<string, unknown> = {};
+
+  copyString(metadata, safe, "source");
+  copyString(metadata, safe, "enrichedBy");
+  copyString(metadata, safe, "reviewSource");
+
+  return safe;
+}
+
+function copyString(
+  source: Record<string, unknown>,
+  target: Record<string, unknown>,
+  key: string,
+): void {
+  if (typeof source[key] === "string") target[key] = source[key];
 }
 
 function sanitizeMetadata(value: unknown): Record<string, unknown> {
