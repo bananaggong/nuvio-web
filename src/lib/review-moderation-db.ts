@@ -9,6 +9,7 @@ import {
   reviewVisibilityHolds,
   reviews as reviewsTable,
 } from "@/db/schema";
+import { currentReviewModerationContentPredicate } from "@/lib/review-moderation-current-db";
 
 export type ReviewModerationSummary = {
   draftCount: number;
@@ -128,6 +129,7 @@ async function countFlaggedPending(reviewAccessConditions: SQL[]): Promise<numbe
     ...reviewAccessConditions,
     eq(reviewsTable.status, "pending"),
     inArray(reviewModerationChecks.riskLevel, ["medium", "high"]),
+    currentReviewModerationContentPredicate(),
   ];
   const query = getDb()
     .select({ value: count() })

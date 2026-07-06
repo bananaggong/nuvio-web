@@ -6,6 +6,7 @@ import {
   reviews as reviewsTable,
 } from "@/db/schema";
 import { safeCreateAuditLog } from "@/lib/audit-log-db";
+import { currentReviewModerationContentPredicate } from "@/lib/review-moderation-current-db";
 
 export type ReviewModerationRiskLevel = "low" | "medium" | "high";
 
@@ -73,6 +74,7 @@ export async function listHostReviewModerationChecksFromDb(
 
   const conditions = buildAccessConditions(options);
   conditions.push(sql`${reviewsTable.status} <> 'deleted'`);
+  conditions.push(currentReviewModerationContentPredicate());
   if (options.riskLevel) {
     conditions.push(eq(reviewModerationChecks.riskLevel, options.riskLevel));
   }
