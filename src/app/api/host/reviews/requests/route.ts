@@ -127,15 +127,35 @@ export async function POST(request: Request) {
       : undefined;
 
     if (applicationIds) {
-      const data = await Promise.all(
-        applicationIds.slice(0, 50).map((applicationId) =>
-          requestHostReviewForApplication(
-            { applicationId, force: (body as { force?: unknown }).force === true },
-            accessOptions,
-          ),
-        ),
-      );
-      return NextResponse.json({ data }, { status: 201 });
+      const force = (body as { force?: unknown }).force === true;
+      const data: Awaited<ReturnType<typeof requestHostReviewForApplication>>[] = [];
+      const errors: ReviewRequestBatchError[] = [];
+
+      for (const applicationId of applicationIds.slice(0, 50)) {
+        try {
+          data.push(
+            await requestHostReviewForApplication(
+              { applicationId, force },
+              accessOptions,
+            ),
+          );
+        } catch (error) {
+          errors.push(mapBatchReviewRequestError(applicationId, error));
+        }
+      }
+
+      const summary = {
+        failed: errors.length,
+        requested: data.length,
+        total: data.length + errors.length,
+      };
+      const status = errors.length === 0
+        ? 201
+        : data.length === 0
+          ? getBatchFailureStatus(errors)
+          : 207;
+
+      return NextResponse.json({ data, errors, summary }, { status });
     }
 
     const data = await requestHostReviewForApplication(body, accessOptions);
@@ -155,4 +175,33 @@ export async function POST(request: Request) {
       { status: 400 },
     );
   }
+}
+type ReviewRequestBatchError = {
+  applicationId: string;
+  code: "access_denied" | "cooldown" | "ineligible" | "unknown";
+  error: string;
+};
+
+function mapBatchReviewRequestError(
+  applicationId: unknown,
+  error: unknown,
+): ReviewRequestBatchError {
+  return {
+    applicationId: typeof applicationId === "string" ? applicationId : String(applicationId ?? ""),
+    code: getBatchErrorCode(error),
+    error: error instanceof Error ? error.message : "Failed to create review request.",
+  };
+}
+
+function getBatchErrorCode(error: unknown): ReviewRequestBatchError["code"] {
+  if (error instanceof ReviewRequestAccessError) return "access_denied";
+  if (error instanceof ReviewRequestCooldownError) return "cooldown";
+  if (error instanceof ReviewRequestEligibilityError) return "ineligible";
+  return "unknown";
+}
+
+function getBatchFailureStatus(errors: ReviewRequestBatchError[]): number {
+  if (errors.some((error) => error.code === "access_denied")) return 403;
+  if (errors.some((error) => error.code === "cooldown")) return 409;
+  return 400;
 }
