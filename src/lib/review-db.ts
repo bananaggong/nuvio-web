@@ -113,6 +113,12 @@ export type PublicReviewPage = {
   nextCursor?: string;
 };
 
+export type ParticipantOwnReview = PublicReview & {
+  status: ReviewStatus;
+  submittedAt?: string;
+  updatedAt: string;
+};
+
 export class PublicReviewCursorError extends Error {
   constructor(message = "Invalid review cursor.") {
     super(message);
@@ -267,7 +273,7 @@ export async function getPublicReviewFromDb(id: string): Promise<PublicReview | 
     : null;
 }
 
-export async function listMyReviewsFromDb(auth: ApiAuthContext): Promise<HostReviewDraft[]> {
+export async function listMyReviewsFromDb(auth: ApiAuthContext): Promise<ParticipantOwnReview[]> {
   const ownerConditions: SQL[] = [eq(reviewsTable.userId, auth.user.id)];
   const emails = getVerifiedAccountEmails(auth);
 
@@ -292,8 +298,13 @@ export async function listMyReviewsFromDb(auth: ApiAuthContext): Promise<HostRev
     .orderBy(desc(reviewsTable.updatedAt))
     .limit(100);
 
-  return rows.map(({ review, programLegacyId }) =>
-    mapReviewRowToHostDraft(review, programLegacyId ?? undefined),
+  return rows.map(({ review, programLegacyId, programSlug, programTitle }) =>
+    mapReviewRowToParticipantOwnReview(
+      review,
+      programLegacyId ?? undefined,
+      programSlug,
+      programTitle,
+    ),
   );
 }
 
@@ -1393,6 +1404,20 @@ function mapReviewRowToPublicReview(
     comments: row.comments,
     badge: row.badge ?? undefined,
     publishedAt: row.publishedAt?.toISOString(),
+  };
+}
+
+function mapReviewRowToParticipantOwnReview(
+  row: ReviewRow,
+  programLegacyId?: number,
+  programSlug?: string | null,
+  programTitle?: string | null,
+): ParticipantOwnReview {
+  return {
+    ...mapReviewRowToPublicReview(row, programLegacyId, programSlug, programTitle),
+    status: row.status,
+    submittedAt: row.submittedAt?.toISOString(),
+    updatedAt: row.updatedAt.toISOString(),
   };
 }
 
