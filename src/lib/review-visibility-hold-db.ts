@@ -271,11 +271,18 @@ async function releaseVisibilityHoldContext(
         status: "released",
         updatedAt: now,
       })
-      .where(eq(reviewVisibilityHolds.id, context.hold.id))
+      .where(
+        and(
+          eq(reviewVisibilityHolds.id, context.hold.id),
+          eq(reviewVisibilityHolds.status, "active"),
+        ),
+      )
       .returning();
   });
 
-  if (!row) throw new ReviewVisibilityHoldError("Review visibility hold was not found.");
+  if (!row) {
+    throw new ReviewVisibilityHoldError("Review visibility hold is already released.");
+  }
 
   void safeCreateAuditLog({
     action: "review.visibility_hold.release",
