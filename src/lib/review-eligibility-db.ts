@@ -36,8 +36,6 @@ export type ReviewEligibility = {
   writeUrl?: string;
 };
 
-const participantReviewStatuses = new Set(["accepted", "checkedIn", "completed"]);
-
 export async function listMyReviewEligibilitiesFromDb(
   auth: ApiAuthContext,
   options: { applicationId?: string; limit?: number } = {},
@@ -64,6 +62,7 @@ export async function listMyReviewEligibilitiesFromDb(
       reviewSubmitted: programApplications.reviewSubmitted,
       reviewSubmittedAt: reviewsTable.submittedAt,
       reviewUpdatedAt: reviewsTable.updatedAt,
+      reviewEligible: sql<boolean>`public.application_is_review_eligible(${programApplications.id})`,
       status: programApplications.status,
       villageSlug: villages.slug,
     })
@@ -93,7 +92,7 @@ export async function listMyReviewEligibilitiesFromDb(
           }
         : undefined;
     const hasReview = Boolean(existingReview);
-    const eligibleStatus = participantReviewStatuses.has(row.status);
+    const eligibleStatus = row.reviewEligible === true;
     const eligible = eligibleStatus && !hasReview;
     const reason: ReviewEligibilityReason = hasReview
       ? "already_submitted"

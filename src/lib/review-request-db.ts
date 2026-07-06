@@ -79,6 +79,7 @@ type ReviewRequestContext = {
   programSlug: string | null;
   programTitle: string | null;
   programVillageId: string | null;
+  reviewEligible: boolean;
   reviewId: string | null;
   reviewStatus: ReviewStatus | null;
   villageSlug: string | null;
@@ -98,7 +99,6 @@ type ReviewRequestAccessOptions = {
   allowedVillageSlugs?: string[];
 };
 
-const eligibleApplicationStatuses = new Set(["accepted", "checkedIn", "completed"]);
 const activeReviewRequestStatuses: ReviewRequestStatus[] = ["pending", "sent", "opened"];
 const terminalReviewRequestStatuses = new Set<ReviewRequestStatus>(["cancelled", "expired"]);
 const reviewRequestStatuses: ReviewRequestStatus[] = [
@@ -464,7 +464,7 @@ export async function requestHostReviewForApplication(
 
   assertReviewRequestAccess(context, options);
 
-  if (!eligibleApplicationStatuses.has(context.applicationStatus) && !context.reviewId) {
+  if (!context.reviewEligible && !context.reviewId) {
     throw new ReviewRequestEligibilityError();
   }
 
@@ -631,6 +631,7 @@ export async function updateHostReviewRequestStatus(
       programSlug: null,
       programTitle: null,
       programVillageId: existing.programVillageId,
+      reviewEligible: true,
       reviewId: existing.request.reviewId,
       reviewStatus: null,
       villageSlug: existing.request.villageSlug,
@@ -858,6 +859,7 @@ async function getReviewRequestContext(applicationId: string): Promise<ReviewReq
       programSlug: programsTable.slug,
       programTitle: programsTable.title,
       programVillageId: programsTable.villageId,
+      reviewEligible: sql<boolean>`public.application_is_review_eligible(${programApplications.id})`,
       reviewId: reviewsTable.id,
       reviewStatus: reviewsTable.status,
       villageSlug: villages.slug,

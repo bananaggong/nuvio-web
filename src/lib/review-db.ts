@@ -99,6 +99,7 @@ type ParticipantApplicationRow = {
   programRunId: string | null;
   programTitle: string | null;
   programVillageId: string | null;
+  reviewEligible: boolean;
   status: string;
   submittedBy: string | null;
   villageSlug: string | null;
@@ -169,7 +170,6 @@ const reviewRequestStatuses: ReviewRequestStatus[] = [
   "cancelled",
   "expired",
 ];
-const participantReviewStatuses = new Set(["accepted", "checkedIn", "completed"]);
 const maxReviewImages = 6;
 const defaultPublicReviewPageSize = 60;
 const maxPublicReviewPageSize = 100;
@@ -422,7 +422,7 @@ export async function createParticipantReview(
   if (!application) {
     throw new ReviewEligibilityError("Application was not found.");
   }
-  if (!participantReviewStatuses.has(application.status)) {
+  if (!application.reviewEligible) {
     throw new ReviewEligibilityError();
   }
 
@@ -1221,6 +1221,7 @@ async function getParticipantReviewApplicationByRequestToken(input: {
       programRunId: programApplications.programRunId,
       programTitle: programsTable.title,
       programVillageId: programsTable.villageId,
+      reviewEligible: sql<boolean>`public.application_is_review_eligible(${programApplications.id})`,
       status: programApplications.status,
       submittedBy: programApplications.submittedBy,
       villageSlug: villages.slug,
@@ -1277,6 +1278,7 @@ async function getParticipantReviewApplication(input: {
       programRunId: programApplications.programRunId,
       programTitle: programsTable.title,
       programVillageId: programsTable.villageId,
+      reviewEligible: sql<boolean>`public.application_is_review_eligible(${programApplications.id})`,
       status: programApplications.status,
       submittedBy: programApplications.submittedBy,
       villageSlug: villages.slug,
