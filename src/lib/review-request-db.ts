@@ -134,6 +134,13 @@ export class ReviewRequestCooldownError extends Error {
   }
 }
 
+export class ReviewRequestLimitError extends Error {
+  constructor(message = "This review request has reached the maximum send count.") {
+    super(message);
+    this.name = "ReviewRequestLimitError";
+  }
+}
+
 export async function listHostReviewRequestsFromDb(
   options: ListHostReviewRequestOptions = {},
 ): Promise<ReviewRequestRecord[]> {
@@ -494,6 +501,10 @@ export async function requestHostReviewForApplication(
           .where(eq(reviewRequests.id, existing.id))
           .returning();
         return [updatedCompleted, previousStatus] as const;
+      }
+
+      if (existing.requestCount >= maxReviewRequestCount) {
+        throw new ReviewRequestLimitError();
       }
 
       if (!normalized.force && isWithinCooldown(existing.lastRequestedAt, now)) {

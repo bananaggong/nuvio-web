@@ -17,6 +17,7 @@ import {
   ReviewRequestAccessError,
   ReviewRequestCooldownError,
   ReviewRequestEligibilityError,
+  ReviewRequestLimitError,
   type ReviewRequestStatus,
 } from "@/lib/review-request-db";
 
@@ -165,6 +166,7 @@ export async function POST(request: Request) {
     return NextResponse.json({ data }, { status: 201 });
   } catch (error) {
     if (error instanceof ReviewRequestAccessError) return apiError(error.message, 403);
+    if (error instanceof ReviewRequestLimitError) return apiError(error.message, 409);
     if (error instanceof ReviewRequestCooldownError) return apiError(error.message, 409);
     if (error instanceof ReviewRequestEligibilityError) return apiError(error.message, 400);
 
@@ -210,7 +212,7 @@ function normalizeApplicationIdBatch(value: unknown): string[] | undefined {
 
 type ReviewRequestBatchError = {
   applicationId: string;
-  code: "access_denied" | "cooldown" | "ineligible" | "unknown";
+  code: "access_denied" | "cooldown" | "ineligible" | "limit_reached" | "unknown";
   error: string;
 };
 
@@ -228,6 +230,7 @@ function mapBatchReviewRequestError(
 
 function getBatchErrorCode(error: unknown): ReviewRequestBatchError["code"] {
   if (error instanceof ReviewRequestAccessError) return "access_denied";
+  if (error instanceof ReviewRequestLimitError) return "limit_reached";
   if (error instanceof ReviewRequestCooldownError) return "cooldown";
   if (error instanceof ReviewRequestEligibilityError) return "ineligible";
   return "unknown";
@@ -235,6 +238,6 @@ function getBatchErrorCode(error: unknown): ReviewRequestBatchError["code"] {
 
 function getBatchFailureStatus(errors: ReviewRequestBatchError[]): number {
   if (errors.some((error) => error.code === "access_denied")) return 403;
-  if (errors.some((error) => error.code === "cooldown")) return 409;
+  if (errors.some((error) => error.code === "cooldown" || error.code === "limit_reached")) return 409;
   return 400;
 }
