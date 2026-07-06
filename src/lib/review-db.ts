@@ -699,6 +699,7 @@ export async function deleteParticipantReview(
       await tx
         .update(reviewRequests)
         .set({
+          cancelledAt: null,
           completedAt: null,
           expiresAt: null,
           lastRequestedAt: null,

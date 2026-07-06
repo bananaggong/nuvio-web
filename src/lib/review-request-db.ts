@@ -482,6 +482,7 @@ export async function requestHostReviewForApplication(
         const [updatedCompleted] = await tx
           .update(reviewRequests)
           .set({
+            cancelledAt: null,
             completedAt: existing.completedAt ?? now,
             nextReminderAt: null,
             requestTokenExpiresAt: null,
@@ -683,6 +684,7 @@ export async function markReviewRequestCompletedForApplication(
   await getDb()
     .update(reviewRequests)
     .set({
+      cancelledAt: null,
       completedAt: new Date(),
       nextReminderAt: null,
       requestTokenExpiresAt: null,
@@ -700,6 +702,7 @@ export async function reopenReviewRequestForApplication(applicationId: string): 
   await getDb()
     .update(reviewRequests)
     .set({
+      cancelledAt: null,
       completedAt: null,
       expiresAt: null,
       lastRequestedAt: null,
