@@ -420,10 +420,14 @@ function normalizeUpdateReviewReportInput(input: unknown): {
 
   const status = asOptionalReportStatus(value.status);
   if (!status) throw new Error("A valid report status is required.");
+  const resolutionNote = asString(value.resolutionNote).slice(0, 1000) || null;
+  if ((status === "resolved" || status === "dismissed") && !resolutionNote) {
+    throw new Error("Resolved or dismissed review reports require a resolution note.");
+  }
 
   return {
     id,
-    resolutionNote: asString(value.resolutionNote).slice(0, 1000) || null,
+    resolutionNote,
     status,
   };
 }
