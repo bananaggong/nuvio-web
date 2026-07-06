@@ -72,6 +72,7 @@ export async function listHostReviewModerationChecksFromDb(
   if (options.allowedVillageSlugs && options.allowedVillageSlugs.length === 0) return [];
 
   const conditions = buildAccessConditions(options);
+  conditions.push(sql`${reviewsTable.status} <> 'deleted'`);
   if (options.riskLevel) {
     conditions.push(eq(reviewModerationChecks.riskLevel, options.riskLevel));
   }
@@ -290,7 +291,7 @@ async function getReviewForModeration(reviewId: string): Promise<ReviewForModera
     })
     .from(reviewsTable)
     .leftJoin(programsTable, eq(reviewsTable.programId, programsTable.id))
-    .where(eq(reviewsTable.id, reviewId))
+    .where(and(eq(reviewsTable.id, reviewId), sql`${reviewsTable.status} <> 'deleted'`))
     .limit(1);
 
   return row ?? null;
