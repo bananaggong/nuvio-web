@@ -15,6 +15,7 @@ import {
   PublicReviewCursorError,
   ReviewEligibilityError,
 } from "@/lib/review-db";
+import { PublicReviewQueryError } from "@/lib/review-public-query";
 
 export const runtime = "nodejs";
 
@@ -38,7 +39,7 @@ export async function GET(request: Request) {
     const page = await listPublicReviewsPageFromDb({ cursor, limit, villageSlug });
     return NextResponse.json(page);
   } catch (error) {
-    if (error instanceof PublicReviewCursorError) {
+    if (error instanceof PublicReviewCursorError || error instanceof PublicReviewQueryError) {
       return NextResponse.json({ error: error.message }, { status: 400 });
     }
 

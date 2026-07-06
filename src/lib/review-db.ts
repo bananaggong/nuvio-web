@@ -14,6 +14,7 @@ import { queueReviewSubmittedNotification } from "@/lib/notification-db";
 import { safeEnrichLatestReviewContentVersion } from "@/lib/review-content-version-db";
 import { refreshReviewModerationCheck } from "@/lib/review-moderation-check-db";
 import { buildPublicReviewVisibilityConditions } from "@/lib/review-public-visibility-db";
+import { normalizePublicReviewQueryText } from "@/lib/review-public-query";
 import { safeRecordReviewRequestEvent } from "@/lib/review-request-event-db";
 import { hashReviewRequestToken, normalizeReviewRequestToken } from "@/lib/review-request-token";
 import { queuePublishedReviewHostReplyNotificationForReview } from "@/lib/review-reply-db";
@@ -170,6 +171,7 @@ const participantReviewStatuses = new Set(["accepted", "checkedIn", "completed"]
 const maxReviewImages = 6;
 const defaultPublicReviewPageSize = 60;
 const maxPublicReviewPageSize = 100;
+const maxPublicReviewCursorLength = 512;
 
 export async function listPublicReviewsFromDb(options: {
   limit?: number;
@@ -188,8 +190,8 @@ export async function listPublicReviewsPageFromDb(options: {
   const limit = clampPublicReviewLimit(options.limit);
   const cursor = decodePublicReviewCursor(options.cursor);
 
-  if (options.villageSlug) {
-    const villageSlug = options.villageSlug.trim();
+  const villageSlug = normalizePublicReviewQueryText(options.villageSlug, "villageSlug");
+  if (villageSlug) {
     const villagePredicate = or(
       eq(reviewsTable.villageSlug, villageSlug),
       eq(villages.slug, villageSlug),
@@ -1484,6 +1486,7 @@ function encodePublicReviewCursor(review: ReviewRow): string {
 function decodePublicReviewCursor(value: string | undefined): PublicReviewCursor | undefined {
   const cursor = value?.trim();
   if (!cursor) return undefined;
+  if (cursor.length > maxPublicReviewCursorLength) throw new PublicReviewCursorError();
 
   try {
     const payload = JSON.parse(Buffer.from(cursor, "base64url").toString("utf8")) as {

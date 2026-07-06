@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { applyPersistentRateLimit } from "@/lib/api-security";
 import { launchFeatureFlags } from "@/lib/launch-feature-flags";
+import { PublicReviewQueryError } from "@/lib/review-public-query";
 import { getPublicReviewSummaryFromDb } from "@/lib/review-summary-db";
 
 export const runtime = "nodejs";
@@ -31,6 +32,10 @@ export async function GET(request: Request) {
 
     return NextResponse.json({ data: summary });
   } catch (error) {
+    if (error instanceof PublicReviewQueryError) {
+      return NextResponse.json({ error: error.message }, { status: 400 });
+    }
+
     return NextResponse.json(
       {
         error:

@@ -6,6 +6,7 @@ import {
   reviews as reviewsTable,
   villages,
 } from "@/db/schema";
+import { normalizePublicReviewQueryText } from "@/lib/review-public-query";
 import { buildPublicReviewVisibilityConditions } from "@/lib/review-public-visibility-db";
 
 export type PublicReviewSummary = {
@@ -28,7 +29,8 @@ export async function getPublicReviewSummaryFromDb(options: {
   programIdentifier?: string;
   villageSlug?: string;
 } = {}): Promise<PublicReviewSummary> {
-  const conditions = buildPublicReviewConditions(options);
+  const normalizedOptions = normalizePublicReviewSummaryOptions(options);
+  const conditions = buildPublicReviewConditions(normalizedOptions);
   const whereClause = and(...conditions);
 
   const [summaryRow] = await getDb()
@@ -82,24 +84,39 @@ export async function getPublicReviewSummaryFromDb(options: {
     ratingDistribution,
     reviewCount: toNumber(summaryRow?.reviewCount),
     scope: {
-      programIdentifier: options.programIdentifier,
-      type: options.programIdentifier
+      programIdentifier: normalizedOptions.programIdentifier,
+      type: normalizedOptions.programIdentifier
         ? "program"
-        : options.villageSlug
+        : normalizedOptions.villageSlug
           ? "village"
           : "all",
-      villageSlug: options.villageSlug,
+      villageSlug: normalizedOptions.villageSlug,
     },
   };
 }
 
+function normalizePublicReviewSummaryOptions(options: {
+  programIdentifier?: string;
+  villageSlug?: string;
+}): {
+  programIdentifier?: string;
+  villageSlug?: string;
+} {
+  return {
+    programIdentifier: normalizePublicReviewQueryText(
+      options.programIdentifier,
+      "programIdentifier",
+    ),
+    villageSlug: normalizePublicReviewQueryText(options.villageSlug, "villageSlug"),
+  };
+}
 function buildPublicReviewConditions(options: {
   programIdentifier?: string;
   villageSlug?: string;
 }): SQL[] {
   const conditions: SQL[] = buildPublicReviewVisibilityConditions();
-  const programIdentifier = options.programIdentifier?.trim();
-  const villageSlug = options.villageSlug?.trim();
+  const programIdentifier = options.programIdentifier;
+  const villageSlug = options.villageSlug;
 
   if (programIdentifier) {
     conditions.push(buildProgramIdentifierPredicate(programIdentifier));
