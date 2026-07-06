@@ -1011,6 +1011,9 @@ export async function updateHostReviewStatus(
     if (status === "deleted") {
       await tx.execute(sql`select set_config('app.review_delete_allowed', 'true', true)`);
     }
+    if (existing.review.status === "deleted" && status !== "deleted") {
+      await tx.execute(sql`select set_config('app.review_restore_deleted_allowed', 'true', true)`);
+    }
 
     const [updatedReview] = await tx
       .update(reviewsTable)
