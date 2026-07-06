@@ -786,6 +786,7 @@ export async function upsertHostReviewDraft(
   const insertValue = await mapHostDraftToReviewInsert(normalizedDraft, {
     allowedVillageIds,
   });
+  assertPublishedReviewHasScope(insertValue);
   if (insertValue.status === "deleted") {
     throw new HostReviewAccessError();
   }
@@ -1579,6 +1580,14 @@ function normalizeHostHiddenReason(
     throw new Error("Hidden or deleted reviews require a moderation reason.");
   }
   return reason;
+}
+
+function assertPublishedReviewHasScope(
+  review: Pick<ReviewInsert, "programId" | "status" | "villageSlug">,
+) {
+  if (review.status !== "published") return;
+  if (review.programId || review.villageSlug?.trim()) return;
+  throw new Error("Published reviews must be attached to a program or channel.");
 }
 
 function asStatusFromPublished(value: unknown): ReviewStatus {
