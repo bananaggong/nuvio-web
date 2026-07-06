@@ -397,9 +397,13 @@ function normalizeCreateReviewReportInput(input: unknown): {
 
   const reason = asOptionalReportReason(value.reason);
   if (!reason) throw new Error("A valid report reason is required.");
+  const message = asString(value.message).slice(0, 1000);
+  if (reason === "other" && !message) {
+    throw new Error("Other review reports require a message.");
+  }
 
   return {
-    message: asString(value.message).slice(0, 1000),
+    message,
     reason,
     reviewId,
   };
