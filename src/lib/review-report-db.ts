@@ -415,10 +415,13 @@ function normalizeUpdateReviewReportInput(input: unknown): {
   const id = asUuid(value.id);
   if (!id) throw new Error("A valid report id is required.");
 
+  const status = asOptionalReportStatus(value.status);
+  if (!status) throw new Error("A valid report status is required.");
+
   return {
     id,
     resolutionNote: asString(value.resolutionNote).slice(0, 1000) || null,
-    status: asReportStatus(value.status),
+    status,
   };
 }
 
@@ -475,11 +478,15 @@ function asReportReason(value: unknown): ReviewReportReason {
     : "other";
 }
 
-function asReportStatus(value: unknown): ReviewReportStatus {
+function asOptionalReportStatus(value: unknown): ReviewReportStatus | undefined {
   const text = asString(value);
   return reportStatuses.includes(text as ReviewReportStatus)
     ? (text as ReviewReportStatus)
-    : "open";
+    : undefined;
+}
+
+function asReportStatus(value: unknown): ReviewReportStatus {
+  return asOptionalReportStatus(value) ?? "open";
 }
 
 function authOwnsReportedReview(
