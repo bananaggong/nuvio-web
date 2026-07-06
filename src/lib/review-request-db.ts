@@ -360,6 +360,7 @@ export async function processDueReviewRequestReminders(
       .limit(limit);
 
     const updatedRows: Array<{
+      previousStatus: ReviewRequestStatus;
       programTitle: string | null;
       request: ReviewRequestRow;
       token: string;
@@ -387,6 +388,7 @@ export async function processDueReviewRequestReminders(
 
       if (updated) {
         updatedRows.push({
+          previousStatus,
           programTitle: row.programTitle,
           request: updated,
           token: requestToken.token,
@@ -408,6 +410,7 @@ export async function processDueReviewRequestReminders(
     const requestStatus = asReviewRequestStatus(row.request.status);
     await safeRecordReviewRequestEvent({
       action: "resent",
+      fromStatus: row.previousStatus,
       metadata: {
         applicationId: row.request.applicationId,
         requestCount: row.request.requestCount,
@@ -461,7 +464,7 @@ export async function requestHostReviewForApplication(
   const requestExpiresAt = new Date(now.getTime() + defaultExpiryMs);
   const nextReminderAt = new Date(now.getTime() + defaultReminderDelayMs);
   const requestToken = createReviewRequestToken();
-  const [row] = await getDb().transaction(async (tx) => {
+  const [row, previousStatus] = await getDb().transaction(async (tx) => {
     await tx.execute(
       sql`select pg_advisory_xact_lock(hashtext(${`review-request:${context.applicationId}`}))`,
     );
@@ -473,6 +476,8 @@ export async function requestHostReviewForApplication(
       .limit(1);
 
     if (existing) {
+      const previousStatus = asReviewRequestStatus(existing.status);
+
       if (context.reviewId || existing.status === "completed") {
         const [updatedCompleted] = await tx
           .update(reviewRequests)
@@ -487,7 +492,7 @@ export async function requestHostReviewForApplication(
           })
           .where(eq(reviewRequests.id, existing.id))
           .returning();
-        return [updatedCompleted];
+        return [updatedCompleted, previousStatus] as const;
       }
 
       if (!normalized.force && isWithinCooldown(existing.lastRequestedAt, now)) {
@@ -511,7 +516,7 @@ export async function requestHostReviewForApplication(
         })
         .where(eq(reviewRequests.id, existing.id))
         .returning();
-      return [updated];
+      return [updated, previousStatus] as const;
     }
 
     const insertValue: ReviewRequestInsert = {
@@ -534,7 +539,7 @@ export async function requestHostReviewForApplication(
     };
 
     const [created] = await tx.insert(reviewRequests).values(insertValue).returning();
-    return [created];
+    return [created, null] as const;
   });
 
   void safeCreateAuditLog({
@@ -559,6 +564,7 @@ export async function requestHostReviewForApplication(
           : "requested",
     actorId: options.actorId,
     actorRole: options.actorRole,
+    fromStatus: previousStatus ?? undefined,
     metadata: {
       applicationId: row.applicationId,
       requestCount: row.requestCount,
