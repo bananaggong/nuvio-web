@@ -101,11 +101,34 @@ export async function POST(request: Request) {
     );
   }
 }
-type MyReviewRequestResponse = Omit<ReviewRequestRecord, "recipientEmail" | "recipientName">;
+type MyReviewRequestResponse = {
+  applicationId: string;
+  applicationStatus: string;
+  completedAt?: string;
+  expiresAt?: string;
+  id: string;
+  programLegacyId?: number;
+  programSlug?: string;
+  programTitle: string;
+  review?: ReviewRequestRecord["review"];
+  status: ReviewRequestRecord["status"];
+  villageSlug?: string;
+  writeUrl?: string;
+};
 
 function mapMyReviewRequestResponse(record: ReviewRequestRecord): MyReviewRequestResponse {
-  const { recipientEmail: _recipientEmail, recipientName: _recipientName, ...safeRecord } = record;
-  void _recipientEmail;
-  void _recipientName;
-  return safeRecord;
+  return {
+    applicationId: record.applicationId,
+    applicationStatus: record.applicationStatus,
+    completedAt: record.completedAt,
+    expiresAt: record.expiresAt,
+    id: record.id,
+    programLegacyId: record.programLegacyId,
+    programSlug: record.programSlug,
+    programTitle: record.programTitle,
+    review: record.review,
+    status: record.status,
+    villageSlug: record.villageSlug,
+    writeUrl: record.writeUrl,
+  };
 }
