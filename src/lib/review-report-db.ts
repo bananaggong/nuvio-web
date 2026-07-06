@@ -395,9 +395,12 @@ function normalizeCreateReviewReportInput(input: unknown): {
   const reviewId = asUuid(value.reviewId);
   if (!reviewId) throw new Error("A valid review id is required.");
 
+  const reason = asOptionalReportReason(value.reason);
+  if (!reason) throw new Error("A valid report reason is required.");
+
   return {
     message: asString(value.message).slice(0, 1000),
-    reason: asReportReason(value.reason),
+    reason,
     reviewId,
   };
 }
@@ -471,11 +474,14 @@ function assertReportAccess(input: {
   throw new ReviewReportAccessError();
 }
 
-function asReportReason(value: unknown): ReviewReportReason {
+function asOptionalReportReason(value: unknown): ReviewReportReason | undefined {
   const text = asString(value);
   return reportReasons.includes(text as ReviewReportReason)
     ? (text as ReviewReportReason)
-    : "other";
+    : undefined;
+}
+function asReportReason(value: unknown): ReviewReportReason {
+  return asOptionalReportReason(value) ?? "other";
 }
 
 function asOptionalReportStatus(value: unknown): ReviewReportStatus | undefined {

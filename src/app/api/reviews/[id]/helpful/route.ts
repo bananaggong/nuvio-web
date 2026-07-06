@@ -41,10 +41,7 @@ export async function POST(
     const { id } = await params;
     const parsedBody = await readJsonWithLimit(request, 4 * 1024);
     if (parsedBody.response) return parsedBody.response;
-    const body = parsedBody.body;
-    const helpful = body && typeof body === "object" && "helpful" in body
-      ? (body as { helpful?: unknown }).helpful !== false
-      : true;
+    const helpful = normalizeHelpfulRequest(parsedBody.body);
     const result = await setReviewHelpful(id, helpful, auth);
     return NextResponse.json({ data: result });
   } catch (error) {
@@ -60,4 +57,20 @@ export async function POST(
       { status: 500 },
     );
   }
+}
+
+function normalizeHelpfulRequest(body: unknown): boolean {
+  if (body === null || body === undefined) return true;
+  if (!body || typeof body !== "object" || Array.isArray(body)) {
+    throw new ReviewInteractionError("Helpful payload must be an object.");
+  }
+
+  if (!("helpful" in body)) return true;
+
+  const helpful = (body as { helpful?: unknown }).helpful;
+  if (typeof helpful !== "boolean") {
+    throw new ReviewInteractionError("Helpful must be true or false.");
+  }
+
+  return helpful;
 }
