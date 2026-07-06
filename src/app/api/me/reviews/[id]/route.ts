@@ -47,7 +47,7 @@ export async function PATCH(
     if (parsedBody.response) return parsedBody.response;
     const body = parsedBody.body as Parameters<typeof updateParticipantReview>[1];
     const review = await updateParticipantReview(id, body, auth);
-    return NextResponse.json({ data: review });
+    return NextResponse.json({ data: mapParticipantReviewMutationResponse(review) });
   } catch (error) {
     if (error instanceof ReviewEligibilityError) {
       return NextResponse.json({ error: error.message }, { status: 403 });
@@ -102,4 +102,15 @@ export async function DELETE(
       { status: 400 },
     );
   }
+}
+type ParticipantReviewMutationResult = Awaited<ReturnType<typeof updateParticipantReview>>;
+
+function mapParticipantReviewMutationResponse(review: ParticipantReviewMutationResult) {
+  return {
+    id: review.id,
+    title: review.title,
+    status: review.status,
+    submittedAt: review.submittedAt,
+    updatedAt: review.updatedAt,
+  };
 }
