@@ -83,7 +83,11 @@ export async function recordReviewHelpfulVoteEvent(
 
   const actorId = input.actorId ?? options.actorId ?? null;
   const actorRole = normalizeOptionalText(input.actorRole ?? options.actorRole);
-  const metadata = sanitizeMetadata(input.metadata, input.action);
+  const metadata = sanitizeMetadata(input.metadata, {
+    action: input.action,
+    reviewId: input.reviewId,
+    userId: input.userId,
+  });
   const recentTriggerEvent = actorId
     ? await findRecentTriggerEvent({
         action: input.action,
@@ -274,13 +278,20 @@ function copyNumber(
 
 function sanitizeMetadata(
   value: unknown,
-  action: ReviewHelpfulVoteEventAction,
+  input: {
+    action: ReviewHelpfulVoteEventAction;
+    reviewId: string;
+    userId: string;
+  },
 ): Record<string, unknown> {
   const metadata = asRecord(value);
   return {
     ...metadata,
-    helpful: action === "added",
+    action: input.action,
+    helpful: input.action === "added",
+    reviewId: input.reviewId,
     source: typeof metadata.source === "string" ? metadata.source : "application_service",
+    userId: input.userId,
   };
 }
 
