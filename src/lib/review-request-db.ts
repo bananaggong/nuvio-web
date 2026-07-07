@@ -397,7 +397,11 @@ export async function processDueReviewRequestReminders(
         .update(reviewRequests)
         .set({
           lastRequestedAt: now,
-          nextReminderAt,
+          nextReminderAt: sql`case
+            when ${reviewRequests.requestCount} + 1 >= ${maxReviewRequestCount}
+              then null
+            else ${nextReminderAt}
+          end`,
           requestCount: sql`${reviewRequests.requestCount} + 1`,
           requestTokenExpiresAt,
           requestTokenHash: requestToken.hash,
@@ -538,7 +542,9 @@ export async function requestHostReviewForApplication(
           completedAt: null,
           expiresAt: requestExpiresAt,
           lastRequestedAt: now,
-          nextReminderAt,
+          nextReminderAt: existing.requestCount + 1 >= maxReviewRequestCount
+            ? null
+            : nextReminderAt,
           openedAt: existing.status === "opened" ? existing.openedAt ?? now : null,
           requestCount: sql`${reviewRequests.requestCount} + 1`,
           requestTokenExpiresAt: requestExpiresAt,
