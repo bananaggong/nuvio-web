@@ -105,7 +105,7 @@ export function ChannelProfileHeader({
   homeHref,
   village,
 }: {
-  activeTab: "home" | "program" | "gallery" | "magazine" | "board" | "free";
+  activeTab: "home" | "program" | "review" | "gallery" | "magazine" | "board" | "free";
   homeHref: string;
   village: Village;
 }) {

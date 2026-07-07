@@ -1,7 +1,8 @@
+import { launchFeatureFlags } from "@/lib/launch-feature-flags";
 import { villagePath } from "@/lib/village-routing";
 import type { Village, VillageSection, VillageSectionType } from "@/lib/village-types";
 
-export type ChannelMenuKind = "program" | "gallery" | "magazine" | "board" | "free";
+export type ChannelMenuKind = "program" | "review" | "gallery" | "magazine" | "board" | "free";
 
 export type ChannelMenuItem = {
   description: string;
@@ -75,9 +76,26 @@ export const channelMenuMeta: Record<
     hostHref: "/host/channels/programs",
     sectionType: "programs",
   },
+  review: {
+    badge: "후기형",
+    defaultDescription: "참여자 후기와 평점을 표시해요",
+    defaultLabel: "후기",
+    guestHref: (homeHref) => `${homeHref}/reviews`,
+    hostHref: "/host/channels/reviews",
+    sectionType: "review",
+  },
 };
 
 export const channelMenuTypeOptions: ChannelMenuTypeOption[] = [
+  ...(launchFeatureFlags.reviews
+    ? [
+        {
+          description: channelMenuMeta.review.defaultDescription,
+          kind: "review" as const,
+          label: channelMenuMeta.review.defaultLabel,
+        },
+      ]
+    : []),
   {
     description: channelMenuMeta.gallery.defaultDescription,
     kind: "gallery",
@@ -110,8 +128,7 @@ export function getChannelMenuItems(
   const storedItems = sections
     .map((section, index) => menuItemFromSection(section, index))
     .filter((item): item is ChannelMenuItem => Boolean(item));
-  const items =
-    storedItems.length > 0 ? ensureProgramMenu(storedItems) : [createProgramMenuItem()];
+  const items = storedItems.length > 0 ? ensureCoreMenus(storedItems) : ensureCoreMenus([]);
 
   return items
     .filter((item) => includeFree || item.kind !== "free")
@@ -140,7 +157,7 @@ export function applyChannelMenuItemsToSections(
   items: ChannelMenuItem[],
 ): VillageSection[] {
   const preservedSections = sections.filter((section) => !isChannelMenuSection(section));
-  const normalizedItems = ensureProgramMenu(items)
+  const normalizedItems = ensureCoreMenus(items)
     .map((item, index) => ({
       ...item,
       id: item.id || createMenuId(item.kind),
@@ -206,7 +223,15 @@ function createProgramMenuItem(): ChannelMenuItem {
   };
 }
 
-function ensureProgramMenu(items: ChannelMenuItem[]) {
+function createReviewMenuItem(): ChannelMenuItem {
+  return {
+    ...createChannelMenuItem("review"),
+    id: "channel-menu-review",
+    order: 1,
+  };
+}
+
+function ensureCoreMenus(items: ChannelMenuItem[]) {
   const normalized = items.map((item, index) => ({
     ...item,
     locked: item.kind === "program" || item.locked,
@@ -214,9 +239,23 @@ function ensureProgramMenu(items: ChannelMenuItem[]) {
     visible: item.kind === "program" ? item.visible : item.visible,
   }));
 
-  if (normalized.some((item) => item.kind === "program")) return normalized;
+  const withProgram = normalized.some((item) => item.kind === "program")
+    ? normalized
+    : [createProgramMenuItem(), ...normalized.map((item) => ({ ...item, order: item.order + 1 }))];
 
-  return [createProgramMenuItem(), ...normalized.map((item) => ({ ...item, order: item.order + 1 }))];
+  if (!launchFeatureFlags.reviews || withProgram.some((item) => item.kind === "review")) {
+    return withProgram;
+  }
+
+  const reviewOrder =
+    Math.min(...withProgram.filter((item) => item.kind === "program").map((item) => item.order)) + 1;
+
+  return [
+    ...withProgram.map((item) =>
+      item.order >= reviewOrder ? { ...item, order: item.order + 1 } : item,
+    ),
+    { ...createReviewMenuItem(), order: reviewOrder },
+  ];
 }
 
 function menuItemFromSection(section: VillageSection, index: number): ChannelMenuItem | null {
@@ -255,6 +294,7 @@ function getSectionMenuKind(section: VillageSection): ChannelMenuKind | null {
 function asChannelMenuKind(value: unknown): ChannelMenuKind | null {
   if (
     value === "program" ||
+    value === "review" ||
     value === "gallery" ||
     value === "magazine" ||
     value === "board" ||

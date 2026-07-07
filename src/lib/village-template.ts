@@ -19,6 +19,7 @@ export const sectionTypeLabels: Record<VillageSection["type"], string> = {
   magazine: "매거진",
   notice: "공지",
   programs: "프로그램",
+  review: "후기",
   stay: "체류",
   story: "소개",
 };

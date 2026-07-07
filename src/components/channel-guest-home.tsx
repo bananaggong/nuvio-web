@@ -384,6 +384,10 @@ function ChannelGuestMenuSection({
     );
   }
 
+  if (item.kind === "review") {
+    return <span className="hidden" id={`channel-${village.slug}-reviews`} />;
+  }
+
   return <span className="hidden" id={`channel-${village.slug}-free`} />;
 }
 

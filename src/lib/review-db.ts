@@ -38,6 +38,8 @@ export type HostReviewDraft = {
   title: string;
   category: ReviewCategory;
   programLegacyId?: number;
+  programSlug?: string;
+  programTitle?: string;
   programUuid?: string;
   programRunId?: string;
   villageSlug?: string;
@@ -387,8 +389,13 @@ export async function listHostReviewDraftsFromDb(
         .limit(300)
     : await baseQuery.orderBy(desc(reviewsTable.updatedAt)).limit(300);
 
-  return rows.map(({ review, programLegacyId }) =>
-    mapReviewRowToHostDraft(review, programLegacyId ?? undefined),
+  return rows.map(({ review, programLegacyId, programSlug, programTitle }) =>
+    mapReviewRowToHostDraft(
+      review,
+      programLegacyId ?? undefined,
+      programSlug,
+      programTitle,
+    ),
   );
 }
 
@@ -1517,6 +1524,8 @@ function mapReviewRowToParticipantOwnReview(
 function mapReviewRowToHostDraft(
   row: ReviewRow,
   programLegacyId?: number,
+  programSlug?: string | null,
+  programTitle?: string | null,
 ): HostReviewDraft {
   return {
     id: row.id,
@@ -1524,6 +1533,8 @@ function mapReviewRowToHostDraft(
     title: row.title,
     category: row.category,
     programLegacyId,
+    programSlug: programSlug ?? undefined,
+    programTitle: programTitle ?? undefined,
     programUuid: row.programId ?? undefined,
     programRunId: row.programRunId ?? undefined,
     villageSlug: row.villageSlug ?? undefined,

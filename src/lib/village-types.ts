@@ -12,6 +12,7 @@ export type VillageSectionType =
   | "free"
   | "gallery"
   | "magazine"
+  | "review"
   | "story"
   | "programs"
   | "stay"

@@ -10,7 +10,7 @@ import {
 import { ChannelGuestAboutPage } from "@/components/channel-guest-about";
 import { ChannelGuestBoardPage } from "@/components/channel-guest-board";
 import { ChannelGuestProgramsPage } from "@/components/channel-guest-programs";
-import { NuvioEmptyState } from "@/components/nuvio-empty-state";
+import { ChannelGuestReviewsPage } from "@/components/channel-guest-reviews";
 import { VillageSiteFooter, VillageSiteHeader } from "@/components/village-site-chrome";
 import { formatDate } from "@/lib/format";
 import { villagePath } from "@/lib/village-routing";
@@ -69,21 +69,12 @@ export function VillageReviewsIndexPage({
   }
 
   return (
-    <VillagePageFrame
-      primaryProgram={programs[0]}
-      title="참여 후기"
+    <ChannelGuestReviewsPage
+      programFilter={reviewFilter}
+      programs={programs}
+      reviews={reviews}
       village={village}
-    >
-      {reviews.length > 0 ? (
-        <div className="grid gap-5 md:grid-cols-2">
-          {reviews.map((review) => (
-            <ReviewListCard key={review.id} review={review} village={village} />
-          ))}
-        </div>
-      ) : (
-        <EmptyBlock text="아직 공개된 참여 후기가 없습니다." village={village} />
-      )}
-    </VillagePageFrame>
+    />
   );
 }
 
@@ -275,59 +266,6 @@ function VillagePageFrame({
         {children}
       </section>
       <VillageSiteFooter primaryProgram={primaryProgram} village={village} />
-    </div>
-  );
-}
-
-function ReviewListCard({
-  review,
-  village,
-}: {
-  review: Review;
-  village: Village;
-}) {
-  return (
-    <Link
-      className="border border-[#dfddd5] bg-white px-6 py-6 hover:border-[#0f766e]"
-      href={`${villagePath(village.slug)}/reviews/${review.id}`}
-    >
-      <div className="flex items-center justify-between gap-4">
-        <span
-          className="inline-flex items-center gap-2 px-2.5 py-1 text-xs font-black text-white"
-          style={{ backgroundColor: village.brandColor }}
-        >
-          <Quote size={14} />
-          {review.badge ?? "후기"}
-        </span>
-        <span className="text-sm text-slate-500">{formatDate(review.date)}</span>
-      </div>
-      <h2 className="mt-4 line-clamp-2 text-2xl font-black leading-8">
-        {review.title}
-      </h2>
-      <p className="mt-3 line-clamp-4 text-sm leading-7 text-slate-600">
-        {review.excerpt}
-      </p>
-      <p className="mt-5 text-sm font-black" style={{ color: village.brandColor }}>
-        {review.author}
-      </p>
-    </Link>
-  );
-}
-
-function EmptyBlock({ text, village }: { text: string; village: Village }) {
-  const label = text.includes("후기") ? "참여 후기" : "프로그램";
-
-  return (
-    <div className="border border-dashed border-[#cfc9b9] bg-white text-center">
-      <NuvioEmptyState className="min-h-[260px]" label={label} />
-      <Link
-        className="mx-auto mb-8 inline-flex items-center gap-2 text-sm font-black"
-        href={villagePath(village.slug)}
-        style={{ color: village.brandColor }}
-      >
-        홈으로 돌아가기
-        <ArrowRight size={15} />
-      </Link>
     </div>
   );
 }
