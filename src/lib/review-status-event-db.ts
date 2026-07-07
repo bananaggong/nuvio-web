@@ -330,6 +330,8 @@ function sanitizeStatusEventMetadata(value: unknown): Record<string, unknown> {
   copyString(metadata, safe, "source");
   copyString(metadata, safe, "enrichedBy");
   copyString(metadata, safe, "reviewSource");
+  copyString(metadata, safe, "applicationId");
+  copyString(metadata, safe, "programId");
   copyString(metadata, safe, "previousStatus");
   copyString(metadata, safe, "status");
 
