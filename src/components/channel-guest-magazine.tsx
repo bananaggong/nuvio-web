@@ -6,6 +6,7 @@ import {
   channelGuestScaleRootStyle,
   px,
 } from "@/components/channel-guest-gallery";
+import { NuvioEmptyState } from "@/components/nuvio-empty-state";
 import { villagePath } from "@/lib/village-routing";
 import type { VillageMediaContent } from "@/lib/types";
 import type { Village } from "@/lib/village-types";
@@ -51,18 +52,22 @@ export function ChannelGuestMagazinePage({
             paddingTop: px(36),
           }}
         >
-          <div
-            className="grid"
-            style={{
-              columnGap: px(45),
-              gridTemplateColumns: "repeat(2, minmax(0, 1fr))",
-              rowGap: px(79),
-            }}
-          >
-            {items.map((item) => (
-              <MagazineCard item={item} key={item.id} />
-            ))}
-          </div>
+          {items.length > 0 ? (
+            <div
+              className="grid"
+              style={{
+                columnGap: px(45),
+                gridTemplateColumns: "repeat(2, minmax(0, 1fr))",
+                rowGap: px(79),
+              }}
+            >
+              {items.map((item) => (
+                <MagazineCard item={item} key={item.id} />
+              ))}
+            </div>
+          ) : (
+            <ChannelMagazineEmptyState />
+          )}
         </section>
       </main>
     </div>
@@ -131,22 +136,25 @@ function buildMagazineItems(
   village: Village,
 ): MagazineItem[] {
   const homeHref = villagePath(village.slug);
-  const items: MagazineItem[] = media.map((item) => ({
+  return media.map((item) => ({
     date: formatMagazineDate(item.date),
     href: `${homeHref}/media/${item.id}`,
     id: item.id,
     image: item.thumbnail,
     title: item.title || "메인 타이틀 제목",
   }));
+}
 
-  return items.concat(
-    Array.from({ length: Math.max(0, 5 - items.length) }, (_, index) => ({
-      date: "0000. 00. 00",
-      href: `${homeHref}/media`,
-      id: `magazine-fallback-${index}`,
-      image: undefined,
-      title: "메인 타이틀 제목",
-    })),
+function ChannelMagazineEmptyState() {
+  return (
+    <div
+      className="border border-dashed border-[#D6D6D6]"
+      style={{
+        minHeight: px(320),
+      }}
+    >
+      <NuvioEmptyState className="h-full" message="아직 매거진이 없어요" />
+    </div>
   );
 }
 
