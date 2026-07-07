@@ -148,7 +148,7 @@ export function ChannelGuestHomePage({
   const programCards = buildProgramCards(programs, village);
   const galleryCards = buildGalleryCards(media, programs).slice(0, 3);
   const stories = buildStoryCards(media, village).slice(0, 3);
-  const notices = buildChannelNotices(village, programs).slice(0, 4);
+  const notices = buildChannelNotices(programs, village).slice(0, 4);
   const visibleMenuItems = getVisibleChannelMenuItems(village);
   const homeBlocks = getChannelHomeBlocks(village);
 
@@ -674,35 +674,47 @@ function ChannelNoticeSection({
   return (
     <section>
       <SectionHeading title={title} />
-      <div className="border-t border-[#F5E1D3]" style={{ margin: `${px(26)} ${px(20)} 0` }}>
-        {notices.map((notice, index) => (
-          <Link
-            className="grid items-center border-b border-[#F5E1D3]"
-            href={notice.href}
-            key={`${notice.title}-${index}`}
-            style={{
-              gridTemplateColumns: `${px(84)} minmax(0, 1fr) ${px(160)}`,
-              height: px(43),
-              paddingRight: px(27),
-            }}
-          >
-            <span
-              className={`flex items-center justify-center text-[length:var(--channel-font-11)] font-semibold leading-[1.253] text-white ${
-                notice.variant === "fixed" ? "bg-[#789157]" : notice.variant === "new" ? "bg-[#FF9A3D]" : ""
-              }`}
-              style={{ borderRadius: px(4), height: px(17), width: px(39) }}
+      {notices.length > 0 ? (
+        <div className="border-t border-[#F5E1D3]" style={{ margin: `${px(26)} ${px(20)} 0` }}>
+          {notices.map((notice, index) => (
+            <Link
+              className="grid items-center border-b border-[#F5E1D3]"
+              href={notice.href}
+              key={`${notice.title}-${index}`}
+              style={{
+                gridTemplateColumns: `${px(84)} minmax(0, 1fr) ${px(160)}`,
+                height: px(43),
+                paddingRight: px(27),
+              }}
             >
-              {notice.variant === "fixed" ? text.fixed : notice.variant === "new" ? text.new : ""}
-            </span>
-            <span className="min-w-0 truncate text-[length:var(--channel-font-12)] font-medium leading-[1.253] text-[#5B3A29]">
-              {notice.title}
-            </span>
-            <span className="text-right text-[length:var(--channel-font-12)] font-medium leading-[1.253] text-[#CAC4BC]">
-              {formatNoticeDate(notice.date)}
-            </span>
-          </Link>
-        ))}
-      </div>
+              <span
+                className={`flex items-center justify-center text-[length:var(--channel-font-11)] font-semibold leading-[1.253] text-white ${
+                  notice.variant === "fixed" ? "bg-[#789157]" : notice.variant === "new" ? "bg-[#FF9A3D]" : ""
+                }`}
+                style={{ borderRadius: px(4), height: px(17), width: px(39) }}
+              >
+                {notice.variant === "fixed" ? text.fixed : notice.variant === "new" ? text.new : ""}
+              </span>
+              <span className="min-w-0 truncate text-[length:var(--channel-font-12)] font-medium leading-[1.253] text-[#5B3A29]">
+                {notice.title}
+              </span>
+              <span className="text-right text-[length:var(--channel-font-12)] font-medium leading-[1.253] text-[#CAC4BC]">
+                {formatNoticeDate(notice.date)}
+              </span>
+            </Link>
+          ))}
+        </div>
+      ) : (
+        <div
+          className="border border-dashed border-[#D6D6D6]"
+          style={{
+            margin: `${px(26)} ${px(20)} 0`,
+            minHeight: px(260),
+          }}
+        >
+          <NuvioEmptyState className="h-full" message="아직 게시글이 없어요" />
+        </div>
+      )}
     </section>
   );
 }
@@ -856,23 +868,13 @@ function buildStoryCards(media: VillageMediaContent[], village: Village): StoryC
   );
 }
 
-function buildChannelNotices(village: Village, programs: Program[]): NoticeModel[] {
-  const homeHref = villagePath(village.slug);
-  const programNotices: NoticeModel[] = programs.slice(0, 3).map((program, index) => ({
+function buildChannelNotices(programs: Program[], village: Village): NoticeModel[] {
+  return programs.slice(0, 3).map((program, index) => ({
     date: program.recruitStart,
     href: villageProgramPath(village.slug, program.slug),
     title: `${program.title} ${text.open} ${text.notice}`,
     variant: index === 0 ? "fixed" : ("new" as const),
   }));
-
-  return programNotices.concat([
-    {
-      date: village.updatedAt,
-      href: `${homeHref}/notice`,
-      title: `${village.name} ${text.channelHome} ${text.notice}`,
-      variant: undefined,
-    },
-  ]);
 }
 
 function getProgramStatus(status: Program["status"]) {

@@ -101,7 +101,7 @@ export function ChannelGuestReviewsPage({
                 <NuvioEmptyState
                   className="min-h-[220px] rounded-[6px] bg-white"
                   label="후기"
-                  message="아직 공개된 후기가 없습니다."
+                  message="아직 후기가 없어요"
                 />
               </div>
             )}

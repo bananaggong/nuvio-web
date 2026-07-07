@@ -43,12 +43,7 @@ export function buildVillageNotices(
   village: Village,
   programs: Program[],
 ): VillageNotice[] {
-  const programNotices = programs.slice(0, 4).map((program) => ({
-    date: program.recruitStart,
-    href: villageProgramPath(village.slug, program.slug),
-    title: `${program.title} 신청 접수 안내`,
-    type: "모집",
-  }));
+  const programNotices = buildChannelBoardNotices(village, programs);
   const reviewNotices: VillageNotice[] = launchFeatureFlags.reviews
     ? [
         {
@@ -70,6 +65,18 @@ export function buildVillageNotices(
     },
     ...reviewNotices,
   ].slice(0, 6);
+}
+
+export function buildChannelBoardNotices(
+  village: Village,
+  programs: Program[],
+): VillageNotice[] {
+  return programs.slice(0, 4).map((program) => ({
+    date: program.recruitStart,
+    href: villageProgramPath(village.slug, program.slug),
+    title: `${program.title} 신청 접수 안내`,
+    type: "모집",
+  }));
 }
 
 function romanizeKoreanLabel(value: string): string {

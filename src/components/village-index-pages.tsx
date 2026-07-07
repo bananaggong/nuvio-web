@@ -15,6 +15,7 @@ import { VillageSiteFooter, VillageSiteHeader } from "@/components/village-site-
 import { formatDate } from "@/lib/format";
 import { villagePath } from "@/lib/village-routing";
 import {
+  buildChannelBoardNotices,
   buildVillageNotices,
 } from "@/lib/village-template";
 import type { Program, Review } from "@/lib/types";
@@ -109,7 +110,10 @@ export function VillageNoticeIndexPage({
   programs: Program[];
   village: Village;
 }) {
-  const notices = buildVillageNotices(village, programs);
+  const notices =
+    village.slug === "boseong"
+      ? buildVillageNotices(village, programs)
+      : buildChannelBoardNotices(village, programs);
 
   if (village.slug === "boseong") {
     return (
