@@ -11,13 +11,9 @@ import {
   channelHomeLabel,
   channelMenuMeta,
   getVisibleChannelMenuItems,
-  isChannelMenuSection,
   type ChannelMenuItem,
 } from "@/lib/channel-menu";
-import {
-  getChannelHomeBlocks,
-  isChannelHomeBlockSection,
-} from "@/lib/channel-home-blocks";
+import { getChannelHomeBlocks } from "@/lib/channel-home-blocks";
 import { villagePath, villageProgramPath } from "@/lib/village-routing";
 import type { Program, Review, VillageMediaContent } from "@/lib/types";
 import type { Village } from "@/lib/village-types";
@@ -146,8 +142,8 @@ export function ChannelGuestHomePage({
 }: ChannelGuestHomePageProps) {
   const homeHref = villagePath(village.slug);
   const programCards = buildProgramCards(programs, village);
-  const galleryCards = buildGalleryCards(media, programs).slice(0, 3);
-  const stories = buildStoryCards(media, village).slice(0, 3);
+  const galleryCards = buildGalleryCards(media).slice(0, 3);
+  const stories = buildStoryCards(media).slice(0, 3);
   const notices = buildChannelNotices(programs, village).slice(0, 4);
   const visibleMenuItems = getVisibleChannelMenuItems(village);
   const homeBlocks = getChannelHomeBlocks(village);
@@ -552,19 +548,23 @@ function ChannelGallerySection({
   return (
     <section>
       <SectionHeading title={title} />
-      <div
-        className="grid items-start"
-        style={{
-          gap: px(40),
-          gridTemplateColumns: `repeat(3, minmax(0, ${px(290)})) ${px(112)}`,
-          padding: `${px(26)} ${px(20)} 0`,
-        }}
-      >
-        {items.map((item) => (
-          <GalleryTile item={item} key={item.id} />
-        ))}
-        <MoreLink href={`${homeHref}/media?type=gallery`} tall />
-      </div>
+      {items.length > 0 ? (
+        <div
+          className="grid items-start"
+          style={{
+            gap: px(40),
+            gridTemplateColumns: `repeat(3, minmax(0, ${px(290)})) ${px(112)}`,
+            padding: `${px(26)} ${px(20)} 0`,
+          }}
+        >
+          {items.map((item) => (
+            <GalleryTile item={item} key={item.id} />
+          ))}
+          <MoreLink href={`${homeHref}/media?type=gallery`} tall />
+        </div>
+      ) : (
+        <ChannelHomeMenuEmptyState message="아직 미디어가 없어요" />
+      )}
     </section>
   );
 }
@@ -624,42 +624,46 @@ function ChannelStorySection({
   return (
     <section>
       <SectionHeading title={title} />
-      <div
-        className="grid"
-        style={{
-          gap: px(40),
-          gridTemplateColumns: `repeat(3, minmax(0, ${px(386)}))`,
-          padding: `${px(26)} ${px(20)} 0`,
-        }}
-      >
-        {stories.map((story) => (
-          <article
-            className="overflow-hidden bg-[#F9F9F9]"
-            key={story.id}
-            style={{ borderRadius: px(10), width: px(386) }}
-          >
-            <div className="relative overflow-hidden bg-[#D9D9D9]" style={{ height: px(368) }}>
-              {story.image ? (
-                <Image
-                  alt={story.title}
-                  className="object-cover"
-                  fill
-                  sizes="515px"
-                  src={story.image}
-                />
-              ) : null}
-            </div>
-            <div style={{ padding: `${px(22)} ${px(24)}` }}>
-              <h3 className="truncate text-[length:var(--channel-font-20)] font-semibold leading-[1.253] text-[#5B3A29]">
-                {story.title}
-              </h3>
-              <p className="text-[length:var(--channel-font-14)] font-medium leading-[1.253] text-[#CAC4BC]" style={{ marginTop: px(1) }}>
-                {story.date}
-              </p>
-            </div>
-          </article>
-        ))}
-      </div>
+      {stories.length > 0 ? (
+        <div
+          className="grid"
+          style={{
+            gap: px(40),
+            gridTemplateColumns: `repeat(3, minmax(0, ${px(386)}))`,
+            padding: `${px(26)} ${px(20)} 0`,
+          }}
+        >
+          {stories.map((story) => (
+            <article
+              className="overflow-hidden bg-[#F9F9F9]"
+              key={story.id}
+              style={{ borderRadius: px(10), width: px(386) }}
+            >
+              <div className="relative overflow-hidden bg-[#D9D9D9]" style={{ height: px(368) }}>
+                {story.image ? (
+                  <Image
+                    alt={story.title}
+                    className="object-cover"
+                    fill
+                    sizes="515px"
+                    src={story.image}
+                  />
+                ) : null}
+              </div>
+              <div style={{ padding: `${px(22)} ${px(24)}` }}>
+                <h3 className="truncate text-[length:var(--channel-font-20)] font-semibold leading-[1.253] text-[#5B3A29]">
+                  {story.title}
+                </h3>
+                <p className="text-[length:var(--channel-font-14)] font-medium leading-[1.253] text-[#CAC4BC]" style={{ marginTop: px(1) }}>
+                  {story.date}
+                </p>
+              </div>
+            </article>
+          ))}
+        </div>
+      ) : (
+        <ChannelHomeMenuEmptyState message="아직 매거진이 없어요" />
+      )}
     </section>
   );
 }
@@ -735,6 +739,20 @@ function MoreLink({ href, tall = false }: { href: string; tall?: boolean }) {
       </span>
       {text.seeAll}
     </Link>
+  );
+}
+
+function ChannelHomeMenuEmptyState({ message }: { message: string }) {
+  return (
+    <div
+      className="border border-dashed border-[#D6D6D6]"
+      style={{
+        margin: `${px(26)} ${px(20)} 0`,
+        minHeight: px(260),
+      }}
+    >
+      <NuvioEmptyState className="h-full" message={message} />
+    </div>
   );
 }
 
@@ -819,53 +837,23 @@ function ChannelProgramEmptyState({
   );
 }
 
-function buildGalleryCards(
-  media: VillageMediaContent[],
-  programs: Program[],
-): GalleryCardModel[] {
-  const cards: GalleryCardModel[] = media.map((item, index) => ({
+function buildGalleryCards(media: VillageMediaContent[]): GalleryCardModel[] {
+  return media.map((item, index) => ({
     caption: item.summary || text.fallbackGallery,
     count: index === 0 || index === 2 ? 3 : undefined,
     id: item.id,
     image: item.thumbnail,
     kind: index === 1 ? "video" : "image",
   }));
-  const images = programs
-    .flatMap((program) => [program.image, ...program.gallery])
-    .filter(Boolean)
-    .slice(0, 3);
-
-  return cards.concat(
-    Array.from({ length: Math.max(0, 3 - cards.length) }, (_, index) => ({
-      caption: text.fallbackGallery,
-      count: index === 1 ? undefined : 3,
-      id: `gallery-fallback-${index}`,
-      image: images[index],
-      kind: index === 1 ? "video" : "image",
-    })),
-  );
 }
 
-function buildStoryCards(media: VillageMediaContent[], village: Village): StoryCardModel[] {
-  const cards = media.map((item) => ({
+function buildStoryCards(media: VillageMediaContent[]): StoryCardModel[] {
+  return media.map((item) => ({
     date: formatStoryDate(item.date),
     id: item.id,
     image: item.thumbnail,
     title: item.title || text.storyTitle,
   }));
-
-  return cards.concat(
-    village.sections
-      .filter((section) => !isChannelMenuSection(section))
-      .filter((section) => !isChannelHomeBlockSection(section))
-      .slice(0, Math.max(0, 3 - cards.length))
-      .map((section) => ({
-        date: "0000. 00. 00",
-        id: section.id,
-        image: village.heroImage,
-        title: section.title || text.storyTitle,
-      })),
-  );
 }
 
 function buildChannelNotices(programs: Program[], village: Village): NoticeModel[] {
