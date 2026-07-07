@@ -312,6 +312,7 @@ export async function listMyReviewsFromDb(auth: ApiAuthContext): Promise<Partici
 
   const rows = await getDb()
     .select({
+      helpfulCount: publicReviewHelpfulCountSelection(),
       review: reviewsTable,
       programLegacyId: programsTable.legacyId,
       programSlug: programsTable.slug,
@@ -324,12 +325,13 @@ export async function listMyReviewsFromDb(auth: ApiAuthContext): Promise<Partici
     .orderBy(desc(reviewsTable.updatedAt))
     .limit(100);
 
-  return rows.map(({ review, programLegacyId, programSlug, programTitle }) =>
+  return rows.map(({ helpfulCount, review, programLegacyId, programSlug, programTitle }) =>
     mapReviewRowToParticipantOwnReview(
       review,
       programLegacyId ?? undefined,
       programSlug,
       programTitle,
+      helpfulCount,
     ),
   );
 }
@@ -1501,9 +1503,10 @@ function mapReviewRowToParticipantOwnReview(
   programLegacyId?: number,
   programSlug?: string | null,
   programTitle?: string | null,
+  helpfulCount?: number,
 ): ParticipantOwnReview {
   return {
-    ...mapReviewRowToPublicReview(row, programLegacyId, programSlug, programTitle),
+    ...mapReviewRowToPublicReview(row, programLegacyId, programSlug, programTitle, helpfulCount),
     status: row.status,
     submittedAt: row.submittedAt?.toISOString(),
     updatedAt: row.updatedAt.toISOString(),
