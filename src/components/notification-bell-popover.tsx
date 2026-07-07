@@ -140,7 +140,7 @@ export function NotificationBellPopover({ signedIn }: { signedIn: boolean }) {
         <Image
           alt=""
           aria-hidden="true"
-          className="size-[1.389vw] min-h-[20px] min-w-[20px]"
+          className="h-[1.389vw] min-h-[20px] w-auto"
           height={21}
           src={nuvioIcons.bell}
           width={20}
@@ -161,7 +161,7 @@ export function NotificationBellPopover({ signedIn }: { signedIn: boolean }) {
         <Image
           alt=""
           aria-hidden="true"
-          className="size-[1.389vw] min-h-[20px] min-w-[20px]"
+          className="h-[1.389vw] min-h-[20px] w-auto"
           height={21}
           src={nuvioIcons.bell}
           width={20}
