@@ -1,6 +1,7 @@
 import { eq, or, type SQL } from "drizzle-orm";
 import { getDb } from "@/db/client";
 import { programs as programsTable } from "@/db/schema";
+import { parseLegacyProgramIdentifier } from "@/lib/program-identifier";
 import type { Program } from "@/lib/types";
 
 type ProgramInsert = typeof programsTable.$inferInsert;
@@ -47,11 +48,11 @@ export async function getProgramRecordByIdentifier(
   const key = String(identifier).trim();
   if (!key) return undefined;
 
-  const numericId = Number(key);
+  const legacyId = parseLegacyProgramIdentifier(key);
   const conditions: SQL[] = [eq(programsTable.slug, key)];
   if (isUuid(key)) conditions.push(eq(programsTable.id, key));
-  if (Number.isInteger(numericId)) {
-    conditions.push(eq(programsTable.legacyId, numericId));
+  if (legacyId !== undefined) {
+    conditions.push(eq(programsTable.legacyId, legacyId));
   }
 
   const [row] = await getDb()

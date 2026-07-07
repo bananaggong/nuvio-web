@@ -11,6 +11,7 @@ import {
 import type { ApiAuthContext } from "@/lib/api-security";
 import { safeCreateAuditLog } from "@/lib/audit-log-db";
 import { queueReviewSubmittedNotification } from "@/lib/notification-db";
+import { parseLegacyProgramIdentifier } from "@/lib/program-identifier";
 import { safeEnrichLatestReviewContentVersion } from "@/lib/review-content-version-db";
 import { refreshReviewModerationCheck } from "@/lib/review-moderation-check-db";
 import { buildPublicReviewVisibilityConditions } from "@/lib/review-public-visibility-db";
@@ -1472,9 +1473,9 @@ function buildProgramIdentifierPredicate(programIdentifier: number | string): SQ
   const key = String(programIdentifier).trim();
   if (isUuid(key)) return eq(programsTable.id, key);
 
-  const numericId = Number(key);
-  return Number.isInteger(numericId)
-    ? eq(programsTable.legacyId, numericId)
+  const legacyId = parseLegacyProgramIdentifier(key);
+  return legacyId !== undefined
+    ? eq(programsTable.legacyId, legacyId)
     : eq(programsTable.slug, key);
 }
 type PublicReviewCursor = {

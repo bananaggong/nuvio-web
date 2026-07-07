@@ -8,6 +8,7 @@ import {
   decodeHostProgramMeta,
   stripHostProgramMeta,
 } from "@/lib/host-program-studio";
+import { parseLegacyProgramIdentifier } from "@/lib/program-identifier";
 import type { Program } from "@/lib/types";
 
 type ProgramRow = typeof programsTable.$inferSelect;
@@ -47,11 +48,11 @@ export async function getPublicProgramByIdentifier(
   if (!key) return undefined;
 
   try {
-    const numericId = Number(key);
+    const legacyId = parseLegacyProgramIdentifier(key);
     const identifierConditions: SQL[] = [eq(programsTable.slug, key)];
     if (isUuid(key)) identifierConditions.push(eq(programsTable.id, key));
-    if (Number.isInteger(numericId)) {
-      identifierConditions.push(eq(programsTable.legacyId, numericId));
+    if (legacyId !== undefined) {
+      identifierConditions.push(eq(programsTable.legacyId, legacyId));
     }
 
     const [row] = await getDb()
@@ -96,8 +97,8 @@ function mergePrograms(databasePrograms: Program[], staticPrograms: Program[]): 
 }
 
 function getStaticProgram(identifier: string): Program | undefined {
-  const numericId = Number(identifier);
-  if (Number.isInteger(numericId)) return getProgramById(numericId);
+  const legacyId = parseLegacyProgramIdentifier(identifier);
+  if (legacyId !== undefined) return getProgramById(legacyId);
   return seedPrograms.find((program) => program.slug === identifier);
 }
 

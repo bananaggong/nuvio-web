@@ -6,6 +6,7 @@ import {
   reviews as reviewsTable,
   villages,
 } from "@/db/schema";
+import { parseLegacyProgramIdentifier } from "@/lib/program-identifier";
 import { normalizePublicReviewQueryText } from "@/lib/review-public-query";
 import { buildPublicReviewVisibilityConditions } from "@/lib/review-public-visibility-db";
 
@@ -149,9 +150,9 @@ function buildProgramIdentifierPredicate(programIdentifier: string): SQL {
   const key = programIdentifier.trim();
   if (isUuid(key)) return eq(programsTable.id, key);
 
-  const numericId = Number(key);
-  return Number.isInteger(numericId)
-    ? eq(programsTable.legacyId, numericId)
+  const legacyId = parseLegacyProgramIdentifier(key);
+  return legacyId !== undefined
+    ? eq(programsTable.legacyId, legacyId)
     : eq(programsTable.slug, key);
 }
 
