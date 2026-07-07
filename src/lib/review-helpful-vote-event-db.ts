@@ -83,7 +83,7 @@ export async function recordReviewHelpfulVoteEvent(
 
   const actorId = input.actorId ?? options.actorId ?? null;
   const actorRole = normalizeOptionalText(input.actorRole ?? options.actorRole);
-  const metadata = sanitizeMetadata(input.metadata);
+  const metadata = sanitizeMetadata(input.metadata, input.action);
   const recentTriggerEvent = actorId
     ? await findRecentTriggerEvent({
         action: input.action,
@@ -272,10 +272,14 @@ function copyNumber(
   if (typeof value === "number" && Number.isFinite(value)) target[key] = value;
 }
 
-function sanitizeMetadata(value: unknown): Record<string, unknown> {
+function sanitizeMetadata(
+  value: unknown,
+  action: ReviewHelpfulVoteEventAction,
+): Record<string, unknown> {
   const metadata = asRecord(value);
   return {
     ...metadata,
+    helpful: action === "added",
     source: typeof metadata.source === "string" ? metadata.source : "application_service",
   };
 }
