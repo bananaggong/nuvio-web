@@ -510,8 +510,30 @@ export async function createParticipantReview(
       .set({ reviewSubmitted: true, updatedAt: now })
       .where(eq(programApplications.id, application.applicationId));
 
+    let completedRequestResult: typeof requestBeforeCompletion | null = null;
     if (requestBeforeCompletion) {
-      await tx
+      const activeCompletionConditions: SQL[] = [
+        eq(reviewRequests.id, requestBeforeCompletion.id),
+        inArray(reviewRequests.status, completableReviewRequestStatuses),
+        sql`${reviewRequests.reviewId} is null`,
+        sql`(${reviewRequests.expiresAt} is null or ${reviewRequests.expiresAt} > now())`,
+      ];
+      if (requestTokenHash) {
+        activeCompletionConditions.push(
+          eq(reviewRequests.requestTokenHash, requestTokenHash),
+          sql`${reviewRequests.requestTokenExpiresAt} is not null`,
+          sql`${reviewRequests.requestTokenExpiresAt} > now()`,
+        );
+      }
+
+      const alreadyCompletedByTrigger = and(
+        eq(reviewRequests.id, requestBeforeCompletion.id),
+        eq(reviewRequests.status, "completed"),
+        eq(reviewRequests.reviewId, createdReview.id),
+      );
+      const activeCompletion = and(...activeCompletionConditions);
+
+      const [completed] = await tx
         .update(reviewRequests)
         .set({
           completedAt: now,
@@ -521,15 +543,26 @@ export async function createParticipantReview(
           status: "completed",
           updatedAt: now,
         })
-        .where(eq(reviewRequests.id, requestBeforeCompletion.id));
+        .where(
+          or(
+            activeCompletion,
+            alreadyCompletedByTrigger,
+          ),
+        )
+        .returning({ id: reviewRequests.id, status: reviewRequests.status });
+
+      if (!completed && requestTokenHash) {
+        throw new ReviewEligibilityError("Review request was not found or has expired.");
+      }
+      completedRequestResult = completed ? requestBeforeCompletion : null;
     }
 
     return [
       createdReview,
-      requestBeforeCompletion
+      completedRequestResult
         ? {
-            id: requestBeforeCompletion.id,
-            previousStatus: asReviewRequestStatus(requestBeforeCompletion.status),
+            id: completedRequestResult.id,
+            previousStatus: asReviewRequestStatus(completedRequestResult.status),
           }
         : null,
     ] as const;

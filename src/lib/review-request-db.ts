@@ -472,6 +472,8 @@ export async function requestHostReviewForApplication(
   options: ReviewRequestAccessOptions = {},
 ): Promise<ReviewRequestRecord> {
   const normalized = normalizeCreateReviewRequestInput(input);
+  await expireStaleReviewRequests();
+
   const context = await getReviewRequestContext(normalized.applicationId);
   if (!context) throw new ReviewRequestEligibilityError("Application was not found.");
 
@@ -732,6 +734,7 @@ export async function markReviewRequestCompletedForApplication(
       and(
         eq(reviewRequests.applicationId, applicationId),
         inArray(reviewRequests.status, activeReviewRequestStatuses),
+        sql`(${reviewRequests.expiresAt} is null or ${reviewRequests.expiresAt} > now())`,
       ),
     );
 }
