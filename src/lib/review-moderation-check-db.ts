@@ -97,7 +97,7 @@ export async function getHostReviewModerationCheckFromDb(
     .where(eq(reviewModerationChecks.reviewId, reviewId))
     .limit(1);
 
-  if (row) return mapCheck(row);
+  if (row && isCurrentModerationCheck(row, review)) return mapCheck(row);
   return refreshReviewModerationCheck(reviewId, options);
 }
 
@@ -336,6 +336,13 @@ function mapCheck(row: typeof reviewModerationChecks.$inferSelect): ReviewModera
   };
 }
 
+function isCurrentModerationCheck(
+  row: typeof reviewModerationChecks.$inferSelect,
+  review: ReviewForModeration,
+): boolean {
+  return asMetadata(row.metadata).contentHash === review.contentHash;
+}
+
 function asRiskLevel(value: string): ReviewModerationRiskLevel {
   return value === "high" || value === "medium" ? value : "low";
 }
@@ -370,6 +377,10 @@ function maskUrl(value: string): string {
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return Boolean(value && typeof value === "object" && !Array.isArray(value));
+}
+
+function asMetadata(value: unknown): Record<string, unknown> {
+  return isRecord(value) ? value : {};
 }
 
 function clampLimit(limit: number | undefined, fallback: number): number {
