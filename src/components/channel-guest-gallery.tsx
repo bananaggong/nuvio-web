@@ -2,6 +2,7 @@ import Image from "next/image";
 import Link from "next/link";
 import type { CSSProperties } from "react";
 import { nuvioIcons } from "@/components/icons/nuvio-icons";
+import { NuvioEmptyState } from "@/components/nuvio-empty-state";
 import {
   channelGuestHref,
   channelHomeLabel,
@@ -81,19 +82,23 @@ export function ChannelGuestGalleryPage({
           }}
         >
           <GalleryViewSwitch />
-          <div
-            className="grid"
-            style={{
-              columnGap: px(6.211),
-              gridTemplateColumns: `repeat(5, ${px(222.031)})`,
-              paddingTop: px(12),
-              rowGap: px(36),
-            }}
-          >
-            {items.map((item) => (
-              <GalleryCard item={item} key={item.id} />
-            ))}
-          </div>
+          {items.length > 0 ? (
+            <div
+              className="grid"
+              style={{
+                columnGap: px(6.211),
+                gridTemplateColumns: `repeat(5, ${px(222.031)})`,
+                paddingTop: px(12),
+                rowGap: px(36),
+              }}
+            >
+              {items.map((item) => (
+                <GalleryCard item={item} key={item.id} />
+              ))}
+            </div>
+          ) : (
+            <ChannelGalleryEmptyState />
+          )}
         </section>
       </main>
     </div>
@@ -356,21 +361,26 @@ function buildGalleryItems(
   village: Village,
 ): GalleryItem[] {
   const homeHref = villagePath(village.slug);
-  const items: GalleryItem[] = media.map((item) => ({
+  return media.map((item) => ({
     caption: item.summary || item.title || text.fallbackCaption,
     href: `${homeHref}/media/${item.id}`,
     id: item.id,
     image: item.thumbnail,
     provider: item.provider,
   }));
+}
 
-  return items.concat(
-    Array.from({ length: Math.max(0, 5 - items.length) }, (_, index) => ({
-      caption: text.fallbackCaption,
-      href: `${homeHref}/media`,
-      id: `gallery-fallback-${index}`,
-      image: undefined,
-      provider: index === 4 ? "youtube" : undefined,
-    })),
+function ChannelGalleryEmptyState() {
+  return (
+    <div
+      className="border border-dashed border-[#D6D6D6]"
+      style={{
+        marginTop: px(28),
+        minHeight: px(320),
+        width: px(1142),
+      }}
+    >
+      <NuvioEmptyState className="h-full" message="아직 미디어가 없어요" />
+    </div>
   );
 }
