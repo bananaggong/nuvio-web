@@ -183,6 +183,8 @@ async function findRecentTriggerEvent(input: {
         eq(reviewHelpfulVoteEvents.userId, input.userId),
         eq(reviewHelpfulVoteEvents.action, input.action),
         isNull(reviewHelpfulVoteEvents.actorId),
+        isNull(reviewHelpfulVoteEvents.actorRole),
+        sql`not (${reviewHelpfulVoteEvents.metadata} ? 'enrichedBy')`,
         gte(reviewHelpfulVoteEvents.createdAt, new Date(Date.now() - 60_000)),
       ),
     )
