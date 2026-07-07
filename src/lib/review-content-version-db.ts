@@ -246,6 +246,7 @@ function sanitizeContentVersionMetadata(value: unknown): Record<string, unknown>
   copyString(metadata, safe, "source");
   copyString(metadata, safe, "enrichedBy");
   copyString(metadata, safe, "reviewSource");
+  copyString(metadata, safe, "contentHash");
 
   return safe;
 }
