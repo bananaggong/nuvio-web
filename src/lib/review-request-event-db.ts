@@ -120,6 +120,7 @@ export async function recordReviewRequestEvent(
   assertAccess(request, options);
 
   const action = input.action ?? getReviewRequestEventAction(input.fromStatus ?? null, input.toStatus);
+  validateReviewRequestEventAction(action, input.fromStatus ?? null, input.toStatus);
   const actorId = input.actorId ?? options.actorId ?? null;
   const actorRole = normalizeOptionalText(input.actorRole ?? options.actorRole);
   const metadata = sanitizeMetadata(input.metadata);
@@ -232,6 +233,54 @@ export function getReviewRequestEventAction(
     return "reopened";
   }
   return "status_changed";
+}
+
+function validateReviewRequestEventAction(
+  action: ReviewRequestEventAction,
+  fromStatus: ReviewRequestStatus | null,
+  toStatus: ReviewRequestStatus,
+): void {
+  if (!fromStatus) {
+    if (toStatus === "pending" && action === "created") return;
+    if (toStatus === "sent" && (action === "requested" || action === "resent")) return;
+    if (toStatus === "opened" && action === "opened") return;
+    if (toStatus === "completed" && action === "completed") return;
+    if (toStatus === "cancelled" && action === "cancelled") return;
+    if (toStatus === "expired" && action === "expired") return;
+    throw new ReviewRequestEventError(
+      "Review request event action does not match the status transition.",
+    );
+  }
+
+  if (fromStatus === toStatus) {
+    if (action === "resent" || action === "status_changed") return;
+    throw new ReviewRequestEventError(
+      "Review request event action does not match the status transition.",
+    );
+  }
+
+  if (fromStatus === "completed" && toStatus !== "completed" && action === "reopened") return;
+  if (
+    (fromStatus === "cancelled" || fromStatus === "expired") &&
+    toStatus === "pending" &&
+    action === "reopened"
+  ) {
+    return;
+  }
+  if (
+    toStatus === "sent" &&
+    (action === "requested" || action === "sent" || action === "resent")
+  ) {
+    return;
+  }
+  if (toStatus === "opened" && action === "opened") return;
+  if (toStatus === "completed" && action === "completed") return;
+  if (toStatus === "cancelled" && action === "cancelled") return;
+  if (toStatus === "expired" && action === "expired") return;
+
+  throw new ReviewRequestEventError(
+    "Review request event action does not match the status transition.",
+  );
 }
 
 async function findRecentTriggerEvent(input: {
