@@ -82,7 +82,7 @@ export function ReviewFeed({ reviews, showWriteButton = false }: { reviews: Revi
                 className="rounded-md border border-slate-200 bg-white p-4 shadow-sm"
                 key={review.id}
               >
-                <Link href={`/reviews/${review.id}`}>
+                <div>
                   <div className="flex items-start justify-between gap-3">
                     <div>
                       <p className="text-sm font-black text-[var(--primary)]">
@@ -106,7 +106,7 @@ export function ReviewFeed({ reviews, showWriteButton = false }: { reviews: Revi
                   <p className="mt-3 line-clamp-3 text-sm leading-6 text-slate-600">
                     {review.excerpt}
                   </p>
-                </Link>
+                </div>
 
                 {review.images.length > 0 ? (
                   <div className="mt-4 grid grid-cols-3 gap-2">

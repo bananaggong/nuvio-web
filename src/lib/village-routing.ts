@@ -24,6 +24,16 @@ const reservedTopLevelSegments = new Set([
   "villages",
 ]);
 
+export const boseongLegacyChannelSlug = "boseong";
+
+export function isBoseongLegacyChannelSlug(slug: string): boolean {
+  return slug.trim().toLowerCase() === boseongLegacyChannelSlug;
+}
+
+export function supportsVillageReviewDetailPages(slug: string): boolean {
+  return isBoseongLegacyChannelSlug(slug);
+}
+
 export function isReservedVillageSlug(slug: string): boolean {
   return reservedTopLevelSegments.has(slug.toLowerCase());
 }
@@ -68,7 +78,9 @@ export function isVillageMicrositePath(pathname: string): boolean {
 
   return (
     segments.length === 3 &&
-    (second === "media" || second === "reviews" || second === "privacy") &&
+    (second === "media" ||
+      second === "privacy" ||
+      (second === "reviews" && supportsVillageReviewDetailPages(first))) &&
     Boolean(third)
   );
 }

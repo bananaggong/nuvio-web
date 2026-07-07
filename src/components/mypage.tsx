@@ -3905,9 +3905,8 @@ function BookmarkProgramMiniCard({
 
 function ReviewCard({ review }: { review: Review }) {
   return (
-    <Link
-      className="grid gap-3 rounded-[6px] border border-[#d9d9d9] px-5 py-5 transition hover:border-[#f7983a]"
-      href={`/reviews/${review.id}`}
+    <article
+      className="grid gap-3 rounded-[6px] border border-[#d9d9d9] px-5 py-5"
     >
       <div className="flex flex-wrap items-center gap-2 text-[12px] text-[#8F7A6C]">
         <span>{review.date}</span>
@@ -3917,7 +3916,7 @@ function ReviewCard({ review }: { review: Review }) {
       <p className="line-clamp-2 text-[13px] leading-6 text-[#8F7A6C]">
         {review.excerpt}
       </p>
-    </Link>
+    </article>
   );
 }
 

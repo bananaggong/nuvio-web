@@ -17,6 +17,7 @@ export default function robots(): MetadataRoute.Robots {
         "/mypage",
         "/programs/*/apply",
         ...(launchFeatureFlags.reviews ? [] : ["/reviews", "/reviews/"]),
+        "/reviews/*",
         "/reviews/new",
         "/signup",
       ],

@@ -579,7 +579,6 @@ function ParticipantReviewSection({
             <ReviewCard
               key={review.id}
               review={review}
-              reviewListHref={reviewListHref}
             />
           ))
         ) : (
@@ -605,13 +604,10 @@ function ParticipantReviewSection({
 
 function ReviewCard({
   review,
-  reviewListHref,
 }: {
   review: Review;
-  reviewListHref: string;
 }) {
   const images = review.images.filter(isRenderableImage).slice(0, 5);
-  const detailHref = getReviewDetailHref(review, reviewListHref);
   const reviewBody = getReviewBody(review);
 
   return (
@@ -642,16 +638,23 @@ function ReviewCard({
           {formatReviewDate(review.date)}
         </time>
       </div>
-      <p className="mt-2 line-clamp-3 max-h-[58px] w-full overflow-hidden px-2 text-xs font-normal leading-[1.6] text-[#2B1E17] max-md:w-full">
-        {reviewBody}
-      </p>
-      <Link
-        className="mt-2 inline-flex self-end border-0 bg-transparent p-0 pb-3 text-xs font-normal leading-[1.6] text-[#6D7A8A]"
-        href={detailHref}
-      >
-        펼치기
-        <ChevronDown aria-hidden="true" className="size-[9px]" />
-      </Link>
+      <details className="group mt-2 w-full px-2">
+        <summary className="flex cursor-pointer list-none flex-col [&::-webkit-details-marker]:hidden">
+          <span className="line-clamp-3 max-h-[58px] overflow-hidden text-xs font-normal leading-[1.6] text-[#2B1E17] group-open:hidden max-md:w-full">
+            {reviewBody}
+          </span>
+          <span className="mt-2 inline-flex self-end border-0 bg-transparent p-0 pb-3 text-xs font-normal leading-[1.6] text-[#6D7A8A]">
+            펼치기
+            <ChevronDown
+              aria-hidden="true"
+              className="size-[9px] transition-transform group-open:rotate-180"
+            />
+          </span>
+        </summary>
+        <p className="whitespace-pre-wrap pb-3 text-xs font-normal leading-[1.6] text-[#2B1E17]">
+          {reviewBody}
+        </p>
+      </details>
       {images.length > 0 ? (
         <div className="group/gallery relative flex items-center gap-1.5 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden max-md:w-full max-md:overflow-x-auto">
           {images.map((imageUrl, index) => (
@@ -755,12 +758,6 @@ function getReviewDisplayScore(review: Review): number {
 
 function getReviewBody(review: Review): string {
   return (review.body || review.excerpt || "").trim();
-}
-
-function getReviewDetailHref(review: Review, fallbackHref: string): string {
-  return review.villageSlug
-    ? `/${review.villageSlug}/reviews/${review.id}`
-    : fallbackHref;
 }
 
 function formatReviewDate(value: string): string {

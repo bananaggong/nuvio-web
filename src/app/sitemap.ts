@@ -3,7 +3,6 @@ import { announcements } from "@/lib/data";
 import { launchFeatureFlags } from "@/lib/launch-feature-flags";
 import { programPath } from "@/lib/program-routing";
 import { listPublicPrograms } from "@/lib/public-program-db";
-import { listPublicReviewsFromDb } from "@/lib/review-db";
 import { absoluteUrl } from "@/lib/seo";
 import {
   getVillagePrograms,
@@ -14,6 +13,7 @@ import { listPublicVillageMedia } from "@/lib/village-media-db";
 import {
   canonicalVillagePath,
   canonicalVillageProgramPath,
+  supportsVillageReviewDetailPages,
   villagePath,
 } from "@/lib/village-routing";
 
@@ -94,29 +94,25 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
 
   const villageReviewRouteGroups = launchFeatureFlags.reviews
     ? await Promise.all(
-        villages.map(async (village) => {
-          const villagePrograms = await getVillagePrograms(village);
-          const villageReviews = await getVillageReviews(village, villagePrograms);
-          return villageReviews.map((review) =>
-            route(
-              `${villagePath(village.slug)}/reviews/${review.id}`,
-              "weekly",
-              0.45,
-              dateOrNow(review.date),
-            ),
-          );
-        }),
+        villages
+          .filter((village) => supportsVillageReviewDetailPages(village.slug))
+          .map(async (village) => {
+            const villagePrograms = await getVillagePrograms(village);
+            const villageReviews = await getVillageReviews(village, villagePrograms);
+            return villageReviews.map((review) =>
+              route(
+                `${villagePath(village.slug)}/reviews/${review.id}`,
+                "weekly",
+                0.45,
+                dateOrNow(review.date),
+              ),
+            );
+          }),
       )
     : [];
 
   const announcementRoutes = announcements.map((announcement) =>
     route(`/announcements/${announcement.id}`, "weekly", 0.45, announcement.date),
-  );
-  const globalReviews = launchFeatureFlags.reviews
-    ? await listSitemapPublicReviews()
-    : [];
-  const reviewRoutes = globalReviews.map((review) =>
-    route(`/reviews/${review.id}`, "weekly", 0.45, review.date),
   );
 
   return uniqueRoutes([
@@ -127,18 +123,9 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     ...villageMediaRouteGroups.flat(),
     ...villageReviewRouteGroups.flat(),
     ...announcementRoutes,
-    ...reviewRoutes,
   ]);
 }
 
-
-async function listSitemapPublicReviews() {
-  try {
-    return await listPublicReviewsFromDb({ limit: 100 });
-  } catch {
-    return [];
-  }
-}
 function route(
   path: string,
   changeFrequency: MetadataRoute.Sitemap[number]["changeFrequency"],

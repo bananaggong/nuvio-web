@@ -1,5 +1,4 @@
 import Image from "next/image";
-import Link from "next/link";
 import { ChevronDown, ChevronLeft, ChevronRight, Star } from "lucide-react";
 import type { CSSProperties, ReactNode } from "react";
 import {
@@ -23,7 +22,6 @@ type ReviewCardModel = {
   author: string;
   body: string;
   date: string;
-  href: string;
   id: string;
   images: string[];
   programTitle: string;
@@ -44,7 +42,7 @@ export function ChannelGuestReviewsPage({
   const homeHref = villagePath(village.slug);
   const selectedProgram = normalizeFilterValue(programFilter);
   const visibleReviews = filterReviewsByProgram(reviews, programs, selectedProgram);
-  const cards = visibleReviews.map((review) => buildReviewCard(review, programs, homeHref));
+  const cards = visibleReviews.map((review) => buildReviewCard(review, programs));
   const averageRating = getAverageRating(visibleReviews);
 
   return (
@@ -305,40 +303,52 @@ function ReviewCard({ review }: { review: ReviewCardModel }) {
         </time>
       </div>
 
-      <Link
-        className="block text-[#0D0D0C]"
-        href={review.href}
+      <details
+        className="group text-[#0D0D0C]"
         style={{
           padding: `${px(8)} ${px(8)} 0`,
           width: px(775),
         }}
       >
+        <summary
+          className="cursor-pointer list-none [&::-webkit-details-marker]:hidden"
+        >
+          <p
+            className="line-clamp-4 whitespace-pre-wrap group-open:hidden"
+            style={{ fontSize: px(12), fontWeight: 400, lineHeight: 1.6, width: px(759) }}
+          >
+            {review.body}
+          </p>
+          <span
+            className="flex w-full items-center justify-end text-[#6D7A8A]"
+            style={{
+              gap: px(3),
+              paddingBottom: review.images.length > 0 ? px(12) : 0,
+            }}
+          >
+            <span style={{ fontSize: px(12), fontWeight: 400, lineHeight: 1.6 }}>
+              펼치기
+            </span>
+            <ChevronDown
+              aria-hidden="true"
+              className="transition-transform group-open:rotate-180"
+              style={{ height: px(9), width: px(9) }}
+            />
+          </span>
+        </summary>
         <p
-          className="line-clamp-4 whitespace-pre-wrap"
+          className="whitespace-pre-wrap"
           style={{ fontSize: px(12), fontWeight: 400, lineHeight: 1.6, width: px(759) }}
         >
           {review.body}
         </p>
-      </Link>
-
-      <Link
-        className="flex w-full items-center justify-end text-[#6D7A8A]"
-        href={review.href}
-        style={{
-          gap: px(3),
-          paddingBottom: review.images.length > 0 ? px(12) : 0,
-        }}
-      >
-        <span style={{ fontSize: px(12), fontWeight: 400, lineHeight: 1.6 }}>펼치기</span>
-        <ChevronDown aria-hidden="true" style={{ height: px(9), width: px(9) }} />
-      </Link>
+      </details>
 
       {review.images.length > 0 ? (
         <div className="relative flex items-center" style={{ gap: px(6), paddingBottom: px(16) }}>
           {review.images.slice(0, 7).map((image, index) => (
-            <Link
+            <div
               className="relative block shrink-0 overflow-hidden bg-[#D9D9D9]"
-              href={review.href}
               key={`${image}-${index}`}
               style={{
                 borderRadius: px(6),
@@ -353,7 +363,7 @@ function ReviewCard({ review }: { review: ReviewCardModel }) {
                 sizes="160px"
                 src={image}
               />
-            </Link>
+            </div>
           ))}
           {review.images.length > 4 ? (
             <div
@@ -388,7 +398,7 @@ function ArrowCircle({ direction }: { direction: "left" | "right" }) {
   );
 }
 
-function buildReviewCard(review: Review, programs: Program[], homeHref: string): ReviewCardModel {
+function buildReviewCard(review: Review, programs: Program[]): ReviewCardModel {
   const program = findProgramForReview(review, programs);
   const body = (review.body || review.excerpt || "").trim();
 
@@ -396,7 +406,6 @@ function buildReviewCard(review: Review, programs: Program[], homeHref: string):
     author: review.author || "닉네임",
     body: body || "후기 내용이 없습니다.",
     date: review.date,
-    href: `${homeHref}/reviews/${review.id}`,
     id: String(review.id),
     images: review.images.filter(Boolean),
     programTitle: review.programTitle || program?.title || "해당 프로그램 명",
