@@ -242,7 +242,7 @@ function DesktopAuthAction({
         <button
           aria-expanded={menuOpen}
           aria-label="마이페이지 메뉴"
-          className="inline-flex size-[2.153vw] min-h-[26px] min-w-[26px] items-center justify-center transition-opacity hover:opacity-75"
+          className="inline-flex size-[2.153vw] min-h-[26px] min-w-[26px] cursor-pointer items-center justify-center transition-opacity hover:opacity-75"
           onClick={onToggleMenu}
           type="button"
         >
@@ -269,7 +269,7 @@ function DesktopAuthAction({
   return (
     <Link
       aria-label="로그인"
-      className="inline-flex h-[2.5vw] min-h-[30px] w-[2.153vw] min-w-[26px] items-center justify-center"
+      className="inline-flex h-[2.5vw] min-h-[30px] w-[2.153vw] min-w-[26px] cursor-pointer items-center justify-center"
       href="/login"
     >
       <Image
@@ -353,8 +353,8 @@ function ProfileMenu({
         </button>
         <Link
           aria-label="설정"
-          className="inline-flex size-[1.458vw] min-h-[21px] min-w-[21px] items-center justify-center text-[#CAC4BC] transition-colors hover:text-[#FF9A3D]"
-          href="/mypage"
+          className="inline-flex size-[1.458vw] min-h-[21px] min-w-[21px] cursor-pointer items-center justify-center text-[#CAC4BC] transition-colors hover:text-[#FF9A3D]"
+          href={signedIn ? "/mypage/settings" : "/login?next=/mypage/settings"}
         >
           <Settings aria-hidden="true" size={17} strokeWidth={1.8} />
         </Link>

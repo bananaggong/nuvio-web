@@ -85,7 +85,7 @@ const programFilterOptions: Array<{ label: string; value: ProgramStatusFilter }>
 ];
 
 const programEmptyMessages: Record<ProgramStatusFilter, string> = {
-  all: "아직 등록된 프로그램이 없어요",
+  all: "아직 프로그램이 없어요",
   closed: "아직 마감된 프로그램이 없어요",
   open: "아직 오픈된 프로그램이 없어요",
   upcoming: "아직 예정된 프로그램이 없어요",
@@ -143,7 +143,6 @@ export function ChannelGuestProgramsPage({
             </div>
           ) : (
             <ChannelProgramsEmptyState
-              homeHref={homeHref}
               message={programEmptyMessages[activeFilter]}
             />
           )}
@@ -562,10 +561,8 @@ function getProgramSortTime(program: ProgramCardModel) {
 }
 
 function ChannelProgramsEmptyState({
-  homeHref,
   message,
 }: {
-  homeHref: string;
   message: string;
 }) {
   return (
@@ -577,8 +574,6 @@ function ChannelProgramsEmptyState({
       }}
     >
       <NuvioEmptyState
-        actionHref={`${homeHref}/programs`}
-        actionLabel="프로그램 찾아보기"
         className="h-full"
         message={message}
       />

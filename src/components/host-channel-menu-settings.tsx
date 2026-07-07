@@ -321,14 +321,14 @@ export function HostChannelMenuSettings() {
               메뉴 설정
             </h2>
             <p className="mt-[var(--host-12)] text-[length:var(--host-16)] font-normal leading-[1.6] text-[#6D7A8A]">
-              채널 내비게이션과 홈 화면 섹션에 표시되는 메뉴를 관리해요.
+              채널 네비게이션에 표시되는 메뉴를 관리해요
             </p>
             <p className="mt-[var(--host-6)] text-[length:var(--host-16)] font-normal leading-[1.6] text-[#6D7A8A]">
-              채널 홈은 고정 메뉴이며, 프로그램과 후기는 기본 메뉴라 삭제하거나 유형을 변경할 수 없어요.
+              모든 메뉴 이름은 자유롭게 변경할 수 있어요
             </p>
           </section>
 
-          <section className="min-h-[var(--host-636)] px-[var(--host-58)] pt-[var(--host-30)] max-md:px-5">
+          <section className="px-[var(--host-58)] pt-[var(--host-30)] max-md:px-5">
             <ChannelHomeMenuRow />
             {items.map((item, index) => (
               <ChannelMenuRow

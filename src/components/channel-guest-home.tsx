@@ -133,7 +133,7 @@ const programFilterOptions: Array<{ label: string; value: ProgramStatusFilter }>
 ];
 
 const programEmptyMessages: Record<ProgramStatusFilter, string> = {
-  all: "아직 등록된 프로그램이 없어요",
+  all: "아직 프로그램이 없어요",
   closed: "아직 마감된 프로그램이 없어요",
   open: "아직 오픈된 프로그램이 없어요",
   upcoming: "아직 예정된 프로그램이 없어요",

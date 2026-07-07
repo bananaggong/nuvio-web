@@ -553,11 +553,7 @@ export function ChannelProfileHeader({
           )}
         </div>
       </div>
-      <nav
-        className={`absolute left-[var(--host-228)] flex items-end gap-[var(--host-40-7)] text-[length:var(--host-16)] font-semibold leading-[1.253] text-[#5B3A29] ${
-          sectionVariant ? "top-[var(--host-142)]" : "top-[var(--host-128)]"
-        }`}
-      >
+      <nav className="absolute bottom-0 left-[var(--host-228)] flex items-end gap-[var(--host-40-7)] text-[length:var(--host-16)] font-semibold leading-[1.253] text-[#5B3A29]">
         {menuLabels.map((item) => (
           <span
             className="relative shrink-0 pb-[var(--host-8)] text-[#5B3A29]"

@@ -134,7 +134,7 @@ export function NotificationBellPopover({ signedIn }: { signedIn: boolean }) {
     return (
       <Link
         aria-label="알림"
-        className="inline-flex size-[2.153vw] min-h-[26px] min-w-[26px] items-center justify-center transition-opacity hover:opacity-75"
+        className="inline-flex size-[2.153vw] min-h-[26px] min-w-[26px] cursor-pointer items-center justify-center transition-opacity hover:opacity-75"
         href="/login?next=/mypage"
       >
         <Image
@@ -154,7 +154,7 @@ export function NotificationBellPopover({ signedIn }: { signedIn: boolean }) {
       <button
         aria-expanded={open}
         aria-label={unreadCount > 0 ? `알림 ${unreadCount}개` : "알림"}
-        className="relative inline-flex size-[2.153vw] min-h-[26px] min-w-[26px] items-center justify-center transition-opacity hover:opacity-75"
+        className="relative inline-flex size-[2.153vw] min-h-[26px] min-w-[26px] cursor-pointer items-center justify-center transition-opacity hover:opacity-75"
         onClick={toggleOpen}
         type="button"
       >
