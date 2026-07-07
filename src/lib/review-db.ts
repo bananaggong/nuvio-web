@@ -3,6 +3,7 @@ import { getDb } from "@/db/client";
 import {
   programApplications,
   programs as programsTable,
+  reviewHelpfulVotes,
   reviewRequests,
   reviewVisibilityHolds,
   reviews as reviewsTable,
@@ -208,6 +209,7 @@ export async function listPublicReviewsPageFromDb(options: {
 
   const rows = await getDb()
     .select({
+      helpfulCount: publicReviewHelpfulCountSelection(),
       review: reviewsTable,
       programLegacyId: programsTable.legacyId,
       programSlug: programsTable.slug,
@@ -221,8 +223,14 @@ export async function listPublicReviewsPageFromDb(options: {
     .limit(limit + 1);
 
   const pageRows = rows.slice(0, limit);
-  const data = pageRows.map(({ review, programLegacyId, programSlug, programTitle }) =>
-    mapReviewRowToPublicReview(review, programLegacyId ?? undefined, programSlug, programTitle),
+  const data = pageRows.map(({ helpfulCount, review, programLegacyId, programSlug, programTitle }) =>
+    mapReviewRowToPublicReview(
+      review,
+      programLegacyId ?? undefined,
+      programSlug,
+      programTitle,
+      helpfulCount,
+    ),
   );
   const lastRow = pageRows.at(-1)?.review;
 
@@ -240,6 +248,7 @@ export async function listPublicProgramReviewsFromDb(
 
   const rows = await getDb()
     .select({
+      helpfulCount: publicReviewHelpfulCountSelection(),
       review: reviewsTable,
       programLegacyId: programsTable.legacyId,
       programSlug: programsTable.slug,
@@ -251,8 +260,14 @@ export async function listPublicProgramReviewsFromDb(
     .orderBy(desc(reviewsTable.publishedAt), desc(reviewsTable.createdAt))
     .limit(clampLimit(limit, 80));
 
-  return rows.map(({ review, programLegacyId, programSlug, programTitle }) =>
-    mapReviewRowToPublicReview(review, programLegacyId ?? undefined, programSlug, programTitle),
+  return rows.map(({ helpfulCount, review, programLegacyId, programSlug, programTitle }) =>
+    mapReviewRowToPublicReview(
+      review,
+      programLegacyId ?? undefined,
+      programSlug,
+      programTitle,
+      helpfulCount,
+    ),
   );
 }
 
@@ -261,6 +276,7 @@ export async function getPublicReviewFromDb(id: string): Promise<PublicReview | 
 
   const [row] = await getDb()
     .select({
+      helpfulCount: publicReviewHelpfulCountSelection(),
       review: reviewsTable,
       programLegacyId: programsTable.legacyId,
       programSlug: programsTable.slug,
@@ -277,6 +293,7 @@ export async function getPublicReviewFromDb(id: string): Promise<PublicReview | 
         row.programLegacyId ?? undefined,
         row.programSlug,
         row.programTitle,
+        row.helpfulCount,
       )
     : null;
 }
@@ -1443,6 +1460,7 @@ function mapReviewRowToPublicReview(
   programLegacyId?: number,
   programSlug?: string | null,
   programTitle?: string | null,
+  helpfulCount?: number,
 ): PublicReview {
   return {
     id: row.id,
@@ -1458,11 +1476,19 @@ function mapReviewRowToPublicReview(
     body: row.body,
     images: row.images,
     rating: row.rating ?? undefined,
-    likes: row.likes,
+    likes: helpfulCount ?? row.likes,
     comments: row.comments,
     badge: row.badge ?? undefined,
     publishedAt: row.publishedAt?.toISOString(),
   };
+}
+
+function publicReviewHelpfulCountSelection(): SQL<number> {
+  return sql<number>`coalesce((
+    select count(*)::integer
+    from ${reviewHelpfulVotes} helpful_vote
+    where helpful_vote.review_id = ${reviewsTable.id}
+  ), 0)`;
 }
 
 function mapReviewRowToParticipantOwnReview(
