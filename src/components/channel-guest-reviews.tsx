@@ -281,7 +281,10 @@ function RadioChoice({
 }) {
   return (
     <button
-      className="flex items-center justify-center text-[#6D7A8A] transition hover:text-[#FE701E]"
+      aria-pressed={active}
+      className={`flex items-center justify-center transition hover:text-[#FE701E] ${
+        active ? "text-[#FE701E]" : "text-[#6D7A8A]"
+      }`}
       onClick={onClick}
       style={{ gap: px(2) }}
       type="button"
@@ -314,7 +317,10 @@ function RatingChoice({
 }) {
   return (
     <button
-      className="flex items-center justify-center text-[#6D7A8A] transition hover:text-[#FE701E]"
+      aria-pressed={active}
+      className={`flex items-center justify-center transition hover:text-[#FE701E] ${
+        active ? "text-[#FE701E]" : "text-[#6D7A8A]"
+      }`}
       onClick={onClick}
       style={{ gap: px(2) }}
       type="button"
