@@ -119,7 +119,7 @@ export function getChannelMenuItems(
   const storedItems = sections
     .map((section, index) => menuItemFromSection(section, index))
     .filter((item): item is ChannelMenuItem => Boolean(item));
-  const items = storedItems.length > 0 ? ensureCoreMenus(storedItems) : ensureCoreMenus([]);
+  const items = storedItems.length > 0 ? ensureCoreMenus(storedItems) : createDefaultChannelMenuItems();
 
   return items
     .filter((item) => includeFree || item.kind !== "free")
@@ -224,6 +224,30 @@ function createReviewMenuItem(): ChannelMenuItem {
     id: "channel-menu-review",
     order: 1,
   };
+}
+
+function createDefaultEditableMenuItem(
+  kind: Exclude<ChannelMenuKind, "program" | "review">,
+  order: number,
+): ChannelMenuItem {
+  return {
+    ...createChannelMenuItem(kind),
+    id: `channel-menu-${kind}`,
+    order,
+  };
+}
+
+function createDefaultChannelMenuItems() {
+  const defaults: ChannelMenuItem[] = [
+    createProgramMenuItem(),
+    ...(launchFeatureFlags.reviews ? [createReviewMenuItem()] : []),
+    createDefaultEditableMenuItem("gallery", launchFeatureFlags.reviews ? 2 : 1),
+    createDefaultEditableMenuItem("magazine", launchFeatureFlags.reviews ? 3 : 2),
+    createDefaultEditableMenuItem("board", launchFeatureFlags.reviews ? 4 : 3),
+    createDefaultEditableMenuItem("free", launchFeatureFlags.reviews ? 5 : 4),
+  ];
+
+  return defaults;
 }
 
 function ensureCoreMenus(items: ChannelMenuItem[]) {
