@@ -79,6 +79,7 @@ const holdReasons: ReviewVisibilityHoldReason[] = [
   "inappropriate_report",
   "spam_report",
   "false_information_report",
+  "report_volume",
 ];
 const holdSourceTypes: ReviewVisibilityHoldSourceType[] = [
   "moderation_check",
@@ -392,6 +393,9 @@ function sanitizeVisibilityHoldMetadata(value: unknown): Record<string, unknown>
   copyString(metadata, safe, "status");
   copyString(metadata, safe, "reportedAt");
   copyString(metadata, safe, "reportId");
+  copyNumber(metadata, safe, "reportCount");
+  copyNumber(metadata, safe, "threshold");
+  copyStringArray(metadata, safe, "reasons");
 
   const release = asRecord(metadata.release);
   if (Object.keys(release).length > 0) {
