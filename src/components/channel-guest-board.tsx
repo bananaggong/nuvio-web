@@ -5,6 +5,7 @@ import {
   channelGuestScaleRootStyle,
   px,
 } from "@/components/channel-guest-gallery";
+import { NuvioEmptyState } from "@/components/nuvio-empty-state";
 import type { VillageNotice } from "@/lib/village-template";
 import { villagePath } from "@/lib/village-routing";
 import type { Village } from "@/lib/village-types";
@@ -32,7 +33,7 @@ export function ChannelGuestBoardPage({
   village,
 }: ChannelGuestBoardPageProps) {
   const homeHref = villagePath(village.slug);
-  const rows = buildBoardRows(notices, homeHref);
+  const rows = buildBoardRows(notices);
 
   return (
     <div
@@ -50,11 +51,15 @@ export function ChannelGuestBoardPage({
             paddingTop: px(29),
           }}
         >
-          <div className="w-full">
-            {rows.map((row) => (
-              <BoardListRow key={row.id} row={row} />
-            ))}
-          </div>
+          {rows.length > 0 ? (
+            <div className="w-full">
+              {rows.map((row) => (
+                <BoardListRow key={row.id} row={row} />
+              ))}
+            </div>
+          ) : (
+            <ChannelBoardEmptyState />
+          )}
         </section>
       </main>
     </div>
@@ -106,23 +111,26 @@ function BoardBadge({ type }: { type: "fixed" | "new" }) {
   );
 }
 
-function buildBoardRows(notices: VillageNotice[], homeHref: string): BoardRow[] {
-  const rows = notices.slice(0, 4).map((notice, index) => ({
+function buildBoardRows(notices: VillageNotice[]): BoardRow[] {
+  return notices.slice(0, 4).map((notice, index) => ({
     badge: index === 0 ? ("fixed" as const) : index === 1 ? ("new" as const) : undefined,
     date: formatBoardDate(notice.date),
     href: notice.href,
     id: `${notice.type}-${notice.title}-${index}`,
     title: notice.title || "제목",
   }));
+}
 
-  return rows.concat(
-    Array.from({ length: Math.max(0, 4 - rows.length) }, (_, index) => ({
-      badge: index === 0 && rows.length === 0 ? ("fixed" as const) : undefined,
-      date: "2000. 00. 00 00:00",
-      href: `${homeHref}/notice`,
-      id: `board-fallback-${index}`,
-      title: "제목",
-    })),
+function ChannelBoardEmptyState() {
+  return (
+    <div
+      className="border border-dashed border-[#D6D6D6]"
+      style={{
+        minHeight: px(320),
+      }}
+    >
+      <NuvioEmptyState className="h-full" message="아직 게시글이 없어요" />
+    </div>
   );
 }
 
