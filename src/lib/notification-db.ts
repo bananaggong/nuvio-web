@@ -420,6 +420,7 @@ export async function queueApplicationSubmittedNotification(input: {
   applicantName?: string;
   applicationId: string;
   email: string;
+  programId?: number | string;
   programCreatedBy?: string;
   programTitle: string;
   villageId?: string;
@@ -428,6 +429,7 @@ export async function queueApplicationSubmittedNotification(input: {
   const recipientUserId = await findProfileIdByEmail(recipientEmail);
   const metadata = {
     applicationId: input.applicationId,
+    programId: input.programId,
     programTitle: input.programTitle,
   };
   const applicantMessage: NotificationMessage = {
@@ -454,6 +456,7 @@ export async function queueApplicationSubmittedNotification(input: {
   await notifyHostUsersAboutSubmittedApplicationWithPush({
     applicantName: input.applicantName,
     applicationId: input.applicationId,
+    programId: input.programId,
     programCreatedBy: input.programCreatedBy,
     programTitle: input.programTitle,
     villageId: input.villageId,
@@ -1159,6 +1162,7 @@ async function queueBrowserPushNotification(
 async function notifyHostUsersAboutSubmittedApplicationWithPush(input: {
   applicantName?: string;
   applicationId: string;
+  programId?: number | string;
   programCreatedBy?: string;
   programTitle: string;
   villageId?: string;
@@ -1174,10 +1178,11 @@ async function notifyHostUsersAboutSubmittedApplicationWithPush(input: {
     recipients.map(async (recipient) => {
       const message: NotificationMessage = {
         body: `${input.programTitle}에 ${applicantName}님의 새 신청서가 들어왔어요.`,
-        href: `/host/applications/${input.applicationId}`,
+        href: buildHostApplicationManagementHref(input),
         metadata: {
           applicationId: input.applicationId,
           applicantName,
+          programId: input.programId,
           programTitle: input.programTitle,
           villageId: input.villageId,
         },
@@ -1235,6 +1240,7 @@ async function notifyHostUsersAboutInquiryMessage(input: {
 async function notifyHostUsersAboutSubmittedApplication(input: {
   applicantName?: string;
   applicationId: string;
+  programId?: number | string;
   programCreatedBy?: string;
   programTitle: string;
   villageId?: string;
@@ -1250,10 +1256,11 @@ async function notifyHostUsersAboutSubmittedApplication(input: {
     recipients.map((recipient) =>
       createInAppNotificationIfEnabled(recipient.id, {
         body: `${input.programTitle}에 ${applicantName}님의 신청서가 들어왔어요.`,
-        href: `/host/applications/${input.applicationId}`,
+        href: buildHostApplicationManagementHref(input),
         metadata: {
           applicationId: input.applicationId,
           applicantName,
+          programId: input.programId,
           programTitle: input.programTitle,
           villageId: input.villageId,
         },
@@ -1262,6 +1269,20 @@ async function notifyHostUsersAboutSubmittedApplication(input: {
       }),
     ),
   );
+}
+
+function buildHostApplicationManagementHref(input: {
+  applicationId: string;
+  programId?: number | string;
+}) {
+  const applicationId = encodeURIComponent(input.applicationId);
+  const programId = String(input.programId ?? "").trim();
+
+  if (!programId) {
+    return `/host/applications/${applicationId}`;
+  }
+
+  return `/host/programs/${encodeURIComponent(programId)}/applications?applicationId=${applicationId}`;
 }
 
 async function listHostNotificationRecipients(options: {

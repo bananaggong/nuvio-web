@@ -352,7 +352,7 @@ function buildCandidate(input: {
     applicationId: input.applicationId,
     dayOffset: input.target.dayOffset,
     eventType: input.target.eventType,
-    href: `/host/applications/${input.applicationId}`,
+    href: `/host/programs/${encodeURIComponent(input.programId)}/applications?applicationId=${encodeURIComponent(input.applicationId)}`,
     kind: input.target.kind,
     programId: input.programId,
     programTitle: input.programTitle,

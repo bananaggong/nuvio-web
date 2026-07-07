@@ -143,6 +143,7 @@ export function HostApplicationsCrm({
   projectId?: string;
 }) {
   const searchParams = useSearchParams();
+  const requestedApplicationId = searchParams.get("applicationId") ?? "";
   const { applications, programs: hostPrograms, reportProjects, setApplications } =
     useHostOperationsData();
   const [activeTab, setActiveTab] = useState<ReviewTab>("all");
@@ -223,12 +224,18 @@ export function HostApplicationsCrm({
   const filteredApplications = scopedApplications.filter((application) =>
     matchesReviewTab(application, activeTab),
   );
+  const selectedLookupApplicationId =
+    selectedApplicationId || requestedApplicationId;
   const selectedApplication =
-    filteredApplications.find((application) => application.id === selectedApplicationId) ??
+    filteredApplications.find(
+      (application) => application.id === selectedLookupApplicationId,
+    ) ??
     filteredApplications[0] ??
     scopedApplications[0];
   const selectedScopedApplication =
-    scopedApplications.find((application) => application.id === selectedApplicationId) ??
+    scopedApplications.find(
+      (application) => application.id === selectedLookupApplicationId,
+    ) ??
     scopedApplications[0];
   const resolvedProgramBasePath = programBasePath ?? projectBasePath ?? "/host/programs";
   const applicationsHref = `${resolvedProgramBasePath}/applications`;

@@ -84,6 +84,7 @@ export async function POST(request: Request) {
       applicantName: application.applicantName,
       applicationId: application.id,
       email: application.email,
+      programId: application.programId,
       programCreatedBy: application.programCreatedBy,
       programTitle: application.programTitle,
       villageId: application.villageId,
