@@ -23,8 +23,11 @@ export async function PUT(
   request: Request,
   { params }: { params: Promise<{ id: string }> },
 ) {
-  if (!launchFeatureFlags.reviews) {
-    return NextResponse.json({ error: "Reviews are disabled." }, { status: 404 });
+  if (!launchFeatureFlags.reviewReplies) {
+    return NextResponse.json(
+      { error: "Review replies are disabled." },
+      { status: 404 },
+    );
   }
 
   const auth = await requireHostRole();
@@ -74,8 +77,11 @@ export async function PATCH(
   request: Request,
   { params }: { params: Promise<{ id: string }> },
 ) {
-  if (!launchFeatureFlags.reviews) {
-    return NextResponse.json({ error: "Reviews are disabled." }, { status: 404 });
+  if (!launchFeatureFlags.reviewReplies) {
+    return NextResponse.json(
+      { error: "Review replies are disabled." },
+      { status: 404 },
+    );
   }
 
   const auth = await requireHostRole();

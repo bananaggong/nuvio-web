@@ -9,8 +9,11 @@ export async function GET(
   request: Request,
   { params }: { params: Promise<{ id: string }> },
 ) {
-  if (!launchFeatureFlags.reviews) {
-    return NextResponse.json({ error: "Reviews are disabled." }, { status: 404 });
+  if (!launchFeatureFlags.reviewReplies) {
+    return NextResponse.json(
+      { error: "Review replies are disabled." },
+      { status: 404 },
+    );
   }
 
   const limited = await applyPersistentRateLimit(request, {

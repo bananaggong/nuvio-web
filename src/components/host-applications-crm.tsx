@@ -1591,25 +1591,7 @@ function ReviewManagementCard({
         })}
       </div>
 
-      {review.excerpt ? (
-        <div className="mt-[14px] rounded-[4px] border border-[#AEB8C2] bg-white px-[12px] py-[10px] text-[12px] font-normal leading-[1.55] text-[#6D7A8A]">
-          <p className="font-semibold text-[#6D7A8A]">호스트 댓글</p>
-          <p className="mt-[6px] whitespace-pre-line">{review.excerpt}</p>
-        </div>
-      ) : null}
-
-      <div className="mt-[14px] flex gap-[7px] border-t border-[#D9D9D9] pt-[14px]">
-        <input
-          className="h-[31px] flex-1 rounded-[4px] border border-[#AEB8C2] bg-white px-[12px] text-[12px] font-normal leading-[1.253] outline-none placeholder:text-[#CAC4BC]"
-          placeholder="댓글을 입력해 주세요"
-        />
-        <button
-          className="h-[31px] w-[58px] rounded-[4px] border border-[#6D7A8A] bg-white text-[12px] font-normal leading-[1.253] text-[#6D7A8A]"
-          type="button"
-        >
-          등록
-        </button>
-      </div>
+      <div className="mt-[14px] border-t border-[#D9D9D9]" />
     </article>
   );
 }
