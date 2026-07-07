@@ -3,7 +3,14 @@
 import Image from "next/image";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
-import { useEffect, useRef, useState, type ChangeEvent, type ReactNode } from "react";
+import {
+  useEffect,
+  useRef,
+  useState,
+  type CSSProperties,
+  type ChangeEvent,
+  type ReactNode,
+} from "react";
 import { HostChannelHomeBlocks } from "@/components/host-channel-home-blocks";
 import { nuvioIcons } from "@/components/icons/nuvio-icons";
 import { HostWorkspaceLayout } from "@/components/host-workspace-ui";
@@ -587,9 +594,7 @@ export function ChannelSectionShell({
     <section className="border-t border-[#D9D9D9] py-[var(--host-22)]">
       <div className="mb-[var(--host-18)] flex items-center justify-between">
         <div className="flex items-center gap-[var(--host-8)]">
-          <span className="grid size-[var(--host-16)] place-items-center rounded-[4px] border border-[#D9D9D9] bg-white">
-            <span className="size-[var(--host-5)] rounded-full bg-[#CAC4BC]" />
-          </span>
+          <SectionMoveIcon label={`${title} 섹션 이동`} />
           <h2 className="text-[length:var(--host-16)] font-semibold leading-[1.253] text-[#5B3A29]">
             {title}
           </h2>
@@ -619,6 +624,25 @@ export function ChannelSectionShell({
       </div>
       {children}
     </section>
+  );
+}
+
+function SectionMoveIcon({ label }: { label: string }) {
+  return (
+    <span
+      aria-label={label}
+      className="grid size-[var(--host-22)] shrink-0 place-items-center text-[#D9D9D9]"
+      role="img"
+    >
+      <span
+        aria-hidden="true"
+        className="block size-[var(--host-22)] bg-current"
+        style={{
+          mask: `url(${nuvioIcons.menuReorder}) center / contain no-repeat`,
+          WebkitMask: `url(${nuvioIcons.menuReorder}) center / contain no-repeat`,
+        } as CSSProperties}
+      />
+    </span>
   );
 }
 

@@ -9,7 +9,6 @@ import {
   type PointerEvent,
   type ReactNode,
 } from "react";
-import { ChannelHomeBlockView } from "@/components/channel-home-block-view";
 import { nuvioIcons } from "@/components/icons/nuvio-icons";
 import {
   applyChannelHomeBlocksToSections,
@@ -17,7 +16,6 @@ import {
   channelHomeBlockTextWeights,
   defaultChannelHomeBlock,
   getChannelHomeBlocks,
-  hasChannelHomeBlockContent,
   type ChannelHomeBlock,
   type ChannelHomeBlockTextAlign,
   type ChannelHomeBlockTextPreset,
@@ -254,8 +252,12 @@ function HostChannelHomeBlocksInner({
       />
       <div className="mb-[var(--host-18)] flex items-center justify-between">
         <div className="flex items-center gap-[var(--host-8)]">
-          <span className="grid size-[var(--host-16)] place-items-center rounded-[4px] border border-[#D9D9D9] bg-white">
-            <span className="size-[var(--host-5)] rounded-full bg-[#CAC4BC]" />
+          <span
+            aria-label="블록 섹션 이동"
+            className="grid size-[var(--host-22)] shrink-0 place-items-center text-[#D9D9D9]"
+            role="img"
+          >
+            <IconMask icon={nuvioIcons.menuReorder} size="var(--host-22)" />
           </span>
           <h2 className="text-[length:var(--host-16)] font-semibold leading-[1.253] text-[#5B3A29]">
             블록
@@ -273,7 +275,6 @@ function HostChannelHomeBlocksInner({
           <div key={block.id}>
             <HostBlockPreview
               active={editingId === block.id}
-              block={block}
               onEdit={() => setEditingId((current) => (current === block.id ? null : block.id))}
               onRemove={() => removeBlock(block.id)}
             />
@@ -324,12 +325,10 @@ function HostChannelHomeBlocksInner({
 
 function HostBlockPreview({
   active,
-  block,
   onEdit,
   onRemove,
 }: {
   active: boolean;
-  block: ChannelHomeBlock;
   onEdit: () => void;
   onRemove: () => void;
 }) {
@@ -339,20 +338,12 @@ function HostBlockPreview({
         className={`relative overflow-hidden border ${
           active ? "border-[#F7B267]" : "border-transparent"
         }`}
-        style={{ minHeight: hostPx(hasChannelHomeBlockContent(block) ? 80 : 40) }}
       >
-        {hasChannelHomeBlockContent(block) ? (
-          <ChannelHomeBlockView block={block} px={hostPx} />
-        ) : (
-          <div
-            className="flex items-center justify-center border border-dashed border-[#D9D9D9] text-center text-[length:var(--host-11)] font-medium leading-[1.45] text-[#A8AFB8]"
-            style={{ height: hostPx(40) }}
-          >
-            이미지나 텍스트를 추가해서 자유롭게 꾸밀 수 있어요
-            <br />
-            비워두면 섹션 사이 여백(40px)으로 사용할 수 있어요
-          </div>
-        )}
+        <div
+          aria-hidden="true"
+          className="border border-dashed border-[#D9D9D9] bg-white"
+          style={{ height: hostPx(40) }}
+        />
       </div>
       <div className="absolute right-[var(--host-8)] top-[var(--host-6)] flex items-center gap-[var(--host-6)]">
         <button

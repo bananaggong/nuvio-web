@@ -10,6 +10,10 @@ import {
   Upload,
 } from "lucide-react";
 import { useEffect, useId, useMemo, useRef, useState } from "react";
+import {
+  getKoreanLocalOptions,
+  koreanRegionOptions,
+} from "@/lib/korean-local-governments";
 import type { Village } from "@/lib/village-types";
 
 type VillageAssetPayload = {
@@ -32,7 +36,8 @@ export function HostLocalPageCreate() {
   const router = useRouter();
   const imagePreviewRef = useRef("");
   const [name, setName] = useState("새 채널");
-  const [location, setLocation] = useState("전국 로컬");
+  const [region, setRegion] = useState("");
+  const [city, setCity] = useState("");
   const [summary, setSummary] = useState(
     "채널 소개, 프로그램 안내와 공지를 한곳에서 관리합니다.",
   );
@@ -44,16 +49,16 @@ export function HostLocalPageCreate() {
   const [createdHref, setCreatedHref] = useState("");
 
   const trimmedName = name.trim() || "새 채널";
-  const trimmedLocation = location.trim() || "전국 로컬";
+  const trimmedRegion = region.trim();
+  const trimmedCity = city.trim();
+  const trimmedLocation =
+    [trimmedRegion, trimmedCity].filter(Boolean).join(" ") || "지역 미선택";
   const trimmedSummary =
     summary.trim() ||
     "채널 소개, 프로그램 안내와 공지를 한곳에서 관리합니다.";
   const previewImage = imagePreviewUrl || fallbackHeroImage;
 
-  const locationParts = useMemo(
-    () => splitLocation(trimmedLocation),
-    [trimmedLocation],
-  );
+  const cityOptions = useMemo(() => getKoreanLocalOptions(trimmedRegion), [trimmedRegion]);
 
   useEffect(() => {
     return () => {
@@ -72,8 +77,13 @@ export function HostLocalPageCreate() {
       return;
     }
 
-    if (!trimmedLocation) {
-      setErrorMessage("위치를 입력해 주세요.");
+    if (!trimmedRegion) {
+      setErrorMessage("지역을 선택해 주세요.");
+      return;
+    }
+
+    if (!trimmedCity) {
+      setErrorMessage("로컬을 선택해 주세요.");
       return;
     }
 
@@ -83,8 +93,8 @@ export function HostLocalPageCreate() {
       setStatusMessage("채널을 만들고 있어요.");
       const createdVillage = await saveVillage(buildVillageDraft({
         name: trimmedName,
-        region: locationParts.region,
-        city: locationParts.city,
+        region: trimmedRegion,
+        city: trimmedCity,
         summary: trimmedSummary,
       }));
 
@@ -193,12 +203,26 @@ export function HostLocalPageCreate() {
             </label>
 
             <div className="grid gap-4 md:grid-cols-2">
-              <TextField
-                label="위치"
-                onChange={setLocation}
-                placeholder="예: 전남 보성"
-                value={location}
-              />
+              <div className="grid gap-4 sm:grid-cols-2">
+                <SelectField
+                  label="지역"
+                  onChange={(value) => {
+                    setRegion(value);
+                    setCity("");
+                  }}
+                  options={koreanRegionOptions}
+                  placeholder="지역 선택"
+                  value={region}
+                />
+                <SelectField
+                  disabled={!region}
+                  label="로컬"
+                  onChange={setCity}
+                  options={cityOptions}
+                  placeholder={region ? "로컬 선택" : "지역 먼저 선택"}
+                  value={city}
+                />
+              </div>
               <TextField
                 label="채널 이름"
                 onChange={setName}
@@ -313,6 +337,41 @@ function TextField({
   );
 }
 
+function SelectField({
+  disabled = false,
+  label,
+  onChange,
+  options,
+  placeholder,
+  value,
+}: {
+  disabled?: boolean;
+  label: string;
+  onChange: (value: string) => void;
+  options: readonly string[];
+  placeholder: string;
+  value: string;
+}) {
+  return (
+    <label className="grid gap-2">
+      <span className="text-sm font-black text-slate-800">{label}</span>
+      <select
+        className="h-11 w-full rounded-md border border-slate-200 bg-white px-3 text-sm text-slate-800 outline-none focus:border-[var(--primary)] disabled:bg-slate-50 disabled:text-slate-400"
+        disabled={disabled}
+        onChange={(event) => onChange(event.target.value)}
+        value={value}
+      >
+        <option value="">{placeholder}</option>
+        {options.map((option) => (
+          <option key={option} value={option}>
+            {option}
+          </option>
+        ))}
+      </select>
+    </label>
+  );
+}
+
 async function saveVillage(village: Village): Promise<Village> {
   const response = await fetch("/api/host/channels", {
     body: JSON.stringify(village),
@@ -397,16 +456,6 @@ function buildVillageDraft({
     ],
     published: false,
     updatedAt: now,
-  };
-}
-
-function splitLocation(value: string) {
-  const parts = value.split(/\s+/u).filter(Boolean);
-  const [first, ...rest] = parts;
-
-  return {
-    city: rest.join(" ") || "로컬",
-    region: first || "전국",
   };
 }
 

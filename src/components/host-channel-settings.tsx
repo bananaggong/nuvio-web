@@ -8,6 +8,11 @@ import { nuvioIcons } from "@/components/icons/nuvio-icons";
 import { HostWorkspaceLayout } from "@/components/host-workspace-ui";
 import { UnsavedChangesGuard } from "@/components/unsaved-changes-guard";
 import { selectHostChannel } from "@/lib/host-channel-selection";
+import {
+  getKoreanLocalOptions,
+  koreanRegionOptions,
+  normalizeKoreanLocation,
+} from "@/lib/korean-local-governments";
 import type { Village, VillageLink } from "@/lib/village-types";
 
 const defaultLink: VillageLink = {
@@ -16,9 +21,6 @@ const defaultLink: VillageLink = {
   type: "website",
   url: "",
 };
-
-const regionOptions = ["전남", "서울", "부산", "강원", "제주"];
-const cityOptions = ["보성군", "목포시", "강릉시", "제주시", "부산 중구"];
 
 const maxProfileUploadBytes = 5 * 1024 * 1024;
 
@@ -83,8 +85,13 @@ export function HostChannelSettings() {
         if (active) {
           const selectedChannel =
             selectHostChannel(channels, requestedChannelSlug) ?? fallbackChannel;
-          setChannel(selectedChannel);
-          setSavedChannelSignature(createChannelSettingsSignature(selectedChannel));
+          const normalizedLocation = normalizeKoreanLocation(
+            selectedChannel.region,
+            selectedChannel.city,
+          );
+          const normalizedChannel = { ...selectedChannel, ...normalizedLocation };
+          setChannel(normalizedChannel);
+          setSavedChannelSignature(createChannelSettingsSignature(normalizedChannel));
         }
       } finally {
         if (active) setIsLoading(false);
@@ -100,6 +107,14 @@ export function HostChannelSettings() {
 
   function updateChannel(patch: Partial<Village>) {
     setChannel((current) => ({ ...current, ...patch, updatedAt: new Date().toISOString() }));
+  }
+
+  function updateRegion(region: string) {
+    const nextCities = getKoreanLocalOptions(region);
+    updateChannel({
+      city: nextCities.includes(channel.city) ? channel.city : "",
+      region,
+    });
   }
 
   function updatePrimaryLink(patch: Partial<VillageLink>) {
@@ -221,6 +236,7 @@ export function HostChannelSettings() {
   }
 
   const primaryLink = channel.links[0] ?? defaultLink;
+  const cityOptions = getKoreanLocalOptions(channel.region);
 
   return (
     <HostWorkspaceLayout sidebarHeight="min-h-[var(--host-1076)]">
@@ -301,16 +317,16 @@ export function HostChannelSettings() {
               <div className="flex w-[var(--host-730)] gap-[var(--host-12)]">
                 <SelectField
                   disabled={isLoading}
-                  onChange={(value) => updateChannel({ region: value })}
-                  options={regionOptions}
+                  onChange={updateRegion}
+                  options={koreanRegionOptions}
                   placeholder="지역 선택"
                   value={channel.region}
                 />
                 <SelectField
-                  disabled={isLoading}
+                  disabled={isLoading || !channel.region}
                   onChange={(value) => updateChannel({ city: value })}
                   options={cityOptions}
-                  placeholder="도시 선택"
+                  placeholder="로컬 선택"
                   value={channel.city}
                 />
               </div>
