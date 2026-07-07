@@ -142,6 +142,7 @@ export async function recordReviewVisibilityHoldEvent(
   assertAccess(hold, options);
 
   const action = input.action ?? getHoldEventAction(input.fromStatus ?? null, input.toStatus);
+  assertHoldEventActionMatchesTransition(action, input.fromStatus ?? null, input.toStatus);
   const actorId = input.actorId ?? options.actorId ?? null;
   const actorRole = normalizeOptionalText(input.actorRole ?? options.actorRole);
   const metadata = sanitizeMetadata(input.metadata);
@@ -247,6 +248,24 @@ export function getHoldEventAction(
   if (fromStatus !== toStatus && toStatus === "active") return "activated";
   if (fromStatus !== toStatus && toStatus === "released") return "released";
   return "metadata_changed";
+}
+
+function assertHoldEventActionMatchesTransition(
+  action: ReviewVisibilityHoldEventAction,
+  fromStatus: ReviewVisibilityHoldStatus | null,
+  toStatus: ReviewVisibilityHoldStatus,
+): void {
+  if (action === "updated" || action === "metadata_changed") {
+    if (fromStatus && fromStatus === toStatus) return;
+    throw new ReviewVisibilityHoldEventError(
+      "Review visibility hold event action does not match the status transition.",
+    );
+  }
+
+  if (action === getHoldEventAction(fromStatus, toStatus)) return;
+  throw new ReviewVisibilityHoldEventError(
+    "Review visibility hold event action does not match the status transition.",
+  );
 }
 
 async function findRecentTriggerEvent(input: {

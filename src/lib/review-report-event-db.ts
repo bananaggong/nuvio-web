@@ -142,6 +142,7 @@ export async function recordReviewReportEvent(
   assertAccess(report, options);
 
   const action = input.action ?? getReviewReportEventAction(input.fromStatus ?? null, input.toStatus);
+  assertReportEventActionMatchesTransition(action, input.fromStatus ?? null, input.toStatus);
   const actorId = input.actorId ?? options.actorId ?? null;
   const actorRole = normalizeOptionalText(input.actorRole ?? options.actorRole);
   const metadata = sanitizeMetadata(input.metadata);
@@ -247,6 +248,24 @@ export function getReviewReportEventAction(
   if (fromStatus !== toStatus && toStatus === "open") return "reopened";
   if (fromStatus !== toStatus) return "status_changed";
   return "updated";
+}
+
+function assertReportEventActionMatchesTransition(
+  action: ReviewReportEventAction,
+  fromStatus: ReviewReportEventStatus | null,
+  toStatus: ReviewReportEventStatus,
+): void {
+  if (action === "updated" || action === "reason_changed") {
+    if (fromStatus && fromStatus === toStatus) return;
+    throw new ReviewReportEventError(
+      "Review report event action does not match the status transition.",
+    );
+  }
+
+  if (action === getReviewReportEventAction(fromStatus, toStatus)) return;
+  throw new ReviewReportEventError(
+    "Review report event action does not match the status transition.",
+  );
 }
 
 async function findRecentTriggerEvent(input: {
