@@ -1,6 +1,8 @@
+"use client";
+
 import Image from "next/image";
 import { ChevronDown, ChevronLeft, ChevronRight, Star } from "lucide-react";
-import type { CSSProperties, ReactNode } from "react";
+import { useMemo, useState, type CSSProperties, type ReactNode } from "react";
 import {
   ChannelProfileHeader,
   channelGuestScaleRootStyle,
@@ -28,6 +30,9 @@ type ReviewCardModel = {
   rating: number;
 };
 
+type RatingFilter = "all" | "5" | "4" | "3" | "2" | "1";
+type ReviewSortOrder = "latest" | "oldest";
+
 const reviewPageStyle = {
   maxWidth: `calc(100% - ${px(298)})`,
   width: px(1142),
@@ -40,8 +45,20 @@ export function ChannelGuestReviewsPage({
   village,
 }: ChannelGuestReviewsPageProps) {
   const homeHref = villagePath(village.slug);
-  const selectedProgram = normalizeFilterValue(programFilter);
-  const visibleReviews = filterReviewsByProgram(reviews, programs, selectedProgram);
+  const [selectedProgram, setSelectedProgram] = useState(() => normalizeFilterValue(programFilter));
+  const [ratingFilter, setRatingFilter] = useState<RatingFilter>("all");
+  const [sortOrder, setSortOrder] = useState<ReviewSortOrder>("latest");
+  const visibleReviews = useMemo(
+    () =>
+      sortReviews(
+        filterReviewsByRating(
+          filterReviewsByProgram(reviews, programs, selectedProgram),
+          ratingFilter,
+        ),
+        sortOrder,
+      ),
+    [programs, ratingFilter, reviews, selectedProgram, sortOrder],
+  );
   const cards = visibleReviews.map((review) => buildReviewCard(review, programs));
   const averageRating = getAverageRating(visibleReviews);
 
@@ -63,9 +80,14 @@ export function ChannelGuestReviewsPage({
         >
           <ReviewToolbar
             averageRating={averageRating}
+            onProgramChange={setSelectedProgram}
+            onRatingChange={setRatingFilter}
+            onSortChange={setSortOrder}
             programs={programs}
+            ratingFilter={ratingFilter}
             reviewCount={visibleReviews.length}
             selectedProgram={selectedProgram}
+            sortOrder={sortOrder}
           />
 
           <div
@@ -92,14 +114,24 @@ export function ChannelGuestReviewsPage({
 
 function ReviewToolbar({
   averageRating,
+  onProgramChange,
+  onRatingChange,
+  onSortChange,
   programs,
+  ratingFilter,
   reviewCount,
   selectedProgram,
+  sortOrder,
 }: {
   averageRating: string;
+  onProgramChange: (value: string) => void;
+  onRatingChange: (value: RatingFilter) => void;
+  onSortChange: (value: ReviewSortOrder) => void;
   programs: Program[];
+  ratingFilter: RatingFilter;
   reviewCount: number;
   selectedProgram: string;
+  sortOrder: ReviewSortOrder;
 }) {
   return (
     <div
@@ -138,8 +170,8 @@ function ReviewToolbar({
             className="flex items-center border-l border-[#6D7A8A]"
             style={{ paddingLeft: px(5), paddingRight: px(5) }}
           >
-            <div
-              className="flex items-center rounded-[4px] border border-[#6D7A8A]"
+            <label
+              className="relative flex items-center rounded-[4px] border border-[#6D7A8A]"
               style={{
                 gap: px(8),
                 height: px(21),
@@ -148,31 +180,56 @@ function ReviewToolbar({
                 width: px(235),
               }}
             >
-              <span
-                className="min-w-0 flex-1 truncate text-[#6D7A8A]"
+              <span className="sr-only">후기 프로그램 선택</span>
+              <select
+                className="min-w-0 flex-1 appearance-none bg-transparent pr-5 text-[#6D7A8A] outline-none"
+                onChange={(event) => onProgramChange(event.target.value)}
                 style={{ fontSize: px(14), fontWeight: 500, lineHeight: 1.253 }}
+                value={selectedProgram}
               >
-                {getSelectedProgramLabel(programs, selectedProgram)}
-              </span>
+                <option value="all">{getSelectedProgramLabel(programs, "all")}</option>
+                {programs.map((program) => (
+                  <option key={String(program.id)} value={program.slug || String(program.id)}>
+                    {program.title}
+                  </option>
+                ))}
+              </select>
               <ChevronDown
                 aria-hidden="true"
-                className="text-[#6D7A8A]"
-                style={{ height: px(13), width: px(13) }}
+                className="pointer-events-none absolute text-[#6D7A8A]"
+                style={{ height: px(13), right: px(8), width: px(13) }}
               />
-            </div>
+            </label>
           </div>
         </div>
 
         <FilterLine label="평점">
-          <RadioChoice active={selectedProgram === "all"} label="전체" />
-          {[5, 4, 3, 2, 1].map((rating) => (
-            <RatingChoice active={selectedProgram === "all" && rating >= 4} key={rating} rating={rating} />
+          <RadioChoice
+            active={ratingFilter === "all"}
+            label="전체"
+            onClick={() => onRatingChange("all")}
+          />
+          {([5, 4, 3, 2, 1] as const).map((rating) => (
+            <RatingChoice
+              active={ratingFilter === String(rating)}
+              key={rating}
+              onClick={() => onRatingChange(String(rating) as RatingFilter)}
+              rating={rating}
+            />
           ))}
         </FilterLine>
 
         <FilterLine label="순서">
-          <RadioChoice active label="최신순" />
-          <RadioChoice label="오래된순" />
+          <RadioChoice
+            active={sortOrder === "latest"}
+            label="최신순"
+            onClick={() => onSortChange("latest")}
+          />
+          <RadioChoice
+            active={sortOrder === "oldest"}
+            label="오래된순"
+            onClick={() => onSortChange("oldest")}
+          />
         </FilterLine>
       </div>
     </div>
@@ -213,9 +270,22 @@ function FilterLabel({ children, width = 32 }: { children: ReactNode; width?: nu
   );
 }
 
-function RadioChoice({ active = false, label }: { active?: boolean; label: string }) {
+function RadioChoice({
+  active = false,
+  label,
+  onClick,
+}: {
+  active?: boolean;
+  label: string;
+  onClick?: () => void;
+}) {
   return (
-    <span className="flex items-center justify-center text-[#6D7A8A]" style={{ gap: px(2) }}>
+    <button
+      className="flex items-center justify-center text-[#6D7A8A] transition hover:text-[#FE701E]"
+      onClick={onClick}
+      style={{ gap: px(2) }}
+      type="button"
+    >
       <span
         className="inline-flex shrink-0 items-center justify-center rounded-full"
         style={{
@@ -229,14 +299,41 @@ function RadioChoice({ active = false, label }: { active?: boolean; label: strin
         ) : null}
       </span>
       <span style={{ fontSize: px(14), fontWeight: 400, lineHeight: 1.253 }}>{label}</span>
-    </span>
+    </button>
   );
 }
 
-function RatingChoice({ active = false, rating }: { active?: boolean; rating: number }) {
+function RatingChoice({
+  active = false,
+  onClick,
+  rating,
+}: {
+  active?: boolean;
+  onClick?: () => void;
+  rating: number;
+}) {
   return (
-    <span className="flex items-center justify-center text-[#6D7A8A]" style={{ gap: px(2) }}>
-      <RadioChoice active={active} label={`${rating}점`} />
+    <button
+      className="flex items-center justify-center text-[#6D7A8A] transition hover:text-[#FE701E]"
+      onClick={onClick}
+      style={{ gap: px(2) }}
+      type="button"
+    >
+      <span
+        className="inline-flex shrink-0 items-center justify-center rounded-full"
+        style={{
+          border: `${px(1)} solid ${active ? "#FE701E" : "#6D7A8A"}`,
+          height: px(14),
+          width: px(14),
+        }}
+      >
+        {active ? (
+          <span className="rounded-full bg-[#FE701E]" style={{ height: px(7), width: px(7) }} />
+        ) : null}
+      </span>
+      <span style={{ fontSize: px(14), fontWeight: 400, lineHeight: 1.253 }}>
+        {rating}점
+      </span>
       <span className="flex items-center" style={{ gap: px(2) }}>
         {Array.from({ length: rating }, (_, index) => (
           <Star
@@ -247,7 +344,7 @@ function RatingChoice({ active = false, rating }: { active?: boolean; rating: nu
           />
         ))}
       </span>
-    </span>
+    </button>
   );
 }
 
@@ -425,6 +522,24 @@ function filterReviewsByProgram(reviews: Review[], programs: Program[], selected
       String(program?.id ?? "") === selectedProgram ||
       program?.slug === selectedProgram
     );
+  });
+}
+
+function filterReviewsByRating(reviews: Review[], ratingFilter: RatingFilter): Review[] {
+  if (ratingFilter === "all") return reviews;
+
+  const targetRating = Number(ratingFilter);
+
+  return reviews.filter((review) => Math.round(review.rating ?? 0) === targetRating);
+}
+
+function sortReviews(reviews: Review[], sortOrder: ReviewSortOrder): Review[] {
+  return [...reviews].sort((left, right) => {
+    const leftTime = Date.parse(left.date);
+    const rightTime = Date.parse(right.date);
+    const delta = rightTime - leftTime;
+
+    return sortOrder === "latest" ? delta : -delta;
   });
 }
 
