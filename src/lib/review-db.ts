@@ -167,6 +167,7 @@ const reviewStatuses: ReviewStatus[] = ["draft", "pending", "published", "hidden
 const hostModerationStatuses: ReviewStatus[] = ["pending", "published", "hidden", "deleted"];
 const reviewSources: ReviewSource[] = ["participant", "host", "admin", "imported"];
 const completableReviewRequestStatuses: ReviewRequestStatus[] = ["pending", "sent", "opened"];
+const participantMutableReviewStatuses: ReviewStatus[] = ["draft", "pending", "published", "hidden"];
 const reviewRequestStatuses: ReviewRequestStatus[] = [
   "pending",
   "sent",
@@ -662,6 +663,9 @@ export async function updateParticipantReview(
       category: normalized.category,
       excerpt: normalized.excerpt,
       images: normalized.images,
+      hiddenAt: null,
+      hiddenReason: null,
+      moderationNote: null,
       rating: normalized.rating ?? null,
       status: "pending",
       title: normalized.title,
@@ -1255,7 +1259,8 @@ async function getOwnedMutableReview(
       and(
         eq(reviewsTable.id, reviewId),
         ownerPredicate,
-        inArray(reviewsTable.status, ["draft", "pending"]),
+        eq(reviewsTable.source, "participant"),
+        inArray(reviewsTable.status, participantMutableReviewStatuses),
       ),
     )
     .limit(1);
