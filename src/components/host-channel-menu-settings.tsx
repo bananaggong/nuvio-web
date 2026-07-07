@@ -324,11 +324,12 @@ export function HostChannelMenuSettings() {
               채널 내비게이션과 홈 화면 섹션에 표시되는 메뉴를 관리해요.
             </p>
             <p className="mt-[var(--host-6)] text-[length:var(--host-16)] font-normal leading-[1.6] text-[#6D7A8A]">
-              프로그램 메뉴는 기본 메뉴라 삭제할 수 없고 이름과 순서는 변경할 수 있어요.
+              채널 홈은 고정 메뉴이며, 프로그램과 후기는 기본 메뉴라 삭제하거나 유형을 변경할 수 없어요.
             </p>
           </section>
 
           <section className="min-h-[var(--host-636)] px-[var(--host-58)] pt-[var(--host-30)] max-md:px-5">
+            <ChannelHomeMenuRow />
             {items.map((item, index) => (
               <ChannelMenuRow
                 draggingId={draggingId}
@@ -342,7 +343,7 @@ export function HostChannelMenuSettings() {
                 onRemove={() => removeItem(item.id)}
                 onSelectType={() => openUpdateTypeDialog(item)}
                 onUpdate={(patch) => updateItem(item.id, patch)}
-                rowIndex={index}
+                rowIndex={index + 1}
               />
             ))}
           </section>
@@ -390,6 +391,37 @@ export function HostChannelMenuSettings() {
         />
       ) : null}
     </HostWorkspaceLayout>
+  );
+}
+
+function ChannelHomeMenuRow() {
+  return (
+    <div className="relative h-[var(--host-68)] w-full border-b border-[#CAC4BC]">
+      <label
+        className="absolute grid gap-[var(--host-6)]"
+        style={{
+          left: "var(--host-10)",
+          top: 0,
+          width: "var(--host-507)",
+        }}
+      >
+        <input
+          aria-label="채널 홈 메뉴 이름"
+          className="h-[var(--host-34)] rounded-[4px] border border-[#6D7A8A] bg-white px-[var(--host-14)] text-[length:var(--host-14)] font-medium leading-[1.253] text-[#6D7A8A] outline-none"
+          readOnly
+          value={channelHomeLabel}
+        />
+        <span className="pl-[var(--host-8)] text-[length:var(--host-14)] font-normal leading-[1.253] text-[#CAC4BC]">
+          채널 메인 화면, 메뉴 위치 이동은 불가능해요
+        </span>
+      </label>
+      <span
+        className="absolute top-[var(--host-6)] inline-flex h-[var(--host-22)] w-fit min-w-[var(--host-76)] items-center justify-center rounded-full bg-[#6D7A8A] px-[var(--host-12)] text-[length:var(--host-14)] font-semibold leading-[1.253] text-[#F9F9F9]"
+        style={{ left: "calc(var(--host-10) + var(--host-529))" }}
+      >
+        고정 메뉴
+      </span>
+    </div>
   );
 }
 
@@ -479,7 +511,7 @@ function ChannelMenuRow({
               onClick={onSelectType}
               type="button"
             >
-              <Image alt="" height={16} src={nuvioIcons.formItemCopy} width={16} />
+              <Image alt="" height={16} src={nuvioIcons.formItemCondition} width={16} />
             </button>
             <button
               aria-label={`${item.label} 삭제`}

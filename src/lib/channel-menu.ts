@@ -16,7 +16,7 @@ export type ChannelMenuItem = {
 
 export type ChannelMenuTypeOption = {
   description: string;
-  kind: Exclude<ChannelMenuKind, "program">;
+  kind: Exclude<ChannelMenuKind, "program" | "review">;
   label: string;
 };
 
@@ -36,49 +36,49 @@ export const channelMenuMeta: Record<
   }
 > = {
   board: {
-    badge: "게시판형",
-    defaultDescription: "공지사항과 글 목록이 게시판 형태로 표시돼요",
-    defaultLabel: "게시판형",
+    badge: "게시판 형",
+    defaultDescription: "공지사항과 같이 목록이 게시판 형태로 표시돼요",
+    defaultLabel: "게시판",
     guestHref: (homeHref) => `${homeHref}/notice`,
     hostHref: "/host/channels/boards",
     sectionType: "board",
   },
   free: {
-    badge: "자유형",
+    badge: "자유 형",
     defaultDescription:
-      "소개 페이지 등 원페이지 형태로 자유롭게 구성할 수 있으며 홈 화면에는 표시되지 않아요",
-    defaultLabel: "자유형",
+      "소개 페이지 등 원페이지 형태로 자유롭게 구성할 수 있으며, 홈 화면에는 표시되지 않고 메뉴에서만 접근할 수 있어요",
+    defaultLabel: "자유",
     guestHref: (homeHref) => `${homeHref}#channel-free`,
     hostHref: "/host/channels/free",
     sectionType: "free",
   },
   gallery: {
-    badge: "갤러리형",
-    defaultDescription: "이미지와 영상을 그리드로 표시해요",
-    defaultLabel: "갤러리형",
+    badge: "갤러리 형",
+    defaultDescription: "이미지와 영상을 그리드로 표시돼요",
+    defaultLabel: "갤러리",
     guestHref: (homeHref) => `${homeHref}/media?type=gallery`,
     hostHref: "/host/channels/galleries",
     sectionType: "gallery",
   },
   magazine: {
-    badge: "매거진형",
-    defaultDescription: "블로그처럼 글을 작성하고 목록은 웹페이지 카드로 표시해요",
-    defaultLabel: "매거진형",
+    badge: "매거진 형",
+    defaultDescription: "블로그 처럼 글을 작성하고 목록은 썸네일 카드로 표시돼요",
+    defaultLabel: "매거진",
     guestHref: (homeHref) => `${homeHref}/media?type=magazine`,
     hostHref: "/host/channels/magazines",
     sectionType: "magazine",
   },
   program: {
     badge: "기본 메뉴",
-    defaultDescription: "운영 중인 프로그램 목록을 표시해요",
+    defaultDescription: "운영 중인 프로그램 목록이 표시돼요",
     defaultLabel: "프로그램",
     guestHref: (homeHref) => `${homeHref}/programs`,
     hostHref: "/host/channels/programs",
     sectionType: "programs",
   },
   review: {
-    badge: "후기형",
-    defaultDescription: "참여자 후기와 평점을 표시해요",
+    badge: "기본 메뉴",
+    defaultDescription: "호스트가 오픈한 모든 프로그램의 후기가 표시돼요",
     defaultLabel: "후기",
     guestHref: (homeHref) => `${homeHref}/reviews`,
     hostHref: "/host/channels/reviews",
@@ -87,15 +87,6 @@ export const channelMenuMeta: Record<
 };
 
 export const channelMenuTypeOptions: ChannelMenuTypeOption[] = [
-  ...(launchFeatureFlags.reviews
-    ? [
-        {
-          description: channelMenuMeta.review.defaultDescription,
-          kind: "review" as const,
-          label: channelMenuMeta.review.defaultLabel,
-        },
-      ]
-    : []),
   {
     description: channelMenuMeta.gallery.defaultDescription,
     kind: "gallery",
@@ -160,10 +151,14 @@ export function applyChannelMenuItemsToSections(
   const normalizedItems = ensureCoreMenus(items)
     .map((item, index) => ({
       ...item,
+      description: isCoreMenuKind(item.kind)
+        ? channelMenuMeta[item.kind].defaultDescription
+        : item.description,
       id: item.id || createMenuId(item.kind),
       label: item.label.trim() || channelMenuMeta[item.kind].defaultLabel,
-      locked: item.kind === "program" || item.locked,
+      locked: isCoreMenuKind(item.kind) || item.locked,
       order: index,
+      visible: isCoreMenuKind(item.kind) ? true : item.visible,
     }));
 
   return [
@@ -209,7 +204,7 @@ export function createChannelMenuItem(kind: ChannelMenuKind): ChannelMenuItem {
     id: createMenuId(kind),
     kind,
     label: channelMenuMeta[kind].defaultLabel,
-    locked: kind === "program",
+    locked: isCoreMenuKind(kind),
     order: 0,
     visible: true,
   };
@@ -234,9 +229,12 @@ function createReviewMenuItem(): ChannelMenuItem {
 function ensureCoreMenus(items: ChannelMenuItem[]) {
   const normalized = items.map((item, index) => ({
     ...item,
-    locked: item.kind === "program" || item.locked,
+    description: isCoreMenuKind(item.kind)
+      ? channelMenuMeta[item.kind].defaultDescription
+      : item.description,
+    locked: isCoreMenuKind(item.kind) || item.locked,
     order: Number.isFinite(item.order) ? item.order : index,
-    visible: item.kind === "program" ? item.visible : item.visible,
+    visible: isCoreMenuKind(item.kind) ? true : item.visible,
   }));
 
   const withProgram = normalized.some((item) => item.kind === "program")
@@ -263,17 +261,22 @@ function menuItemFromSection(section: VillageSection, index: number): ChannelMen
   if (!kind) return null;
 
   return {
-    description:
-      section.description?.trim() || channelMenuMeta[kind].defaultDescription,
+    description: isCoreMenuKind(kind)
+      ? channelMenuMeta[kind].defaultDescription
+      : section.description?.trim() || channelMenuMeta[kind].defaultDescription,
     id: section.id || createMenuId(kind),
     kind,
     label: section.title?.trim() || channelMenuMeta[kind].defaultLabel,
-    locked: kind === "program" || section.locked === true,
+    locked: isCoreMenuKind(kind) || section.locked === true,
     order: typeof section.order === "number" && Number.isFinite(section.order)
       ? section.order
       : index,
-    visible: section.visible !== false,
+    visible: isCoreMenuKind(kind) ? true : section.visible !== false,
   };
+}
+
+function isCoreMenuKind(kind: ChannelMenuKind) {
+  return kind === "program" || kind === "review";
 }
 
 function getSectionMenuKind(section: VillageSection): ChannelMenuKind | null {
