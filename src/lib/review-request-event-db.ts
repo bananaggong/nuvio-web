@@ -253,7 +253,9 @@ async function findRecentTriggerEvent(input: {
         eq(reviewRequestEvents.toStatus, input.toStatus),
         eq(reviewRequestEvents.action, input.action),
         isNull(reviewRequestEvents.actorId),
+        isNull(reviewRequestEvents.actorRole),
         sql`${reviewRequestEvents.metadata}->>'source' = 'database_trigger'`,
+        sql`not (${reviewRequestEvents.metadata} ? 'enrichedBy')`,
         gte(reviewRequestEvents.createdAt, new Date(Date.now() - 60_000)),
       ),
     )
