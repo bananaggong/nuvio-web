@@ -15,7 +15,7 @@ export type ChannelMenuItem = {
 
 export type ChannelMenuTypeOption = {
   description: string;
-  kind: Exclude<ChannelMenuKind, "program" | "free">;
+  kind: Exclude<ChannelMenuKind, "program">;
   label: string;
 };
 
@@ -93,6 +93,11 @@ export const channelMenuTypeOptions: ChannelMenuTypeOption[] = [
     kind: "board",
     label: channelMenuMeta.board.defaultLabel,
   },
+  {
+    description: channelMenuMeta.free.defaultDescription,
+    kind: "free",
+    label: channelMenuMeta.free.defaultLabel,
+  },
 ];
 
 export function getChannelMenuItems(
@@ -117,7 +122,7 @@ export function getChannelMenuItems(
 export function getVisibleChannelMenuItems(
   value: Pick<Village, "sections"> | VillageSection[] | null | undefined,
 ) {
-  return getChannelMenuItems(value, { includeHidden: false });
+  return getChannelMenuItems(value, { includeFree: true, includeHidden: false });
 }
 
 export function getChannelMenuLabel(
@@ -136,7 +141,6 @@ export function applyChannelMenuItemsToSections(
 ): VillageSection[] {
   const preservedSections = sections.filter((section) => !isChannelMenuSection(section));
   const normalizedItems = ensureProgramMenu(items)
-    .filter((item) => item.kind !== "free")
     .map((item, index) => ({
       ...item,
       id: item.id || createMenuId(item.kind),

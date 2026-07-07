@@ -49,13 +49,17 @@ export function HostChannelMenuSettings() {
   const searchParams = useSearchParams();
   const requestedChannelSlug = searchParams.get("channel");
   const [channel, setChannel] = useState<Village | null>(null);
-  const [items, setItems] = useState<ChannelMenuItem[]>(() => getChannelMenuItems(null));
+  const [items, setItems] = useState<ChannelMenuItem[]>(() =>
+    getChannelMenuItems(null, { includeFree: true }),
+  );
   const [draggingId, setDraggingId] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
   const [selectedKind, setSelectedKind] = useState<SelectableMenuKind>("gallery");
   const [statusMessage, setStatusMessage] = useState("");
   const [typeDialogOpen, setTypeDialogOpen] = useState(false);
+  const [typeDialogMode, setTypeDialogMode] = useState<"create" | "update">("create");
+  const [typeDialogTargetId, setTypeDialogTargetId] = useState<string | null>(null);
   const currentMenuSignature = useMemo(() => createChannelMenuSignature(items), [items]);
   const [savedMenuSignature, setSavedMenuSignature] = useState(currentMenuSignature);
   const hasUnsavedMenuChanges =
@@ -75,7 +79,7 @@ export function HostChannelMenuSettings() {
       if (!active) return;
 
       if (!response?.ok) {
-        const fallbackItems = getChannelMenuItems(null);
+        const fallbackItems = getChannelMenuItems(null, { includeFree: true });
         setChannel(null);
         setItems(fallbackItems);
         setSavedMenuSignature(createChannelMenuSignature(fallbackItems));
@@ -85,7 +89,7 @@ export function HostChannelMenuSettings() {
 
       const payload = (await response.json().catch(() => ({}))) as HostChannelPayload;
       const selectedChannel = selectHostChannel(payload.data, requestedChannelSlug);
-      const loadedItems = getChannelMenuItems(selectedChannel);
+      const loadedItems = getChannelMenuItems(selectedChannel, { includeFree: true });
 
       setChannel(selectedChannel);
       setItems(loadedItems);
@@ -132,15 +136,59 @@ export function HostChannelMenuSettings() {
     setStatusMessage("");
   }
 
-  function openTypeDialog() {
+  function openCreateTypeDialog() {
     setSelectedKind("gallery");
+    setTypeDialogMode("create");
+    setTypeDialogTargetId(null);
     setTypeDialogOpen(true);
   }
 
-  function createMenuItem() {
+  function openUpdateTypeDialog(item: ChannelMenuItem) {
+    if (item.locked) return;
+
+    setSelectedKind(
+      item.kind === "program" ? "gallery" : (item.kind as SelectableMenuKind),
+    );
+    setTypeDialogMode("update");
+    setTypeDialogTargetId(item.id);
+    setTypeDialogOpen(true);
+  }
+
+  function applySelectedMenuType() {
+    if (typeDialogMode === "update" && typeDialogTargetId) {
+      setItems((current) =>
+        current.map((item) => {
+          if (item.id !== typeDialogTargetId || item.locked) return item;
+
+          const previousMeta = channelMenuMeta[item.kind];
+          const nextMeta = channelMenuMeta[selectedKind];
+          const shouldReplaceLabel =
+            !item.label.trim() || item.label.trim() === previousMeta.defaultLabel;
+          const shouldReplaceDescription =
+            !item.description.trim() ||
+            item.description.trim() === previousMeta.defaultDescription;
+
+          return {
+            ...item,
+            description: shouldReplaceDescription
+              ? nextMeta.defaultDescription
+              : item.description,
+            kind: selectedKind,
+            label: shouldReplaceLabel ? nextMeta.defaultLabel : item.label,
+            locked: false,
+          };
+        }),
+      );
+      setTypeDialogOpen(false);
+      setTypeDialogTargetId(null);
+      setStatusMessage("");
+      return;
+    }
+
     const nextItem = createChannelMenuItem(selectedKind);
     setItems((current) => [...current, { ...nextItem, order: current.length }]);
     setTypeDialogOpen(false);
+    setTypeDialogTargetId(null);
     setStatusMessage("");
   }
 
@@ -186,7 +234,7 @@ export function HostChannelMenuSettings() {
       }
 
       setChannel(payload.data);
-      const savedItems = getChannelMenuItems(payload.data);
+      const savedItems = getChannelMenuItems(payload.data, { includeFree: true });
       setItems(savedItems);
       setSavedMenuSignature(createChannelMenuSignature(savedItems));
       setStatusMessage("저장되었습니다.");
@@ -292,6 +340,7 @@ export function HostChannelMenuSettings() {
                 }}
                 onDragStart={() => setDraggingId(item.id)}
                 onRemove={() => removeItem(item.id)}
+                onSelectType={() => openUpdateTypeDialog(item)}
                 onUpdate={(patch) => updateItem(item.id, patch)}
                 rowIndex={index}
               />
@@ -306,7 +355,7 @@ export function HostChannelMenuSettings() {
               aria-label="메뉴 추가"
               className="mt-[var(--host-5)] grid size-[var(--host-28)] place-items-center transition hover:opacity-80 disabled:cursor-not-allowed disabled:opacity-40"
               disabled={isLoading || !channel}
-              onClick={openTypeDialog}
+              onClick={openCreateTypeDialog}
               type="button"
             >
               <Image alt="" height={24} src={nuvioIcons.channelAddCircle} width={24} />
@@ -334,7 +383,8 @@ export function HostChannelMenuSettings() {
       {typeDialogOpen ? (
         <SelectMenuTypeDialog
           onClose={() => setTypeDialogOpen(false)}
-          onCreate={createMenuItem}
+          mode={typeDialogMode}
+          onConfirm={applySelectedMenuType}
           onSelect={setSelectedKind}
           selectedKind={selectedKind}
         />
@@ -350,6 +400,7 @@ function ChannelMenuRow({
   onDragOver,
   onDragStart,
   onRemove,
+  onSelectType,
   onUpdate,
   rowIndex,
 }: {
@@ -359,6 +410,7 @@ function ChannelMenuRow({
   onDragOver: (targetId: string) => void;
   onDragStart: () => void;
   onRemove: () => void;
+  onSelectType: () => void;
   onUpdate: (patch: Partial<ChannelMenuItem>) => void;
   rowIndex: number;
 }) {
@@ -419,33 +471,25 @@ function ChannelMenuRow({
         {channelMenuMeta[item.kind].badge}
       </span>
       <span className="absolute right-0 top-[var(--host-8)] flex items-center justify-end gap-[var(--host-11)]">
-        <button
-          aria-label={`${item.label} 숨김 전환`}
-          aria-pressed={item.visible}
-          className="grid h-[var(--host-18)] w-[var(--host-23)] place-items-center"
-          onClick={() => onUpdate({ visible: !item.visible })}
-          type="button"
-        >
-          <Image
-            alt=""
-            height={12}
-            src={
-              item.visible
-                ? nuvioIcons.formRequiredToggleOn
-                : nuvioIcons.formRequiredToggleOff
-            }
-            width={23}
-          />
-        </button>
         {!item.locked ? (
-          <button
-            aria-label={`${item.label} 삭제`}
-            className="grid size-[var(--host-16)] place-items-center"
-            onClick={onRemove}
-            type="button"
-          >
-            <Image alt="" height={16} src={nuvioIcons.formItemTrash} width={16} />
-          </button>
+          <>
+            <button
+              aria-label={`${item.label} 메뉴 유형 변경`}
+              className="grid size-[var(--host-16)] place-items-center transition hover:opacity-70"
+              onClick={onSelectType}
+              type="button"
+            >
+              <Image alt="" height={16} src={nuvioIcons.formItemCopy} width={16} />
+            </button>
+            <button
+              aria-label={`${item.label} 삭제`}
+              className="grid size-[var(--host-16)] place-items-center transition hover:opacity-70"
+              onClick={onRemove}
+              type="button"
+            >
+              <Image alt="" height={16} src={nuvioIcons.formItemTrash} width={16} />
+            </button>
+          </>
         ) : null}
       </span>
     </div>
@@ -453,13 +497,15 @@ function ChannelMenuRow({
 }
 
 function SelectMenuTypeDialog({
+  mode,
   onClose,
-  onCreate,
+  onConfirm,
   onSelect,
   selectedKind,
 }: {
+  mode: "create" | "update";
   onClose: () => void;
-  onCreate: () => void;
+  onConfirm: () => void;
   onSelect: (kind: SelectableMenuKind) => void;
   selectedKind: SelectableMenuKind;
 }) {
@@ -512,10 +558,10 @@ function SelectMenuTypeDialog({
         <div className="mt-auto flex w-full justify-end">
           <button
             className="inline-flex h-[var(--host-38)] items-center justify-center rounded-[4px] bg-[#FE701E] px-[var(--host-27)] text-[length:var(--host-12)] font-medium leading-[1.253] text-[#FFF6EC] transition hover:bg-[#E96418]"
-            onClick={onCreate}
+            onClick={onConfirm}
             type="button"
           >
-            생성
+            {mode === "create" ? "생성" : "변경"}
           </button>
         </div>
       </section>
