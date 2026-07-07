@@ -757,6 +757,7 @@ export async function reopenReviewRequestForApplication(applicationId: string): 
       lastRequestedAt: null,
       nextReminderAt: null,
       openedAt: null,
+      requestCount: 0,
       requestTokenExpiresAt: null,
       requestTokenHash: null,
       reviewId: null,
