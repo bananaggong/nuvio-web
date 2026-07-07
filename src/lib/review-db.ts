@@ -12,7 +12,10 @@ import type { ApiAuthContext } from "@/lib/api-security";
 import { safeCreateAuditLog } from "@/lib/audit-log-db";
 import { queueReviewSubmittedNotification } from "@/lib/notification-db";
 import { parseLegacyProgramIdentifier } from "@/lib/program-identifier";
-import { safeEnrichLatestReviewContentVersion } from "@/lib/review-content-version-db";
+import {
+  safeEnrichLatestReviewContentVersion,
+  type ReviewContentVersionSnapshotInput,
+} from "@/lib/review-content-version-db";
 import { refreshReviewModerationCheck } from "@/lib/review-moderation-check-db";
 import { buildPublicReviewVisibilityConditions } from "@/lib/review-public-visibility-db";
 import { normalizePublicReviewQueryText } from "@/lib/review-public-query";
@@ -580,6 +583,7 @@ export async function createParticipantReview(
       source: submissionSource,
     },
     reviewId: row.id,
+    snapshot: buildContentVersionSnapshot(row),
   });
   await safeRefreshModerationCheck(row.id, actorId);
   await safeQueueReviewSubmittedNotification(row, application);
@@ -647,6 +651,7 @@ export async function updateParticipantReview(
       source: "participant_update",
     },
     reviewId: row.id,
+    snapshot: buildContentVersionSnapshot(row),
   });
   await safeRefreshModerationCheck(row.id, auth.user.id);
 
@@ -890,6 +895,7 @@ export async function upsertHostReviewDraft(
             reviewSource: updatedRow.source,
           },
           reviewId: updatedRow.id,
+          snapshot: buildContentVersionSnapshot(updatedRow),
         }, {
           actorId: options.actorId,
           actorRole: options.actorRole,
@@ -939,6 +945,7 @@ export async function upsertHostReviewDraft(
       reviewSource: row.source,
     },
     reviewId: row.id,
+    snapshot: buildContentVersionSnapshot(row),
   }, {
     actorId: options.actorId,
     actorRole: options.actorRole,
@@ -1466,6 +1473,20 @@ function mapReviewRowToHostDraft(
     moderationNote: row.moderationNote ?? undefined,
     hiddenReason: row.hiddenReason ?? undefined,
     updatedAt: row.updatedAt.toISOString(),
+  };
+}
+
+function buildContentVersionSnapshot(row: ReviewRow): ReviewContentVersionSnapshotInput {
+  return {
+    authorName: row.authorName,
+    body: row.body,
+    category: row.category,
+    excerpt: row.excerpt,
+    images: Array.isArray(row.images) ? row.images : [],
+    rating: row.rating,
+    source: asReviewSource(row.source, "host"),
+    status: row.status,
+    title: row.title,
   };
 }
 

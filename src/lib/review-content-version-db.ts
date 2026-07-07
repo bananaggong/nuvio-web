@@ -1,4 +1,4 @@
-import { and, desc, eq, gte, isNull, sql } from "drizzle-orm";
+import { and, desc, eq, gte, isNull, sql, type SQL } from "drizzle-orm";
 import { getDb } from "@/db/client";
 import {
   programs as programsTable,
@@ -46,6 +46,19 @@ type EnrichReviewContentVersionInput = {
   changeSource: string;
   metadata?: Record<string, unknown>;
   reviewId: string;
+  snapshot?: ReviewContentVersionSnapshotInput;
+};
+
+export type ReviewContentVersionSnapshotInput = {
+  authorName: string;
+  body: string;
+  category: ReviewCategory;
+  excerpt: string;
+  images: string[];
+  rating?: number | null;
+  source: ReviewSource;
+  status: ReviewStatus;
+  title: string;
 };
 
 export class ReviewContentVersionAccessError extends Error {
@@ -95,8 +108,12 @@ export async function enrichLatestReviewContentVersion(
       and(
         eq(reviewContentVersions.reviewId, input.reviewId),
         isNull(reviewContentVersions.changedBy),
+        isNull(reviewContentVersions.changedByRole),
+        eq(reviewContentVersions.changeSource, "database_trigger"),
         sql`${reviewContentVersions.metadata}->>'source' = 'database_trigger'`,
+        sql`not (${reviewContentVersions.metadata} ? 'enrichedBy')`,
         gte(reviewContentVersions.createdAt, new Date(Date.now() - 60_000)),
+        ...buildSnapshotConditions(input.snapshot),
       ),
     )
     .orderBy(desc(reviewContentVersions.version))
@@ -123,7 +140,16 @@ export async function enrichLatestReviewContentVersion(
         changeSource: normalizeChangeSource(input.changeSource),
         metadata,
       })
-      .where(eq(reviewContentVersions.id, recentVersion.id))
+      .where(
+        and(
+          eq(reviewContentVersions.id, recentVersion.id),
+          isNull(reviewContentVersions.changedBy),
+          isNull(reviewContentVersions.changedByRole),
+          eq(reviewContentVersions.changeSource, "database_trigger"),
+          sql`${reviewContentVersions.metadata}->>'source' = 'database_trigger'`,
+          sql`not (${reviewContentVersions.metadata} ? 'enrichedBy')`,
+        ),
+      )
       .returning();
   });
 
@@ -238,6 +264,26 @@ function sanitizeMetadata(value: unknown): Record<string, unknown> {
     ...metadata,
     source: typeof metadata.source === "string" ? metadata.source : "application_service",
   };
+}
+
+function buildSnapshotConditions(
+  snapshot: ReviewContentVersionSnapshotInput | undefined,
+): SQL[] {
+  if (!snapshot) return [];
+
+  return [
+    eq(reviewContentVersions.title, snapshot.title),
+    eq(reviewContentVersions.category, snapshot.category),
+    eq(reviewContentVersions.authorName, snapshot.authorName),
+    eq(reviewContentVersions.excerpt, snapshot.excerpt),
+    eq(reviewContentVersions.body, snapshot.body),
+    sql`${reviewContentVersions.images} = ${JSON.stringify(snapshot.images)}::jsonb`,
+    snapshot.rating == null
+      ? isNull(reviewContentVersions.rating)
+      : eq(reviewContentVersions.rating, snapshot.rating),
+    eq(reviewContentVersions.source, snapshot.source),
+    eq(reviewContentVersions.status, snapshot.status),
+  ];
 }
 
 function asRecord(value: unknown): Record<string, unknown> {
