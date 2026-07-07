@@ -104,13 +104,7 @@ export async function getVillagePrograms(village: Village): Promise<Program[]> {
   const programIds = new Set(village.programIds.map((id) => String(id)));
 
   if (programIds.size === 0) {
-    return programs
-      .filter(
-        (program) =>
-          program.region === village.region &&
-          (program.city === village.city || program.city.startsWith(village.city)),
-      )
-      .slice(0, 6);
+    return [];
   }
 
   return programs.filter(
@@ -166,7 +160,7 @@ export async function resolveVillageProgram(
 
   const programIds = new Set(village.programIds.map((id) => String(id)));
   if (programIds.size === 0) {
-    return program.region === village.region ? program : undefined;
+    return undefined;
   }
 
   if (programIds.has(String(program.id)) || programIds.has(program.slug)) {

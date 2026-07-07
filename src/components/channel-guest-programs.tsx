@@ -1,7 +1,10 @@
+"use client";
+
 import Image from "next/image";
 import Link from "next/link";
-import type { CSSProperties } from "react";
+import { useMemo, useState, type CSSProperties } from "react";
 import { nuvioIcons } from "@/components/icons/nuvio-icons";
+import { NuvioEmptyState } from "@/components/nuvio-empty-state";
 import {
   channelGuestHref,
   channelHomeLabel,
@@ -18,15 +21,20 @@ type ChannelGuestProgramsPageProps = {
 };
 
 type ProgramCardModel = {
+  activityStart: string;
   href: string;
   id: string;
   image?: string;
   period: string;
+  recruitStart: string;
   recruitEnd: string;
   status: Program["status"];
   summary: string;
   title: string;
 };
+
+type ProgramStatusFilter = "all" | "open" | "upcoming" | "closed";
+type ProgramSortOrder = "latest" | "oldest";
 
 const text = {
   all: "전체",
@@ -69,12 +77,32 @@ const contentStyle = {
   width: px(1142),
 } as CSSProperties;
 
+const programFilterOptions: Array<{ label: string; value: ProgramStatusFilter }> = [
+  { label: text.all, value: "all" },
+  { label: text.open, value: "open" },
+  { label: text.upcoming, value: "upcoming" },
+  { label: text.closed, value: "closed" },
+];
+
+const programEmptyMessages: Record<ProgramStatusFilter, string> = {
+  all: "아직 등록된 프로그램이 없어요",
+  closed: "아직 마감된 프로그램이 없어요",
+  open: "아직 오픈된 프로그램이 없어요",
+  upcoming: "아직 예정된 프로그램이 없어요",
+};
+
 export function ChannelGuestProgramsPage({
   programs,
   village,
 }: ChannelGuestProgramsPageProps) {
   const homeHref = villagePath(village.slug);
-  const cards = buildProgramCards(programs, village);
+  const [activeFilter, setActiveFilter] = useState<ProgramStatusFilter>("all");
+  const [sortOrder, setSortOrder] = useState<ProgramSortOrder>("latest");
+  const cards = useMemo(() => buildProgramCards(programs, village), [programs, village]);
+  const visibleCards = useMemo(
+    () => sortProgramCards(filterProgramCards(cards, activeFilter), sortOrder),
+    [activeFilter, cards, sortOrder],
+  );
 
   return (
     <div
@@ -93,20 +121,32 @@ export function ChannelGuestProgramsPage({
             paddingTop: px(8),
           }}
         >
-          <FilterAndSortRow />
-          <div
-            className="grid"
-            style={{
-              columnGap: px(36.6667),
-              gridTemplateColumns: `repeat(3, ${px(344)})`,
-              paddingLeft: px(20),
-              rowGap: px(40),
-            }}
-          >
-            {cards.map((program) => (
-              <ProgramGridCard key={program.id} program={program} />
-            ))}
-          </div>
+          <FilterAndSortRow
+            activeFilter={activeFilter}
+            onFilterChange={setActiveFilter}
+            onSortChange={setSortOrder}
+            sortOrder={sortOrder}
+          />
+          {visibleCards.length > 0 ? (
+            <div
+              className="grid"
+              style={{
+                columnGap: px(36.6667),
+                gridTemplateColumns: `repeat(3, ${px(344)})`,
+                paddingLeft: px(20),
+                rowGap: px(40),
+              }}
+            >
+              {visibleCards.map((program) => (
+                <ProgramGridCard key={program.id} program={program} />
+              ))}
+            </div>
+          ) : (
+            <ChannelProgramsEmptyState
+              homeHref={homeHref}
+              message={programEmptyMessages[activeFilter]}
+            />
+          )}
         </section>
       </main>
     </div>
@@ -265,7 +305,17 @@ function ChannelTab({
   );
 }
 
-function FilterAndSortRow() {
+function FilterAndSortRow({
+  activeFilter,
+  onFilterChange,
+  onSortChange,
+  sortOrder,
+}: {
+  activeFilter: ProgramStatusFilter;
+  onFilterChange: (value: ProgramStatusFilter) => void;
+  onSortChange: (value: ProgramSortOrder) => void;
+  sortOrder: ProgramSortOrder;
+}) {
   return (
     <div
       className="flex items-center"
@@ -275,10 +325,14 @@ function FilterAndSortRow() {
       }}
     >
       <div className="flex items-center" style={{ gap: px(10) }}>
-        <FilterButton active label={text.all} />
-        <FilterButton label={text.open} />
-        <FilterButton label={text.upcoming} />
-        <FilterButton label={text.closed} />
+        {programFilterOptions.map((option) => (
+          <FilterButton
+            active={activeFilter === option.value}
+            key={option.value}
+            label={option.label}
+            onClick={() => onFilterChange(option.value)}
+          />
+        ))}
       </div>
 
       <div
@@ -291,8 +345,16 @@ function FilterAndSortRow() {
       >
         <span>{text.sort}</span>
         <span className="h-[1em] w-px bg-[#FF9A3D]" aria-hidden />
-        <SortChoice active label={text.latest} />
-        <SortChoice label={text.oldFirst} />
+        <SortChoice
+          active={sortOrder === "latest"}
+          label={text.latest}
+          onClick={() => onSortChange("latest")}
+        />
+        <SortChoice
+          active={sortOrder === "oldest"}
+          label={text.oldFirst}
+          onClick={() => onSortChange("oldest")}
+        />
       </div>
     </div>
   );
@@ -301,15 +363,19 @@ function FilterAndSortRow() {
 function FilterButton({
   active = false,
   label,
+  onClick,
 }: {
   active?: boolean;
   label: string;
+  onClick: () => void;
 }) {
   return (
     <button
+      aria-pressed={active}
       className={`rounded-full text-[length:var(--channel-font-12)] font-semibold leading-[1.253] ${
         active ? "bg-[#FF9A3D] text-white" : "bg-[#CAC4BC] text-white"
       }`}
+      onClick={onClick}
       style={{
         height: px(30),
         width: px(70),
@@ -321,9 +387,23 @@ function FilterButton({
   );
 }
 
-function SortChoice({ active = false, label }: { active?: boolean; label: string }) {
+function SortChoice({
+  active = false,
+  label,
+  onClick,
+}: {
+  active?: boolean;
+  label: string;
+  onClick: () => void;
+}) {
   return (
-    <span className="flex items-center" style={{ gap: px(4) }}>
+    <button
+      aria-pressed={active}
+      className="flex items-center"
+      onClick={onClick}
+      style={{ gap: px(4) }}
+      type="button"
+    >
       <span
         className="relative inline-flex shrink-0 items-center justify-center rounded-full"
         style={{
@@ -340,7 +420,7 @@ function SortChoice({ active = false, label }: { active?: boolean; label: string
         ) : null}
       </span>
       {label}
-    </span>
+    </button>
   );
 }
 
@@ -435,29 +515,74 @@ function ProgramGridCard({ program }: { program: ProgramCardModel }) {
 }
 
 function buildProgramCards(programs: Program[], village: Village): ProgramCardModel[] {
-  const homeHref = villagePath(village.slug);
-  const cards: ProgramCardModel[] = programs.map((program) => ({
+  return programs.map((program) => ({
+    activityStart: program.activityStart,
     href: villageProgramPath(village.slug, program.slug),
     id: String(program.id),
     image: program.image,
     period: formatCompactPeriod(program.activityStart, program.activityEnd),
+    recruitStart: program.recruitStart,
     recruitEnd: program.recruitEnd,
     status: program.status,
     summary: program.summary || text.fallbackSummary,
     title: program.title || text.fallbackTitle,
   }));
+}
 
-  return cards.concat(
-    Array.from({ length: Math.max(0, 7 - cards.length) }, (_, index) => ({
-      href: `${homeHref}/programs`,
-      id: `program-fallback-${index}`,
-      image: undefined,
-      period: text.fallbackPeriod,
-      recruitEnd: new Date().toISOString().slice(0, 10),
-      status: index < 2 ? "open" : index < 5 ? "upcoming" : "closed",
-      summary: text.fallbackSummary,
-      title: text.fallbackTitle,
-    })),
+function filterProgramCards(
+  cards: ProgramCardModel[],
+  activeFilter: ProgramStatusFilter,
+) {
+  if (activeFilter === "all") return cards;
+  if (activeFilter === "closed") {
+    return cards.filter(
+      (program) => program.status === "closed" || program.status === "earlyClosed",
+    );
+  }
+
+  return cards.filter((program) => program.status === activeFilter);
+}
+
+function sortProgramCards(cards: ProgramCardModel[], sortOrder: ProgramSortOrder) {
+  return [...cards].sort((a, b) => {
+    const aTime = getProgramSortTime(a);
+    const bTime = getProgramSortTime(b);
+
+    return sortOrder === "latest" ? bTime - aTime : aTime - bTime;
+  });
+}
+
+function getProgramSortTime(program: ProgramCardModel) {
+  const date =
+    toDate(program.recruitStart) ||
+    toDate(program.activityStart) ||
+    toDate(program.recruitEnd);
+
+  return date?.getTime() ?? 0;
+}
+
+function ChannelProgramsEmptyState({
+  homeHref,
+  message,
+}: {
+  homeHref: string;
+  message: string;
+}) {
+  return (
+    <div
+      className="border border-dashed border-[#D6D6D6]"
+      style={{
+        margin: `${px(18)} ${px(20)} 0`,
+        minHeight: px(320),
+      }}
+    >
+      <NuvioEmptyState
+        actionHref={`${homeHref}/programs`}
+        actionLabel="프로그램 찾아보기"
+        className="h-full"
+        message={message}
+      />
+    </div>
   );
 }
 

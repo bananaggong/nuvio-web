@@ -1,8 +1,11 @@
-﻿import Image from "next/image";
+"use client";
+
+import Image from "next/image";
 import Link from "next/link";
-import type { CSSProperties } from "react";
+import { useMemo, useState, type CSSProperties } from "react";
 import { ChannelHomeBlockView } from "@/components/channel-home-block-view";
 import { nuvioIcons } from "@/components/icons/nuvio-icons";
+import { NuvioEmptyState } from "@/components/nuvio-empty-state";
 import {
   channelGuestHref,
   channelHomeLabel,
@@ -27,15 +30,19 @@ type ChannelGuestHomePageProps = {
 };
 
 type ProgramCardModel = {
+  activityStart: string;
   href: string;
   id: string;
   image?: string;
   period: string;
+  recruitStart: string;
   recruitEnd: string;
   status: Program["status"];
   summary: string;
   title: string;
 };
+
+type ProgramStatusFilter = "all" | "open" | "upcoming" | "closed";
 
 type GalleryCardModel = {
   caption: string;
@@ -118,13 +125,27 @@ const contentStyle = {
   width: px(1142),
 } as CSSProperties;
 
+const programFilterOptions: Array<{ label: string; value: ProgramStatusFilter }> = [
+  { label: text.all, value: "all" },
+  { label: text.open, value: "open" },
+  { label: text.upcoming, value: "upcoming" },
+  { label: text.closed, value: "closed" },
+];
+
+const programEmptyMessages: Record<ProgramStatusFilter, string> = {
+  all: "아직 등록된 프로그램이 없어요",
+  closed: "아직 마감된 프로그램이 없어요",
+  open: "아직 오픈된 프로그램이 없어요",
+  upcoming: "아직 예정된 프로그램이 없어요",
+};
+
 export function ChannelGuestHomePage({
   media = [],
   programs,
   village,
 }: ChannelGuestHomePageProps) {
   const homeHref = villagePath(village.slug);
-  const programCards = buildProgramCards(programs, village).slice(0, 4);
+  const programCards = buildProgramCards(programs, village);
   const galleryCards = buildGalleryCards(media, programs).slice(0, 3);
   const stories = buildStoryCards(media, village).slice(0, 3);
   const notices = buildChannelNotices(village, programs).slice(0, 4);
@@ -400,6 +421,12 @@ function ChannelProgramSection({
   programs: ProgramCardModel[];
   title: string;
 }) {
+  const [activeFilter, setActiveFilter] = useState<ProgramStatusFilter>("all");
+  const visiblePrograms = useMemo(
+    () => filterProgramCards(programs, activeFilter).slice(0, 4),
+    [activeFilter, programs],
+  );
+
   return (
     <section>
       <SectionHeading title={title} />
@@ -413,31 +440,40 @@ function ChannelProgramSection({
           paddingLeft: px(9),
         }}
       >
-        {[text.all, text.open, text.upcoming, text.closed].map((label, index) => (
+        {programFilterOptions.map((option) => (
           <button
+            aria-pressed={activeFilter === option.value}
             className={`flex items-center justify-center rounded-full text-center text-[length:var(--channel-font-12)] font-bold leading-[1.6] ${
-              index === 0 ? "bg-[#FF9A3D] text-[#F9F9F9]" : "bg-[#CAC4BC] text-[#F3F3F3]"
+              activeFilter === option.value ? "bg-[#FF9A3D] text-[#F9F9F9]" : "bg-[#CAC4BC] text-[#F3F3F3]"
             }`}
-            key={label}
+            key={option.value}
+            onClick={() => setActiveFilter(option.value)}
             style={{ height: px(30), width: px(70) }}
             type="button"
           >
-            {label}
+            {option.label}
           </button>
         ))}
       </div>
-      <div
-        className="flex items-start"
-        style={{
-          gap: px(40),
-          padding: `${px(30)} ${px(20)} 0`,
-        }}
-      >
-        {programs.map((program) => (
-          <MiniProgramCard key={program.id} program={program} />
-        ))}
-        <MoreLink href={`${homeHref}/programs`} />
-      </div>
+      {visiblePrograms.length > 0 ? (
+        <div
+          className="flex items-start"
+          style={{
+            gap: px(40),
+            padding: `${px(30)} ${px(20)} 0`,
+          }}
+        >
+          {visiblePrograms.map((program) => (
+            <MiniProgramCard key={program.id} program={program} />
+          ))}
+          <MoreLink href={`${homeHref}/programs`} />
+        </div>
+      ) : (
+        <ChannelProgramEmptyState
+          homeHref={homeHref}
+          message={programEmptyMessages[activeFilter]}
+        />
+      )}
     </section>
   );
 }
@@ -718,29 +754,56 @@ function SectionHeading({
 }
 
 function buildProgramCards(programs: Program[], village: Village): ProgramCardModel[] {
-  const homeHref = villagePath(village.slug);
-  const cards = programs.map((program) => ({
+  return programs.map((program) => ({
+    activityStart: program.activityStart,
     href: villageProgramPath(village.slug, program.slug),
     id: String(program.id),
     image: program.image,
     period: formatCompactPeriod(program.activityStart, program.activityEnd),
+    recruitStart: program.recruitStart,
     recruitEnd: program.recruitEnd,
     status: program.status,
     summary: program.summary || text.fallbackProgramSummary,
     title: program.title || text.fallbackProgramTitle,
   }));
+}
 
-  return cards.concat(
-    Array.from({ length: Math.max(0, 4 - cards.length) }, (_, index) => ({
-      href: `${homeHref}/programs`,
-      id: `program-fallback-${index}`,
-      image: village.heroImage,
-      period: text.fallbackPeriod,
-      recruitEnd: new Date().toISOString().slice(0, 10),
-      status: index === 2 ? "upcoming" : index === 3 ? "closed" : "open",
-      summary: text.fallbackProgramSummary,
-      title: index === 0 ? `${village.name} ${text.program}` : text.fallbackProgramTitle,
-    })),
+function filterProgramCards(
+  cards: ProgramCardModel[],
+  activeFilter: ProgramStatusFilter,
+) {
+  if (activeFilter === "all") return cards;
+  if (activeFilter === "closed") {
+    return cards.filter(
+      (program) => program.status === "closed" || program.status === "earlyClosed",
+    );
+  }
+
+  return cards.filter((program) => program.status === activeFilter);
+}
+
+function ChannelProgramEmptyState({
+  homeHref,
+  message,
+}: {
+  homeHref: string;
+  message: string;
+}) {
+  return (
+    <div
+      className="border border-dashed border-[#D6D6D6]"
+      style={{
+        margin: `${px(30)} ${px(20)} 0`,
+        minHeight: px(260),
+      }}
+    >
+      <NuvioEmptyState
+        actionHref={`${homeHref}/programs`}
+        actionLabel="프로그램 찾아보기"
+        className="h-full"
+        message={message}
+      />
+    </div>
   );
 }
 
