@@ -1,4 +1,4 @@
-import { and, eq } from "drizzle-orm";
+import { and, count, eq } from "drizzle-orm";
 import { getDb } from "@/db/client";
 import {
   programApplications,
@@ -151,12 +151,12 @@ async function readReviewLikeCount(
   reviewId: string,
 ): Promise<number> {
   const [current] = await tx
-    .select({ likes: reviewsTable.likes })
-    .from(reviewsTable)
-    .where(eq(reviewsTable.id, reviewId))
+    .select({ value: count() })
+    .from(reviewHelpfulVotes)
+    .where(eq(reviewHelpfulVotes.reviewId, reviewId))
     .limit(1);
 
-  return current?.likes ?? 0;
+  return Number(current?.value ?? 0);
 }
 
 function isReviewConstraintError(error: unknown): boolean {

@@ -2,6 +2,7 @@ import { and, count, eq, or, sql, type SQL } from "drizzle-orm";
 import { getDb } from "@/db/client";
 import {
   programs as programsTable,
+  reviewHelpfulVotes,
   reviewHostReplies,
   reviews as reviewsTable,
   villages,
@@ -37,7 +38,6 @@ export async function getPublicReviewSummaryFromDb(options: {
   const [summaryRow] = await getDb()
     .select({
       averageRating: sql<string | null>`avg(${reviewsTable.rating})`,
-      helpfulCount: sql<number>`coalesce(sum(${reviewsTable.likes}), 0)`,
       imageReviewCount: sql<number>`count(*) filter (where jsonb_array_length(${reviewsTable.images}) > 0)`,
       latestPublishedAt: sql<Date | null>`max(${reviewsTable.publishedAt})`,
       ratingCount: sql<number>`count(${reviewsTable.rating})`,
@@ -48,7 +48,7 @@ export async function getPublicReviewSummaryFromDb(options: {
     .leftJoin(villages, eq(programsTable.villageId, villages.id))
     .where(whereClause);
 
-  const [ratingRows, hostReplyCount] = await Promise.all([
+  const [ratingRows, helpfulCount, hostReplyCount] = await Promise.all([
     getDb()
       .select({
         rating: reviewsTable.rating,
@@ -59,6 +59,7 @@ export async function getPublicReviewSummaryFromDb(options: {
       .leftJoin(villages, eq(programsTable.villageId, villages.id))
       .where(and(whereClause, sql`${reviewsTable.rating} between 1 and 5`))
       .groupBy(reviewsTable.rating),
+    countHelpfulVotes(conditions),
     countPublishedHostReplies(conditions),
   ]);
 
@@ -77,7 +78,7 @@ export async function getPublicReviewSummaryFromDb(options: {
 
   return {
     averageRating: normalizeAverage(summaryRow?.averageRating ?? null),
-    helpfulCount: toNumber(summaryRow?.helpfulCount),
+    helpfulCount,
     hostReplyCount,
     imageReviewCount: toNumber(summaryRow?.imageReviewCount),
     latestPublishedAt: summaryRow?.latestPublishedAt?.toISOString(),
@@ -132,6 +133,18 @@ function buildPublicReviewConditions(options: {
   }
 
   return conditions;
+}
+
+async function countHelpfulVotes(reviewConditions: SQL[]): Promise<number> {
+  const [row] = await getDb()
+    .select({ value: count() })
+    .from(reviewHelpfulVotes)
+    .innerJoin(reviewsTable, eq(reviewHelpfulVotes.reviewId, reviewsTable.id))
+    .leftJoin(programsTable, eq(reviewsTable.programId, programsTable.id))
+    .leftJoin(villages, eq(programsTable.villageId, villages.id))
+    .where(and(...reviewConditions));
+
+  return toNumber(row?.value);
 }
 
 async function countPublishedHostReplies(reviewConditions: SQL[]): Promise<number> {
