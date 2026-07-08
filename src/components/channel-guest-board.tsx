@@ -122,11 +122,16 @@ function BoardBadge({ type }: { type: "fixed" | "new" }) {
 }
 
 function buildBoardRows(notices: VillageNotice[]): BoardRow[] {
-  return notices.slice(0, 4).map((notice, index) => ({
-    badge: index === 0 ? ("fixed" as const) : index === 1 ? ("new" as const) : undefined,
+  return notices.map((notice, index) => ({
+    badge:
+      notice.type === "고정"
+        ? ("fixed" as const)
+        : notice.type === "새글"
+          ? ("new" as const)
+          : undefined,
     date: formatBoardDate(notice.date),
     href: notice.href,
-    id: `${notice.type}-${notice.title}-${index}`,
+    id: `${notice.type}-${notice.title}-${notice.href}-${index}`,
     title: notice.title || "제목",
   }));
 }

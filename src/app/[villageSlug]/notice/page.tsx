@@ -5,6 +5,7 @@ import {
   getPublicVillageBySlug,
   getVillagePrograms,
 } from "@/lib/village-db";
+import { listPublicChannelBoardPosts } from "@/lib/channel-board-posts";
 import { listPublicVillagePageSections } from "@/lib/village-page-cms";
 import { createSeoMetadata } from "@/lib/seo";
 import { isReservedVillageSlug } from "@/lib/village-routing";
@@ -47,9 +48,12 @@ export default async function VillageNoticeRoute({
     village.slug === "boseong"
       ? await listPublicVillagePageSections(village.slug, "notice")
       : undefined;
+  const boardPosts =
+    village.slug === "boseong" ? [] : await listPublicChannelBoardPosts(village.slug);
 
   return (
     <VillageNoticeIndexPage
+      boardPosts={boardPosts}
       pageSections={pageSections}
       programs={programs}
       village={village}

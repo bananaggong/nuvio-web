@@ -15,7 +15,10 @@ import { VillageSiteFooter, VillageSiteHeader } from "@/components/village-site-
 import { formatDate } from "@/lib/format";
 import { villagePath } from "@/lib/village-routing";
 import {
-  buildChannelBoardNotices,
+  buildChannelBoardNoticesFromPosts,
+  type ChannelBoardPost,
+} from "@/lib/channel-board-posts";
+import {
   buildVillageNotices,
 } from "@/lib/village-template";
 import type {
@@ -117,10 +120,12 @@ export function VillageAboutIndexPage({
 }
 
 export function VillageNoticeIndexPage({
+  boardPosts = [],
   pageSections,
   programs,
   village,
 }: {
+  boardPosts?: ChannelBoardPost[];
   pageSections?: PublishedVillagePageSection[];
   programs: Program[];
   village: Village;
@@ -128,7 +133,7 @@ export function VillageNoticeIndexPage({
   const notices =
     village.slug === "boseong"
       ? buildVillageNotices(village, programs)
-      : buildChannelBoardNotices(village, programs);
+      : buildChannelBoardNoticesFromPosts({ posts: boardPosts, village });
 
   if (village.slug === "boseong") {
     return (
