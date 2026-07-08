@@ -5,6 +5,10 @@ import {
   getPublicVillageBySlug,
   getVillagePrograms,
 } from "@/lib/village-db";
+import {
+  normalizeChannelProgramSortOrder,
+  normalizeChannelProgramStatusFilter,
+} from "@/lib/channel-program-filters";
 import { listPublicVillagePageSections } from "@/lib/village-page-cms";
 import { createSeoMetadata } from "@/lib/seo";
 import { isReservedVillageSlug } from "@/lib/village-routing";
@@ -33,8 +37,10 @@ export async function generateMetadata({
 
 export default async function VillageProgramsRoute({
   params,
+  searchParams,
 }: {
   params: Promise<{ villageSlug: string }>;
+  searchParams?: Promise<Record<string, string | string[] | undefined>>;
 }) {
   const { villageSlug } = await params;
   if (isReservedVillageSlug(villageSlug)) notFound();
@@ -47,12 +53,19 @@ export default async function VillageProgramsRoute({
     village.slug === "boseong"
       ? await listPublicVillagePageSections(village.slug, "programs")
       : undefined;
+  const query = (await searchParams) ?? {};
 
   return (
     <VillageProgramsIndexPage
+      initialFilter={normalizeChannelProgramStatusFilter(getSingleValue(query.status))}
+      initialSort={normalizeChannelProgramSortOrder(getSingleValue(query.sort))}
       pageSections={pageSections}
       programs={programs}
       village={village}
     />
   );
+}
+
+function getSingleValue(value: string | string[] | undefined) {
+  return Array.isArray(value) ? value[0] : value;
 }

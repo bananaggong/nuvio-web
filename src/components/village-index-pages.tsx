@@ -18,15 +18,23 @@ import {
   buildChannelBoardNotices,
   buildVillageNotices,
 } from "@/lib/village-template";
+import type {
+  ChannelProgramSortOrder,
+  ChannelProgramStatusFilter,
+} from "@/lib/channel-program-filters";
 import type { Program, Review } from "@/lib/types";
 import type { PublishedVillagePageSection } from "@/lib/village-page-cms";
 import type { Village } from "@/lib/village-types";
 
 export function VillageProgramsIndexPage({
+  initialFilter = "all",
+  initialSort = "latest",
   pageSections,
   programs,
   village,
 }: {
+  initialFilter?: ChannelProgramStatusFilter;
+  initialSort?: ChannelProgramSortOrder;
   pageSections?: PublishedVillagePageSection[];
   programs: Program[];
   village: Village;
@@ -41,7 +49,14 @@ export function VillageProgramsIndexPage({
     );
   }
 
-  return <ChannelGuestProgramsPage programs={programs} village={village} />;
+  return (
+    <ChannelGuestProgramsPage
+      initialFilter={initialFilter}
+      initialSort={initialSort}
+      programs={programs}
+      village={village}
+    />
+  );
 }
 
 export function VillageReviewsIndexPage({

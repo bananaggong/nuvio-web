@@ -14,6 +14,7 @@ import {
   type ChannelMenuItem,
 } from "@/lib/channel-menu";
 import { getChannelHomeBlocks } from "@/lib/channel-home-blocks";
+import { buildChannelProgramsHref } from "@/lib/channel-program-filters";
 import { villagePath, villageProgramPath } from "@/lib/village-routing";
 import type { Program, Review, VillageMediaContent } from "@/lib/types";
 import type { Village } from "@/lib/village-types";
@@ -462,10 +463,16 @@ function ChannelProgramSection({
           {visiblePrograms.map((program) => (
             <MiniProgramCard key={program.id} program={program} />
           ))}
-          <MoreLink href={`${homeHref}/programs`} />
+          <MoreLink
+            href={buildChannelProgramsHref({
+              baseHref: `${homeHref}/programs`,
+              filter: activeFilter,
+            })}
+          />
         </div>
       ) : (
         <ChannelProgramEmptyState
+          activeFilter={activeFilter}
           homeHref={homeHref}
           message={programEmptyMessages[activeFilter]}
         />
@@ -813,9 +820,11 @@ function filterProgramCards(
 }
 
 function ChannelProgramEmptyState({
+  activeFilter,
   homeHref,
   message,
 }: {
+  activeFilter: ProgramStatusFilter;
   homeHref: string;
   message: string;
 }) {
@@ -828,7 +837,10 @@ function ChannelProgramEmptyState({
       }}
     >
       <NuvioEmptyState
-        actionHref={`${homeHref}/programs`}
+        actionHref={buildChannelProgramsHref({
+          baseHref: `${homeHref}/programs`,
+          filter: activeFilter,
+        })}
         actionLabel="프로그램 찾아보기"
         className="h-full"
         message={message}

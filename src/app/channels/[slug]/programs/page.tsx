@@ -7,6 +7,7 @@ export const runtime = "nodejs";
 
 type ChannelProgramsRouteProps = {
   params: Promise<{ slug: string }>;
+  searchParams?: Promise<Record<string, string | string[] | undefined>>;
 };
 
 export async function generateMetadata({ params }: ChannelProgramsRouteProps) {
@@ -19,10 +20,12 @@ export async function generateMetadata({ params }: ChannelProgramsRouteProps) {
 
 export default async function ChannelProgramsRoute({
   params,
+  searchParams,
 }: ChannelProgramsRouteProps) {
   const { slug } = await params;
 
   return VillageProgramsRoute({
     params: Promise.resolve({ villageSlug: slug }),
+    searchParams,
   });
 }

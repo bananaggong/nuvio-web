@@ -2,7 +2,8 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { useMemo, useState, type CSSProperties } from "react";
+import { useMemo, type CSSProperties } from "react";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { nuvioIcons } from "@/components/icons/nuvio-icons";
 import { NuvioEmptyState } from "@/components/nuvio-empty-state";
 import {
@@ -11,11 +12,20 @@ import {
   getChannelMenuDisplayLabel,
   getVisibleChannelMenuItems,
 } from "@/lib/channel-menu";
+import {
+  buildChannelProgramsHref,
+  normalizeChannelProgramSortOrder,
+  normalizeChannelProgramStatusFilter,
+  type ChannelProgramSortOrder,
+  type ChannelProgramStatusFilter,
+} from "@/lib/channel-program-filters";
 import { villagePath, villageProgramPath } from "@/lib/village-routing";
 import type { Program } from "@/lib/types";
 import type { Village } from "@/lib/village-types";
 
 type ChannelGuestProgramsPageProps = {
+  initialFilter?: ChannelProgramStatusFilter;
+  initialSort?: ChannelProgramSortOrder;
   programs: Program[];
   village: Village;
 };
@@ -33,8 +43,8 @@ type ProgramCardModel = {
   title: string;
 };
 
-type ProgramStatusFilter = "all" | "open" | "upcoming" | "closed";
-type ProgramSortOrder = "latest" | "oldest";
+type ProgramStatusFilter = ChannelProgramStatusFilter;
+type ProgramSortOrder = ChannelProgramSortOrder;
 
 const text = {
   all: "전체",
@@ -92,17 +102,44 @@ const programEmptyMessages: Record<ProgramStatusFilter, string> = {
 };
 
 export function ChannelGuestProgramsPage({
+  initialFilter = "all",
+  initialSort = "latest",
   programs,
   village,
 }: ChannelGuestProgramsPageProps) {
   const homeHref = villagePath(village.slug);
-  const [activeFilter, setActiveFilter] = useState<ProgramStatusFilter>("all");
-  const [sortOrder, setSortOrder] = useState<ProgramSortOrder>("latest");
+  const pathname = usePathname();
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const urlFilter = normalizeChannelProgramStatusFilter(searchParams.get("status"));
+  const urlSort = normalizeChannelProgramSortOrder(searchParams.get("sort"));
+  const activeFilter = searchParams.has("status") ? urlFilter : initialFilter;
+  const sortOrder = searchParams.has("sort") ? urlSort : initialSort;
   const cards = useMemo(() => buildProgramCards(programs, village), [programs, village]);
   const visibleCards = useMemo(
     () => sortProgramCards(filterProgramCards(cards, activeFilter), sortOrder),
     [activeFilter, cards, sortOrder],
   );
+
+  const updateProgramQuery = (
+    nextFilter: ProgramStatusFilter,
+    nextSort: ProgramSortOrder,
+  ) => {
+    router.replace(
+      buildChannelProgramsHref({
+        baseHref: pathname,
+        filter: nextFilter,
+        sort: nextSort,
+      }),
+      { scroll: false },
+    );
+  };
+  const handleFilterChange = (value: ProgramStatusFilter) => {
+    updateProgramQuery(value, sortOrder);
+  };
+  const handleSortChange = (value: ProgramSortOrder) => {
+    updateProgramQuery(activeFilter, value);
+  };
 
   return (
     <div
@@ -123,8 +160,8 @@ export function ChannelGuestProgramsPage({
         >
           <FilterAndSortRow
             activeFilter={activeFilter}
-            onFilterChange={setActiveFilter}
-            onSortChange={setSortOrder}
+            onFilterChange={handleFilterChange}
+            onSortChange={handleSortChange}
             sortOrder={sortOrder}
           />
           {visibleCards.length > 0 ? (
