@@ -199,6 +199,7 @@ export const profiles = pgTable(
     paymentMethod: text("payment_method"),
     refundBank: text("refund_bank"),
     refundAccount: text("refund_account"),
+    showHostCenterNav: boolean("show_host_center_nav"),
     createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
     updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
   },

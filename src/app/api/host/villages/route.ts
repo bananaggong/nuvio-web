@@ -13,6 +13,7 @@ import {
   ensureOwnerMembershipForVillage,
   listHostVillageWorkspaces,
 } from "@/lib/host-village-access";
+import { updateUserProfile } from "@/lib/auth-profile-db";
 import {
   getHostVillageBySlug,
   listHostVillagesFromDb,
@@ -104,6 +105,7 @@ export async function POST(request: Request) {
       await ensureOwnerMembershipForVillage(savedVillage.id, auth, {
         required: true,
       });
+      await updateUserProfile(auth.user.id, { showHostCenterNav: true });
     }
 
     return NextResponse.json({ data: savedVillage }, { status: 201 });

@@ -22,6 +22,7 @@ export type AuthProfile = {
   paymentMethod: string;
   refundBank: string;
   refundAccount: string;
+  showHostCenterNav: boolean | null;
   role: "user" | "partner" | "admin";
   onboardingIntent: OnboardingIntent | null;
   onboardingCompletedAt: string | null;
@@ -51,6 +52,7 @@ type ProfilePatch = Partial<
     | "paymentMethod"
     | "refundBank"
     | "refundAccount"
+    | "showHostCenterNav"
   >
 >;
 
@@ -76,6 +78,7 @@ export async function ensureUserProfile(user: User): Promise<AuthProfile> {
       paymentMethod: profile.paymentMethod,
       refundBank: profile.refundBank,
       refundAccount: profile.refundAccount,
+      showHostCenterNav: profile.showHostCenterNav,
       role: profile.role,
     })
     .onConflictDoUpdate({
@@ -95,6 +98,7 @@ export async function ensureUserProfile(user: User): Promise<AuthProfile> {
         paymentMethod: sql`coalesce(nullif(${profiles.paymentMethod}, ''), ${profile.paymentMethod})`,
         refundBank: sql`coalesce(nullif(${profiles.refundBank}, ''), ${profile.refundBank})`,
         refundAccount: sql`coalesce(nullif(${profiles.refundAccount}, ''), ${profile.refundAccount})`,
+        showHostCenterNav: sql`coalesce(${profiles.showHostCenterNav}, ${profile.showHostCenterNav})`,
         updatedAt: now,
       },
     })
@@ -202,6 +206,7 @@ export async function updateUserProfile(
       paymentMethod: patch.paymentMethod,
       refundBank: patch.refundBank,
       refundAccount: patch.refundAccount,
+      showHostCenterNav: patch.showHostCenterNav,
       updatedAt: new Date(),
     })
     .where(eq(profiles.id, userId))
@@ -237,6 +242,7 @@ function buildProfileFromUser(user: User): AuthProfile {
     paymentMethod: stringMetadata(metadata.payment_method),
     refundBank: stringMetadata(metadata.refund_bank),
     refundAccount: stringMetadata(metadata.refund_account),
+    showHostCenterNav: null,
     role: "user",
     onboardingIntent: null,
     onboardingCompletedAt: null,
@@ -260,6 +266,7 @@ function mapProfileRow(row: typeof profiles.$inferSelect): AuthProfile {
     paymentMethod: row.paymentMethod ?? "",
     refundBank: row.refundBank ?? "",
     refundAccount: row.refundAccount ?? "",
+    showHostCenterNav: row.showHostCenterNav ?? null,
     role: row.role,
     onboardingIntent:
       row.onboardingIntent === "participant" || row.onboardingIntent === "host"

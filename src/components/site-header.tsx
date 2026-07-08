@@ -17,16 +17,27 @@ import { nuvioIcons } from "@/components/icons/nuvio-icons";
 import { NotificationBellPopover } from "@/components/notification-bell-popover";
 import { launchFeatureFlags } from "@/lib/launch-feature-flags";
 
-const navItems = [
+type HeaderNavItem = { href: string; label: string; match: string[] };
+
+const baseNavItems: HeaderNavItem[] = [
   { href: "/magazine", label: "매거진", match: ["/magazine"] },
   { href: "/channels", label: "채널", match: ["/channels"] },
 ];
+
+const hostCenterNavItem: HeaderNavItem = {
+  href: "/host",
+  label: "호스트센터",
+  match: ["/host"],
+};
 
 type HeaderSession =
   | {
       profile: {
         displayName?: string | null;
         email?: string | null;
+        onboardingIntent?: "host" | "participant" | null;
+        role?: "admin" | "partner" | "user" | null;
+        showHostCenterNav?: boolean | null;
       } | null;
       user: {
         email?: string | null;
@@ -50,6 +61,10 @@ export function SiteHeader() {
   const isHostRoute = pathname === "/host" || pathname.startsWith("/host/");
   const isMypageRoute = pathname === "/mypage" || pathname.startsWith("/mypage/");
   const showAccountActions = signedIn || isHostRoute || isMypageRoute;
+  const showHostCenterNav = shouldShowHostCenterNav(session);
+  const navItems = showHostCenterNav
+    ? [...baseNavItems, hostCenterNavItem]
+    : baseNavItems;
   const profileName =
     session !== "loading"
       ? session.profile?.displayName?.trim() ||
@@ -73,10 +88,16 @@ export function SiteHeader() {
       }
     }
 
+    function reloadSession() {
+      void loadSession();
+    }
+
     void loadSession();
+    window.addEventListener("nuvio-profile-updated", reloadSession);
 
     return () => {
       active = false;
+      window.removeEventListener("nuvio-profile-updated", reloadSession);
     };
   }, [pathname]);
 
@@ -394,7 +415,7 @@ function HeaderLink({
   item,
   pathname,
 }: {
-  item: { href: string; label: string; match: string[] };
+  item: HeaderNavItem;
   pathname: string;
 }) {
   const active = isActive(item, pathname);
@@ -476,7 +497,7 @@ function MobileLink({
   onSelect,
   pathname,
 }: {
-  item: { href: string; label: string; match: string[] };
+  item: HeaderNavItem;
   onSelect: () => void;
   pathname: string;
 }) {
@@ -497,7 +518,7 @@ function MobileLink({
 }
 
 function isActive(
-  item: { href: string; match: string[] },
+  item: HeaderNavItem,
   pathname: string,
 ): boolean {
   if (item.href === "/") {
@@ -505,4 +526,19 @@ function isActive(
   }
 
   return pathname.startsWith(item.href) || item.match.some((path) => pathname.startsWith(path));
+}
+
+function shouldShowHostCenterNav(session: HeaderSession): boolean {
+  if (session === "loading" || !session.user) return false;
+
+  const profile = session.profile;
+  if (profile?.showHostCenterNav !== null && profile?.showHostCenterNav !== undefined) {
+    return profile.showHostCenterNav;
+  }
+
+  return (
+    profile?.onboardingIntent === "host" ||
+    profile?.role === "admin" ||
+    profile?.role === "partner"
+  );
 }

@@ -95,6 +95,7 @@ export async function PATCH(request: Request) {
       paymentMethod: normalizeText(body.paymentMethod, 80),
       refundBank: normalizeText(body.refundBank, 80),
       refundAccount: normalizeText(body.refundAccount, 80),
+      showHostCenterNav: normalizeNullableBoolean(body.showHostCenterNav),
     });
 
     return NextResponse.json({ data: profile });
@@ -111,6 +112,13 @@ export async function PATCH(request: Request) {
 
 function normalizeText(value: unknown, maxLength: number): string | undefined {
   return typeof value === "string" ? value.trim().slice(0, maxLength) : undefined;
+}
+
+function normalizeNullableBoolean(value: unknown): boolean | null | undefined {
+  if (value === undefined) return undefined;
+  if (value === null) return null;
+  if (typeof value === "boolean") return value;
+  throw new Error("Invalid boolean value.");
 }
 
 function normalizeContactEmail(value: unknown): string | undefined {

@@ -68,6 +68,8 @@ type AuthProfile = {
   displayName: string | null;
   loginId: string | null;
   role: "user" | "partner" | "admin";
+  onboardingIntent: "participant" | "host" | null;
+  showHostCenterNav: boolean | null;
   avatarUrl: string | null;
   phone: string | null;
   contactEmail: string | null;
@@ -454,7 +456,7 @@ export function MypageCoupons() {
 export function MypageSettings() {
   return (
     <MypageFrame activeSection="settings">
-      {() => <SettingsContent />}
+      {(context) => <SettingsContent context={context} />}
     </MypageFrame>
   );
 }
@@ -2967,16 +2969,129 @@ function CouponsContent() {
   );
 }
 
-function SettingsContent() {
+function SettingsContent({ context }: { context: MypageContext }) {
   return (
     <section>
       <PageTitle title="설정" />
       <div className="mt-6 grid gap-3">
         <SettingRow label="마케팅 수신 동의" value="미설정" />
+        <HostCenterNavSettingRow context={context} />
         <BrowserPushSettingRow />
         <SettingRow label="계정 보안" value="소셜 로그인" />
       </div>
     </section>
+  );
+}
+
+function HostCenterNavSettingRow({ context }: { context: MypageContext }) {
+  const profile = context.authSession.profile;
+  const [optimisticEnabled, setOptimisticEnabled] = useState<boolean | null>(null);
+  const [message, setMessage] = useState("");
+  const [busy, setBusy] = useState(false);
+  const enabled = optimisticEnabled ?? getEffectiveHostCenterNavVisibility(profile);
+  const statusMessage =
+    message ||
+    (profile
+      ? enabled
+        ? "상단 메뉴에서 호스트센터로 바로 이동할 수 있어요."
+        : "필요할 때 다시 켜면 상단 메뉴에 호스트센터가 표시돼요."
+      : "로그인 후 설정할 수 있어요.");
+
+  async function handleToggle() {
+    if (busy || !profile) return;
+
+    const nextEnabled = !enabled;
+    setBusy(true);
+    setOptimisticEnabled(nextEnabled);
+    setMessage(nextEnabled ? "호스트센터 메뉴를 켜고 있어요." : "호스트센터 메뉴를 숨기고 있어요.");
+
+    try {
+      const response = await fetch("/api/me/profile", {
+        body: JSON.stringify({ showHostCenterNav: nextEnabled }),
+        headers: { "Content-Type": "application/json" },
+        method: "PATCH",
+      });
+      const payload = (await response.json().catch(() => ({}))) as {
+        data?: AuthProfile;
+        error?: string;
+      };
+
+      if (!response.ok || !payload.data) {
+        throw new Error(payload.error ?? "설정을 저장하지 못했어요.");
+      }
+
+      context.updateProfile(payload.data);
+      window.dispatchEvent(new Event("nuvio-profile-updated"));
+      setOptimisticEnabled(null);
+      setMessage(
+        nextEnabled
+          ? "상단 메뉴에 호스트센터가 표시돼요."
+          : "상단 메뉴에서 호스트센터를 숨겼어요.",
+      );
+    } catch (error) {
+      setOptimisticEnabled(null);
+      setMessage(
+        error instanceof Error ? error.message : "설정을 저장하지 못했어요.",
+      );
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  return (
+    <div className="rounded-[6px] border border-[#d9d9d9] px-5 py-4">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <div>
+          <p className="text-[14px] font-semibold text-[#4B3328]">
+            호스트센터 메뉴
+          </p>
+          <p className="mt-1 text-[13px] text-[#8F7A6C]">
+            상단 메뉴의 매거진, 채널 옆에 호스트센터 바로가기를 표시해요.
+          </p>
+          <p className="mt-2 text-[12px] text-[#748190]">{statusMessage}</p>
+        </div>
+        <div className="flex shrink-0 items-center gap-3">
+          <span className="text-[13px] text-[#8F7A6C]">
+            {enabled ? "사용 중" : "꺼짐"}
+          </span>
+          <button
+            aria-pressed={enabled}
+            className={[
+              "relative h-7 w-12 rounded-full border transition",
+              enabled
+                ? "border-[#ff6b1a] bg-[#ff6b1a]"
+                : "border-[#cfc7c0] bg-[#f4f1ee]",
+              busy ? "cursor-not-allowed opacity-50" : "",
+            ].join(" ")}
+            disabled={busy || !profile}
+            onClick={handleToggle}
+            type="button"
+          >
+            <span
+              className={[
+                "absolute top-1/2 h-5 w-5 -translate-y-1/2 rounded-full bg-white shadow-sm transition",
+                enabled ? "left-6" : "left-1",
+              ].join(" ")}
+            />
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function getEffectiveHostCenterNavVisibility(
+  profile: AuthProfile | null | undefined,
+): boolean {
+  if (!profile) return false;
+  if (profile.showHostCenterNav !== null && profile.showHostCenterNav !== undefined) {
+    return profile.showHostCenterNav;
+  }
+
+  return (
+    profile.onboardingIntent === "host" ||
+    profile.role === "admin" ||
+    profile.role === "partner"
   );
 }
 
