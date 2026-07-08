@@ -146,7 +146,7 @@ export function HostChannelGalleries() {
       id: `channel-gallery-draft-${Date.now()}`,
       imageCount: 0,
       provider: "link",
-      published: false,
+      published: true,
       sourceName: channel?.name || "호스트 채널",
       sourceUrl: "/host/channels/galleries",
       summary: "새 게시물 설명을 입력하세요.",
