@@ -24,7 +24,7 @@ export async function generateMetadata({
   if (!village) return {};
 
   return createSeoMetadata({
-    title: `알림마당 | ${village.name}`,
+    title: `게시판형 | ${village.name}`,
     description: `${village.name} 신청, 선정, 운영 안내입니다.`,
     image: village.heroImage,
     path: `/${village.slug}/notice`,
