@@ -52,6 +52,7 @@ export function HostCenterHome({
   const searchParams = useSearchParams();
   const {
     applications,
+    isLoading,
     programs,
     reportProjects,
     setPrograms,
@@ -339,6 +340,7 @@ export function HostCenterHome({
                 <HostProgramRow
                   actionLabel={group.actionLabel}
                   expanded={expandedProgramGroupId === group.id}
+                  isLoading={isLoading}
                   items={group.items}
                   key={group.id}
                   statusFilter={group.id}

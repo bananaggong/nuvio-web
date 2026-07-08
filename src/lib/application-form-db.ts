@@ -1,6 +1,10 @@
-import { and, desc, eq, isNull } from "drizzle-orm";
+import { and, count, desc, eq, isNull } from "drizzle-orm";
 import { getDb } from "@/db/client";
-import { programApplicationForms } from "@/db/schema";
+import {
+  programApplicationForms,
+  programApplications,
+  programInquiries,
+} from "@/db/schema";
 import { getProgramRecordByIdentifier } from "@/lib/program-db";
 import type {
   ApplicationFormKind,
@@ -22,6 +26,16 @@ export class ApplicationFormAccessError extends Error {
   constructor() {
     super("You do not have permission to update this application form.");
     this.name = "ApplicationFormAccessError";
+  }
+}
+
+export class ApplicationFormDeleteBlockedError extends Error {
+  constructor(
+    message: string,
+    public readonly code: "linked-program" | "submitted-records",
+  ) {
+    super(message);
+    this.name = "ApplicationFormDeleteBlockedError";
   }
 }
 
@@ -167,16 +181,66 @@ export async function deleteApplicationFormTemplate(
 ): Promise<boolean> {
   if (!isUuid(templateId)) return false;
 
+  const ownershipCondition =
+    options.ownerId && options.restrictToOwner
+      ? and(
+          eq(programApplicationForms.id, templateId),
+          eq(programApplicationForms.createdBy, options.ownerId),
+        )
+      : eq(programApplicationForms.id, templateId);
+
+  const [formRow] = await getDb()
+    .select({
+      id: programApplicationForms.id,
+      programId: programApplicationForms.programId,
+      programTitle: programApplicationForms.programTitle,
+    })
+    .from(programApplicationForms)
+    .where(ownershipCondition)
+    .limit(1);
+
+  if (!formRow) {
+    if (options.ownerId && options.restrictToOwner) {
+      const [existingRow] = await getDb()
+        .select({ id: programApplicationForms.id })
+        .from(programApplicationForms)
+        .where(eq(programApplicationForms.id, templateId))
+        .limit(1);
+
+      if (existingRow) throw new ApplicationFormAccessError();
+    }
+
+    return false;
+  }
+
+  if (formRow.programId || formRow.programTitle?.trim()) {
+    throw new ApplicationFormDeleteBlockedError(
+      "프로그램에 연결된 신청폼은 삭제할 수 없어요. 먼저 프로그램의 신청폼 연결을 해제하거나 다른 신청폼으로 교체해 주세요.",
+      "linked-program",
+    );
+  }
+
+  const [applicationUsage] = await getDb()
+    .select({ value: count() })
+    .from(programApplications)
+    .where(eq(programApplications.formId, templateId));
+  const [inquiryUsage] = await getDb()
+    .select({ value: count() })
+    .from(programInquiries)
+    .where(eq(programInquiries.formId, templateId));
+  const submittedRecordCount =
+    (applicationUsage?.value ?? 0) + (inquiryUsage?.value ?? 0);
+
+  if (submittedRecordCount > 0) {
+    throw new ApplicationFormDeleteBlockedError(
+      `이미 접수된 신청/문의 ${submittedRecordCount}건과 연결된 신청폼은 삭제할 수 없어요. 접수 이력 보존을 위해 새 폼을 복제해서 사용해 주세요.`,
+      "submitted-records",
+    );
+  }
+
   const [deletedRow] = await getDb()
     .delete(programApplicationForms)
-    .where(
-      options.ownerId && options.restrictToOwner
-        ? and(
-            eq(programApplicationForms.id, templateId),
-            eq(programApplicationForms.createdBy, options.ownerId),
-          )
-        : eq(programApplicationForms.id, templateId),
-    )
+    .where(eq(programApplicationForms.id, templateId))
     .returning({ id: programApplicationForms.id });
 
   return Boolean(deletedRow);

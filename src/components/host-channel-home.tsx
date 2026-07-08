@@ -15,8 +15,10 @@ import { HostChannelHomeBlocks } from "@/components/host-channel-home-blocks";
 import { nuvioIcons } from "@/components/icons/nuvio-icons";
 import { HostWorkspaceLayout } from "@/components/host-workspace-ui";
 import {
+  applyChannelMenuItemsToSections,
   channelHomeLabel,
   channelMenuMeta,
+  getChannelMenuItems,
   getVisibleChannelMenuItems,
   type ChannelMenuItem,
 } from "@/lib/channel-menu";
@@ -83,6 +85,8 @@ export function HostChannelHome() {
   const [channel, setChannel] = useState<Village | null>(null);
   const [programs, setPrograms] = useState<HostProgramDraft[]>([]);
   const [isUploadingHero, setIsUploadingHero] = useState(false);
+  const [savingMenuItemId, setSavingMenuItemId] = useState<string | null>(null);
+  const [menuStatusMessage, setMenuStatusMessage] = useState("");
   const [uploadMessage, setUploadMessage] = useState("");
   const heroInputRef = useRef<HTMLInputElement>(null);
 
@@ -136,7 +140,10 @@ export function HostChannelHome() {
   }, [requestedChannelSlug]);
 
   const publicHref = channel?.slug ? villagePath(channel.slug) : "";
-  const visibleMenuItems = getVisibleChannelMenuItems(channel);
+  const homeMenuItems = getChannelMenuItems(channel, {
+    includeHidden: true,
+    includeFree: false,
+  }).filter((item) => item.kind !== "review");
   const visiblePrograms = programs.slice(0, 8);
   const visibleGalleryCards: string[] = [];
   const visibleStoryCards: Array<{ body: string; title: string }> = [];
@@ -207,6 +214,57 @@ export function HostChannelHome() {
       );
     } finally {
       setIsUploadingHero(false);
+    }
+  }
+
+  async function toggleMenuItemVisibility(item: ChannelMenuItem) {
+    if (!channel || item.locked || savingMenuItemId) return;
+
+    const nextVisible = !item.visible;
+    const allMenuItems = getChannelMenuItems(channel, {
+      includeFree: true,
+      includeHidden: true,
+    });
+    const nextMenuItems = allMenuItems.map((menuItem) =>
+      menuItem.id === item.id ? { ...menuItem, visible: nextVisible } : menuItem,
+    );
+    const nextChannel: Village = {
+      ...channel,
+      sections: applyChannelMenuItemsToSections(channel.sections, nextMenuItems),
+      updatedAt: new Date().toISOString(),
+    };
+    const previousChannel = channel;
+
+    setSavingMenuItemId(item.id);
+    setMenuStatusMessage("");
+    setChannel(nextChannel);
+
+    try {
+      const response = await fetch("/api/host/channels", {
+        body: JSON.stringify(nextChannel),
+        headers: { "Content-Type": "application/json" },
+        method: "POST",
+      });
+      const payload = (await response.json().catch(() => ({}))) as SaveChannelPayload;
+
+      if (!response.ok || !payload.data) {
+        throw new Error(payload.error || "메뉴 노출 상태를 저장하지 못했습니다.");
+      }
+
+      setChannel(payload.data);
+      setMenuStatusMessage(
+        nextVisible
+          ? `${item.label || channelMenuMeta[item.kind].defaultLabel} 메뉴를 표시합니다.`
+          : `${item.label || channelMenuMeta[item.kind].defaultLabel} 메뉴를 숨겼습니다.`,
+      );
+      window.dispatchEvent(new CustomEvent("nuvio-channel-menu-updated"));
+    } catch (error) {
+      setChannel(previousChannel);
+      setMenuStatusMessage(
+        error instanceof Error ? error.message : "메뉴 노출 상태를 저장하지 못했습니다.",
+      );
+    } finally {
+      setSavingMenuItemId(null);
     }
   }
 
@@ -284,10 +342,19 @@ export function HostChannelHome() {
           />
 
           <section className="px-[var(--host-58)] pb-[var(--host-70)] pt-[var(--host-20)]">
-            {visibleMenuItems.map((item) => (
+            {menuStatusMessage ? (
+              <p className="mb-[var(--host-12)] text-right text-[length:var(--host-12)] font-medium leading-[1.253] text-[#6D7A8A]">
+                {menuStatusMessage}
+              </p>
+            ) : null}
+            {homeMenuItems.map((item) => (
               <ChannelHomeMenuSection
                 item={item}
                 key={item.id}
+                onToggleVisible={
+                  item.locked ? undefined : () => void toggleMenuItemVisibility(item)
+                }
+                toggleBusy={Boolean(savingMenuItemId)}
                 visibleGalleryCards={visibleGalleryCards}
                 visibleNoticeRows={visibleNoticeRows}
                 visiblePrograms={visiblePrograms}
@@ -304,12 +371,16 @@ export function HostChannelHome() {
 
 function ChannelHomeMenuSection({
   item,
+  onToggleVisible,
+  toggleBusy,
   visibleGalleryCards,
   visibleNoticeRows,
   visiblePrograms,
   visibleStoryCards,
 }: {
   item: ChannelMenuItem;
+  onToggleVisible?: () => void;
+  toggleBusy?: boolean;
   visibleGalleryCards: string[];
   visibleNoticeRows: Array<{ category: string; date: string; title: string }>;
   visiblePrograms: HostProgramDraft[];
@@ -317,7 +388,10 @@ function ChannelHomeMenuSection({
 }) {
   if (item.kind === "program") {
     return (
-      <ChannelSectionShell title={item.label || channelMenuMeta.program.defaultLabel}>
+      <ChannelSectionShell
+        title={item.label || channelMenuMeta.program.defaultLabel}
+        toggleOn={item.visible}
+      >
         <div className="mb-[var(--host-24)] flex items-center gap-[var(--host-8)] text-[length:var(--host-12)] font-medium leading-[1.253]">
           <span className="rounded-full bg-[#FF9A3D] px-[var(--host-16)] py-[var(--host-5)] text-white">
             전체
@@ -357,7 +431,10 @@ function ChannelHomeMenuSection({
       <ChannelSectionShell
         actionLabel="전체보기"
         badge={channelMenuMeta.gallery.badge}
+        onToggle={onToggleVisible}
         title={item.label || channelMenuMeta.gallery.defaultLabel}
+        toggleBusy={toggleBusy}
+        toggleOn={item.visible}
       >
         {visibleGalleryCards.length > 0 ? (
           <div className="grid grid-cols-3 gap-[var(--host-36)]">
@@ -396,7 +473,10 @@ function ChannelHomeMenuSection({
       <ChannelSectionShell
         actionLabel="전체보기"
         badge={channelMenuMeta.magazine.badge}
+        onToggle={onToggleVisible}
         title={item.label || channelMenuMeta.magazine.defaultLabel}
+        toggleBusy={toggleBusy}
+        toggleOn={item.visible}
       >
         {visibleStoryCards.length > 0 ? (
           <div className="grid grid-cols-3 gap-[var(--host-36)]">
@@ -433,7 +513,10 @@ function ChannelHomeMenuSection({
       <ChannelSectionShell
         actionLabel="전체보기"
         badge={channelMenuMeta.board.badge}
+        onToggle={onToggleVisible}
         title={item.label || channelMenuMeta.board.defaultLabel}
+        toggleBusy={toggleBusy}
+        toggleOn={item.visible}
       >
         {visibleNoticeRows.length > 0 ? (
           <div className="border-t border-[#F3E2D5]">
@@ -581,13 +664,17 @@ export function ChannelSectionShell({
   actionLabel,
   badge,
   children,
+  onToggle,
   title,
+  toggleBusy = false,
   toggleOn = true,
 }: {
   actionLabel?: string;
   badge?: string;
   children: ReactNode;
+  onToggle?: () => void;
   title: string;
+  toggleBusy?: boolean;
   toggleOn?: boolean;
 }) {
   return (
@@ -613,16 +700,36 @@ export function ChannelSectionShell({
               {actionLabel}
             </button>
           ) : null}
-          <Image
-            alt=""
-            className="h-[var(--host-16)] w-[var(--host-20)]"
-            height={20}
-            src={toggleOn ? nuvioIcons.formRequiredToggleOn : nuvioIcons.formRequiredToggleOff}
-            width={23}
-          />
+          {onToggle ? (
+            <button
+              aria-label={`${title} 메뉴 ${toggleOn ? "숨기기" : "표시하기"}`}
+              aria-pressed={toggleOn}
+              className="inline-flex h-[var(--host-22)] w-[var(--host-28)] items-center justify-center rounded-full transition hover:bg-[#FFF3EA] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#FE701E] disabled:cursor-wait disabled:opacity-55"
+              disabled={toggleBusy}
+              onClick={onToggle}
+              type="button"
+            >
+              <Image
+                alt=""
+                className="h-[var(--host-16)] w-[var(--host-20)]"
+                height={20}
+                src={
+                  toggleOn
+                    ? nuvioIcons.formRequiredToggleOn
+                    : nuvioIcons.formRequiredToggleOff
+                }
+                width={23}
+              />
+            </button>
+          ) : null}
         </div>
       </div>
-      {children}
+      {!toggleOn && onToggle ? (
+        <p className="mb-[var(--host-12)] text-right text-[length:var(--host-11)] font-medium leading-[1.253] text-[#AEB8C2]">
+          현재 공개 채널에서는 숨김 상태입니다.
+        </p>
+      ) : null}
+      <div className={toggleOn || !onToggle ? "" : "opacity-45"}>{children}</div>
     </section>
   );
 }

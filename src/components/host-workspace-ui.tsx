@@ -690,17 +690,21 @@ export function HostFolderPlaceholderCard({
 export function HostProgramRow({
   actionLabel,
   expanded = false,
+  isLoading = false,
   statusFilter,
   items,
   title,
 }: {
   actionLabel: string;
   expanded?: boolean;
+  isLoading?: boolean;
   statusFilter: string;
   items: HostProgramListItem[];
   title: string;
 }) {
   const visibleItems = expanded ? items : items.slice(0, 4);
+  const loadingPlaceholders =
+    !expanded && isLoading && visibleItems.length === 0 ? [0, 1, 2, 3] : [];
 
   return (
     <section
@@ -728,11 +732,9 @@ export function HostProgramRow({
             program={program}
           />
         ))}
-        {!expanded && visibleItems.length < 4
-          ? Array.from({ length: 4 - visibleItems.length }).map((_, index) => (
-              <HostMiniProgramCardPlaceholder key={index} />
-            ))
-          : null}
+        {loadingPlaceholders.map((index) => (
+          <HostMiniProgramCardPlaceholder key={`loading-${index}`} />
+        ))}
         {!expanded ? (
           <Link
             className="flex h-[var(--host-42)] w-[var(--host-42)] shrink-0 flex-col items-center justify-center gap-[var(--host-8)] text-center text-[length:var(--host-12)] font-normal leading-[1.253] text-[#6D7A8A]"

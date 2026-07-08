@@ -29,6 +29,10 @@ export function HostFormLibrary({
   const [templates, setTemplates] = useState<ApplicationFormTemplate[]>([]);
   const [isCreating, setIsCreating] = useState(false);
   const [pendingId, setPendingId] = useState<string | null>(null);
+  const [feedback, setFeedback] = useState<{
+    message: string;
+    tone: "error" | "success";
+  } | null>(null);
   const applicationForms = useMemo(
     () => templates.filter((template) => template.formKind === "application"),
     [templates],
@@ -72,6 +76,7 @@ export function HostFormLibrary({
     if (isCreating) return;
 
     setIsCreating(true);
+    setFeedback(null);
 
     try {
       const response = await fetch("/api/host/forms", {
@@ -103,6 +108,7 @@ export function HostFormLibrary({
 
   async function duplicateForm(template: ApplicationFormTemplate) {
     setPendingId(template.id);
+    setFeedback(null);
 
     try {
       const copiedTemplate = cloneApplicationFormTemplate(template, {
@@ -132,22 +138,60 @@ export function HostFormLibrary({
     }
   }
 
-  async function deleteForm(templateId: string) {
-    setPendingId(templateId);
+  async function deleteForm(template: ApplicationFormTemplate) {
+    const linkedProgramName =
+      template.programTitle.trim() || (template.programId ? "연결된 프로그램" : "");
+
+    if (linkedProgramName) {
+      setFeedback({
+        message:
+          "프로그램에 연결된 신청폼은 삭제할 수 없어요. 먼저 프로그램의 신청폼 연결을 해제하거나 다른 신청폼으로 교체해 주세요.",
+        tone: "error",
+      });
+      return;
+    }
+
+    if (
+      !window.confirm(
+        "신청폼을 삭제할까요?\n삭제한 폼은 복구할 수 없고, 접수 이력이 있는 폼은 삭제되지 않습니다.",
+      )
+    ) {
+      return;
+    }
+
+    setPendingId(template.id);
+    setFeedback(null);
 
     try {
       const response = await fetch(
-        `/api/host/forms/${encodeURIComponent(templateId)}`,
+        `/api/host/forms/${encodeURIComponent(template.id)}`,
         { method: "DELETE" },
       );
+      const payload = (await response.json().catch(() => ({}))) as {
+        error?: string;
+      };
 
       if (!response.ok) {
-        throw new Error("신청서 양식을 삭제하지 못했습니다.");
+        throw new Error(payload.error ?? "신청서 양식을 삭제하지 못했습니다.");
       }
 
       setTemplates((currentTemplates) =>
-        currentTemplates.filter((template) => template.id !== templateId),
+        currentTemplates.filter(
+          (currentTemplate) => currentTemplate.id !== template.id,
+        ),
       );
+      setFeedback({
+        message: "신청폼을 삭제했습니다.",
+        tone: "success",
+      });
+    } catch (deleteError) {
+      setFeedback({
+        message:
+          deleteError instanceof Error
+            ? deleteError.message
+            : "신청서 양식을 삭제하지 못했습니다.",
+        tone: "error",
+      });
     } finally {
       setPendingId(null);
     }
@@ -174,13 +218,26 @@ export function HostFormLibrary({
               </HostSmallButton>
             </div>
 
+            {feedback ? (
+              <div
+                className={`w-[var(--host-959)] max-w-full rounded-[4px] border px-[var(--host-16)] py-[var(--host-10)] text-[var(--host-13)] font-medium leading-[1.55] ${
+                  feedback.tone === "error"
+                    ? "border-[#FE701E] bg-[#FFF6EC] text-[#5B3A29]"
+                    : "border-[#7A8B52] bg-[#F1F7ED] text-[#3E552C]"
+                }`}
+                role="status"
+              >
+                {feedback.message}
+              </div>
+            ) : null}
+
             <section className="flex w-[var(--host-959)] max-w-full flex-col gap-[var(--host-18)]">
               {applicationForms.length > 0 ? (
                 applicationForms.map((template) => (
                   <FormRow
                     disabled={pendingId === template.id}
                     key={template.id}
-                    onDelete={() => void deleteForm(template.id)}
+                    onDelete={() => void deleteForm(template)}
                     onDuplicate={() => void duplicateForm(template)}
                     template={template}
                   />
@@ -209,6 +266,9 @@ function FormRow({
   onDuplicate: () => void;
   template: ApplicationFormTemplate;
 }) {
+  const linkedProgramName =
+    template.programTitle.trim() || (template.programId ? "연결된 프로그램" : "");
+
   return (
     <div className="flex h-[var(--host-38)] w-full items-center gap-[12px] rounded-[4px] border border-[#6D7A8A] px-[var(--host-16)] py-[var(--host-8)]">
       <Link
@@ -220,6 +280,11 @@ function FormRow({
       <p className="shrink-0 whitespace-nowrap text-[var(--host-14)] font-medium leading-[1.253] text-[#0D0D0C]">
         (최근 수정일) {formatFormUpdatedAt(template.updatedAt)}
       </p>
+      {linkedProgramName ? (
+        <span className="shrink-0 rounded-full bg-[#FFF6EC] px-[8px] py-[3px] text-[var(--host-11)] font-semibold leading-[1.253] text-[#FE701E]">
+          프로그램 연결됨
+        </span>
+      ) : null}
       <div className="flex min-w-0 flex-1 items-center justify-end gap-[8px]">
         <button
           aria-label={`${template.name} 복제`}

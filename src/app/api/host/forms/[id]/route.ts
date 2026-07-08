@@ -6,7 +6,11 @@ import {
   isApiAuthError,
   requireHostRole,
 } from "@/lib/api-security";
-import { deleteApplicationFormTemplate } from "@/lib/application-form-db";
+import {
+  ApplicationFormAccessError,
+  ApplicationFormDeleteBlockedError,
+  deleteApplicationFormTemplate,
+} from "@/lib/application-form-db";
 
 export const runtime = "nodejs";
 
@@ -46,6 +50,17 @@ export async function DELETE(
 
     return NextResponse.json({ data: { id } });
   } catch (error) {
+    if (error instanceof ApplicationFormAccessError) {
+      return NextResponse.json({ error: error.message }, { status: 403 });
+    }
+
+    if (error instanceof ApplicationFormDeleteBlockedError) {
+      return NextResponse.json(
+        { code: error.code, error: error.message },
+        { status: 409 },
+      );
+    }
+
     return NextResponse.json(
       {
         error:
