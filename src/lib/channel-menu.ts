@@ -130,7 +130,9 @@ export function getChannelMenuItems(
 export function getVisibleChannelMenuItems(
   value: Pick<Village, "sections"> | VillageSection[] | null | undefined,
 ) {
-  return getChannelMenuItems(value, { includeFree: true, includeHidden: false });
+  return getChannelMenuItems(value, { includeFree: true, includeHidden: false }).filter(
+    (item) => item.kind !== "review",
+  );
 }
 
 export function getChannelMenuLabel(
