@@ -8,7 +8,7 @@ import { NuvioEmptyState } from "@/components/nuvio-empty-state";
 import {
   channelGuestHref,
   channelHomeLabel,
-  channelMenuMeta,
+  getChannelMenuDisplayLabel,
   getVisibleChannelMenuItems,
 } from "@/lib/channel-menu";
 import { villagePath, villageProgramPath } from "@/lib/village-routing";
@@ -269,7 +269,7 @@ function ChannelProfileHeader({
               active={activeTab === item.kind}
               href={channelGuestHref(item.kind, village)}
               key={item.id}
-              label={item.label || channelMenuMeta[item.kind].defaultLabel}
+              label={getChannelMenuDisplayLabel(item)}
             />
           ))}
         </nav>

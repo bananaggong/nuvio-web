@@ -9,7 +9,7 @@ import { NuvioEmptyState } from "@/components/nuvio-empty-state";
 import {
   channelGuestHref,
   channelHomeLabel,
-  channelMenuMeta,
+  getChannelMenuDisplayLabel,
   getVisibleChannelMenuItems,
   type ChannelMenuItem,
 } from "@/lib/channel-menu";
@@ -311,7 +311,7 @@ function ChannelProfileHeader({
             <ChannelTab
               href={channelGuestHref(item.kind, village)}
               key={item.id}
-              label={item.label || channelMenuMeta[item.kind].defaultLabel}
+              label={getChannelMenuDisplayLabel(item)}
             />
           ))}
         </nav>
@@ -368,7 +368,7 @@ function ChannelGuestMenuSection({
       <ChannelProgramSection
         homeHref={homeHref}
         programs={programs}
-        title={item.label || channelMenuMeta.program.defaultLabel}
+        title={getChannelMenuDisplayLabel(item)}
       />
     );
   }
@@ -378,7 +378,7 @@ function ChannelGuestMenuSection({
       <ChannelGallerySection
         homeHref={homeHref}
         items={galleryCards}
-        title={item.label || channelMenuMeta.gallery.defaultLabel}
+        title={getChannelMenuDisplayLabel(item)}
       />
     );
   }
@@ -387,7 +387,7 @@ function ChannelGuestMenuSection({
     return (
       <ChannelStorySection
         stories={stories}
-        title={item.label || channelMenuMeta.magazine.defaultLabel}
+        title={getChannelMenuDisplayLabel(item)}
       />
     );
   }
@@ -396,7 +396,7 @@ function ChannelGuestMenuSection({
     return (
       <ChannelNoticeSection
         notices={notices}
-        title={item.label || channelMenuMeta.board.defaultLabel}
+        title={getChannelMenuDisplayLabel(item)}
       />
     );
   }

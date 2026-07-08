@@ -24,6 +24,13 @@ export const CHANNEL_MENU_SECTION_MARKER = "__nuvio_channel_menu__";
 
 export const channelHomeLabel = "채널 홈";
 
+const legacyEditableMenuLabels: Partial<Record<ChannelMenuKind, string>> = {
+  board: "게시판",
+  free: "자유",
+  gallery: "갤러리",
+  magazine: "매거진",
+};
+
 export const channelMenuMeta: Record<
   ChannelMenuKind,
   {
@@ -38,7 +45,7 @@ export const channelMenuMeta: Record<
   board: {
     badge: "게시판 형",
     defaultDescription: "공지사항과 같이 목록이 게시판 형태로 표시돼요",
-    defaultLabel: "게시판",
+    defaultLabel: "게시판형",
     guestHref: (homeHref) => `${homeHref}/notice`,
     hostHref: "/host/channels/boards",
     sectionType: "board",
@@ -47,7 +54,7 @@ export const channelMenuMeta: Record<
     badge: "자유 형",
     defaultDescription:
       "소개 페이지 등 원페이지 형태로 자유롭게 구성할 수 있으며, 홈 화면에는 표시되지 않고 메뉴에서만 접근할 수 있어요",
-    defaultLabel: "자유",
+    defaultLabel: "자유형",
     guestHref: (homeHref) => `${homeHref}#channel-free`,
     hostHref: "/host/channels/free",
     sectionType: "free",
@@ -55,7 +62,7 @@ export const channelMenuMeta: Record<
   gallery: {
     badge: "갤러리 형",
     defaultDescription: "이미지와 영상을 그리드로 표시돼요",
-    defaultLabel: "갤러리",
+    defaultLabel: "갤러리형",
     guestHref: (homeHref) => `${homeHref}/media?type=gallery`,
     hostHref: "/host/channels/galleries",
     sectionType: "gallery",
@@ -63,7 +70,7 @@ export const channelMenuMeta: Record<
   magazine: {
     badge: "매거진 형",
     defaultDescription: "블로그 처럼 글을 작성하고 목록은 썸네일 카드로 표시돼요",
-    defaultLabel: "매거진",
+    defaultLabel: "매거진형",
     guestHref: (homeHref) => `${homeHref}/media?type=magazine`,
     hostHref: "/host/channels/magazines",
     sectionType: "magazine",
@@ -139,10 +146,19 @@ export function getChannelMenuLabel(
   village: Pick<Village, "sections"> | VillageSection[] | null | undefined,
   kind: ChannelMenuKind,
 ) {
-  return (
-    getChannelMenuItems(village).find((item) => item.kind === kind)?.label ||
-    channelMenuMeta[kind].defaultLabel
-  );
+  const item = getChannelMenuItems(village).find((menuItem) => menuItem.kind === kind);
+  return getChannelMenuDisplayLabel(item ?? createChannelMenuItem(kind));
+}
+
+export function getChannelMenuDisplayLabel(item: Pick<ChannelMenuItem, "kind" | "label">) {
+  const label = item.label.trim();
+  const legacyLabel = legacyEditableMenuLabels[item.kind];
+
+  if (!label || label === legacyLabel) {
+    return channelMenuMeta[item.kind].defaultLabel;
+  }
+
+  return label;
 }
 
 export function applyChannelMenuItemsToSections(

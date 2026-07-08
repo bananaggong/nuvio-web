@@ -11,7 +11,7 @@ import {
 import {
   channelGuestHref,
   channelHomeLabel,
-  channelMenuMeta,
+  getChannelMenuDisplayLabel,
   getVisibleChannelMenuItems,
 } from "@/lib/channel-menu";
 import { villagePath } from "@/lib/village-routing";
@@ -197,7 +197,7 @@ export function ChannelProfileHeader({
               active={activeTab === item.kind}
               href={channelGuestHref(item.kind, village)}
               key={item.id}
-              label={item.label || channelMenuMeta[item.kind].defaultLabel}
+              label={getChannelMenuDisplayLabel(item)}
             />
           ))}
         </nav>
