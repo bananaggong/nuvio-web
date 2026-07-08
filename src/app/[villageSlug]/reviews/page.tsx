@@ -22,7 +22,7 @@ export async function generateMetadata({
   if (!launchFeatureFlags.reviews) return {};
 
   const { villageSlug } = await params;
-  if (isReservedVillageSlug(villageSlug)) return {};
+  if (isReservedVillageSlug(villageSlug) || villageSlug !== "boseong") return {};
 
   const village = await getPublicVillageBySlug(villageSlug);
   if (!village) return {};
@@ -48,6 +48,7 @@ export default async function VillageReviewsRoute({
   const query = (await searchParams) ?? {};
   const programFilter = Array.isArray(query.program) ? query.program[0] : query.program;
   if (isReservedVillageSlug(villageSlug)) notFound();
+  if (villageSlug !== "boseong") notFound();
 
   const village = await getPublicVillageBySlug(villageSlug);
   if (!village) notFound();

@@ -162,7 +162,7 @@ export function ChannelGuestHomePage({
           >
             <Image
               alt={`${village.name} banner`}
-              className="object-contain object-center"
+              className="object-cover object-center"
               fill
               priority
               sizes="100vw"

@@ -225,7 +225,7 @@ export function HostChannelHome() {
             {channel?.heroImage ? (
               <Image
                 alt={`${channel.name || "채널"} 배너 이미지`}
-                className="object-contain object-center"
+                className="object-cover object-center"
                 fill
                 priority
                 sizes="(min-width: 1920px) 1640px, 1230px"
