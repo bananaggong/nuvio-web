@@ -22,6 +22,11 @@ type HostMediaPayload = {
   data?: VillageMediaContent[];
 };
 
+type SaveHostMediaPayload = {
+  data?: VillageMediaContent;
+  error?: string;
+};
+
 type GalleryViewMode = "grid" | "stack" | "video";
 type GalleryMediaLayout = "portrait" | "landscape";
 
@@ -57,7 +62,8 @@ export function HostChannelGalleries() {
   const [items, setItems] = useState<GalleryItem[]>([]);
   const [viewMode, setViewMode] = useState<GalleryViewMode>("grid");
   const [selectedId, setSelectedId] = useState<string | null>(null);
-  const [saved, setSaved] = useState(false);
+  const [saveMessage, setSaveMessage] = useState("");
+  const [saving, setSaving] = useState(false);
 
   useEffect(() => {
     let active = true;
@@ -153,12 +159,53 @@ export function HostChannelGalleries() {
     setItems((current) => [nextItem, ...current]);
     setSelectedId(nextItem.id);
     setViewMode("stack");
-    setSaved(false);
+    setSaveMessage("");
   }
 
-  function saveDraft() {
-    window.localStorage.setItem("nuvio-channel-gallery-draft", JSON.stringify(items));
-    setSaved(true);
+  async function saveDraft() {
+    if (!channel?.slug) {
+      setSaveMessage("채널을 먼저 선택해 주세요.");
+      return;
+    }
+
+    if (items.length === 0) {
+      setSaveMessage("저장할 갤러리 게시물이 없습니다.");
+      return;
+    }
+
+    setSaving(true);
+    setSaveMessage("저장 중입니다...");
+
+    try {
+      const savedItems: GalleryItem[] = [];
+      let nextSelectedId = selectedId;
+
+      for (const item of items) {
+        const response = await fetch("/api/host/media", {
+          body: JSON.stringify({ ...item, villageSlug: channel.slug }),
+          headers: { "Content-Type": "application/json" },
+          method: "POST",
+        });
+        const payload = (await response.json().catch(() => ({}))) as SaveHostMediaPayload;
+
+        if (!response.ok || !payload.data) {
+          throw new Error(payload.error || "갤러리 게시물을 저장하지 못했습니다.");
+        }
+
+        if (item.id === selectedId) nextSelectedId = payload.data.id;
+        savedItems.push(normalizeGalleryItem(payload.data));
+      }
+
+      setItems(savedItems);
+      setSelectedId(nextSelectedId);
+      setSaveMessage("저장되었습니다. 공개 채널에 반영됩니다.");
+    } catch (error) {
+      setSaveMessage(
+        error instanceof Error ? error.message : "갤러리 게시물을 저장하지 못했습니다.",
+      );
+    } finally {
+      setSaving(false);
+    }
   }
 
   return (
@@ -209,15 +256,16 @@ export function HostChannelGalleries() {
 
           <footer className="flex h-[var(--host-69)] items-start gap-[var(--host-12)] border-b border-[#6D7A8A] px-[var(--host-24)] pt-[var(--host-18)]">
             <button
-              className="h-[var(--host-29)] rounded-[3px] border border-[#6D7A8A] bg-white px-[var(--host-20)] text-[length:var(--host-12)] font-medium leading-[1.253] text-[#6D7A8A] transition hover:border-[#FE701E] hover:text-[#FE701E]"
+              className="h-[var(--host-29)] rounded-[3px] border border-[#6D7A8A] bg-white px-[var(--host-20)] text-[length:var(--host-12)] font-medium leading-[1.253] text-[#6D7A8A] transition hover:border-[#FE701E] hover:text-[#FE701E] disabled:cursor-not-allowed disabled:opacity-50"
+              disabled={saving}
               onClick={saveDraft}
               type="button"
             >
               저장
             </button>
-            {saved ? (
+            {saveMessage ? (
               <span className="text-[length:var(--host-12)] font-normal leading-[1.253] text-[#6D7A8A]">
-                임시 저장되었습니다.
+                {saveMessage}
               </span>
             ) : null}
           </footer>
