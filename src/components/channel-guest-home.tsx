@@ -143,8 +143,8 @@ export function ChannelGuestHomePage({
 }: ChannelGuestHomePageProps) {
   const homeHref = villagePath(village.slug);
   const programCards = buildProgramCards(programs, village);
-  const galleryCards = buildGalleryCards(media).slice(0, 3);
-  const stories = buildStoryCards(media).slice(0, 3);
+  const galleryCards = buildGalleryCards(media.filter(isChannelGalleryMedia)).slice(0, 3);
+  const stories = buildStoryCards(media.filter(isChannelMagazineMedia)).slice(0, 3);
   const notices = buildChannelNotices(programs, village).slice(0, 4);
   const visibleMenuItems = getVisibleChannelMenuItems(village);
   const homeBlocks = getChannelHomeBlocks(village);
@@ -857,6 +857,14 @@ function buildGalleryCards(media: VillageMediaContent[]): GalleryCardModel[] {
     image: item.thumbnail,
     kind: index === 1 ? "video" : "image",
   }));
+}
+
+function isChannelMagazineMedia(item: VillageMediaContent) {
+  return item.sourceUrl.includes("/host/channels/magazines");
+}
+
+function isChannelGalleryMedia(item: VillageMediaContent) {
+  return !isChannelMagazineMedia(item);
 }
 
 function buildStoryCards(media: VillageMediaContent[]): StoryCardModel[] {

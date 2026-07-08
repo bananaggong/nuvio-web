@@ -58,11 +58,24 @@ export function VillageMediaIndexPage({
     );
   }
 
+  const channelMedia =
+    viewType === "magazine"
+      ? media.filter(isChannelMagazineMedia)
+      : media.filter(isChannelGalleryMedia);
+
   if (viewType === "magazine") {
-    return <ChannelGuestMagazinePage media={media} village={village} />;
+    return <ChannelGuestMagazinePage media={channelMedia} village={village} />;
   }
 
-  return <ChannelGuestGalleryPage media={media} village={village} />;
+  return <ChannelGuestGalleryPage media={channelMedia} village={village} />;
+}
+
+function isChannelMagazineMedia(item: VillageMediaContent) {
+  return item.sourceUrl.includes("/host/channels/magazines");
+}
+
+function isChannelGalleryMedia(item: VillageMediaContent) {
+  return !isChannelMagazineMedia(item);
 }
 
 export function VillageMediaDetailPage({
