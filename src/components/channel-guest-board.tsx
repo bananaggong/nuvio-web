@@ -24,8 +24,8 @@ type BoardRow = {
 };
 
 const boardListStyle = {
-  maxWidth: `calc(100% - ${px(396)})`,
-  width: px(1044),
+  maxWidth: `calc(100% - ${px(336)})`,
+  width: px(1104),
 } as CSSProperties;
 
 export function ChannelGuestBoardPage({
@@ -48,11 +48,17 @@ export function ChannelGuestBoardPage({
           style={{
             ...boardListStyle,
             paddingBottom: px(48),
-            paddingTop: px(29),
+            paddingTop: px(8),
           }}
         >
           {rows.length > 0 ? (
-            <div className="w-full">
+            <div
+              className="w-full"
+              style={{
+                borderRadius: px(6),
+                padding: `${px(8)} ${px(30)} ${px(14)}`,
+              }}
+            >
               {rows.map((row) => (
                 <BoardListRow key={row.id} row={row} />
               ))}
@@ -69,11 +75,14 @@ export function ChannelGuestBoardPage({
 function BoardListRow({ row }: { row: BoardRow }) {
   return (
     <Link
-      className="grid items-center border-b border-[#F0D8C8] transition hover:bg-[#FFF9F4]"
+      className="grid items-center border-b border-[#F7B267] transition hover:bg-[#FFF9F4]"
       href={row.href}
       style={{
-        gridTemplateColumns: `${px(90)} minmax(0, 1fr) ${px(170)}`,
-        height: px(43),
+        borderBottomWidth: px(0.5),
+        gridTemplateColumns: `${row.badge ? px(82) : px(44)} minmax(0, 1fr) ${px(138)}`,
+        minHeight: px(43),
+        paddingBottom: px(12),
+        paddingTop: px(12),
       }}
     >
       <span className="flex items-center">
@@ -81,13 +90,13 @@ function BoardListRow({ row }: { row: BoardRow }) {
       </span>
       <span
         className="truncate font-medium leading-[1.253] text-[#5B3A29]"
-        style={{ fontSize: px(14) }}
+        style={{ fontSize: px(12) }}
       >
         {row.title}
       </span>
       <span
-        className="text-right font-medium leading-[1.253] text-[#D3CBC4]"
-        style={{ fontSize: px(14) }}
+        className="text-right font-normal leading-[1.6] text-[#CAC4BC]"
+        style={{ fontSize: px(12), paddingRight: px(27) }}
       >
         {row.date}
       </span>
@@ -98,12 +107,13 @@ function BoardListRow({ row }: { row: BoardRow }) {
 function BoardBadge({ type }: { type: "fixed" | "new" }) {
   return (
     <span
-      className="inline-flex items-center justify-center rounded-full font-semibold leading-none text-white"
+      className="inline-flex items-center justify-center font-semibold leading-[1.253] text-[#F9F9F9]"
       style={{
         backgroundColor: type === "fixed" ? "#789157" : "#FF6422",
         fontSize: px(12),
-        height: px(19),
-        width: px(39),
+        borderRadius: px(6),
+        minHeight: px(19),
+        padding: `${px(1)} ${px(9)}`,
       }}
     >
       {type === "fixed" ? "고정" : "새글"}
