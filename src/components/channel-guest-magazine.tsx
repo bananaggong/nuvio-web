@@ -25,8 +25,8 @@ type MagazineItem = {
 };
 
 const magazineGridStyle = {
-  maxWidth: `calc(100% - ${px(340)})`,
-  width: px(1101),
+  maxWidth: `calc(100% - ${px(337)})`,
+  width: px(1103),
 } as CSSProperties;
 
 export function ChannelGuestMagazinePage({
@@ -49,16 +49,16 @@ export function ChannelGuestMagazinePage({
           style={{
             ...magazineGridStyle,
             paddingBottom: px(82),
-            paddingTop: px(36),
+            paddingTop: px(22),
           }}
         >
           {items.length > 0 ? (
             <div
               className="grid"
               style={{
-                columnGap: px(45),
+                columnGap: px(43),
                 gridTemplateColumns: "repeat(2, minmax(0, 1fr))",
-                rowGap: px(79),
+                rowGap: px(43),
               }}
             >
               {items.map((item) => (
@@ -77,18 +77,19 @@ export function ChannelGuestMagazinePage({
 function MagazineCard({ item }: { item: MagazineItem }) {
   return (
     <article
-      className="overflow-hidden bg-white"
+      className="overflow-hidden bg-[#FCFCFC]"
       style={{
-        borderRadius: px(14),
+        borderRadius: px(16),
+        height: px(550),
       }}
     >
       <Link
         className="relative block overflow-hidden bg-[#D9D9D9]"
         href={item.href}
         style={{
-          borderTopLeftRadius: px(14),
-          borderTopRightRadius: px(14),
-          height: px(367),
+          borderTopLeftRadius: px(16),
+          borderTopRightRadius: px(16),
+          height: px(368),
         }}
       >
         {item.image ? (
@@ -105,8 +106,7 @@ function MagazineCard({ item }: { item: MagazineItem }) {
         className="flex flex-col items-center text-center"
         href={item.href}
         style={{
-          height: px(148),
-          paddingTop: px(32),
+          paddingTop: px(30),
         }}
       >
         <span
@@ -118,10 +118,10 @@ function MagazineCard({ item }: { item: MagazineItem }) {
           {item.title}
         </span>
         <span
-          className="font-medium leading-[1.253] text-[#D3CBC4]"
+          className="font-normal leading-[1.253] text-[#CAC4BC]"
           style={{
             fontSize: px(14),
-            marginTop: px(16),
+            marginTop: px(13),
           }}
         >
           {item.date}
