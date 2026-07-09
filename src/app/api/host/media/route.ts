@@ -9,6 +9,7 @@ import {
 } from "@/lib/api-security";
 import { canManageHostVillage } from "@/lib/host-village-access";
 import {
+  deleteHostVillageMediaDraft,
   listHostVillageMediaFromDb,
   normalizeHostVillageMediaDraft,
   upsertHostVillageMediaDraft,
@@ -89,6 +90,54 @@ export async function POST(request: Request) {
       {
         error:
           error instanceof Error ? error.message : "Failed to save host media.",
+      },
+      { status: 400 },
+    );
+  }
+}
+
+export async function DELETE(request: Request) {
+  const auth = await requireHostRole();
+  if (isApiAuthError(auth)) return auth.response;
+
+  try {
+    const crossOrigin = enforceSameOrigin(request);
+    if (crossOrigin) return crossOrigin;
+
+    const rateLimitError = applyRateLimit(request, {
+      key: "host-media-delete",
+      limit: 60,
+      windowMs: 15 * 60 * 1000,
+    });
+    if (rateLimitError) return rateLimitError;
+
+    const body = (await request.json().catch(() => ({}))) as Record<string, unknown>;
+    const id = typeof body.id === "string" ? body.id.trim() : "";
+    const villageSlug =
+      typeof body.villageSlug === "string" ? body.villageSlug.trim() : "";
+
+    if (!id || !villageSlug) {
+      return apiError("Media id and channel slug are required.", 400);
+    }
+
+    if (!(await canManageHostVillage(auth, villageSlug))) {
+      return apiError("You do not have permission to manage this channel.", 403);
+    }
+
+    const deleted = await deleteHostVillageMediaDraft(id, {
+      allowedVillageSlug: villageSlug,
+    });
+
+    return NextResponse.json({ data: { deleted } });
+  } catch (error) {
+    if (error instanceof VillageMediaAccessError) {
+      return apiError(error.message, 403);
+    }
+
+    return NextResponse.json(
+      {
+        error:
+          error instanceof Error ? error.message : "Failed to delete host media.",
       },
       { status: 400 },
     );

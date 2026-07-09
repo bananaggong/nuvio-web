@@ -100,6 +100,7 @@ const mediaProviderLabels: Record<VillageMediaProvider, string> = {
   naver: "Naver",
   imweb: "Imweb",
   link: "링크",
+  video: "영상",
 };
 
 export function BoseongAdminConsole() {

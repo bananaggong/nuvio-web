@@ -71,7 +71,11 @@ export async function PATCH(request: Request) {
       );
     }
 
-    if (displayName) {
+    if (
+      displayName &&
+      normalizeDisplayNameForComparison(displayName) !==
+        normalizeDisplayNameForComparison(auth.profile.displayName)
+    ) {
       const available = await isDisplayNameAvailable(displayName, auth.user.id);
       if (!available) {
         return NextResponse.json(
@@ -112,6 +116,10 @@ export async function PATCH(request: Request) {
 
 function normalizeText(value: unknown, maxLength: number): string | undefined {
   return typeof value === "string" ? value.trim().slice(0, maxLength) : undefined;
+}
+
+function normalizeDisplayNameForComparison(displayName: string): string {
+  return displayName.trim().replace(/\s+/g, " ").toLowerCase();
 }
 
 function normalizeNullableBoolean(value: unknown): boolean | null | undefined {

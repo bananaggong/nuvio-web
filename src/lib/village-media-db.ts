@@ -52,6 +52,7 @@ const mediaProviders: VillageMediaProvider[] = [
   "naver",
   "imweb",
   "link",
+  "video",
 ];
 
 export async function listPublicVillageMedia(
@@ -173,6 +174,72 @@ export async function upsertHostVillageMediaDraft(
 
   const [row] = await getDb().insert(mediaTable).values(insertValue).returning();
   return mapMediaRowToHostDraft(row);
+}
+
+export async function deleteHostVillageMediaDraft(
+  id: string,
+  options: VillageMediaMutationOptions = {},
+): Promise<boolean> {
+  const normalizedId = id.trim();
+  const allowedVillageSlug = options.allowedVillageSlug
+    ? createSlug(options.allowedVillageSlug)
+    : undefined;
+
+  if (!normalizedId) return false;
+
+  if (isUuid(normalizedId)) {
+    const [existingRow] = await getDb()
+      .select({
+        id: mediaTable.id,
+        villageSlug: mediaTable.villageSlug,
+      })
+      .from(mediaTable)
+      .where(eq(mediaTable.id, normalizedId))
+      .limit(1);
+
+    if (!existingRow) return false;
+    assertMediaVillageAccess(existingRow.villageSlug, allowedVillageSlug);
+
+    const deletedRows = await getDb()
+      .delete(mediaTable)
+      .where(
+        allowedVillageSlug
+          ? and(
+              eq(mediaTable.id, normalizedId),
+              eq(mediaTable.villageSlug, allowedVillageSlug),
+            )
+          : eq(mediaTable.id, normalizedId),
+      )
+      .returning({ id: mediaTable.id });
+
+    return deletedRows.length > 0;
+  }
+
+  const [existingRow] = await getDb()
+    .select({
+      id: mediaTable.id,
+      villageSlug: mediaTable.villageSlug,
+    })
+    .from(mediaTable)
+    .where(eq(mediaTable.legacyId, normalizedId))
+    .limit(1);
+
+  if (!existingRow) return false;
+  assertMediaVillageAccess(existingRow.villageSlug, allowedVillageSlug);
+
+  const deletedRows = await getDb()
+    .delete(mediaTable)
+    .where(
+      allowedVillageSlug
+        ? and(
+            eq(mediaTable.legacyId, normalizedId),
+            eq(mediaTable.villageSlug, allowedVillageSlug),
+          )
+        : eq(mediaTable.legacyId, normalizedId),
+    )
+    .returning({ id: mediaTable.id });
+
+  return deletedRows.length > 0;
 }
 
 export function normalizeHostVillageMediaDraft(
@@ -366,6 +433,11 @@ function normalizeYoutubeEmbedUrl(value: string): string | undefined {
 
     if (url.hostname.endsWith("youtube.com")) {
       if (url.pathname.startsWith("/embed/")) {
+        const id = url.pathname.split("/")[2];
+        return id ? `https://www.youtube.com/embed/${id}` : undefined;
+      }
+
+      if (url.pathname.startsWith("/shorts/")) {
         const id = url.pathname.split("/")[2];
         return id ? `https://www.youtube.com/embed/${id}` : undefined;
       }

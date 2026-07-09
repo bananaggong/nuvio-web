@@ -6,7 +6,10 @@ import {
   BoseongFigmaMediaAspectIndexPage,
   BoseongFigmaMediaIndexPage,
 } from "@/components/boseong-figma-site";
-import { ChannelGuestGalleryPage } from "@/components/channel-guest-gallery";
+import {
+  ChannelGuestGalleryDetailPage,
+  ChannelGuestGalleryPage,
+} from "@/components/channel-guest-gallery";
 import { ChannelGuestMagazinePage } from "@/components/channel-guest-magazine";
 import {
   VillageSiteFooter,
@@ -100,10 +103,22 @@ export function VillageMediaDetailPage({
     );
   }
 
+  if (isChannelGalleryMedia(content)) {
+    return (
+      <ChannelGuestGalleryDetailPage
+        content={content}
+        media={media.filter(isChannelGalleryMedia)}
+        village={village}
+      />
+    );
+  }
+
   const related = media
     .filter((item) => item.id !== content.id)
     .slice(0, 3);
   const isPortraitEmbed = content.provider === "instagram";
+  const isUploadedVideo = content.provider === "video";
+  const showSourceLink = /^https?:\/\//iu.test(content.sourceUrl);
 
   return (
     <VillageMediaFrame primaryProgram={programs[0]} title={content.title} village={village}>
@@ -124,6 +139,14 @@ export function VillageMediaDetailPage({
                 referrerPolicy="strict-origin-when-cross-origin"
                 src={content.embedUrl}
                 title={content.title}
+              />
+            ) : isUploadedVideo ? (
+              <video
+                className="absolute inset-0 h-full w-full object-cover"
+                controls
+                playsInline
+                poster={content.thumbnail || undefined}
+                src={content.sourceUrl}
               />
             ) : (
               <Image
@@ -153,15 +176,17 @@ export function VillageMediaDetailPage({
                 <p key={paragraph}>{paragraph}</p>
               ))}
             </div>
-            <a
-              className="mt-8 inline-flex h-11 items-center justify-center gap-2 bg-[#11130f] px-4 text-sm font-black text-white hover:bg-[#4E7C3A]"
-              href={content.sourceUrl}
-              rel="noreferrer"
-              target="_blank"
-            >
-              {getSourceButtonLabel(content.provider)}
-              <ExternalLink size={16} />
-            </a>
+            {showSourceLink ? (
+              <a
+                className="mt-8 inline-flex h-11 items-center justify-center gap-2 bg-[#11130f] px-4 text-sm font-black text-white hover:bg-[#4E7C3A]"
+                href={content.sourceUrl}
+                rel="noreferrer"
+                target="_blank"
+              >
+                {getSourceButtonLabel(content.provider)}
+                <ExternalLink size={16} />
+              </a>
+            ) : null}
           </div>
         </div>
 
@@ -238,5 +263,6 @@ function VillageMediaFrame({
 function getSourceButtonLabel(provider?: VillageMediaContent["provider"]): string {
   if (provider === "youtube") return "유튜브에서 보기";
   if (provider === "instagram") return "인스타그램에서 보기";
+  if (provider === "video") return "영상 열기";
   return "원문 보기";
 }

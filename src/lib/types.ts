@@ -172,7 +172,13 @@ export type ProgramLead = {
 };
 
 export type VillageMediaCategory = "original" | "broadcast" | "archive";
-export type VillageMediaProvider = "youtube" | "instagram" | "naver" | "imweb" | "link";
+export type VillageMediaProvider =
+  | "youtube"
+  | "instagram"
+  | "naver"
+  | "imweb"
+  | "link"
+  | "video";
 
 export type VillageMediaContent = {
   id: string;
