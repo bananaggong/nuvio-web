@@ -7,6 +7,8 @@ export type ApplicationFormBlockType =
   | "title"
   | "description"
   | "divider"
+  | "fileAttachment"
+  | "fileRequest"
   | "image"
   | "shortText"
   | "longText"
@@ -35,6 +37,8 @@ export type ApplicationFormBlock = {
   imageAlt?: string;
   imageUrl?: string;
   imageWidth?: number;
+  fileName?: string;
+  fileUrl?: string;
   options?: string[];
 };
 
@@ -67,6 +71,8 @@ export const questionBlockTypes: ApplicationFormBlockType[] = [
   "checkbox",
   "date",
   "email",
+  "fileAttachment",
+  "fileRequest",
   "phone",
 ];
 
@@ -81,6 +87,8 @@ const blockTypeValues: ApplicationFormBlockType[] = [
   "title",
   "description",
   "divider",
+  "fileAttachment",
+  "fileRequest",
   "image",
   "shortText",
   "longText",
@@ -214,6 +222,8 @@ export function normalizeApplicationFormBlocks(
         imageAlt: asString(block.imageAlt),
         imageUrl: asString(block.imageUrl),
         imageWidth: clampNumber(block.imageWidth, 20, 100, 100),
+        fileName: asString(block.fileName),
+        fileUrl: asString(block.fileUrl),
         id: asString(block.id) || `block-${index}-${Date.now()}`,
         label: asString(block.label),
         options: asStringArray(block.options),
@@ -268,6 +278,8 @@ export function fieldsToBlocks(
     imageAlt: "",
     imageUrl: "",
     imageWidth: 100,
+    fileName: "",
+    fileUrl: "",
     id: field.id,
     label: field.label,
     options: field.options ?? [],
@@ -286,6 +298,8 @@ export function createEmptyBlock(
     imageAlt: "",
     imageUrl: "",
     imageWidth: 100,
+    fileName: "",
+    fileUrl: "",
     id: `block-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
     label: "",
     options:
@@ -399,7 +413,7 @@ function blockTypeToLegacyFieldType(
 ): ApplicationFieldType {
   if (type === "longText") return "textarea";
   if (type === "singleSelect" || type === "multiSelect") return "select";
-  if (type === "checkbox") return "checkbox";
+  if (type === "checkbox" || type === "fileAttachment") return "checkbox";
   return "text";
 }
 

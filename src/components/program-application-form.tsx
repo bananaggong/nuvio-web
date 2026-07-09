@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
-import { CheckCircle2, ChevronDown } from "lucide-react";
+import { CheckCircle2, ChevronDown, FileText, Upload } from "lucide-react";
 import { useEffect, useState } from "react";
 import type {
   ApplicationFormBlock,
@@ -39,7 +39,13 @@ type ApplicationFormState = {
   consentThirdParty: boolean;
 };
 
-type DynamicAnswers = Record<string, string | boolean | string[]>;
+type FileAnswer = {
+  fileName: string;
+  fileSize: number;
+  fileType: string;
+};
+type DynamicAnswer = string | boolean | string[] | FileAnswer;
+type DynamicAnswers = Record<string, DynamicAnswer>;
 type LegalConsentField =
   | "consentMarketing"
   | "consentPrivacyCollection"
@@ -157,7 +163,7 @@ export function ProgramApplicationForm({
     setForm((current) => ({ ...current, [key]: value }));
   }
 
-  function updateDynamicAnswer(fieldId: string, value: string | boolean | string[]) {
+  function updateDynamicAnswer(fieldId: string, value: DynamicAnswer) {
     setDynamicAnswers((current) => ({ ...current, [fieldId]: value }));
   }
 
@@ -240,7 +246,11 @@ export function ProgramApplicationForm({
             id: block.id,
             label: block.label,
             type: block.type,
-            value: dynamicAnswers[block.id] ?? (block.type === "checkbox" ? false : ""),
+            value:
+              dynamicAnswers[block.id] ??
+              (block.type === "checkbox" || block.type === "fileAttachment"
+                ? false
+                : ""),
           })),
         companions: String(companionCount),
         legalConsent,
@@ -607,8 +617,8 @@ function DynamicBlock({
   value,
 }: {
   block: ApplicationFormBlock;
-  onChange: (value: string | boolean | string[]) => void;
-  value?: string | boolean | string[];
+  onChange: (value: DynamicAnswer) => void;
+  value?: DynamicAnswer;
 }) {
   if (block.type === "title") {
     return (
@@ -660,6 +670,80 @@ function DynamicBlock({
           </p>
         ) : null}
       </figure>
+    );
+  }
+
+  if (block.type === "fileRequest") {
+    const fileAnswer = isFileAnswer(value) ? value : undefined;
+
+    return (
+      <FieldBlock label={block.label} required={block.required}>
+        {block.body || block.helper ? (
+          <p className="px-[14px] text-[12px] font-normal leading-[1.65] text-[#6D7A8A]">
+            &lt;{block.body || block.helper}&gt;
+          </p>
+        ) : null}
+        <div className="px-[14px]">
+          <span className="inline-flex h-[52px] w-[64px] cursor-pointer flex-col items-center justify-center gap-[4px] rounded-[6px] border border-[#F7B267] bg-white text-[10px] font-medium leading-[1.253] text-[#AEB8C2] transition hover:border-[#FE701E] hover:text-[#FE701E]">
+            파일 업로드
+            <Upload aria-hidden="true" className="text-[#FF9A3D]" size={18} />
+            <input
+              className="sr-only"
+              onChange={(event) => {
+                const file = event.target.files?.[0];
+                if (!file) return;
+                onChange({
+                  fileName: file.name,
+                  fileSize: file.size,
+                  fileType: file.type || "application/octet-stream",
+                });
+              }}
+              required={block.required && !fileAnswer}
+              type="file"
+            />
+          </span>
+        </div>
+        {fileAnswer ? (
+          <div className="mx-[14px] flex min-h-[34px] items-center gap-[8px] rounded-[4px] border border-[#F3D7C4] bg-[#FFF7EF] px-[10px] py-[8px] text-[12px] font-medium leading-[1.4] text-[#5B3A29]">
+            <FileText aria-hidden="true" className="shrink-0 text-[#FE701E]" size={16} />
+            <span className="min-w-0 flex-1 truncate">{fileAnswer.fileName}</span>
+            <span className="shrink-0 text-[#8A94A3]">
+              {formatFileSize(fileAnswer.fileSize)}
+            </span>
+          </div>
+        ) : null}
+      </FieldBlock>
+    );
+  }
+
+  if (block.type === "fileAttachment") {
+    const checked = Boolean(value);
+
+    return (
+      <div className="border-b border-dashed border-[#F3D7C4] py-[18px]">
+        <p className="text-[14px] font-semibold leading-[1.45] text-[#5B3A29]">
+          {block.label}
+          {block.required ? <span className="ml-[8px] text-[12px] text-[#FE701E]">*필수항목</span> : null}
+        </p>
+        {block.body || block.helper ? (
+          <p className="mt-[12px] px-[14px] text-[12px] font-normal leading-[1.65] text-[#6D7A8A]">
+            &lt;{block.body || block.helper}&gt;
+          </p>
+        ) : null}
+        <div className="mt-[14px] px-[14px]">
+          <ApplicationAttachmentCard block={block} />
+        </div>
+        <label className="mt-[14px] inline-flex items-center gap-[8px] px-[14px] text-[14px] font-normal leading-[1.35] text-[#5B3A29]">
+          <input
+            checked={checked}
+            className="size-[14px] accent-[#FE701E]"
+            onChange={(event) => onChange(event.target.checked)}
+            required={block.required}
+            type="checkbox"
+          />
+          확인 완료
+        </label>
+      </div>
     );
   }
 
@@ -855,11 +939,12 @@ function resolveVisibleBlocks(
 }
 
 function isBranchMatched(
-  answer: string | boolean | string[] | undefined,
+  answer: DynamicAnswer | undefined,
   branchValue: string,
 ): boolean {
   if (Array.isArray(answer)) return answer.includes(branchValue);
   if (typeof answer === "boolean") return String(answer) === branchValue;
+  if (answer && typeof answer === "object") return false;
   return answer === branchValue;
 }
 
@@ -903,6 +988,49 @@ function FieldBlock({
       </label>
     </div>
   );
+}
+
+function ApplicationAttachmentCard({
+  block,
+}: {
+  block: ApplicationFormBlock;
+}) {
+  const fileUrl = block.fileUrl?.trim();
+  const fileName = block.fileName?.trim() || block.imageAlt?.trim() || "첨부 파일";
+  const isImageAttachment = Boolean(
+    fileUrl && /\.(png|jpe?g|gif|webp|avif|svg)(\?|#|$)/i.test(fileUrl),
+  );
+
+  if (fileUrl && isImageAttachment) {
+    return (
+      // eslint-disable-next-line @next/next/no-img-element
+      <img
+        alt={fileName}
+        className="h-[188px] w-[320px] max-w-full rounded-[2px] bg-[#D9D9D9] object-cover"
+        src={fileUrl}
+      />
+    );
+  }
+
+  return (
+    <div className="flex h-[188px] w-[320px] max-w-full flex-col items-center justify-center gap-[10px] rounded-[2px] bg-[#D9D9D9] px-[18px] text-center text-[12px] font-medium leading-[1.45] text-[#6D7A8A]">
+      <FileText aria-hidden="true" size={28} strokeWidth={1.8} />
+      <span className="line-clamp-2">{fileName}</span>
+      {fileUrl ? <span className="text-[11px] text-[#8A94A3]">다운로드 가능한 파일</span> : null}
+    </div>
+  );
+}
+
+function isFileAnswer(value: unknown): value is FileAnswer {
+  if (!value || typeof value !== "object" || Array.isArray(value)) return false;
+  const answer = value as Partial<FileAnswer>;
+  return typeof answer.fileName === "string" && typeof answer.fileSize === "number";
+}
+
+function formatFileSize(value: number): string {
+  if (!Number.isFinite(value) || value <= 0) return "0 KB";
+  if (value < 1024 * 1024) return `${Math.max(1, Math.round(value / 1024)).toLocaleString("ko-KR")} KB`;
+  return `${(value / (1024 * 1024)).toFixed(1)} MB`;
 }
 
 function formatApplicationDate(value: string): string {

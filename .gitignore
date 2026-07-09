@@ -14,6 +14,7 @@
 /coverage
 /output
 /.playwright-cli
+/.codex-artifacts
 
 # next.js
 /.next/

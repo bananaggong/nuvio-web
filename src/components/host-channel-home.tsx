@@ -300,7 +300,6 @@ export function HostChannelHome() {
 
     const nextVisible = !item.visible;
     const allMenuItems = getChannelMenuItems(channel, {
-      includeFree: true,
       includeHidden: true,
     });
     const nextMenuItems = allMenuItems.map((menuItem) =>

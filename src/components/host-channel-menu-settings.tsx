@@ -50,7 +50,7 @@ export function HostChannelMenuSettings() {
   const requestedChannelSlug = searchParams.get("channel");
   const [channel, setChannel] = useState<Village | null>(null);
   const [items, setItems] = useState<ChannelMenuItem[]>(() =>
-    getChannelMenuItems(null, { includeFree: true }),
+    getChannelMenuItems(null),
   );
   const [draggingId, setDraggingId] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -79,7 +79,7 @@ export function HostChannelMenuSettings() {
       if (!active) return;
 
       if (!response?.ok) {
-        const fallbackItems = getChannelMenuItems(null, { includeFree: true });
+        const fallbackItems = getChannelMenuItems(null);
         setChannel(null);
         setItems(fallbackItems);
         setSavedMenuSignature(createChannelMenuSignature(fallbackItems));
@@ -89,7 +89,7 @@ export function HostChannelMenuSettings() {
 
       const payload = (await response.json().catch(() => ({}))) as HostChannelPayload;
       const selectedChannel = selectHostChannel(payload.data, requestedChannelSlug);
-      const loadedItems = getChannelMenuItems(selectedChannel, { includeFree: true });
+      const loadedItems = getChannelMenuItems(selectedChannel);
 
       setChannel(selectedChannel);
       setItems(loadedItems);
@@ -234,7 +234,7 @@ export function HostChannelMenuSettings() {
       }
 
       setChannel(payload.data);
-      const savedItems = getChannelMenuItems(payload.data, { includeFree: true });
+      const savedItems = getChannelMenuItems(payload.data);
       setItems(savedItems);
       setSavedMenuSignature(createChannelMenuSignature(savedItems));
       setStatusMessage("저장되었습니다.");

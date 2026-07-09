@@ -711,7 +711,7 @@ function ReviewsContent({ context }: { context: MypageContext }) {
 
   return (
     <section>
-      <PageTitle eyebrow="REVIEW" title="후기" trailing={`${writtenTrips.length}건`} />
+      <PageTitle title="후기" trailing={`${writtenTrips.length}건`} />
       <SegmentedTabs
         active={tab}
         items={[

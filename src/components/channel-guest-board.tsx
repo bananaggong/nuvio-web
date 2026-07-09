@@ -16,7 +16,7 @@ type ChannelGuestBoardPageProps = {
 };
 
 type BoardRow = {
-  badge?: "fixed" | "new";
+  badges: Array<"fixed" | "new">;
   date: string;
   href: string;
   id: string;
@@ -79,14 +79,16 @@ function BoardListRow({ row }: { row: BoardRow }) {
       href={row.href}
       style={{
         borderBottomWidth: px(0.5),
-        gridTemplateColumns: `${row.badge ? px(82) : px(44)} minmax(0, 1fr) ${px(138)}`,
+        gridTemplateColumns: `${row.badges.length > 0 ? px(108) : px(44)} minmax(0, 1fr) ${px(138)}`,
         minHeight: px(43),
         paddingBottom: px(12),
         paddingTop: px(12),
       }}
     >
-      <span className="flex items-center">
-        {row.badge ? <BoardBadge type={row.badge} /> : null}
+      <span className="flex items-center" style={{ gap: px(4) }}>
+        {row.badges.map((badge) => (
+          <BoardBadge key={badge} type={badge} />
+        ))}
       </span>
       <span
         className="truncate font-medium leading-[1.253] text-[#5B3A29]"
@@ -122,18 +124,19 @@ function BoardBadge({ type }: { type: "fixed" | "new" }) {
 }
 
 function buildBoardRows(notices: VillageNotice[]): BoardRow[] {
-  return notices.map((notice, index) => ({
-    badge:
-      notice.type === "고정"
-        ? ("fixed" as const)
-        : notice.type === "새글"
-          ? ("new" as const)
-          : undefined,
-    date: formatBoardDate(notice.date),
-    href: notice.href,
-    id: `${notice.type}-${notice.title}-${notice.href}-${index}`,
-    title: notice.title || "제목",
-  }));
+  return notices.map((notice, index) => {
+    const badges: BoardRow["badges"] = [];
+    if (notice.type.includes("고정")) badges.push("fixed");
+    if (notice.type.includes("새글")) badges.push("new");
+
+    return {
+      badges,
+      date: formatBoardDate(notice.date),
+      href: notice.href,
+      id: `${notice.type}-${notice.title}-${notice.href}-${index}`,
+      title: notice.title || "제목",
+    };
+  });
 }
 
 function ChannelBoardEmptyState() {

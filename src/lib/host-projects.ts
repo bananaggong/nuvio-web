@@ -45,12 +45,16 @@ export type HostProgramOverview = {
   activeCount: number;
   applicationCount: number;
   applications: HostApplication[];
+  activityEnd?: string;
+  activityStart?: string;
   id: string;
   imageUrl: string;
   missingEvidenceCount: number;
   pendingCount: number;
   periodLabel?: string;
   readiness: number;
+  recruitEnd?: string;
+  recruitStart?: string;
   slug?: string;
   status?: ProgramStatus;
   title: string;
@@ -319,12 +323,16 @@ function buildProgramOverviewFromDraft(
       applicationSummary.completed,
     applicationCount: programApplications.length,
     applications: programApplications,
+    activityEnd: program.activityEnd,
+    activityStart: program.activityStart,
     id: program.id,
     imageUrl: program.image || resolveProgramImage(program.title),
     missingEvidenceCount: countMissingEvidence(programApplications),
     pendingCount,
     periodLabel: formatProgramDraftPeriod(program),
     readiness: applicationSummary.reportReadiness,
+    recruitEnd: program.recruitEnd,
+    recruitStart: program.recruitStart,
     slug: program.slug,
     status: program.status,
     title: program.title,
@@ -354,12 +362,16 @@ function buildStandaloneProgramOverviewFromDraft(
       applicationSummary.completed,
     applicationCount: programApplications.length,
     applications: programApplications,
+    activityEnd: program.activityEnd,
+    activityStart: program.activityStart,
     id: program.id,
     imageUrl: program.image || resolveProgramImage(program.title),
     missingEvidenceCount: countMissingEvidence(programApplications),
     pendingCount,
     periodLabel: formatProgramDraftPeriod(program),
     readiness: applicationSummary.reportReadiness,
+    recruitEnd: program.recruitEnd,
+    recruitStart: program.recruitStart,
     slug: program.slug,
     status: program.status,
     title: program.title,

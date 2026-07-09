@@ -83,7 +83,7 @@ type UploadAssetPayload = {
 
 type ChannelMagazine = VillageMediaContent;
 
-type MagazineEditorDraft = {
+export type MagazineEditorDraft = {
   bodyHtml: string;
   date: string;
   id?: string;
@@ -98,7 +98,7 @@ const tableSizeInputClassName =
 const TABLE_SIZE_MIN = 1;
 const TABLE_SIZE_MAX = 20;
 
-function createEmptyMagazineDraft(): MagazineEditorDraft {
+export function createEmptyMagazineDraft(): MagazineEditorDraft {
   return {
     bodyHtml: "<p></p>",
     date: new Date().toISOString().slice(0, 10),
@@ -112,7 +112,7 @@ function normalizeMagazineItem(item: VillageMediaContent): ChannelMagazine {
   return item;
 }
 
-function createMagazineDraftFromItem(item: ChannelMagazine): MagazineEditorDraft {
+export function createMagazineDraftFromItem(item: ChannelMagazine): MagazineEditorDraft {
   return {
     bodyHtml: createEditorHtmlFromBody(item.body),
     date: item.date.slice(0, 10),
@@ -132,7 +132,7 @@ function formatMagazineDate(value: string) {
   return `${year}. ${month}. ${day}`;
 }
 
-function createEditorHtmlFromBody(body: string[]) {
+export function createEditorHtmlFromBody(body: string[]) {
   if (body.length === 0) return "<p></p>";
   if (looksLikeHtml(body[0])) return body[0];
   return body
@@ -153,14 +153,14 @@ function escapeHtml(value: string) {
     .replace(/'/gu, "&#39;");
 }
 
-function collectImageUrlsFromHtml(html: string) {
+export function collectImageUrlsFromHtml(html: string) {
   const urls = Array.from(html.matchAll(/<img[^>]+src=["']([^"']+)["']/giu))
     .map((match) => match[1]?.trim())
     .filter(Boolean) as string[];
   return Array.from(new Set(urls));
 }
 
-function hasEditorContent(html: string, plainText: string) {
+export function hasEditorContent(html: string, plainText: string) {
   return plainText.trim().length > 0 || /<img\s/i.test(html);
 }
 
@@ -442,22 +442,34 @@ export function HostChannelMagazines() {
   );
 }
 
-function MagazineEditorSurface({
+export function MagazineEditorSurface({
+  bodyPlaceholder,
+  closeAriaLabel,
   draft,
+  extraControls,
+  headingLabel,
   onClose,
   onSave,
   onUpdate,
   saveMessage,
   saving,
+  titleLabel,
+  titlePlaceholder,
   uploadImage,
   uploadingImage,
 }: {
+  bodyPlaceholder?: string;
+  closeAriaLabel?: string;
   draft: MagazineEditorDraft;
+  extraControls?: ReactNode;
+  headingLabel?: string;
   onClose: () => void;
   onSave: (html: string, text: string) => void;
   onUpdate: (patch: Partial<MagazineEditorDraft>) => void;
   saveMessage: string;
   saving: boolean;
+  titleLabel?: string;
+  titlePlaceholder?: string;
   uploadImage: (file: File | undefined) => Promise<string>;
   uploadingImage: boolean;
 }) {
@@ -488,7 +500,7 @@ function MagazineEditorSurface({
         inline: false,
       }),
       Placeholder.configure({
-        placeholder: "내용을 입력해주세요",
+        placeholder: bodyPlaceholder ?? "내용을 입력해주세요",
       }),
       TextAlign.configure({
         types: ["heading", "paragraph"],
@@ -538,10 +550,10 @@ function MagazineEditorSurface({
     <div className="mx-auto w-[var(--host-1103)] max-w-full">
       <div className="mb-[var(--host-22)] flex items-center justify-between">
         <h2 className="text-[length:var(--host-24)] font-semibold leading-[1.253] text-[#5B3A29]">
-          {draft.id ? "매거진 글 수정" : "새 매거진 글 작성"}
+          {headingLabel ?? (draft.id ? "매거진 글 수정" : "새 매거진 글 작성")}
         </h2>
         <button
-          aria-label="매거진 작성 닫기"
+          aria-label={closeAriaLabel ?? "매거진 작성 닫기"}
           className="grid size-[var(--host-32)] place-items-center rounded-full border border-[#D9D9D9] text-[#6D7A8A] transition hover:border-[#FE701E] hover:text-[#FE701E] disabled:opacity-45"
           disabled={isBusy}
           onClick={onClose}
@@ -560,15 +572,18 @@ function MagazineEditorSurface({
       <section className="overflow-hidden rounded-[8px] border border-[#D9D9D9] bg-white">
         <div className="border-b border-[#D9D9D9] p-[var(--host-24)]">
           <label className="grid gap-[var(--host-8)] text-[length:var(--host-12)] font-semibold leading-[1.253] text-[#6D7A8A]">
-            제목
+            {titleLabel ?? "제목"}
             <input
               className="h-[var(--host-48)] rounded-[6px] border border-[#D9D9D9] bg-white px-[var(--host-14)] text-[length:var(--host-22)] font-semibold leading-[1.253] text-[#5B3A29] outline-none transition placeholder:text-[#CAC4BC] focus:border-[#FE701E]"
               maxLength={120}
               onChange={(event) => onUpdate({ title: event.target.value })}
-              placeholder="제목을 입력해 주세요"
+              placeholder={titlePlaceholder ?? "제목을 입력해 주세요"}
               value={draft.title}
             />
           </label>
+          {extraControls ? (
+            <div className="mt-[var(--host-18)]">{extraControls}</div>
+          ) : null}
         </div>
 
         <MagazineEditorToolbar

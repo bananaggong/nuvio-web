@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
-import { CalendarDays, Flame, Loader2, X } from "lucide-react";
+import { CalendarDays, FileText, Flame, Loader2, X } from "lucide-react";
 import { useEffect, useMemo, useState, type CSSProperties } from "react";
 import { HostProgramSidebar } from "@/components/host-program-sidebar";
 import {
@@ -1357,6 +1357,11 @@ function ApplicationResponseBlock({
     );
   }
 
+  const helperText =
+    block.type === "fileAttachment" || block.type === "fileRequest"
+      ? block.body || block.helper
+      : block.helper;
+
   return (
     <div className="mt-[22px] border-t border-dashed border-[#F3D7C4] pt-[18px]">
       <p className="text-[14px] font-semibold leading-[1.253] text-[#5B3A29]">
@@ -1365,9 +1370,11 @@ function ApplicationResponseBlock({
           <span className="ml-[8px] text-[12px] text-[#FE701E]">*필수항목</span>
         ) : null}
       </p>
-      {block.helper ? (
+      {helperText ? (
         <p className="mt-[10px] text-[12px] font-normal leading-[1.6] text-[#6D7A8A]">
-          {block.helper}
+          {block.type === "fileAttachment" || block.type === "fileRequest"
+            ? `〈${helperText}〉`
+            : helperText}
         </p>
       ) : null}
       <ApplicationResponseControl answer={answer} block={block} />
@@ -1384,6 +1391,48 @@ function ApplicationResponseControl({
 }) {
   const value = answer?.value;
   const displayValue = formatApplicationAnswer(value);
+
+  if (block.type === "fileRequest") {
+    const fileAnswer = asFileAnswer(value);
+
+    return (
+      <div className="mt-[14px] rounded-[4px] border border-[#FF9A3D] bg-white px-[12px] py-[10px] text-[12px] font-normal leading-[1.6] text-[#6D7A8A]">
+        {fileAnswer ? (
+          <div className="flex items-center gap-[8px] text-[#5B3A29]">
+            <FileText aria-hidden="true" className="shrink-0 text-[#FE701E]" size={16} />
+            <span className="min-w-0 flex-1 truncate font-semibold">
+              {fileAnswer.fileName}
+            </span>
+            <span className="shrink-0 text-[#8A94A3]">
+              {formatFileSize(fileAnswer.fileSize)}
+            </span>
+          </div>
+        ) : (
+          "첨부된 파일이 없습니다."
+        )}
+      </div>
+    );
+  }
+
+  if (block.type === "fileAttachment") {
+    const checked = isTruthyAnswer(value);
+
+    return (
+      <div className="mt-[14px] space-y-[12px]">
+        <ApplicationAttachmentPreview block={block} />
+        <label className="inline-flex items-center gap-[8px] px-[14px] text-[14px] font-normal leading-[1.253] text-[#5B3A29]">
+          <input
+            checked={checked}
+            className="size-[14px] accent-[#FE701E]"
+            disabled
+            readOnly
+            type="checkbox"
+          />
+          {checked ? "확인 완료" : "확인 전"}
+        </label>
+      </div>
+    );
+  }
 
   if (block.type === "longText") {
     return (
@@ -1864,6 +1913,12 @@ type SubmittedAnswer = {
   value: unknown;
 };
 
+type FileAnswer = {
+  fileName: string;
+  fileSize: number;
+  fileType?: string;
+};
+
 function resolveApplicationTemplate(
   application: HostApplication | undefined,
   templates: ApplicationFormTemplate[],
@@ -2052,6 +2107,8 @@ function submittedAnswerTypeToBlockType(
       "checkbox",
       "date",
       "email",
+      "fileAttachment",
+      "fileRequest",
       "longText",
       "multiSelect",
       "phone",
@@ -2081,10 +2138,64 @@ function formatApplicationAnswer(value: unknown): string {
   if (typeof value === "boolean") return value ? "예" : "아니오";
   if (typeof value === "number") return value.toLocaleString("ko-KR");
   if (typeof value === "string") return value;
+  const fileAnswer = asFileAnswer(value);
+  if (fileAnswer) {
+    return `${fileAnswer.fileName} (${formatFileSize(fileAnswer.fileSize)})`;
+  }
   if (value && typeof value === "object") {
     return JSON.stringify(value, null, 2);
   }
   return "";
+}
+
+function ApplicationAttachmentPreview({
+  block,
+}: {
+  block: ApplicationFormBlock;
+}) {
+  const fileUrl = block.fileUrl?.trim();
+  const fileName = block.fileName?.trim() || block.imageAlt?.trim() || "첨부 파일";
+  const isImageAttachment = Boolean(
+    fileUrl && /\.(png|jpe?g|gif|webp|avif|svg)(\?|#|$)/i.test(fileUrl),
+  );
+
+  if (fileUrl && isImageAttachment) {
+    return (
+      // eslint-disable-next-line @next/next/no-img-element
+      <img
+        alt={fileName}
+        className="h-[188px] w-[320px] max-w-full rounded-[2px] bg-[#D9D9D9] object-cover"
+        src={fileUrl}
+      />
+    );
+  }
+
+  return (
+    <div className="flex h-[188px] w-[320px] max-w-full flex-col items-center justify-center gap-[10px] rounded-[2px] bg-[#D9D9D9] px-[18px] text-center text-[12px] font-medium leading-[1.45] text-[#6D7A8A]">
+      <FileText aria-hidden="true" size={28} strokeWidth={1.8} />
+      <span className="line-clamp-2">{fileName}</span>
+      {fileUrl ? <span className="text-[11px] text-[#8A94A3]">다운로드 가능한 파일</span> : null}
+    </div>
+  );
+}
+
+function asFileAnswer(value: unknown): FileAnswer | undefined {
+  if (!value || typeof value !== "object" || Array.isArray(value)) return undefined;
+  const answer = value as Partial<FileAnswer>;
+  if (typeof answer.fileName !== "string" || typeof answer.fileSize !== "number") {
+    return undefined;
+  }
+  return {
+    fileName: answer.fileName,
+    fileSize: answer.fileSize,
+    fileType: answer.fileType,
+  };
+}
+
+function formatFileSize(value: number): string {
+  if (!Number.isFinite(value) || value <= 0) return "0 KB";
+  if (value < 1024 * 1024) return `${Math.max(1, Math.round(value / 1024)).toLocaleString("ko-KR")} KB`;
+  return `${(value / (1024 * 1024)).toFixed(1)} MB`;
 }
 
 function isTruthyAnswer(value: unknown): boolean {

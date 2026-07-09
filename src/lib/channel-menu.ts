@@ -23,6 +23,7 @@ export type ChannelMenuTypeOption = {
 export const CHANNEL_MENU_SECTION_MARKER = "__nuvio_channel_menu__";
 
 export const channelHomeLabel = "채널 홈";
+const channelFreeMenuEnabled = false;
 
 const legacyEditableMenuLabels: Partial<Record<ChannelMenuKind, string>> = {
   board: "게시판",
@@ -109,18 +110,22 @@ export const channelMenuTypeOptions: ChannelMenuTypeOption[] = [
     kind: "board",
     label: channelMenuMeta.board.defaultLabel,
   },
-  {
-    description: channelMenuMeta.free.defaultDescription,
-    kind: "free",
-    label: channelMenuMeta.free.defaultLabel,
-  },
+  ...(channelFreeMenuEnabled
+    ? [
+        {
+          description: channelMenuMeta.free.defaultDescription,
+          kind: "free" as const,
+          label: channelMenuMeta.free.defaultLabel,
+        },
+      ]
+    : []),
 ];
 
 export function getChannelMenuItems(
   value: Pick<Village, "sections"> | VillageSection[] | null | undefined,
   options: { includeFree?: boolean; includeHidden?: boolean } = {},
 ): ChannelMenuItem[] {
-  const includeFree = options.includeFree ?? false;
+  const includeFree = channelFreeMenuEnabled && (options.includeFree ?? false);
   const includeHidden = options.includeHidden ?? true;
   const sections = Array.isArray(value) ? value : value?.sections ?? [];
   const storedItems = sections
@@ -137,7 +142,7 @@ export function getChannelMenuItems(
 export function getVisibleChannelMenuItems(
   value: Pick<Village, "sections"> | VillageSection[] | null | undefined,
 ) {
-  return getChannelMenuItems(value, { includeFree: true, includeHidden: false }).filter(
+  return getChannelMenuItems(value, { includeHidden: false }).filter(
     (item) => item.kind !== "review",
   );
 }
@@ -166,7 +171,18 @@ export function applyChannelMenuItemsToSections(
   items: ChannelMenuItem[],
 ): VillageSection[] {
   const preservedSections = sections.filter((section) => !isChannelMenuSection(section));
-  const normalizedItems = ensureCoreMenus(items)
+  const disabledMenuSections = sections
+    .filter((section) => {
+      const kind = getSectionMenuKind(section);
+      return isChannelMenuSection(section) && kind !== null && !isEnabledChannelMenuKind(kind);
+    })
+    .map((section) => ({
+      ...section,
+      visible: false,
+    }));
+  const normalizedItems = ensureCoreMenus(
+    items.filter((item) => isEnabledChannelMenuKind(item.kind)),
+  )
     .map((item, index) => ({
       ...item,
       description: isCoreMenuKind(item.kind)
@@ -181,6 +197,7 @@ export function applyChannelMenuItemsToSections(
 
   return [
     ...preservedSections,
+    ...disabledMenuSections,
     ...normalizedItems.map((item): VillageSection => ({
       body: CHANNEL_MENU_SECTION_MARKER,
       description: item.description || channelMenuMeta[item.kind].defaultDescription,
@@ -262,7 +279,9 @@ function createDefaultChannelMenuItems() {
     createDefaultEditableMenuItem("gallery", launchFeatureFlags.reviews ? 2 : 1),
     createDefaultEditableMenuItem("magazine", launchFeatureFlags.reviews ? 3 : 2),
     createDefaultEditableMenuItem("board", launchFeatureFlags.reviews ? 4 : 3),
-    createDefaultEditableMenuItem("free", launchFeatureFlags.reviews ? 5 : 4),
+    ...(channelFreeMenuEnabled
+      ? [createDefaultEditableMenuItem("free", launchFeatureFlags.reviews ? 5 : 4)]
+      : []),
   ];
 
   return defaults;
@@ -319,6 +338,10 @@ function menuItemFromSection(section: VillageSection, index: number): ChannelMen
 
 function isCoreMenuKind(kind: ChannelMenuKind) {
   return kind === "program" || kind === "review";
+}
+
+function isEnabledChannelMenuKind(kind: ChannelMenuKind) {
+  return channelFreeMenuEnabled || kind !== "free";
 }
 
 function getSectionMenuKind(section: VillageSection): ChannelMenuKind | null {

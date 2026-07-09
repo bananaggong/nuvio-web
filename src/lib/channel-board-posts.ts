@@ -21,6 +21,7 @@ export type ChannelBoardPost = {
 const BOARD_PAGE_KEY = "notice";
 const BOARD_SECTION_KEY = "notice_index";
 const BOARD_SECTION_TYPE = "media_preview";
+const BOARD_NEW_DAYS = 10;
 
 export async function listHostChannelBoardPosts(
   villageSlug: string,
@@ -93,16 +94,42 @@ export function buildChannelBoardNoticesFromPosts({
     date: post.createdAt,
     href: `${noticeHref}#${encodeURIComponent(post.id)}`,
     title: post.title,
-    type: post.pinned ? "고정" : post.unread ? "새글" : "게시글",
+    type: buildBoardNoticeType(post),
   }));
 }
 
 export function normalizeChannelBoardPosts(input: unknown): ChannelBoardPost[] {
   if (!Array.isArray(input)) return [];
 
-  return input
-    .map((item, index) => normalizeChannelBoardPost(item, index))
-    .filter((post): post is ChannelBoardPost => Boolean(post));
+  return sortChannelBoardPosts(
+    input
+      .map((item, index) => normalizeChannelBoardPost(item, index))
+      .filter((post): post is ChannelBoardPost => Boolean(post)),
+  );
+}
+
+export function isChannelBoardPostNew(createdAt: string): boolean {
+  const date = new Date(createdAt);
+  if (Number.isNaN(date.getTime())) return false;
+
+  const age = Date.now() - date.getTime();
+  return age >= 0 && age <= BOARD_NEW_DAYS * 24 * 60 * 60 * 1000;
+}
+
+function buildBoardNoticeType(post: ChannelBoardPost): string {
+  const badges = [
+    post.pinned ? "고정" : "",
+    isChannelBoardPostNew(post.createdAt) ? "새글" : "",
+  ].filter(Boolean);
+
+  return badges.length > 0 ? badges.join(",") : "게시글";
+}
+
+function sortChannelBoardPosts(posts: ChannelBoardPost[]): ChannelBoardPost[] {
+  return [...posts].sort((a, b) => {
+    if (Boolean(a.pinned) !== Boolean(b.pinned)) return a.pinned ? -1 : 1;
+    return Date.parse(b.createdAt) - Date.parse(a.createdAt);
+  });
 }
 
 function normalizeChannelBoardPost(

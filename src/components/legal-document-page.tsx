@@ -20,20 +20,16 @@ export function LegalDocumentContent({
   document: LegalDocument;
   hrefPrefix?: string;
 }) {
+  const visibleBlocks = getVisibleLegalDocumentBlocks(document);
+
   return (
     <div className="mx-auto w-full max-w-[1180px] px-5 py-12 md:px-8 md:py-16">
       <header className="border-b border-[#F1E2D7] pb-8 md:pb-10">
-        <p className="text-xs font-semibold tracking-[0.12em] text-[#FE701E]">
-          누비오 정책
-        </p>
-        <div className="mt-4 flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
+        <div className="flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
           <div>
             <h1 className="text-[34px] font-semibold leading-[1.25] tracking-normal text-[#5B3A29] md:text-[44px]">
               {document.title}
             </h1>
-            <p className="mt-4 max-w-[720px] text-[15px] font-medium leading-[1.8] text-[#6D7A8A]">
-              {document.description}
-            </p>
           </div>
           <div className="w-fit rounded-full border border-[#F3D7C4] bg-white px-4 py-2 text-sm font-semibold text-[#6D7A8A]">
             시행일 {document.effectiveDate}
@@ -66,12 +62,25 @@ export function LegalDocumentContent({
           <p className="text-sm font-semibold text-[#FE701E]">{document.title}</p>
         </div>
         <div className="px-5 py-6 md:px-8 md:py-9">
-          {document.blocks.map((block, index) => (
+          {visibleBlocks.map((block, index) => (
             <LegalDocumentBlockView block={block} key={`${block.type}-${index}`} />
           ))}
         </div>
       </article>
     </div>
+  );
+}
+
+function getVisibleLegalDocumentBlocks(document: LegalDocument): LegalDocumentBlock[] {
+  const hiddenOpeningTexts = new Set<string>([
+    `누비오(Nuvio) ${document.title}`,
+    "누비오(Nuvio)",
+    "(베타테스트 기간 적용)",
+    `시행일: ${document.effectiveDate}`,
+  ]);
+
+  return document.blocks.filter(
+    (block) => block.type !== "paragraph" || !hiddenOpeningTexts.has(block.text),
   );
 }
 

@@ -762,24 +762,44 @@ export function HostProgramRow({
 }
 
 export type HostProgramStatusFrameKind = "open" | "upcoming" | "closed";
+type HostProgramSortKey = "activityStart" | "recruitStart" | "recruitEnd";
+type HostProgramSortDirection = "asc" | "desc";
+type HostProgramSortTab = {
+  direction: HostProgramSortDirection;
+  key: HostProgramSortKey;
+  label: string;
+};
 
 const hostProgramStatusFrameCopy: Record<
   HostProgramStatusFrameKind,
   {
-    tabs: [string, string];
+    defaultSort: HostProgramSortKey;
+    tabs: [HostProgramSortTab, HostProgramSortTab];
     title: string;
   }
 > = {
   closed: {
-    tabs: ["마감일순", "종료일순"],
+    defaultSort: "recruitEnd",
+    tabs: [
+      { direction: "desc", key: "recruitEnd", label: "마감일순" },
+      { direction: "desc", key: "activityStart", label: "출발일순" },
+    ],
     title: "마감된 프로그램",
   },
   open: {
-    tabs: ["출발일순", "오픈일순"],
+    defaultSort: "activityStart",
+    tabs: [
+      { direction: "asc", key: "activityStart", label: "출발일순" },
+      { direction: "asc", key: "recruitStart", label: "오픈일순" },
+    ],
     title: "오픈된 프로그램",
   },
   upcoming: {
-    tabs: ["예정일순", "등록일순"],
+    defaultSort: "activityStart",
+    tabs: [
+      { direction: "asc", key: "activityStart", label: "출발일순" },
+      { direction: "asc", key: "recruitStart", label: "오픈일순" },
+    ],
     title: "예정된 프로그램",
   },
 };
@@ -796,7 +816,17 @@ export function HostProgramStatusFrame({
   status: HostProgramStatusFrameKind;
 }) {
   const copy = hostProgramStatusFrameCopy[status];
-  const displayItems = items.length > 0 ? items : [];
+  const searchParams = useSearchParams();
+  const activeSort = normalizeHostProgramSort(
+    status,
+    searchParams.get("sort"),
+  );
+  const activeTab =
+    copy.tabs.find((tab) => tab.key === activeSort) ?? copy.tabs[0];
+  const displayItems =
+    items.length > 0
+      ? sortHostProgramItems(items, activeTab.key, activeTab.direction)
+      : [];
 
   return (
     <section className="w-[var(--host-1118)] max-w-full">
@@ -821,19 +851,23 @@ export function HostProgramStatusFrame({
       </div>
 
       <div className="mt-[var(--host-12)] flex h-[var(--host-27)] items-start gap-[var(--host-12)] pl-[var(--host-13)]">
-        {copy.tabs.map((tab, index) => (
-          <button
-            className={`h-[var(--host-27)] px-0 text-[length:var(--host-12)] leading-[1.253] ${
-              index === 0
-                ? "border-b-2 border-[#FE701E] font-medium text-[#6D7A8A]"
-                : "font-normal text-[#CAC4BC]"
-            }`}
-            key={tab}
-            type="button"
-          >
-            {tab}
-          </button>
-        ))}
+        {copy.tabs.map((tab) => {
+          const active = tab.key === activeTab.key;
+
+          return (
+            <Link
+              className={`h-[var(--host-27)] px-0 text-[length:var(--host-12)] leading-[1.253] ${
+                active
+                  ? "border-b-2 border-[#FE701E] font-medium text-[#6D7A8A]"
+                  : "font-normal text-[#CAC4BC]"
+              }`}
+              href={buildHostProgramSortHref(status, tab.key)}
+              key={tab.key}
+            >
+              {tab.label}
+            </Link>
+          );
+        })}
       </div>
 
       <div className="mt-[var(--host-12)] flex flex-wrap gap-x-[clamp(26px,1.806vw,34.667px)] gap-y-[var(--host-16)]">
@@ -851,6 +885,60 @@ export function HostProgramStatusFrame({
       </div>
     </section>
   );
+}
+
+function normalizeHostProgramSort(
+  status: HostProgramStatusFrameKind,
+  sort: string | null,
+): HostProgramSortKey {
+  const copy = hostProgramStatusFrameCopy[status];
+  return copy.tabs.some((tab) => tab.key === sort)
+    ? (sort as HostProgramSortKey)
+    : copy.defaultSort;
+}
+
+function buildHostProgramSortHref(
+  status: HostProgramStatusFrameKind,
+  sort: HostProgramSortKey,
+): string {
+  return `/host?status=${encodeURIComponent(status)}&sort=${encodeURIComponent(sort)}`;
+}
+
+function sortHostProgramItems(
+  items: HostProgramListItem[],
+  sort: HostProgramSortKey,
+  direction: HostProgramSortDirection,
+): HostProgramListItem[] {
+  return [...items].sort((a, b) => {
+    const left = getHostProgramSortTime(a, sort);
+    const right = getHostProgramSortTime(b, sort);
+    const leftHasDate = Number.isFinite(left);
+    const rightHasDate = Number.isFinite(right);
+
+    if (leftHasDate && !rightHasDate) return -1;
+    if (!leftHasDate && rightHasDate) return 1;
+    if (leftHasDate && rightHasDate && left !== right) {
+      return direction === "asc" ? left - right : right - left;
+    }
+
+    const updatedDiff =
+      getHostProgramSortTime(b, "updatedAt") -
+      getHostProgramSortTime(a, "updatedAt");
+    if (Number.isFinite(updatedDiff) && updatedDiff !== 0) return updatedDiff;
+
+    return a.title.localeCompare(b.title, "ko");
+  });
+}
+
+function getHostProgramSortTime(
+  program: HostProgramListItem,
+  sort: HostProgramSortKey | "updatedAt",
+): number {
+  const value = program[sort];
+  if (!value) return Number.NaN;
+
+  const time = Date.parse(value);
+  return Number.isNaN(time) ? Number.NaN : time;
 }
 
 export function HostMiniProgramCard({

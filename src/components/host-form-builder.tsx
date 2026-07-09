@@ -4,6 +4,7 @@ import Image from "next/image";
 import Link from "next/link";
 import {
   ChevronDown,
+  FileText,
   Plus,
   Upload,
 } from "lucide-react";
@@ -42,8 +43,8 @@ const editableBlockTypes: Array<{
   { label: "숫자", type: "phone" },
   { label: "선택박스", type: "singleSelect" },
   { label: "드롭다운", type: "multiSelect" },
-  { label: "파일 요청", type: "image" },
-  { label: "파일 첨부", type: "description" },
+  { label: "파일 요청", type: "fileRequest" },
+  { label: "파일 첨부", type: "fileAttachment" },
   { label: "동의 항목", type: "checkbox" },
 ];
 
@@ -494,6 +495,8 @@ function FormItemIconButton({
 }
 
 function getEditableBlockTypeLabel(type: ApplicationFormBlockType) {
+  if (type === "image") return "이미지";
+  if (type === "description") return "설명";
   return editableBlockTypes.find((item) => item.type === type)?.label ?? "텍스트";
 }
 
@@ -506,7 +509,11 @@ function getQuestionPlaceholder(type: ApplicationFormBlockType) {
     case "multiSelect":
       return "질문을 입력해주세요 *답변은 여러 개 선택 가능해요.";
     case "image":
+      return "이미지 제목을 입력해주세요.";
+    case "fileRequest":
       return "질문을 입력해주세요 *답변은 파일 업로드만 가능해요.";
+    case "fileAttachment":
+      return "파일 안내사항 제목을 입력해주세요.";
     case "description":
       return "안내할 내용을 입력해주세요.";
     case "checkbox":
@@ -651,13 +658,57 @@ function EditableBlockCard({
         </div>
       ) : null}
 
-      {block.type === "checkbox" || block.type === "description" ? (
+      {block.type === "checkbox" ||
+      block.type === "description" ||
+      block.type === "fileRequest" ? (
         <textarea
           className="min-h-[var(--host-69)] rounded-[7px] border border-[#CAC4BC] px-[var(--host-8)] py-[var(--host-10)] text-[var(--host-12)] font-medium leading-[1.253] text-[#0D0D0C] outline-none placeholder:text-[#D9D9D9]"
           onChange={(event) => onUpdate({ body: event.target.value })}
-          placeholder="게스트에게 안내할 내용을 입력해주세요"
+          placeholder={
+            block.type === "fileRequest"
+              ? "게스트에게 안내할 내용을 입력해 주세요 (예: 파일 형식, 준비 방식 등)"
+              : "게스트에게 안내할 내용을 입력해주세요"
+          }
           value={block.body ?? ""}
         />
+      ) : null}
+
+      {block.type === "fileAttachment" ? (
+        <div className="flex flex-col gap-[var(--host-10)]">
+          <label className="flex items-center gap-[var(--host-8)] text-[var(--host-12)] font-medium leading-[1.253] text-[#5B3A29]">
+            <input
+              checked
+              className="size-[var(--host-14)] accent-[#FE701E]"
+              readOnly
+              type="radio"
+            />
+            확인버튼
+          </label>
+          <input
+            className="host-form-input"
+            onChange={(event) => onUpdate({ body: event.target.value })}
+            placeholder="안내할 내용을 입력해주세요"
+            value={block.body ?? ""}
+          />
+          <div className="grid grid-cols-[minmax(0,1fr)_minmax(0,1fr)] gap-[var(--host-8)]">
+            <input
+              className="host-form-input"
+              onChange={(event) => onUpdate({ fileName: event.target.value })}
+              placeholder="첨부 파일 이름"
+              value={block.fileName ?? ""}
+            />
+            <input
+              className="host-form-input"
+              onChange={(event) => onUpdate({ fileUrl: event.target.value })}
+              placeholder="첨부 파일 URL"
+              value={block.fileUrl ?? ""}
+            />
+          </div>
+          <div className="grid h-[var(--host-69)] place-items-center rounded-[7px] border border-[#CAC4BC] bg-white text-center text-[var(--host-12)] font-medium leading-[1.253] text-[#D9D9D9]">
+            <span>{block.fileName || block.fileUrl ? "첨부 파일 연결됨" : "파일을 업로드 하세요"}</span>
+            <Upload className="text-[#6D7A8A]" size={16} />
+          </div>
+        </div>
       ) : null}
 
       {block.type === "image" ? (
@@ -907,6 +958,39 @@ function PreviewControl({ block }: { block: ApplicationFormBlock }) {
     );
   }
 
+  if (block.type === "fileRequest") {
+    return (
+      <div className="px-[14px]">
+        {block.body ? (
+          <p className="mb-[12px] whitespace-pre-line text-[12px] font-normal leading-[1.65] text-[#6D7A8A]">
+            &lt;{block.body}&gt;
+          </p>
+        ) : null}
+        <div className="flex h-[52px] w-[52px] flex-col items-center justify-center gap-[4px] rounded-[6px] border border-[#F7B267] bg-white text-[10px] font-medium leading-[1.253] text-[#D9D9D9]">
+          파일 업로드
+          <Upload className="text-[#FF9A3D]" size={18} />
+        </div>
+      </div>
+    );
+  }
+
+  if (block.type === "fileAttachment") {
+    return (
+      <div className="px-[14px]">
+        {block.body ? (
+          <p className="mb-[12px] whitespace-pre-line text-[12px] font-normal leading-[1.65] text-[#6D7A8A]">
+            &lt;{block.body}&gt;
+          </p>
+        ) : null}
+        <AttachmentPreviewCard block={block} />
+        <label className="mt-[14px] inline-flex items-center gap-[8px] text-[14px] font-normal leading-[1.35] text-[#5B3A29]">
+          <input className="size-[14px] accent-[#FE701E]" type="checkbox" />
+          확인 완료
+        </label>
+      </div>
+    );
+  }
+
   if (block.type === "longText") {
     return (
       <textarea
@@ -921,5 +1005,30 @@ function PreviewControl({ block }: { block: ApplicationFormBlock }) {
       className="h-[34px] w-full rounded-[4px] border border-[#FF9A3D] bg-white px-[12px] text-[12px] font-normal leading-[1.253] outline-none placeholder:text-[#CAC4BC]"
       placeholder={block.type === "phone" ? "숫자 입력" : "텍스트 입력"}
     />
+  );
+}
+
+function AttachmentPreviewCard({ block }: { block: ApplicationFormBlock }) {
+  const fileUrl = block.fileUrl?.trim();
+  const fileName = block.fileName?.trim() || block.imageAlt?.trim() || "첨부 파일";
+  const isImageAttachment = Boolean(fileUrl && /\.(png|jpe?g|gif|webp|avif|svg)(\?|#|$)/i.test(fileUrl));
+
+  if (fileUrl && isImageAttachment) {
+    return (
+      // eslint-disable-next-line @next/next/no-img-element
+      <img
+        alt={fileName}
+        className="h-[188px] w-[320px] max-w-full rounded-[2px] bg-[#D9D9D9] object-cover"
+        src={fileUrl}
+      />
+    );
+  }
+
+  return (
+    <div className="flex h-[188px] w-[320px] max-w-full flex-col items-center justify-center gap-[10px] rounded-[2px] bg-[#D9D9D9] px-[18px] text-center text-[12px] font-medium leading-[1.45] text-[#6D7A8A]">
+      <FileText aria-hidden="true" size={28} strokeWidth={1.8} />
+      <span className="line-clamp-2">{fileName}</span>
+      {fileUrl ? <span className="text-[11px] text-[#8A94A3]">다운로드 가능한 파일</span> : null}
+    </div>
   );
 }
