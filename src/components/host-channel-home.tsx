@@ -349,7 +349,7 @@ export function HostChannelHome() {
     <HostWorkspaceLayout sidebarHeight="min-h-[var(--host-3942)]">
       <section className="min-w-0 flex-1 overflow-x-clip bg-white">
         <div className="w-full max-w-[var(--host-1230)]">
-          <section className="relative grid h-[var(--host-560)] place-items-center overflow-hidden border-b border-[#D9D9D9] bg-[#F9F9F9]">
+          <section className="relative grid h-[var(--host-560)] place-items-center overflow-hidden border-b border-[#D9D9D9] bg-[#F3F3F3]">
             <input
               accept="image/gif,image/jpeg,image/png,image/webp"
               className="sr-only"
@@ -491,14 +491,25 @@ function ChannelHomeMenuSection({
           </span>
         </div>
         {visiblePrograms.length > 0 ? (
-          <div className="grid grid-cols-4 gap-[var(--host-36)]">
-            {visiblePrograms.slice(0, 4).map((program, index) => (
-              <ChannelProgramMiniCard
-                key={program.id ?? `program-${index}`}
-                program={program}
-                variantIndex={index}
-              />
-            ))}
+          <div className="flex items-start justify-between gap-[var(--host-32)]">
+            <div className="flex min-w-0 flex-wrap gap-x-[var(--host-40)] gap-y-[var(--host-36)]">
+              {visiblePrograms.slice(0, 4).map((program, index) => (
+                <ChannelProgramMiniCard
+                  key={program.id ?? `program-${index}`}
+                  program={program}
+                  variantIndex={index}
+                />
+              ))}
+            </div>
+            <Link
+              className="mt-[var(--host-84)] inline-flex shrink-0 flex-col items-center gap-[var(--host-6)] text-[length:var(--host-12)] font-medium leading-[1.253] text-[#6D7A8A] transition hover:text-[#FE701E]"
+              href="/host/channels/programs"
+            >
+              <span className="grid size-[var(--host-28)] place-items-center rounded-full bg-[#FF9A3D] text-[length:var(--host-22)] font-semibold leading-none text-white">
+                +
+              </span>
+              전체보기
+            </Link>
           </div>
         ) : (
           <ChannelEmptyState
@@ -992,10 +1003,10 @@ export function ChannelSectionShell({
 }) {
   return (
     <section className="border-t border-[#D9D9D9] py-[var(--host-22)]">
-      <div className="mb-[var(--host-18)] flex items-center justify-between">
+      <div className="mb-[var(--host-24)] flex items-center justify-between">
         <div className="flex items-center gap-[var(--host-8)]">
           <SectionMoveIcon label={`${title} 섹션 이동`} />
-          <h2 className="text-[length:var(--host-16)] font-semibold leading-[1.253] text-[#5B3A29]">
+          <h2 className="text-[length:var(--host-20)] font-semibold leading-[1.253] text-[#5B3A29]">
             {title}
           </h2>
           {badge ? (
@@ -1096,11 +1107,30 @@ function ChannelProgramMiniCard({
   const title = program?.title || "제목 미입력";
   const statusLabel = getMiniProgramStatusLabel(program?.status, variantIndex);
   const periodLabel = program ? formatMiniProgramPeriod(program) : "일정 미정";
+  const timingLabel = program ? formatMiniProgramTiming(program, statusLabel) : "";
+  const imageUrl = getMiniProgramImage(program);
+  const summary = getMiniProgramSummary(program);
 
   return (
-    <article className="min-w-0">
+    <article className="min-w-0 shrink-0" style={{ width: "calc(186px * var(--host-scale))" }}>
       <Link className="group block" href={href} target={program ? "_blank" : undefined}>
-        <div className="h-[var(--host-194)] rounded-[4px] bg-[#D9D9D9]" />
+        <div
+          className="relative overflow-hidden bg-[#D9D9D9]"
+          style={{
+            borderRadius: "calc(8.65px * var(--host-scale))",
+            height: "calc(232.5px * var(--host-scale))",
+          }}
+        >
+          {imageUrl ? (
+            <Image
+              alt=""
+              className="object-cover transition duration-300 group-hover:scale-[1.025]"
+              fill
+              sizes="(min-width: 1920px) 248px, 186px"
+              src={imageUrl}
+            />
+          ) : null}
+        </div>
         <div className="mt-[var(--host-10)] flex items-center gap-[var(--host-8)]">
           <span
             className={`inline-flex h-[var(--host-18)] items-center rounded-[4px] px-[var(--host-8)] text-[length:var(--host-10)] font-semibold leading-[1.253] text-white ${
@@ -1114,15 +1144,15 @@ function ChannelProgramMiniCard({
             {statusLabel}
           </span>
           <span className="truncate text-[length:var(--host-10)] font-normal leading-[1.253] text-[#6D7A8A]">
-            {periodLabel}
+            {timingLabel || periodLabel}
           </span>
           <Image alt="" className="ml-auto size-[var(--host-16)]" height={16} src={nuvioIcons.bookmark} width={16} />
         </div>
-        <h3 className="mt-[var(--host-8)] line-clamp-1 text-[length:var(--host-14)] font-semibold leading-[1.253] text-[#5B3A29]">
+        <h3 className="mt-[var(--host-8)] line-clamp-2 text-[length:var(--host-16)] font-normal leading-[1.253] text-[#5B3A29]">
           {title}
         </h3>
         <p className="mt-[var(--host-8)] line-clamp-3 text-[length:var(--host-10)] font-normal leading-[1.55] text-[#CAC4BC]">
-          {program?.summary || "프로그램 소개가 아직 입력되지 않았습니다."}
+          {summary}
         </p>
         <p className="mt-[var(--host-16)] text-[length:var(--host-10)] font-normal leading-[1.253] text-[#6D7A8A]">
           프로그램 기간
@@ -1149,6 +1179,106 @@ function formatMiniProgramPeriod(program: HostProgramDraft) {
   if (end) return `${end} 종료`;
 
   return "일정 미정";
+}
+
+function formatMiniProgramTiming(program: HostProgramDraft, statusLabel: string) {
+  const today = new Date();
+  const recruitStart = parseProgramDate(program.recruitStart);
+  const recruitEnd = parseProgramDate(program.recruitEnd);
+  const activityStart = parseProgramDate(program.activityStart);
+
+  if (statusLabel === "오픈") {
+    const baseDate = recruitStart || activityStart;
+    if (baseDate) return `D+ ${formatProgramDayCount(daysBetween(today, baseDate))}`;
+  }
+
+  if (statusLabel === "예정") {
+    const baseDate = recruitStart || activityStart;
+    if (baseDate) return `D- ${formatProgramDayCount(daysBetween(baseDate, today))}`;
+  }
+
+  if (statusLabel === "마감") {
+    const baseDate = recruitEnd || activityStart;
+    if (baseDate) return `${formatMiniDate(baseDate.toISOString())} 마감`;
+  }
+
+  return "";
+}
+
+function formatProgramDayCount(days: number) {
+  return String(Math.max(0, days)).padStart(2, "0");
+}
+
+function daysBetween(later: Date, earlier: Date) {
+  const dayMs = 24 * 60 * 60 * 1000;
+  const laterDate = new Date(later.getFullYear(), later.getMonth(), later.getDate());
+  const earlierDate = new Date(earlier.getFullYear(), earlier.getMonth(), earlier.getDate());
+
+  return Math.floor((laterDate.getTime() - earlierDate.getTime()) / dayMs);
+}
+
+function parseProgramDate(value?: string) {
+  if (!value) return null;
+  const date = new Date(value);
+
+  return Number.isNaN(date.getTime()) ? null : date;
+}
+
+function getMiniProgramImage(program?: HostProgramDraft) {
+  if (!program) return "";
+  const record = program as unknown as Record<string, unknown>;
+  const candidates = [
+    program.image,
+    record.thumbnail,
+    record.thumbnailUrl,
+    record.coverImage,
+    record.coverImageUrl,
+    record.heroImage,
+    record.imageUrl,
+    record.mainImage,
+    record.featuredImage,
+    getFirstImageUrl(program.detailImages),
+    getFirstImageUrl(record.images),
+    getFirstImageUrl(record.galleryImages),
+  ];
+  const image = candidates.find(isNonEmptyString);
+
+  return image ? image.trim() : "";
+}
+
+function getFirstImageUrl(value: unknown) {
+  if (!Array.isArray(value)) return "";
+
+  for (const item of value) {
+    if (isNonEmptyString(item)) return item;
+    if (item && typeof item === "object") {
+      const record = item as Record<string, unknown>;
+      const image = [record.url, record.src, record.image, record.imageUrl, record.thumbnail].find(
+        isNonEmptyString,
+      );
+      if (image) return image;
+    }
+  }
+
+  return "";
+}
+
+function getMiniProgramSummary(program?: HostProgramDraft) {
+  if (!program) return "프로그램 소개가 아직 입력되지 않았습니다.";
+  const record = program as unknown as Record<string, unknown>;
+  const summary = [
+    program.summary,
+    program.description,
+    record.introduction,
+    record.subtitle,
+    record.tagline,
+  ].find(isNonEmptyString);
+
+  return summary ? summary.trim() : "프로그램 소개가 아직 입력되지 않았습니다.";
+}
+
+function isNonEmptyString(value: unknown): value is string {
+  return typeof value === "string" && value.trim().length > 0;
 }
 
 function formatMiniDate(value?: string) {
