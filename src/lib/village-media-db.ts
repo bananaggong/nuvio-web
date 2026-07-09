@@ -2,6 +2,11 @@ import { and, desc, eq, isNotNull } from "drizzle-orm";
 import { getDb } from "@/db/client";
 import { villageMediaContents as mediaTable } from "@/db/schema";
 import { isDemoModeEnabled } from "@/lib/demo-mode";
+import {
+  excerptFromHtml,
+  hasMagazineContent,
+  sanitizeMagazineHtml,
+} from "@/lib/magazine-content";
 import { boseongMediaSeeds } from "@/lib/village-media-seeds";
 import type {
   VillageMediaCategory,
@@ -251,9 +256,14 @@ export function normalizeHostVillageMediaDraft(
   }
 
   const value = input as Record<string, unknown>;
-  const body = normalizeBody(value.body);
+  const sourceUrl = asString(value.sourceUrl) || "https://nuvio.kr/boseong/media";
+  const isChannelMagazine = sourceUrl.includes("/host/channels/magazines");
+  const body = isChannelMagazine
+    ? normalizeMagazineMediaBody(value.body)
+    : normalizeBody(value.body);
   const summary =
     asString(value.summary) ||
+    (isChannelMagazine ? excerptFromHtml(body[0] ?? "", 140) : "") ||
     body[0] ||
     "전체차LAB의 활동을 기록한 미디어 콘텐츠입니다.";
   const now = new Date().toISOString();
@@ -270,7 +280,7 @@ export function normalizeHostVillageMediaDraft(
     imageUrls: normalizeImageUrls(value.imageUrls ?? value.images),
     embedUrl: normalizeEmbedUrl(value.embedUrl, value.sourceUrl),
     sourceName: asString(value.sourceName) || "전체차LAB",
-    sourceUrl: asString(value.sourceUrl) || "https://nuvio.kr/boseong/media",
+    sourceUrl,
     date: normalizeDate(asString(value.date) || asString(value.publishedAt)),
     featured: Boolean(value.featured),
     published: value.published !== false,
@@ -498,6 +508,17 @@ function normalizeBody(value: unknown): string[] {
         .map((line) => line.trim())
         .filter(Boolean)
     : [];
+}
+
+function normalizeMagazineMediaBody(value: unknown): string[] {
+  const [rawHtml = ""] = normalizeBody(value);
+  const contentHtml = sanitizeMagazineHtml(rawHtml);
+
+  if (!hasMagazineContent(contentHtml)) {
+    throw new Error("Magazine content is required.");
+  }
+
+  return [contentHtml];
 }
 
 function normalizeImageUrls(value: unknown): string[] {
