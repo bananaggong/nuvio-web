@@ -17,7 +17,9 @@ export function ProgramScheduleCards({
   fallbackItems: string[];
   items: ProgramScheduleItem[];
 }) {
-  const [openItemKey, setOpenItemKey] = useState<string | null>(null);
+  const [openItemKeys, setOpenItemKeys] = useState<Set<string>>(
+    () => new Set(),
+  );
 
   return (
     <div className="flex w-full flex-col gap-[18px]">
@@ -30,12 +32,20 @@ export function ProgramScheduleCards({
 
         return (
           <ScheduleCard
-            isOpen={openItemKey === itemKey}
+            isOpen={openItemKeys.has(itemKey)}
             item={item}
             key={itemKey}
-            onToggle={() =>
-              setOpenItemKey((current) => (current === itemKey ? null : itemKey))
-            }
+            onToggle={() => {
+              setOpenItemKeys((current) => {
+                const next = new Set(current);
+                if (next.has(itemKey)) {
+                  next.delete(itemKey);
+                } else {
+                  next.add(itemKey);
+                }
+                return next;
+              });
+            }}
             panelId={`program-schedule-${index}`}
             scheduleItems={
               scheduleItems.length > 0 ? scheduleItems : ["세부 일정은 추후 안내됩니다."]
@@ -97,7 +107,7 @@ function ScheduleCard({
         <button
           aria-controls={panelId}
           aria-expanded={isOpen}
-          className="inline-flex items-center gap-1 border-0 bg-transparent p-0 text-xs font-normal leading-[1.6] text-[#FE701E]"
+          className="inline-flex cursor-pointer items-center gap-1 border-0 bg-transparent p-0 text-xs font-normal leading-[1.6] text-[#FE701E]"
           onClick={onToggle}
           type="button"
         >

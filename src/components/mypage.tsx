@@ -522,33 +522,43 @@ function MypageOverview({ context }: { context: MypageContext }) {
   return (
     <>
       <header className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-        <h1 className="text-[clamp(24px,1.6667vw,32px)] font-semibold leading-tight tracking-normal text-[var(--mypage-brown)]">
-          {context.profileName} 누비어님, 안녕하세요.
-        </h1>
-        <Link
-          className="inline-flex h-[clamp(30px,2.0833vw,40px)] w-fit items-center justify-center rounded-[clamp(4px,0.2778vw,5.333px)] border border-[#d9d9d9] px-[clamp(16px,1.1111vw,21.333px)] text-[clamp(12px,0.8333vw,16px)] font-medium text-[#6B5145] transition hover:border-[#ffa143] hover:text-[var(--mypage-orange)]"
-          href={context.signedIn ? "/mypage/member-information" : "/login"}
-        >
-          회원 정보 수정하기
-        </Link>
+        {context.loading ? (
+          <MypageSkeletonBlock className="h-[clamp(30px,2.0833vw,40px)] w-[clamp(220px,15.2778vw,293.333px)]" />
+        ) : (
+          <h1 className="text-[clamp(24px,1.6667vw,32px)] font-semibold leading-tight tracking-normal text-[var(--mypage-brown)]">
+            {context.profileName} 누비어님, 안녕하세요.
+          </h1>
+        )}
+        {context.loading ? (
+          <MypageSkeletonBlock className="h-[clamp(30px,2.0833vw,40px)] w-[clamp(112px,7.7778vw,149.333px)]" />
+        ) : (
+          <Link
+            className="inline-flex h-[clamp(30px,2.0833vw,40px)] w-fit items-center justify-center rounded-[clamp(4px,0.2778vw,5.333px)] border border-[#d9d9d9] px-[clamp(16px,1.1111vw,21.333px)] text-[clamp(12px,0.8333vw,16px)] font-medium text-[#6B5145] transition hover:border-[#ffa143] hover:text-[var(--mypage-orange)]"
+            href={context.signedIn ? "/mypage/member-information" : "/login"}
+          >
+            회원 정보 수정하기
+          </Link>
+        )}
       </header>
 
       <section className="mt-[clamp(52px,3.6111vw,69.333px)] grid gap-[clamp(12px,0.8333vw,16px)] lg:grid-cols-[minmax(0,1fr)_clamp(220px,15.2778vw,293.333px)]">
         <ProfileSummaryCard
           avatarUrl={context.authSession.profile?.avatarUrl}
           bookmarkCount={context.bookmarkedPrograms.length}
+          loading={context.loading}
           messageCount={context.unreadMessageCount}
           nickname={context.nickname}
           tripCount={context.visibleTrips.length}
         />
-        <WalletSummaryCard pointCount={0} />
+        <WalletSummaryCard loading={context.loading} pointCount={0} />
       </section>
     </>
   );
 }
 
 function MypageHomeContent({ context }: { context: MypageContext }) {
-  const showTripLoading = context.loading && Boolean(context.authSession.user);
+  const showTripLoading = context.loading;
+  const showRecentLoading = context.loading;
   const tripSlots = context.visibleTrips.slice(0, 4).map((application) => ({
     application,
     program: findProgramForApplication(application, context.publicPrograms),
@@ -588,7 +598,13 @@ function MypageHomeContent({ context }: { context: MypageContext }) {
         heading="최근 본 프로그램"
         href="/programs"
       >
-        {context.recentlyViewedPrograms.length > 0 ? (
+        {showRecentLoading ? (
+          <div className="grid gap-[var(--mypage-mini-gap)] sm:grid-cols-2 lg:grid-cols-[repeat(4,var(--mypage-mini-card))]">
+            {Array.from({ length: 4 }, (_, index) => (
+              <MiniCardPlaceholder animated key={`recent-loading-${index}`} />
+            ))}
+          </div>
+        ) : context.recentlyViewedPrograms.length > 0 ? (
           <div className="grid gap-[var(--mypage-mini-gap)] sm:grid-cols-2 lg:grid-cols-[repeat(4,var(--mypage-mini-card))]">
             {context.recentlyViewedPrograms.slice(0, 4).map((program) => (
               <ProgramMiniCard key={program.id} program={program} />
@@ -752,7 +768,7 @@ function ReviewsContent({ context }: { context: MypageContext }) {
 function BookmarksContent({ context }: { context: MypageContext }) {
   const [tab, setTab] = useState<"open" | "closed">("open");
   const [sort, setSort] = useState<"bookmarked" | "date">("bookmarked");
-  const showBookmarkLoading = context.loading && Boolean(context.authSession.user);
+  const showBookmarkLoading = context.loading;
   const tabItems = [
     { key: "open" as const, label: "오픈된 여행" },
     { key: "closed" as const, label: "마감된 여행" },
@@ -3266,16 +3282,43 @@ function SupportContent({ context }: { context: MypageContext }) {
 function ProfileSummaryCard({
   avatarUrl,
   bookmarkCount,
+  loading = false,
   messageCount,
   nickname,
   tripCount,
 }: {
   avatarUrl?: string | null;
   bookmarkCount: number;
+  loading?: boolean;
   messageCount: number;
   nickname: string;
   tripCount: number;
 }) {
+  if (loading) {
+    return (
+      <section className="rounded-[clamp(4px,0.2778vw,5.333px)] border border-[#d9d9d9] bg-white px-[clamp(48px,3.3333vw,64px)] py-[clamp(24px,1.6667vw,32px)]">
+        <div className="flex flex-col gap-[clamp(36px,2.5vw,48px)] md:flex-row md:items-center">
+          <div className="flex shrink-0 flex-col items-center gap-[clamp(10px,0.6944vw,13.333px)] md:w-[clamp(82px,5.6944vw,109.333px)]">
+            <MypageSkeletonBlock className="size-[clamp(54px,3.75vw,72px)] rounded-full" />
+            <MypageSkeletonBlock className="h-[clamp(14px,0.9722vw,18.667px)] w-[clamp(64px,4.4444vw,85.333px)]" />
+          </div>
+          <div className="grid flex-1 grid-cols-3 gap-y-[clamp(18px,1.25vw,24px)]">
+            {Array.from({ length: 3 }, (_, index) => (
+              <div
+                className="flex flex-col items-center gap-[clamp(8px,0.5556vw,10.667px)]"
+                key={`summary-loading-${index}`}
+              >
+                <MypageSkeletonBlock className="size-[clamp(18px,1.25vw,24px)] rounded-[clamp(4px,0.2778vw,5.333px)]" />
+                <MypageSkeletonBlock className="h-[clamp(13px,0.9028vw,17.333px)] w-[clamp(58px,4.0278vw,77.333px)]" />
+                <MypageSkeletonBlock className="h-[clamp(18px,1.25vw,24px)] w-[clamp(22px,1.5278vw,29.333px)]" />
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+    );
+  }
+
   return (
     <section className="rounded-[clamp(4px,0.2778vw,5.333px)] border border-[#d9d9d9] bg-white px-[clamp(48px,3.3333vw,64px)] py-[clamp(24px,1.6667vw,32px)]">
       <div className="flex flex-col gap-[clamp(36px,2.5vw,48px)] md:flex-row md:items-center">
@@ -3319,11 +3362,24 @@ function ProfileSummaryCard({
   );
 }
 
-function WalletSummaryCard({ pointCount }: { pointCount: number }) {
+function WalletSummaryCard({
+  loading = false,
+  pointCount,
+}: {
+  loading?: boolean;
+  pointCount: number;
+}) {
   return (
     <section className="rounded-[clamp(4px,0.2778vw,5.333px)] border border-[#d9d9d9] bg-white px-[clamp(24px,1.6667vw,32px)] py-[clamp(22px,1.5278vw,29.333px)]">
       <div className="grid h-full min-h-[clamp(96px,6.6667vw,128px)] content-center gap-[clamp(18px,1.25vw,24px)]">
-        <WalletLine label="포인트" unit="P" value={pointCount} />
+        {loading ? (
+          <div className="flex items-center justify-between">
+            <MypageSkeletonBlock className="h-[clamp(20px,1.3889vw,26.667px)] w-[clamp(54px,3.75vw,72px)]" />
+            <MypageSkeletonBlock className="h-[clamp(20px,1.3889vw,26.667px)] w-[clamp(58px,4.0278vw,77.333px)]" />
+          </div>
+        ) : (
+          <WalletLine label="포인트" unit="P" value={pointCount} />
+        )}
       </div>
     </section>
   );
@@ -3692,12 +3748,21 @@ function NuvioAssetIcon({
 }
 
 function MiniCardPlaceholder({ animated = false }: { animated?: boolean }) {
-  const pulseClass = animated ? "animate-pulse" : "";
+  if (animated) {
+    return (
+      <article aria-busy="true" className="block min-w-0">
+        <MypageSkeletonBlock className="aspect-square w-full rounded-[clamp(9px,0.625vw,12px)]" />
+        <MypageSkeletonBlock className="mt-[clamp(11px,0.7639vw,14.667px)] h-[clamp(12px,0.8333vw,16px)] w-[58%]" />
+        <MypageSkeletonBlock className="mt-[clamp(8px,0.5556vw,10.667px)] h-[clamp(18px,1.25vw,24px)] w-[88%]" />
+        <MypageSkeletonBlock className="mt-[clamp(7px,0.4861vw,9.333px)] h-[clamp(14px,0.9722vw,18.667px)] w-[64%]" />
+      </article>
+    );
+  }
 
   return (
     <article className="block min-w-0">
       <div
-        className={`aspect-square w-full rounded-[clamp(9px,0.625vw,12px)] bg-[#d9d9d9] ${pulseClass}`}
+        className="aspect-square w-full rounded-[clamp(9px,0.625vw,12px)] bg-[#d9d9d9]"
       />
       <p className="mt-[clamp(11px,0.7639vw,14.667px)] text-[clamp(12px,0.8333vw,16px)] font-medium leading-none text-[var(--mypage-orange)]">
         여행예정 00/00
@@ -3706,6 +3771,15 @@ function MiniCardPlaceholder({ animated = false }: { animated?: boolean }) {
         프로그램 제목 입력
       </p>
     </article>
+  );
+}
+
+function MypageSkeletonBlock({ className }: { className?: string }) {
+  return (
+    <span
+      aria-hidden="true"
+      className={`block animate-pulse rounded-[clamp(4px,0.2778vw,5.333px)] bg-[#E3E0DA] ${className ?? ""}`}
+    />
   );
 }
 

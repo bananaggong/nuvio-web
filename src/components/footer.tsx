@@ -21,7 +21,7 @@ export function Footer() {
               이용약관
             </Link>
             <Link className="transition-colors hover:text-[#FF9A3D]" href="/privacy">
-              개인정보 수집 및 이용
+              개인정보 처리방침
             </Link>
             <Link
               className="transition-colors hover:text-[#FF9A3D]"
