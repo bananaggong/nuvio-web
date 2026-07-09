@@ -19,11 +19,13 @@ import {
   applyChannelMenuItemsToSections,
   channelHomeLabel,
   channelMenuMeta,
+  channelHostHref,
   getChannelMenuItems,
   getVisibleChannelMenuItems,
   type ChannelMenuItem,
 } from "@/lib/channel-menu";
 import {
+  buildChannelScopedHref,
   filterProgramsForChannel,
   hostChannelProgramsEndpoint,
   selectHostChannel,
@@ -122,6 +124,7 @@ export function HostChannelHome() {
   const [programs, setPrograms] = useState<HostProgramDraft[]>([]);
   const [mediaItems, setMediaItems] = useState<VillageMediaContent[]>([]);
   const [boardPosts, setBoardPosts] = useState<ChannelBoardPost[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
   const [isUploadingHero, setIsUploadingHero] = useState(false);
   const [savingMenuItemId, setSavingMenuItemId] = useState<string | null>(null);
   const [menuStatusMessage, setMenuStatusMessage] = useState("");
@@ -132,6 +135,7 @@ export function HostChannelHome() {
     let active = true;
 
     async function load() {
+      setIsLoading(true);
       const channelResponse = await fetch("/api/host/channels", {
         cache: "no-store",
       }).catch(() => null);
@@ -143,6 +147,7 @@ export function HostChannelHome() {
         setPrograms([]);
         setMediaItems([]);
         setBoardPosts([]);
+        setIsLoading(false);
         return;
       }
 
@@ -157,6 +162,7 @@ export function HostChannelHome() {
         setPrograms([]);
         setMediaItems([]);
         setBoardPosts([]);
+        setIsLoading(false);
         return;
       }
 
@@ -197,6 +203,7 @@ export function HostChannelHome() {
       } else {
         setBoardPosts([]);
       }
+      setIsLoading(false);
     }
 
     void load();
@@ -408,31 +415,38 @@ export function HostChannelHome() {
           <ChannelProfileHeader
             activeLabel="채널 홈"
             channel={channel}
+            loading={isLoading}
             publicHref={publicHref}
             variant="home"
           />
 
           <section className="px-[var(--host-58)] pb-[var(--host-70)] pt-[var(--host-20)]">
-            {menuStatusMessage ? (
-              <p className="mb-[var(--host-12)] text-right text-[length:var(--host-12)] font-medium leading-[1.253] text-[#6D7A8A]">
-                {menuStatusMessage}
-              </p>
-            ) : null}
-            {homeMenuItems.map((item) => (
-              <ChannelHomeMenuSection
-                item={item}
-                key={item.id}
-                onToggleVisible={
-                  item.locked ? undefined : () => void toggleMenuItemVisibility(item)
-                }
-                toggleBusy={Boolean(savingMenuItemId)}
-                visibleGalleryCards={visibleGalleryCards}
-                visibleNoticeRows={visibleNoticeRows}
-                visiblePrograms={visiblePrograms}
-                visibleStoryCards={visibleStoryCards}
-              />
-            ))}
-            <HostChannelHomeBlocks channel={channel} onChannelSaved={setChannel} />
+            {isLoading ? (
+              <ChannelContentSkeleton variant="home" />
+            ) : (
+              <>
+                {menuStatusMessage ? (
+                  <p className="mb-[var(--host-12)] text-right text-[length:var(--host-12)] font-medium leading-[1.253] text-[#6D7A8A]">
+                    {menuStatusMessage}
+                  </p>
+                ) : null}
+                {homeMenuItems.map((item) => (
+                  <ChannelHomeMenuSection
+                    item={item}
+                    key={item.id}
+                    onToggleVisible={
+                      item.locked ? undefined : () => void toggleMenuItemVisibility(item)
+                    }
+                    toggleBusy={Boolean(savingMenuItemId)}
+                    visibleGalleryCards={visibleGalleryCards}
+                    visibleNoticeRows={visibleNoticeRows}
+                    visiblePrograms={visiblePrograms}
+                    visibleStoryCards={visibleStoryCards}
+                  />
+                ))}
+                <HostChannelHomeBlocks channel={channel} onChannelSaved={setChannel} />
+              </>
+            )}
           </section>
         </div>
       </section>
@@ -649,17 +663,24 @@ function ChannelHomeMenuSection({
 export function ChannelProfileHeader({
   activeLabel = "채널 홈",
   channel,
+  loading = false,
   publicHref,
   variant = "section",
 }: {
   activeLabel?: string;
   channel: Village | null;
+  loading?: boolean;
   publicHref: string;
   variant?: "home" | "section";
 }) {
+  if (loading) {
+    return <ChannelProfileHeaderSkeleton variant={variant} />;
+  }
+
   const menuLabels = [
     {
       active: activeLabel === channelHomeLabel,
+      href: "/host/channels",
       id: "channel-home",
       label: channelHomeLabel,
     },
@@ -667,6 +688,7 @@ export function ChannelProfileHeader({
       active:
         activeLabel === item.label ||
         activeLabel === channelMenuMeta[item.kind].defaultLabel,
+      href: channelHostHref(item.kind),
       id: item.id,
       label: item.label || channelMenuMeta[item.kind].defaultLabel,
     })),
@@ -737,18 +759,218 @@ export function ChannelProfileHeader({
       </div>
       <nav className="absolute bottom-0 left-[var(--host-228)] flex items-end gap-[var(--host-40-7)] text-[length:var(--host-16)] font-semibold leading-[1.253] text-[#5B3A29]">
         {menuLabels.map((item) => (
-          <span
-            className="relative shrink-0 pb-[var(--host-8)] text-[#5B3A29]"
+          <Link
+            aria-current={item.active ? "page" : undefined}
+            className="relative shrink-0 pb-[var(--host-8)] text-[#5B3A29] transition hover:text-[#FE701E]"
+            href={buildChannelScopedHref(item.href, channel?.slug)}
             key={item.id}
           >
             {item.label}
             {item.active ? (
               <span className="absolute bottom-0 left-0 h-[var(--host-2)] w-full bg-[#FE701E]" />
             ) : null}
-          </span>
+          </Link>
         ))}
       </nav>
     </section>
+  );
+}
+
+function ChannelProfileHeaderSkeleton({
+  variant = "section",
+}: {
+  variant?: "home" | "section";
+}) {
+  const sectionVariant = variant === "section";
+
+  return (
+    <section
+      aria-busy="true"
+      aria-label="채널 정보를 불러오는 중"
+      className={`relative border-b border-[#6D7A8A] bg-white ${
+        sectionVariant ? "h-[var(--host-178)]" : "h-[var(--host-156)]"
+      }`}
+    >
+      <div
+        className={`flex items-start gap-[var(--host-42)] px-[var(--host-58)] ${
+          sectionVariant ? "pt-[var(--host-36)]" : "pt-[var(--host-14)]"
+        }`}
+      >
+        <ChannelSkeletonBlock className="size-[var(--host-128)] shrink-0 rounded-full" />
+        <div className="min-w-0 flex-1 pt-[var(--host-4)]">
+          <div className="flex items-end gap-[var(--host-12)]">
+            <ChannelSkeletonBlock className="h-[var(--host-28)] w-[var(--host-135)]" />
+            <ChannelSkeletonBlock className="h-[var(--host-16)] w-[var(--host-150)]" />
+          </div>
+          <ChannelSkeletonBlock className="mt-[var(--host-14)] h-[var(--host-18)] w-[var(--host-430)] max-w-[70%]" />
+          <ChannelSkeletonBlock className="mt-[var(--host-14)] h-[var(--host-16)] w-[var(--host-166)]" />
+        </div>
+      </div>
+      <nav className="absolute bottom-0 left-[var(--host-228)] flex items-end gap-[var(--host-40-7)]">
+        {[
+          "w-[var(--host-90)]",
+          "w-[var(--host-72)]",
+          "w-[var(--host-85)]",
+          "w-[var(--host-85)]",
+          "w-[var(--host-85)]",
+          "w-[var(--host-72)]",
+        ].map((widthClass, index) => (
+          <ChannelSkeletonBlock
+            className={`mb-[var(--host-8)] h-[var(--host-18)] ${widthClass}`}
+            key={`${widthClass}-${index}`}
+          />
+        ))}
+      </nav>
+    </section>
+  );
+}
+
+export function ChannelContentSkeleton({
+  variant = "grid",
+}: {
+  variant?: "board" | "gallery" | "grid" | "home" | "magazine" | "programs";
+}) {
+  if (variant === "board") {
+    return (
+      <div aria-busy="true" className="flex flex-col gap-[var(--host-14)]">
+        <ChannelSkeletonBlock className="h-[var(--host-24)] w-[var(--host-210)]" />
+        {Array.from({ length: 6 }).map((_, index) => (
+          <div
+            className="grid h-[var(--host-42)] grid-cols-[var(--host-95)_minmax(0,1fr)_var(--host-156)] items-center gap-[var(--host-18)] border-b border-[#F3E2D5]"
+            key={index}
+          >
+            <ChannelSkeletonBlock className="h-[var(--host-18)] w-[var(--host-62)]" />
+            <ChannelSkeletonBlock className="h-[var(--host-18)] w-full" />
+            <ChannelSkeletonBlock className="h-[var(--host-16)] w-[var(--host-119)] justify-self-end" />
+          </div>
+        ))}
+      </div>
+    );
+  }
+
+  if (variant === "home") {
+    return (
+      <div aria-busy="true" className="flex flex-col gap-[var(--host-34)]">
+        <ChannelSkeletonSectionHeader />
+        <div className="grid grid-cols-4 gap-[var(--host-36)]">
+          {Array.from({ length: 4 }).map((_, index) => (
+            <ChannelSkeletonCard key={index} />
+          ))}
+        </div>
+        <ChannelSkeletonSectionHeader />
+        <div className="grid grid-cols-3 gap-[var(--host-36)]">
+          {Array.from({ length: 3 }).map((_, index) => (
+            <ChannelSkeletonMediaCard key={index} />
+          ))}
+        </div>
+        <ChannelSkeletonSectionHeader />
+        <div className="flex flex-col gap-[var(--host-10)]">
+          {Array.from({ length: 4 }).map((_, index) => (
+            <ChannelSkeletonBlock className="h-[var(--host-34)] w-full" key={index} />
+          ))}
+        </div>
+      </div>
+    );
+  }
+
+  if (variant === "magazine") {
+    return (
+      <div
+        aria-busy="true"
+        className="grid w-full grid-cols-[repeat(2,minmax(0,1fr))] gap-[var(--host-43)]"
+      >
+        {Array.from({ length: 4 }).map((_, index) => (
+          <ChannelSkeletonMagazineCard key={index} />
+        ))}
+      </div>
+    );
+  }
+
+  const cardCount = variant === "programs" ? 6 : 9;
+  const gridClass =
+    variant === "gallery"
+      ? "grid grid-cols-3 gap-[var(--host-20)]"
+      : "grid grid-cols-3 gap-x-[var(--host-36-7)] gap-y-[var(--host-40)]";
+
+  return (
+    <div aria-busy="true" className="flex flex-col gap-[var(--host-28)]">
+      <div className="flex items-center gap-[var(--host-10)]">
+        {Array.from({ length: 4 }).map((_, index) => (
+          <ChannelSkeletonBlock
+            className="h-[var(--host-30)] w-[var(--host-70)] rounded-full"
+            key={index}
+          />
+        ))}
+      </div>
+      <ChannelSkeletonBlock className="h-[var(--host-16)] w-[var(--host-430)] max-w-[70%]" />
+      <div className={gridClass}>
+        {Array.from({ length: cardCount }).map((_, index) => (
+          <ChannelSkeletonCard
+            key={index}
+            mediaClassName={variant === "gallery" ? "h-[var(--host-216)]" : undefined}
+          />
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function ChannelSkeletonSectionHeader() {
+  return (
+    <div className="flex items-center justify-between border-b border-[#F3E2D5] pb-[var(--host-14)]">
+      <ChannelSkeletonBlock className="h-[var(--host-22)] w-[var(--host-135)]" />
+      <ChannelSkeletonBlock className="h-[var(--host-18)] w-[var(--host-82)]" />
+    </div>
+  );
+}
+
+function ChannelSkeletonCard({
+  mediaClassName = "h-[var(--host-156)]",
+}: {
+  mediaClassName?: string;
+}) {
+  return (
+    <article className="min-w-0">
+      <ChannelSkeletonBlock className={`${mediaClassName} w-full rounded-[6px]`} />
+      <ChannelSkeletonBlock className="mt-[var(--host-14)] h-[var(--host-16)] w-[82%]" />
+      <ChannelSkeletonBlock className="mt-[var(--host-8)] h-[var(--host-14)] w-[58%]" />
+    </article>
+  );
+}
+
+function ChannelSkeletonMediaCard() {
+  return (
+    <article className="min-w-0">
+      <ChannelSkeletonBlock className="h-[var(--host-219)] w-full rounded-[6px]" />
+      <ChannelSkeletonBlock className="mt-[var(--host-14)] h-[var(--host-16)] w-[76%]" />
+    </article>
+  );
+}
+
+function ChannelSkeletonMagazineCard() {
+  return (
+    <article className="overflow-hidden rounded-[8px] bg-[#FAFAFA]">
+      <ChannelSkeletonBlock className="h-[var(--host-288)] w-full rounded-b-none" />
+      <div className="px-[var(--host-18)] py-[var(--host-18)]">
+        <ChannelSkeletonBlock className="h-[var(--host-18)] w-[70%]" />
+        <ChannelSkeletonBlock className="mt-[var(--host-12)] h-[var(--host-14)] w-[38%]" />
+      </div>
+    </article>
+  );
+}
+
+function ChannelSkeletonBlock({
+  className,
+  style,
+}: {
+  className?: string;
+  style?: CSSProperties;
+}) {
+  return (
+    <div
+      className={`animate-pulse rounded-[4px] bg-[#E3E0DA] ${className ?? ""}`}
+      style={style}
+    />
   );
 }
 

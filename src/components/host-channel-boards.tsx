@@ -4,6 +4,7 @@ import Image from "next/image";
 import { useSearchParams } from "next/navigation";
 import { useEffect, useState } from "react";
 import {
+  ChannelContentSkeleton,
   ChannelEmptyState,
   ChannelProfileHeader,
 } from "@/components/host-channel-home";
@@ -38,6 +39,7 @@ export function HostChannelBoards() {
   const requestedChannelSlug = searchParams.get("channel");
   const [channel, setChannel] = useState<Village | null>(null);
   const [posts, setPosts] = useState<ChannelBoardPost[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
   const [savedMessage, setSavedMessage] = useState("");
 
@@ -45,13 +47,25 @@ export function HostChannelBoards() {
     let active = true;
 
     async function loadChannel() {
+      setIsLoading(true);
       const response = await fetch("/api/host/channels", { cache: "no-store" }).catch(
         () => null,
       );
-      if (!active || !response?.ok) return;
+      if (!active) return;
+      if (!response?.ok) {
+        setChannel(null);
+        setPosts([]);
+        setIsLoading(false);
+        return;
+      }
 
       const payload = (await response.json().catch(() => ({}))) as HostChannelPayload;
-      setChannel(selectHostChannel(payload.data, requestedChannelSlug));
+      const selectedChannel = selectHostChannel(payload.data, requestedChannelSlug);
+      setChannel(selectedChannel);
+      if (!selectedChannel?.slug) {
+        setPosts([]);
+        setIsLoading(false);
+      }
     }
 
     void loadChannel();
@@ -69,16 +83,23 @@ export function HostChannelBoards() {
     let active = true;
 
     async function loadPosts() {
+      setIsLoading(true);
       const response = await fetch(
         `/api/host/channel-board-posts?villageSlug=${encodedChannelSlug}`,
         { cache: "no-store" },
       ).catch(() => null);
-      if (!active || !response?.ok) return;
+      if (!active) return;
+      if (!response?.ok) {
+        setPosts([]);
+        setIsLoading(false);
+        return;
+      }
 
       const payload = (await response.json().catch(() => ({}))) as ChannelBoardPostsPayload;
       if (Array.isArray(payload.data)) {
         setPosts(payload.data);
       }
+      setIsLoading(false);
     }
 
     void loadPosts();
@@ -150,7 +171,12 @@ export function HostChannelBoards() {
     <HostWorkspaceLayout sidebarHeight="min-h-[var(--host-1158)]">
       <section className="min-w-0 flex-1 overflow-x-hidden bg-white">
         <div className="w-full max-w-[var(--host-1230)]">
-          <ChannelProfileHeader activeLabel="게시판형" channel={channel} publicHref={publicHref} />
+          <ChannelProfileHeader
+            activeLabel="게시판형"
+            channel={channel}
+            loading={isLoading}
+            publicHref={publicHref}
+          />
 
           <section className="relative border-b border-[#6D7A8A] pb-[var(--host-30)] pt-[var(--host-62)]">
             <button
@@ -163,7 +189,9 @@ export function HostChannelBoards() {
             </button>
 
             <div className="ml-[var(--host-30)] w-[var(--host-1170)] max-w-[calc(100%-var(--host-60))]">
-              {posts.length > 0 ? (
+              {isLoading ? (
+                <ChannelContentSkeleton variant="board" />
+              ) : posts.length > 0 ? (
                 posts.map((post) => (
                   <BoardPostRow
                     key={post.id}

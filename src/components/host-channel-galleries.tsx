@@ -23,6 +23,7 @@ import {
   X,
 } from "lucide-react";
 import {
+  ChannelContentSkeleton,
   ChannelEmptyState,
   ChannelProfileHeader,
 } from "@/components/host-channel-home";
@@ -250,6 +251,7 @@ export function HostChannelGalleries() {
   const thumbnailInputRef = useRef<HTMLInputElement>(null);
   const [channel, setChannel] = useState<Village | null>(null);
   const [items, setItems] = useState<GalleryItem[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
   const [filterMode, setFilterMode] = useState<GalleryFilterMode>("all");
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [uploadStep, setUploadStep] = useState<UploadStep | null>(null);
@@ -264,6 +266,7 @@ export function HostChannelGalleries() {
     let active = true;
 
     async function load() {
+      setIsLoading(true);
       const channelResponse = await fetch("/api/host/channels", {
         cache: "no-store",
       }).catch(() => null);
@@ -273,6 +276,7 @@ export function HostChannelGalleries() {
       if (!channelResponse?.ok) {
         setChannel(null);
         setItems([]);
+        setIsLoading(false);
         return;
       }
 
@@ -285,6 +289,7 @@ export function HostChannelGalleries() {
 
       if (!selectedChannel?.slug) {
         setItems([]);
+        setIsLoading(false);
         return;
       }
 
@@ -309,6 +314,7 @@ export function HostChannelGalleries() {
       } else {
         setItems([]);
       }
+      setIsLoading(false);
     }
 
     void load();
@@ -622,7 +628,12 @@ export function HostChannelGalleries() {
       <UnsavedChangesGuard when={isDirty && uploadOpen} />
       <section className="min-w-0 flex-1 overflow-x-clip bg-white">
         <div className="w-full max-w-[var(--host-1230)]">
-          <ChannelProfileHeader activeLabel="갤러리형" channel={channel} publicHref={publicHref} />
+          <ChannelProfileHeader
+            activeLabel="갤러리형"
+            channel={channel}
+            loading={isLoading}
+            publicHref={publicHref}
+          />
 
           {uploadOpen ? (
             <GalleryUploadSurface
@@ -662,7 +673,9 @@ export function HostChannelGalleries() {
                 <div className="mx-auto w-[var(--host-1142)] max-w-full">
                   <GalleryFilterTabs activeMode={filterMode} onChange={setFilterMode} />
 
-                  {selectedItem ? (
+                  {isLoading ? (
+                    <ChannelContentSkeleton variant="gallery" />
+                  ) : selectedItem ? (
                     <GalleryDetailView
                       item={selectedItem}
                       onDelete={() => void deleteItem(selectedItem)}

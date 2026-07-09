@@ -47,6 +47,7 @@ import TableHeader from "@tiptap/extension-table-header";
 import TableRow from "@tiptap/extension-table-row";
 import Underline from "@tiptap/extension-underline";
 import {
+  ChannelContentSkeleton,
   ChannelEmptyState,
   ChannelProfileHeader,
 } from "@/components/host-channel-home";
@@ -168,6 +169,7 @@ export function HostChannelMagazines() {
   const requestedChannelSlug = searchParams.get("channel");
   const [channel, setChannel] = useState<Village | null>(null);
   const [items, setItems] = useState<ChannelMagazine[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
   const [editorDraft, setEditorDraft] = useState<MagazineEditorDraft | null>(null);
   const [saveMessage, setSaveMessage] = useState("");
   const [saving, setSaving] = useState(false);
@@ -177,10 +179,17 @@ export function HostChannelMagazines() {
     let active = true;
 
     async function load() {
+      setIsLoading(true);
       const response = await fetch("/api/host/channels", { cache: "no-store" }).catch(
         () => null,
       );
-      if (!active || !response?.ok) return;
+      if (!active) return;
+      if (!response?.ok) {
+        setChannel(null);
+        setItems([]);
+        setIsLoading(false);
+        return;
+      }
 
       const payload = (await response.json().catch(() => ({}))) as HostChannelPayload;
       const selectedChannel = selectHostChannel(payload.data, requestedChannelSlug);
@@ -188,6 +197,7 @@ export function HostChannelMagazines() {
 
       if (!selectedChannel?.slug) {
         setItems([]);
+        setIsLoading(false);
         return;
       }
 
@@ -213,6 +223,7 @@ export function HostChannelMagazines() {
       } else {
         setItems([]);
       }
+      setIsLoading(false);
     }
 
     void load();
@@ -363,7 +374,12 @@ export function HostChannelMagazines() {
     <HostWorkspaceLayout sidebarHeight="min-h-[var(--host-2053)]">
       <section className="min-w-0 flex-1 overflow-x-clip bg-white">
         <div className="w-full max-w-[var(--host-1230)]">
-          <ChannelProfileHeader activeLabel="매거진형" channel={channel} publicHref={publicHref} />
+          <ChannelProfileHeader
+            activeLabel="매거진형"
+            channel={channel}
+            loading={isLoading}
+            publicHref={publicHref}
+          />
 
           <section className="relative min-h-[var(--host-1806)] border-b border-[#6D7A8A] pb-[var(--host-44)] pt-[var(--host-62)]">
             {!editorDraft ? (
@@ -377,7 +393,11 @@ export function HostChannelMagazines() {
               </button>
             ) : null}
 
-            {editorDraft ? (
+            {isLoading ? (
+              <div className="mx-auto w-[var(--host-1103)] max-w-full">
+                <ChannelContentSkeleton variant="magazine" />
+              </div>
+            ) : editorDraft ? (
               <MagazineEditorSurface
                 draft={editorDraft}
                 key={editorDraft.id ?? "new"}

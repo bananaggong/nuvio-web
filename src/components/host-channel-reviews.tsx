@@ -5,6 +5,7 @@ import { ChevronDown, Star } from "lucide-react";
 import { useSearchParams } from "next/navigation";
 import { useEffect, useMemo, useState, type ReactNode } from "react";
 import {
+  ChannelContentSkeleton,
   ChannelEmptyState,
   ChannelProfileHeader,
 } from "@/components/host-channel-home";
@@ -183,7 +184,12 @@ export function HostChannelReviews() {
     <HostWorkspaceLayout sidebarHeight="min-h-[var(--host-1806)]">
       <section className="min-w-0 flex-1 overflow-x-clip bg-white">
         <div className="w-full max-w-[var(--host-1230)]">
-          <ChannelProfileHeader activeLabel="후기" channel={channel} publicHref={publicHref} />
+          <ChannelProfileHeader
+            activeLabel="후기"
+            channel={channel}
+            loading={isLoading}
+            publicHref={publicHref}
+          />
 
           <section className="ml-[var(--host-44)] flex w-[var(--host-1142)] flex-col gap-[var(--host-30)] pt-[var(--host-8)]">
             <ReviewManagerToolbar
@@ -202,10 +208,7 @@ export function HostChannelReviews() {
 
             <div className="flex w-full flex-col px-[var(--host-32)]">
               {isLoading ? (
-                <ChannelEmptyState
-                  description="채널 후기를 불러오고 있습니다."
-                  title="후기 목록을 준비하고 있습니다."
-                />
+                <ChannelContentSkeleton variant="board" />
               ) : visibleReviews.length > 0 ? (
                 visibleReviews.map((review) => (
                   <HostReviewCard

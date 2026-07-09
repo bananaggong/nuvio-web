@@ -38,7 +38,24 @@ export async function GET(request: Request) {
 
   try {
     const villages = await listHostVillagesFromDb();
-    if (auth.profile.role === "admin") return NextResponse.json({ data: villages });
+    if (auth.profile.role === "admin") {
+      const workspaces = await listHostVillageWorkspaces(auth);
+      const ownAccountEmail = auth.profile.email.trim().toLowerCase();
+      const ownChannelSlugs = new Set(
+        workspaces
+          .filter(
+            (workspace) =>
+              workspace.status === "active" &&
+              workspace.accountEmail.trim().toLowerCase() === ownAccountEmail,
+          )
+          .map((workspace) => workspace.slug.trim().toLowerCase())
+          .filter(Boolean),
+      );
+
+      return NextResponse.json({
+        data: prioritizeHostVillages(villages, ownChannelSlugs),
+      });
+    }
 
     const workspaces = await listHostVillageWorkspaces(auth);
     const allowedSlugs = new Set(workspaces.map((workspace) => workspace.slug));
@@ -55,6 +72,21 @@ export async function GET(request: Request) {
       { status: 500 },
     );
   }
+}
+
+function prioritizeHostVillages<T extends { slug: string }>(
+  villages: T[],
+  preferredSlugs: Set<string>,
+): T[] {
+  if (preferredSlugs.size === 0) return villages;
+
+  return [...villages].sort((a, b) => {
+    const aPreferred = preferredSlugs.has(a.slug.trim().toLowerCase());
+    const bPreferred = preferredSlugs.has(b.slug.trim().toLowerCase());
+
+    if (aPreferred === bPreferred) return 0;
+    return aPreferred ? -1 : 1;
+  });
 }
 
 export async function POST(request: Request) {

@@ -4,6 +4,7 @@ import Image from "next/image";
 import { useSearchParams } from "next/navigation";
 import { useEffect, useState } from "react";
 import {
+  ChannelContentSkeleton,
   ChannelEmptyState,
   ChannelProfileHeader,
 } from "@/components/host-channel-home";
@@ -27,19 +28,27 @@ export function HostChannelFree() {
   const requestedChannelSlug = searchParams.get("channel");
   const [channel, setChannel] = useState<Village | null>(null);
   const [blocks, setBlocks] = useState<FreeBlock[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
   const [saved, setSaved] = useState(false);
 
   useEffect(() => {
     let active = true;
 
     async function loadChannel() {
+      setIsLoading(true);
       const response = await fetch("/api/host/channels", { cache: "no-store" }).catch(
         () => null,
       );
-      if (!active || !response?.ok) return;
+      if (!active) return;
+      if (!response?.ok) {
+        setChannel(null);
+        setIsLoading(false);
+        return;
+      }
 
       const payload = (await response.json().catch(() => ({}))) as HostChannelPayload;
       setChannel(selectHostChannel(payload.data, requestedChannelSlug));
+      setIsLoading(false);
     }
 
     void loadChannel();
@@ -68,10 +77,19 @@ export function HostChannelFree() {
     <HostWorkspaceLayout sidebarHeight="min-h-[clamp(383px,26.597vw,510.667px)]">
       <section className="min-w-0 flex-1 overflow-x-hidden bg-white">
         <div className="w-full max-w-[var(--host-1230)]">
-          <ChannelProfileHeader activeLabel="자유형" channel={channel} publicHref={publicHref} />
+          <ChannelProfileHeader
+            activeLabel="자유형"
+            channel={channel}
+            loading={isLoading}
+            publicHref={publicHref}
+          />
 
           <section className="border-b border-[#6D7A8A] pb-[var(--host-8)] pt-[var(--host-8)]">
-            {blocks.length > 0 ? (
+            {isLoading ? (
+              <div className="px-[var(--host-18)] py-[var(--host-24)]">
+                <ChannelContentSkeleton variant="grid" />
+              </div>
+            ) : blocks.length > 0 ? (
               <div className="grid grid-cols-3 gap-[var(--host-8)] border-b border-[#F3E2D5] px-[var(--host-18)] py-[var(--host-12)]">
                 {blocks.map((block) => (
                   <div

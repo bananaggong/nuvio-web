@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
 import {
+  ChannelContentSkeleton,
   ChannelEmptyState,
   ChannelProfileHeader,
 } from "@/components/host-channel-home";
@@ -43,6 +44,7 @@ export function HostChannelPrograms() {
   const requestedChannelSlug = searchParams.get("channel");
   const [channel, setChannel] = useState<Village | null>(null);
   const [programs, setPrograms] = useState<HostProgramDraft[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
   const [activeFilter, setActiveFilter] = useState<ProgramFilter>("all");
   const [sortOrder, setSortOrder] = useState<SortOrder>("latest");
 
@@ -50,6 +52,7 @@ export function HostChannelPrograms() {
     let active = true;
 
     async function load() {
+      setIsLoading(true);
       const channelResponse = await fetch("/api/host/channels", {
         cache: "no-store",
       }).catch(() => null);
@@ -59,6 +62,7 @@ export function HostChannelPrograms() {
       if (!channelResponse?.ok) {
         setChannel(null);
         setPrograms([]);
+        setIsLoading(false);
         return;
       }
 
@@ -72,6 +76,7 @@ export function HostChannelPrograms() {
       const programsEndpoint = hostChannelProgramsEndpoint(selectedChannel);
       if (!programsEndpoint) {
         setPrograms([]);
+        setIsLoading(false);
         return;
       }
 
@@ -86,6 +91,7 @@ export function HostChannelPrograms() {
       } else {
         setPrograms([]);
       }
+      setIsLoading(false);
     }
 
     void load();
@@ -116,7 +122,12 @@ export function HostChannelPrograms() {
     <HostWorkspaceLayout sidebarHeight="min-h-[var(--host-1114)]">
       <section className="min-w-0 flex-1 overflow-x-clip bg-white">
         <div className="w-full max-w-[var(--host-1230)]">
-          <ChannelProfileHeader activeLabel="프로그램" channel={channel} publicHref={publicHref} />
+          <ChannelProfileHeader
+            activeLabel="프로그램"
+            channel={channel}
+            loading={isLoading}
+            publicHref={publicHref}
+          />
 
           <section className="px-[var(--host-44)] pt-[var(--host-8)]">
             <div className="flex h-[var(--host-48)] items-start justify-between pt-[var(--host-6)]">
@@ -151,7 +162,11 @@ export function HostChannelPrograms() {
               편집을 원하는 프로그램을 클릭 시, 해당 프로그램의 설정 페이지로 이동해요
             </p>
 
-            {visiblePrograms.length > 0 ? (
+            {isLoading ? (
+              <div className="mt-[var(--host-30)] pl-[var(--host-20)]">
+                <ChannelContentSkeleton variant="programs" />
+              </div>
+            ) : visiblePrograms.length > 0 ? (
               <div className="mt-[var(--host-30)] grid grid-cols-[repeat(3,var(--host-344))] gap-x-[var(--host-36-7)] gap-y-[var(--host-40)] pl-[var(--host-20)]">
                 {visiblePrograms.map((program, index) => (
                   <ChannelProgramCard key={`${program.id}-${index}`} program={program} />
