@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
-import { CalendarDays, Loader2, X } from "lucide-react";
+import { CalendarDays, Flame, Loader2, X } from "lucide-react";
 import { useEffect, useMemo, useState, type CSSProperties } from "react";
 import { HostProgramSidebar } from "@/components/host-program-sidebar";
 import {
@@ -38,20 +38,33 @@ import { launchFeatureFlags } from "@/lib/launch-feature-flags";
 import {
   renderMessageTemplate,
 } from "@/lib/message-automation";
+import type { ReviewStatus } from "@/lib/types";
 import { useHostMessageTemplates } from "@/lib/use-host-message-templates";
 import { useHostOperationsData } from "@/lib/use-host-operations-data";
 
 type ReviewTab = "all" | "pending" | "accepted" | "rejected";
 type ApplicationsPanel = "applications" | "receipts" | "reviews";
+type ReviewRatingFilter = "all" | 5 | 4 | 3 | 2 | 1;
+type ReviewSortOrder = "latest" | "oldest";
+type ReviewVisibilityFilter = "all" | "replyMissing" | "hidden";
 
 type HostReviewManagementItem = {
   id: number | string;
+  applicationId?: string;
   author: string;
   body: string;
   date: string;
   excerpt?: string;
   images?: string[];
+  programLegacyId?: number;
+  programSlug?: string;
+  programTitle?: string;
+  programUuid?: string;
   published?: boolean;
+  publishedAt?: string;
+  rating?: number;
+  status?: ReviewStatus;
+  submittedAt?: string;
   title?: string;
   updatedAt?: string;
 };
@@ -135,6 +148,28 @@ const applicationStatusOptions: Array<{
   },
 ];
 
+const reviewRatingFilterOptions: Array<{
+  key: string;
+  label: string;
+  value: ReviewRatingFilter;
+}> = [
+  { key: "all", label: "전체", value: "all" },
+  { key: "5", label: "5점", value: 5 },
+  { key: "4", label: "4점", value: 4 },
+  { key: "3", label: "3점", value: 3 },
+  { key: "2", label: "2점", value: 2 },
+  { key: "1", label: "1점", value: 1 },
+];
+
+const reviewVisibilityFilterOptions: Array<{
+  label: string;
+  value: ReviewVisibilityFilter;
+}> = [
+  { label: "전체 후기", value: "all" },
+  { label: "답글 미작성 후기", value: "replyMissing" },
+  { label: "숨김처리된 후기", value: "hidden" },
+];
+
 export function HostApplicationsCrm({
   programId,
   projectId,
@@ -154,6 +189,16 @@ export function HostApplicationsCrm({
   const { templates: messageTemplates } = useHostMessageTemplates();
   const [hostReviews, setHostReviews] =
     useState<HostReviewManagementItem[]>([]);
+  const [isLoadingHostReviews, setIsLoadingHostReviews] = useState(false);
+  const [updatingReviewId, setUpdatingReviewId] = useState<string | null>(null);
+  const [reviewPanelMessage, setReviewPanelMessage] = useState("");
+  const [reviewPanelError, setReviewPanelError] = useState("");
+  const [reviewRatingFilter, setReviewRatingFilter] =
+    useState<ReviewRatingFilter>("all");
+  const [reviewSortOrder, setReviewSortOrder] =
+    useState<ReviewSortOrder>("latest");
+  const [reviewVisibilityFilter, setReviewVisibilityFilter] =
+    useState<ReviewVisibilityFilter>("all");
   const [isStatusDialogOpen, setIsStatusDialogOpen] = useState(false);
   const [statusDialogValue, setStatusDialogValue] =
     useState<HostApplicationStatus>("screening");
@@ -268,6 +313,18 @@ export function HostApplicationsCrm({
     return undefined;
   }, [hostPrograms, selectedApplication, sidebarProgramId, sidebarTitle]);
   const sidebarStatus = getHostProgramSidebarStatus(program, sidebarDraft);
+  const scopedHostReviews = useMemo(
+    () =>
+      hostReviews.filter((review) =>
+        matchesHostReviewProgram(review, {
+          program,
+          programId: sidebarProgramId,
+          programTitle: sidebarTitle,
+          scopedApplications,
+        }),
+      ),
+    [hostReviews, program, scopedApplications, sidebarProgramId, sidebarTitle],
+  );
   const selectedApplicationTemplate = useMemo(
     () =>
       resolveApplicationTemplate(
@@ -327,6 +384,9 @@ export function HostApplicationsCrm({
     let cancelled = false;
 
     async function loadHostReviews() {
+      setIsLoadingHostReviews(true);
+      setReviewPanelMessage("");
+      setReviewPanelError("");
       try {
         const response = await fetch("/api/host/reviews", { cache: "no-store" });
         if (!response.ok) {
@@ -340,6 +400,8 @@ export function HostApplicationsCrm({
         if (!cancelled) setHostReviews(Array.isArray(payload.data) ? payload.data : []);
       } catch {
         if (!cancelled) setHostReviews([]);
+      } finally {
+        if (!cancelled) setIsLoadingHostReviews(false);
       }
     }
 
@@ -349,6 +411,53 @@ export function HostApplicationsCrm({
       cancelled = true;
     };
   }, [activePanel]);
+
+  async function updateReviewVisibility(
+    review: HostReviewManagementItem,
+    hidden: boolean,
+  ) {
+    const reviewId = String(review.id);
+    setUpdatingReviewId(reviewId);
+    setReviewPanelMessage("");
+    setReviewPanelError("");
+
+    const nextStatus: ReviewStatus = hidden ? "hidden" : "published";
+
+    try {
+      const response = await fetch("/api/host/reviews", {
+        body: JSON.stringify({
+          hiddenReason: hidden ? "host_hidden" : undefined,
+          id: reviewId,
+          status: nextStatus,
+        }),
+        headers: { "Content-Type": "application/json" },
+        method: "PATCH",
+      });
+      const payload = (await response.json()) as {
+        data?: HostReviewManagementItem;
+        error?: string;
+      };
+
+      if (!response.ok || !payload.data) {
+        throw new Error(payload.error ?? "후기 상태를 변경하지 못했습니다.");
+      }
+
+      setHostReviews((currentReviews) =>
+        currentReviews.map((currentReview) =>
+          String(currentReview.id) === reviewId
+            ? { ...currentReview, ...payload.data }
+            : currentReview,
+        ),
+      );
+      setReviewPanelMessage(hidden ? "후기를 숨김처리했습니다." : "후기 숨김을 해제했습니다.");
+    } catch (error) {
+      setReviewPanelError(
+        error instanceof Error ? error.message : "후기 상태를 변경하지 못했습니다.",
+      );
+    } finally {
+      setUpdatingReviewId(null);
+    }
+  }
 
   function toggleCheckedApplication(applicationId: string) {
     setCheckedApplicationIds((currentIds) =>
@@ -512,7 +621,22 @@ export function HostApplicationsCrm({
               />
             ) : null}
             {activePanel === "reviews" ? (
-              <ReviewManagementPanel reviews={hostReviews} />
+              <ReviewManagementPanel
+                errorMessage={reviewPanelError}
+                isLoading={isLoadingHostReviews}
+                onRatingFilterChange={setReviewRatingFilter}
+                onSortOrderChange={setReviewSortOrder}
+                onToggleVisibility={(review, hidden) =>
+                  void updateReviewVisibility(review, hidden)
+                }
+                onVisibilityFilterChange={setReviewVisibilityFilter}
+                ratingFilter={reviewRatingFilter}
+                reviews={scopedHostReviews}
+                sortOrder={reviewSortOrder}
+                statusMessage={reviewPanelMessage}
+                updatingReviewId={updatingReviewId}
+                visibilityFilter={reviewVisibilityFilter}
+              />
             ) : null}
             {activePanel === "applications" ? (
               <>
@@ -1487,57 +1611,150 @@ function PaymentManagementPanel({
 }
 
 function ReviewManagementPanel({
+  errorMessage,
+  isLoading,
+  onRatingFilterChange,
+  onSortOrderChange,
+  onToggleVisibility,
+  onVisibilityFilterChange,
+  ratingFilter,
   reviews,
+  sortOrder,
+  statusMessage,
+  updatingReviewId,
+  visibilityFilter,
 }: {
+  errorMessage: string;
+  isLoading: boolean;
+  onRatingFilterChange: (filter: ReviewRatingFilter) => void;
+  onSortOrderChange: (order: ReviewSortOrder) => void;
+  onToggleVisibility: (review: HostReviewManagementItem, hidden: boolean) => void;
+  onVisibilityFilterChange: (filter: ReviewVisibilityFilter) => void;
+  ratingFilter: ReviewRatingFilter;
   reviews: HostReviewManagementItem[];
+  sortOrder: ReviewSortOrder;
+  statusMessage: string;
+  updatingReviewId: string | null;
+  visibilityFilter: ReviewVisibilityFilter;
 }) {
-  const averageRating = reviews.length > 0 ? "4.6" : "0.0";
+  const reviewPool = useMemo(
+    () => reviews.filter((review) => review.status !== "deleted"),
+    [reviews],
+  );
+  const averageRating = getAverageReviewRating(reviewPool);
+  const filteredReviews = useMemo(
+    () =>
+      sortHostReviews(
+        reviewPool.filter(
+          (review) =>
+            matchesReviewRatingFilter(review, ratingFilter) &&
+            matchesReviewVisibilityFilter(review, visibilityFilter),
+        ),
+        sortOrder,
+      ),
+    [ratingFilter, reviewPool, sortOrder, visibilityFilter],
+  );
 
   return (
     <section className="min-h-[calc(100vh_-_4.861vw)] bg-white pl-[2.778vw] pt-[47px]">
       <div className="w-[61.042vw] max-w-[1172px]">
         <h1 className="text-[16px] font-semibold leading-[1.253] text-[#0D0D0C]">
-          전체 후기 {String(reviews.length).padStart(2, "0")}개 / 평균 ★ {averageRating}
+          전체 후기 {reviewPool.length}개 / 평균{" "}
+          <span className="inline-flex items-center gap-[3px] text-[#0D0D0C]">
+            <Flame
+              aria-hidden="true"
+              className="size-[14px] fill-[#0D0D0C] text-[#0D0D0C]"
+              strokeWidth={1.8}
+            />
+            {averageRating}
+          </span>
         </h1>
 
         <div className="mt-[26px] grid gap-[12px] text-[14px] font-normal leading-[1.253] text-[#6D7A8A]">
           <div className="flex items-center gap-[13px]">
-            <span>평점</span>
-            {["전체", "5점 ★★★★★", "4점 ★★★★", "3점 ★★★", "2점 ★★", "1점 ★"].map((label, index) => (
-              <label className="inline-flex items-center gap-[4px]" key={label}>
-                <input defaultChecked={index === 0 || index === 1 || index === 2} className="size-[14px] accent-[#FE701E]" type="radio" />
-                {label}
+            <span className="shrink-0">평점</span>
+            {reviewRatingFilterOptions.map((option) => (
+              <label className="inline-flex items-center gap-[4px]" key={option.key}>
+                <input
+                  checked={ratingFilter === option.value}
+                  className="size-[14px] accent-[#FE701E]"
+                  onChange={() => onRatingFilterChange(option.value)}
+                  type="radio"
+                />
+                <span className="inline-flex items-center gap-[2px]">
+                  {option.label}
+                  {option.value !== "all" ? (
+                    <FlameRating rating={option.value} tone="muted" />
+                  ) : null}
+                </span>
               </label>
             ))}
           </div>
           <div className="flex items-center gap-[20px]">
-            <span>순서</span>
+            <span className="shrink-0">순서</span>
             <label className="inline-flex items-center gap-[4px]">
-              <input defaultChecked className="size-[14px] accent-[#FE701E]" type="radio" />
+              <input
+                checked={sortOrder === "latest"}
+                className="size-[14px] accent-[#FE701E]"
+                onChange={() => onSortOrderChange("latest")}
+                type="radio"
+              />
               최신순
             </label>
             <label className="inline-flex items-center gap-[4px]">
-              <input className="size-[14px] accent-[#FE701E]" type="radio" />
+              <input
+                checked={sortOrder === "oldest"}
+                className="size-[14px] accent-[#FE701E]"
+                onChange={() => onSortOrderChange("oldest")}
+                type="radio"
+              />
               오래된순
             </label>
           </div>
           <div className="flex items-center gap-[14px]">
-            <span className="font-semibold text-[#0D0D0C]">전체 후기</span>
-            <span className="text-[#CAC4BC]">답글 미작성 후기</span>
-            <span className="text-[#CAC4BC]">숨김처리된 후기</span>
+            {reviewVisibilityFilterOptions.map((option) => (
+              <button
+                className={
+                  visibilityFilter === option.value
+                    ? "font-semibold text-[#0D0D0C]"
+                    : "font-normal text-[#CAC4BC]"
+                }
+                key={option.value}
+                onClick={() => onVisibilityFilterChange(option.value)}
+                type="button"
+              >
+                {option.label}
+              </button>
+            ))}
           </div>
         </div>
 
         <hr className="mt-[13px] border-[#CAC4BC]" />
 
+        {statusMessage || errorMessage ? (
+          <div className="mt-[14px] text-[12px] font-semibold leading-[1.253]">
+            {statusMessage ? <p className="text-[#FE701E]">{statusMessage}</p> : null}
+            {errorMessage ? <p className="text-red-600">{errorMessage}</p> : null}
+          </div>
+        ) : null}
+
         <div className="mt-[28px] grid w-[54.792vw] max-w-[1052px] gap-[14px] pb-[40px]">
-          {reviews.length > 0 ? (
-            reviews.map((review) => (
-              <ReviewManagementCard key={review.id} review={review} />
+          {filteredReviews.length > 0 ? (
+            filteredReviews.map((review) => (
+              <ReviewManagementCard
+                disabled={updatingReviewId === String(review.id)}
+                key={review.id}
+                onToggleVisibility={onToggleVisibility}
+                review={review}
+              />
             ))
+          ) : isLoading ? (
+            <div className="flex h-[160px] items-center justify-center rounded-[6px] border border-[#6D7A8A] text-[14px] font-semibold text-[#6D7A8A]">
+              후기를 불러오는 중입니다.
+            </div>
           ) : (
             <div className="flex h-[160px] items-center justify-center rounded-[6px] border border-[#6D7A8A] text-[14px] font-semibold text-[#6D7A8A]">
-              등록된 후기가 없습니다.
+              조건에 맞는 후기가 없습니다.
             </div>
           )}
         </div>
@@ -1546,13 +1763,46 @@ function ReviewManagementPanel({
   );
 }
 
+function FlameRating({
+  rating,
+  tone = "orange",
+}: {
+  rating: number;
+  tone?: "muted" | "orange";
+}) {
+  const activeClassName =
+    tone === "orange"
+      ? "fill-[#FE701E] text-[#FE701E]"
+      : "fill-[#6D7A8A] text-[#6D7A8A]";
+  const inactiveClassName = "fill-transparent text-[#AEB8C2]";
+
+  return (
+    <span className="inline-flex items-center gap-[1px]">
+      {Array.from({ length: rating }, (_, index) => (
+        <Flame
+          aria-hidden="true"
+          className={`size-[12px] ${index < rating ? activeClassName : inactiveClassName}`}
+          key={index}
+          strokeWidth={1.8}
+        />
+      ))}
+    </span>
+  );
+}
+
 function ReviewManagementCard({
+  disabled,
+  onToggleVisibility,
   review,
 }: {
+  disabled: boolean;
+  onToggleVisibility: (review: HostReviewManagementItem, hidden: boolean) => void;
   review: HostReviewManagementItem;
 }) {
   const body = review.body || review.excerpt || "후기 내용이 없습니다.";
   const images = review.images ?? [];
+  const rating = getReviewRating(review);
+  const hidden = isHostReviewHidden(review);
 
   return (
     <article className="rounded-[6px] border border-[#6D7A8A] bg-white px-[34px] py-[29px]">
@@ -1562,15 +1812,26 @@ function ReviewManagementCard({
             {review.author || "작성자"}
           </h2>
           <p className="mt-[9px] text-[12px] font-normal leading-[1.253] text-[#6D7A8A]">
-            {formatReviewManagementDate(review.date || review.updatedAt)}{" "}
-            <span className="ml-[6px] text-[#FE701E]">★ 5.0</span>
+            {formatReviewManagementDate(
+              review.date || review.publishedAt || review.submittedAt || review.updatedAt,
+            )}{" "}
+            <span className="ml-[6px] inline-flex items-center gap-[2px] text-[#FE701E]">
+              <Flame
+                aria-hidden="true"
+                className="size-[11px] fill-[#FE701E] text-[#FE701E]"
+                strokeWidth={1.8}
+              />
+              {rating.toFixed(1)}
+            </span>
           </p>
         </div>
         <button
-          className="h-[21px] rounded-[999px] border border-[#6D7A8A] px-[10px] text-[12px] font-normal leading-[1.253] text-[#6D7A8A]"
+          className="h-[21px] rounded-[999px] border border-[#6D7A8A] px-[10px] text-[12px] font-normal leading-[1.253] text-[#6D7A8A] transition hover:border-[#FE701E] hover:text-[#FE701E] disabled:cursor-wait disabled:opacity-50"
+          disabled={disabled}
+          onClick={() => onToggleVisibility(review, !hidden)}
           type="button"
         >
-          {review.published === false ? "숨김해제" : "숨김처리"}
+          {hidden ? "숨김해제" : "숨김처리"}
         </button>
       </div>
 
@@ -1892,6 +2153,125 @@ function matchesProgramIdentifier(application: HostApplication, programId: strin
   return (
     normalizeIdentifier(application.programId ?? "") === normalizedProgramId ||
     normalizeIdentifier(application.programTitle) === normalizedProgramId
+  );
+}
+
+function matchesHostReviewProgram(
+  review: HostReviewManagementItem,
+  {
+    program,
+    programId,
+    programTitle,
+    scopedApplications,
+  }: {
+    program?: HostProgramOverview;
+    programId: string;
+    programTitle: string;
+    scopedApplications: HostApplication[];
+  },
+) {
+  const scopedApplicationIds = new Set(scopedApplications.map((application) => application.id));
+  if (review.applicationId && scopedApplicationIds.has(review.applicationId)) return true;
+
+  const programIdentifiers = [
+    programId,
+    program?.id,
+    program?.slug,
+    program?.title,
+    programTitle,
+    programTitle ? hostProgramId(programTitle) : "",
+  ].filter((identifier): identifier is string => Boolean(identifier));
+
+  if (programIdentifiers.length === 0) return true;
+
+  const reviewIdentifiers = [
+    review.programUuid,
+    review.programSlug,
+    review.programTitle,
+    review.programLegacyId !== undefined ? String(review.programLegacyId) : "",
+  ].filter((identifier): identifier is string => Boolean(identifier));
+
+  if (reviewIdentifiers.length === 0) return false;
+
+  return reviewIdentifiers.some((reviewIdentifier) =>
+    programIdentifiers.some((programIdentifier) =>
+      identifiersMatch(reviewIdentifier, programIdentifier),
+    ),
+  );
+}
+
+function getAverageReviewRating(reviews: HostReviewManagementItem[]) {
+  const ratings = reviews.map(getReviewRating);
+  if (ratings.length === 0) return "0.0";
+
+  const average = ratings.reduce((sum, rating) => sum + rating, 0) / ratings.length;
+  return average.toFixed(1);
+}
+
+function matchesReviewRatingFilter(
+  review: HostReviewManagementItem,
+  ratingFilter: ReviewRatingFilter,
+) {
+  if (ratingFilter === "all") return true;
+  return Math.round(getReviewRating(review)) === ratingFilter;
+}
+
+function matchesReviewVisibilityFilter(
+  review: HostReviewManagementItem,
+  visibilityFilter: ReviewVisibilityFilter,
+) {
+  if (visibilityFilter === "all") return true;
+  if (visibilityFilter === "hidden") return isHostReviewHidden(review);
+  return !isHostReviewHidden(review) && !hasHostReviewReply(review);
+}
+
+function sortHostReviews(
+  reviews: HostReviewManagementItem[],
+  sortOrder: ReviewSortOrder,
+) {
+  return [...reviews].sort((left, right) => {
+    const leftTime = getReviewTime(left);
+    const rightTime = getReviewTime(right);
+    return sortOrder === "latest" ? rightTime - leftTime : leftTime - rightTime;
+  });
+}
+
+function getReviewRating(review: HostReviewManagementItem) {
+  const rating =
+    typeof review.rating === "number" && Number.isFinite(review.rating)
+      ? review.rating
+      : 5;
+  return Math.min(5, Math.max(1, rating));
+}
+
+function getReviewTime(review: HostReviewManagementItem) {
+  const value =
+    review.publishedAt ||
+    review.submittedAt ||
+    review.date ||
+    review.updatedAt ||
+    "";
+  const timestamp = Date.parse(value);
+  return Number.isNaN(timestamp) ? 0 : timestamp;
+}
+
+function isHostReviewHidden(review: HostReviewManagementItem) {
+  return review.status === "hidden" || review.published === false;
+}
+
+function hasHostReviewReply(review: HostReviewManagementItem) {
+  const maybeReply = review as HostReviewManagementItem & {
+    hostReply?: unknown;
+    hostReplyId?: unknown;
+    reply?: unknown;
+    replyStatus?: unknown;
+  };
+
+  return Boolean(
+    maybeReply.hostReply ||
+      maybeReply.hostReplyId ||
+      maybeReply.reply ||
+      maybeReply.replyStatus === "published",
   );
 }
 
