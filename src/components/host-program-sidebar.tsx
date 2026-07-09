@@ -172,7 +172,7 @@ export function HostProgramSidebar({
             ) : null}
             <SidebarNavLink
               active={activeItem === "messages"}
-              href={messagesHref}
+              href="/host/messages"
               label="메시지함"
             />
             <SidebarNavLink

@@ -3557,7 +3557,7 @@ function GuideItemsBlock({
   }
 
   return (
-    <DetailFormBlock className="h-[var(--figma-219)] shrink-0">
+    <DetailFormBlock className="min-h-[var(--figma-219)] shrink-0">
       <div className="flex w-full flex-col gap-[var(--figma-14)]">
         <SettingsFieldLabel>{title}</SettingsFieldLabel>
         <p className="text-[length:var(--figma-14)] font-normal leading-[1.253] text-[#6D7A8A]">
@@ -3565,7 +3565,10 @@ function GuideItemsBlock({
         </p>
         <div className="flex flex-col gap-[var(--figma-14)]">
           {items.map((item, index) => (
-            <div className="flex h-[var(--figma-31)] items-center gap-[var(--figma-8)]" key={index}>
+            <div
+              className="grid min-h-[var(--figma-31)] grid-cols-[var(--figma-8)_minmax(0,1fr)_var(--figma-14)] items-center gap-[var(--figma-8)]"
+              key={index}
+            >
               <span
                 aria-hidden="true"
                 className="size-[var(--figma-8)] shrink-0 rounded-full bg-[#CAC4BC]"
@@ -3578,7 +3581,7 @@ function GuideItemsBlock({
               />
               <button
                 aria-label={`${title} 항목 삭제`}
-                className="grid size-[var(--figma-12)] shrink-0 place-items-center rounded-full bg-[#CAC4BC] text-white transition hover:bg-[#6D7A8A]"
+                className="grid size-[var(--figma-12)] place-items-center justify-self-center rounded-full bg-[#CAC4BC] text-white transition hover:bg-[#6D7A8A]"
                 onClick={() => removeItem(index)}
                 type="button"
               >
@@ -3588,7 +3591,7 @@ function GuideItemsBlock({
           ))}
         </div>
         <button
-          className="mx-auto flex h-[var(--figma-15)] items-center gap-[var(--figma-4)] text-[length:var(--figma-12)] font-normal leading-[1.253] text-[#6D7A8A] transition hover:text-[#FE701E]"
+          className="mx-auto mt-[var(--figma-2)] flex min-h-[var(--figma-18)] items-center gap-[var(--figma-4)] text-[length:var(--figma-12)] font-normal leading-[1.253] text-[#6D7A8A] transition hover:text-[#FE701E]"
           onClick={addItem}
           type="button"
         >
@@ -3647,7 +3650,7 @@ function RefundRulesBlock({
   }
 
   return (
-    <DetailFormBlock className="h-[var(--figma-251)] shrink-0">
+    <DetailFormBlock className="min-h-[var(--figma-251)] shrink-0">
       <div className="flex w-full flex-col gap-[var(--figma-14)]">
         <SettingsFieldLabel>취소 / 환불 규정</SettingsFieldLabel>
         <p className="text-[length:var(--figma-14)] font-normal leading-[1.253] text-[#6D7A8A]">
@@ -3655,7 +3658,10 @@ function RefundRulesBlock({
         </p>
         <div className="flex flex-col gap-[var(--figma-14)]">
           {rules.map((rule, index) => (
-            <div className="flex h-[var(--figma-31)] items-center gap-[var(--figma-8)]" key={rule.id}>
+            <div
+              className="grid min-h-[var(--figma-31)] grid-cols-[var(--figma-8)_var(--figma-72)_var(--figma-72)_var(--figma-72)_var(--figma-40)_var(--figma-14)] items-center gap-[var(--figma-8)]"
+              key={rule.id}
+            >
               <span
                 aria-hidden="true"
                 className="size-[var(--figma-8)] shrink-0 rounded-full bg-[#CAC4BC]"
@@ -3682,7 +3688,7 @@ function RefundRulesBlock({
               </span>
               <button
                 aria-label="환불 규정 삭제"
-                className="grid size-[var(--figma-12)] shrink-0 place-items-center rounded-full bg-[#CAC4BC] text-white transition hover:bg-[#6D7A8A]"
+                className="grid size-[var(--figma-12)] place-items-center justify-self-center rounded-full bg-[#CAC4BC] text-white transition hover:bg-[#6D7A8A]"
                 onClick={() => removeRule(index)}
                 type="button"
               >
@@ -3692,7 +3698,7 @@ function RefundRulesBlock({
           ))}
         </div>
         <button
-          className="flex h-[var(--figma-15)] w-fit items-center gap-[var(--figma-4)] text-[length:var(--figma-12)] font-normal leading-[1.253] text-[#6D7A8A] transition hover:text-[#FE701E]"
+          className="mt-[var(--figma-2)] flex min-h-[var(--figma-18)] w-fit items-center gap-[var(--figma-4)] text-[length:var(--figma-12)] font-normal leading-[1.253] text-[#6D7A8A] transition hover:text-[#FE701E]"
           onClick={addRule}
           type="button"
         >

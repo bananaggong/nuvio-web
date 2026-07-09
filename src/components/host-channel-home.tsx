@@ -14,6 +14,7 @@ import {
 import { HostChannelHomeBlocks } from "@/components/host-channel-home-blocks";
 import { nuvioIcons } from "@/components/icons/nuvio-icons";
 import { HostWorkspaceLayout } from "@/components/host-workspace-ui";
+import type { ChannelBoardPost } from "@/lib/channel-board-posts";
 import {
   applyChannelMenuItemsToSections,
   channelHomeLabel,
@@ -29,6 +30,7 @@ import {
 } from "@/lib/host-channel-selection";
 import type { HostProgramDraft } from "@/lib/host-program-studio";
 import { channelPath } from "@/lib/channel-routing";
+import type { VillageMediaContent } from "@/lib/types";
 import type { Village } from "@/lib/village-types";
 
 type HostChannelPayload = {
@@ -38,6 +40,16 @@ type HostChannelPayload = {
 
 type HostProgramsPayload = {
   data?: HostProgramDraft[];
+  error?: string;
+};
+
+type HostMediaPayload = {
+  data?: VillageMediaContent[];
+  error?: string;
+};
+
+type ChannelBoardPostsPayload = {
+  data?: ChannelBoardPost[];
   error?: string;
 };
 
@@ -51,6 +63,30 @@ type AssetUploadPayload = {
 type SaveChannelPayload = {
   data?: Village;
   error?: string;
+};
+
+type HostChannelHomeGalleryCard = {
+  caption: string;
+  extraCount?: number;
+  id: string;
+  image?: string;
+  isVideo?: boolean;
+  title: string;
+};
+
+type HostChannelHomeStoryCard = {
+  body: string;
+  date: string;
+  id: string;
+  image?: string;
+  title: string;
+};
+
+type HostChannelHomeNoticeRow = {
+  category: string;
+  date: string;
+  title: string;
+  variant?: "default" | "new" | "pinned";
 };
 
 const maxHeroUploadBytes = 5 * 1024 * 1024;
@@ -84,6 +120,8 @@ export function HostChannelHome() {
   const requestedChannelSlug = searchParams.get("channel");
   const [channel, setChannel] = useState<Village | null>(null);
   const [programs, setPrograms] = useState<HostProgramDraft[]>([]);
+  const [mediaItems, setMediaItems] = useState<VillageMediaContent[]>([]);
+  const [boardPosts, setBoardPosts] = useState<ChannelBoardPost[]>([]);
   const [isUploadingHero, setIsUploadingHero] = useState(false);
   const [savingMenuItemId, setSavingMenuItemId] = useState<string | null>(null);
   const [menuStatusMessage, setMenuStatusMessage] = useState("");
@@ -103,6 +141,8 @@ export function HostChannelHome() {
       if (!channelResponse?.ok) {
         setChannel(null);
         setPrograms([]);
+        setMediaItems([]);
+        setBoardPosts([]);
         return;
       }
 
@@ -113,15 +153,27 @@ export function HostChannelHome() {
       );
       setChannel(selectedChannel);
 
-      const programsEndpoint = hostChannelProgramsEndpoint(selectedChannel);
-      if (!programsEndpoint) {
+      if (!selectedChannel?.slug) {
         setPrograms([]);
+        setMediaItems([]);
+        setBoardPosts([]);
         return;
       }
 
-      const programsResponse = await fetch(programsEndpoint, {
-        cache: "no-store",
-      }).catch(() => null);
+      const programsEndpoint = hostChannelProgramsEndpoint(selectedChannel);
+      const encodedChannelSlug = encodeURIComponent(selectedChannel.slug);
+      const [programsResponse, mediaResponse, boardPostsResponse] =
+        await Promise.all([
+          programsEndpoint
+            ? fetch(programsEndpoint, { cache: "no-store" }).catch(() => null)
+            : Promise.resolve(null),
+          fetch(`/api/host/media?villageSlug=${encodedChannelSlug}`, {
+            cache: "no-store",
+          }).catch(() => null),
+          fetch(`/api/host/channel-board-posts?villageSlug=${encodedChannelSlug}`, {
+            cache: "no-store",
+          }).catch(() => null),
+        ]);
       if (!active) return;
 
       if (programsResponse?.ok) {
@@ -129,6 +181,21 @@ export function HostChannelHome() {
         setPrograms(filterProgramsForChannel(programsPayload.data, selectedChannel));
       } else {
         setPrograms([]);
+      }
+
+      if (mediaResponse?.ok) {
+        const mediaPayload = (await mediaResponse.json().catch(() => ({}))) as HostMediaPayload;
+        const media = Array.isArray(mediaPayload.data) ? mediaPayload.data : [];
+        setMediaItems(media.filter((item) => item.villageSlug === selectedChannel.slug));
+      } else {
+        setMediaItems([]);
+      }
+
+      if (boardPostsResponse?.ok) {
+        const boardPostsPayload = (await boardPostsResponse.json().catch(() => ({}))) as ChannelBoardPostsPayload;
+        setBoardPosts(Array.isArray(boardPostsPayload.data) ? boardPostsPayload.data : []);
+      } else {
+        setBoardPosts([]);
       }
     }
 
@@ -145,9 +212,13 @@ export function HostChannelHome() {
     includeFree: false,
   }).filter((item) => item.kind !== "review");
   const visiblePrograms = programs.slice(0, 8);
-  const visibleGalleryCards: string[] = [];
-  const visibleStoryCards: Array<{ body: string; title: string }> = [];
-  const visibleNoticeRows: Array<{ category: string; date: string; title: string }> = [];
+  const visibleGalleryCards = buildGalleryCards(
+    mediaItems.filter(isChannelGalleryMedia),
+  ).slice(0, 3);
+  const visibleStoryCards = buildStoryCards(
+    mediaItems.filter(isChannelMagazineMedia),
+  ).slice(0, 3);
+  const visibleNoticeRows = buildNoticeRows(boardPosts).slice(0, 4);
 
   async function handleHeroFileChange(event: ChangeEvent<HTMLInputElement>) {
     const file = event.target.files?.[0];
@@ -381,10 +452,10 @@ function ChannelHomeMenuSection({
   item: ChannelMenuItem;
   onToggleVisible?: () => void;
   toggleBusy?: boolean;
-  visibleGalleryCards: string[];
-  visibleNoticeRows: Array<{ category: string; date: string; title: string }>;
+  visibleGalleryCards: HostChannelHomeGalleryCard[];
+  visibleNoticeRows: HostChannelHomeNoticeRow[];
   visiblePrograms: HostProgramDraft[];
-  visibleStoryCards: Array<{ body: string; title: string }>;
+  visibleStoryCards: HostChannelHomeStoryCard[];
 }) {
   if (item.kind === "program") {
     return (
@@ -438,20 +509,29 @@ function ChannelHomeMenuSection({
       >
         {visibleGalleryCards.length > 0 ? (
           <div className="grid grid-cols-3 gap-[var(--host-36)]">
-            {visibleGalleryCards.map((title, index) => (
-              <article key={`${title}-${index}`}>
+            {visibleGalleryCards.map((card) => (
+              <article key={card.id}>
                 <div className="relative h-[var(--host-354)] overflow-hidden rounded-[4px] bg-[#D9D9D9]">
-                  {index === 1 ? (
+                  {card.image ? (
+                    <Image
+                      alt={card.title}
+                      className="object-cover"
+                      fill
+                      sizes="(min-width: 1920px) 468px, 351px"
+                      src={card.image}
+                    />
+                  ) : null}
+                  {card.isVideo ? (
                     <span className="absolute left-1/2 top-1/2 size-0 -translate-x-1/2 -translate-y-1/2 border-y-[var(--host-12)] border-l-[var(--host-18)] border-y-transparent border-l-white" />
                   ) : null}
                   <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/35 to-transparent px-[var(--host-18)] pb-[var(--host-18)] pt-[var(--host-56)]">
                     <p className="line-clamp-3 text-[length:var(--host-12)] font-medium leading-[1.6] text-white">
-                      {title}를 따라 채널에서 보여줄 이미지와 영상 설명이 표시됩니다.
+                      {card.caption}
                     </p>
                   </div>
-                  {index !== 1 ? (
+                  {card.extraCount ? (
                     <span className="absolute right-[var(--host-12)] top-[var(--host-12)] text-[length:var(--host-12)] font-semibold leading-[1.253] text-white">
-                      +3
+                      +{card.extraCount}
                     </span>
                   ) : null}
                 </div>
@@ -483,15 +563,25 @@ function ChannelHomeMenuSection({
             {visibleStoryCards.map((card) => (
               <article
                 className="min-w-0 overflow-hidden rounded-[8px] bg-[#F9F9F9]"
-                key={card.title}
+                key={card.id}
               >
-                <div className="h-[var(--host-288)] rounded-t-[8px] bg-[#D9D9D9]" />
+                <div className="relative h-[var(--host-288)] overflow-hidden rounded-t-[8px] bg-[#D9D9D9]">
+                  {card.image ? (
+                    <Image
+                      alt={card.title}
+                      className="object-cover"
+                      fill
+                      sizes="(min-width: 1920px) 468px, 351px"
+                      src={card.image}
+                    />
+                  ) : null}
+                </div>
                 <div className="px-[var(--host-18)] py-[var(--host-16)]">
                   <h3 className="text-[length:var(--host-14)] font-semibold leading-[1.253] text-[#5B3A29]">
                     {card.title}
                   </h3>
                   <p className="mt-[var(--host-4)] text-[length:var(--host-11)] font-normal leading-[1.253] text-[#CAC4BC]">
-                    작성일 미정
+                    {card.date}
                   </p>
                   <p className="sr-only">{card.body}</p>
                 </div>
@@ -523,13 +613,13 @@ function ChannelHomeMenuSection({
             {visibleNoticeRows.map((row, index) => (
               <div
                 className="grid h-[var(--host-37)] grid-cols-[var(--host-82)_minmax(0,1fr)_var(--host-166)] items-center border-b border-[#F3E2D5] text-[length:var(--host-11)] leading-[1.253]"
-                key={`${row.category}-${index}`}
+                key={`${row.title}-${index}`}
               >
                 <div>
                   {row.category ? (
                     <span
                       className={`inline-flex h-[var(--host-16)] items-center rounded-[4px] px-[var(--host-8)] text-[length:var(--host-10)] font-semibold text-white ${
-                        row.category === "고정" ? "bg-[#6BAA50]" : "bg-[#FE701E]"
+                        row.variant === "pinned" ? "bg-[#6BAA50]" : "bg-[#FE701E]"
                       }`}
                     >
                       {row.category}
@@ -537,7 +627,9 @@ function ChannelHomeMenuSection({
                   ) : null}
                 </div>
                 <p className="font-medium text-[#5B3A29]">{row.title}</p>
-                <p className="text-right font-normal text-[#CAC4BC]">{row.date}</p>
+                <p className="text-right font-normal text-[#CAC4BC]">
+                  {formatChannelHomeNoticeDate(row.date)}
+                </p>
               </div>
             ))}
           </div>
@@ -846,4 +938,93 @@ function formatMiniDate(value?: string) {
   return `${String(date.getMonth() + 1).padStart(2, "0")}.${String(
     date.getDate(),
   ).padStart(2, "0")}`;
+}
+
+function buildGalleryCards(
+  media: VillageMediaContent[],
+): HostChannelHomeGalleryCard[] {
+  return media.map((item) => {
+    const images = getMediaImageUrls(item);
+
+    return {
+      caption: item.summary || item.title || "갤러리 게시글",
+      extraCount: images.length > 1 ? images.length - 1 : undefined,
+      id: item.id,
+      image: item.thumbnail || images[0],
+      isVideo: isChannelVideoMedia(item),
+      title: item.title || item.summary || "갤러리 게시글",
+    };
+  });
+}
+
+function buildStoryCards(
+  media: VillageMediaContent[],
+): HostChannelHomeStoryCard[] {
+  return media.map((item) => ({
+    body: item.body.join("\n"),
+    date: formatChannelHomeStoryDate(item.date),
+    id: item.id,
+    image: item.thumbnail,
+    title: item.title || "매거진 게시글",
+  }));
+}
+
+function buildNoticeRows(posts: ChannelBoardPost[]): HostChannelHomeNoticeRow[] {
+  return posts.map((post) => ({
+    category: post.pinned ? "고정" : post.unread ? "신규" : "",
+    date: post.createdAt,
+    title: post.title,
+    variant: post.pinned ? "pinned" : post.unread ? "new" : "default",
+  }));
+}
+
+function isChannelMagazineMedia(item: VillageMediaContent) {
+  return item.sourceUrl.includes("/host/channels/magazines");
+}
+
+function isChannelGalleryMedia(item: VillageMediaContent) {
+  return !isChannelMagazineMedia(item);
+}
+
+function isChannelVideoMedia(
+  item: Pick<VillageMediaContent, "embedUrl" | "provider" | "sourceUrl">,
+) {
+  return (
+    item.provider === "youtube" ||
+    item.provider === "instagram" ||
+    item.provider === "video" ||
+    Boolean(item.embedUrl) ||
+    /\.(mp4|mov|webm)(\?|#|$)/iu.test(item.sourceUrl)
+  );
+}
+
+function getMediaImageUrls(item: VillageMediaContent) {
+  return item.images?.length ? item.images : [item.thumbnail].filter(Boolean);
+}
+
+function formatChannelHomeStoryDate(value: string) {
+  const date = toChannelHomeDate(value);
+  if (!date) return "작성일 미정";
+
+  return `${date.getFullYear()}. ${String(date.getMonth() + 1).padStart(
+    2,
+    "0",
+  )}. ${String(date.getDate()).padStart(2, "0")}`;
+}
+
+function formatChannelHomeNoticeDate(value: string) {
+  const date = toChannelHomeDate(value);
+  if (!date) return "작성일 미정";
+
+  return `${date.getFullYear()}. ${String(date.getMonth() + 1).padStart(
+    2,
+    "0",
+  )}. ${String(date.getDate()).padStart(2, "0")} ${String(
+    date.getHours(),
+  ).padStart(2, "0")}:${String(date.getMinutes()).padStart(2, "0")}`;
+}
+
+function toChannelHomeDate(value: string) {
+  const date = new Date(value);
+  return Number.isNaN(date.getTime()) ? null : date;
 }
