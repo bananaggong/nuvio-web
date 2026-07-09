@@ -19,7 +19,7 @@ import {
   getSectionContent,
   type PublishedVillagePageSection,
 } from "@/lib/village-page-content";
-import { villagePath, villageProgramPath } from "@/lib/village-routing";
+import { channelPath, channelProgramPath } from "@/lib/channel-routing";
 import type { Program, Review, VillageMediaContent } from "@/lib/types";
 import type { Village } from "@/lib/village-types";
 
@@ -156,8 +156,8 @@ export function BoseongFigmaHeader({
   village: Village;
 }) {
   const applyHref = primaryProgram
-    ? villageProgramPath(village.slug, primaryProgram.slug)
-    : `${villagePath(village.slug)}/programs`;
+    ? channelProgramPath(village.slug, primaryProgram.slug)
+    : `${channelPath(village.slug)}/programs`;
 
   return (
     <header className="font-boseong relative z-40 border-b border-[#9d997e] bg-white text-[#171717]">
@@ -1127,7 +1127,7 @@ function HomeOriginalCta({
   const hrefBySlug = (slug: string) => {
     const program = programs.find((item) => item.slug === slug);
 
-    return program ? villageProgramPath("boseong", program.slug) : "/boseong/programs";
+    return program ? channelProgramPath("boseong", program.slug) : "/boseong/programs";
   };
 
   const content = getSectionContent(pageSections, "original_carousel", {
@@ -1397,7 +1397,7 @@ function OriginalProgramRow({
         </h2>
         <Link
           className="mt-[17px] inline-flex h-[24px] items-center justify-center rounded-[3px] border border-[#4f813f] px-[13px] text-[11px] font-extrabold leading-none text-[#2f6b2e] hover:bg-[#4f813f] hover:text-white md:h-[25px]"
-          href={villageProgramPath(village.slug, program.slug)}
+          href={channelProgramPath(village.slug, program.slug)}
         >
           신청하기
         </Link>

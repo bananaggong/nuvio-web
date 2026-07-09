@@ -7,7 +7,7 @@ import {
   px,
 } from "@/components/channel-guest-gallery";
 import { NuvioEmptyState } from "@/components/nuvio-empty-state";
-import { villagePath } from "@/lib/village-routing";
+import { channelPath } from "@/lib/channel-routing";
 import type { VillageMediaContent } from "@/lib/types";
 import type { Village } from "@/lib/village-types";
 
@@ -33,7 +33,7 @@ export function ChannelGuestMagazinePage({
   media,
   village,
 }: ChannelGuestMagazinePageProps) {
-  const homeHref = villagePath(village.slug);
+  const homeHref = channelPath(village.slug);
   const items = buildMagazineItems(media, village);
 
   return (
@@ -135,7 +135,7 @@ function buildMagazineItems(
   media: VillageMediaContent[],
   village: Village,
 ): MagazineItem[] {
-  const homeHref = villagePath(village.slug);
+  const homeHref = channelPath(village.slug);
   return media.map((item) => ({
     date: formatMagazineDate(item.date),
     href: `${homeHref}/media/${item.id}`,

@@ -15,7 +15,7 @@ import {
   createSeoMetadata,
   villageJsonLd,
 } from "@/lib/seo";
-import { canonicalVillagePath } from "@/lib/village-routing";
+import { canonicalChannelPath } from "@/lib/channel-routing";
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
@@ -39,7 +39,7 @@ export async function generateMetadata({
     description: village.summary,
     image: village.heroImage,
     keywords: [village.region, village.city, village.name, "채널"],
-    path: canonicalVillagePath(village.slug),
+    path: canonicalChannelPath(village.slug),
   });
 }
 
@@ -63,11 +63,11 @@ export default async function VillagePage({
     <>
       <JsonLdScript
         data={[
-          villageJsonLd(village, canonicalVillagePath(village.slug)),
+          villageJsonLd(village, canonicalChannelPath(village.slug)),
           breadcrumbJsonLd([
             { name: "홈", path: "/" },
             { name: "채널", path: "/channels" },
-            { name: village.name, path: canonicalVillagePath(village.slug) },
+            { name: village.name, path: canonicalChannelPath(village.slug) },
           ]),
         ]}
       />

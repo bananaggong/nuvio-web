@@ -7,7 +7,7 @@ import {
 } from "@/components/channel-guest-gallery";
 import { NuvioEmptyState } from "@/components/nuvio-empty-state";
 import type { VillageNotice } from "@/lib/village-template";
-import { villagePath } from "@/lib/village-routing";
+import { channelPath } from "@/lib/channel-routing";
 import type { Village } from "@/lib/village-types";
 
 type ChannelGuestBoardPageProps = {
@@ -32,7 +32,7 @@ export function ChannelGuestBoardPage({
   notices,
   village,
 }: ChannelGuestBoardPageProps) {
-  const homeHref = villagePath(village.slug);
+  const homeHref = channelPath(village.slug);
   const rows = buildBoardRows(notices);
 
   return (

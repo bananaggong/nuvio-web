@@ -17,7 +17,7 @@ import {
   type ChannelMenuItem,
 } from "@/lib/channel-menu";
 import { selectHostChannel } from "@/lib/host-channel-selection";
-import { villagePath } from "@/lib/village-routing";
+import { channelPath } from "@/lib/channel-routing";
 import type { Village } from "@/lib/village-types";
 
 type HostChannelPayload = {
@@ -121,7 +121,7 @@ export function HostChannelMenuSettings() {
     channel?.tagline?.trim() ||
     channel?.summary?.trim() ||
     "채널 설정에서 이름, 지역, 소개를 입력해 주세요";
-  const publicHref = channel?.slug ? villagePath(channel.slug) : "";
+  const publicHref = channel?.slug ? channelPath(channel.slug) : "";
   const publicLinkEnabled = Boolean(channel?.published && publicHref);
 
   function updateItem(id: string, patch: Partial<ChannelMenuItem>) {

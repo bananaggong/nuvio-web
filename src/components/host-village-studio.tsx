@@ -13,7 +13,7 @@ import {
   Save,
 } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
-import { villagePath } from "@/lib/village-routing";
+import { channelPath } from "@/lib/channel-routing";
 import type { Village, VillageSection } from "@/lib/village-types";
 
 export function HostVillageStudio() {
@@ -236,7 +236,7 @@ export function HostVillageStudio() {
         </button>
         <Link
           className="inline-flex h-10 items-center justify-center gap-2 rounded-md bg-slate-950 px-3 text-sm font-black text-white"
-          href={villagePath(village.slug)}
+          href={channelPath(village.slug)}
           target="_blank"
         >
           <Eye size={16} />

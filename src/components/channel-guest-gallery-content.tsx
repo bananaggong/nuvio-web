@@ -160,6 +160,11 @@ function GalleryCard({ item }: { item: GalleryItem }) {
             <Play fill="currentColor" size={28} strokeWidth={0} />
           </span>
         ) : null}
+        {!isVideo && item.imageCount > 1 ? (
+          <span className="absolute right-[clamp(10px,0.694444vw,13.333333px)] top-[clamp(8px,0.555556vw,10.666667px)] text-[length:var(--channel-font-16)] font-semibold leading-[1.253] text-[#FFF6EC] drop-shadow">
+            +{item.imageCount - 1}
+          </span>
+        ) : null}
       </Link>
       <Link
         className="line-clamp-2 text-[length:var(--channel-font-14)] font-medium leading-[1.253] text-[#0D0D0C]"

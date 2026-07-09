@@ -16,7 +16,7 @@ import {
   VillageSiteHeader,
 } from "@/components/village-site-chrome";
 import { formatDate } from "@/lib/format";
-import { villagePath } from "@/lib/village-routing";
+import { channelPath } from "@/lib/channel-routing";
 import type { Program, VillageMediaContent } from "@/lib/types";
 import type { PublishedVillagePageSection } from "@/lib/village-page-content";
 import type { Village } from "@/lib/village-types";
@@ -193,14 +193,14 @@ export function VillageMediaDetailPage({
         <aside className="space-y-3">
           <Link
             className="flex items-center justify-between border border-[#d9d6c9] bg-white px-4 py-4 text-sm font-black hover:border-[#4E7C3A]"
-            href={`${villagePath(village.slug)}/media`}
+            href={`${channelPath(village.slug)}/media`}
           >
             미디어 목록
             <ArrowRight size={16} />
           </Link>
           <Link
             className="flex items-center justify-between border border-[#d9d6c9] bg-white px-4 py-4 text-sm font-black hover:border-[#4E7C3A]"
-            href={villagePath(village.slug)}
+            href={channelPath(village.slug)}
           >
             {village.name} 홈
             <ArrowRight size={16} />
@@ -212,7 +212,7 @@ export function VillageMediaDetailPage({
                 {related.map((item) => (
                   <Link
                     className="block text-sm font-bold leading-6 text-slate-700 hover:text-[#4E7C3A]"
-                    href={`${villagePath(village.slug)}/media/${item.id}`}
+                    href={`${channelPath(village.slug)}/media/${item.id}`}
                     key={item.id}
                   >
                     {item.title}

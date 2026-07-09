@@ -28,7 +28,7 @@ import {
   selectHostChannel,
 } from "@/lib/host-channel-selection";
 import type { HostProgramDraft } from "@/lib/host-program-studio";
-import { villagePath } from "@/lib/village-routing";
+import { channelPath } from "@/lib/channel-routing";
 import type { Village } from "@/lib/village-types";
 
 type HostChannelPayload = {
@@ -139,7 +139,7 @@ export function HostChannelHome() {
     };
   }, [requestedChannelSlug]);
 
-  const publicHref = channel?.slug ? villagePath(channel.slug) : "";
+  const publicHref = channel?.slug ? channelPath(channel.slug) : "";
   const homeMenuItems = getChannelMenuItems(channel, {
     includeHidden: true,
     includeFree: false,

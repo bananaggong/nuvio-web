@@ -1,5 +1,5 @@
 import { launchFeatureFlags } from "@/lib/launch-feature-flags";
-import { villagePath, villageProgramPath } from "@/lib/village-routing";
+import { channelPath, channelProgramPath } from "@/lib/channel-routing";
 import type { Program } from "@/lib/types";
 import type { Village, VillageSection } from "@/lib/village-types";
 
@@ -48,7 +48,7 @@ export function buildVillageNotices(
     ? [
         {
           date: village.updatedAt,
-          href: `${villagePath(village.slug)}/reviews`,
+          href: `${channelPath(village.slug)}/reviews`,
           title: "활동 후기와 만족도 조사 제출 안내",
           type: "후기",
         },
@@ -59,7 +59,7 @@ export function buildVillageNotices(
     ...programNotices,
     {
       date: village.updatedAt,
-      href: `${villagePath(village.slug)}/notice`,
+      href: `${channelPath(village.slug)}/notice`,
       title: "선정자 대상 OT, 숙소 위치, 공지방 입장 안내",
       type: "공지",
     },
@@ -73,7 +73,7 @@ export function buildChannelBoardNotices(
 ): VillageNotice[] {
   return programs.slice(0, 4).map((program) => ({
     date: program.recruitStart,
-    href: villageProgramPath(village.slug, program.slug),
+    href: channelProgramPath(village.slug, program.slug),
     title: `${program.title} 신청 접수 안내`,
     type: "모집",
   }));

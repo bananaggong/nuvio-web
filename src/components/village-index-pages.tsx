@@ -13,7 +13,7 @@ import { ChannelGuestProgramsPage } from "@/components/channel-guest-programs";
 import { ChannelGuestReviewsPage } from "@/components/channel-guest-reviews";
 import { VillageSiteFooter, VillageSiteHeader } from "@/components/village-site-chrome";
 import { formatDate } from "@/lib/format";
-import { villagePath } from "@/lib/village-routing";
+import { channelPath } from "@/lib/channel-routing";
 import {
   buildChannelBoardNoticesFromPosts,
   type ChannelBoardPost,
@@ -219,14 +219,14 @@ export function VillageReviewDetailPage({
         <aside className="space-y-3">
           <Link
             className="flex items-center justify-between border border-[#dfddd5] bg-white px-4 py-4 text-sm font-black hover:border-[#0f766e]"
-            href={`${villagePath(village.slug)}/reviews`}
+            href={`${channelPath(village.slug)}/reviews`}
           >
             {village.name} 후기 목록
             <ArrowRight size={16} />
           </Link>
           <Link
             className="flex items-center justify-between border border-[#dfddd5] bg-white px-4 py-4 text-sm font-black hover:border-[#0f766e]"
-            href={villagePath(village.slug)}
+            href={channelPath(village.slug)}
           >
             {village.name} 홈
             <ArrowRight size={16} />

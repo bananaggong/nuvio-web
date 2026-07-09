@@ -32,7 +32,7 @@ import { UnsavedChangesGuard } from "@/components/unsaved-changes-guard";
 import { HostWorkspaceLayout } from "@/components/host-workspace-ui";
 import { selectHostChannel } from "@/lib/host-channel-selection";
 import type { VillageMediaContent, VillageMediaProvider } from "@/lib/types";
-import { villagePath } from "@/lib/village-routing";
+import { channelPath } from "@/lib/channel-routing";
 import type { Village } from "@/lib/village-types";
 
 type HostChannelPayload = {
@@ -104,9 +104,11 @@ function createEmptyDraft(): GalleryDraft {
 }
 
 function normalizeGalleryItem(item: VillageMediaContent): GalleryItem {
+  const imageUrls = item.images?.length ? item.images : [item.thumbnail].filter(Boolean);
+
   return {
     ...item,
-    imageCount: item.featured ? 3 : 0,
+    imageCount: imageUrls.length,
   };
 }
 
@@ -135,12 +137,14 @@ function formatGalleryDate(value: string) {
 
 function createDraftFromItem(item: GalleryItem): GalleryDraft {
   const isVideo = isVideoItem(item);
+  const imageUrls = item.images?.length ? item.images : [item.thumbnail].filter(Boolean);
+
   return {
     bodyText: (item.body.length > 0 ? item.body : [item.summary]).join("\n"),
     date: item.date.slice(0, 10),
     embedUrl: item.embedUrl ?? "",
     id: item.id,
-    imageUrls: !isVideo && item.thumbnail ? [item.thumbnail] : [],
+    imageUrls: !isVideo ? imageUrls : [],
     linkInput: "",
     mediaUrl: item.provider === "video" ? item.sourceUrl : "",
     provider: item.provider ?? "link",
@@ -314,7 +318,7 @@ export function HostChannelGalleries() {
     };
   }, [requestedChannelSlug]);
 
-  const publicHref = channel?.slug ? villagePath(channel.slug) : "";
+  const publicHref = channel?.slug ? channelPath(channel.slug) : "";
   const filteredItems = useMemo(() => {
     if (filterMode === "video") return items.filter(isVideoItem);
     if (filterMode === "photo") return items.filter((item) => !isVideoItem(item));
@@ -412,13 +416,22 @@ export function HostChannelGalleries() {
         setUploadStep("video");
       } else {
         const imageUrls = uploaded.map((asset) => asset.url);
-        updateDraft({
-          imageUrls,
-          mediaUrl: imageUrls[0] ?? "",
-          provider: "link",
-          sourceUrl: gallerySourceUrl,
-          thumbnail: imageUrls[0] ?? "",
+        setDraft((current) => {
+          const mergedImageUrls = Array.from(
+            new Set([...current.imageUrls, ...imageUrls]),
+          );
+          const firstImageUrl = mergedImageUrls[0] ?? "";
+
+          return {
+            ...current,
+            imageUrls: mergedImageUrls,
+            mediaUrl: current.mediaUrl || firstImageUrl,
+            provider: "link",
+            sourceUrl: gallerySourceUrl,
+            thumbnail: current.thumbnail || firstImageUrl,
+          };
         });
+        setIsDirty(true);
         setUploadStep("image");
       }
 
@@ -566,7 +579,8 @@ export function HostChannelGalleries() {
           date: draft.date,
           embedUrl: draft.embedUrl || undefined,
           featured: draft.imageUrls.length > 1,
-          id: draft.id || `channel-gallery-${Date.now()}`,
+          id: draft.id || undefined,
+          imageUrls: draft.imageUrls,
           provider: draft.provider,
           published: true,
           sourceName: channel.name || "호스트 채널",

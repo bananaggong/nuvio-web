@@ -263,6 +263,10 @@ export function normalizeInstagramMediaToDraft(
   const title = createInstagramTitle(caption, item.timestamp);
   const summary = createInstagramSummary(caption, title);
   const permalink = item.permalink ?? `https://www.instagram.com/p/${item.id}/`;
+  const thumbnail =
+    item.thumbnail_url ||
+    item.media_url ||
+    "https://upload.wikimedia.org/wikipedia/commons/b/b3/Boseong_Green_Tea_Field.jpg";
 
   return {
     id: `instagram-${item.id}`,
@@ -272,10 +276,8 @@ export function normalizeInstagramMediaToDraft(
     provider: "instagram",
     summary,
     body: body.length > 0 ? body : [summary],
-    thumbnail:
-      item.thumbnail_url ||
-      item.media_url ||
-      "https://upload.wikimedia.org/wikipedia/commons/b/b3/Boseong_Green_Tea_Field.jpg",
+    thumbnail,
+    imageUrls: [thumbnail],
     embedUrl: normalizeInstagramEmbedUrl(permalink),
     sourceName: item.username ? `Instagram @${item.username}` : "Instagram",
     sourceUrl: permalink,

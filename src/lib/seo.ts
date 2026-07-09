@@ -8,9 +8,9 @@ const defaultSiteUrl = "https://nuvio.kr";
 export const siteConfig = {
   name: "누비오",
   alternateName: "누비오",
-  title: "누비오 - 로컬 라이프로 가는 온보딩 플랫폼",
+  title: "누비오 | 결이 맞는 사람과 함께 떠나는 로컬 여행",
   description:
-    "로컬여행, 한달살기, 워케이션, 청년마을 프로그램을 가볍게 탐색하고 나와 맞는 로컬 라이프를 찾아보세요.",
+    "결이 맞는 사람과 함께 떠나는 로컬 여행. 누비오에서 지역의 취향과 이야기가 담긴 프로그램을 찾고 신청해보세요.",
   url: normalizeSiteUrl(
     process.env.NEXT_PUBLIC_SITE_URL ||
       process.env.SITE_URL ||
@@ -31,6 +31,8 @@ export const siteConfig = {
     "로컬 체류",
     "청년마을",
     "로컬 프로그램",
+    "로컬 여행",
+    "로컬 커뮤니티",
     "지역 체험",
   ],
 };
@@ -82,7 +84,7 @@ export function createSeoMetadata({
           url: imageUrl,
           width: 1200,
           height: 630,
-          alt: `${siteConfig.name} 대표 이미지`,
+          alt: `${siteConfig.name} - 결이 맞는 사람과 함께 떠나는 로컬 여행`,
         },
       ],
     },

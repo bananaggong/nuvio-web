@@ -15,7 +15,7 @@ import {
 } from "@/lib/channel-menu";
 import { getChannelHomeBlocks } from "@/lib/channel-home-blocks";
 import { buildChannelProgramsHref } from "@/lib/channel-program-filters";
-import { villagePath, villageProgramPath } from "@/lib/village-routing";
+import { channelPath, channelProgramPath } from "@/lib/channel-routing";
 import type { Program, Review, VillageMediaContent } from "@/lib/types";
 import type { Village } from "@/lib/village-types";
 
@@ -141,7 +141,7 @@ export function ChannelGuestHomePage({
   programs,
   village,
 }: ChannelGuestHomePageProps) {
-  const homeHref = villagePath(village.slug);
+  const homeHref = channelPath(village.slug);
   const programCards = buildProgramCards(programs, village);
   const galleryCards = buildGalleryCards(media.filter(isChannelGalleryMedia)).slice(0, 3);
   const stories = buildStoryCards(media.filter(isChannelMagazineMedia)).slice(0, 3);
@@ -793,7 +793,7 @@ function SectionHeading({
 function buildProgramCards(programs: Program[], village: Village): ProgramCardModel[] {
   return programs.map((program) => ({
     activityStart: program.activityStart,
-    href: villageProgramPath(village.slug, program.slug),
+    href: channelProgramPath(village.slug, program.slug),
     id: String(program.id),
     image: program.image,
     period: formatCompactPeriod(program.activityStart, program.activityEnd),
@@ -879,7 +879,7 @@ function buildStoryCards(media: VillageMediaContent[]): StoryCardModel[] {
 function buildChannelNotices(programs: Program[], village: Village): NoticeModel[] {
   return programs.slice(0, 3).map((program, index) => ({
     date: program.recruitStart,
-    href: villageProgramPath(village.slug, program.slug),
+    href: channelProgramPath(village.slug, program.slug),
     title: `${program.title} ${text.open} ${text.notice}`,
     variant: index === 0 ? "fixed" : ("new" as const),
   }));

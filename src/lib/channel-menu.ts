@@ -1,5 +1,5 @@
 import { launchFeatureFlags } from "@/lib/launch-feature-flags";
-import { villagePath } from "@/lib/village-routing";
+import { channelPath } from "@/lib/channel-routing";
 import type { Village, VillageSection, VillageSectionType } from "@/lib/village-types";
 
 export type ChannelMenuKind = "program" | "review" | "gallery" | "magazine" | "board" | "free";
@@ -205,7 +205,7 @@ export function isChannelMenuSection(section: VillageSection): boolean {
 }
 
 export function channelGuestHref(kind: ChannelMenuKind, village: Pick<Village, "slug">) {
-  return channelMenuMeta[kind].guestHref(villagePath(village.slug));
+  return channelMenuMeta[kind].guestHref(channelPath(village.slug));
 }
 
 export function channelHostHref(kind: ChannelMenuKind) {

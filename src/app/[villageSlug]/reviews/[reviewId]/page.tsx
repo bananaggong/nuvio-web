@@ -17,9 +17,9 @@ import {
 import type { Program, Review } from "@/lib/types";
 import type { Village } from "@/lib/village-types";
 import {
-  isReservedVillageSlug,
-  supportsVillageReviewDetailPages,
-} from "@/lib/village-routing";
+  isReservedChannelSlug,
+  supportsChannelReviewDetailPages,
+} from "@/lib/channel-routing";
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
@@ -32,8 +32,8 @@ export async function generateMetadata({
   if (!launchFeatureFlags.reviews) return {};
 
   const { villageSlug, reviewId } = await params;
-  if (isReservedVillageSlug(villageSlug)) return {};
-  if (!supportsVillageReviewDetailPages(villageSlug)) return {};
+  if (isReservedChannelSlug(villageSlug)) return {};
+  if (!supportsChannelReviewDetailPages(villageSlug)) return {};
 
   const village = await getPublicVillageBySlug(villageSlug);
   if (!village) return {};
@@ -58,8 +58,8 @@ export default async function VillageReviewDetailRoute({
   if (!launchFeatureFlags.reviews) notFound();
 
   const { villageSlug, reviewId } = await params;
-  if (isReservedVillageSlug(villageSlug)) notFound();
-  if (!supportsVillageReviewDetailPages(villageSlug)) notFound();
+  if (isReservedChannelSlug(villageSlug)) notFound();
+  if (!supportsChannelReviewDetailPages(villageSlug)) notFound();
 
   const village = await getPublicVillageBySlug(villageSlug);
   if (!village) notFound();

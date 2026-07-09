@@ -12,7 +12,7 @@ import {
   BoseongFigmaFooter,
   BoseongFigmaHeader,
 } from "@/components/boseong-figma-site";
-import { villagePath } from "@/lib/village-routing";
+import { channelPath } from "@/lib/channel-routing";
 import { greentmosireLogoImage } from "@/lib/village-media-seeds";
 import { launchFeatureFlags } from "@/lib/launch-feature-flags";
 import type { Program } from "@/lib/types";
@@ -32,7 +32,7 @@ export function VillageSiteHeader({
     return <BoseongFigmaHeader primaryProgram={primaryProgram} village={village} />;
   }
 
-  const homePath = villagePath(village.slug);
+  const homePath = channelPath(village.slug);
   const operatorLabel =
     village.slug === "boseong"
       ? "그린티모시레"
@@ -141,7 +141,7 @@ export function VillageSiteFooter({
     return <BoseongFigmaFooter primaryProgram={primaryProgram} village={village} />;
   }
 
-  const homePath = villagePath(village.slug);
+  const homePath = channelPath(village.slug);
   const programHref = primaryProgram
     ? `${homePath}/${primaryProgram.slug}`
     : `${homePath}/programs`;

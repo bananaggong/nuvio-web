@@ -987,6 +987,7 @@ export const villageMediaContents = pgTable(
     summary: text("summary").notNull(),
     body: jsonb("body").$type<string[]>().default(emptyArray).notNull(),
     thumbnailUrl: text("thumbnail_url").notNull(),
+    imageUrls: jsonb("image_urls").$type<string[]>().default(emptyArray).notNull(),
     embedUrl: text("embed_url"),
     sourceName: text("source_name").notNull(),
     sourceUrl: text("source_url").notNull(),

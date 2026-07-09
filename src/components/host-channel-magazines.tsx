@@ -11,7 +11,7 @@ import { HostWorkspaceLayout } from "@/components/host-workspace-ui";
 import { nuvioIcons } from "@/components/icons/nuvio-icons";
 import { selectHostChannel } from "@/lib/host-channel-selection";
 import type { VillageMediaContent } from "@/lib/types";
-import { villagePath } from "@/lib/village-routing";
+import { channelPath } from "@/lib/channel-routing";
 import type { Village } from "@/lib/village-types";
 
 type HostChannelPayload = {
@@ -99,7 +99,7 @@ export function HostChannelMagazines() {
     };
   }, [requestedChannelSlug]);
 
-  const publicHref = channel?.slug ? villagePath(channel.slug) : "";
+  const publicHref = channel?.slug ? channelPath(channel.slug) : "";
 
   function addMagazine() {
     const now = new Date().toISOString();

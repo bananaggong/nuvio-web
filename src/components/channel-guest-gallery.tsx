@@ -16,7 +16,7 @@ import {
   getChannelMenuDisplayLabel,
   getVisibleChannelMenuItems,
 } from "@/lib/channel-menu";
-import { villagePath } from "@/lib/village-routing";
+import { channelPath } from "@/lib/channel-routing";
 import type { VillageMediaContent } from "@/lib/types";
 import type { Village } from "@/lib/village-types";
 
@@ -42,6 +42,7 @@ export type GalleryItem = {
   href: string;
   id: string;
   image?: string;
+  imageCount: number;
   provider?: VillageMediaContent["provider"];
   sourceUrl: string;
   title: string;
@@ -63,7 +64,7 @@ export function ChannelGuestGalleryPage({
   media,
   village,
 }: ChannelGuestGalleryPageProps) {
-  const homeHref = villagePath(village.slug);
+  const homeHref = channelPath(village.slug);
   const items = buildGalleryItems(media, village);
 
   return (
@@ -94,7 +95,7 @@ export function ChannelGuestGalleryDetailPage({
   media,
   village,
 }: ChannelGuestGalleryDetailPageProps) {
-  const homeHref = villagePath(village.slug);
+  const homeHref = channelPath(village.slug);
   const backHref = `${homeHref}/media`;
   const related = buildGalleryItems(
     media.filter((item) => item.id !== content.id).slice(0, 4),
@@ -378,7 +379,7 @@ function buildGalleryItems(
   media: VillageMediaContent[],
   village: Village,
 ): GalleryItem[] {
-  const homeHref = villagePath(village.slug);
+  const homeHref = channelPath(village.slug);
   return media.map((item) => ({
     caption: item.summary || item.title || text.fallbackCaption,
     date: item.date,
@@ -386,6 +387,7 @@ function buildGalleryItems(
     href: `${homeHref}/media/${item.id}`,
     id: item.id,
     image: item.thumbnail,
+    imageCount: item.images?.length ?? 0,
     provider: item.provider,
     sourceUrl: item.sourceUrl,
     title: item.title || item.summary || text.fallbackCaption,

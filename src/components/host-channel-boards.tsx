@@ -11,7 +11,7 @@ import { HostWorkspaceLayout } from "@/components/host-workspace-ui";
 import { nuvioIcons } from "@/components/icons/nuvio-icons";
 import type { ChannelBoardPost } from "@/lib/channel-board-posts";
 import { selectHostChannel } from "@/lib/host-channel-selection";
-import { villagePath } from "@/lib/village-routing";
+import { channelPath } from "@/lib/channel-routing";
 import type { Village } from "@/lib/village-types";
 
 type HostChannelPayload = {
@@ -88,7 +88,7 @@ export function HostChannelBoards() {
     };
   }, [channel?.slug]);
 
-  const publicHref = channel?.slug ? villagePath(channel.slug) : "";
+  const publicHref = channel?.slug ? channelPath(channel.slug) : "";
 
   function addPost() {
     setPosts((current) => [

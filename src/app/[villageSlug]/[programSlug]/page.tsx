@@ -12,10 +12,10 @@ import {
   programJsonLd,
 } from "@/lib/seo";
 import {
-  canonicalVillagePath,
-  canonicalVillageProgramPath,
-  isReservedVillageSlug,
-} from "@/lib/village-routing";
+  canonicalChannelPath,
+  canonicalChannelProgramPath,
+  isReservedChannelSlug,
+} from "@/lib/channel-routing";
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
@@ -26,7 +26,7 @@ export async function generateMetadata({
   params: Promise<{ villageSlug: string; programSlug: string }>;
 }): Promise<Metadata> {
   const { villageSlug, programSlug } = await params;
-  if (isReservedVillageSlug(villageSlug)) return {};
+  if (isReservedChannelSlug(villageSlug)) return {};
 
   const village = await getPublicVillageBySlug(villageSlug);
   if (!village) return {};
@@ -34,7 +34,7 @@ export async function generateMetadata({
   const program = await resolveVillageProgram(village, programSlug);
   if (!program) return {};
 
-  const canonicalPath = canonicalVillageProgramPath(village.slug, program.slug);
+  const canonicalPath = canonicalChannelProgramPath(village.slug, program.slug);
 
   return createSeoMetadata({
     title: `${program.title} | ${village.name}`,
@@ -51,14 +51,14 @@ export default async function ShortVillageProgramRoute({
   params: Promise<{ villageSlug: string; programSlug: string }>;
 }) {
   const { villageSlug, programSlug } = await params;
-  if (isReservedVillageSlug(villageSlug)) notFound();
+  if (isReservedChannelSlug(villageSlug)) notFound();
 
   const village = await getPublicVillageBySlug(villageSlug);
   if (!village) notFound();
 
   const program = await resolveVillageProgram(village, programSlug);
   if (!program) notFound();
-  const canonicalPath = canonicalVillageProgramPath(village.slug, program.slug);
+  const canonicalPath = canonicalChannelProgramPath(village.slug, program.slug);
 
   return (
     <>
@@ -68,7 +68,7 @@ export default async function ShortVillageProgramRoute({
           breadcrumbJsonLd([
             { name: "홈", path: "/" },
             { name: "채널", path: "/channels" },
-            { name: village.name, path: canonicalVillagePath(village.slug) },
+            { name: village.name, path: canonicalChannelPath(village.slug) },
             { name: program.title, path: canonicalPath },
           ]),
         ]}

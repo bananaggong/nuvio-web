@@ -17,7 +17,7 @@ import {
 import type { HostProgramDraft } from "@/lib/host-program-studio";
 import type { HostReviewDraft } from "@/lib/review-db";
 import type { ReviewStatus } from "@/lib/types";
-import { villagePath } from "@/lib/village-routing";
+import { channelPath } from "@/lib/channel-routing";
 import type { Village } from "@/lib/village-types";
 
 type HostChannelPayload = {
@@ -110,7 +110,7 @@ export function HostChannelReviews() {
     };
   }, [requestedChannelSlug]);
 
-  const publicHref = channel?.slug ? villagePath(channel.slug) : "";
+  const publicHref = channel?.slug ? channelPath(channel.slug) : "";
   const visibleReviews = useMemo(() => {
     return reviews
       .filter((review) => {

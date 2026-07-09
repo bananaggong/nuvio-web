@@ -4,11 +4,11 @@ import { usePathname } from "next/navigation";
 import { Footer } from "@/components/footer";
 import { MobileTabBar } from "@/components/mobile-tab-bar";
 import { SiteHeader } from "@/components/site-header";
-import { isVillageMicrositePath } from "@/lib/village-routing";
+import { isChannelMicrositePath } from "@/lib/channel-routing";
 
 export function AppShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
-  const isVillageMicrosite = isVillageMicrositePath(pathname);
+  const isChannelMicrosite = isChannelMicrositePath(pathname);
   const isAuthPage =
     pathname === "/login" || pathname === "/signup" || pathname === "/onboarding";
   const isOpsConsole =
@@ -16,7 +16,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
     pathname.startsWith("/host/") ||
     pathname === "/admin" ||
     pathname.startsWith("/admin/");
-  const hideChrome = isVillageMicrosite || isAuthPage || isOpsConsole;
+  const hideChrome = isChannelMicrosite || isAuthPage || isOpsConsole;
 
   if (isOpsConsole) {
     return <>{children}</>;

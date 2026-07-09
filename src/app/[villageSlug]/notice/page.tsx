@@ -8,7 +8,7 @@ import {
 import { listPublicChannelBoardPosts } from "@/lib/channel-board-posts";
 import { listPublicVillagePageSections } from "@/lib/village-page-cms";
 import { createSeoMetadata } from "@/lib/seo";
-import { isReservedVillageSlug } from "@/lib/village-routing";
+import { isReservedChannelSlug } from "@/lib/channel-routing";
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
@@ -19,7 +19,7 @@ export async function generateMetadata({
   params: Promise<{ villageSlug: string }>;
 }): Promise<Metadata> {
   const { villageSlug } = await params;
-  if (isReservedVillageSlug(villageSlug)) return {};
+  if (isReservedChannelSlug(villageSlug)) return {};
 
   const village = await getPublicVillageBySlug(villageSlug);
   if (!village) return {};
@@ -38,7 +38,7 @@ export default async function VillageNoticeRoute({
   params: Promise<{ villageSlug: string }>;
 }) {
   const { villageSlug } = await params;
-  if (isReservedVillageSlug(villageSlug)) notFound();
+  if (isReservedChannelSlug(villageSlug)) notFound();
 
   const village = await getPublicVillageBySlug(villageSlug);
   if (!village) notFound();

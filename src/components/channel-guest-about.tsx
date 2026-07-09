@@ -4,7 +4,7 @@ import {
   channelGuestScaleRootStyle,
   px,
 } from "@/components/channel-guest-gallery";
-import { villagePath } from "@/lib/village-routing";
+import { channelPath } from "@/lib/channel-routing";
 import type { Village, VillageSection } from "@/lib/village-types";
 
 type ChannelGuestAboutPageProps = {
@@ -18,7 +18,7 @@ const text = {
 } as const;
 
 export function ChannelGuestAboutPage({ village }: ChannelGuestAboutPageProps) {
-  const homeHref = villagePath(village.slug);
+  const homeHref = channelPath(village.slug);
   const sections = getAboutSections(village);
 
   return (

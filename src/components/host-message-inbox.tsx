@@ -47,11 +47,13 @@ export type HostMessageInboxView = "ended" | "ongoing";
 
 type MessageThread = {
   bookingInfo: string;
+  closedAt: string;
   dateLabel: string;
   guestName: string;
   id: string;
   imageUrl: string;
   lastMessage: string;
+  lastActivityAt: string;
   messages: HostThreadMessage[];
   openDate: string;
   periodLabel: string;
@@ -63,6 +65,8 @@ type MessageThread = {
   timeLabel: string;
   unread: boolean;
 };
+
+type EndedMessageSortMode = "all" | "latest" | "ended";
 
 type HostThreadMessage = {
   body: string;
@@ -332,7 +336,6 @@ export function HostMessageInbox({ view }: { view: HostMessageInboxView }) {
           isLoading={isLoadingInquiries}
           loadError={loadError}
           onSelectThread={setSelectedId}
-          selectedThread={selectedThread}
           selectedThreadId={selectedThreadId}
           threads={threads}
         />
@@ -511,17 +514,81 @@ function EndedMessagesView({
   isLoading,
   loadError,
   onSelectThread,
-  selectedThread,
   selectedThreadId,
   threads,
 }: {
   isLoading: boolean;
   loadError: string;
   onSelectThread: (threadId: string) => void;
-  selectedThread?: MessageThread;
   selectedThreadId?: string;
   threads: MessageThread[];
 }) {
+  const [query, setQuery] = useState("");
+  const [programFilter, setProgramFilter] = useState("all");
+  const [sortMode, setSortMode] = useState<EndedMessageSortMode>("all");
+  const programOptions = useMemo(() => {
+    const optionMap = new Map<string, string>();
+
+    for (const thread of threads) {
+      const key = getThreadProgramFilterKey(thread);
+      if (!key || optionMap.has(key)) continue;
+      optionMap.set(key, thread.programTitle || "호스트 문의");
+    }
+
+    return Array.from(optionMap, ([value, label]) => ({ label, value })).sort(
+      (a, b) => a.label.localeCompare(b.label, "ko-KR"),
+    );
+  }, [threads]);
+  const visibleThreads = useMemo(() => {
+    const normalizedQuery = normalizeSearchText(query);
+    const filteredThreads = threads.filter((thread) => {
+      const matchesProgram =
+        programFilter === "all" ||
+        getThreadProgramFilterKey(thread) === programFilter;
+      const matchesQuery =
+        !normalizedQuery ||
+        normalizeSearchText(
+          [
+            thread.guestName,
+            thread.programTitle,
+            thread.programNumber,
+            thread.bookingInfo,
+            thread.lastMessage,
+            ...thread.messages.map((message) => message.body),
+          ].join(" "),
+        ).includes(normalizedQuery);
+
+      return matchesProgram && matchesQuery;
+    });
+
+    if (sortMode === "latest") {
+      return [...filteredThreads].sort(
+        (a, b) => getTimeValue(b.lastActivityAt) - getTimeValue(a.lastActivityAt),
+      );
+    }
+
+    if (sortMode === "ended") {
+      return [...filteredThreads].sort(
+        (a, b) => getTimeValue(b.closedAt) - getTimeValue(a.closedAt),
+      );
+    }
+
+    return filteredThreads;
+  }, [programFilter, query, sortMode, threads]);
+  const visibleSelectedThread =
+    visibleThreads.find((thread) => thread.id === selectedThreadId) ??
+    visibleThreads[0];
+  const visibleSelectedThreadId = visibleSelectedThread?.id;
+  const emptyLabel =
+    threads.length === 0
+      ? "종료된 메세지가 없습니다."
+      : "조건에 맞는 종료된 메세지가 없습니다.";
+  function showAllThreads() {
+    setQuery("");
+    setProgramFilter("all");
+    setSortMode("all");
+  }
+
   return (
     <HostWorkspaceLayout>
       <section
@@ -556,8 +623,10 @@ function EndedMessagesView({
                 />
                 <input
                   className="h-full w-full rounded-full border border-[#6D7A8A] bg-[#F9F9F9] pl-[calc(var(--host-msg-9)+var(--host-msg-14)+var(--host-msg-12))] pr-[var(--host-msg-12)] text-[length:var(--host-msg-12)] font-semibold leading-[1.253] text-[#6D7A8A] outline-none placeholder:text-[#6D7A8A] focus:border-[#FE701E]"
+                  onChange={(event) => setQuery(event.target.value)}
                   placeholder="대화 내용 또는 게스트 검색"
                   type="search"
+                  value={query}
                 />
               </label>
 
@@ -565,23 +634,46 @@ function EndedMessagesView({
                 <span className="text-[length:var(--host-msg-14)] font-medium leading-[1.253] text-[#0D0D0C]">
                   프로그램
                 </span>
-                <button
-                  className="flex h-full flex-1 items-center rounded-[var(--host-msg-7)] border border-[#6D7A8A] pl-[var(--host-msg-12)] text-left text-[length:var(--host-msg-12)] font-medium leading-[1.253] text-[#D9D9D9]"
-                  type="button"
-                >
-                  <span className="flex-1">전체</span>
+                <label className="relative h-full flex-1">
+                  <select
+                    className="h-full w-full appearance-none rounded-[var(--host-msg-7)] border border-[#6D7A8A] bg-[#F9F9F9] pl-[var(--host-msg-12)] pr-[var(--host-msg-28)] text-left text-[length:var(--host-msg-12)] font-medium leading-[1.253] text-[#6D7A8A] outline-none focus:border-[#FE701E]"
+                    onChange={(event) => setProgramFilter(event.target.value)}
+                    value={programFilter}
+                  >
+                    <option value="all">전체</option>
+                    {programOptions.map((option) => (
+                      <option key={option.value} value={option.value}>
+                        {option.label}
+                      </option>
+                    ))}
+                  </select>
                   <ChevronDown
                     aria-hidden="true"
-                    className="mr-[var(--host-msg-8)] size-[var(--host-msg-16)] text-[#6D7A8A]"
+                    className="pointer-events-none absolute right-[var(--host-msg-8)] top-1/2 size-[var(--host-msg-16)] -translate-y-1/2 text-[#6D7A8A]"
                     strokeWidth={1.8}
                   />
-                </button>
+                </label>
               </div>
 
               <div className="flex gap-[var(--host-msg-10)] border-b border-[#6D7A8A] pb-[var(--host-msg-12)] pl-[var(--host-msg-9)] pt-[var(--host-msg-6)]">
-                <FilterPill active>전체</FilterPill>
-                <FilterPill>최신순</FilterPill>
-                <FilterPill>종료순</FilterPill>
+                <FilterPill
+                  active={sortMode === "all"}
+                  onClick={showAllThreads}
+                >
+                  전체
+                </FilterPill>
+                <FilterPill
+                  active={sortMode === "latest"}
+                  onClick={() => setSortMode("latest")}
+                >
+                  최신순
+                </FilterPill>
+                <FilterPill
+                  active={sortMode === "ended"}
+                  onClick={() => setSortMode("ended")}
+                >
+                  종료순
+                </FilterPill>
               </div>
             </div>
 
@@ -590,35 +682,37 @@ function EndedMessagesView({
                 <MessageListState label="문의를 불러오는 중입니다." />
               ) : loadError ? (
                 <MessageListState label={loadError} />
-              ) : threads.length > 0 ? (
-                threads.slice(0, 12).map((thread) => (
-                <button
-                  className={`grid min-h-[var(--host-msg-42)] grid-cols-[var(--host-msg-69)_minmax(0,1fr)_var(--host-msg-92)] items-center gap-[var(--host-msg-23)] rounded-[var(--host-msg-6)] border px-[var(--host-msg-12)] py-[var(--host-msg-12)] text-left text-[length:var(--host-msg-14)] leading-[1.253] text-[#6D7A8A] transition ${
-                    thread.id === selectedThreadId
-                      ? "border-[var(--host-msg-3)] border-[#6D7A8A]"
-                      : "border-[#D9D9D9] hover:border-[#6D7A8A]"
-                  }`}
-                  key={thread.id}
-                  onClick={() => onSelectThread(thread.id)}
-                  type="button"
-                >
-                  <span className="truncate font-semibold">{thread.guestName}</span>
-                  <span className="truncate font-semibold">
-                    {thread.programTitle || "호스트 문의"}
-                  </span>
-                  <span className="whitespace-nowrap text-right font-medium">
-                    {thread.dateLabel}
-                  </span>
-                </button>
+              ) : visibleThreads.length > 0 ? (
+                visibleThreads.slice(0, 12).map((thread) => (
+                  <button
+                    className={`grid min-h-[var(--host-msg-42)] grid-cols-[var(--host-msg-69)_minmax(0,1fr)_var(--host-msg-92)] items-center gap-[var(--host-msg-23)] rounded-[var(--host-msg-6)] border px-[var(--host-msg-12)] py-[var(--host-msg-12)] text-left text-[length:var(--host-msg-14)] leading-[1.253] text-[#6D7A8A] transition ${
+                      thread.id === visibleSelectedThreadId
+                        ? "border-[var(--host-msg-3)] border-[#6D7A8A]"
+                        : "border-[#D9D9D9] hover:border-[#6D7A8A]"
+                    }`}
+                    key={thread.id}
+                    onClick={() => onSelectThread(thread.id)}
+                    type="button"
+                  >
+                    <span className="truncate font-semibold">
+                      {thread.guestName}
+                    </span>
+                    <span className="truncate font-semibold">
+                      {thread.programTitle || "호스트 문의"}
+                    </span>
+                    <span className="whitespace-nowrap text-right font-medium">
+                      {thread.dateLabel}
+                    </span>
+                  </button>
                 ))
               ) : (
-                <MessageListState label="종료된 메세지가 없습니다." />
+                <MessageListState label={emptyLabel} />
               )}
             </div>
           </div>
         </div>
 
-        <ThreadDetailPanel thread={selectedThread} variant="ended" />
+        <ThreadDetailPanel thread={visibleSelectedThread} variant="ended" />
       </section>
     </HostWorkspaceLayout>
   );
@@ -1298,15 +1392,18 @@ function ToggleButton({
 function FilterPill({
   active = false,
   children,
+  onClick,
 }: {
   active?: boolean;
   children: string;
+  onClick: () => void;
 }) {
   return (
     <button
       className={`inline-flex h-[var(--host-msg-30)] min-w-[var(--host-msg-70)] items-center justify-center rounded-full px-[var(--host-msg-20)] text-[length:var(--host-msg-12)] font-bold leading-[1.6] ${
         active ? "bg-[#FF9A3D] text-[#F9F9F9]" : "bg-[#CAC4BC] text-[#F3F3F3]"
       }`}
+      onClick={onClick}
       type="button"
     >
       {children}
@@ -1369,6 +1466,9 @@ function buildMessageThreads(
         : undefined);
     const messages = createHostThreadMessages(inquiry);
     const latestMessage = messages[messages.length - 1];
+    const lastActivityAt =
+      latestMessage?.createdAt ?? inquiry.updatedAt ?? inquiry.submittedAt;
+    const closedAt = inquiry.status === "closed" ? inquiry.updatedAt : "";
     const submitted = new Date(inquiry.submittedAt);
     const dateLabel = Number.isNaN(submitted.getTime())
       ? "0000. 00. 00"
@@ -1398,6 +1498,7 @@ function buildMessageThreads(
           : relatedApplication?.status === "accepted"
             ? "예약 확정"
             : "예약 확인 중",
+      closedAt,
       dateLabel,
       guestName: inquiry.contactName || "게스트명",
       id: inquiry.id || `message-thread-${index}`,
@@ -1405,6 +1506,7 @@ function buildMessageThreads(
         relatedProgram?.image ||
         resolveThreadImage(rawProgramTitle),
       lastMessage: latestMessage?.body ?? inquiry.message,
+      lastActivityAt,
       messages,
       openDate: formatDateLabel(relatedProgram?.recruitStart, dateLabel),
       periodLabel: formatPeriodLabel(
@@ -1493,6 +1595,19 @@ function formatPeriodLabel(start?: string, end?: string): string {
 
 function normalizeTitle(value: string): string {
   return value.replace(/\s+/gu, "").trim().toLowerCase();
+}
+
+function getThreadProgramFilterKey(thread: MessageThread): string {
+  return thread.programId || normalizeTitle(thread.programTitle);
+}
+
+function normalizeSearchText(value: string): string {
+  return value.replace(/\s+/gu, "").trim().toLowerCase();
+}
+
+function getTimeValue(value: string): number {
+  const time = Date.parse(value);
+  return Number.isNaN(time) ? 0 : time;
 }
 
 function formatRelativeTime(value: string, fallback: string): string {

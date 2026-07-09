@@ -3,6 +3,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { NuvioEmptyState } from "@/components/nuvio-empty-state";
 import { listPublicMagazinePosts } from "@/lib/magazine-db";
+import type { MagazinePost } from "@/lib/magazine-db";
 import { createSeoMetadata } from "@/lib/seo";
 
 export const dynamic = "force-dynamic";
@@ -15,7 +16,9 @@ export const metadata: Metadata = createSeoMetadata({
 });
 
 export default async function MagazinePage() {
-  const posts = await listPublicMagazinePosts(24);
+  const allPosts = await listPublicMagazinePosts(100);
+  const posts = allPosts.slice(0, 24);
+  const issueNumberByPostId = createMagazineIssueNumberByPostId(allPosts);
 
   return (
     <div className="font-pretendard bg-white">
@@ -31,7 +34,7 @@ export default async function MagazinePage() {
           />
         ) : (
           <div className="mt-[clamp(40px,2.778vw,53.333px)] grid w-[min(100%,clamp(1085px,75.3472vw,1446.667px))] grid-cols-2 gap-x-[clamp(25px,1.7361vw,33.333px)] gap-y-[clamp(16px,1.1111vw,21.333px)] max-md:w-[88vw] max-md:grid-cols-1 max-md:gap-y-6">
-            {posts.map((post, index) => (
+            {posts.map((post) => (
               <article
                 className="h-[clamp(550px,38.1944vw,733.333px)] min-w-0 text-center"
                 key={post.id}
@@ -53,7 +56,11 @@ export default async function MagazinePage() {
                     {post.title}
                   </h2>
                   <p className="mt-auto pb-[clamp(28px,1.9444vw,37.333px)] text-[clamp(14px,0.9722vw,18.667px)] font-normal leading-[1.253] text-black max-md:text-[14px]">
-                    #{String(index + 1).padStart(2, "0")}
+                    #
+                    {String(issueNumberByPostId.get(post.id) ?? 1).padStart(
+                      2,
+                      "0",
+                    )}
                   </p>
                 </Link>
               </article>
@@ -63,6 +70,29 @@ export default async function MagazinePage() {
       </section>
     </div>
   );
+}
+
+function createMagazineIssueNumberByPostId(
+  posts: MagazinePost[],
+): Map<string, number> {
+  return new Map(
+    [...posts]
+      .sort((a, b) => {
+        const timeDifference = getMagazineIssueTime(a) - getMagazineIssueTime(b);
+        if (timeDifference !== 0) return timeDifference;
+
+        const createdDifference = Date.parse(a.createdAt) - Date.parse(b.createdAt);
+        if (createdDifference !== 0) return createdDifference;
+
+        return a.id.localeCompare(b.id);
+      })
+      .map((post, index) => [post.id, index + 1] as const),
+  );
+}
+
+function getMagazineIssueTime(post: MagazinePost): number {
+  const time = Date.parse(post.publishedAt ?? post.createdAt);
+  return Number.isFinite(time) ? time : 0;
 }
 
 function MagazineImage({ alt, src }: { alt: string; src: string }) {

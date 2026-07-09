@@ -12,9 +12,9 @@ import {
   programJsonLd,
 } from "@/lib/seo";
 import {
-  canonicalVillagePath,
-  canonicalVillageProgramPath,
-} from "@/lib/village-routing";
+  canonicalChannelPath,
+  canonicalChannelProgramPath,
+} from "@/lib/channel-routing";
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
@@ -31,7 +31,7 @@ export async function generateMetadata({
   const program = await resolveVillageProgram(village, programSlug);
   if (!program) return {};
 
-  const canonicalPath = canonicalVillageProgramPath(village.slug, program.slug);
+  const canonicalPath = canonicalChannelProgramPath(village.slug, program.slug);
 
   return createSeoMetadata({
     title: `${program.title} | ${village.name}`,
@@ -55,7 +55,7 @@ export default async function VillageProgramRoute({
   const program = await resolveVillageProgram(village, programSlug);
 
   if (!program) notFound();
-  const canonicalPath = canonicalVillageProgramPath(village.slug, program.slug);
+  const canonicalPath = canonicalChannelProgramPath(village.slug, program.slug);
 
   return (
     <>
@@ -65,7 +65,7 @@ export default async function VillageProgramRoute({
           breadcrumbJsonLd([
             { name: "홈", path: "/" },
             { name: "채널", path: "/channels" },
-            { name: village.name, path: canonicalVillagePath(village.slug) },
+            { name: village.name, path: canonicalChannelPath(village.slug) },
             { name: program.title, path: canonicalPath },
           ]),
         ]}

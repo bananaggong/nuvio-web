@@ -5,7 +5,7 @@ import {
   type PublishedVillagePageSection,
   type VillagePageSectionDraft,
 } from "@/lib/village-page-cms";
-import { villagePath } from "@/lib/village-routing";
+import { channelPath } from "@/lib/channel-routing";
 import type { Village } from "@/lib/village-types";
 import type { VillageNotice } from "@/lib/village-template";
 
@@ -87,7 +87,7 @@ export function buildChannelBoardNoticesFromPosts({
   posts: ChannelBoardPost[];
   village: Village;
 }): VillageNotice[] {
-  const noticeHref = `${villagePath(village.slug)}/notice`;
+  const noticeHref = `${channelPath(village.slug)}/notice`;
 
   return normalizeChannelBoardPosts(posts).map((post) => ({
     date: post.createdAt,

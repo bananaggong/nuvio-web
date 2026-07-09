@@ -19,7 +19,7 @@ import {
   type ChannelProgramSortOrder,
   type ChannelProgramStatusFilter,
 } from "@/lib/channel-program-filters";
-import { villagePath, villageProgramPath } from "@/lib/village-routing";
+import { channelPath, channelProgramPath } from "@/lib/channel-routing";
 import type { Program } from "@/lib/types";
 import type { Village } from "@/lib/village-types";
 
@@ -107,7 +107,7 @@ export function ChannelGuestProgramsPage({
   programs,
   village,
 }: ChannelGuestProgramsPageProps) {
-  const homeHref = villagePath(village.slug);
+  const homeHref = channelPath(village.slug);
   const pathname = usePathname();
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -553,7 +553,7 @@ function ProgramGridCard({ program }: { program: ProgramCardModel }) {
 function buildProgramCards(programs: Program[], village: Village): ProgramCardModel[] {
   return programs.map((program) => ({
     activityStart: program.activityStart,
-    href: villageProgramPath(village.slug, program.slug),
+    href: channelProgramPath(village.slug, program.slug),
     id: String(program.id),
     image: program.image,
     period: formatCompactPeriod(program.activityStart, program.activityEnd),

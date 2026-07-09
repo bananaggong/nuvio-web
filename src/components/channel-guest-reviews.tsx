@@ -9,7 +9,7 @@ import {
   px,
 } from "@/components/channel-guest-gallery";
 import { NuvioEmptyState } from "@/components/nuvio-empty-state";
-import { villagePath } from "@/lib/village-routing";
+import { channelPath } from "@/lib/channel-routing";
 import type { Program, Review } from "@/lib/types";
 import type { Village } from "@/lib/village-types";
 
@@ -44,7 +44,7 @@ export function ChannelGuestReviewsPage({
   reviews,
   village,
 }: ChannelGuestReviewsPageProps) {
-  const homeHref = villagePath(village.slug);
+  const homeHref = channelPath(village.slug);
   const [selectedProgram, setSelectedProgram] = useState(() => normalizeFilterValue(programFilter));
   const [ratingFilter, setRatingFilter] = useState<RatingFilter>("all");
   const [sortOrder, setSortOrder] = useState<ReviewSortOrder>("latest");

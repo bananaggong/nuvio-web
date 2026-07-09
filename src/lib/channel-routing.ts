@@ -11,8 +11,10 @@ const reservedTopLevelSegments = new Set([
   "host",
   "icon.svg",
   "login",
+  "magazine",
   "manifest.json",
   "me",
+  "mypage",
   "partners",
   "privacy",
   "robots.txt",
@@ -30,34 +32,37 @@ export function isBoseongLegacyChannelSlug(slug: string): boolean {
   return slug.trim().toLowerCase() === boseongLegacyChannelSlug;
 }
 
-export function supportsVillageReviewDetailPages(slug: string): boolean {
+export function supportsChannelReviewDetailPages(slug: string): boolean {
   return isBoseongLegacyChannelSlug(slug);
 }
 
-export function isReservedVillageSlug(slug: string): boolean {
+export function isReservedChannelSlug(slug: string): boolean {
   return reservedTopLevelSegments.has(slug.toLowerCase());
 }
 
-export function villagePath(slug: string): string {
+export function channelPath(slug: string): string {
   return `/${slug}`;
 }
 
-export function canonicalVillagePath(slug: string): string {
+export function canonicalChannelPath(slug: string): string {
   return `/channels/${slug}`;
 }
 
-export function villageProgramPath(villageSlug: string, programSlug: string): string {
-  return `/${villageSlug}/${programSlug}`;
-}
-
-export function canonicalVillageProgramPath(
-  villageSlug: string,
+export function channelProgramPath(
+  channelSlug: string,
   programSlug: string,
 ): string {
-  return `/channels/${villageSlug}/programs/${programSlug}`;
+  return `/${channelSlug}/${programSlug}`;
 }
 
-export function isVillageMicrositePath(pathname: string): boolean {
+export function canonicalChannelProgramPath(
+  channelSlug: string,
+  programSlug: string,
+): string {
+  return `/channels/${channelSlug}/programs/${programSlug}`;
+}
+
+export function isChannelMicrositePath(pathname: string): boolean {
   const path = pathname.split(/[?#]/u)[0] ?? "";
   const segments = path.split("/").filter(Boolean);
   const [first, second, third] = segments;
@@ -68,7 +73,7 @@ export function isVillageMicrositePath(pathname: string): boolean {
     return segments.length >= 2;
   }
 
-  if (isReservedVillageSlug(first) || first.includes(".")) {
+  if (isReservedChannelSlug(first) || first.includes(".")) {
     return false;
   }
 
@@ -80,7 +85,7 @@ export function isVillageMicrositePath(pathname: string): boolean {
     segments.length === 3 &&
     (second === "media" ||
       second === "privacy" ||
-      (second === "reviews" && supportsVillageReviewDetailPages(first))) &&
+      (second === "reviews" && supportsChannelReviewDetailPages(first))) &&
     Boolean(third)
   );
 }

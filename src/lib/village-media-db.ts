@@ -18,6 +18,7 @@ export type HostVillageMediaDraft = {
   summary: string;
   body: string[];
   thumbnail: string;
+  imageUrls: string[];
   embedUrl?: string;
   sourceName: string;
   sourceUrl: string;
@@ -258,7 +259,7 @@ export function normalizeHostVillageMediaDraft(
   const now = new Date().toISOString();
 
   return {
-    id: asString(value.id) || `media-${Date.now()}`,
+    id: asString(value.id),
     villageSlug: createSlug(asString(value.villageSlug) || "boseong"),
     title: asString(value.title) || "전체차LAB 미디어",
     category: asMediaCategory(value.category),
@@ -266,6 +267,7 @@ export function normalizeHostVillageMediaDraft(
     summary,
     body,
     thumbnail: asString(value.thumbnail) || asString(value.thumbnailUrl) || "",
+    imageUrls: normalizeImageUrls(value.imageUrls ?? value.images),
     embedUrl: normalizeEmbedUrl(value.embedUrl, value.sourceUrl),
     sourceName: asString(value.sourceName) || "전체차LAB",
     sourceUrl: asString(value.sourceUrl) || "https://nuvio.kr/boseong/media",
@@ -280,7 +282,7 @@ function mapHostDraftToMediaInsert(draft: HostVillageMediaDraft): MediaInsert {
   const publishedDate = normalizeDate(draft.date);
 
   return {
-    legacyId: isUuid(draft.id) ? null : draft.id,
+    legacyId: draft.id && !isUuid(draft.id) ? draft.id : null,
     villageSlug: createSlug(draft.villageSlug),
     title: draft.title.trim() || "전체차LAB 미디어",
     category: draft.category,
@@ -288,6 +290,7 @@ function mapHostDraftToMediaInsert(draft: HostVillageMediaDraft): MediaInsert {
     summary: draft.summary.trim(),
     body: draft.body.length > 0 ? draft.body : [draft.summary.trim()],
     thumbnailUrl: draft.thumbnail.trim(),
+    imageUrls: draft.imageUrls.length > 0 ? draft.imageUrls : [draft.thumbnail].filter(Boolean),
     embedUrl: draft.embedUrl?.trim() || null,
     sourceName: draft.sourceName.trim() || "전체차LAB",
     sourceUrl: draft.sourceUrl.trim() || "https://nuvio.kr/boseong/media",
@@ -306,6 +309,9 @@ function mapMediaRowToContent(row: MediaRow): VillageMediaContent {
     summary: row.summary,
     body: row.body,
     thumbnail: row.thumbnailUrl,
+    images: normalizeImageUrls(row.imageUrls).length > 0
+      ? normalizeImageUrls(row.imageUrls)
+      : [row.thumbnailUrl].filter(Boolean),
     embedUrl: row.embedUrl ?? undefined,
     sourceName: row.sourceName,
     sourceUrl: row.sourceUrl,
@@ -326,6 +332,9 @@ function mapMediaRowToHostDraft(row: MediaRow): HostVillageMediaDraft {
     summary: row.summary,
     body: row.body,
     thumbnail: row.thumbnailUrl,
+    imageUrls: normalizeImageUrls(row.imageUrls).length > 0
+      ? normalizeImageUrls(row.imageUrls)
+      : [row.thumbnailUrl].filter(Boolean),
     embedUrl: row.embedUrl ?? undefined,
     sourceName: row.sourceName,
     sourceUrl: row.sourceUrl,
@@ -348,6 +357,9 @@ function mapContentToHostDraft(
     summary: content.summary,
     body: content.body,
     thumbnail: content.thumbnail,
+    imageUrls: normalizeImageUrls(content.images).length > 0
+      ? normalizeImageUrls(content.images)
+      : [content.thumbnail].filter(Boolean),
     embedUrl: content.embedUrl,
     sourceName: content.sourceName,
     sourceUrl: content.sourceUrl,
@@ -486,6 +498,18 @@ function normalizeBody(value: unknown): string[] {
         .map((line) => line.trim())
         .filter(Boolean)
     : [];
+}
+
+function normalizeImageUrls(value: unknown): string[] {
+  if (!Array.isArray(value)) return [];
+
+  return Array.from(
+    new Set(
+      value
+        .map((item) => (typeof item === "string" ? item.trim() : ""))
+        .filter(Boolean),
+    ),
+  );
 }
 
 function normalizeDate(value: string): string {

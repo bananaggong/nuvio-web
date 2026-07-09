@@ -59,7 +59,7 @@ export const metadata: Metadata = {
         url: absoluteUrl(siteConfig.ogImagePath),
         width: 1200,
         height: 630,
-        alt: `${siteConfig.name} 대표 이미지`,
+        alt: `${siteConfig.name} - 결이 맞는 사람과 함께 떠나는 로컬 여행`,
       },
     ],
   },

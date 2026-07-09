@@ -17,7 +17,7 @@ import {
 } from "@/lib/host-channel-selection";
 import type { HostProgramDraft } from "@/lib/host-program-studio";
 import type { ProgramStatus } from "@/lib/types";
-import { villagePath } from "@/lib/village-routing";
+import { channelPath } from "@/lib/channel-routing";
 import type { Village } from "@/lib/village-types";
 
 type HostChannelPayload = {
@@ -95,7 +95,7 @@ export function HostChannelPrograms() {
     };
   }, [requestedChannelSlug]);
 
-  const publicHref = channel?.slug ? villagePath(channel.slug) : "";
+  const publicHref = channel?.slug ? channelPath(channel.slug) : "";
   const visiblePrograms = useMemo(() => {
     return programs
       .filter((program) => {

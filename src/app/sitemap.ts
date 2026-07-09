@@ -11,11 +11,11 @@ import {
 } from "@/lib/village-db";
 import { listPublicVillageMedia } from "@/lib/village-media-db";
 import {
-  canonicalVillagePath,
-  canonicalVillageProgramPath,
-  supportsVillageReviewDetailPages,
-  villagePath,
-} from "@/lib/village-routing";
+  canonicalChannelPath,
+  canonicalChannelProgramPath,
+  supportsChannelReviewDetailPages,
+  channelPath,
+} from "@/lib/channel-routing";
 
 export const revalidate = 3600;
 
@@ -43,19 +43,19 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const villages = await listPublicVillages();
   const villageRoutes = villages.flatMap((village) => [
     route(
-      canonicalVillagePath(village.slug),
+      canonicalChannelPath(village.slug),
       "daily",
       0.8,
       dateOrNow(village.updatedAt),
     ),
-    route(`${villagePath(village.slug)}/about`, "weekly", 0.55, village.updatedAt),
-    route(`${villagePath(village.slug)}/programs`, "daily", 0.65, village.updatedAt),
-    route(`${villagePath(village.slug)}/media`, "weekly", 0.55, village.updatedAt),
-    route(`${villagePath(village.slug)}/notice`, "weekly", 0.45, village.updatedAt),
+    route(`${channelPath(village.slug)}/about`, "weekly", 0.55, village.updatedAt),
+    route(`${channelPath(village.slug)}/programs`, "daily", 0.65, village.updatedAt),
+    route(`${channelPath(village.slug)}/media`, "weekly", 0.55, village.updatedAt),
+    route(`${channelPath(village.slug)}/notice`, "weekly", 0.45, village.updatedAt),
     ...(launchFeatureFlags.reviews
       ? [
           route(
-            `${villagePath(village.slug)}/reviews`,
+            `${channelPath(village.slug)}/reviews`,
             "weekly",
             0.55,
             village.updatedAt,
@@ -69,7 +69,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       const villagePrograms = await getVillagePrograms(village);
       return villagePrograms.map((program) =>
         route(
-          canonicalVillageProgramPath(village.slug, program.slug || String(program.id)),
+          canonicalChannelProgramPath(village.slug, program.slug || String(program.id)),
           "daily",
           0.7,
           dateOrNow(program.recruitStart),
@@ -83,7 +83,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       const media = await listPublicVillageMedia(village.slug);
       return media.map((content) =>
         route(
-          `${villagePath(village.slug)}/media/${content.id}`,
+          `${channelPath(village.slug)}/media/${content.id}`,
           "weekly",
           0.5,
           dateOrNow(content.updatedAt || content.date),
@@ -95,13 +95,13 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const villageReviewRouteGroups = launchFeatureFlags.reviews
     ? await Promise.all(
         villages
-          .filter((village) => supportsVillageReviewDetailPages(village.slug))
+          .filter((village) => supportsChannelReviewDetailPages(village.slug))
           .map(async (village) => {
             const villagePrograms = await getVillagePrograms(village);
             const villageReviews = await getVillageReviews(village, villagePrograms);
             return villageReviews.map((review) =>
               route(
-                `${villagePath(village.slug)}/reviews/${review.id}`,
+                `${channelPath(village.slug)}/reviews/${review.id}`,
                 "weekly",
                 0.45,
                 dateOrNow(review.date),

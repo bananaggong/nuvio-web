@@ -189,6 +189,7 @@ export type VillageMediaContent = {
   summary: string;
   body: string[];
   thumbnail: string;
+  images?: string[];
   embedUrl?: string;
   sourceName: string;
   sourceUrl: string;

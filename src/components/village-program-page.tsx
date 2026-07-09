@@ -14,7 +14,7 @@ import { StatusBadge } from "@/components/status-badge";
 import { VillageSiteFooter, VillageSiteHeader } from "@/components/village-site-chrome";
 import { formatDate, formatRange, formatWon, getDday } from "@/lib/format";
 import { programPath } from "@/lib/program-routing";
-import { canonicalVillagePath } from "@/lib/village-routing";
+import { canonicalChannelPath } from "@/lib/channel-routing";
 import type { Program } from "@/lib/types";
 import type { Village } from "@/lib/village-types";
 
@@ -33,7 +33,7 @@ export function VillageProgramPage({
           <div className="order-2 min-w-0 lg:order-1">
             <Link
               className="inline-flex items-center gap-2 rounded-md border border-slate-200 bg-white px-3 py-2 text-sm font-black text-slate-700 hover:border-[var(--primary)] hover:text-[var(--primary)]"
-              href={canonicalVillagePath(village.slug)}
+              href={canonicalChannelPath(village.slug)}
             >
               <ArrowLeft size={16} />
               {village.name}
@@ -154,7 +154,7 @@ export function VillageProgramPage({
             <p className="mt-2 text-sm leading-6 text-slate-600">{village.summary}</p>
             <Link
               className="mt-4 inline-flex w-full items-center justify-center gap-2 rounded-md bg-white px-4 py-3 text-sm font-black text-slate-700 hover:text-[var(--primary)]"
-              href={canonicalVillagePath(village.slug)}
+              href={canonicalChannelPath(village.slug)}
             >
               채널 보기
               <ExternalLink size={16} />
