@@ -43,6 +43,17 @@ export async function listPublicChannelBoardPosts(
   return normalizeChannelBoardPosts(section?.content.posts);
 }
 
+export async function getPublicChannelBoardPost(
+  villageSlug: string,
+  postId: string,
+): Promise<ChannelBoardPost | undefined> {
+  const normalizedPostId = normalizeChannelBoardPostId(postId);
+  if (!normalizedPostId) return undefined;
+
+  const posts = await listPublicChannelBoardPosts(villageSlug);
+  return posts.find((post) => post.id === normalizedPostId);
+}
+
 export async function saveHostChannelBoardPosts({
   posts,
   villageSlug,
@@ -139,7 +150,7 @@ export function buildChannelBoardNoticesFromPosts({
 
   return normalizeChannelBoardPosts(posts).map((post) => ({
     date: post.createdAt,
-    href: `${noticeHref}#${encodeURIComponent(post.id)}`,
+    href: `${noticeHref}/${encodeURIComponent(post.id)}`,
     title: post.title,
     type: buildBoardNoticeType(post),
   }));
@@ -247,4 +258,15 @@ function asIsoDate(value: unknown): string | undefined {
 
 function asString(value: unknown): string {
   return typeof value === "string" ? value.trim() : "";
+}
+
+function normalizeChannelBoardPostId(value: string): string {
+  const text = value.trim();
+  if (!text) return "";
+
+  try {
+    return decodeURIComponent(text).trim();
+  } catch {
+    return text;
+  }
 }

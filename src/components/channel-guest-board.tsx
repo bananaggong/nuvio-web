@@ -6,6 +6,7 @@ import {
   px,
 } from "@/components/channel-guest-gallery";
 import { NuvioEmptyState } from "@/components/nuvio-empty-state";
+import type { ChannelBoardPost } from "@/lib/channel-board-posts";
 import type { VillageNotice } from "@/lib/village-template";
 import { channelPath } from "@/lib/channel-routing";
 import type { Village } from "@/lib/village-types";
@@ -66,6 +67,92 @@ export function ChannelGuestBoardPage({
           ) : (
             <ChannelBoardEmptyState />
           )}
+        </section>
+      </main>
+    </div>
+  );
+}
+
+export function ChannelGuestBoardDetailPage({
+  post,
+  village,
+}: {
+  post: ChannelBoardPost;
+  village: Village;
+}) {
+  const homeHref = channelPath(village.slug);
+  const boardHref = `${homeHref}/notice`;
+  const bodyHtml = post.body?.trim();
+
+  return (
+    <div
+      className="min-h-screen overflow-x-clip bg-white font-pretendard text-[#5B3A29]"
+      style={channelGuestScaleRootStyle}
+    >
+      <main className="mx-auto w-full max-w-[1920px]">
+        <ChannelProfileHeader activeTab="board" homeHref={homeHref} village={village} />
+
+        <section
+          className="mx-auto"
+          style={{
+            ...boardListStyle,
+            paddingBottom: px(88),
+            paddingTop: px(30),
+          }}
+        >
+          <Link
+            className="inline-flex items-center font-semibold leading-[1.253] text-[#6D7A8A] transition hover:text-[#FE701E]"
+            href={boardHref}
+            style={{ fontSize: px(13), marginBottom: px(24) }}
+          >
+            게시판 목록
+          </Link>
+
+          <article
+            className="border-y border-[#F7B267]"
+            style={{
+              paddingBottom: px(52),
+              paddingTop: px(31),
+            }}
+          >
+            <div className="flex flex-wrap items-center justify-between" style={{ gap: px(18) }}>
+              <div className="flex min-w-0 items-center" style={{ gap: px(8) }}>
+                {post.pinned ? <BoardBadge type="fixed" /> : null}
+                {isRecentBoardDate(post.createdAt) ? <BoardBadge type="new" /> : null}
+                <h1
+                  className="min-w-0 font-semibold leading-[1.253] text-[#5B3A29]"
+                  style={{ fontSize: px(24) }}
+                >
+                  {post.title}
+                </h1>
+              </div>
+              <time
+                className="shrink-0 font-normal leading-[1.6] text-[#CAC4BC]"
+                dateTime={post.createdAt}
+                style={{ fontSize: px(13) }}
+              >
+                {formatBoardDate(post.createdAt)}
+              </time>
+            </div>
+
+            {bodyHtml ? (
+              <div
+                className="magazine-content text-[#5B3A29]"
+                dangerouslySetInnerHTML={{ __html: bodyHtml }}
+                style={{
+                  fontSize: px(15),
+                  marginTop: px(38),
+                }}
+              />
+            ) : (
+              <p
+                className="font-medium leading-[1.8] text-[#CAC4BC]"
+                style={{ fontSize: px(15), marginTop: px(38) }}
+              >
+                작성된 내용이 없습니다.
+              </p>
+            )}
+          </article>
         </section>
       </main>
     </div>
@@ -159,6 +246,16 @@ function formatBoardDate(value: string): string {
   const year = date.getFullYear();
   const month = `${date.getMonth() + 1}`.padStart(2, "0");
   const day = `${date.getDate()}`.padStart(2, "0");
+  const hours = `${date.getHours()}`.padStart(2, "0");
+  const minutes = `${date.getMinutes()}`.padStart(2, "0");
 
-  return `${year}. ${month}. ${day} 00:00`;
+  return `${year}. ${month}. ${day} ${hours}:${minutes}`;
+}
+
+function isRecentBoardDate(value: string): boolean {
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return false;
+
+  const age = Date.now() - date.getTime();
+  return age >= 0 && age <= 10 * 24 * 60 * 60 * 1000;
 }

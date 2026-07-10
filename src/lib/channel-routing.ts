@@ -84,6 +84,7 @@ export function isChannelMicrositePath(pathname: string): boolean {
   return (
     segments.length === 3 &&
     (second === "media" ||
+      second === "notice" ||
       second === "privacy" ||
       (second === "reviews" && supportsChannelReviewDetailPages(first))) &&
     Boolean(third)
