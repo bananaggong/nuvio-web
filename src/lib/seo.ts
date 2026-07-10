@@ -4,13 +4,14 @@ import type { Program, Review, VillageMediaContent } from "@/lib/types";
 import type { Village } from "@/lib/village-types";
 
 const defaultSiteUrl = "https://nuvio.kr";
+const defaultSlogan = "결이 맞는 사람과 함께 떠나는 로컬 여행";
 
 export const siteConfig = {
   name: "누비오",
   alternateName: "누비오",
-  title: "누비오 | 결이 맞는 사람과 함께 떠나는 로컬 여행",
-  description:
-    "결이 맞는 사람과 함께 떠나는 로컬 여행. 누비오에서 지역의 취향과 이야기가 담긴 프로그램을 찾고 신청해보세요.",
+  title: "누비오",
+  slogan: defaultSlogan,
+  description: defaultSlogan,
   url: normalizeSiteUrl(
     process.env.NEXT_PUBLIC_SITE_URL ||
       process.env.SITE_URL ||
@@ -19,7 +20,10 @@ export const siteConfig = {
   ),
   locale: "ko_KR",
   language: "ko-KR",
-  ogImagePath: "/opengraph-image",
+  ogImagePath: "/brand/nuvio-social-preview.png",
+  ogImageWidth: 1424,
+  ogImageHeight: 748,
+  ogImageAlt: `누비오 - ${defaultSlogan}`,
   logoPath: "/brand/nuvio-logo-combined.svg",
   keywords: [
     "누비오",
@@ -58,7 +62,10 @@ export function createSeoMetadata({
 }: SeoMetadataInput = {}): Metadata {
   const resolvedTitle = absoluteTitle ?? formatSocialTitle(title);
   const canonical = path ? normalizePath(path) : undefined;
-  const imageUrl = absoluteUrl(image);
+  const socialImageUrl = absoluteUrl(siteConfig.ogImagePath);
+  const secondaryImageUrl = image
+    ? normalizeImageUrl(absoluteUrl(image), socialImageUrl)
+    : undefined;
 
   return {
     title: absoluteTitle ? { absolute: absoluteTitle } : title,
@@ -81,18 +88,26 @@ export function createSeoMetadata({
       type: "website",
       images: [
         {
-          url: imageUrl,
-          width: 1200,
-          height: 630,
-          alt: `${siteConfig.name} - 결이 맞는 사람과 함께 떠나는 로컬 여행`,
+          url: socialImageUrl,
+          width: siteConfig.ogImageWidth,
+          height: siteConfig.ogImageHeight,
+          alt: siteConfig.ogImageAlt,
         },
+        ...(secondaryImageUrl
+          ? [
+              {
+                url: secondaryImageUrl,
+                alt: resolvedTitle,
+              },
+            ]
+          : []),
       ],
     },
     twitter: {
       card: "summary_large_image",
       title: resolvedTitle,
       description,
-      images: [imageUrl],
+      images: [socialImageUrl],
     },
     robots: noIndex ? noIndexRobots : indexRobots,
   };
@@ -367,6 +382,10 @@ function programLocationJsonLd(program: Program) {
 function normalizeSiteUrl(value: string): string {
   const withProtocol = value.startsWith("http") ? value : `https://${value}`;
   return withProtocol.replace(/\/+$/u, "");
+}
+
+function normalizeImageUrl(imageUrl: string, defaultImageUrl: string): string | undefined {
+  return imageUrl === defaultImageUrl ? undefined : imageUrl;
 }
 
 function formatSocialTitle(title: string | undefined): string {
