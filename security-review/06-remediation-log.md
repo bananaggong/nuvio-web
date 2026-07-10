@@ -1,6 +1,8 @@
 # 수정 이력
 
-코드 변경은 현재 working tree에 있으며 아직 commit/push/merge 전이다. production migration 5개는 명시적 승인 후 적용했고, 애플리케이션 배포는 이 문서 갱신 후 수행한다.
+보안 변경은 commit `926a22c`로 기록했다. production migration 5개를 명시적 승인 후 적용했고, Vercel production deployment `dpl_BMZmGD93jbfs1SWpMe72qgq7FP2K`가 Ready 상태로 `https://nuvio.kr`에 연결되었다. Git push/merge는 수행하지 않았다.
+
+배포 후 읽기 전용 smoke test에서 `/`, `/magazine`, `/api/programs`는 200을 반환했고, 비로그인 `/api/host/forms`는 의도대로 401을 반환했다. CSP, HSTS, frame 차단, MIME sniffing 차단 헤더가 확인되었으며 관찰 구간에 신규 runtime error log는 없었다.
 
 ## 인증과 권한
 

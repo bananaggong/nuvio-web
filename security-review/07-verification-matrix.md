@@ -16,8 +16,10 @@
 | Patch whitespace | `git diff --check` | PASS | whitespace error 0; Windows line-ending warning만 존재 |
 | Supabase local | `npm run supabase:start` | BLOCKED | Docker daemon 부재 |
 | Supabase production migrations | `npx supabase db push --db-url <production pooler> --include-all` 및 `migration list` | PASS | 5개 적용, local/remote history 일치 |
+| Vercel production deployment | source remote build 및 `vercel inspect` | PASS | `dpl_BMZmGD93jbfs1SWpMe72qgq7FP2K`, Ready, `https://nuvio.kr` alias 적용 |
+| Production read-only smoke | `/`, `/magazine`, `/api/programs`, 비로그인 `/api/host/forms` | PASS | 200/200/200/401, 보안 헤더 확인, 신규 runtime error log 없음 |
 | Browser overflow | `npm run verify:overflow -- /host/villages` | NOT RUN | local Supabase/test account 부재, `.env.local`의 외부 환경 오접속 방지 |
-| Production active test | 실행하지 않음 | NOT ALLOWED | 범위 정책 준수 |
+| Production mutating/tenant E2E | 실행하지 않음 | NOT RUN | 역할별 테스트 계정과 격리된 테스트 데이터 부재 |
 
 ## 보안 테스트 세부
 

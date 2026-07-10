@@ -4,7 +4,7 @@
 
 현재 working tree는 기준선보다 보안과 안정성이 크게 개선되었다. 확인된 Critical 2건과 High 5건은 모두 코드 및 migration으로 수정했고, 업로드/TipTap HTML/URL 처리와 외부 연동의 주요 Medium 위험도 보강했다.
 
-DB 권한/RLS migration 3개와 앞선 미적용 migration 2개는 production에 적용되었고, 원격 migration history도 일치한다. 다만 Docker 및 역할별 테스트 계정 부재로 실제 JWT와 두 tenant 계정을 이용한 smoke test는 배포 후 과제로 남아 있다.
+DB 권한/RLS migration 3개와 앞선 미적용 migration 2개는 production에 적용되었고, 원격 migration history도 일치한다. 애플리케이션은 Vercel production에 배포되어 `https://nuvio.kr`에서 Ready 상태이며, 공개 경로와 비로그인 권한 경계의 읽기 전용 smoke test를 통과했다. 다만 Docker 및 역할별 테스트 계정 부재로 실제 JWT와 두 tenant 계정을 이용한 교차 tenant E2E는 후속 과제로 남아 있다.
 
 ## 가장 중요한 발견
 
@@ -35,6 +35,8 @@ DB 권한/RLS migration 3개와 앞선 미적용 migration 2개는 production에
 - `npm audit`: 취약점 0
 - Drizzle schema check: 통과
 - API raw `request.json()`: 0건
+- production 배포: Ready, 홈페이지/매거진/공개 API 200 및 비로그인 host API 401
+- production 보안 헤더: CSP, HSTS, frame 차단, MIME sniffing 차단 확인
 - 실제 Supabase/RLS와 역할별 E2E: 환경 제약으로 미실행
 
 ## 배포 후 확인 조건
