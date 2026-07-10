@@ -12,7 +12,6 @@ import {
 import { listPublicVillageMedia } from "@/lib/village-media-db";
 import {
   canonicalChannelPath,
-  canonicalChannelProgramPath,
   supportsChannelReviewDetailPages,
   channelPath,
 } from "@/lib/channel-routing";
@@ -69,7 +68,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       const villagePrograms = await getVillagePrograms(village);
       return villagePrograms.map((program) =>
         route(
-          canonicalChannelProgramPath(village.slug, program.slug || String(program.id)),
+          programPath(program),
           "daily",
           0.7,
           dateOrNow(program.recruitStart),

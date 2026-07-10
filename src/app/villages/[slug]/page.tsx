@@ -9,6 +9,7 @@ import {
   listPublicVillages,
 } from "@/lib/village-db";
 import { launchFeatureFlags } from "@/lib/launch-feature-flags";
+import { listPublicChannelBoardPosts } from "@/lib/channel-board-posts";
 import { listPublicVillageMedia } from "@/lib/village-media-db";
 import {
   breadcrumbJsonLd,
@@ -54,10 +55,13 @@ export default async function VillagePage({
   if (!village) notFound();
 
   const programs = await getVillagePrograms(village);
-  const reviews = launchFeatureFlags.reviews
-    ? await getVillageReviews(village, programs, { limit: 6 })
-    : [];
-  const media = await listPublicVillageMedia(village.slug, { limit: 6 });
+  const [boardPosts, media, reviews] = await Promise.all([
+    village.slug === "boseong" ? [] : listPublicChannelBoardPosts(village.slug),
+    listPublicVillageMedia(village.slug, { limit: 6 }),
+    launchFeatureFlags.reviews
+      ? getVillageReviews(village, programs, { limit: 6 })
+      : [],
+  ]);
 
   return (
     <>
@@ -72,6 +76,7 @@ export default async function VillagePage({
         ]}
       />
       <VillageHomePage
+        boardPosts={boardPosts}
         media={media}
         programs={programs}
         reviews={reviews}

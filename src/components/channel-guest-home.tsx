@@ -16,10 +16,12 @@ import {
 import { getChannelHomeBlocks } from "@/lib/channel-home-blocks";
 import { buildChannelProgramsHref } from "@/lib/channel-program-filters";
 import { channelPath, channelProgramPath } from "@/lib/channel-routing";
+import type { ChannelBoardPost } from "@/lib/channel-board-posts";
 import type { Program, Review, VillageMediaContent } from "@/lib/types";
 import type { Village } from "@/lib/village-types";
 
 type ChannelGuestHomePageProps = {
+  boardPosts?: ChannelBoardPost[];
   media?: VillageMediaContent[];
   programs: Program[];
   reviews: Review[];
@@ -137,6 +139,7 @@ const programEmptyMessages: Record<ProgramStatusFilter, string> = {
 };
 
 export function ChannelGuestHomePage({
+  boardPosts = [],
   media = [],
   programs,
   village,
@@ -145,7 +148,7 @@ export function ChannelGuestHomePage({
   const programCards = buildProgramCards(programs, village);
   const galleryCards = buildGalleryCards(media.filter(isChannelGalleryMedia)).slice(0, 3);
   const stories = buildStoryCards(media.filter(isChannelMagazineMedia)).slice(0, 3);
-  const notices = buildChannelNotices(programs, village).slice(0, 4);
+  const notices = buildChannelNotices(boardPosts, village).slice(0, 4);
   const visibleMenuItems = getVisibleChannelMenuItems(village);
   const homeBlocks = getChannelHomeBlocks(village);
 
@@ -876,13 +879,24 @@ function buildStoryCards(media: VillageMediaContent[]): StoryCardModel[] {
   }));
 }
 
-function buildChannelNotices(programs: Program[], village: Village): NoticeModel[] {
-  return programs.slice(0, 3).map((program, index) => ({
-    date: program.recruitStart,
-    href: channelProgramPath(village.slug, program.slug),
-    title: `${program.title} ${text.open} ${text.notice}`,
-    variant: index === 0 ? "fixed" : ("new" as const),
+function buildChannelNotices(
+  posts: ChannelBoardPost[],
+  village: Village,
+): NoticeModel[] {
+  return posts.map((post) => ({
+    date: post.createdAt,
+    href: `${channelPath(village.slug)}/notice/${encodeURIComponent(post.id)}`,
+    title: post.title,
+    variant: post.pinned ? "fixed" : isRecentNotice(post.createdAt) ? "new" : undefined,
   }));
+}
+
+function isRecentNotice(value: string): boolean {
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return false;
+
+  const age = Date.now() - date.getTime();
+  return age >= 0 && age <= 10 * 24 * 60 * 60 * 1000;
 }
 
 function getProgramStatus(status: Program["status"]) {
@@ -926,7 +940,7 @@ function formatStoryDate(value: string) {
 function formatNoticeDate(value: string) {
   const date = toDate(value);
   if (!date) return "2000. 00. 00 00:00";
-  return `${date.getFullYear()}. ${String(date.getMonth() + 1).padStart(2, "0")}. ${String(date.getDate()).padStart(2, "0")} 00:00`;
+  return `${date.getFullYear()}. ${String(date.getMonth() + 1).padStart(2, "0")}. ${String(date.getDate()).padStart(2, "0")} ${String(date.getHours()).padStart(2, "0")}:${String(date.getMinutes()).padStart(2, "0")}`;
 }
 
 function toDate(value: string) {

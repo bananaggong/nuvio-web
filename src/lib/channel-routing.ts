@@ -1,3 +1,5 @@
+import { programSlugPath } from "@/lib/program-routing";
+
 const reservedTopLevelSegments = new Set([
   "_next",
   "admin",
@@ -49,17 +51,10 @@ export function canonicalChannelPath(slug: string): string {
 }
 
 export function channelProgramPath(
-  channelSlug: string,
+  _channelSlug: string,
   programSlug: string,
 ): string {
-  return `/${channelSlug}/${programSlug}`;
-}
-
-export function canonicalChannelProgramPath(
-  channelSlug: string,
-  programSlug: string,
-): string {
-  return `/channels/${channelSlug}/programs/${programSlug}`;
+  return programSlugPath(programSlug);
 }
 
 export function isChannelMicrositePath(pathname: string): boolean {

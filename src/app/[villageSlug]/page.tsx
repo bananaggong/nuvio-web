@@ -9,6 +9,7 @@ import {
   listPublicVillages,
 } from "@/lib/village-db";
 import { launchFeatureFlags } from "@/lib/launch-feature-flags";
+import { listPublicChannelBoardPosts } from "@/lib/channel-board-posts";
 import { listPublicVillageMedia } from "@/lib/village-media-db";
 import { listPublicVillagePageSections } from "@/lib/village-page-cms";
 import {
@@ -59,14 +60,16 @@ export default async function ShortVillagePage({
   if (!village) notFound();
 
   const programs = await getVillagePrograms(village);
-  const reviews = launchFeatureFlags.reviews
-    ? await getVillageReviews(village, programs, { limit: 8 })
-    : [];
-  const media = await listPublicVillageMedia(village.slug, { limit: 6 });
-  const pageSections =
+  const [boardPosts, media, pageSections, reviews] = await Promise.all([
+    village.slug === "boseong" ? [] : listPublicChannelBoardPosts(village.slug),
+    listPublicVillageMedia(village.slug, { limit: 6 }),
     village.slug === "boseong"
-      ? await listPublicVillagePageSections(village.slug, "home")
-      : undefined;
+      ? listPublicVillagePageSections(village.slug, "home")
+      : undefined,
+    launchFeatureFlags.reviews
+      ? getVillageReviews(village, programs, { limit: 8 })
+      : [],
+  ]);
 
   return (
     <>
@@ -81,6 +84,7 @@ export default async function ShortVillagePage({
         ]}
       />
       <VillageHomePage
+        boardPosts={boardPosts}
         media={media}
         pageSections={pageSections}
         programs={programs}
