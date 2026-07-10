@@ -1,9 +1,9 @@
 import { NextResponse } from "next/server";
 import {
   applyRateLimit,
-  enforceContentLength,
   enforceSameOrigin,
   isApiAuthError,
+  readJsonWithLimit,
   requireHostRole,
 } from "@/lib/api-security";
 import { updateHostInquiryStatus } from "@/lib/host-inquiry-db";
@@ -29,9 +29,6 @@ export async function PATCH(
   const crossOrigin = enforceSameOrigin(request);
   if (crossOrigin) return crossOrigin;
 
-  const payloadTooLarge = enforceContentLength(request, 4 * 1024);
-  if (payloadTooLarge) return payloadTooLarge;
-
   const limited = applyRateLimit(request, {
     key: "host-inquiry-status:update",
     limit: 120,
@@ -41,7 +38,9 @@ export async function PATCH(
 
   try {
     const { id } = await params;
-    const body = (await request.json().catch(() => ({}))) as {
+    const { body: rawBody, response } = await readJsonWithLimit(request, 4 * 1024);
+    if (response) return response;
+    const body = rawBody as {
       status?: HostInquiryStatus;
     };
     const status = body.status;

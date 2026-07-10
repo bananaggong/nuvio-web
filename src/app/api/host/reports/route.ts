@@ -1,9 +1,10 @@
 import { NextResponse } from "next/server";
 import {
+  applyPersistentRateLimit,
   applyRateLimit,
-  enforceContentLength,
   enforceSameOrigin,
   isApiAuthError,
+  readJsonWithLimit,
   requireHostRole,
 } from "@/lib/api-security";
 import {
@@ -21,6 +22,8 @@ import type { ReportProject } from "@/lib/report-automation";
 
 export const runtime = "nodejs";
 
+const MAX_REPORT_PAYLOAD_BYTES = 256 * 1024;
+
 export async function GET(request: Request) {
   const auth = await requireHostRole();
   if (isApiAuthError(auth)) return auth.response;
@@ -33,25 +36,18 @@ export async function GET(request: Request) {
   if (limited) return limited;
 
   try {
-    const projects = await listReportProjectsFromDb();
     if (auth.profile.role === "admin") {
-      return NextResponse.json({ data: projects });
+      return NextResponse.json({ data: await listReportProjectsFromDb() });
     }
 
     const workspaces = await listManageableHostVillageWorkspaces(auth);
-    const scopedProjects = projects.filter((project) =>
-      findProjectWorkspace(project, workspaces),
-    );
-
-    return NextResponse.json({ data: scopedProjects });
-  } catch (error) {
+    const projects = await listReportProjectsFromDb({
+      villageIds: workspaces.map((workspace) => workspace.villageId),
+    });
+    return NextResponse.json({ data: projects });
+  } catch {
     return NextResponse.json(
-      {
-        error:
-          error instanceof Error
-            ? error.message
-            : "운영 폴더를 불러오지 못했습니다.",
-      },
+      { error: "Failed to load report projects." },
       { status: 500 },
     );
   }
@@ -64,10 +60,8 @@ export async function POST(request: Request) {
   const crossOrigin = enforceSameOrigin(request);
   if (crossOrigin) return crossOrigin;
 
-  const payloadTooLarge = enforceContentLength(request, 256 * 1024);
-  if (payloadTooLarge) return payloadTooLarge;
-
-  const limited = applyRateLimit(request, {
+  const limited = await applyPersistentRateLimit(request, {
+    identity: auth.user.id,
     key: "host-report-project:save",
     limit: 60,
     windowMs: 15 * 60 * 1000,
@@ -75,48 +69,66 @@ export async function POST(request: Request) {
   if (limited) return limited;
 
   try {
-    const body = await request.json().catch(() => ({}));
+    const { body, response } = await readJsonWithLimit(
+      request,
+      MAX_REPORT_PAYLOAD_BYTES,
+    );
+    if (response) return response;
+
     const project = normalizeReportProject(body);
-    const workspaces =
-      auth.profile.role === "admin"
-        ? []
-        : await listManageableHostVillageWorkspaces(auth);
-    const scopedProject =
-      auth.profile.role === "admin"
-        ? project
-        : scopeProjectToHostWorkspace(project, workspaces);
+    const isUpdate = isUuid(project.id);
 
-    if (!scopedProject) {
+    if (auth.profile.role === "admin") {
+      const villageId = isUuid(project.villageId ?? "")
+        ? project.villageId
+        : undefined;
+      if (!villageId) {
+        return NextResponse.json(
+          { error: "Report project requires a valid village workspace." },
+          { status: 400 },
+        );
+      }
+      const savedProject = await upsertReportProject(project, {
+        ownerId: auth.user.id,
+        villageId,
+      });
       return NextResponse.json(
-        { error: "이 계정에 연결된 채널 폴더만 저장할 수 있습니다." },
-        { status: 403 },
+        { data: savedProject },
+        { status: isUpdate ? 200 : 201 },
       );
     }
 
-    if (
-      auth.profile.role !== "admin" &&
-      !(await isProjectUpdateAllowed(scopedProject, workspaces))
-    ) {
+    const workspaces = await listManageableHostVillageWorkspaces(auth);
+    const allowedVillageIds = workspaces.map((workspace) => workspace.villageId);
+    const workspace = isUpdate
+      ? await resolveExistingProjectWorkspace(
+          project.id,
+          workspaces,
+          allowedVillageIds,
+        )
+      : resolveNewProjectWorkspace(project, workspaces);
+
+    if (!workspace) {
       return NextResponse.json(
-        { error: "이 계정에 연결된 채널 폴더만 수정할 수 있습니다." },
-        { status: 403 },
+        { error: "Report project is outside the allowed workspace." },
+        { status: isUpdate ? 404 : 403 },
       );
     }
 
+    const scopedProject = attachWorkspace(project, workspace);
     const savedProject = await upsertReportProject(scopedProject, {
+      allowedVillageIds,
       ownerId: auth.user.id,
-      restrictToOwner: false,
+      villageId: workspace.villageId,
     });
 
-    return NextResponse.json({ data: savedProject }, { status: 201 });
-  } catch (error) {
     return NextResponse.json(
-      {
-        error:
-          error instanceof Error
-            ? error.message
-            : "운영 폴더를 저장하지 못했습니다.",
-      },
+      { data: savedProject },
+      { status: isUpdate ? 200 : 201 },
+    );
+  } catch {
+    return NextResponse.json(
+      { error: "Failed to save report project." },
       { status: 400 },
     );
   }
@@ -129,10 +141,8 @@ export async function DELETE(request: Request) {
   const crossOrigin = enforceSameOrigin(request);
   if (crossOrigin) return crossOrigin;
 
-  const payloadTooLarge = enforceContentLength(request, 16 * 1024);
-  if (payloadTooLarge) return payloadTooLarge;
-
-  const limited = applyRateLimit(request, {
+  const limited = await applyPersistentRateLimit(request, {
+    identity: auth.user.id,
     key: "host-report-project:delete",
     limit: 30,
     windowMs: 15 * 60 * 1000,
@@ -140,87 +150,81 @@ export async function DELETE(request: Request) {
   if (limited) return limited;
 
   try {
-    const body = await request.json().catch(() => ({}));
-    const bodyId =
-      body &&
-      typeof body === "object" &&
-      !Array.isArray(body) &&
-      typeof (body as { id?: unknown }).id === "string"
-        ? (body as { id: string }).id.trim()
-        : "";
+    const { body, response } = await readJsonWithLimit(request, 16 * 1024);
+    if (response) return response;
+
+    const record = asRecord(body);
+    const bodyId = typeof record.id === "string" ? record.id.trim() : "";
     const queryId = new URL(request.url).searchParams.get("id")?.trim() ?? "";
     const projectId = bodyId || queryId;
 
     if (!projectId) {
       return NextResponse.json(
-        { error: "삭제할 폴더 ID가 필요합니다." },
+        { error: "Report project ID is required." },
         { status: 400 },
       );
     }
 
-    const existingProject = await getReportProjectFromDb(projectId);
+    const workspaces =
+      auth.profile.role === "admin"
+        ? []
+        : await listManageableHostVillageWorkspaces(auth);
+    const deletedProject = await deleteReportProjectFromDb(projectId, {
+      villageIds:
+        auth.profile.role === "admin"
+          ? undefined
+          : workspaces.map((workspace) => workspace.villageId),
+    });
 
-    if (!existingProject) {
-      return NextResponse.json(
-        { error: "삭제할 폴더를 찾을 수 없습니다." },
-        { status: 404 },
-      );
-    }
-
-    if (auth.profile.role !== "admin") {
-      const workspaces = await listManageableHostVillageWorkspaces(auth);
-      if (!findProjectWorkspace(existingProject, workspaces)) {
-        return NextResponse.json(
-          { error: "이 계정에서 관리할 수 있는 폴더만 삭제할 수 있습니다." },
-          { status: 403 },
-        );
-      }
-    }
-
-    const deletedProject = await deleteReportProjectFromDb(projectId);
     if (!deletedProject) {
       return NextResponse.json(
-        { error: "삭제할 폴더를 찾을 수 없습니다." },
+        { error: "Report project was not found." },
         { status: 404 },
       );
     }
 
     return NextResponse.json({ data: deletedProject });
-  } catch (error) {
+  } catch {
     return NextResponse.json(
-      {
-        error:
-          error instanceof Error ? error.message : "폴더를 삭제하지 못했습니다.",
-      },
+      { error: "Failed to delete report project." },
       { status: 400 },
     );
   }
 }
 
-async function isProjectUpdateAllowed(
-  project: ReportProject,
+async function resolveExistingProjectWorkspace(
+  projectId: string,
   workspaces: HostVillageWorkspace[],
-): Promise<boolean> {
-  const existingProject = (await listReportProjectsFromDb()).find(
-    (item) => item.id === project.id,
-  );
-  if (!existingProject) return true;
+  allowedVillageIds: string[],
+): Promise<HostVillageWorkspace | undefined> {
+  const existingProject = await getReportProjectFromDb(projectId, {
+    villageIds: allowedVillageIds,
+  });
+  if (!existingProject?.villageId) return undefined;
 
-  return Boolean(findProjectWorkspace(existingProject, workspaces));
+  return workspaces.find(
+    (workspace) => workspace.villageId === existingProject.villageId,
+  );
 }
 
-function scopeProjectToHostWorkspace(
+function resolveNewProjectWorkspace(
   project: ReportProject,
   workspaces: HostVillageWorkspace[],
-): ReportProject | null {
-  const matchedWorkspace = findProjectWorkspace(project, workspaces);
-  if (matchedWorkspace) return attachWorkspace(project, matchedWorkspace);
+): HostVillageWorkspace | undefined {
+  const villageId = normalizeIdentifier(project.villageId);
+  const villageSlug = normalizeIdentifier(project.villageSlug);
+  const exactMatch = workspaces.find(
+    (workspace) =>
+      (villageId && normalizeIdentifier(workspace.villageId) === villageId) ||
+      (villageSlug && normalizeIdentifier(workspace.slug) === villageSlug),
+  );
+  if (exactMatch) return exactMatch;
 
-  if (workspaces.length === 1 && isGenericProjectWorkspace(project)) {
-    return attachWorkspace(project, workspaces[0]);
+  if (!villageId && !villageSlug && workspaces.length === 1) {
+    return workspaces[0];
   }
 
-  return null;
+  return undefined;
 }
 
 function attachWorkspace(
@@ -229,10 +233,7 @@ function attachWorkspace(
 ): ReportProject {
   return {
     ...project,
-    agencyName:
-      isGenericText(project.agencyName, ["운영 조직명", "채널"])
-        ? `${workspace.title} 운영팀`
-        : project.agencyName,
+    agencyName: project.agencyName.trim() || `${workspace.title} operations`,
     imageUrl: project.imageUrl || workspace.heroImage,
     villageId: workspace.villageId,
     villageName: workspace.title,
@@ -240,46 +241,18 @@ function attachWorkspace(
   };
 }
 
-function findProjectWorkspace(
-  project: ReportProject,
-  workspaces: HostVillageWorkspace[],
-): HostVillageWorkspace | undefined {
-  const villageId = normalizeIdentifier(project.villageId);
-  const villageSlug = normalizeIdentifier(project.villageSlug);
-  const villageName = normalizeText(project.villageName);
-  const agencyName = normalizeText(project.agencyName);
-
-  return workspaces.find((workspace) => {
-    const workspaceId = normalizeIdentifier(workspace.villageId);
-    const workspaceSlug = normalizeIdentifier(workspace.slug);
-    const workspaceTitle = normalizeText(workspace.title);
-
-    return (
-      Boolean(villageId && villageId === workspaceId) ||
-      Boolean(villageSlug && villageSlug === workspaceSlug) ||
-      Boolean(villageName && villageName === workspaceTitle) ||
-      Boolean(agencyName && agencyName.includes(workspaceTitle))
-    );
-  });
-}
-
-function isGenericProjectWorkspace(project: ReportProject): boolean {
-  return (
-    !normalizeIdentifier(project.villageId) &&
-    !normalizeIdentifier(project.villageSlug) &&
-    isGenericText(project.villageName, ["", "채널", "운영 조직명"])
-  );
-}
-
-function isGenericText(value: string | undefined, candidates: string[]): boolean {
-  const normalizedValue = normalizeText(value);
-  return candidates.some((candidate) => normalizedValue === normalizeText(candidate));
+function asRecord(value: unknown): Record<string, unknown> {
+  return value && typeof value === "object" && !Array.isArray(value)
+    ? (value as Record<string, unknown>)
+    : {};
 }
 
 function normalizeIdentifier(value: string | undefined): string {
   return (value ?? "").trim().toLowerCase();
 }
 
-function normalizeText(value: string | undefined): string {
-  return (value ?? "").replace(/\s+/gu, "").trim().toLowerCase();
+function isUuid(value: string): boolean {
+  return /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/iu.test(
+    value,
+  );
 }

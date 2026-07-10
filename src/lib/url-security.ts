@@ -2,8 +2,11 @@ const publicImageHosts = new Set([
   "cdn.imweb.me",
   "ctt-image.kakao.com",
   "images.unsplash.com",
+  "lh3.googleusercontent.com",
+  "nuvio.kr",
   "postcode.map.kakao.com",
   "upload.wikimedia.org",
+  "www.nuvio.kr",
 ]);
 
 const publicImageHostSuffixes = [

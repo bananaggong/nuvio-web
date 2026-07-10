@@ -1,9 +1,9 @@
 import { NextResponse } from "next/server";
 import {
   applyRateLimit,
-  enforceContentLength,
   enforceSameOrigin,
   isApiAuthError,
+  readJsonWithLimit,
   requireHostRole,
   type ApiAuthContext,
 } from "@/lib/api-security";
@@ -11,6 +11,7 @@ import type { ApplicationFormTemplate } from "@/lib/application-form-builder";
 import { asFormKind } from "@/lib/application-form-builder";
 import {
   ApplicationFormAccessError,
+  type HostFormScope,
   listApplicationFormTemplatesFromDb,
   normalizeApplicationFormTemplate,
   upsertApplicationFormTemplate,
@@ -38,11 +39,11 @@ export async function GET(request: Request) {
       requestedKind === "application" || requestedKind === "inquiry"
         ? asFormKind(requestedKind)
         : undefined;
-    const templates = await listApplicationFormTemplatesFromDb(
-      auth.profile.role === "admin"
-        ? { formKind }
-        : { formKind, ownerId: auth.user.id },
-    );
+    const hostScope = await resolveHostFormScope(auth);
+    const templates = await listApplicationFormTemplatesFromDb({
+      formKind,
+      hostScope,
+    });
     return NextResponse.json({ data: templates });
   } catch (error) {
     return NextResponse.json(
@@ -64,9 +65,6 @@ export async function POST(request: Request) {
   const crossOrigin = enforceSameOrigin(request);
   if (crossOrigin) return crossOrigin;
 
-  const payloadTooLarge = enforceContentLength(request, 256 * 1024);
-  if (payloadTooLarge) return payloadTooLarge;
-
   const limited = applyRateLimit(request, {
     key: "host-form:save",
     limit: 60,
@@ -75,12 +73,21 @@ export async function POST(request: Request) {
   if (limited) return limited;
 
   try {
-    const body = await request.json().catch(() => ({}));
+    const { body, response } = await readJsonWithLimit(request, 256 * 1024);
+    if (response) return response;
     const template = normalizeApplicationFormTemplate(body);
-    const scopedTemplate = await scopeTemplateToProgram(template, auth);
+    const hostScope = await resolveHostFormScope(auth);
+    if (auth.profile.role !== "admin" && hostScope?.villageIds.length === 0) {
+      throw new ApplicationFormAccessError();
+    }
+    const scopedTemplate = await scopeTemplateToProgram(
+      template,
+      auth,
+      hostScope?.villageIds,
+    );
     const savedTemplate = await upsertApplicationFormTemplate(scopedTemplate, {
+      hostScope,
       ownerId: auth.user.id,
-      restrictToOwner: auth.profile.role !== "admin",
     });
 
     return NextResponse.json({ data: savedTemplate }, { status: 201 });
@@ -104,7 +111,12 @@ export async function POST(request: Request) {
 async function scopeTemplateToProgram(
   template: ApplicationFormTemplate,
   auth: ApiAuthContext,
+  allowedVillageIds?: string[],
 ): Promise<ApplicationFormTemplate> {
+  if (auth.profile.role !== "admin" && !allowedVillageIds?.length) {
+    throw new ApplicationFormAccessError();
+  }
+
   const programId = template.programId?.trim();
   if (!programId) return template;
 
@@ -114,11 +126,7 @@ async function scopeTemplateToProgram(
   }
 
   if (auth.profile.role !== "admin") {
-    const allowedVillageIds = (await listManageableHostVillageWorkspaces(auth)).map(
-      (workspace) => workspace.villageId,
-    );
-
-    if (!program.villageId || !allowedVillageIds.includes(program.villageId)) {
+    if (!program.villageId || !allowedVillageIds?.includes(program.villageId)) {
       throw new Error(
         "이 계정에 연결된 채널 프로그램에만 신청서를 연결할 수 있습니다.",
       );
@@ -129,5 +137,17 @@ async function scopeTemplateToProgram(
     ...template,
     programId: program.id,
     programTitle: program.title,
+  };
+}
+
+async function resolveHostFormScope(
+  auth: ApiAuthContext,
+): Promise<HostFormScope | undefined> {
+  if (auth.profile.role === "admin") return undefined;
+
+  const workspaces = await listManageableHostVillageWorkspaces(auth);
+  return {
+    ownerId: auth.user.id,
+    villageIds: workspaces.map((workspace) => workspace.villageId),
   };
 }

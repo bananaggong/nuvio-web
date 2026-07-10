@@ -10,6 +10,7 @@ import {
   isMagazinePostStatus,
   type MagazinePostStatus,
 } from "@/lib/magazine-types";
+import { sanitizeJsonRecord } from "@/lib/safe-json";
 import { sanitizePublicImageUrl } from "@/lib/url-security";
 
 export function normalizeMagazinePostInput(body: unknown): MagazinePostInput {
@@ -60,9 +61,12 @@ function readString(value: unknown): string {
 }
 
 function readRecord(value: unknown): Record<string, unknown> {
-  return value && typeof value === "object" && !Array.isArray(value)
-    ? (value as Record<string, unknown>)
-    : {};
+  return sanitizeJsonRecord(value, {
+    maxArrayLength: 300,
+    maxDepth: 12,
+    maxObjectKeys: 1200,
+    maxStringLength: 5000,
+  });
 }
 
 function validateOptionalUrl(value: string): string {

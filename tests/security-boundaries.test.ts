@@ -1,0 +1,119 @@
+import assert from "node:assert/strict";
+import { readFileSync } from "node:fs";
+import test from "node:test";
+
+const root = new URL("../", import.meta.url);
+
+test("database migration revokes browser writes and protects profile identity", () => {
+  const migration = read("supabase/migrations/20260711000000_lock_browser_data_writes.sql");
+
+  assert.match(migration, /revoke all privileges on table/iu);
+  assert.match(migration, /drop policy if exists "Users can update their own profile"/u);
+  assert.match(migration, /prevent_browser_profile_identity_mutation/u);
+  assert.match(migration, /auth\.jwt\(\)[\s\S]*email/iu);
+  assert.doesNotMatch(migration, /contact_email.*any/iu);
+  assert.doesNotMatch(migration, /grant select on table/iu);
+  assert.match(migration, /Village members can read own assets/u);
+  assert.match(migration, /current_user_can_view_village_slug\(village_slug\)/u);
+  assert.match(migration, /drop policy if exists "Users can manage their application forms"/u);
+  assert.doesNotMatch(migration, /created_by\s*=\s*\(select auth\.uid\(\)\)/iu);
+});
+
+test("village and report mutations use server-resolved tenant identifiers", () => {
+  const villageRoute = read("src/app/api/host/villages/route.ts");
+  const villageDb = read("src/lib/village-db.ts");
+  const reportDb = read("src/lib/report-automation-db.ts");
+
+  assert.doesNotMatch(villageRoute, /upsertHostVillage/u);
+  assert.match(villageRoute, /updateHostVillage\(existingVillage\.id/u);
+  assert.match(villageDb, /pg_advisory_xact_lock/iu);
+  assert.match(villageDb, /createHostVillageWithOwner/u);
+  assert.match(reportDb, /reportVillageScope/u);
+  assert.match(reportDb, /allowedVillageIds/u);
+});
+
+test("report migration fails closed when legacy tenant mapping is unresolved", () => {
+  const migration = read(
+    "supabase/migrations/20260711001000_scope_report_projects_to_villages.sql",
+  );
+  const schema = read("src/db/schema.ts");
+  const announcementsBlock = schema.match(
+    /export const announcements[\s\S]*?export const magazinePosts/u,
+  )?.[0];
+
+  assert.doesNotMatch(migration, /\(project\.schema ->> 'villageId'\)::uuid/u);
+  assert.match(migration, /project\.program_id = program\.id/u);
+  assert.match(migration, /Cannot scope %s legacy report project/u);
+  assert.match(migration, /alter column village_id set not null/u);
+  assert.ok(announcementsBlock);
+  assert.doesNotMatch(announcementsBlock, /villageId/u);
+});
+
+test("host forms remain scoped to active village memberships", () => {
+  const formsRoute = read("src/app/api/host/forms/route.ts");
+  const formDeleteRoute = read("src/app/api/host/forms/[id]/route.ts");
+  const formDb = read("src/lib/application-form-db.ts");
+
+  assert.match(formsRoute, /resolveHostFormScope/u);
+  assert.match(formsRoute, /listManageableHostVillageWorkspaces/u);
+  assert.doesNotMatch(formsRoute, /restrictToOwner/u);
+  assert.match(formDeleteRoute, /hostScope/u);
+  assert.match(formDb, /canAccessFormWithinHostScope/u);
+  assert.match(formDb, /programsTable\.villageId/u);
+  assert.match(formDb, /villageIds\.length === 0/u);
+});
+
+test("public application responses do not return database application records", () => {
+  const route = read("src/app/api/program-applications/route.ts");
+
+  assert.match(route, /requireAuthenticatedUser/u);
+  assert.match(route, /getConfirmedAuthEmail/u);
+  assert.match(route, /acceptedApplicationResponse/u);
+  assert.doesNotMatch(route, /data:\s*existingApplication/u);
+  assert.doesNotMatch(route, /data:\s*application/u);
+});
+
+test("external dispatch and notification jobs are idempotent and literal", () => {
+  const sheet = read("src/lib/manual-dispatch-sheet.ts");
+  const notifications = read("src/lib/notification-db.ts");
+  const scheduledMessages = read("src/lib/scheduled-message-db.ts");
+
+  assert.doesNotMatch(sheet, /USER_ENTERED/u);
+  assert.match(sheet, /valueInputOption=RAW/u);
+  assert.match(sheet, /GOOGLE_MANUAL_MESSAGE_SPREADSHEET_ID is required/u);
+  assert.match(notifications, /program-reminder:[^`]*reminderKey/u);
+  assert.match(notifications, /idempotencyKey: event\.id/u);
+  assert.match(scheduledMessages, /idempotencyKey: row\.id/u);
+});
+
+test("API JSON bodies are parsed through the bounded helper", () => {
+  const routeFiles = [
+    "src/app/api/program-applications/route.ts",
+    "src/app/api/program-inquiries/route.ts",
+    "src/app/api/support/route.ts",
+    "src/app/api/host/villages/route.ts",
+    "src/app/api/host/scheduled-messages/route.ts",
+  ];
+
+  for (const path of routeFiles) {
+    const source = read(path);
+    assert.match(source, /readJsonWithLimit/u, path);
+    assert.doesNotMatch(source, /request\.json\(/u, path);
+  }
+});
+
+test("stored HTML render sinks retain an explicit sanitizer boundary", () => {
+  const magazinePage = read("src/app/magazine/[slug]/page.tsx");
+  const boardRenderer = read("src/components/channel-guest-board.tsx");
+  const mediaRenderer = read("src/components/village-media-pages.tsx");
+  const boardStorage = read("src/lib/channel-board-posts.ts");
+
+  assert.match(magazinePage, /sanitizeMagazineHtml\(post\.contentHtml\)/u);
+  assert.match(boardRenderer, /sanitizeMagazineHtml\(post\.body/u);
+  assert.match(mediaRenderer, /return sanitizeMagazineHtml\(firstBody\)/u);
+  assert.match(boardStorage, /body = sanitizeMagazineHtml/u);
+});
+
+function read(path: string): string {
+  return readFileSync(new URL(path, root), "utf8");
+}

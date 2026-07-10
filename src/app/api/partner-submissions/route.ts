@@ -1,9 +1,10 @@
 import { NextResponse } from "next/server";
 import {
+  applyPersistentRateLimit,
   applyRateLimit,
-  enforceContentLength,
   enforceSameOrigin,
   isApiAuthError,
+  readJsonWithLimit,
   requireAdminRole,
 } from "@/lib/api-security";
 import {
@@ -42,13 +43,10 @@ export async function GET(request: Request) {
 }
 
 export async function POST(request: Request) {
-  const payloadTooLarge = enforceContentLength(request, 48 * 1024);
-  if (payloadTooLarge) return payloadTooLarge;
-
   const crossOrigin = enforceSameOrigin(request);
   if (crossOrigin) return crossOrigin;
 
-  const limited = applyRateLimit(request, {
+  const limited = await applyPersistentRateLimit(request, {
     key: "partner-submission:create",
     limit: 3,
     windowMs: 15 * 60 * 1000,
@@ -56,12 +54,13 @@ export async function POST(request: Request) {
   if (limited) return limited;
 
   try {
-    const body = await request.json().catch(() => ({}));
-    const submission = await createPartnerSubmission(
+    const { body, response } = await readJsonWithLimit(request, 48 * 1024);
+    if (response) return response;
+    await createPartnerSubmission(
       normalizePartnerSubmissionInput(body),
     );
 
-    return NextResponse.json({ data: submission }, { status: 201 });
+    return NextResponse.json({ data: { accepted: true } }, { status: 202 });
   } catch (error) {
     return NextResponse.json(
       {

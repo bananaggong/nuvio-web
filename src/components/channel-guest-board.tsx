@@ -7,6 +7,7 @@ import {
 } from "@/components/channel-guest-gallery";
 import { NuvioEmptyState } from "@/components/nuvio-empty-state";
 import type { ChannelBoardPost } from "@/lib/channel-board-posts";
+import { sanitizeMagazineHtml } from "@/lib/magazine-content";
 import type { VillageNotice } from "@/lib/village-template";
 import { channelPath } from "@/lib/channel-routing";
 import type { Village } from "@/lib/village-types";
@@ -82,7 +83,7 @@ export function ChannelGuestBoardDetailPage({
 }) {
   const homeHref = channelPath(village.slug);
   const boardHref = `${homeHref}/notice`;
-  const bodyHtml = post.body?.trim();
+  const bodyHtml = sanitizeMagazineHtml(post.body?.trim() ?? "");
 
   return (
     <div

@@ -4,6 +4,7 @@ import {
   type LoginIntent,
 } from "@/components/login-panel";
 import { createSeoMetadata } from "@/lib/seo";
+import { isSafeRelativePath } from "@/lib/url-security";
 
 export const metadata: Metadata = createSeoMetadata({
   title: "로그인",
@@ -35,8 +36,7 @@ function getFirstParam(value: string | string[] | undefined) {
 }
 
 function getSafeNextPath(value: string | undefined): string | null {
-  if (!value || !value.startsWith("/") || value.startsWith("//")) return null;
-  return value;
+  return value && isSafeRelativePath(value) ? value : null;
 }
 
 function normalizeIntent(value: string | undefined): LoginIntent | null {

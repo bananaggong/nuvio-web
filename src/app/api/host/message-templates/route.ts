@@ -2,9 +2,9 @@ import { NextResponse } from "next/server";
 import {
   apiError,
   applyRateLimit,
-  enforceContentLength,
   enforceSameOrigin,
   isApiAuthError,
+  readJsonWithLimit,
   requireHostRole,
 } from "@/lib/api-security";
 import {
@@ -49,9 +49,6 @@ export async function POST(request: Request) {
   const crossOrigin = enforceSameOrigin(request);
   if (crossOrigin) return crossOrigin;
 
-  const payloadTooLarge = enforceContentLength(request, 32 * 1024);
-  if (payloadTooLarge) return payloadTooLarge;
-
   const limited = applyRateLimit(request, {
     key: "host-message-template:save",
     limit: 120,
@@ -60,7 +57,9 @@ export async function POST(request: Request) {
   if (limited) return limited;
 
   try {
-    const payload = await request.json().catch(() => ({}));
+    const { body, response } = await readJsonWithLimit(request, 32 * 1024);
+    if (response) return response;
+    const payload = body as Parameters<typeof upsertHostMessageTemplate>[0];
     const template = await upsertHostMessageTemplate(payload, {
       ownerId: auth.user.id,
     });
@@ -81,9 +80,6 @@ export async function DELETE(request: Request) {
   const crossOrigin = enforceSameOrigin(request);
   if (crossOrigin) return crossOrigin;
 
-  const payloadTooLarge = enforceContentLength(request, 8 * 1024);
-  if (payloadTooLarge) return payloadTooLarge;
-
   const limited = applyRateLimit(request, {
     key: "host-message-template:delete",
     limit: 60,
@@ -92,7 +88,9 @@ export async function DELETE(request: Request) {
   if (limited) return limited;
 
   try {
-    const payload = (await request.json().catch(() => ({}))) as { id?: unknown };
+    const { body, response } = await readJsonWithLimit(request, 8 * 1024);
+    if (response) return response;
+    const payload = body as { id?: unknown };
     const id = typeof payload.id === "string" ? payload.id.trim() : "";
     const result = await deleteHostMessageTemplate(id, {
       ownerId: auth.user.id,

@@ -1,9 +1,9 @@
 import { NextResponse } from "next/server";
 import {
   applyRateLimit,
-  enforceContentLength,
   enforceSameOrigin,
   isApiAuthError,
+  readJsonWithLimit,
   requireHostRole,
 } from "@/lib/api-security";
 import {
@@ -51,9 +51,6 @@ export async function POST(request: Request) {
   const crossOrigin = enforceSameOrigin(request);
   if (crossOrigin) return crossOrigin;
 
-  const payloadTooLarge = enforceContentLength(request, 64 * 1024);
-  if (payloadTooLarge) return payloadTooLarge;
-
   const limited = applyRateLimit(request, {
     key: "host-message-campaign:save",
     limit: 60,
@@ -62,7 +59,8 @@ export async function POST(request: Request) {
   if (limited) return limited;
 
   try {
-    const body = await request.json().catch(() => ({}));
+    const { body, response } = await readJsonWithLimit(request, 64 * 1024);
+    if (response) return response;
     const campaign = normalizeMessageCampaign(body);
     const savedCampaign = await upsertMessageCampaign(campaign, {
       ownerId: auth.user.id,

@@ -1,7 +1,8 @@
+import { randomUUID } from "node:crypto";
 import { NextResponse } from "next/server";
 import {
   apiError,
-  applyRateLimit,
+  applyPersistentRateLimit,
   enforceContentLength,
   enforceSameOrigin,
   type ApiAuthContext,
@@ -9,14 +10,18 @@ import {
   requireHostRole,
 } from "@/lib/api-security";
 import { listManageableHostVillageWorkspaces } from "@/lib/host-village-access";
-import { validateImageUploadFile } from "@/lib/image-upload-security";
+import {
+  serverUploadMaxFileBytes,
+  serverUploadMaxRequestBytes,
+  validateImageUploadFile,
+} from "@/lib/image-upload-security";
 import { getProgramRecordByIdentifier } from "@/lib/program-db";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 
 export const runtime = "nodejs";
 
 const bucketName = "program-assets";
-const maxUploadBytes = 5 * 1024 * 1024;
+const maxUploadBytes = serverUploadMaxFileBytes;
 
 export async function POST(request: Request) {
   const auth = await requireHostRole();
@@ -25,10 +30,11 @@ export async function POST(request: Request) {
   const crossOrigin = enforceSameOrigin(request);
   if (crossOrigin) return crossOrigin;
 
-  const payloadTooLarge = enforceContentLength(request, 8 * 1024 * 1024);
+  const payloadTooLarge = enforceContentLength(request, serverUploadMaxRequestBytes);
   if (payloadTooLarge) return payloadTooLarge;
 
-  const limited = applyRateLimit(request, {
+  const limited = await applyPersistentRateLimit(request, {
+    identity: auth.user.id,
     key: "host-program-asset:upload",
     limit: 30,
     windowMs: 10 * 60 * 1000,
@@ -68,7 +74,7 @@ export async function POST(request: Request) {
       sanitizePathSegment(auth.user.id),
       programId,
       usage,
-      `${Date.now()}-${safeName}`,
+      `${randomUUID()}-${safeName}`,
     ].join("/");
     const admin = createSupabaseAdminClient();
 
@@ -87,7 +93,7 @@ export async function POST(request: Request) {
       .from(bucketName)
       .upload(objectPath, file, {
         contentType: validatedFile.contentType,
-        upsert: true,
+        upsert: false,
       });
 
     if (uploadError) throw uploadError;

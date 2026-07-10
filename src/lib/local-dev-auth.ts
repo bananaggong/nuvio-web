@@ -6,7 +6,9 @@ import {
 } from "@/lib/auth-profile-db";
 import type { ApiAuthContext } from "@/lib/api-security";
 
-const localDevEmail = "intume0b@gmail.com";
+const localDevEmail =
+  process.env.NUVIO_LOCAL_DEV_EMAIL?.trim().toLowerCase() ||
+  "local-dev@nuvio.invalid";
 const fallbackLocalDevUserId = "00000000-0000-4000-8000-000000000001";
 
 export async function getLocalDevAuthContext(
@@ -25,6 +27,7 @@ export async function isLocalDevAuthRequest(
   request?: Request,
 ): Promise<boolean> {
   if (process.env.NODE_ENV !== "development") return false;
+  if (process.env.NUVIO_ENABLE_LOCAL_DEV_AUTH !== "1") return false;
   if (process.env.NUVIO_DISABLE_LOCAL_DEV_AUTH === "1") return false;
 
   const host = await getRequestHost(request);
@@ -39,6 +42,7 @@ function buildLocalDevUser(userId: string): User {
     aud: "authenticated",
     role: "authenticated",
     email: localDevEmail,
+    email_confirmed_at: timestamp,
     app_metadata: {
       provider: "local-dev",
       providers: ["local-dev"],

@@ -7,11 +7,12 @@ import {
 } from "@/lib/auth-profile-db";
 import {
   applyRateLimit,
-  enforceContentLength,
   enforceSameOrigin,
   isApiAuthError,
+  readJsonWithLimit,
   requireAuthenticatedUser,
 } from "@/lib/api-security";
+import { sanitizePublicImageUrl } from "@/lib/url-security";
 
 export const runtime = "nodejs";
 
@@ -41,9 +42,6 @@ export async function GET(request: Request) {
 }
 
 export async function PATCH(request: Request) {
-  const payloadTooLarge = enforceContentLength(request, 16 * 1024);
-  if (payloadTooLarge) return payloadTooLarge;
-
   const crossOrigin = enforceSameOrigin(request);
   if (crossOrigin) return crossOrigin;
 
@@ -58,7 +56,9 @@ export async function PATCH(request: Request) {
     const auth = await requireAuthenticatedUser();
     if (isApiAuthError(auth)) return auth.response;
 
-    const body = (await request.json().catch(() => ({}))) as Record<
+    const { body: rawBody, response } = await readJsonWithLimit(request, 16 * 1024);
+    if (response) return response;
+    const body = rawBody as Record<
       string,
       unknown
     >;
@@ -143,11 +143,7 @@ function normalizeAvatarUrl(value: unknown): string | undefined {
   if (normalized === undefined || !normalized) return normalized;
 
   try {
-    const url = new URL(normalized);
-    if (url.protocol !== "https:" && url.protocol !== "http:") {
-      throw new Error("Invalid avatar URL.");
-    }
-    return url.toString();
+    return sanitizePublicImageUrl(normalized, { allowRelative: true });
   } catch {
     throw new Error("Invalid avatar URL.");
   }

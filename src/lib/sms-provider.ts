@@ -5,6 +5,7 @@ import {
 
 export type SmsSendInput = {
   body: string;
+  idempotencyKey?: string;
   to: string;
 };
 
@@ -38,6 +39,7 @@ async function sendWebhookSms(input: SmsSendInput): Promise<SmsSendResult> {
   const headers: Record<string, string> = {
     "Content-Type": "application/json",
   };
+  if (input.idempotencyKey) headers["Idempotency-Key"] = input.idempotencyKey;
   const authHeader = process.env.SMS_WEBHOOK_AUTH_HEADER?.trim();
   const authToken = process.env.SMS_WEBHOOK_AUTH_TOKEN?.trim();
   if (authHeader && authToken) headers[authHeader] = authToken;
@@ -46,6 +48,7 @@ async function sendWebhookSms(input: SmsSendInput): Promise<SmsSendResult> {
     url,
     {
       body: JSON.stringify({
+        idempotencyKey: input.idempotencyKey,
         message: input.body,
         to: input.to,
       }),
@@ -57,13 +60,11 @@ async function sendWebhookSms(input: SmsSendInput): Promise<SmsSendResult> {
   );
 
   if (!response.ok) {
-    const text = await readLimitedResponseText(
+    await readLimitedResponseText(
       response,
       SMS_WEBHOOK_MAX_ERROR_BYTES,
     ).catch(() => "");
-    throw new Error(
-      `SMS webhook failed with ${response.status}${text ? `: ${text}` : ""}`,
-    );
+    throw new Error(`SMS webhook failed with ${response.status}.`);
   }
 
   const payloadText = await readLimitedResponseText(

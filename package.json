@@ -7,6 +7,7 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
+    "test:security": "node --test tests/browser-push-security.test.mjs tests/image-upload-security.test.mjs && tsx --test tests/content-security.test.ts tests/request-security.test.ts tests/security-boundaries.test.ts",
     "verify:host-program-flow": "node scripts/verify-host-program-flow.mjs",
     "verify:overflow": "node scripts/verify-route-overflow.mjs",
     "db:generate": "drizzle-kit generate",
@@ -36,11 +37,12 @@
     "drizzle-orm": "^0.45.2",
     "fast-xml-parser": "^5.7.2",
     "lucide-react": "^1.14.0",
-    "next": "16.2.4",
+    "next": "16.2.10",
     "postgres": "^3.4.9",
     "react": "19.2.4",
     "react-dom": "19.2.4",
     "sanitize-html": "^2.17.4",
+    "sharp": "0.34.5",
     "web-push": "^3.6.7"
   },
   "devDependencies": {
@@ -50,9 +52,14 @@
     "@types/react-dom": "^19",
     "drizzle-kit": "^0.31.10",
     "eslint": "^9",
-    "eslint-config-next": "16.2.4",
+    "eslint-config-next": "16.2.10",
     "supabase": "^2.98.0",
     "tailwindcss": "^4",
+    "tsx": "4.23.0",
     "typescript": "^5"
+  },
+  "overrides": {
+    "esbuild": "0.28.1",
+    "postcss": "8.5.10"
   }
 }

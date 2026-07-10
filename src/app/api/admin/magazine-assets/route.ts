@@ -1,19 +1,24 @@
+import { randomUUID } from "node:crypto";
 import { NextResponse } from "next/server";
 import {
   apiError,
-  applyRateLimit,
+  applyPersistentRateLimit,
   enforceContentLength,
   enforceSameOrigin,
   isApiAuthError,
   requireAdminRole,
 } from "@/lib/api-security";
-import { validateImageUploadFile } from "@/lib/image-upload-security";
+import {
+  serverUploadMaxFileBytes,
+  serverUploadMaxRequestBytes,
+  validateImageUploadFile,
+} from "@/lib/image-upload-security";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 
 export const runtime = "nodejs";
 
 const bucketName = "magazine-assets";
-const maxUploadBytes = 5 * 1024 * 1024;
+const maxUploadBytes = serverUploadMaxFileBytes;
 const allowedUploadTypes = new Set([
   "image/gif",
   "image/jpeg",
@@ -28,10 +33,11 @@ export async function POST(request: Request) {
   const crossOrigin = enforceSameOrigin(request);
   if (crossOrigin) return crossOrigin;
 
-  const payloadTooLarge = enforceContentLength(request, 8 * 1024 * 1024);
+  const payloadTooLarge = enforceContentLength(request, serverUploadMaxRequestBytes);
   if (payloadTooLarge) return payloadTooLarge;
 
-  const limited = applyRateLimit(request, {
+  const limited = await applyPersistentRateLimit(request, {
+    identity: auth.user.id,
     key: "admin-magazine-asset:upload",
     limit: 20,
     windowMs: 10 * 60 * 1000,
@@ -53,7 +59,7 @@ export async function POST(request: Request) {
       validatedFile.contentType,
       "magazine-image",
     );
-    const objectPath = `${auth.user.id}/${Date.now()}-${safeName}`;
+    const objectPath = `${auth.user.id}/${randomUUID()}-${safeName}`;
     const admin = createSupabaseAdminClient();
 
     const { data: buckets } = await admin.storage.listBuckets();
@@ -71,7 +77,7 @@ export async function POST(request: Request) {
       .from(bucketName)
       .upload(objectPath, file, {
         contentType: validatedFile.contentType,
-        upsert: true,
+        upsert: false,
       });
 
     if (uploadError) {

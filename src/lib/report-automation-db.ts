@@ -1,4 +1,4 @@
-import { and, desc, eq } from "drizzle-orm";
+import { and, desc, eq, inArray, sql } from "drizzle-orm";
 import { getDb } from "@/db/client";
 import { reportProjects } from "@/db/schema";
 import {
@@ -13,6 +13,7 @@ type DatabaseReportStatus = ReportProjectRow["status"];
 
 export async function listReportProjectsFromDb(options: {
   ownerId?: string;
+  villageIds?: string[];
 } = {}): Promise<ReportProject[]> {
   let query = getDb()
     .select()
@@ -22,6 +23,9 @@ export async function listReportProjectsFromDb(options: {
   if (options.ownerId) {
     query = query.where(eq(reportProjects.createdBy, options.ownerId));
   }
+  if (options.villageIds) {
+    query = query.where(reportVillageScope(options.villageIds));
+  }
 
   const rows = await query.orderBy(desc(reportProjects.updatedAt)).limit(200);
 
@@ -30,13 +34,21 @@ export async function listReportProjectsFromDb(options: {
 
 export async function getReportProjectFromDb(
   projectId: string,
+  options: { villageIds?: string[] } = {},
 ): Promise<ReportProject | null> {
   if (!isUuid(projectId)) return null;
 
   const [row] = await getDb()
     .select()
     .from(reportProjects)
-    .where(eq(reportProjects.id, projectId))
+    .where(
+      options.villageIds
+        ? and(
+            eq(reportProjects.id, projectId),
+            reportVillageScope(options.villageIds),
+          )
+        : eq(reportProjects.id, projectId),
+    )
     .limit(1);
 
   return row ? mapReportRowToProject(row) : null;
@@ -44,9 +56,21 @@ export async function getReportProjectFromDb(
 
 export async function upsertReportProject(
   project: ReportProject,
-  options: { ownerId?: string; restrictToOwner?: boolean } = {},
+  options: {
+    allowedVillageIds?: string[];
+    ownerId?: string;
+    villageId: string;
+  },
 ): Promise<ReportProject> {
-  const insertValue = mapProjectToInsert(project, options.ownerId);
+  if (!isUuid(options.villageId)) {
+    throw new Error("Report project requires a valid village workspace.");
+  }
+  assertVillageScope(options.villageId, options.allowedVillageIds);
+  const insertValue = mapProjectToInsert(
+    project,
+    options.ownerId,
+    options.villageId,
+  );
   const now = new Date();
 
   if (isUuid(project.id)) {
@@ -54,10 +78,10 @@ export async function upsertReportProject(
       .update(reportProjects)
       .set({ ...insertValue, updatedAt: now })
       .where(
-        options.ownerId && options.restrictToOwner
+        options.allowedVillageIds
           ? and(
               eq(reportProjects.id, project.id),
-              eq(reportProjects.createdBy, options.ownerId),
+              reportVillageScope(options.allowedVillageIds),
             )
           : eq(reportProjects.id, project.id),
       )
@@ -65,12 +89,7 @@ export async function upsertReportProject(
 
     if (updatedRow) return mapReportRowToProject(updatedRow);
 
-    const [createdRow] = await getDb()
-      .insert(reportProjects)
-      .values({ ...insertValue, id: project.id })
-      .returning();
-
-    return mapReportRowToProject(createdRow);
+    throw new Error("Report project was not found in the allowed workspace.");
   }
 
   const [row] = await getDb()
@@ -83,17 +102,17 @@ export async function upsertReportProject(
 
 export async function deleteReportProjectFromDb(
   projectId: string,
-  options: { ownerId?: string; restrictToOwner?: boolean } = {},
+  options: { villageIds?: string[] } = {},
 ): Promise<ReportProject | null> {
   if (!isUuid(projectId)) return null;
 
   const [deletedRow] = await getDb()
     .delete(reportProjects)
     .where(
-      options.ownerId && options.restrictToOwner
+      options.villageIds
         ? and(
             eq(reportProjects.id, projectId),
-            eq(reportProjects.createdBy, options.ownerId),
+            reportVillageScope(options.villageIds),
           )
         : eq(reportProjects.id, projectId),
     )
@@ -112,10 +131,12 @@ export function normalizeReportProject(input: unknown): ReportProject {
 
 function mapProjectToInsert(
   project: ReportProject,
-  ownerId?: string,
+  ownerId: string | undefined,
+  villageId: string,
 ): ReportProjectInsert {
   return {
     createdBy: ownerId,
+    villageId,
     programId: isUuid(project.programId ?? "")
       ? project.programId
       : project.connectedProgramIds.find(isUuid) ?? null,
@@ -158,8 +179,27 @@ function mapReportRowToProject(row: ReportProjectRow): ReportProject {
     status: mapDatabaseStatusToReport(row.status),
     title: asString(payload.title) || row.name,
     updatedAt: row.updatedAt.toISOString(),
+    villageId: row.villageId ?? asString(payload.villageId),
     villageName: asString(payload.villageName) || row.organizationName,
   });
+}
+
+function reportVillageScope(villageIds: string[]) {
+  const normalizedIds = villageIds.filter(isUuid);
+  return normalizedIds.length > 0
+    ? inArray(reportProjects.villageId, normalizedIds)
+    : sql`false`;
+}
+
+function assertVillageScope(
+  villageId: string,
+  allowedVillageIds: string[] | undefined,
+) {
+  if (!allowedVillageIds) return;
+
+  if (!allowedVillageIds.includes(villageId)) {
+    throw new Error("Report project is outside the allowed workspace.");
+  }
 }
 
 function normalizeSchema(value: unknown): Record<string, unknown> {

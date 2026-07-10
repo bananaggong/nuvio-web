@@ -2,11 +2,12 @@ import { NextResponse } from "next/server";
 import {
   apiError,
   applyRateLimit,
-  enforceContentLength,
   enforceSameOrigin,
   isApiAuthError,
+  readJsonWithLimit,
   requireAuthenticatedUser,
 } from "@/lib/api-security";
+import { isSupportedBrowserPushEndpoint } from "@/lib/browser-push";
 import {
   deleteAllBrowserPushSubscriptions,
   deleteBrowserPushSubscription,
@@ -45,9 +46,6 @@ export async function POST(request: Request) {
   const crossOrigin = enforceSameOrigin(request);
   if (crossOrigin) return crossOrigin;
 
-  const payloadTooLarge = enforceContentLength(request, MAX_PUSH_SUBSCRIPTION_BYTES);
-  if (payloadTooLarge) return payloadTooLarge;
-
   const limited = applyRateLimit(request, {
     key: "me-push-subscriptions:post",
     limit: 30,
@@ -55,7 +53,12 @@ export async function POST(request: Request) {
   });
   if (limited) return limited;
 
-  const body = (await request.json().catch(() => ({}))) as Record<string, unknown>;
+  const { body: rawBody, response } = await readJsonWithLimit(
+    request,
+    MAX_PUSH_SUBSCRIPTION_BYTES,
+  );
+  if (response) return response;
+  const body = rawBody as Record<string, unknown>;
   const parsed = parseBrowserPushSubscription(body);
   if (!parsed) {
     return apiError("Invalid push subscription.", 400);
@@ -63,7 +66,7 @@ export async function POST(request: Request) {
 
   const subscription = await upsertBrowserPushSubscription({
     ...parsed,
-    userAgent: request.headers.get("user-agent") ?? "",
+    userAgent: (request.headers.get("user-agent") ?? "").slice(0, 512),
     userId: auth.user.id,
   });
 
@@ -77,9 +80,6 @@ export async function DELETE(request: Request) {
   const crossOrigin = enforceSameOrigin(request);
   if (crossOrigin) return crossOrigin;
 
-  const payloadTooLarge = enforceContentLength(request, MAX_PUSH_SUBSCRIPTION_BYTES);
-  if (payloadTooLarge) return payloadTooLarge;
-
   const limited = applyRateLimit(request, {
     key: "me-push-subscriptions:delete",
     limit: 30,
@@ -87,7 +87,12 @@ export async function DELETE(request: Request) {
   });
   if (limited) return limited;
 
-  const body = (await request.json().catch(() => ({}))) as Record<string, unknown>;
+  const { body: rawBody, response } = await readJsonWithLimit(
+    request,
+    MAX_PUSH_SUBSCRIPTION_BYTES,
+  );
+  if (response) return response;
+  const body = rawBody as Record<string, unknown>;
   const endpoint = typeof body.endpoint === "string" ? body.endpoint.trim() : "";
   const deletedCount = endpoint
     ? await deleteBrowserPushSubscription(auth.user.id, endpoint)
@@ -119,7 +124,7 @@ function parseBrowserPushSubscription(value: Record<string, unknown>):
   const auth = typeof keys.auth === "string" ? keys.auth.trim() : "";
 
   if (!endpoint || !p256dh || !auth) return null;
-  if (!endpoint.startsWith("https://")) return null;
+  if (!isSupportedBrowserPushEndpoint(endpoint)) return null;
   if (endpoint.length > 2000 || p256dh.length > 500 || auth.length > 500) {
     return null;
   }

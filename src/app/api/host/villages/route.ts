@@ -1,24 +1,26 @@
 import { NextResponse } from "next/server";
 import {
   apiError,
+  applyPersistentRateLimit,
   applyRateLimit,
-  enforceContentLength,
   enforceSameOrigin,
   isApiAuthError,
+  readJsonWithLimit,
   requireAuthenticatedUser,
   requireHostRole,
 } from "@/lib/api-security";
+import { getConfirmedAuthEmail } from "@/lib/auth-email";
 import {
   canManageHostVillage,
-  ensureOwnerMembershipForVillage,
   listHostVillageWorkspaces,
 } from "@/lib/host-village-access";
-import { updateUserProfile } from "@/lib/auth-profile-db";
 import {
+  createHostVillageWithOwner,
   getHostVillageBySlug,
+  HostVillageMutationError,
   listHostVillagesFromDb,
   normalizeHostVillage,
-  upsertHostVillage,
+  updateHostVillage,
 } from "@/lib/village-db";
 
 export const runtime = "nodejs";
@@ -97,17 +99,20 @@ export async function POST(request: Request) {
     const crossOrigin = enforceSameOrigin(request);
     if (crossOrigin) return crossOrigin;
 
-    const contentLengthError = enforceContentLength(request, MAX_VILLAGE_PAYLOAD_BYTES);
-    if (contentLengthError) return contentLengthError;
-
-    const rateLimitError = applyRateLimit(request, {
+    const rateLimitError = await applyPersistentRateLimit(request, {
+      identity: auth.user.id,
       key: "host-villages-post",
       limit: 30,
       windowMs: 15 * 60 * 1000,
     });
     if (rateLimitError) return rateLimitError;
 
-    const body = await request.json().catch(() => ({}));
+    const { body, response } = await readJsonWithLimit(
+      request,
+      MAX_VILLAGE_PAYLOAD_BYTES,
+    );
+    if (response) return response;
+
     const village = normalizeHostVillage(body);
     const existingVillage = await getHostVillageBySlug(village.slug);
     const isCreatingVillage = !existingVillage;
@@ -132,16 +137,24 @@ export async function POST(request: Request) {
       }
     }
 
-    const savedVillage = await upsertHostVillage(village);
-    if (isCreatingVillage) {
-      await ensureOwnerMembershipForVillage(savedVillage.id, auth, {
-        required: true,
-      });
-      await updateUserProfile(auth.user.id, { showHostCenterNav: true });
+    const savedVillage = existingVillage
+      ? await updateHostVillage(existingVillage.id, village)
+      : await createHostVillageWithOwner(village, {
+          accountEmail: getConfirmedAuthEmail(auth.user),
+          isAdmin: auth.profile.role === "admin",
+          userId: auth.user.id,
+        });
+
+    return NextResponse.json(
+      { data: savedVillage },
+      { status: isCreatingVillage ? 201 : 200 },
+    );
+  } catch (error) {
+    if (error instanceof HostVillageMutationError) {
+      const status = error.code === "not_found" ? 404 : 409;
+      return apiError(error.message, status);
     }
 
-    return NextResponse.json({ data: savedVillage }, { status: 201 });
-  } catch (error) {
     return NextResponse.json(
       {
         error:

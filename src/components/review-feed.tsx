@@ -97,6 +97,11 @@ export function ReviewFeed({ reviews, showWriteButton = false }: { reviews: Revi
                         {review.badge}
                       </span>
                     ) : null}
+                    {review.source && review.source !== "participant" ? (
+                      <span className="rounded-md border border-slate-200 bg-slate-50 px-2 py-1 text-xs font-black text-slate-600">
+                        {reviewSourceLabel(review.source)}
+                      </span>
+                    ) : null}
                   </div>
                   {programTitle ? (
                     <p className="mt-2 text-sm font-bold text-slate-500">
@@ -171,4 +176,11 @@ export function ReviewFeed({ reviews, showWriteButton = false }: { reviews: Revi
       </section>
     </div>
   );
+}
+
+function reviewSourceLabel(source: NonNullable<Review["source"]>): string {
+  if (source === "host") return "Host-authored";
+  if (source === "admin") return "NUVIO editorial";
+  if (source === "imported") return "Imported review";
+  return "Participant review";
 }

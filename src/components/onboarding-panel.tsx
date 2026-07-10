@@ -15,6 +15,7 @@ import {
 } from "lucide-react";
 import { useEffect, useMemo, useState, type FormEvent, type ReactNode } from "react";
 import { AuthHeader } from "@/components/auth-ui";
+import { isSafeRelativePath } from "@/lib/url-security";
 
 type OnboardingIntent = "participant" | "host";
 type OnboardingStep = 1 | 2 | 3;
@@ -706,8 +707,7 @@ function normalizeIntent(value: string | null): OnboardingIntent | null {
 }
 
 function getSafeNextPath(value: string | null): string | null {
-  if (!value || !value.startsWith("/") || value.startsWith("//")) return null;
-  return value;
+  return value && isSafeRelativePath(value) ? value : null;
 }
 
 function getDestinationPath(intent: OnboardingIntent, nextPath: string | null) {

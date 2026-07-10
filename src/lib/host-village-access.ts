@@ -10,6 +10,7 @@ import {
   getUserProfile,
   type AuthProfile,
 } from "@/lib/auth-profile-db";
+import { getConfirmedAuthEmail } from "@/lib/auth-email";
 import type { ApiAuthContext } from "@/lib/api-security";
 import { getLocalDevAuthContext } from "@/lib/local-dev-auth";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
@@ -84,10 +85,7 @@ export async function getCurrentHostSession(): Promise<ApiAuthContext | null> {
   try {
     const localDevAuth = await getLocalDevAuthContext();
     if (localDevAuth) {
-      await activatePendingHostVillageMemberships(
-        localDevAuth.profile.id,
-        localDevAuth.profile.email,
-      );
+      await activatePendingHostVillageMemberships(localDevAuth.user);
       return localDevAuth;
     }
 
@@ -99,7 +97,7 @@ export async function getCurrentHostSession(): Promise<ApiAuthContext | null> {
     if (!user) return null;
 
     const profile = (await getUserProfile(user.id)) ?? (await ensureUserProfile(user));
-    await activatePendingHostVillageMemberships(profile.id, profile.email);
+    await activatePendingHostVillageMemberships(user);
 
     return { profile, user };
   } catch {
@@ -110,7 +108,7 @@ export async function getCurrentHostSession(): Promise<ApiAuthContext | null> {
 export async function listHostVillageWorkspaces(
   auth: ApiAuthContext,
 ): Promise<HostVillageWorkspace[]> {
-  await activatePendingHostVillageMemberships(auth.profile.id, auth.profile.email);
+  await activatePendingHostVillageMemberships(auth.user);
 
   try {
     const isAdmin = auth.profile.role === "admin";
@@ -211,7 +209,7 @@ export async function canManageHostVillage(
   villageSlug: string,
 ): Promise<boolean> {
   if (auth.profile.role === "admin") return true;
-  await activatePendingHostVillageMemberships(auth.profile.id, auth.profile.email);
+  await activatePendingHostVillageMemberships(auth.user);
 
   try {
     const [row] = await getDb()
@@ -236,11 +234,37 @@ export async function canManageHostVillage(
   }
 }
 
+export async function canAdminHostVillage(
+  auth: ApiAuthContext,
+  villageSlug: string,
+): Promise<boolean> {
+  if (auth.profile.role === "admin") return true;
+  await activatePendingHostVillageMemberships(auth.user);
+
+  try {
+    const [row] = await getDb()
+      .select({ role: hostVillageMemberships.role })
+      .from(hostVillageMemberships)
+      .innerJoin(villages, eq(hostVillageMemberships.villageId, villages.id))
+      .where(
+        and(
+          eq(villages.slug, normalizeSlug(villageSlug)),
+          eq(hostVillageMemberships.userId, auth.user.id),
+          eq(hostVillageMemberships.status, "active"),
+        ),
+      )
+      .limit(1);
+
+    return row?.role === "owner" || row?.role === "manager";
+  } catch {
+    return false;
+  }
+}
+
 export async function activatePendingHostVillageMemberships(
-  userId: string,
-  email: string,
+  user: User,
 ): Promise<void> {
-  const accountEmail = normalizeEmail(email);
+  const accountEmail = getConfirmedAuthEmail(user);
   if (!accountEmail) return;
 
   try {
@@ -251,7 +275,7 @@ export async function activatePendingHostVillageMemberships(
         activatedAt: now,
         status: "active",
         updatedAt: now,
-        userId,
+        userId: user.id,
       })
       .where(
         and(
@@ -262,46 +286,6 @@ export async function activatePendingHostVillageMemberships(
       );
   } catch {
     // Older environments may not have the membership table yet.
-  }
-}
-
-export async function ensureOwnerMembershipForVillage(
-  villageId: string,
-  auth: ApiAuthContext,
-  options: { required?: boolean } = {},
-): Promise<void> {
-  const accountEmail = normalizeEmail(auth.profile.email);
-  if (!accountEmail) return;
-
-  try {
-    const now = new Date();
-    await getDb()
-      .insert(hostVillageMemberships)
-      .values({
-        accountEmail,
-        activatedAt: now,
-        role: "owner",
-        status: "active",
-        userId: auth.user.id,
-        villageId,
-      })
-      .onConflictDoUpdate({
-        target: [
-          hostVillageMemberships.villageId,
-          hostVillageMemberships.accountEmail,
-        ],
-        set: {
-          activatedAt: now,
-          role: "owner",
-          status: "active",
-          updatedAt: now,
-          userId: auth.user.id,
-        },
-      });
-  } catch (error) {
-    if (options.required) throw error;
-
-    // Membership creation should not block village saving while migrations roll out.
   }
 }
 
@@ -322,10 +306,6 @@ function mapWorkspaceRow(row: WorkspaceRow): HostVillageWorkspace {
     title: row.title,
     villageId: row.villageId,
   };
-}
-
-function normalizeEmail(value: string): string {
-  return value.trim().toLowerCase();
 }
 
 function normalizeSlug(value: string): string {

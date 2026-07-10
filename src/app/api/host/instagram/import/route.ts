@@ -2,9 +2,9 @@ import { NextResponse } from "next/server";
 import {
   apiError,
   applyRateLimit,
-  enforceContentLength,
   enforceSameOrigin,
   isApiAuthError,
+  readJsonWithLimit,
   requireHostRole,
 } from "@/lib/api-security";
 import { canManageHostVillage } from "@/lib/host-village-access";
@@ -34,12 +34,6 @@ export async function POST(request: Request) {
     const crossOrigin = enforceSameOrigin(request);
     if (crossOrigin) return crossOrigin;
 
-    const contentLengthError = enforceContentLength(
-      request,
-      MAX_INSTAGRAM_IMPORT_PAYLOAD_BYTES,
-    );
-    if (contentLengthError) return contentLengthError;
-
     const rateLimitError = applyRateLimit(request, {
       key: "host-instagram-import",
       limit: 10,
@@ -47,7 +41,12 @@ export async function POST(request: Request) {
     });
     if (rateLimitError) return rateLimitError;
 
-    const body = (await request.json().catch(() => ({}))) as {
+    const { body: rawBody, response } = await readJsonWithLimit(
+      request,
+      MAX_INSTAGRAM_IMPORT_PAYLOAD_BYTES,
+    );
+    if (response) return response;
+    const body = rawBody as {
       villageSlug?: unknown;
       limit?: unknown;
     };

@@ -5,6 +5,11 @@ import {
   villagePageSections,
 } from "@/db/schema";
 import { isDemoModeEnabled } from "@/lib/demo-mode";
+import { sanitizeJsonRecord } from "@/lib/safe-json";
+import {
+  trySanitizeEditorLinkUrl,
+  trySanitizePublicImageUrl,
+} from "@/lib/url-security";
 import type {
   PublishedVillagePageSection,
   VillagePageKey,
@@ -217,8 +222,8 @@ export function normalizeVillagePageSectionDraft(input: unknown): VillagePageSec
     sectionKey,
     sectionType,
     label: asString(value.label) || defaultLabel(sectionType),
-    draftContent: asRecord(value.draftContent),
-    publishedContent: asOptionalRecord(value.publishedContent),
+    draftContent: sanitizeVillagePageContent(value.draftContent),
+    publishedContent: asOptionalVillagePageContent(value.publishedContent),
     orderIndex: asInteger(value.orderIndex, 100),
     publishedOrderIndex:
       value.publishedOrderIndex === undefined
@@ -556,7 +561,7 @@ function mapDraftToInsert(draft: VillagePageSectionDraft): SectionInsert {
     sectionKey: createSectionKey(draft.sectionKey),
     sectionType: draft.sectionType,
     label: draft.label.trim() || defaultLabel(draft.sectionType),
-    draftContent: draft.draftContent,
+    draftContent: sanitizeVillagePageContent(draft.draftContent),
     orderIndex: draft.orderIndex,
     visible: draft.visible,
     status: draft.status,
@@ -571,8 +576,8 @@ function mapSectionRowToDraft(row: SectionRow): VillagePageSectionDraft {
     sectionKey: row.sectionKey,
     sectionType: asSectionType(row.sectionType),
     label: row.label,
-    draftContent: row.draftContent,
-    publishedContent: row.publishedContent ?? undefined,
+    draftContent: sanitizeVillagePageContent(row.draftContent),
+    publishedContent: asOptionalVillagePageContent(row.publishedContent),
     orderIndex: row.orderIndex,
     publishedOrderIndex: row.publishedOrderIndex ?? undefined,
     visible: row.visible,
@@ -597,7 +602,7 @@ function mapSectionRowToPublished(
     sectionKey: row.sectionKey,
     sectionType: asSectionType(row.sectionType),
     label: row.label,
-    content: row.publishedContent,
+    content: sanitizeVillagePageContent(row.publishedContent),
     orderIndex: row.publishedOrderIndex ?? row.orderIndex,
     visible: row.publishedVisible ?? row.visible,
     publishedAt: row.publishedAt?.toISOString(),
@@ -666,16 +671,70 @@ function normalizeSlug(value: string): string {
   );
 }
 
-function asRecord(value: unknown): Record<string, unknown> {
-  return value && typeof value === "object" && !Array.isArray(value)
-    ? (value as Record<string, unknown>)
-    : {};
+export function sanitizeVillagePageContent(
+  value: unknown,
+): Record<string, unknown> {
+  const bounded = sanitizeJsonRecord(value, {
+    maxArrayLength: 120,
+    maxDepth: 10,
+    maxObjectKeys: 240,
+    maxStringLength: 5000,
+  });
+
+  return sanitizeVillagePageValue(bounded) as Record<string, unknown>;
 }
 
-function asOptionalRecord(value: unknown): Record<string, unknown> | undefined {
-  const record = asRecord(value);
-  return Object.keys(record).length > 0 ? record : undefined;
+function asOptionalVillagePageContent(
+  value: unknown,
+): Record<string, unknown> | undefined {
+  const content = sanitizeVillagePageContent(value);
+  return Object.keys(content).length > 0 ? content : undefined;
 }
+
+function sanitizeVillagePageValue(value: unknown, key = ""): unknown {
+  if (typeof value === "string") {
+    if (villageImageKeys.has(key)) {
+      return trySanitizePublicImageUrl(value, { allowRelative: true });
+    }
+    if (villageLinkKeys.has(key)) {
+      return trySanitizeEditorLinkUrl(value, { allowRelative: true });
+    }
+    return value;
+  }
+
+  if (Array.isArray(value)) {
+    return value.map((item) => sanitizeVillagePageValue(item, key));
+  }
+
+  if (!value || typeof value !== "object") return value;
+
+  return Object.fromEntries(
+    Object.entries(value as Record<string, unknown>).map(([childKey, childValue]) => [
+      childKey,
+      sanitizeVillagePageValue(childValue, childKey),
+    ]),
+  );
+}
+
+const villageImageKeys = new Set([
+  "backgroundImage",
+  "blockImageUrl",
+  "coverImage",
+  "heroImage",
+  "iconSrc",
+  "image",
+  "imageUrl",
+  "thumbnail",
+]);
+
+const villageLinkKeys = new Set([
+  "applyUrl",
+  "href",
+  "linkHref",
+  "sourceUrl",
+  "url",
+  "videoUrl",
+]);
 
 function asInteger(value: unknown, fallback: number): number {
   const numeric = Number(value);

@@ -4,10 +4,11 @@ import {
 } from "@/lib/host-village-access";
 import {
   apiError,
+  applyPersistentRateLimit,
   applyRateLimit,
-  enforceContentLength,
   enforceSameOrigin,
   isApiAuthError,
+  readJsonWithLimit,
   requireHostRole,
 } from "@/lib/api-security";
 import {
@@ -63,13 +64,8 @@ export async function POST(request: Request) {
   const crossOrigin = enforceSameOrigin(request);
   if (crossOrigin) return crossOrigin;
 
-  const payloadTooLarge = enforceContentLength(
-    request,
-    MAX_SCHEDULED_MESSAGE_PAYLOAD_BYTES,
-  );
-  if (payloadTooLarge) return payloadTooLarge;
-
-  const limited = applyRateLimit(request, {
+  const limited = await applyPersistentRateLimit(request, {
+    identity: auth.user.id,
     key: "host-scheduled-message:create",
     limit: 30,
     windowMs: 15 * 60 * 1000,
@@ -77,12 +73,11 @@ export async function POST(request: Request) {
   if (limited) return limited;
 
   try {
-    let body: unknown;
-    try {
-      body = await request.json();
-    } catch {
-      return apiError("Invalid JSON payload.", 400);
-    }
+    const { body, response } = await readJsonWithLimit(
+      request,
+      MAX_SCHEDULED_MESSAGE_PAYLOAD_BYTES,
+    );
+    if (response) return response;
     const payload = normalizeScheduledMessagePayload(body);
     const villageIds =
       auth.profile.role === "admin"
@@ -110,10 +105,8 @@ export async function DELETE(request: Request) {
   const crossOrigin = enforceSameOrigin(request);
   if (crossOrigin) return crossOrigin;
 
-  const payloadTooLarge = enforceContentLength(request, 16 * 1024);
-  if (payloadTooLarge) return payloadTooLarge;
-
-  const limited = applyRateLimit(request, {
+  const limited = await applyPersistentRateLimit(request, {
+    identity: auth.user.id,
     key: "host-scheduled-message:delete",
     limit: 30,
     windowMs: 15 * 60 * 1000,
@@ -121,7 +114,12 @@ export async function DELETE(request: Request) {
   if (limited) return limited;
 
   try {
-    const body = (await request.json().catch(() => ({}))) as Record<string, unknown>;
+    const { body: rawBody, response } = await readJsonWithLimit(
+      request,
+      16 * 1024,
+    );
+    if (response) return response;
+    const body = rawBody as Record<string, unknown>;
     const messageIds = Array.isArray(body.messageIds)
       ? body.messageIds
           .map((item) => (typeof item === "string" ? item.trim() : ""))
@@ -158,10 +156,8 @@ export async function PATCH(request: Request) {
   const crossOrigin = enforceSameOrigin(request);
   if (crossOrigin) return crossOrigin;
 
-  const payloadTooLarge = enforceContentLength(request, 16 * 1024);
-  if (payloadTooLarge) return payloadTooLarge;
-
-  const limited = applyRateLimit(request, {
+  const limited = await applyPersistentRateLimit(request, {
+    identity: auth.user.id,
     key: "host-scheduled-message:mark-sent",
     limit: 60,
     windowMs: 15 * 60 * 1000,
@@ -169,8 +165,10 @@ export async function PATCH(request: Request) {
   if (limited) return limited;
 
   try {
+    const { body, response } = await readJsonWithLimit(request, 16 * 1024);
+    if (response) return response;
     const payload = normalizeManualDispatchCompletionPayload(
-      await request.json().catch(() => ({})),
+      body,
     );
     const villageIds =
       auth.profile.role === "admin"

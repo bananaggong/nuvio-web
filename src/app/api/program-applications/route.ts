@@ -1,14 +1,19 @@
+import { randomUUID } from "node:crypto";
 import { NextResponse } from "next/server";
 import {
-  applyRateLimit,
-  enforceContentLength,
+  applyPersistentRateLimit,
+  asJsonRecord,
   enforceSameOrigin,
-  getOptionalAuthenticatedUser,
+  isApiAuthError,
+  readJsonWithLimit,
+  requireAuthenticatedUser,
 } from "@/lib/api-security";
+import { getConfirmedAuthEmail } from "@/lib/auth-email";
 import {
   createProgramApplication,
   DuplicateProgramApplicationError,
   findExistingProgramApplication,
+  ProgramNotAcceptingApplicationsError,
 } from "@/lib/host-application-db";
 import { queueApplicationSubmittedNotification } from "@/lib/notification-db";
 import { sanitizeJsonRecord } from "@/lib/safe-json";
@@ -16,14 +21,17 @@ import { updateUserProgramState } from "@/lib/user-program-state-db";
 
 export const runtime = "nodejs";
 
-export async function POST(request: Request) {
-  const payloadTooLarge = enforceContentLength(request, 64 * 1024);
-  if (payloadTooLarge) return payloadTooLarge;
+const MAX_APPLICATION_PAYLOAD_BYTES = 64 * 1024;
 
+export async function POST(request: Request) {
   const crossOrigin = enforceSameOrigin(request);
   if (crossOrigin) return crossOrigin;
 
-  const limited = applyRateLimit(request, {
+  const auth = await requireAuthenticatedUser();
+  if (isApiAuthError(auth)) return auth.response;
+
+  const limited = await applyPersistentRateLimit(request, {
+    identity: auth.user.id,
     key: "program-application:create",
     limit: 5,
     windowMs: 15 * 60 * 1000,
@@ -31,75 +39,73 @@ export async function POST(request: Request) {
   if (limited) return limited;
 
   try {
-    const body = await request.json().catch(() => ({}));
+    const { body: rawBody, response } = await readJsonWithLimit(
+      request,
+      MAX_APPLICATION_PAYLOAD_BYTES,
+    );
+    if (response) return response;
+
+    const body = asJsonRecord(rawBody);
     const answers = normalizeAnswers(body.answers);
     validateApplicationPayload(body, answers);
-    const auth = await getOptionalAuthenticatedUser();
-    const programId = normalizeProgramId(body.programId);
-    const email = normalizeText(body.email, 120).toLowerCase();
-    const duplicateEmails = normalizeEmailList([
-      email,
-      auth?.profile.email,
-      auth?.profile.contactEmail ?? undefined,
-      auth?.user.email,
-    ]);
-    const existingApplication = await findExistingProgramApplication({
-      emails: duplicateEmails,
-      programId,
-    });
 
-    if (existingApplication) {
+    const confirmedEmail = getConfirmedAuthEmail(auth.user);
+    const submittedEmail = normalizeText(body.email, 120).toLowerCase();
+    if (!confirmedEmail || confirmedEmail !== submittedEmail) {
       return NextResponse.json(
-        {
-          data: existingApplication,
-          error: "이미 신청한 프로그램입니다. 마이페이지에서 신청 내역을 확인해 주세요.",
-        },
-        { status: 409 },
+        { error: "Use the confirmed email address on your signed-in account." },
+        { status: 403 },
       );
     }
 
+    const programId = normalizeProgramId(body.programId);
+    const existingApplication = await findExistingProgramApplication({
+      emails: [confirmedEmail],
+      programId,
+    });
+    if (existingApplication) return acceptedApplicationResponse();
+
     const application = await createProgramApplication({
+      answers,
+      applicantName: normalizeText(body.applicantName, 80),
+      email: confirmedEmail,
+      formId: typeof body.formId === "string" ? body.formId : undefined,
+      memo:
+        typeof body.memo === "string"
+          ? normalizeText(body.memo, 120)
+          : undefined,
+      phone: normalizeText(body.phone, 40),
       programId,
       programRunId:
         typeof body.programRunId === "string" ? body.programRunId : undefined,
-      formId: typeof body.formId === "string" ? body.formId : undefined,
-      applicantName: normalizeText(body.applicantName, 80),
-      email,
-      phone: normalizeText(body.phone, 40),
-      answers,
-      memo: typeof body.memo === "string" ? normalizeText(body.memo, 120) : undefined,
-      submittedBy: auth?.user.id,
+      submittedBy: auth.user.id,
     });
 
-    if (auth) {
-      void updateUserProgramState(
-        auth.user.id,
-        String(programId),
-        "trackingEnabled",
-        true,
-      ).catch(() => undefined);
-    }
+    void updateUserProgramState(
+      auth.user.id,
+      String(programId),
+      "trackingEnabled",
+      true,
+    ).catch(() => undefined);
 
     void queueApplicationSubmittedNotification({
       applicantName: application.applicantName,
       applicationId: application.id,
       email: application.email,
-      programId: application.programId,
       programCreatedBy: application.programCreatedBy,
+      programId: application.programId,
       programTitle: application.programTitle,
       villageId: application.villageId,
     }).catch(() => undefined);
 
-    return NextResponse.json({ data: application }, { status: 201 });
+    return acceptedApplicationResponse();
   } catch (error) {
     if (error instanceof DuplicateProgramApplicationError) {
-      return NextResponse.json(
-        {
-          error:
-            "This program already has an application for the submitted email.",
-        },
-        { status: 409 },
-      );
+      return acceptedApplicationResponse();
+    }
+
+    if (error instanceof ProgramNotAcceptingApplicationsError) {
+      return NextResponse.json({ error: error.message }, { status: 409 });
     }
 
     return NextResponse.json(
@@ -112,6 +118,18 @@ export async function POST(request: Request) {
       { status: 400 },
     );
   }
+}
+
+function acceptedApplicationResponse() {
+  return NextResponse.json(
+    {
+      data: {
+        id: randomUUID(),
+        submittedAt: new Date().toISOString(),
+      },
+    },
+    { status: 202 },
+  );
 }
 
 function normalizeProgramId(value: unknown): number | string {
@@ -130,16 +148,6 @@ function normalizeAnswers(value: unknown): Record<string, unknown> {
   });
 }
 
-function normalizeEmailList(values: Array<string | undefined>): string[] {
-  return Array.from(
-    new Set(
-      values
-        .map((value) => normalizeText(value, 120).toLowerCase())
-        .filter((value) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/u.test(value)),
-    ),
-  );
-}
-
 function validateApplicationPayload(
   body: Record<string, unknown>,
   answers: Record<string, unknown>,
@@ -156,25 +164,20 @@ function validateApplicationPayload(
     throw new Error("A valid email is required.");
   }
 
-  const serializedAnswers = JSON.stringify(answers);
-  if (serializedAnswers.length > 20_000) {
+  if (JSON.stringify(answers).length > 20_000) {
     throw new Error("Application answers are too large.");
   }
 
   const legalConsent = answers.legalConsent;
-  if (
-    !legalConsent ||
-    typeof legalConsent !== "object" ||
-    Array.isArray(legalConsent)
-  ) {
+  if (!legalConsent || typeof legalConsent !== "object" || Array.isArray(legalConsent)) {
     throw new Error("Required consent is missing.");
   }
 
-  const consentRecord = legalConsent as Record<string, unknown>;
+  const consent = legalConsent as Record<string, unknown>;
   if (
-    !isRequiredLegalConsentAgreed(consentRecord, "terms") ||
-    !isRequiredLegalConsentAgreed(consentRecord, "privacyCollection") ||
-    !isRequiredLegalConsentAgreed(consentRecord, "thirdParty")
+    !isRequiredLegalConsentAgreed(consent, "terms") ||
+    !isRequiredLegalConsentAgreed(consent, "privacyCollection") ||
+    !isRequiredLegalConsentAgreed(consent, "thirdParty")
   ) {
     throw new Error("Required consent is missing.");
   }
@@ -191,15 +194,12 @@ function isRequiredLegalConsentAgreed(
   }[key];
 
   if (consent[directKey] === true) return true;
+  if (!Array.isArray(consent.documents)) return false;
 
-  const documents = consent.documents;
-  if (!Array.isArray(documents)) return false;
-
-  return documents.some((document) => {
+  return consent.documents.some((document) => {
     if (!document || typeof document !== "object" || Array.isArray(document)) {
       return false;
     }
-
     const record = document as Record<string, unknown>;
     return record.key === key && record.agreed === true;
   });

@@ -1,9 +1,9 @@
 import { NextResponse } from "next/server";
 import {
   applyRateLimit,
-  enforceContentLength,
   enforceSameOrigin,
   isApiAuthError,
+  readJsonWithLimit,
   requireAuthenticatedUser,
 } from "@/lib/api-security";
 import {
@@ -42,9 +42,6 @@ export async function PATCH(request: Request) {
   const crossOrigin = enforceSameOrigin(request);
   if (crossOrigin) return crossOrigin;
 
-  const payloadTooLarge = enforceContentLength(request, 16 * 1024);
-  if (payloadTooLarge) return payloadTooLarge;
-
   const limited = applyRateLimit(request, {
     key: "me-notifications:patch",
     limit: 120,
@@ -52,7 +49,9 @@ export async function PATCH(request: Request) {
   });
   if (limited) return limited;
 
-  const body = (await request.json().catch(() => ({}))) as {
+  const { body: rawBody, response } = await readJsonWithLimit(request, 16 * 1024);
+  if (response) return response;
+  const body = rawBody as {
     ids?: unknown;
     markAllRead?: unknown;
   };

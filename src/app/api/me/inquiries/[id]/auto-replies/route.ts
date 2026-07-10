@@ -2,9 +2,9 @@ import { NextResponse } from "next/server";
 import {
   apiError,
   applyRateLimit,
-  enforceContentLength,
   enforceSameOrigin,
   isApiAuthError,
+  readJsonWithLimit,
   requireAuthenticatedUser,
 } from "@/lib/api-security";
 import {
@@ -28,9 +28,6 @@ export async function POST(
   const crossOrigin = enforceSameOrigin(request);
   if (crossOrigin) return crossOrigin;
 
-  const payloadTooLarge = enforceContentLength(request, MAX_AUTO_REPLY_PAYLOAD_BYTES);
-  if (payloadTooLarge) return payloadTooLarge;
-
   const limited = applyRateLimit(request, {
     key: "me-inquiry-auto-reply:create",
     limit: 30,
@@ -40,7 +37,12 @@ export async function POST(
 
   try {
     const { id } = await params;
-    const body = (await request.json().catch(() => ({}))) as {
+    const { body: rawBody, response } = await readJsonWithLimit(
+      request,
+      MAX_AUTO_REPLY_PAYLOAD_BYTES,
+    );
+    if (response) return response;
+    const body = rawBody as {
       itemId?: string;
     };
     const itemId = body.itemId?.trim() ?? "";

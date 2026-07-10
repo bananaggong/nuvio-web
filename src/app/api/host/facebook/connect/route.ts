@@ -7,11 +7,13 @@ import {
   isApiAuthError,
   requireHostRole,
 } from "@/lib/api-security";
-import { canManageHostVillage } from "@/lib/host-village-access";
+import { canAdminHostVillage } from "@/lib/host-village-access";
 import {
   buildFacebookOAuthUrl,
   getFacebookOAuthConfig,
 } from "@/lib/meta-graph";
+import { getTrustedRequestOrigin } from "@/lib/trusted-request-origin";
+import { isSafeRelativePath } from "@/lib/url-security";
 
 export const runtime = "nodejs";
 
@@ -31,7 +33,7 @@ export async function GET(request: Request) {
 
   try {
     const villageSlug = requestUrl.searchParams.get("villageSlug") ?? "boseong";
-    if (!(await canManageHostVillage(auth, villageSlug))) {
+    if (!(await canAdminHostVillage(auth, villageSlug))) {
       return apiError("You do not have permission to manage this channel.", 403);
     }
 
@@ -43,7 +45,8 @@ export async function GET(request: Request) {
       JSON.stringify({ nonce, returnTo, villageSlug }),
       "utf8",
     ).toString("base64url");
-    const config = getFacebookOAuthConfig(requestUrl);
+    const trustedAppUrl = new URL(getTrustedRequestOrigin(requestUrl));
+    const config = getFacebookOAuthConfig(trustedAppUrl);
     const cookieStore = await cookies();
 
     cookieStore.set(STATE_COOKIE, nonce, {
@@ -51,24 +54,22 @@ export async function GET(request: Request) {
       maxAge: 10 * 60,
       path: "/",
       sameSite: "lax",
-      secure: requestUrl.protocol === "https:",
+      secure: trustedAppUrl.protocol === "https:",
     });
 
     return NextResponse.redirect(buildFacebookOAuthUrl(config, state));
-  } catch (error) {
+  } catch {
     return redirectWithStatus(
       "/host/villages/boseong",
       "facebook_error",
-      error instanceof Error ? error.message : "Facebook connection failed.",
-      requestUrl.origin,
+      "Facebook connection could not be started.",
+      getTrustedRequestOrigin(requestUrl),
     );
   }
 }
 
 function normalizeReturnTo(value: string): string {
-  return value.startsWith("/") && !value.startsWith("//")
-    ? value
-    : "/host/villages/boseong";
+  return isSafeRelativePath(value) ? value : "/host/villages/boseong";
 }
 
 function redirectWithStatus(
@@ -77,7 +78,7 @@ function redirectWithStatus(
   message: string,
   origin: string,
 ): NextResponse {
-  const url = new URL(path, origin);
+  const url = new URL(normalizeReturnTo(path), origin);
   url.searchParams.set(key, message);
 
   return NextResponse.redirect(url);

@@ -243,7 +243,6 @@ type MypageSection =
   | "settings"
   | "support";
 
-const DEFAULT_MEMBER_EMAIL = "rhkd3539@naver.com";
 const CUSTOM_EMAIL_DOMAIN = "custom";
 const KAKAO_POSTCODE_SCRIPT_SRC =
   "https://t1.kakaocdn.net/mapjsapi/bundle/postcode/prod/postcode.v2.js";
@@ -2300,7 +2299,7 @@ function MemberInformationForm({
   );
   const socialProviderLabel = getAuthProviderLabel(authProvider);
   const accountEmail = context.authSession.user?.email ?? profile?.email ?? "";
-  const initialEmail = profile?.contactEmail || accountEmail || DEFAULT_MEMBER_EMAIL;
+  const initialEmail = profile?.contactEmail || accountEmail;
   const initialEmailParts = splitEmailAddress(initialEmail);
   const initialBirthDateParts = splitBirthDate(profile?.birthDate);
   const initialNickname = profile?.displayName ?? "";

@@ -26,6 +26,10 @@ import {
   type HostProgramDraft,
 } from "@/lib/host-program-studio";
 import type { PeriodKey, ProgramStatus, ThemeKey } from "@/lib/types";
+import {
+  trySanitizeHttpUrl,
+  trySanitizePublicImageUrl,
+} from "@/lib/url-security";
 
 type ProgramInsert = typeof programsTable.$inferInsert;
 type ProgramRow = typeof programsTable.$inferSelect;
@@ -332,8 +336,8 @@ export function normalizeHostProgramDraft(input: unknown): HostProgramDraft {
   const id = asString(value.id) || `draft-${Date.now()}`;
   const today = toDateString(new Date());
   const meta = decodeHostProgramMeta(asStringArray(value.body));
-  const itineraryDays = normalizeHostProgramItineraryDays(
-    value.itineraryDays ?? meta.itineraryDays,
+  const itineraryDays = sanitizeItineraryImages(
+    normalizeHostProgramItineraryDays(value.itineraryDays ?? meta.itineraryDays),
   );
 
   return {
@@ -358,14 +362,14 @@ export function normalizeHostProgramDraft(input: unknown): HostProgramDraft {
     fee: asString(value.fee),
     status: asStatus(value.status),
     sourceName: asString(value.sourceName),
-    sourceUrl: asString(value.sourceUrl),
-    applyUrl: asString(value.applyUrl),
+    sourceUrl: sanitizeProgramLink(value.sourceUrl),
+    applyUrl: sanitizeProgramLink(value.applyUrl),
     phone: asString(value.phone),
     contactEmail: asString(value.contactEmail),
     hashtags: asStringArray(value.hashtags),
-    image: asString(value.image),
-    detailImages: normalizeHostProgramDetailImages(
-      value.detailImages ?? meta.detailImages,
+    image: sanitizeProgramImage(value.image),
+    detailImages: sanitizeProgramImages(
+      normalizeHostProgramDetailImages(value.detailImages ?? meta.detailImages),
     ),
     itineraryDays:
       itineraryDays.length > 0
@@ -379,11 +383,13 @@ export function normalizeHostProgramDraft(input: unknown): HostProgramDraft {
 }
 
 function mapHostDraftToProgramInsert(draft: HostProgramDraft): ProgramInsert {
-  const image = draft.image.trim() || fallbackImage;
+  const image = sanitizeProgramImage(draft.image) || fallbackImage;
+  const detailImages = sanitizeProgramImages(draft.detailImages);
+  const itineraryDays = sanitizeItineraryImages(draft.itineraryDays);
   const hashtags = normalizeTags(draft.hashtags);
   const itineraryImages = Array.from(
     new Set(
-      draft.itineraryDays
+      itineraryDays
         .flatMap((day) => [day.image, ...day.images])
         .map((image) => image.trim())
         .filter(Boolean),
@@ -391,7 +397,14 @@ function mapHostDraftToProgramInsert(draft: HostProgramDraft): ProgramInsert {
   );
   const body = [
     draft.description.trim() || draft.summary.trim(),
-    encodeHostProgramMeta(draft),
+    encodeHostProgramMeta({
+      ...draft,
+      detailImages,
+      image,
+      itineraryDays,
+      applyUrl: sanitizeProgramLink(draft.applyUrl),
+      sourceUrl: sanitizeProgramLink(draft.sourceUrl),
+    }),
   ].filter(Boolean);
 
   return {
@@ -419,12 +432,12 @@ function mapHostDraftToProgramInsert(draft: HostProgramDraft): ProgramInsert {
     applicants: 0,
     status: draft.status || defaultStatus,
     sourceName: draft.sourceName.trim() || "누비오 Host",
-    sourceUrl: draft.sourceUrl.trim() || "https://www.nuvio.kr",
-    applyUrl: draft.applyUrl.trim() || "https://www.nuvio.kr/apply",
+    sourceUrl: sanitizeProgramLink(draft.sourceUrl) || "https://www.nuvio.kr",
+    applyUrl: sanitizeProgramLink(draft.applyUrl) || "https://www.nuvio.kr/apply",
     phone: draft.phone.trim() || "000-0000-0000",
     contactEmail: (draft.contactEmail ?? "").trim() || null,
     imageUrl: image,
-    gallery: [image, ...draft.detailImages, ...itineraryImages],
+    gallery: [image, ...detailImages, ...itineraryImages],
     badges: hashtags.slice(0, 4),
     body,
     villageId: isUuid(draft.villageId ?? "") ? draft.villageId : null,
@@ -461,14 +474,14 @@ function mapProgramRowToHostDraft(row: ProgramRow): HostProgramDraft {
     fee: row.fee,
     status: row.status,
     sourceName: row.sourceName,
-    sourceUrl: row.sourceUrl,
-    applyUrl: row.applyUrl,
+    sourceUrl: sanitizeProgramLink(row.sourceUrl),
+    applyUrl: sanitizeProgramLink(row.applyUrl),
     phone: row.phone,
     contactEmail: row.contactEmail ?? "",
     hashtags: row.hashtags,
-    image: row.imageUrl,
-    detailImages: meta.detailImages,
-    itineraryDays,
+    image: sanitizeProgramImage(row.imageUrl) || fallbackImage,
+    detailImages: sanitizeProgramImages(meta.detailImages),
+    itineraryDays: sanitizeItineraryImages(itineraryDays),
     placeInfo: meta.placeInfo,
     guideInfo: meta.guideInfo,
     published: Boolean(row.publishedAt),
@@ -493,6 +506,30 @@ function normalizeTags(tags: string[]): string[] {
     .map((tag) => tag.trim().replace(/^#/u, ""))
     .filter(Boolean)
     .slice(0, 12);
+}
+
+function sanitizeProgramLink(value: unknown): string {
+  return trySanitizeHttpUrl(asString(value), { allowRelative: true });
+}
+
+function sanitizeProgramImage(value: unknown): string {
+  return trySanitizePublicImageUrl(asString(value), { allowRelative: true });
+}
+
+function sanitizeProgramImages(values: string[]): string[] {
+  return Array.from(
+    new Set(values.map(sanitizeProgramImage).filter(Boolean)),
+  ).slice(0, 20);
+}
+
+function sanitizeItineraryImages(
+  days: ReturnType<typeof normalizeHostProgramItineraryDays>,
+): ReturnType<typeof normalizeHostProgramItineraryDays> {
+  return days.map((day) => {
+    const images = sanitizeProgramImages(day.images);
+    const image = sanitizeProgramImage(day.image) || images[0] || "";
+    return { ...day, image, images };
+  });
 }
 
 function normalizeRowDate(value: string | Date): string {

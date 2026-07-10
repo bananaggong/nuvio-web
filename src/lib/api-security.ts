@@ -9,6 +9,7 @@ import {
   getUserProfile,
   type AuthProfile,
 } from "@/lib/auth-profile-db";
+import { getConfirmedAuthEmail } from "@/lib/auth-email";
 import { getLocalDevAuthContext } from "@/lib/local-dev-auth";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 
@@ -137,11 +138,16 @@ export function enforceContentLength(
 }
 
 export function enforceSameOrigin(request: Request): NextResponse | null {
-  const origin = request.headers.get("origin");
-  if (!origin) return null;
-
   const allowedOrigins = getAllowedOrigins(request);
-  if (allowedOrigins.has(origin)) return null;
+  const origin = normalizeRequestOrigin(request.headers.get("origin"));
+  if (origin && allowedOrigins.has(origin)) return null;
+
+  if (!origin) {
+    const refererOrigin = normalizeRequestOrigin(request.headers.get("referer"));
+    if (refererOrigin && allowedOrigins.has(refererOrigin)) return null;
+
+    if (request.headers.get("sec-fetch-site") === "same-origin") return null;
+  }
 
   return apiError("Cross-origin state-changing requests are not allowed.", 403);
 }
@@ -326,7 +332,9 @@ function hashRateLimitValue(value: string): string {
 }
 
 function getClientIp(request: Request): string {
-  const forwardedFor = request.headers.get("x-forwarded-for");
+  const forwardedFor =
+    request.headers.get("x-vercel-forwarded-for") ||
+    request.headers.get("x-forwarded-for");
   if (forwardedFor) return forwardedFor.split(",")[0]?.trim() || "unknown";
 
   return (
@@ -345,7 +353,7 @@ function getAllowedOrigins(request: Request): Set<string> {
     request.headers.get("x-forwarded-proto"),
   );
 
-  if (host) {
+  if (host && process.env.NODE_ENV !== "production") {
     const proto =
       forwardedProto ||
       (host.startsWith("localhost") || host.startsWith("127.0.0.1")
@@ -375,7 +383,21 @@ function getAllowedOrigins(request: Request): Set<string> {
       .forEach((item) => addOrigin(origins, item));
   });
 
+  addOrigin(origins, "https://nuvio.kr");
+  addOrigin(origins, "https://www.nuvio.kr");
+
   return origins;
+}
+
+function normalizeRequestOrigin(value: string | null): string {
+  if (!value) return "";
+
+  try {
+    const url = new URL(value);
+    return url.origin;
+  } catch {
+    return "";
+  }
 }
 
 function getFirstHeaderValue(value: string | null): string {
@@ -425,7 +447,7 @@ async function hasActiveHostVillageMembership(
 async function activatePendingHostMembership(
   auth: ApiAuthContext,
 ): Promise<void> {
-  const accountEmail = auth.profile.email.trim().toLowerCase();
+  const accountEmail = getConfirmedAuthEmail(auth.user);
   if (!accountEmail) return;
 
   await getDb()

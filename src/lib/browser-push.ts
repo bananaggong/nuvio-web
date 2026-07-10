@@ -1,3 +1,4 @@
+import { isIP } from "node:net";
 import webPush from "web-push";
 import type { BrowserPushSubscriptionRecord } from "@/lib/push-subscription-db";
 
@@ -24,6 +25,13 @@ type WebPushConfig = {
 
 let configuredSignature = "";
 
+const webPushDeliveryTimeoutMs = 10_000;
+const exactBrowserPushHosts = new Set([
+  "fcm.googleapis.com",
+  "updates.push.services.mozilla.com",
+  "web.push.apple.com",
+]);
+
 export function getBrowserPushPublicKey(): string {
   return process.env.NEXT_PUBLIC_WEB_PUSH_VAPID_PUBLIC_KEY?.trim() ?? "";
 }
@@ -32,10 +40,49 @@ export function isBrowserPushConfigured(): boolean {
   return Boolean(getBrowserPushConfig());
 }
 
+export function isSupportedBrowserPushEndpoint(endpoint: string): boolean {
+  let url: URL;
+  try {
+    url = new URL(endpoint);
+  } catch {
+    return false;
+  }
+
+  if (
+    url.protocol !== "https:" ||
+    (url.port && url.port !== "443") ||
+    url.username ||
+    url.password ||
+    url.hash
+  ) {
+    return false;
+  }
+
+  const hostname = url.hostname.toLowerCase();
+  const ipCandidate =
+    hostname.startsWith("[") && hostname.endsWith("]")
+      ? hostname.slice(1, -1)
+      : hostname;
+  if (isIP(ipCandidate) !== 0) return false;
+
+  return (
+    exactBrowserPushHosts.has(hostname) ||
+    (hostname.endsWith(".notify.windows.com") &&
+      hostname !== "notify.windows.com")
+  );
+}
+
 export async function sendBrowserPushNotification(
   subscription: BrowserPushSubscriptionRecord,
   payload: BrowserPushPayload,
 ): Promise<BrowserPushDeliveryResult> {
+  if (!isSupportedBrowserPushEndpoint(subscription.endpoint)) {
+    return {
+      message: "Browser push endpoint is not supported.",
+      status: "failed",
+    };
+  }
+
   const config = getBrowserPushConfig();
   if (!config) {
     return {
@@ -63,6 +110,7 @@ export async function sendBrowserPushNotification(
         title: payload.title,
         type: payload.type,
       }),
+      { timeout: webPushDeliveryTimeoutMs },
     );
 
     return { message: "Delivered as browser push notification.", status: "sent" };

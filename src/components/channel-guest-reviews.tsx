@@ -28,6 +28,7 @@ type ReviewCardModel = {
   images: string[];
   programTitle: string;
   rating: number;
+  source?: Review["source"];
 };
 
 type RatingFilter = "all" | "5" | "4" | "3" | "2" | "1";
@@ -374,6 +375,14 @@ function ReviewCard({ review }: { review: ReviewCardModel }) {
           >
             {review.author}
           </p>
+          {review.source && review.source !== "participant" ? (
+            <span
+              className="ml-2 shrink-0 rounded-[3px] border border-[#D9D9D9] px-1.5 py-0.5 text-[#6D7A8A]"
+              style={{ fontSize: px(10), lineHeight: 1.2 }}
+            >
+              {review.source === "host" ? "Host-authored" : "Editorial"}
+            </span>
+          ) : null}
         </div>
       </div>
 
@@ -513,6 +522,7 @@ function buildReviewCard(review: Review, programs: Program[]): ReviewCardModel {
     images: review.images.filter(Boolean),
     programTitle: review.programTitle || program?.title || "해당 프로그램 명",
     rating: review.rating ?? 5,
+    source: review.source,
   };
 }
 

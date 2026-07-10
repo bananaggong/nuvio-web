@@ -1,9 +1,9 @@
 import { NextResponse } from "next/server";
 import {
   applyRateLimit,
-  enforceContentLength,
   enforceSameOrigin,
   isApiAuthError,
+  readJsonWithLimit,
   requireAdminRole,
 } from "@/lib/api-security";
 import { safeCreateAuditLog } from "@/lib/audit-log-db";
@@ -51,12 +51,6 @@ export async function POST(request: Request) {
   if (isApiAuthError(auth)) return auth.response;
 
   try {
-    const payloadTooLarge = enforceContentLength(
-      request,
-      MAX_ANNOUNCEMENT_SOURCE_PAYLOAD_BYTES,
-    );
-    if (payloadTooLarge) return payloadTooLarge;
-
     const crossOrigin = enforceSameOrigin(request);
     if (crossOrigin) return crossOrigin;
 
@@ -67,7 +61,12 @@ export async function POST(request: Request) {
     });
     if (limited) return limited;
 
-    const body = await request.json().catch(() => ({}));
+    const { body: rawBody, response } = await readJsonWithLimit(
+      request,
+      MAX_ANNOUNCEMENT_SOURCE_PAYLOAD_BYTES,
+    );
+    if (response) return response;
+    const body = rawBody as Record<string, unknown>;
     const source = await upsertAnnouncementSource({
       id: normalizeId(String(body.id ?? body.name ?? body.url ?? "")),
       name: normalizeText(body.name, 120),
@@ -111,12 +110,6 @@ export async function PATCH(request: Request) {
   if (isApiAuthError(auth)) return auth.response;
 
   try {
-    const payloadTooLarge = enforceContentLength(
-      request,
-      MAX_ANNOUNCEMENT_SOURCE_PAYLOAD_BYTES,
-    );
-    if (payloadTooLarge) return payloadTooLarge;
-
     const crossOrigin = enforceSameOrigin(request);
     if (crossOrigin) return crossOrigin;
 
@@ -127,7 +120,12 @@ export async function PATCH(request: Request) {
     });
     if (limited) return limited;
 
-    const body = await request.json().catch(() => ({}));
+    const { body: rawBody, response } = await readJsonWithLimit(
+      request,
+      MAX_ANNOUNCEMENT_SOURCE_PAYLOAD_BYTES,
+    );
+    if (response) return response;
+    const body = rawBody as Record<string, unknown>;
     const sourceId = String(body.id ?? "").trim();
     if (!sourceId) {
       return NextResponse.json({ error: "Source id is required." }, { status: 400 });

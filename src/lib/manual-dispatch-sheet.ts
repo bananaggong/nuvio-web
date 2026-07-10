@@ -1,10 +1,15 @@
 import { createSign } from "node:crypto";
 
+import { readLimitedResponseText } from "@/lib/outbound-fetch-security";
+
 const GOOGLE_SHEETS_SCOPE = "https://www.googleapis.com/auth/spreadsheets";
 const GOOGLE_TOKEN_URL = "https://oauth2.googleapis.com/token";
 const GOOGLE_SHEETS_API_BASE = "https://sheets.googleapis.com";
-const DEFAULT_SPREADSHEET_ID = "12giIcDfnxIvFyzCUlmntEIvRZe7nqTHkLXRJ8rYkrtc";
 const DEFAULT_SHEET_TITLE = "발송대기";
+const GOOGLE_REQUEST_TIMEOUT_MS = 10_000;
+const GOOGLE_MAX_ERROR_BODY_BYTES = 2 * 1024;
+const GOOGLE_MAX_RESPONSE_BODY_BYTES = 2 * 1024 * 1024;
+const GOOGLE_MAX_TOKEN_BODY_BYTES = 64 * 1024;
 const TOKEN_TTL_BUFFER_MS = 60 * 1000;
 
 const DISPATCH_HEADERS = [
@@ -95,7 +100,7 @@ export async function appendManualDispatchRows(
     await ensureDispatchSheetHeader(config, sheetTitle);
 
     const range = `${quoteSheetTitle(sheetTitle)}!A:P`;
-    await googleSheetsFetch(config, `/v4/spreadsheets/${config.spreadsheetId}/values/${encodeURIComponent(range)}:append?valueInputOption=USER_ENTERED&insertDataOption=INSERT_ROWS`, {
+    await googleSheetsFetch(config, `/v4/spreadsheets/${config.spreadsheetId}/values/${encodeURIComponent(range)}:append?valueInputOption=RAW&insertDataOption=INSERT_ROWS`, {
       body: JSON.stringify({
         values: rows.map(buildDispatchSheetRow),
       }),
@@ -176,7 +181,7 @@ export async function markManualDispatchRowsSent(input: {
       await googleSheetsFetch(config, `/v4/spreadsheets/${config.spreadsheetId}/values:batchUpdate`, {
         body: JSON.stringify({
           data: updates,
-          valueInputOption: "USER_ENTERED",
+          valueInputOption: "RAW",
         }),
         method: "POST",
       });
@@ -207,6 +212,16 @@ function getManualDispatchSheetsConfig(): ManualDispatchSheetsConfig {
   const privateKey = normalizePrivateKey(
     process.env.GOOGLE_SERVICE_ACCOUNT_PRIVATE_KEY,
   );
+  const spreadsheetId =
+    process.env.GOOGLE_MANUAL_MESSAGE_SPREADSHEET_ID?.trim() ?? "";
+
+  if (!spreadsheetId) {
+    return {
+      reason:
+        "GOOGLE_MANUAL_MESSAGE_SPREADSHEET_ID is required.",
+      skipped: true,
+    };
+  }
 
   if (!serviceAccountEmail || !privateKey) {
     return {
@@ -222,9 +237,7 @@ function getManualDispatchSheetsConfig(): ManualDispatchSheetsConfig {
     sheetTitle: sanitizeSheetTitle(
       process.env.GOOGLE_MANUAL_MESSAGE_SHEET_NAME || DEFAULT_SHEET_TITLE,
     ),
-    spreadsheetId:
-      process.env.GOOGLE_MANUAL_MESSAGE_SPREADSHEET_ID?.trim() ||
-      DEFAULT_SPREADSHEET_ID,
+    spreadsheetId,
   };
 }
 
@@ -289,7 +302,7 @@ async function ensureDispatchSheetHeader(
   );
   if (headerMatches) return;
 
-  await googleSheetsFetch(config, `/v4/spreadsheets/${config.spreadsheetId}/values/${encodeURIComponent(range)}?valueInputOption=USER_ENTERED`, {
+  await googleSheetsFetch(config, `/v4/spreadsheets/${config.spreadsheetId}/values/${encodeURIComponent(range)}?valueInputOption=RAW`, {
     body: JSON.stringify({ values: [DISPATCH_HEADERS] }),
     method: "PUT",
   });
@@ -308,17 +321,21 @@ async function googleSheetsFetch<T = unknown>(
   const response = await fetch(`${GOOGLE_SHEETS_API_BASE}${path}`, {
     ...init,
     headers,
+    signal: AbortSignal.timeout(GOOGLE_REQUEST_TIMEOUT_MS),
   });
 
   if (!response.ok) {
-    const text = await response.text().catch(() => "");
-    throw new Error(
-      `Google Sheets API failed with ${response.status}${text ? `: ${text.slice(0, 500)}` : ""}`,
-    );
+    await readLimitedResponseText(
+      response,
+      GOOGLE_MAX_ERROR_BODY_BYTES,
+    ).catch(() => "");
+    throw new Error(`Google Sheets API failed with ${response.status}.`);
   }
 
   if (response.status === 204) return {} as T;
-  return (await response.json().catch(() => ({}))) as T;
+  return parseJsonResponse<T>(
+    await readLimitedResponseText(response, GOOGLE_MAX_RESPONSE_BODY_BYTES),
+  );
 }
 
 async function getGoogleAccessToken(
@@ -355,19 +372,21 @@ async function getGoogleAccessToken(
       "Content-Type": "application/x-www-form-urlencoded",
     },
     method: "POST",
+    signal: AbortSignal.timeout(GOOGLE_REQUEST_TIMEOUT_MS),
   });
 
   if (!response.ok) {
-    const text = await response.text().catch(() => "");
-    throw new Error(
-      `Google OAuth token request failed with ${response.status}${text ? `: ${text.slice(0, 500)}` : ""}`,
-    );
+    await readLimitedResponseText(
+      response,
+      GOOGLE_MAX_ERROR_BODY_BYTES,
+    ).catch(() => "");
+    throw new Error(`Google OAuth token request failed with ${response.status}.`);
   }
 
-  const payload = (await response.json()) as {
+  const payload = parseJsonResponse<{
     access_token?: string;
     expires_in?: number;
-  };
+  }>(await readLimitedResponseText(response, GOOGLE_MAX_TOKEN_BODY_BYTES));
   if (!payload.access_token) {
     throw new Error("Google OAuth token response did not include access_token.");
   }
@@ -378,6 +397,14 @@ async function getGoogleAccessToken(
   };
 
   return cachedToken.accessToken;
+}
+
+function parseJsonResponse<T>(value: string): T {
+  try {
+    return JSON.parse(value) as T;
+  } catch {
+    return {} as T;
+  }
 }
 
 function signJwt(

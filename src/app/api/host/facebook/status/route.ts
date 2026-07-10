@@ -5,7 +5,7 @@ import {
   isApiAuthError,
   requireHostRole,
 } from "@/lib/api-security";
-import { canManageHostVillage } from "@/lib/host-village-access";
+import { canAdminHostVillage } from "@/lib/host-village-access";
 import {
   getHostSocialConnection,
   redactHostSocialConnection,
@@ -27,7 +27,7 @@ export async function GET(request: Request) {
 
   const { searchParams } = new URL(request.url);
   const villageSlug = searchParams.get("villageSlug") ?? "boseong";
-  if (!(await canManageHostVillage(auth, villageSlug))) {
+  if (!(await canAdminHostVillage(auth, villageSlug))) {
     return apiError("You do not have permission to manage this channel.", 403);
   }
 

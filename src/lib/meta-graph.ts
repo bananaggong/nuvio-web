@@ -79,6 +79,7 @@ export type FacebookOAuthConfig = {
 
 const META_GRAPH_TIMEOUT_MS = 10_000;
 const META_GRAPH_MAX_RESPONSE_BYTES = 64 * 1024;
+const META_GRAPH_MAX_PAGES = 10;
 
 export function hasFacebookOAuthConfig(): boolean {
   return Boolean(process.env.FACEBOOK_APP_ID && process.env.FACEBOOK_APP_SECRET);
@@ -171,6 +172,7 @@ export async function fetchFacebookPages(
 ): Promise<FacebookPage[]> {
   const pages: FacebookPage[] = [];
   let nextUrl: string | undefined;
+  const visitedUrls = new Set<string>();
 
   const initialUrl = new URL(`https://graph.facebook.com/${graphVersion}/me/accounts`);
   initialUrl.searchParams.set(
@@ -187,9 +189,13 @@ export async function fetchFacebookPages(
   initialUrl.searchParams.set("access_token", accessToken);
   nextUrl = initialUrl.toString();
 
-  while (nextUrl) {
+  while (nextUrl && visitedUrls.size < META_GRAPH_MAX_PAGES) {
+    const pageUrl = assertMetaGraphUrl(nextUrl).toString();
+    if (visitedUrls.has(pageUrl)) break;
+    visitedUrls.add(pageUrl);
+
     const response: FacebookPagesResponse =
-      await fetchMetaJson<FacebookPagesResponse>(nextUrl);
+      await fetchMetaJson<FacebookPagesResponse>(pageUrl);
     pages.push(...(response.data ?? []));
     nextUrl = response.paging?.next;
   }
@@ -206,6 +212,7 @@ export async function fetchInstagramMedia(
   const limit = Math.min(Math.max(options.limit ?? 24, 1), 100);
   const media: InstagramMediaItem[] = [];
   let nextUrl: string | undefined;
+  const visitedUrls = new Set<string>();
 
   const initialUrl = new URL(
     `https://graph.facebook.com/${graphVersion}/${instagramUserId}/media`,
@@ -227,9 +234,17 @@ export async function fetchInstagramMedia(
   initialUrl.searchParams.set("access_token", accessToken);
   nextUrl = initialUrl.toString();
 
-  while (nextUrl && media.length < limit) {
+  while (
+    nextUrl &&
+    media.length < limit &&
+    visitedUrls.size < META_GRAPH_MAX_PAGES
+  ) {
+    const pageUrl = assertMetaGraphUrl(nextUrl).toString();
+    if (visitedUrls.has(pageUrl)) break;
+    visitedUrls.add(pageUrl);
+
     const response: InstagramMediaResponse =
-      await fetchMetaJson<InstagramMediaResponse>(nextUrl);
+      await fetchMetaJson<InstagramMediaResponse>(pageUrl);
     media.push(...(response.data ?? []));
     nextUrl = response.paging?.next;
   }
@@ -296,7 +311,8 @@ export function normalizeInstagramMediaToDraft(
 }
 
 async function fetchMetaJson<T>(url: URL | string): Promise<T> {
-  const response = await fetch(url, {
+  const safeUrl = assertMetaGraphUrl(url);
+  const response = await fetch(safeUrl, {
     headers: { Accept: "application/json" },
     cache: "no-store",
     signal: AbortSignal.timeout(META_GRAPH_TIMEOUT_MS),
@@ -312,6 +328,22 @@ async function fetchMetaJson<T>(url: URL | string): Promise<T> {
   }
 
   return payload;
+}
+
+function assertMetaGraphUrl(value: URL | string): URL {
+  const url = value instanceof URL ? new URL(value.toString()) : new URL(value);
+  if (
+    url.protocol !== "https:" ||
+    url.hostname.toLowerCase() !== "graph.facebook.com" ||
+    url.port ||
+    url.username ||
+    url.password
+  ) {
+    throw new Error("Meta Graph API returned an invalid URL.");
+  }
+
+  url.hash = "";
+  return url;
 }
 
 function parseMetaJsonPayload<T>(value: string): T & { error?: MetaGraphError } {

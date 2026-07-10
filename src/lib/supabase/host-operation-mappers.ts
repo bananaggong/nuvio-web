@@ -136,10 +136,12 @@ export function mapMessageCampaignToScheduledMessageInserts(
 
 export function mapReportProjectToInsert(
   project: ReportProject,
+  villageId: string,
   programId?: string,
 ): ReportProjectInsert {
   return {
     programId,
+    villageId,
     name: project.title,
     organizationName: project.villageName || project.agencyName,
     reportType: "operation-closeout",

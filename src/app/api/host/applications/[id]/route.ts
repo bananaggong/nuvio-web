@@ -1,12 +1,14 @@
 import { NextResponse } from "next/server";
 import {
+  applyPersistentRateLimit,
   applyRateLimit,
-  enforceContentLength,
   enforceSameOrigin,
   isApiAuthError,
+  readJsonWithLimit,
   requireHostRole,
 } from "@/lib/api-security";
 import {
+  ApplicationStatusTransitionError,
   getHostApplicationDetail,
   updateHostApplicationStatus,
 } from "@/lib/host-application-db";
@@ -81,10 +83,8 @@ export async function PATCH(
   const crossOrigin = enforceSameOrigin(request);
   if (crossOrigin) return crossOrigin;
 
-  const payloadTooLarge = enforceContentLength(request, 4 * 1024);
-  if (payloadTooLarge) return payloadTooLarge;
-
-  const limited = applyRateLimit(request, {
+  const limited = await applyPersistentRateLimit(request, {
+    identity: auth.user.id,
     key: "host-application-status:update",
     limit: 120,
     windowMs: 15 * 60 * 1000,
@@ -93,7 +93,10 @@ export async function PATCH(
 
   try {
     const { id } = await params;
-    const body = (await request.json().catch(() => ({}))) as {
+    const { body: rawBody, response } = await readJsonWithLimit(request, 4 * 1024);
+    if (response) return response;
+
+    const body = rawBody as {
       status?: HostApplicationStatus;
     };
     const status = body.status as HostApplicationStatus;
@@ -124,12 +127,13 @@ export async function PATCH(
 
     return NextResponse.json({ ok: true });
   } catch (error) {
+    if (error instanceof ApplicationStatusTransitionError) {
+      return NextResponse.json({ error: error.message }, { status: 409 });
+    }
+
     return NextResponse.json(
       {
-        error:
-          error instanceof Error
-            ? error.message
-            : "Failed to update host application.",
+        error: "Failed to update host application.",
       },
       { status: 500 },
     );

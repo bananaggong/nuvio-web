@@ -1,7 +1,8 @@
+import { randomUUID } from "node:crypto";
 import { NextResponse } from "next/server";
 import {
   apiError,
-  applyRateLimit,
+  applyPersistentRateLimit,
   enforceContentLength,
   enforceSameOrigin,
   isApiAuthError,
@@ -10,6 +11,8 @@ import {
 import {
   sanitizeStorageFileName,
   sanitizeStoragePathSegment,
+  serverUploadMaxFileBytes,
+  serverUploadMaxRequestBytes,
   validateImageUploadFile,
 } from "@/lib/image-upload-security";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
@@ -17,8 +20,8 @@ import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 export const runtime = "nodejs";
 
 const bucketName = "review-images";
-const maxImageUploadBytes = 8 * 1024 * 1024;
-const maxRequestBytes = 10 * 1024 * 1024;
+const maxImageUploadBytes = serverUploadMaxFileBytes;
+const maxRequestBytes = serverUploadMaxRequestBytes;
 
 export async function POST(request: Request) {
   const auth = await requireAuthenticatedUser();
@@ -30,7 +33,7 @@ export async function POST(request: Request) {
   const payloadTooLarge = enforceContentLength(request, maxRequestBytes);
   if (payloadTooLarge) return payloadTooLarge;
 
-  const limited = applyRateLimit(request, {
+  const limited = await applyPersistentRateLimit(request, {
     identity: auth.user.id,
     key: "me-review-image:upload",
     limit: 30,
@@ -62,7 +65,7 @@ export async function POST(request: Request) {
     const objectPath = [
       sanitizeStoragePathSegment(auth.user.id, "user"),
       sanitizeStoragePathSegment(applicationId || "general", "review"),
-      `${Date.now()}-${safeFileName}`,
+      `${randomUUID()}-${safeFileName}`,
     ].join("/");
     const admin = createSupabaseAdminClient();
 

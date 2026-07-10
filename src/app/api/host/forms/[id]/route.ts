@@ -10,7 +10,9 @@ import {
   ApplicationFormAccessError,
   ApplicationFormDeleteBlockedError,
   deleteApplicationFormTemplate,
+  type HostFormScope,
 } from "@/lib/application-form-db";
+import { listManageableHostVillageWorkspaces } from "@/lib/host-village-access";
 
 export const runtime = "nodejs";
 
@@ -36,9 +38,17 @@ export async function DELETE(
 
   try {
     const { id } = await params;
+    let hostScope: HostFormScope | undefined;
+    if (auth.profile.role !== "admin") {
+      const workspaces = await listManageableHostVillageWorkspaces(auth);
+      if (workspaces.length === 0) throw new ApplicationFormAccessError();
+      hostScope = {
+        ownerId: auth.user.id,
+        villageIds: workspaces.map((workspace) => workspace.villageId),
+      };
+    }
     const deleted = await deleteApplicationFormTemplate(decodeURIComponent(id), {
-      ownerId: auth.user.id,
-      restrictToOwner: auth.profile.role !== "admin",
+      hostScope,
     });
 
     if (!deleted) {

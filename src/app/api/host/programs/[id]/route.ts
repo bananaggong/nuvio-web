@@ -89,7 +89,13 @@ export async function DELETE(
     const applicationForms = await listApplicationFormTemplatesFromDb(
       auth.profile.role === "admin"
         ? { formKind: "application" }
-        : { formKind: "application", ownerId: auth.user.id },
+        : {
+            formKind: "application",
+            hostScope: {
+              ownerId: auth.user.id,
+              villageIds: allowedVillageIds ?? [],
+            },
+          },
     );
     const linkedApplicationForm = applicationForms.find((form) =>
       isLinkedProgramForm(form, program),

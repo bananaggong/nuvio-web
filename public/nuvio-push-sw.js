@@ -19,7 +19,7 @@ self.addEventListener("notificationclick", (event) => {
   event.notification.close();
 
   const href = event.notification.data?.href || "/";
-  const targetUrl = new URL(href, self.location.origin).toString();
+  const targetUrl = getNotificationTargetUrl(href);
 
   event.waitUntil(
     self.clients
@@ -39,6 +39,17 @@ self.addEventListener("notificationclick", (event) => {
       }),
   );
 });
+
+function getNotificationTargetUrl(href) {
+  try {
+    const url = new URL(href, self.location.origin);
+    if (url.origin === self.location.origin) return url.toString();
+  } catch {
+    // Fall through to the same-origin home page.
+  }
+
+  return new URL("/", self.location.origin).toString();
+}
 
 function readPushPayload(event) {
   if (!event.data) return {};

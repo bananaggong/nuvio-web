@@ -282,7 +282,10 @@ export async function deleteHostScheduledMessages(
   if (normalizedIds.length === 0) return 0;
   if (options.villageIds && options.villageIds.length === 0) return 0;
 
-  const conditions: SQL[] = [inArray(scheduledMessages.id, normalizedIds)];
+  const conditions: SQL[] = [
+    inArray(scheduledMessages.id, normalizedIds),
+    eq(scheduledMessages.deliveryStatus, "draft"),
+  ];
   if (options.villageIds) {
     conditions.push(inArray(programsTable.villageId, options.villageIds));
   }
@@ -310,7 +313,12 @@ export async function deleteHostScheduledMessages(
 
   const deletedRows = await getDb()
     .delete(scheduledMessages)
-    .where(inArray(scheduledMessages.id, allowedIds))
+    .where(
+      and(
+        inArray(scheduledMessages.id, allowedIds),
+        eq(scheduledMessages.deliveryStatus, "draft"),
+      ),
+    )
     .returning({ id: scheduledMessages.id });
 
   return deletedRows.length;
@@ -342,7 +350,10 @@ export async function markHostScheduledMessagesSent(
     };
   }
 
-  const conditions: SQL[] = [inArray(scheduledMessages.id, normalizedIds)];
+  const conditions: SQL[] = [
+    inArray(scheduledMessages.id, normalizedIds),
+    inArray(scheduledMessages.deliveryStatus, ["draft", "scheduled"]),
+  ];
   if (options.villageIds) {
     conditions.push(inArray(programsTable.villageId, options.villageIds));
   }
@@ -382,7 +393,12 @@ export async function markHostScheduledMessagesSent(
       sentAt,
       updatedAt: sentAt,
     })
-    .where(inArray(scheduledMessages.id, allowedIds))
+    .where(
+      and(
+        inArray(scheduledMessages.id, allowedIds),
+        inArray(scheduledMessages.deliveryStatus, ["draft", "scheduled"]),
+      ),
+    )
     .returning({ id: scheduledMessages.id });
 
   const sheetSync = await markManualDispatchRowsSent({
@@ -471,7 +487,11 @@ export async function processDueScheduledSmsMessages(
 
   for (const row of rows) {
     try {
-      await sendSmsMessage({ body: row.body, to: row.recipient });
+      await sendSmsMessage({
+        body: row.body,
+        idempotencyKey: row.id,
+        to: row.recipient,
+      });
       await getDb()
         .update(scheduledMessages)
         .set({

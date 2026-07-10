@@ -754,8 +754,17 @@ export async function queueProgramReminderNotification(input: {
     type: input.type,
   };
 
-  await createInAppNotificationIfEnabled(input.userId, message);
-  await queueBrowserPushNotification(input.userId, message);
+  const reminderKey = String(input.metadata?.reminderKey ?? "").trim();
+  const dedupeBase = reminderKey
+    ? `program-reminder:${input.userId}:${reminderKey}`
+    : undefined;
+
+  await createInAppNotificationIfEnabled(input.userId, message, {
+    dedupeKey: dedupeBase ? `${dedupeBase}:in-app` : undefined,
+  });
+  await queueBrowserPushNotification(input.userId, message, {
+    dedupeKey: dedupeBase ? `${dedupeBase}:browser-push` : undefined,
+  });
 }
 
 export async function queueProgramInquiryCreatedNotification(input: {
@@ -988,6 +997,7 @@ async function deliverEmailEvent(
 
   const result = await sendEmailMessage({
     html: renderNotificationEmailHtml(event),
+    idempotencyKey: event.id,
     metadata: event.metadata,
     subject: event.title,
     text: renderNotificationEmailText(event),

@@ -1,16 +1,40 @@
-import { desc, eq, isNotNull } from "drizzle-orm";
+import { and, desc, eq, isNotNull, ne, or, sql } from "drizzle-orm";
 import { getDb } from "@/db/client";
-import { villages as villagesTable } from "@/db/schema";
+import {
+  hostVillageMemberships,
+  profiles,
+  villages as villagesTable,
+} from "@/db/schema";
 import { getPublicProgramByIdentifier, listPublicPrograms } from "@/lib/public-program-db";
 import { listPublicReviewsFromDb } from "@/lib/review-db";
 import { reviews } from "@/lib/data";
 import { isDemoModeEnabled } from "@/lib/demo-mode";
 import { seedVillages } from "@/lib/village-seeds";
 import type { Program, Review } from "@/lib/types";
+import {
+  trySanitizeHttpUrl,
+  trySanitizePublicImageUrl,
+} from "@/lib/url-security";
 import type { Village, VillageLink, VillageSection } from "@/lib/village-types";
 
 type VillageInsert = typeof villagesTable.$inferInsert;
 type VillageRow = typeof villagesTable.$inferSelect;
+
+export type HostVillageActor = {
+  accountEmail: string;
+  isAdmin: boolean;
+  userId: string;
+};
+
+export class HostVillageMutationError extends Error {
+  constructor(
+    message: string,
+    readonly code: "account_limit" | "conflict" | "not_found",
+  ) {
+    super(message);
+    this.name = "HostVillageMutationError";
+  }
+}
 
 export async function listPublicVillages(): Promise<Village[]> {
   try {
@@ -170,30 +194,119 @@ export async function resolveVillageProgram(
   return undefined;
 }
 
-export async function upsertHostVillage(village: Village): Promise<Village> {
-  const insertValue = mapVillageToInsert(village);
-  const now = new Date();
-
-  if (isUuid(village.id)) {
-    const [updatedRow] = await getDb()
-      .update(villagesTable)
-      .set({ ...insertValue, updatedAt: now })
-      .where(eq(villagesTable.id, village.id))
-      .returning();
-
-    if (updatedRow) return mapVillageRowToVillage(updatedRow);
+export async function updateHostVillage(
+  villageId: string,
+  village: Village,
+): Promise<Village> {
+  if (!isUuid(villageId)) {
+    throw new HostVillageMutationError("Channel was not found.", "not_found");
   }
 
-  const [row] = await getDb()
-    .insert(villagesTable)
-    .values(insertValue)
-    .onConflictDoUpdate({
-      target: villagesTable.slug,
-      set: { ...insertValue, updatedAt: now },
-    })
+  const insertValue = mapVillageToInsert(village);
+  const [updatedRow] = await getDb()
+    .update(villagesTable)
+    .set({ ...insertValue, updatedAt: new Date() })
+    .where(eq(villagesTable.id, villageId))
     .returning();
 
-  return mapVillageRowToVillage(row);
+  if (!updatedRow) {
+    throw new HostVillageMutationError("Channel was not found.", "not_found");
+  }
+
+  return mapVillageRowToVillage(updatedRow);
+}
+
+export async function createHostVillageWithOwner(
+  village: Village,
+  actor: HostVillageActor,
+): Promise<Village> {
+  const accountEmail = actor.accountEmail.trim().toLowerCase();
+  if (!accountEmail) {
+    throw new HostVillageMutationError(
+      "A verified account email is required.",
+      "conflict",
+    );
+  }
+
+  try {
+    return await getDb().transaction(async (tx) => {
+      await tx.execute(
+        sql`select pg_advisory_xact_lock(hashtext(${`host-village-owner:${actor.userId}`}))`,
+      );
+
+      if (!actor.isAdmin) {
+        const [existingMembership] = await tx
+          .select({ id: hostVillageMemberships.id })
+          .from(hostVillageMemberships)
+          .where(
+            and(
+              ne(hostVillageMemberships.status, "revoked"),
+              or(
+                eq(hostVillageMemberships.userId, actor.userId),
+                eq(hostVillageMemberships.accountEmail, accountEmail),
+              ),
+            ),
+          )
+          .limit(1);
+
+        if (existingMembership) {
+          throw new HostVillageMutationError(
+            "This account already has a channel workspace.",
+            "account_limit",
+          );
+        }
+      }
+
+      const [slugConflict] = await tx
+        .select({ id: villagesTable.id })
+        .from(villagesTable)
+        .where(eq(villagesTable.slug, createVillageSlug(village.slug)))
+        .limit(1);
+
+      if (slugConflict) {
+        throw new HostVillageMutationError(
+          "A channel with this slug already exists.",
+          "conflict",
+        );
+      }
+
+      const [createdRow] = await tx
+        .insert(villagesTable)
+        .values({
+          ...mapVillageToInsert(village),
+          createdBy: actor.userId,
+        })
+        .returning();
+
+      await tx.insert(hostVillageMemberships).values({
+        accountEmail,
+        activatedAt: new Date(),
+        grantedBy: actor.userId,
+        role: "owner",
+        status: "active",
+        userId: actor.userId,
+        villageId: createdRow.id,
+      });
+
+      await tx
+        .update(profiles)
+        .set({ showHostCenterNav: true, updatedAt: new Date() })
+        .where(eq(profiles.id, actor.userId));
+
+      return mapVillageRowToVillage(createdRow);
+    });
+  } catch (error) {
+    if (error instanceof HostVillageMutationError) throw error;
+
+    if (isUniqueViolation(error)) {
+      throw new HostVillageMutationError(
+        "A channel with this slug already exists.",
+        "conflict",
+      );
+    }
+
+    throw error;
+  }
 }
 
 export function normalizeHostVillage(input: unknown): Village {
@@ -217,13 +330,13 @@ export function normalizeHostVillage(input: unknown): Village {
     description:
       asString(value.description) ||
       `${name} 호스트가 신청, 공지, 후기, 보고서 자료를 한곳에서 관리할 수 있는 채널입니다.`,
-    heroImage: asString(value.heroImage),
-    profileImage: asString(value.profileImage),
+    heroImage: sanitizeVillageImage(value.heroImage),
+    profileImage: sanitizeVillageImage(value.profileImage),
     logoText: asString(value.logoText) || name.slice(0, 2).toUpperCase(),
     brandColor: normalizeColor(asString(value.brandColor), "#0f766e"),
     accentColor: normalizeColor(asString(value.accentColor), "#f59e0b"),
-    instagramUrl: asOptionalString(value.instagramUrl),
-    kakaoUrl: asOptionalString(value.kakaoUrl),
+    instagramUrl: sanitizeVillageLink(value.instagramUrl),
+    kakaoUrl: sanitizeVillageLink(value.kakaoUrl),
     contactEmail: asOptionalString(value.contactEmail),
     contactPhone: asOptionalString(value.contactPhone),
     address: asOptionalString(value.address),
@@ -256,19 +369,19 @@ function mapVillageToInsert(village: Village): VillageInsert {
     summary: village.summary.trim() || village.tagline.trim(),
     description:
       village.description.trim() || village.summary.trim() || village.tagline.trim(),
-    heroImageUrl: village.heroImage.trim(),
-    profileImageUrl: village.profileImage?.trim() || "",
+    heroImageUrl: sanitizeVillageImage(village.heroImage),
+    profileImageUrl: sanitizeVillageImage(village.profileImage),
     logoText: village.logoText?.trim() || null,
     brandColor: normalizeColor(village.brandColor, "#0f766e"),
     accentColor: normalizeColor(village.accentColor, "#f59e0b"),
-    instagramUrl: village.instagramUrl?.trim() || null,
-    kakaoUrl: village.kakaoUrl?.trim() || null,
+    instagramUrl: sanitizeVillageLink(village.instagramUrl) || null,
+    kakaoUrl: sanitizeVillageLink(village.kakaoUrl) || null,
     contactEmail: village.contactEmail?.trim() || null,
     contactPhone: village.contactPhone?.trim() || null,
     address: village.address?.trim() || null,
     programIds: village.programIds,
-    links: village.links,
-    sections: village.sections,
+    links: normalizeLinks(village.links),
+    sections: normalizeSections(village.sections, village.name),
     publishedAt: village.published ? new Date() : null,
   };
 }
@@ -283,13 +396,13 @@ function mapVillageRowToVillage(row: VillageRow): Village {
     tagline: row.tagline,
     summary: row.summary,
     description: row.description,
-    heroImage: row.heroImageUrl,
-    profileImage: row.profileImageUrl,
+    heroImage: sanitizeVillageImage(row.heroImageUrl),
+    profileImage: sanitizeVillageImage(row.profileImageUrl),
     logoText: row.logoText ?? undefined,
     brandColor: row.brandColor,
     accentColor: row.accentColor,
-    instagramUrl: row.instagramUrl ?? undefined,
-    kakaoUrl: row.kakaoUrl ?? undefined,
+    instagramUrl: sanitizeVillageLink(row.instagramUrl) || undefined,
+    kakaoUrl: sanitizeVillageLink(row.kakaoUrl) || undefined,
     contactEmail: row.contactEmail ?? undefined,
     contactPhone: row.contactPhone ?? undefined,
     address: row.address ?? undefined,
@@ -348,7 +461,7 @@ function normalizeLinks(value: unknown): VillageLink[] {
       if (!item || typeof item !== "object" || Array.isArray(item)) return undefined;
       const record = item as Record<string, unknown>;
       const label = asString(record.label);
-      const url = asString(record.url);
+      const url = sanitizeVillageLink(record.url);
       if (!label || !url) return undefined;
 
       return {
@@ -384,7 +497,7 @@ function normalizeSections(value: unknown, villageName: string): VillageSection[
 
       return {
         blockBackgroundColor: asOptionalString(record.blockBackgroundColor),
-        blockImageUrl: asOptionalString(record.blockImageUrl),
+        blockImageUrl: sanitizeVillageImage(record.blockImageUrl) || undefined,
         blockMode: asOptionalString(record.blockMode),
         blockText: asOptionalString(record.blockText),
         blockTextAlign: asOptionalString(record.blockTextAlign),
@@ -466,8 +579,25 @@ function normalizeColor(value: string, fallback: string): string {
   return /^#[0-9a-f]{6}$/iu.test(value) ? value : fallback;
 }
 
+function sanitizeVillageImage(value: unknown): string {
+  return trySanitizePublicImageUrl(asString(value), { allowRelative: true });
+}
+
+function sanitizeVillageLink(value: unknown): string {
+  return trySanitizeHttpUrl(asString(value), { allowRelative: true });
+}
+
 function isUuid(value: string): boolean {
   return /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/iu.test(
     value,
+  );
+}
+
+function isUniqueViolation(error: unknown): boolean {
+  return Boolean(
+    error &&
+      typeof error === "object" &&
+      "code" in error &&
+      (error as { code?: unknown }).code === "23505",
   );
 }

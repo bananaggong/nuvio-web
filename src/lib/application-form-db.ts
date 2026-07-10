@@ -1,9 +1,19 @@
-import { and, count, desc, eq, isNull } from "drizzle-orm";
+import {
+  and,
+  count,
+  desc,
+  eq,
+  inArray,
+  isNull,
+  or,
+  type SQL,
+} from "drizzle-orm";
 import { getDb } from "@/db/client";
 import {
   programApplicationForms,
   programApplications,
   programInquiries,
+  programs as programsTable,
 } from "@/db/schema";
 import { getProgramRecordByIdentifier } from "@/lib/program-db";
 import type {
@@ -21,6 +31,18 @@ import type { Program } from "@/lib/types";
 
 type FormInsert = typeof programApplicationForms.$inferInsert;
 type FormRow = typeof programApplicationForms.$inferSelect;
+
+export type HostFormScope = {
+  ownerId: string;
+  villageIds: string[];
+};
+
+type FormScopeRow = {
+  createdBy: string | null;
+  id: string;
+  programId: string | null;
+  villageId: string | null;
+};
 
 export class ApplicationFormAccessError extends Error {
   constructor() {
@@ -41,16 +63,37 @@ export class ApplicationFormDeleteBlockedError extends Error {
 
 export async function listApplicationFormTemplatesFromDb(options: {
   formKind?: ApplicationFormKind;
-  ownerId?: string;
+  hostScope?: HostFormScope;
 } = {}): Promise<ApplicationFormTemplate[]> {
-  let query = getDb()
+  const db = getDb();
+  let query = db
     .select()
     .from(programApplicationForms)
     .$dynamic();
-  const conditions = [];
+  const conditions: SQL[] = [];
 
-  if (options.ownerId) {
-    conditions.push(eq(programApplicationForms.createdBy, options.ownerId));
+  if (options.hostScope) {
+    const villageIds = normalizeVillageIds(options.hostScope.villageIds);
+    if (villageIds.length === 0) return [];
+
+    const programRows = await db
+      .select({ id: programsTable.id })
+      .from(programsTable)
+      .where(inArray(programsTable.villageId, villageIds));
+    const allowedProgramIds = programRows.map((row) => row.id);
+    const unlinkedOwnedForm = and(
+      isNull(programApplicationForms.programId),
+      eq(programApplicationForms.createdBy, options.hostScope.ownerId),
+    );
+
+    conditions.push(
+      allowedProgramIds.length > 0
+        ? or(
+            inArray(programApplicationForms.programId, allowedProgramIds),
+            unlinkedOwnedForm,
+          )!
+        : unlinkedOwnedForm!,
+    );
   }
 
   if (options.formKind) {
@@ -115,12 +158,18 @@ export async function getApplicationFormSnapshotForSubmission(input: {
   formId?: string;
   programId: string;
   programTitle: string;
-}): Promise<Record<string, unknown> | undefined> {
+}): Promise<
+  | { formId: string; snapshot: Record<string, unknown> }
+  | undefined
+> {
   try {
     const row = await findApplicationFormRowForSubmission(input);
     if (!row) return undefined;
 
-    return buildApplicationFormSnapshot(mapFormRowToTemplate(row));
+    return {
+      formId: row.id,
+      snapshot: buildApplicationFormSnapshot(mapFormRowToTemplate(row)),
+    };
   } catch {
     return undefined;
   }
@@ -128,38 +177,42 @@ export async function getApplicationFormSnapshotForSubmission(input: {
 
 export async function upsertApplicationFormTemplate(
   template: ApplicationFormTemplate,
-  options: { ownerId?: string; restrictToOwner?: boolean } = {},
+  options: { hostScope?: HostFormScope; ownerId?: string } = {},
 ): Promise<ApplicationFormTemplate> {
-  const insertValue = mapTemplateToInsert(template, options.ownerId);
+  const db = getDb();
+  if (options.hostScope) {
+    await assertTemplateTargetWithinHostScope(template, options.hostScope);
+  }
+
+  const ownerId = options.hostScope?.ownerId ?? options.ownerId;
+  const insertValue = mapTemplateToInsert(template, ownerId);
   const now = new Date();
 
   if (isUuid(template.id)) {
-    const [updatedRow] = await getDb()
+    const existingScope = options.hostScope
+      ? await getApplicationFormScopeRow(template.id)
+      : undefined;
+    if (
+      existingScope &&
+      options.hostScope &&
+      !canAccessFormWithinHostScope(existingScope, options.hostScope)
+    ) {
+      throw new ApplicationFormAccessError();
+    }
+
+    const updateCondition = existingScope
+      ? formScopeSnapshotCondition(existingScope)
+      : eq(programApplicationForms.id, template.id);
+    const [updatedRow] = await db
       .update(programApplicationForms)
       .set({ ...insertValue, updatedAt: now })
-      .where(
-        options.ownerId && options.restrictToOwner
-          ? and(
-              eq(programApplicationForms.id, template.id),
-              eq(programApplicationForms.createdBy, options.ownerId),
-            )
-          : eq(programApplicationForms.id, template.id),
-      )
+      .where(updateCondition)
       .returning();
 
     if (updatedRow) return mapFormRowToTemplate(updatedRow);
+    if (existingScope && options.hostScope) throw new ApplicationFormAccessError();
 
-    if (options.ownerId && options.restrictToOwner) {
-      const [existingRow] = await getDb()
-        .select({ id: programApplicationForms.id })
-        .from(programApplicationForms)
-        .where(eq(programApplicationForms.id, template.id))
-        .limit(1);
-
-      if (existingRow) throw new ApplicationFormAccessError();
-    }
-
-    const [createdRow] = await getDb()
+    const [createdRow] = await db
       .insert(programApplicationForms)
       .values({ ...insertValue, id: template.id })
       .returning();
@@ -167,7 +220,7 @@ export async function upsertApplicationFormTemplate(
     return mapFormRowToTemplate(createdRow);
   }
 
-  const [row] = await getDb()
+  const [row] = await db
     .insert(programApplicationForms)
     .values(insertValue)
     .returning();
@@ -177,40 +230,30 @@ export async function upsertApplicationFormTemplate(
 
 export async function deleteApplicationFormTemplate(
   templateId: string,
-  options: { ownerId?: string; restrictToOwner?: boolean } = {},
+  options: { hostScope?: HostFormScope } = {},
 ): Promise<boolean> {
   if (!isUuid(templateId)) return false;
 
-  const ownershipCondition =
-    options.ownerId && options.restrictToOwner
-      ? and(
-          eq(programApplicationForms.id, templateId),
-          eq(programApplicationForms.createdBy, options.ownerId),
-        )
-      : eq(programApplicationForms.id, templateId);
-
-  const [formRow] = await getDb()
+  const db = getDb();
+  const [formRow] = await db
     .select({
+      createdBy: programApplicationForms.createdBy,
       id: programApplicationForms.id,
       programId: programApplicationForms.programId,
       programTitle: programApplicationForms.programTitle,
+      villageId: programsTable.villageId,
     })
     .from(programApplicationForms)
-    .where(ownershipCondition)
+    .leftJoin(programsTable, eq(programApplicationForms.programId, programsTable.id))
+    .where(eq(programApplicationForms.id, templateId))
     .limit(1);
 
-  if (!formRow) {
-    if (options.ownerId && options.restrictToOwner) {
-      const [existingRow] = await getDb()
-        .select({ id: programApplicationForms.id })
-        .from(programApplicationForms)
-        .where(eq(programApplicationForms.id, templateId))
-        .limit(1);
-
-      if (existingRow) throw new ApplicationFormAccessError();
-    }
-
-    return false;
+  if (!formRow) return false;
+  if (
+    options.hostScope &&
+    !canAccessFormWithinHostScope(formRow, options.hostScope)
+  ) {
+    throw new ApplicationFormAccessError();
   }
 
   if (formRow.programId || formRow.programTitle?.trim()) {
@@ -220,11 +263,11 @@ export async function deleteApplicationFormTemplate(
     );
   }
 
-  const [applicationUsage] = await getDb()
+  const [applicationUsage] = await db
     .select({ value: count() })
     .from(programApplications)
     .where(eq(programApplications.formId, templateId));
-  const [inquiryUsage] = await getDb()
+  const [inquiryUsage] = await db
     .select({ value: count() })
     .from(programInquiries)
     .where(eq(programInquiries.formId, templateId));
@@ -238,12 +281,90 @@ export async function deleteApplicationFormTemplate(
     );
   }
 
-  const [deletedRow] = await getDb()
+  const [deletedRow] = await db
     .delete(programApplicationForms)
-    .where(eq(programApplicationForms.id, templateId))
+    .where(
+      options.hostScope
+        ? formScopeSnapshotCondition(formRow)
+        : eq(programApplicationForms.id, templateId),
+    )
     .returning({ id: programApplicationForms.id });
 
+  if (!deletedRow && options.hostScope) throw new ApplicationFormAccessError();
   return Boolean(deletedRow);
+}
+
+async function assertTemplateTargetWithinHostScope(
+  template: ApplicationFormTemplate,
+  scope: HostFormScope,
+) {
+  const villageIds = normalizeVillageIds(scope.villageIds);
+  if (villageIds.length === 0) throw new ApplicationFormAccessError();
+
+  const programId = template.programId?.trim();
+  if (!programId) return;
+  if (!isUuid(programId)) throw new ApplicationFormAccessError();
+
+  const [program] = await getDb()
+    .select({ villageId: programsTable.villageId })
+    .from(programsTable)
+    .where(eq(programsTable.id, programId))
+    .limit(1);
+  if (!program?.villageId || !villageIds.includes(program.villageId)) {
+    throw new ApplicationFormAccessError();
+  }
+}
+
+async function getApplicationFormScopeRow(
+  templateId: string,
+): Promise<FormScopeRow | undefined> {
+  const [row] = await getDb()
+    .select({
+      createdBy: programApplicationForms.createdBy,
+      id: programApplicationForms.id,
+      programId: programApplicationForms.programId,
+      villageId: programsTable.villageId,
+    })
+    .from(programApplicationForms)
+    .leftJoin(programsTable, eq(programApplicationForms.programId, programsTable.id))
+    .where(eq(programApplicationForms.id, templateId))
+    .limit(1);
+
+  return row;
+}
+
+function canAccessFormWithinHostScope(
+  row: FormScopeRow,
+  scope: HostFormScope,
+): boolean {
+  const villageIds = normalizeVillageIds(scope.villageIds);
+  if (villageIds.length === 0) return false;
+
+  return row.programId
+    ? Boolean(row.villageId && villageIds.includes(row.villageId))
+    : row.createdBy === scope.ownerId;
+}
+
+function formScopeSnapshotCondition(row: FormScopeRow): SQL {
+  const idCondition = eq(programApplicationForms.id, row.id);
+  if (row.programId) {
+    return and(
+      idCondition,
+      eq(programApplicationForms.programId, row.programId),
+    )!;
+  }
+
+  return and(
+    idCondition,
+    isNull(programApplicationForms.programId),
+    row.createdBy
+      ? eq(programApplicationForms.createdBy, row.createdBy)
+      : isNull(programApplicationForms.createdBy),
+  )!;
+}
+
+function normalizeVillageIds(values: string[]): string[] {
+  return Array.from(new Set(values.filter(isUuid)));
 }
 
 export function normalizeApplicationFormTemplate(

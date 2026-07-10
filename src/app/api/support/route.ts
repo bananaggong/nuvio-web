@@ -1,16 +1,16 @@
 import { NextResponse } from "next/server";
+import {
+  apiError,
+  applyPersistentRateLimit,
+  enforceSameOrigin,
+  readJsonWithLimit,
+} from "@/lib/api-security";
 import { createProgramInquiry } from "@/lib/host-inquiry-db";
 import {
   getSupportInquiryLabel,
   isSupportInquiryType,
   type SupportInquiryType,
 } from "@/lib/support-inquiries";
-import {
-  apiError,
-  applyRateLimit,
-  enforceContentLength,
-  enforceSameOrigin,
-} from "@/lib/api-security";
 
 export const runtime = "nodejs";
 
@@ -31,21 +31,17 @@ type ValidatedSupportInquiry = {
 };
 
 export async function POST(request: Request) {
-  const contentLengthError = enforceContentLength(request, MAX_PAYLOAD_BYTES);
-  if (contentLengthError) return contentLengthError;
-
   const crossOriginError = enforceSameOrigin(request);
   if (crossOriginError) return crossOriginError;
 
-  const rateLimitError = applyRateLimit(request, SUPPORT_RATE_LIMIT);
+  const rateLimitError = await applyPersistentRateLimit(
+    request,
+    SUPPORT_RATE_LIMIT,
+  );
   if (rateLimitError) return rateLimitError;
 
-  let body: unknown;
-  try {
-    body = await request.json();
-  } catch {
-    return apiError("요청 형식이 올바르지 않습니다.", 400);
-  }
+  const { body, response } = await readJsonWithLimit(request, MAX_PAYLOAD_BYTES);
+  if (response) return response;
 
   const validation = validateSupportInquiry(body);
   if ("error" in validation) return apiError(validation.error, 400);
@@ -55,7 +51,8 @@ export async function POST(request: Request) {
     const inquiryTypeLabel = getSupportInquiryLabel(
       validation.values.inquiryType,
     );
-    const savedInquiry = await createProgramInquiry({
+
+    await createProgramInquiry({
       answers: {
         inquiryType: validation.values.inquiryType,
         inquiryTypeLabel,
@@ -69,7 +66,7 @@ export async function POST(request: Request) {
       message: validation.values.message,
       messages: [],
       programId: "",
-      programTitle: "고객센터",
+      programTitle: "Customer support",
       source: "support",
       status: "new",
       submittedAt: now,
@@ -78,31 +75,15 @@ export async function POST(request: Request) {
       villageId: "",
     });
 
-    return NextResponse.json(
-      {
-        data: {
-          id: savedInquiry.id,
-        },
-      },
-      { status: 201 },
-    );
-  } catch (error) {
-    return apiError(
-      error instanceof Error ? error.message : "문의 접수에 실패했습니다.",
-      500,
-    );
+    return NextResponse.json({ data: { accepted: true } }, { status: 202 });
+  } catch {
+    return apiError("Failed to submit support inquiry.", 500);
   }
 }
 
 function validateSupportInquiry(
   body: unknown,
-):
-  | {
-      values: ValidatedSupportInquiry;
-    }
-  | {
-      error: string;
-    } {
+): { values: ValidatedSupportInquiry } | { error: string } {
   const value =
     body && typeof body === "object" && !Array.isArray(body)
       ? (body as Record<string, unknown>)
@@ -110,37 +91,27 @@ function validateSupportInquiry(
   const inquiryType = readText(value.inquiryType);
   const name = readText(value.name);
   const phone = readText(value.phone);
-  const email = readText(value.email);
+  const email = readText(value.email).toLowerCase();
   const message = readText(value.message);
 
   if (!isSupportInquiryType(inquiryType)) {
-    return { error: "문의 유형을 선택해 주세요." };
+    return { error: "Select a valid inquiry type." };
   }
-
   if (!name || name.length > 50) {
-    return { error: "이름을 50자 이내로 입력해 주세요." };
+    return { error: "Name must be between 1 and 50 characters." };
   }
-
   if (phone.length > 30) {
-    return { error: "전화번호를 30자 이내로 입력해 주세요." };
+    return { error: "Phone number is too long." };
   }
-
   if (!email || email.length > 120 || !isEmail(email)) {
-    return { error: "이메일 형식을 확인해 주세요." };
+    return { error: "Enter a valid email address." };
   }
-
   if (!message || message.length > MAX_MESSAGE_LENGTH) {
-    return { error: "문의 내용을 2000자 이내로 입력해 주세요." };
+    return { error: `Message must be between 1 and ${MAX_MESSAGE_LENGTH} characters.` };
   }
 
   return {
-    values: {
-      email,
-      inquiryType,
-      message,
-      name,
-      phone,
-    },
+    values: { email, inquiryType, message, name, phone },
   };
 }
 
@@ -149,5 +120,5 @@ function readText(value: unknown): string {
 }
 
 function isEmail(value: string): boolean {
-  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value);
+  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/u.test(value);
 }

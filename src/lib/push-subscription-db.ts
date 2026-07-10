@@ -1,6 +1,8 @@
-import { and, eq } from "drizzle-orm";
+import { and, desc, eq, notInArray, sql } from "drizzle-orm";
 import { getDb } from "@/db/client";
 import { pushSubscriptions } from "@/db/schema";
+
+export const MAX_BROWSER_PUSH_SUBSCRIPTIONS_PER_USER = 8;
 
 export type BrowserPushSubscriptionRecord = {
   auth: string;
@@ -27,7 +29,12 @@ export async function listBrowserPushSubscriptions(
   const rows = await getDb()
     .select()
     .from(pushSubscriptions)
-    .where(eq(pushSubscriptions.userId, userId));
+    .where(eq(pushSubscriptions.userId, userId))
+    .orderBy(
+      desc(pushSubscriptions.updatedAt),
+      desc(pushSubscriptions.createdAt),
+    )
+    .limit(MAX_BROWSER_PUSH_SUBSCRIPTIONS_PER_USER);
 
   return rows.map(mapPushSubscription);
 }
@@ -36,27 +43,66 @@ export async function upsertBrowserPushSubscription(
   input: BrowserPushSubscriptionInput,
 ): Promise<BrowserPushSubscriptionRecord> {
   const now = new Date();
-  const [row] = await getDb()
-    .insert(pushSubscriptions)
-    .values({
-      auth: input.auth,
-      endpoint: input.endpoint,
-      p256dh: input.p256dh,
-      updatedAt: now,
-      userAgent: input.userAgent,
-      userId: input.userId,
-    })
-    .onConflictDoUpdate({
-      set: {
+  const row = await getDb().transaction(async (tx) => {
+    await tx.execute(
+      sql`select pg_advisory_xact_lock(hashtext(${`push-endpoint:${input.endpoint}`}))`,
+    );
+    await tx.execute(
+      sql`select pg_advisory_xact_lock(hashtext(${`push-subscriptions:${input.userId}`}))`,
+    );
+
+    const [existingEndpoint] = await tx
+      .select({ userId: pushSubscriptions.userId })
+      .from(pushSubscriptions)
+      .where(eq(pushSubscriptions.endpoint, input.endpoint))
+      .limit(1);
+    if (existingEndpoint && existingEndpoint.userId !== input.userId) {
+      throw new Error("This push endpoint is already registered to another account.");
+    }
+
+    const [savedRow] = await tx
+      .insert(pushSubscriptions)
+      .values({
         auth: input.auth,
+        endpoint: input.endpoint,
         p256dh: input.p256dh,
         updatedAt: now,
         userAgent: input.userAgent,
         userId: input.userId,
-      },
-      target: pushSubscriptions.endpoint,
-    })
-    .returning();
+      })
+      .onConflictDoUpdate({
+        set: {
+          auth: input.auth,
+          p256dh: input.p256dh,
+          updatedAt: now,
+          userAgent: input.userAgent,
+          userId: input.userId,
+        },
+        target: pushSubscriptions.endpoint,
+      })
+      .returning();
+
+    const retainedIds = tx
+      .select({ id: pushSubscriptions.id })
+      .from(pushSubscriptions)
+      .where(eq(pushSubscriptions.userId, input.userId))
+      .orderBy(
+        desc(pushSubscriptions.updatedAt),
+        desc(pushSubscriptions.createdAt),
+      )
+      .limit(MAX_BROWSER_PUSH_SUBSCRIPTIONS_PER_USER);
+
+    await tx
+      .delete(pushSubscriptions)
+      .where(
+        and(
+          eq(pushSubscriptions.userId, input.userId),
+          notInArray(pushSubscriptions.id, retainedIds),
+        ),
+      );
+
+    return savedRow;
+  });
 
   return mapPushSubscription(row);
 }

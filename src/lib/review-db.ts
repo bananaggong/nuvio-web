@@ -114,7 +114,7 @@ type ParticipantApplicationRow = {
 
 export type PublicReview = Omit<
   Review,
-  "applicationId" | "programUuid" | "programRunId" | "source" | "status" | "submittedAt"
+  "applicationId" | "programUuid" | "programRunId" | "status" | "submittedAt"
 >;
 
 export type PublicReviewPage = {
@@ -424,11 +424,15 @@ export async function createParticipantReview(
       throw new ReviewEligibilityError("Review request was not found or has expired.");
     }
 
-    if (auth && authOwnsParticipantApplication(application, auth)) {
-      actorId = auth.user.id;
-      actorRole = auth.profile.role;
-      userId = auth.user.id;
+    if (!auth || !authOwnsParticipantApplication(application, auth)) {
+      throw new ReviewEligibilityError(
+        "Sign in with the account that owns this review request.",
+      );
     }
+
+    actorId = auth.user.id;
+    actorRole = auth.profile.role;
+    userId = auth.user.id;
   } else {
     if (!auth) {
       throw new ReviewEligibilityError("Authentication is required to write this review.");
@@ -1494,6 +1498,7 @@ function mapReviewRowToPublicReview(
     likes: helpfulCount ?? row.likes,
     comments: row.comments,
     badge: row.badge ?? undefined,
+    source: asReviewSource(row.source, "imported"),
     publishedAt: row.publishedAt?.toISOString(),
   };
 }

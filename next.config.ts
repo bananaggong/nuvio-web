@@ -1,10 +1,14 @@
 import type { NextConfig } from "next";
 
 const isProduction = process.env.NODE_ENV === "production";
+const supabaseImageHostname = getConfiguredHostname(
+  process.env.NEXT_PUBLIC_SUPABASE_URL,
+);
 
 const contentSecurityPolicy = [
   "default-src 'self'",
   `script-src 'self' 'unsafe-inline'${isProduction ? "" : " 'unsafe-eval'"} https://connect.facebook.net https://www.instagram.com https://dapi.kakao.com https://t1.kakaocdn.net https://t1.daumcdn.net`,
+  "script-src-attr 'none'",
   "style-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net",
   "img-src 'self' data: blob: https://images.unsplash.com https://upload.wikimedia.org https://cdn.imweb.me https://*.cdninstagram.com https://*.fbcdn.net https://*.supabase.co https://*.daumcdn.net https://*.kakaocdn.net https://ctt-image.kakao.com https://postcode.map.kakao.com",
   "font-src 'self' data: https://cdn.jsdelivr.net",
@@ -36,14 +40,27 @@ const securityHeaders = [
     value: "DENY",
   },
   {
+    key: "X-Permitted-Cross-Domain-Policies",
+    value: "none",
+  },
+  {
     key: "Permissions-Policy",
     value:
       "camera=(), microphone=(), geolocation=(), payment=(), usb=(), interest-cohort=()",
   },
+  ...(isProduction
+    ? [
+        {
+          key: "Strict-Transport-Security",
+          value: "max-age=31536000; includeSubDomains",
+        },
+      ]
+    : []),
 ];
 
 const nextConfig: NextConfig = {
   allowedDevOrigins: ["127.0.0.1"],
+  poweredByHeader: false,
   async headers() {
     return [
       {
@@ -53,6 +70,9 @@ const nextConfig: NextConfig = {
     ];
   },
   images: {
+    dangerouslyAllowLocalIP: false,
+    maximumRedirects: 0,
+    maximumResponseBody: 10 * 1024 * 1024,
     remotePatterns: [
       {
         protocol: "https",
@@ -68,18 +88,38 @@ const nextConfig: NextConfig = {
       },
       {
         protocol: "https",
+        hostname: "lh3.googleusercontent.com",
+      },
+      {
+        protocol: "https",
         hostname: "**.cdninstagram.com",
       },
       {
         protocol: "https",
         hostname: "**.fbcdn.net",
       },
-      {
-        protocol: "https",
-        hostname: "**.supabase.co",
-      },
+      ...(supabaseImageHostname
+        ? [
+            {
+              protocol: "https" as const,
+              hostname: supabaseImageHostname,
+              pathname: "/storage/v1/object/public/**",
+            },
+          ]
+        : []),
     ],
   },
 };
+
+function getConfiguredHostname(value: string | undefined): string | undefined {
+  if (!value) return undefined;
+
+  try {
+    const url = new URL(value);
+    return url.protocol === "https:" ? url.hostname : undefined;
+  } catch {
+    return undefined;
+  }
+}
 
 export default nextConfig;

@@ -6,8 +6,8 @@ import {
   requireHostRole,
 } from "@/lib/api-security";
 import { upsertHostSocialConnection } from "@/lib/host-social-connections-db";
-import { canManageHostVillage } from "@/lib/host-village-access";
-import { siteConfig } from "@/lib/seo";
+import { canAdminHostVillage } from "@/lib/host-village-access";
+import { getTrustedRequestOrigin } from "@/lib/trusted-request-origin";
 import {
   exchangeFacebookCode,
   fetchFacebookPages,
@@ -16,6 +16,7 @@ import {
   getInstagramAccount,
   selectInstagramPage,
 } from "@/lib/meta-graph";
+import { isSafeRelativePath } from "@/lib/url-security";
 
 export const runtime = "nodejs";
 
@@ -51,7 +52,7 @@ export async function GET(request: Request) {
     if (isApiAuthError(auth)) {
       throw new Error("Host login is required to complete Facebook connection.");
     }
-    if (!(await canManageHostVillage(auth, state.villageSlug))) {
+    if (!(await canAdminHostVillage(auth, state.villageSlug))) {
       throw new Error("You do not have permission to connect this channel.");
     }
 
@@ -61,7 +62,9 @@ export async function GET(request: Request) {
     const code = requestUrl.searchParams.get("code");
     if (!code) throw new Error("Facebook authorization code is missing.");
 
-    const config = getFacebookOAuthConfig(requestUrl);
+    const config = getFacebookOAuthConfig(
+      new URL(getTrustedRequestOrigin(requestUrl)),
+    );
     const token = await exchangeFacebookCode(config, code);
     const [facebookUser, pages] = await Promise.all([
       fetchFacebookUser(config.graphVersion, token.accessToken),
@@ -109,15 +112,15 @@ export async function GET(request: Request) {
       "facebook",
       "connected",
       STATE_COOKIE,
-      requestUrl.origin,
+      getTrustedRequestOrigin(requestUrl),
     );
-  } catch (error) {
+  } catch {
     return redirectWithStatus(
       returnTo,
       "facebook_error",
-      error instanceof Error ? error.message : "Facebook connection failed.",
+      "Facebook connection failed. Please try again.",
       STATE_COOKIE,
-      requestUrl.origin,
+      getTrustedRequestOrigin(requestUrl),
     );
   }
 }
@@ -147,9 +150,7 @@ function parseState(value: string | null): OAuthState {
 }
 
 function normalizeReturnTo(value: string): string {
-  return value.startsWith("/") && !value.startsWith("//")
-    ? value
-    : "/host/villages/boseong";
+  return isSafeRelativePath(value) ? value : "/host/villages/boseong";
 }
 
 function redirectWithStatus(
@@ -157,9 +158,9 @@ function redirectWithStatus(
   key: string,
   message: string,
   cookieName: string,
-  origin = siteConfig.url,
+  origin: string,
 ): NextResponse {
-  const url = new URL(path, origin);
+  const url = new URL(normalizeReturnTo(path), origin);
   url.searchParams.set(key, message);
 
   const response = NextResponse.redirect(url);

@@ -1,6 +1,8 @@
+import { randomUUID } from "node:crypto";
 import { NextResponse } from "next/server";
 import {
   apiError,
+  applyPersistentRateLimit,
   applyRateLimit,
   enforceContentLength,
   enforceSameOrigin,
@@ -9,7 +11,11 @@ import {
   requireHostRole,
 } from "@/lib/api-security";
 import { canManageHostVillage } from "@/lib/host-village-access";
-import { validateImageUploadFile } from "@/lib/image-upload-security";
+import {
+  serverUploadMaxFileBytes,
+  serverUploadMaxRequestBytes,
+  validateImageUploadFile,
+} from "@/lib/image-upload-security";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 import {
   createVillageAsset,
@@ -20,7 +26,7 @@ import { sanitizePublicImageUrl } from "@/lib/url-security";
 export const runtime = "nodejs";
 
 const bucketName = "village-assets";
-const maxUploadBytes = 5 * 1024 * 1024;
+const maxUploadBytes = serverUploadMaxFileBytes;
 
 export async function GET(request: Request) {
   const auth = await requireHostRole();
@@ -61,10 +67,11 @@ export async function POST(request: Request) {
   const crossOrigin = enforceSameOrigin(request);
   if (crossOrigin) return crossOrigin;
 
-  const payloadTooLarge = enforceContentLength(request, 8 * 1024 * 1024);
+  const payloadTooLarge = enforceContentLength(request, serverUploadMaxRequestBytes);
   if (payloadTooLarge) return payloadTooLarge;
 
-  const limited = applyRateLimit(request, {
+  const limited = await applyPersistentRateLimit(request, {
+    identity: auth.user.id,
     key: "host-village-asset:write",
     limit: 30,
     windowMs: 10 * 60 * 1000,
@@ -80,7 +87,7 @@ export async function POST(request: Request) {
 
     const { body: rawBody, response } = await readJsonWithLimit(
       request,
-      8 * 1024 * 1024,
+      serverUploadMaxRequestBytes,
     );
     if (response) return response;
     const body =
@@ -144,7 +151,7 @@ async function handleFileUpload(request: Request) {
     validatedFile.contentType,
     "asset",
   );
-  const objectPath = `${sanitizeStoragePathSegment(villageSlug)}/${Date.now()}-${safeName}`;
+  const objectPath = `${sanitizeStoragePathSegment(villageSlug)}/${randomUUID()}-${safeName}`;
   const admin = createSupabaseAdminClient();
 
   const { data: buckets } = await admin.storage.listBuckets();
@@ -162,7 +169,7 @@ async function handleFileUpload(request: Request) {
     .from(bucketName)
     .upload(objectPath, file, {
       contentType: validatedFile.contentType,
-      upsert: true,
+      upsert: false,
     });
 
   if (uploadError) {

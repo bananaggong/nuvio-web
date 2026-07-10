@@ -2,9 +2,9 @@ import { NextResponse } from "next/server";
 import {
   type ApiAuthContext,
   applyRateLimit,
-  enforceContentLength,
   enforceSameOrigin,
   isApiAuthError,
+  readJsonWithLimit,
   requireHostRole,
 } from "@/lib/api-security";
 import { safeCreateAuditLog } from "@/lib/audit-log-db";
@@ -62,9 +62,6 @@ export async function POST(request: Request) {
   const crossOrigin = enforceSameOrigin(request);
   if (crossOrigin) return crossOrigin;
 
-  const payloadTooLarge = enforceContentLength(request, 512 * 1024);
-  if (payloadTooLarge) return payloadTooLarge;
-
   const limited = applyRateLimit(request, {
     key: "host-program:save",
     limit: 60,
@@ -73,7 +70,8 @@ export async function POST(request: Request) {
   if (limited) return limited;
 
   try {
-    const body = await request.json().catch(() => ({}));
+    const { body, response } = await readJsonWithLimit(request, 512 * 1024);
+    if (response) return response;
     const draft = normalizeHostProgramDraft(body);
     const workspaces =
       auth.profile.role === "admin"
@@ -98,7 +96,13 @@ export async function POST(request: Request) {
       const applicationForms = await listApplicationFormTemplatesFromDb(
         auth.profile.role === "admin"
           ? { formKind: "application" }
-          : { formKind: "application", ownerId: auth.user.id },
+          : {
+              formKind: "application",
+              hostScope: {
+                ownerId: auth.user.id,
+                villageIds: workspaces.map((workspace) => workspace.villageId),
+              },
+            },
       );
       const linkedApplicationForm = applicationForms.find((form) =>
         isLinkedProgramForm(form, scopedDraft),

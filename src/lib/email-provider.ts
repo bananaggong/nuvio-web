@@ -5,6 +5,7 @@ import {
 
 export type EmailSendInput = {
   html?: string;
+  idempotencyKey?: string;
   metadata?: Record<string, unknown>;
   subject: string;
   text: string;
@@ -131,19 +132,20 @@ async function sendResendEmail(input: EmailSendInput): Promise<EmailSendResult> 
     headers: {
       Authorization: `Bearer ${apiKey}`,
       "Content-Type": "application/json",
+      ...(input.idempotencyKey
+        ? { "Idempotency-Key": input.idempotencyKey }
+        : {}),
     },
     method: "POST",
     signal: AbortSignal.timeout(EMAIL_TIMEOUT_MS),
   });
 
   if (!response.ok) {
-    const text = await readLimitedResponseText(
+    await readLimitedResponseText(
       response,
       EMAIL_MAX_ERROR_BYTES,
     ).catch(() => "");
-    throw new Error(
-      `Resend email failed with ${response.status}${text ? `: ${text}` : ""}`,
-    );
+    throw new Error(`Resend email failed with ${response.status}.`);
   }
 
   const payload = await readJsonResponse(response);
@@ -164,6 +166,7 @@ async function sendWebhookEmail(input: EmailSendInput): Promise<EmailSendResult>
   const headers: Record<string, string> = {
     "Content-Type": "application/json",
   };
+  if (input.idempotencyKey) headers["Idempotency-Key"] = input.idempotencyKey;
   const authHeader = process.env.EMAIL_WEBHOOK_AUTH_HEADER?.trim();
   const authToken = process.env.EMAIL_WEBHOOK_AUTH_TOKEN?.trim();
   if (authHeader && authToken) headers[authHeader] = authToken;
@@ -174,6 +177,7 @@ async function sendWebhookEmail(input: EmailSendInput): Promise<EmailSendResult>
       body: JSON.stringify({
         from,
         html: input.html,
+        idempotencyKey: input.idempotencyKey,
         metadata: input.metadata ?? {},
         subject: input.subject,
         text: input.text,
@@ -187,13 +191,11 @@ async function sendWebhookEmail(input: EmailSendInput): Promise<EmailSendResult>
   );
 
   if (!response.ok) {
-    const text = await readLimitedResponseText(
+    await readLimitedResponseText(
       response,
       EMAIL_MAX_ERROR_BYTES,
     ).catch(() => "");
-    throw new Error(
-      `Email webhook failed with ${response.status}${text ? `: ${text}` : ""}`,
-    );
+    throw new Error(`Email webhook failed with ${response.status}.`);
   }
 
   const payload = await readJsonResponse(response);

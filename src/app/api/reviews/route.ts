@@ -2,10 +2,10 @@ import { NextResponse } from "next/server";
 import {
   applyPersistentRateLimit,
   asJsonRecord,
-  enforceContentLength,
   enforceSameOrigin,
+  isApiAuthError,
   readJsonWithLimit,
-  getOptionalAuthenticatedUser,
+  requireAuthenticatedUser,
 } from "@/lib/api-security";
 import { launchFeatureFlags } from "@/lib/launch-feature-flags";
 import { hashReviewRequestToken } from "@/lib/review-request-token";
@@ -59,9 +59,6 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Reviews are disabled." }, { status: 404 });
   }
 
-  const payloadTooLarge = enforceContentLength(request, 32 * 1024);
-  if (payloadTooLarge) return payloadTooLarge;
-
   const crossOrigin = enforceSameOrigin(request);
   if (crossOrigin) return crossOrigin;
 
@@ -71,15 +68,12 @@ export async function POST(request: Request) {
 
     const body = parsedBody.body as Parameters<typeof createParticipantReview>[0];
     const bodyRecord = asJsonRecord(parsedBody.body);
-    const auth = await getOptionalAuthenticatedUser();
+    const auth = await requireAuthenticatedUser();
+    if (isApiAuthError(auth)) return auth.response;
     const requestTokenHash = hashReviewRequestToken(bodyRecord.requestToken);
 
-    if (!auth && !requestTokenHash) {
-      return NextResponse.json({ error: "Unauthorized." }, { status: 401 });
-    }
-
     const limited = await applyPersistentRateLimit(request, {
-      identity: auth?.user.id ?? `review-request-token:${requestTokenHash}`,
+      identity: `${auth.user.id}:${requestTokenHash}`,
       key: "review:create",
       limit: 5,
       windowMs: 15 * 60 * 1000,

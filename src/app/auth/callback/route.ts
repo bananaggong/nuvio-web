@@ -6,25 +6,26 @@ import {
   type OnboardingIntent,
 } from "@/lib/auth-profile-db";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
+import { getTrustedRequestOrigin } from "@/lib/trusted-request-origin";
+import { isSafeRelativePath } from "@/lib/url-security";
 
 export const runtime = "nodejs";
 
 export async function GET(request: Request) {
   const requestUrl = new URL(request.url);
   const code = requestUrl.searchParams.get("code");
-  const origin = requestUrl.origin;
   const next = getSafeNextPath(requestUrl.searchParams.get("next"));
   const intent = getSafeOnboardingIntent(requestUrl.searchParams.get("intent"));
 
   if (!code) {
-    return NextResponse.redirect(`${origin}/login?error=missing_code`);
+    return redirectToTrustedPath("/login?error=missing_code", requestUrl);
   }
 
   const supabase = await createSupabaseServerClient();
   const { error } = await supabase.auth.exchangeCodeForSession(code);
 
   if (error) {
-    return NextResponse.redirect(`${origin}/login?error=auth_callback`);
+    return redirectToTrustedPath("/login?error=auth_callback", requestUrl);
   }
 
   const {
@@ -34,20 +35,18 @@ export async function GET(request: Request) {
   const profile = user ? await ensureUserProfile(user) : null;
   const redirectPath = getPostAuthRedirectPath(profile, next, intent);
 
-  const forwardedHost = requestUrl.hostname === "localhost"
-    ? null
-    : requestUrl.host;
-
-  if (forwardedHost) {
-    return NextResponse.redirect(`https://${forwardedHost}${redirectPath}`);
-  }
-
-  return NextResponse.redirect(`${origin}${redirectPath}`);
+  return redirectToTrustedPath(redirectPath, requestUrl);
 }
 
 function getSafeNextPath(value: string | null): string | null {
-  if (!value || !value.startsWith("/") || value.startsWith("//")) return null;
-  return value;
+  return value && isSafeRelativePath(value) ? value : null;
+}
+
+function redirectToTrustedPath(path: string, requestUrl: URL): NextResponse {
+  const safePath = isSafeRelativePath(path) ? path : "/";
+  return NextResponse.redirect(
+    new URL(safePath, getTrustedRequestOrigin(requestUrl)),
+  );
 }
 
 function getSafeOnboardingIntent(value: string | null): OnboardingIntent | null {

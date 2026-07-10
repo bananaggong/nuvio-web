@@ -2,9 +2,9 @@ import { NextResponse } from "next/server";
 import {
   apiError,
   applyRateLimit,
-  enforceContentLength,
   enforceSameOrigin,
   isApiAuthError,
+  readJsonWithLimit,
   requireHostRole,
 } from "@/lib/api-security";
 import { canManageHostVillage } from "@/lib/host-village-access";
@@ -26,12 +26,6 @@ export async function POST(request: Request) {
     const crossOrigin = enforceSameOrigin(request);
     if (crossOrigin) return crossOrigin;
 
-    const contentLengthError = enforceContentLength(
-      request,
-      MAX_SECTION_PUBLISH_PAYLOAD_BYTES,
-    );
-    if (contentLengthError) return contentLengthError;
-
     const rateLimitError = applyRateLimit(request, {
       key: "host-village-section-publish",
       limit: 60,
@@ -39,7 +33,11 @@ export async function POST(request: Request) {
     });
     if (rateLimitError) return rateLimitError;
 
-    const body = await request.json().catch(() => ({}));
+    const { body, response } = await readJsonWithLimit(
+      request,
+      MAX_SECTION_PUBLISH_PAYLOAD_BYTES,
+    );
+    if (response) return response;
     const draft = normalizeVillagePageSectionDraft(body);
     if (!(await canManageHostVillage(auth, draft.villageSlug))) {
       return apiError("You do not have permission to manage this channel.", 403);

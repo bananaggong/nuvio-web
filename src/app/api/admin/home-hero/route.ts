@@ -1,9 +1,9 @@
 import { NextResponse } from "next/server";
 import {
   applyRateLimit,
-  enforceContentLength,
   enforceSameOrigin,
   isApiAuthError,
+  readJsonWithLimit,
   requireAdminRole,
 } from "@/lib/api-security";
 import { safeCreateAuditLog } from "@/lib/audit-log-db";
@@ -48,9 +48,6 @@ export async function POST(request: Request) {
   const crossOrigin = enforceSameOrigin(request);
   if (crossOrigin) return crossOrigin;
 
-  const lengthError = enforceContentLength(request, MAX_HOME_HERO_PAYLOAD_BYTES);
-  if (lengthError) return lengthError;
-
   const limited = applyRateLimit(request, {
     key: "admin-home-hero:replace",
     limit: 30,
@@ -59,7 +56,12 @@ export async function POST(request: Request) {
   if (limited) return limited;
 
   try {
-    const payload = (await request.json().catch(() => ({}))) as { slides?: unknown };
+    const { body, response } = await readJsonWithLimit(
+      request,
+      MAX_HOME_HERO_PAYLOAD_BYTES,
+    );
+    if (response) return response;
+    const payload = body as { slides?: unknown };
     const slides = await replaceHomeHeroSlides(payload.slides);
 
     await safeCreateAuditLog({

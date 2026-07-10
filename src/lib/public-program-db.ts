@@ -10,6 +10,10 @@ import {
 } from "@/lib/host-program-studio";
 import { parseLegacyProgramIdentifier } from "@/lib/program-identifier";
 import type { Program } from "@/lib/types";
+import {
+  trySanitizeHttpUrl,
+  trySanitizePublicImageUrl,
+} from "@/lib/url-security";
 
 type ProgramRow = typeof programsTable.$inferSelect;
 
@@ -109,7 +113,9 @@ function isUuid(value: string): boolean {
 }
 
 function mapProgramRowToProgram(row: ProgramRow): Program {
-  const image = row.imageUrl || fallbackImage;
+  const image =
+    trySanitizePublicImageUrl(row.imageUrl, { allowRelative: true }) ||
+    fallbackImage;
   const hashtags = normalizeList(row.hashtags);
   const categories = row.categories.length > 0 ? row.categories : [row.theme];
   const meta = decodeHostProgramMeta(row.body);
@@ -140,12 +146,16 @@ function mapProgramRowToProgram(row: ProgramRow): Program {
     applicants: row.applicants,
     status: row.status,
     sourceName: row.sourceName,
-    sourceUrl: row.sourceUrl,
-    applyUrl: row.applyUrl,
+    sourceUrl: trySanitizeHttpUrl(row.sourceUrl, { allowRelative: true }),
+    applyUrl: trySanitizeHttpUrl(row.applyUrl, { allowRelative: true }),
     phone: row.phone,
     contactEmail: row.contactEmail ?? undefined,
     image,
-    gallery: normalizeList(row.gallery, [image]),
+    gallery: normalizeList(row.gallery, [image])
+      .map((item) =>
+        trySanitizePublicImageUrl(item, { allowRelative: true }),
+      )
+      .filter(Boolean),
     badges: normalizeList(row.badges, hashtags.slice(0, 4)),
     body: normalizeList(stripHostProgramMeta(row.body), [
       row.description || row.summary,

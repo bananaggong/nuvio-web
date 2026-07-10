@@ -17,6 +17,7 @@ import type {
   LiveAnnouncement,
   Program,
 } from "./types";
+import { trySanitizeHttpUrl } from "./url-security";
 
 type RssDocument = {
   rss?: {
@@ -222,7 +223,8 @@ function normalizeRssItem(
   const description = stripMarkup(
     readText(item.description) || readText(item.summary) || readText(item.content),
   );
-  const sourceUrl = readLink(item.link) || source.url;
+  const sourceUrl =
+    trySanitizeHttpUrl(readLink(item.link)) || trySanitizeHttpUrl(source.url);
   const date = normalizeDate(
     readText(item.pubDate) || readText(item.updated) || readText(item.published),
   );

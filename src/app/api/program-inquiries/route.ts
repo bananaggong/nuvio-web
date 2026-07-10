@@ -1,10 +1,10 @@
 import { NextResponse } from "next/server";
 import {
   apiError,
-  applyRateLimit,
-  enforceContentLength,
+  applyPersistentRateLimit,
   enforceSameOrigin,
   getOptionalAuthenticatedUser,
+  readJsonWithLimit,
 } from "@/lib/api-security";
 import { createProgramInquiry } from "@/lib/host-inquiry-db";
 import { normalizeHostInquiry } from "@/lib/host-inquiries";
@@ -19,16 +19,10 @@ const MAX_INQUIRY_PAYLOAD_BYTES = 24 * 1024;
 const MAX_INQUIRY_MESSAGE_LENGTH = 2000;
 
 export async function POST(request: Request) {
-  const payloadTooLarge = enforceContentLength(
-    request,
-    MAX_INQUIRY_PAYLOAD_BYTES,
-  );
-  if (payloadTooLarge) return payloadTooLarge;
-
   const crossOrigin = enforceSameOrigin(request);
   if (crossOrigin) return crossOrigin;
 
-  const limited = applyRateLimit(request, {
+  const limited = await applyPersistentRateLimit(request, {
     key: "program-inquiry:create",
     limit: 10,
     windowMs: 15 * 60 * 1000,
@@ -36,12 +30,11 @@ export async function POST(request: Request) {
   if (limited) return limited;
 
   try {
-    let body: unknown;
-    try {
-      body = await request.json();
-    } catch {
-      return apiError("Invalid JSON payload.", 400);
-    }
+    const { body, response } = await readJsonWithLimit(
+      request,
+      MAX_INQUIRY_PAYLOAD_BYTES,
+    );
+    if (response) return response;
 
     const inquiry = normalizeHostInquiry(body);
     const validationError = validateProgramInquiry(inquiry);
@@ -57,6 +50,17 @@ export async function POST(request: Request) {
     }
 
     const programRecord = await getProgramRecordByIdentifier(inquiry.programId);
+    if (
+      programRecord &&
+      (!programRecord.publishedAt ||
+        programRecord.status === "closed" ||
+        programRecord.status === "earlyClosed")
+    ) {
+      return NextResponse.json(
+        { error: "Program was not found." },
+        { status: 404 },
+      );
+    }
     const publicProgram = programRecord
       ? null
       : await getPublicProgramByIdentifier(inquiry.programId);
@@ -105,7 +109,7 @@ export async function POST(request: Request) {
       villageId: savedInquiry.villageId || programRecord?.villageId || undefined,
     });
 
-    return NextResponse.json({ data: savedInquiry }, { status: 201 });
+    return NextResponse.json({ data: { accepted: true } }, { status: 202 });
   } catch (error) {
     return NextResponse.json(
       {

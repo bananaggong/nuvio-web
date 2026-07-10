@@ -63,26 +63,80 @@ export class DuplicateProgramApplicationError extends Error {
   }
 }
 
+export class ProgramNotAcceptingApplicationsError extends Error {
+  constructor() {
+    super("This program is not accepting applications.");
+    this.name = "ProgramNotAcceptingApplicationsError";
+  }
+}
+
+export class ApplicationStatusTransitionError extends Error {
+  constructor(
+    message: string,
+    readonly code: "conflict" | "invalid_transition",
+  ) {
+    super(message);
+    this.name = "ApplicationStatusTransitionError";
+  }
+}
+
 export async function createProgramApplication(
   input: ProgramApplicationInput,
 ): Promise<HostApplication> {
   const program = await resolveApplicationProgram(input.programId);
   const email = input.email.trim().toLowerCase();
-  const formId = isUuid(input.formId ?? "") ? input.formId : undefined;
   const programRunId = isUuid(input.programRunId ?? "")
     ? input.programRunId
     : await ensureDefaultProgramRunForProgram(program.id);
-  const formSnapshot = await getApplicationFormSnapshotForSubmission({
-    formId,
+  const resolvedForm = await getApplicationFormSnapshotForSubmission({
+    formId: isUuid(input.formId ?? "") ? input.formId : undefined,
     programId: program.id,
     programTitle: program.title,
   });
+  const formId = resolvedForm?.formId;
+  const formSnapshot = resolvedForm?.snapshot;
   const consentSnapshot = buildConsentSnapshot(input.answers);
 
   const [row] = await getDb().transaction(async (tx) => {
     await tx.execute(
       sql`select pg_advisory_xact_lock(hashtext(${`program-application:${program.id}:${email}`}))`,
     );
+
+    const [programState] = await tx
+      .select({
+        publishedAt: programsTable.publishedAt,
+        recruitEnd: programsTable.recruitEnd,
+        recruitStart: programsTable.recruitStart,
+        status: programsTable.status,
+      })
+      .from(programsTable)
+      .where(eq(programsTable.id, program.id))
+      .limit(1);
+
+    if (!isApplicationWindowOpen(programState)) {
+      throw new ProgramNotAcceptingApplicationsError();
+    }
+
+    if (programRunId) {
+      const [runState] = await tx
+        .select({
+          programId: programRuns.programId,
+          recruitEnd: programRuns.recruitEnd,
+          recruitStart: programRuns.recruitStart,
+          status: programRuns.status,
+        })
+        .from(programRuns)
+        .where(eq(programRuns.id, programRunId))
+        .limit(1);
+
+      if (
+        !runState ||
+        runState.programId !== program.id ||
+        !isApplicationWindowOpen(runState)
+      ) {
+        throw new ProgramNotAcceptingApplicationsError();
+      }
+    }
 
     const [existingApplication] = await tx
       .select({ id: programApplications.id })
@@ -220,6 +274,26 @@ async function resolveApplicationProgram(
   }
 
   throw new Error(`Program ${key} was not found.`);
+}
+
+function isApplicationWindowOpen(
+  value:
+    | {
+        publishedAt?: Date | null;
+        recruitEnd: string;
+        recruitStart: string;
+        status: string;
+      }
+    | undefined,
+): boolean {
+  if (!value || value.status !== "open") return false;
+  if ("publishedAt" in value && !value.publishedAt) return false;
+
+  const today = new Date(Date.now() + 9 * 60 * 60 * 1000)
+    .toISOString()
+    .slice(0, 10);
+
+  return value.recruitStart <= today && today <= value.recruitEnd;
 }
 
 export async function listHostApplications(
@@ -414,35 +488,59 @@ export async function updateHostApplicationStatus(
 ): Promise<boolean> {
   if (options.villageIds && options.villageIds.length === 0) return false;
 
-  const [current] = await getDb()
-    .select({
-      email: programApplications.email,
-      programTitle: programsTable.title,
-      status: programApplications.status,
-      villageId: programsTable.villageId,
-    })
-    .from(programApplications)
-    .leftJoin(programsTable, eq(programApplications.programId, programsTable.id))
-    .where(eq(programApplications.id, applicationId))
-    .limit(1);
+  const transition = await getDb().transaction(async (tx) => {
+    await tx.execute(
+      sql`select pg_advisory_xact_lock(hashtext(${`application-status:${applicationId}`}))`,
+    );
 
-  if (!current) return false;
-  if (
-    options.villageIds &&
-    !options.villageIds.includes(current.villageId ?? "")
-  ) {
-    return false;
-  }
+    const [current] = await tx
+      .select({
+        email: programApplications.email,
+        programTitle: programsTable.title,
+        status: programApplications.status,
+        villageId: programsTable.villageId,
+      })
+      .from(programApplications)
+      .leftJoin(programsTable, eq(programApplications.programId, programsTable.id))
+      .where(eq(programApplications.id, applicationId))
+      .limit(1);
 
-  if (current.status === status) {
-    return true;
-  }
+    if (!current) return null;
+    if (
+      options.villageIds &&
+      !options.villageIds.includes(current.villageId ?? "")
+    ) {
+      return null;
+    }
 
-  await getDb().transaction(async (tx) => {
-    await tx
+    if (current.status === status) {
+      return { changed: false as const, current };
+    }
+
+    if (!isAllowedApplicationStatusTransition(current.status, status)) {
+      throw new ApplicationStatusTransitionError(
+        `Cannot change application status from ${current.status} to ${status}.`,
+        "invalid_transition",
+      );
+    }
+
+    const [updated] = await tx
       .update(programApplications)
       .set({ status, updatedAt: new Date() })
-      .where(eq(programApplications.id, applicationId));
+      .where(
+        and(
+          eq(programApplications.id, applicationId),
+          eq(programApplications.status, current.status),
+        ),
+      )
+      .returning({ id: programApplications.id });
+
+    if (!updated) {
+      throw new ApplicationStatusTransitionError(
+        "Application status changed concurrently.",
+        "conflict",
+      );
+    }
 
     await tx.insert(applicationStatusEvents).values({
       actorId: isUuid(actorId ?? "") ? actorId : null,
@@ -451,7 +549,14 @@ export async function updateHostApplicationStatus(
       toStatus: status,
       note: "Updated from host console",
     });
+
+    return { changed: true as const, current };
   });
+
+  if (!transition) return false;
+  if (!transition.changed) return true;
+
+  const { current } = transition;
 
   void queueApplicationStatusNotification({
     applicationId,
@@ -474,6 +579,25 @@ export async function updateHostApplicationStatus(
   });
 
   return true;
+}
+
+function isAllowedApplicationStatusTransition(
+  current: HostApplicationStatus,
+  next: HostApplicationStatus,
+): boolean {
+  const allowedTransitions: Record<
+    HostApplicationStatus,
+    HostApplicationStatus[]
+  > = {
+    accepted: ["checkedIn", "rejected"],
+    checkedIn: ["completed"],
+    completed: [],
+    rejected: [],
+    screening: ["accepted", "rejected"],
+    submitted: ["screening", "accepted", "rejected"],
+  };
+
+  return allowedTransitions[current].includes(next);
 }
 
 function buildConsentSnapshot(

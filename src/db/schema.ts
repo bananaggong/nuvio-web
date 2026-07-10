@@ -1432,6 +1432,9 @@ export const reportProjects = pgTable(
     programId: uuid("program_id").references(() => programs.id, {
       onDelete: "set null",
     }),
+    villageId: uuid("village_id").references(() => villages.id, {
+      onDelete: "restrict",
+    }).notNull(),
     name: text("name").notNull(),
     organizationName: text("organization_name").notNull(),
     reportType: text("report_type").notNull(),
@@ -1446,6 +1449,7 @@ export const reportProjects = pgTable(
     index("report_projects_created_by_idx").on(table.createdBy),
     index("report_projects_program_id_idx").on(table.programId),
     index("report_projects_status_idx").on(table.status),
+    index("report_projects_village_id_idx").on(table.villageId),
   ],
 );
 
