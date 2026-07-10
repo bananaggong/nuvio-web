@@ -318,6 +318,7 @@ const nuvioIconSources = {
   messageOrange: "/icons/nuvio/message-orange.svg",
   mypageBack: "/icons/nuvio/mypage-back.svg",
   phone: "/icons/nuvio/phone.svg",
+  review: "/icons/nuvio/review.svg",
   settings: "/icons/nuvio/settings.svg",
   summaryCalendar: "/icons/nuvio/summary-calendar.svg",
   summaryMessage: "/icons/nuvio/summary-message.svg",
@@ -394,7 +395,7 @@ export function MypageTrips() {
 export function MypageReviews() {
   return (
     <MypageFrame activeSection="reviews">
-      {(context) => <ReviewsContent context={context} />}
+      {(context) => <ReviewsContentV2 context={context} />}
     </MypageFrame>
   );
 }
@@ -697,6 +698,281 @@ function TripsContent({ context }: { context: MypageContext }) {
   );
 }
 
+function ReviewsContentV2({ context }: { context: MypageContext }) {
+  const [tab, setTab] = useState<"writable" | "written">("writable");
+  const [sort, setSort] = useState<"reserved" | "completed">("reserved");
+  const tabItems = [
+    { key: "writable" as const, label: "작성 가능한 여행" },
+    { key: "written" as const, label: "내가 쓴 후기" },
+  ];
+  const writableTrips = context.applications.filter(
+    (application) =>
+      ["checkedIn", "completed"].includes(application.status) &&
+      !application.reviewSubmitted,
+  );
+  const writtenReviewItems = context.reviews.map((review) => {
+    const application = findApplicationForReview(review, context.applications);
+    const program = findProgramForReview(review, application, context.publicPrograms);
+    return { application, program, review };
+  });
+  const sortedWritableTrips = [...writableTrips].sort((a, b) => {
+    const aProgram = findProgramForApplication(a, context.publicPrograms);
+    const bProgram = findProgramForApplication(b, context.publicPrograms);
+
+    if (sort === "completed") {
+      return (
+        parseDateSortValue(bProgram?.activityEnd) -
+        parseDateSortValue(aProgram?.activityEnd)
+      );
+    }
+
+    return parseDateSortValue(b.submittedAt) - parseDateSortValue(a.submittedAt);
+  });
+  const sortedWrittenReviews = [...writtenReviewItems].sort((a, b) => {
+    if (sort === "completed") {
+      return (
+        parseDateSortValue(b.program?.activityEnd ?? b.review.submittedAt ?? b.review.date) -
+        parseDateSortValue(a.program?.activityEnd ?? a.review.submittedAt ?? a.review.date)
+      );
+    }
+
+    return (
+      parseDateSortValue(b.application?.submittedAt ?? b.review.submittedAt ?? b.review.date) -
+      parseDateSortValue(a.application?.submittedAt ?? a.review.submittedAt ?? a.review.date)
+    );
+  });
+
+  return (
+    <section className="min-h-[clamp(420px,29.1667vw,560px)]">
+      <TripFrameTabs
+        active={tab}
+        items={tabItems}
+        onChange={(nextTab) => {
+          setTab(nextTab);
+          setSort("reserved");
+        }}
+      />
+      <div className="flex h-[clamp(31px,2.1528vw,41.333px)] items-center gap-[clamp(10px,0.6944vw,13.333px)] border-b border-[#f7eee7] pl-[clamp(7px,0.4861vw,9.333px)]">
+        <BookmarkSortButton
+          active={sort === "reserved"}
+          label="예약일 순"
+          onClick={() => setSort("reserved")}
+        />
+        <BookmarkSortButton
+          active={sort === "completed"}
+          label="완료일 순"
+          onClick={() => setSort("completed")}
+        />
+      </div>
+      <div className="mt-[clamp(27px,1.875vw,36px)]">
+        {context.loading ? (
+          <div className="grid gap-[clamp(27px,1.875vw,36px)]">
+            {Array.from({ length: 2 }, (_, index) => (
+              <ReviewListSkeleton key={`review-loading-${index}`} />
+            ))}
+          </div>
+        ) : tab === "writable" ? (
+          sortedWritableTrips.length > 0 ? (
+            <div className="grid gap-[clamp(27px,1.875vw,36px)]">
+              {sortedWritableTrips.map((application) => (
+                <WritableReviewTripCard
+                  application={application}
+                  key={application.id}
+                  program={findProgramForApplication(application, context.publicPrograms)}
+                />
+              ))}
+            </div>
+          ) : (
+            <TripEmptyPanel message="아직 작성할 후기가 없어요" />
+          )
+        ) : sortedWrittenReviews.length > 0 ? (
+          <div className="grid gap-[clamp(27px,1.875vw,36px)]">
+            {sortedWrittenReviews.map(({ application, program, review }) => (
+              <WrittenReviewCard
+                application={application}
+                key={String(review.id)}
+                program={program}
+                review={review}
+              />
+            ))}
+          </div>
+        ) : (
+          <TripEmptyPanel message="아직 작성한 후기가 없어요" />
+        )}
+      </div>
+    </section>
+  );
+}
+
+function WritableReviewTripCard({
+  application,
+  program,
+}: {
+  application: HostApplication;
+  program: Program | undefined;
+}) {
+  const displayTitle = program?.title || application.programTitle || "프로그램 제목 입력";
+  const completionDate = program?.activityEnd || application.submittedAt;
+
+  return (
+    <article className="grid min-h-[clamp(103px,7.1528vw,137.333px)] grid-cols-[clamp(104px,7.2222vw,138.667px)_minmax(0,1fr)_auto] items-center gap-[clamp(24px,1.6667vw,32px)] border-b border-[#f7eee7] pb-[clamp(16px,1.1111vw,21.333px)]">
+      <Link
+        className="relative block h-[clamp(104px,7.2222vw,138.667px)] w-[clamp(104px,7.2222vw,138.667px)] overflow-hidden rounded-[clamp(8px,0.5556vw,10.667px)] bg-[#d9d9d9]"
+        href={program ? programPath(program) : "/mypage/trips"}
+      >
+        {program?.image ? (
+          <Image
+            alt={displayTitle}
+            className="object-cover"
+            fill
+            sizes="(min-width: 1920px) 139px, 7.3vw"
+            src={program.image}
+          />
+        ) : null}
+      </Link>
+      <div className="min-w-0">
+        <p className="text-[clamp(12px,0.8333vw,16px)] font-medium leading-[1.2] text-[#748190]">
+          {formatReviewProgramLocation(program)}
+        </p>
+        <Link
+          className="mt-[clamp(7px,0.4861vw,9.333px)] block line-clamp-2 text-[clamp(18px,1.25vw,24px)] font-semibold leading-[1.35] text-[var(--mypage-brown)]"
+          href={program ? programPath(program) : "/mypage/trips"}
+        >
+          {displayTitle}
+        </Link>
+        <p className="mt-[clamp(8px,0.5556vw,10.667px)] text-[clamp(12px,0.8333vw,16px)] font-medium leading-[1.2] text-[#748190]">
+          {program?.sourceName || "호스트명"}
+        </p>
+        <p className="mt-[clamp(12px,0.8333vw,16px)] text-[clamp(12px,0.8333vw,16px)] font-medium leading-[1.2] text-[var(--mypage-orange)]">
+          여행완료 {formatShortDate(completionDate)}
+        </p>
+      </div>
+      <Link
+        className="inline-flex h-[clamp(38px,2.6389vw,50.667px)] min-w-[clamp(108px,7.5vw,144px)] items-center justify-center rounded-[clamp(4px,0.2778vw,5.333px)] border border-[var(--mypage-orange)] px-[clamp(18px,1.25vw,24px)] text-[clamp(13px,0.9028vw,17.333px)] font-semibold text-[var(--mypage-orange)] transition hover:bg-[#fff3eb]"
+        href={`/reviews/new?applicationId=${application.id}`}
+      >
+        후기 작성
+      </Link>
+    </article>
+  );
+}
+
+function WrittenReviewCard({
+  application,
+  program,
+  review,
+}: {
+  application?: HostApplication;
+  program?: Program;
+  review: Review;
+}) {
+  const title = program?.title || review.programTitle || application?.programTitle || "프로그램 제목 입력";
+  const hostName = program?.sourceName || "호스트명";
+  const images = review.images.filter(Boolean).slice(0, 5);
+  const body = review.body || review.excerpt;
+
+  return (
+    <article className="grid min-h-[clamp(236px,16.3889vw,314.667px)] grid-cols-[clamp(131px,9.0972vw,174.667px)_minmax(0,1fr)] gap-[clamp(34px,2.3611vw,45.333px)] border-b border-[#f7eee7] pb-[clamp(26px,1.8056vw,34.667px)]">
+      <div className="min-w-0">
+        <Link
+          className="relative block h-[clamp(108px,7.5vw,144px)] w-[clamp(105px,7.2917vw,140px)] overflow-hidden rounded-[clamp(8px,0.5556vw,10.667px)] bg-[#d9d9d9]"
+          href={program ? programPath(program) : "/mypage/trips"}
+        >
+          {program?.image ? (
+            <Image
+              alt={title}
+              className="object-cover"
+              fill
+              sizes="(min-width: 1920px) 140px, 7.3vw"
+              src={program.image}
+            />
+          ) : null}
+        </Link>
+        <p className="mt-[clamp(11px,0.7639vw,14.667px)] text-[clamp(12px,0.8333vw,16px)] font-medium leading-[1.2] text-[#748190]">
+          {formatReviewProgramLocation(program)}
+        </p>
+        <Link
+          className="mt-[clamp(4px,0.2778vw,5.333px)] block line-clamp-2 text-[clamp(16px,1.1111vw,21.333px)] font-semibold leading-[1.42] text-[var(--mypage-brown)]"
+          href={program ? programPath(program) : "/mypage/trips"}
+        >
+          {title}
+        </Link>
+        <p className="mt-[clamp(7px,0.4861vw,9.333px)] text-[clamp(12px,0.8333vw,16px)] font-semibold leading-[1.2] text-[#748190]">
+          {hostName}
+        </p>
+        <p className="mt-[clamp(14px,0.9722vw,18.667px)] text-[clamp(12px,0.8333vw,16px)] font-medium leading-[1.2] text-[var(--mypage-orange)]">
+          여행완료 {formatShortDate(program?.activityEnd || review.submittedAt || review.date)}
+        </p>
+      </div>
+      <div className="min-w-0">
+        <div className="flex h-[clamp(19px,1.3194vw,25.333px)] items-center gap-[clamp(5px,0.3472vw,6.667px)]">
+          <ReviewFireRating rating={review.rating ?? 0} />
+          <span className="text-[clamp(12px,0.8333vw,16px)] font-semibold leading-none text-[var(--mypage-brown)]">
+            {(review.rating ?? 0).toFixed(1)}
+          </span>
+          <span className="ml-auto text-[clamp(11px,0.7639vw,14.667px)] font-medium leading-none text-[#C7BDB5]">
+            {formatReviewDisplayDate(review.submittedAt || review.publishedAt || review.date)}
+          </span>
+        </div>
+        <p className="mt-[clamp(11px,0.7639vw,14.667px)] line-clamp-4 min-h-[clamp(65px,4.5139vw,86.667px)] text-[clamp(13px,0.9028vw,17.333px)] font-medium leading-[1.65] text-[#5F6C7B]">
+          {body}
+        </p>
+        {images.length > 0 ? (
+          <div className="mt-[clamp(22px,1.5278vw,29.333px)] flex gap-[clamp(6px,0.4167vw,8px)] overflow-hidden">
+            {images.map((src, index) => (
+              <div
+                aria-label={`후기 사진 ${index + 1}`}
+                className="h-[clamp(120px,8.3333vw,160px)] w-[clamp(120px,8.3333vw,160px)] shrink-0 rounded-[clamp(5px,0.3472vw,6.667px)] bg-cover bg-center bg-[#f0efec]"
+                key={`${src}-${index}`}
+                role="img"
+                style={{ backgroundImage: `url("${src}")` }}
+              />
+            ))}
+          </div>
+        ) : (
+          <div className="mt-[clamp(22px,1.5278vw,29.333px)] grid h-[clamp(120px,8.3333vw,160px)] place-items-center rounded-[clamp(5px,0.3472vw,6.667px)] border border-dashed border-[#E6DDD6] text-[clamp(12px,0.8333vw,16px)] font-medium text-[#C7BDB5]">
+            첨부된 사진이 없어요
+          </div>
+        )}
+      </div>
+    </article>
+  );
+}
+
+function ReviewFireRating({ rating }: { rating: number }) {
+  return (
+    <div className="flex items-center gap-[clamp(3px,0.2083vw,4px)]">
+      {Array.from({ length: 5 }, (_, index) => {
+        const active = rating >= index + 1;
+        return (
+          <span
+            className={`grid h-[clamp(13px,0.9028vw,17.333px)] w-[clamp(13px,0.9028vw,17.333px)] place-items-center rounded-full ${
+              active ? "bg-[var(--mypage-orange)]" : "bg-[#D8D2CB]"
+            }`}
+            key={index}
+          >
+            <NuvioAssetIcon alt="" name="review" size={8} />
+          </span>
+        );
+      })}
+    </div>
+  );
+}
+
+function ReviewListSkeleton() {
+  return (
+    <article aria-busy="true" className="grid grid-cols-[clamp(104px,7.2222vw,138.667px)_minmax(0,1fr)] gap-[clamp(24px,1.6667vw,32px)] border-b border-[#f7eee7] pb-[clamp(18px,1.25vw,24px)]">
+      <MypageSkeletonBlock className="h-[clamp(104px,7.2222vw,138.667px)] w-[clamp(104px,7.2222vw,138.667px)] rounded-[clamp(8px,0.5556vw,10.667px)]" />
+      <div className="pt-[clamp(8px,0.5556vw,10.667px)]">
+        <MypageSkeletonBlock className="h-[clamp(12px,0.8333vw,16px)] w-[24%]" />
+        <MypageSkeletonBlock className="mt-[clamp(10px,0.6944vw,13.333px)] h-[clamp(22px,1.5278vw,29.333px)] w-[48%]" />
+        <MypageSkeletonBlock className="mt-[clamp(10px,0.6944vw,13.333px)] h-[clamp(14px,0.9722vw,18.667px)] w-[32%]" />
+      </div>
+    </article>
+  );
+}
+
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 function ReviewsContent({ context }: { context: MypageContext }) {
   const [tab, setTab] = useState<"writable" | "written">("writable");
   const writableTrips = context.applications.filter(
@@ -4548,6 +4824,50 @@ function findProgramForApplication(
       program.slug === application.programId ||
       program.title === application.programTitle,
   );
+}
+
+function findApplicationForReview(
+  review: Review,
+  applications: HostApplication[],
+): HostApplication | undefined {
+  return applications.find(
+    (application) =>
+      application.id === review.applicationId ||
+      application.programId === review.programUuid ||
+      application.programId === review.programSlug ||
+      application.programTitle === review.programTitle,
+  );
+}
+
+function findProgramForReview(
+  review: Review,
+  application: HostApplication | undefined,
+  programs: Program[],
+): Program | undefined {
+  if (application) {
+    const program = findProgramForApplication(application, programs);
+    if (program) return program;
+  }
+
+  return programs.find(
+    (program) =>
+      String(program.id) === String(review.programId) ||
+      program.id === review.programUuid ||
+      program.slug === review.programSlug ||
+      program.title === review.programTitle,
+  );
+}
+
+function formatReviewProgramLocation(program: Program | undefined): string {
+  if (!program) return "프로그램 지역 위치";
+  return [program.region, program.city]
+    .filter((value, index, values) => value && values.indexOf(value) === index)
+    .join(" ") || "프로그램 지역 위치";
+}
+
+function formatReviewDisplayDate(value: string | undefined): string {
+  if (!value) return "-";
+  return formatDate(value);
 }
 
 function getMetadataText(

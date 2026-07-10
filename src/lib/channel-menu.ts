@@ -143,9 +143,7 @@ export function getChannelMenuItems(
 export function getVisibleChannelMenuItems(
   value: Pick<Village, "sections"> | VillageSection[] | null | undefined,
 ) {
-  return getChannelMenuItems(value, { includeHidden: false }).filter(
-    (item) => item.kind !== "review",
-  );
+  return getChannelMenuItems(value, { includeHidden: false });
 }
 
 export function getChannelMenuLabel(
