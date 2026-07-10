@@ -5,6 +5,7 @@ import {
   enforceContentLength,
   enforceSameOrigin,
   isApiAuthError,
+  readJsonWithLimit,
   requireHostRole,
 } from "@/lib/api-security";
 import { canManageHostVillage } from "@/lib/host-village-access";
@@ -14,6 +15,7 @@ import {
   createVillageAsset,
   listVillageAssets,
 } from "@/lib/village-assets-db";
+import { sanitizePublicImageUrl } from "@/lib/url-security";
 
 export const runtime = "nodejs";
 
@@ -76,7 +78,15 @@ export async function POST(request: Request) {
       return await handleFileUpload(request);
     }
 
-    const body = (await request.json()) as Record<string, unknown>;
+    const { body: rawBody, response } = await readJsonWithLimit(
+      request,
+      8 * 1024 * 1024,
+    );
+    if (response) return response;
+    const body =
+      rawBody && typeof rawBody === "object" && !Array.isArray(rawBody)
+        ? (rawBody as Record<string, unknown>)
+        : {};
     const url = asString(body.url);
 
     if (!url) {
@@ -118,7 +128,7 @@ async function handleFileUpload(request: Request) {
     throw new Error("File is required.");
   }
 
-  await validateUploadFile(file);
+  const validatedFile = await validateUploadFile(file);
 
   const villageSlug = asString(formData.get("villageSlug")) || "boseong";
   const auth = await requireHostRole();
@@ -129,7 +139,11 @@ async function handleFileUpload(request: Request) {
 
   const usage = asString(formData.get("usage")) || "page";
   const altText = asString(formData.get("altText"));
-  const safeName = sanitizeStorageFileName(file.name || "asset", file.type, "asset");
+  const safeName = sanitizeStorageFileName(
+    file.name || "asset",
+    validatedFile.contentType,
+    "asset",
+  );
   const objectPath = `${sanitizeStoragePathSegment(villageSlug)}/${Date.now()}-${safeName}`;
   const admin = createSupabaseAdminClient();
 
@@ -147,7 +161,7 @@ async function handleFileUpload(request: Request) {
   const { error: uploadError } = await admin.storage
     .from(bucketName)
     .upload(objectPath, file, {
-      contentType: file.type || "application/octet-stream",
+      contentType: validatedFile.contentType,
       upsert: true,
     });
 
@@ -160,7 +174,7 @@ async function handleFileUpload(request: Request) {
     altText,
     fileName: safeName,
     metadata: {
-      contentType: file.type,
+      contentType: validatedFile.contentType,
       size: file.size,
       source: "upload",
       storagePath: objectPath,
@@ -210,29 +224,21 @@ function sanitizeStoragePathSegment(value: string): string {
   );
 }
 
-function safeStorageExtension(fileName: string, contentType: string): string {
-  const extension = fileName.split(".").pop()?.toLowerCase() ?? "";
-  if (["gif", "jpg", "jpeg", "png", "webp"].includes(extension)) {
-    return extension === "jpeg" ? "jpg" : extension;
-  }
-
+function safeStorageExtension(_fileName: string, contentType: string): string {
+  if (contentType === "image/jpeg") return "jpg";
   if (contentType === "image/gif") return "gif";
   if (contentType === "image/png") return "png";
   if (contentType === "image/webp") return "webp";
-  return "jpg";
+  throw new Error("Unsupported upload content type.");
 }
 
 async function validateUploadFile(file: File) {
-  await validateImageUploadFile(file, { maxBytes: maxUploadBytes });
+  return validateImageUploadFile(file, { maxBytes: maxUploadBytes });
 }
 
 function validateAssetUrl(value: string): string {
   try {
-    const url = new URL(value);
-    if (url.protocol !== "https:" && url.protocol !== "http:") {
-      throw new Error("Only HTTP(S) asset URLs are allowed.");
-    }
-    return url.toString();
+    return sanitizePublicImageUrl(value, { allowRelative: true });
   } catch {
     throw new Error("A valid asset URL is required.");
   }

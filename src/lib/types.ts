@@ -193,6 +193,7 @@ export type VillageMediaContent = {
   embedUrl?: string;
   sourceName: string;
   sourceUrl: string;
+  createdAt?: string;
   date: string;
   featured?: boolean;
   published: boolean;

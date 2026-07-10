@@ -24,6 +24,7 @@ export const CHANNEL_MENU_SECTION_MARKER = "__nuvio_channel_menu__";
 
 export const channelHomeLabel = "채널 홈";
 const channelFreeMenuEnabled = false;
+let channelMenuIdSequence = 0;
 
 const legacyEditableMenuLabels: Partial<Record<ChannelMenuKind, string>> = {
   board: "게시판",
@@ -180,6 +181,7 @@ export function applyChannelMenuItemsToSections(
       ...section,
       visible: false,
     }));
+  const usedMenuIds = new Set<string>();
   const normalizedItems = ensureCoreMenus(
     items.filter((item) => isEnabledChannelMenuKind(item.kind)),
   )
@@ -188,7 +190,7 @@ export function applyChannelMenuItemsToSections(
       description: isCoreMenuKind(item.kind)
         ? channelMenuMeta[item.kind].defaultDescription
         : item.description,
-      id: item.id || createMenuId(item.kind),
+      id: normalizeMenuId(item.kind, item.id, usedMenuIds),
       label: item.label.trim() || channelMenuMeta[item.kind].defaultLabel,
       locked: isCoreMenuKind(item.kind) || item.locked,
       order: index,
@@ -230,7 +232,26 @@ export function channelHostHref(kind: ChannelMenuKind) {
 }
 
 export function createMenuId(kind: ChannelMenuKind) {
-  return `channel-menu-${kind}-${Date.now().toString(36)}`;
+  const randomId = globalThis.crypto?.randomUUID?.();
+  if (randomId) return `channel-menu-${kind}-${randomId}`;
+
+  channelMenuIdSequence += 1;
+  return `channel-menu-${kind}-${Date.now().toString(36)}-${channelMenuIdSequence.toString(36)}`;
+}
+
+function normalizeMenuId(
+  kind: ChannelMenuKind,
+  value: string,
+  usedIds: Set<string>,
+) {
+  let id = value || createMenuId(kind);
+
+  while (usedIds.has(id)) {
+    id = createMenuId(kind);
+  }
+
+  usedIds.add(id);
+  return id;
 }
 
 export function createChannelMenuItem(kind: ChannelMenuKind): ChannelMenuItem {

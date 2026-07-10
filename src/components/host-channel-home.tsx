@@ -45,8 +45,12 @@ type HostProgramsPayload = {
   error?: string;
 };
 
+type HostMediaItem = VillageMediaContent & {
+  imageUrls?: string[];
+};
+
 type HostMediaPayload = {
-  data?: VillageMediaContent[];
+  data?: HostMediaItem[];
   error?: string;
 };
 
@@ -122,7 +126,7 @@ export function HostChannelHome() {
   const requestedChannelSlug = searchParams.get("channel");
   const [channel, setChannel] = useState<Village | null>(null);
   const [programs, setPrograms] = useState<HostProgramDraft[]>([]);
-  const [mediaItems, setMediaItems] = useState<VillageMediaContent[]>([]);
+  const [mediaItems, setMediaItems] = useState<HostMediaItem[]>([]);
   const [boardPosts, setBoardPosts] = useState<ChannelBoardPost[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isUploadingHero, setIsUploadingHero] = useState(false);
@@ -192,7 +196,11 @@ export function HostChannelHome() {
       if (mediaResponse?.ok) {
         const mediaPayload = (await mediaResponse.json().catch(() => ({}))) as HostMediaPayload;
         const media = Array.isArray(mediaPayload.data) ? mediaPayload.data : [];
-        setMediaItems(media.filter((item) => item.villageSlug === selectedChannel.slug));
+        setMediaItems(
+          media
+            .filter((item) => item.villageSlug === selectedChannel.slug)
+            .sort(compareChannelHomeMediaItems),
+        );
       } else {
         setMediaItems([]);
       }
@@ -1292,7 +1300,7 @@ function formatMiniDate(value?: string) {
 }
 
 function buildGalleryCards(
-  media: VillageMediaContent[],
+  media: HostMediaItem[],
 ): HostChannelHomeGalleryCard[] {
   return media.map((item) => {
     const images = getMediaImageUrls(item);
@@ -1309,7 +1317,7 @@ function buildGalleryCards(
 }
 
 function buildStoryCards(
-  media: VillageMediaContent[],
+  media: HostMediaItem[],
 ): HostChannelHomeStoryCard[] {
   return media.map((item) => ({
     body: item.body.join("\n"),
@@ -1329,11 +1337,11 @@ function buildNoticeRows(posts: ChannelBoardPost[]): HostChannelHomeNoticeRow[] 
   }));
 }
 
-function isChannelMagazineMedia(item: VillageMediaContent) {
+function isChannelMagazineMedia(item: HostMediaItem) {
   return item.sourceUrl.includes("/host/channels/magazines");
 }
 
-function isChannelGalleryMedia(item: VillageMediaContent) {
+function isChannelGalleryMedia(item: HostMediaItem) {
   return !isChannelMagazineMedia(item);
 }
 
@@ -1349,8 +1357,27 @@ function isChannelVideoMedia(
   );
 }
 
-function getMediaImageUrls(item: VillageMediaContent) {
-  return item.images?.length ? item.images : [item.thumbnail].filter(Boolean);
+function getMediaImageUrls(item: HostMediaItem) {
+  const imageUrls = item.imageUrls?.length ? item.imageUrls : item.images;
+  return imageUrls?.length ? imageUrls : [item.thumbnail].filter(Boolean);
+}
+
+function compareChannelHomeMediaItems(a: HostMediaItem, b: HostMediaItem): number {
+  const dateDifference = parseChannelHomeTime(b.date) - parseChannelHomeTime(a.date);
+  if (dateDifference !== 0) return dateDifference;
+
+  const createdAtDifference =
+    parseChannelHomeTime(b.createdAt ?? b.updatedAt) -
+    parseChannelHomeTime(a.createdAt ?? a.updatedAt);
+  if (createdAtDifference !== 0) return createdAtDifference;
+
+  return String(b.id).localeCompare(String(a.id));
+}
+
+function parseChannelHomeTime(value: string | undefined): number {
+  if (!value) return 0;
+  const time = Date.parse(value);
+  return Number.isNaN(time) ? 0 : time;
 }
 
 function formatChannelHomeStoryDate(value: string) {

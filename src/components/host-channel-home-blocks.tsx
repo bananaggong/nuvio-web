@@ -69,6 +69,7 @@ const colorSwatches = [
   "#1F5A91",
   "#142EA0",
 ];
+let homeBlockIdSequence = 0;
 
 export function HostChannelHomeBlocks({
   channel,
@@ -104,7 +105,7 @@ function HostChannelHomeBlocksInner({
   function createBlock(): ChannelHomeBlock {
     return {
       ...defaultChannelHomeBlock,
-      id: `channel-home-block-${Date.now().toString(36)}`,
+      id: createHomeBlockId(),
       order: blocks.length,
     };
   }
@@ -988,6 +989,14 @@ function normalizeHexInput(value: string): string | null {
   }
 
   return null;
+}
+
+function createHomeBlockId(): string {
+  const randomId = globalThis.crypto?.randomUUID?.();
+  if (randomId) return `channel-home-block-${randomId}`;
+
+  homeBlockIdSequence += 1;
+  return `channel-home-block-${Date.now().toString(36)}-${homeBlockIdSequence.toString(36)}`;
 }
 
 function hexToRgb(value: string) {

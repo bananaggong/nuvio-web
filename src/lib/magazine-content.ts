@@ -1,4 +1,8 @@
 import sanitizeHtml from "sanitize-html";
+import {
+  trySanitizeEditorLinkUrl,
+  trySanitizePublicImageUrl,
+} from "@/lib/url-security";
 
 const allowedTextAlign = [/^left$/u, /^center$/u, /^right$/u, /^justify$/u];
 const allowedCssLength = [
@@ -52,8 +56,9 @@ export function sanitizeMagazineHtml(input: string): string {
     },
     allowedSchemes: ["http", "https", "mailto"],
     allowedSchemesByTag: {
-      img: ["http", "https"],
+      img: ["https"],
     },
+    allowProtocolRelative: false,
     allowedStyles: {
       "*": {
         "text-align": allowedTextAlign,
@@ -78,23 +83,23 @@ export function sanitizeMagazineHtml(input: string): string {
       },
     },
     transformTags: {
-      a: sanitizeHtml.simpleTransform("a", {
-        rel: "noopener noreferrer",
-        target: "_blank",
-      }),
+      a: sanitizeLink,
       col: sanitizeTableColumn,
       img: (tagName, attribs) => {
         const width = sanitizeImageWidth(
           attribs.width ?? parseStyleWidth(attribs.style),
         );
-        const nextAttribs = { ...attribs };
-        delete nextAttribs.height;
-        delete nextAttribs.style;
+        const src = trySanitizePublicImageUrl(attribs.src ?? "", {
+          allowRelative: true,
+        });
+        const nextAttribs: Record<string, string> = {};
+
+        if (src) nextAttribs.src = src;
+        if (attribs.alt) nextAttribs.alt = attribs.alt.slice(0, 200);
+        if (attribs.title) nextAttribs.title = attribs.title.slice(0, 200);
 
         if (width) {
           nextAttribs.width = String(width);
-        } else {
-          delete nextAttribs.width;
         }
 
         return {
@@ -105,6 +110,7 @@ export function sanitizeMagazineHtml(input: string): string {
       td: sanitizeTableCell,
       th: sanitizeTableCell,
     },
+    exclusiveFilter: (frame) => frame.tag === "img" && !frame.attribs.src,
   }).trim();
 }
 
@@ -149,6 +155,43 @@ function sanitizeImageWidth(value: string | undefined): number | null {
 function parseStyleWidth(style: string | undefined): string | undefined {
   if (!style) return undefined;
   return style.match(/(?:^|;)\s*width\s*:\s*(\d{1,4})(?:px)?\s*(?:;|$)/iu)?.[1];
+}
+
+function sanitizeLink(
+  tagName: string,
+  attribs: Record<string, string>,
+): sanitizeHtml.Tag {
+  const href = trySanitizeEditorLinkUrl(attribs.href ?? "", {
+    allowRelative: true,
+  });
+  const name = sanitizeAnchorName(attribs.name);
+  const nextAttribs: Record<string, string> = {};
+
+  if (href) {
+    nextAttribs.href = href;
+    nextAttribs.rel = "noopener noreferrer";
+    nextAttribs.target = "_blank";
+  }
+
+  if (name) {
+    nextAttribs.name = name;
+  }
+
+  return {
+    attribs: nextAttribs,
+    tagName,
+  };
+}
+
+function sanitizeAnchorName(value: string | undefined): string | undefined {
+  if (!value) return undefined;
+  const name = value
+    .normalize("NFKC")
+    .replace(/[^a-z0-9_-]+/giu, "-")
+    .replace(/^-+|-+$/gu, "")
+    .slice(0, 80);
+
+  return name || undefined;
 }
 
 function sanitizeTableCell(

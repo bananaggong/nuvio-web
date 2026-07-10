@@ -31,6 +31,14 @@ type ChannelBoardPostsPayload = {
   error?: string;
 };
 
+type BoardPostMutationInput = {
+  body?: string;
+  createdAt: string;
+  id?: string;
+  pinned?: boolean;
+  title: string;
+};
+
 type UploadAssetPayload = {
   data?: {
     contentType: string;
@@ -228,7 +236,7 @@ export function HostChannelBoards() {
     }
   }
 
-  async function savePosts(nextPosts: ChannelBoardPost[]) {
+  async function mutatePosts(body: Record<string, unknown>) {
     if (!channel?.slug || isSaving) return false;
 
     setIsSaving(true);
@@ -236,7 +244,7 @@ export function HostChannelBoards() {
 
     const response = await fetch("/api/host/channel-board-posts", {
       body: JSON.stringify({
-        posts: sortBoardPosts(nextPosts),
+        ...body,
         villageSlug: channel.slug,
       }),
       headers: {
@@ -256,9 +264,16 @@ export function HostChannelBoards() {
     }
 
     const payload = (await response.json().catch(() => ({}))) as ChannelBoardPostsPayload;
-    setPosts(Array.isArray(payload.data) ? sortBoardPosts(payload.data) : sortBoardPosts(nextPosts));
+    setPosts(Array.isArray(payload.data) ? sortBoardPosts(payload.data) : posts);
     setSavedMessage("저장되어 공개 게시판에 반영되었습니다.");
     return true;
+  }
+
+  async function savePost(post: BoardPostMutationInput) {
+    return mutatePosts({
+      operation: "upsert",
+      post,
+    });
   }
 
   async function saveEditorDraft(contentHtml: string, plainText: string) {
@@ -281,28 +296,24 @@ export function HostChannelBoards() {
     }
 
     const existingPost = posts.find((post) => post.id === editorDraft.id);
-    const createdAt =
-      existingPost?.createdAt ??
-      new Date(`${editorDraft.date || new Date().toISOString().slice(0, 10)}T00:00:00+09:00`).toISOString();
-    const nextPost: ChannelBoardPost = {
+    const createdAt = existingPost?.createdAt ?? new Date().toISOString();
+    const nextPost: BoardPostMutationInput = {
       body: bodyHtml,
       createdAt,
-      id: editorDraft.id ?? `channel-board-post-${Date.now()}`,
       pinned: editorDraft.pinned,
       title,
     };
-    const nextPosts = sortBoardPosts([
-      nextPost,
-      ...posts.filter((post) => post.id !== nextPost.id),
-    ]);
+    if (editorDraft.id) nextPost.id = editorDraft.id;
 
-    const saved = await savePosts(nextPosts);
+    const saved = await savePost(nextPost);
     if (saved) setEditorDraft(null);
   }
 
   async function deletePost(postId: string) {
-    const nextPosts = posts.filter((post) => post.id !== postId);
-    await savePosts(nextPosts);
+    await mutatePosts({
+      operation: "delete",
+      postId,
+    });
   }
 
   const showEditor = Boolean(editorDraft);

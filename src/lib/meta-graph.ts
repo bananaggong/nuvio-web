@@ -267,6 +267,11 @@ export function normalizeInstagramMediaToDraft(
     item.thumbnail_url ||
     item.media_url ||
     "https://upload.wikimedia.org/wikipedia/commons/b/b3/Boseong_Green_Tea_Field.jpg";
+  const imageUrls = [thumbnail];
+  const parsedTimestamp = item.timestamp ? Date.parse(item.timestamp) : NaN;
+  const createdAt = Number.isNaN(parsedTimestamp)
+    ? new Date().toISOString()
+    : new Date(parsedTimestamp).toISOString();
 
   return {
     id: `instagram-${item.id}`,
@@ -277,10 +282,12 @@ export function normalizeInstagramMediaToDraft(
     summary,
     body: body.length > 0 ? body : [summary],
     thumbnail,
-    imageUrls: [thumbnail],
+    images: imageUrls,
+    imageUrls,
     embedUrl: normalizeInstagramEmbedUrl(permalink),
     sourceName: item.username ? `Instagram @${item.username}` : "Instagram",
     sourceUrl: permalink,
+    createdAt,
     date: normalizeDate(item.timestamp),
     featured: false,
     published: true,

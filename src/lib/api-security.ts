@@ -122,10 +122,16 @@ export function enforceContentLength(
   maxBytes: number,
 ): NextResponse | null {
   const rawLength = request.headers.get("content-length");
-  if (!rawLength) return null;
+  if (!rawLength) {
+    return request.body ? apiError("Content-Length is required.", 411) : null;
+  }
 
   const length = Number(rawLength);
-  if (!Number.isFinite(length) || length <= maxBytes) return null;
+  if (!Number.isInteger(length) || length < 0) {
+    return apiError("Content-Length is invalid.", 400);
+  }
+
+  if (length <= maxBytes) return null;
 
   return apiError("Payload is too large.", 413);
 }
@@ -269,7 +275,7 @@ export async function readJsonWithLimit(
   try {
     return { body: JSON.parse(rawBody) as unknown, response: null };
   } catch {
-    return { body: {}, response: null };
+    return { body: {}, response: apiError("Invalid JSON payload.", 400) };
   }
 }
 

@@ -48,7 +48,7 @@ export async function POST(request: Request) {
       throw new Error("Please choose an image file.");
     }
 
-    await validateUploadFile(file);
+    const validatedFile = await validateUploadFile(file);
 
     const requestedProgramId = asString(formData.get("programId"));
     const programAccessError = await validateProgramAssetAccess(
@@ -59,7 +59,11 @@ export async function POST(request: Request) {
 
     const programId = sanitizePathSegment(requestedProgramId || "draft");
     const usage = sanitizePathSegment(asString(formData.get("usage")) || "image");
-    const safeName = sanitizeFileName(file.name || "program-image", file.type, "program-image");
+    const safeName = sanitizeFileName(
+      file.name || "program-image",
+      validatedFile.contentType,
+      "program-image",
+    );
     const objectPath = [
       sanitizePathSegment(auth.user.id),
       programId,
@@ -82,7 +86,7 @@ export async function POST(request: Request) {
     const { error: uploadError } = await admin.storage
       .from(bucketName)
       .upload(objectPath, file, {
-        contentType: file.type || "application/octet-stream",
+        contentType: validatedFile.contentType,
         upsert: true,
       });
 
@@ -93,7 +97,7 @@ export async function POST(request: Request) {
     return NextResponse.json(
       {
         data: {
-          contentType: file.type,
+          contentType: validatedFile.contentType,
           fileName: safeName,
           size: file.size,
           storagePath: objectPath,
@@ -139,20 +143,16 @@ function sanitizePathSegment(value: string): string {
   );
 }
 
-function safeExtension(fileName: string, contentType: string): string {
-  const extension = fileName.split(".").pop()?.toLowerCase() ?? "";
-  if (["gif", "jpg", "jpeg", "png", "webp"].includes(extension)) {
-    return extension === "jpeg" ? "jpg" : extension;
-  }
-
+function safeExtension(_fileName: string, contentType: string): string {
+  if (contentType === "image/jpeg") return "jpg";
   if (contentType === "image/gif") return "gif";
   if (contentType === "image/png") return "png";
   if (contentType === "image/webp") return "webp";
-  return "jpg";
+  throw new Error("Unsupported upload content type.");
 }
 
 async function validateUploadFile(file: File) {
-  await validateImageUploadFile(file, { maxBytes: maxUploadBytes });
+  return validateImageUploadFile(file, { maxBytes: maxUploadBytes });
 }
 
 function asString(value: FormDataEntryValue | null): string {

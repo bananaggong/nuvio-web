@@ -46,11 +46,11 @@ export async function POST(request: Request) {
       return apiError("파일이 필요합니다.", 400);
     }
 
-    await validateUploadFile(file);
+    const validatedFile = await validateUploadFile(file);
 
-    const safeName = sanitizeStorageFileName(
+    const safeName = sanitizeMagazineStorageFileName(
       file.name || "magazine-image",
-      file.type,
+      validatedFile.contentType,
       "magazine-image",
     );
     const objectPath = `${auth.user.id}/${Date.now()}-${safeName}`;
@@ -70,7 +70,7 @@ export async function POST(request: Request) {
     const { error: uploadError } = await admin.storage
       .from(bucketName)
       .upload(objectPath, file, {
-        contentType: file.type || "application/octet-stream",
+        contentType: validatedFile.contentType,
         upsert: true,
       });
 
@@ -83,7 +83,7 @@ export async function POST(request: Request) {
     return NextResponse.json(
       {
         data: {
-          contentType: file.type,
+          contentType: validatedFile.contentType,
           fileName: safeName,
           size: file.size,
           storagePath: objectPath,
@@ -101,18 +101,21 @@ export async function POST(request: Request) {
 }
 
 async function validateUploadFile(file: File) {
-  await validateImageUploadFile(file, { maxBytes: maxUploadBytes });
+  const validatedFile = await validateImageUploadFile(file, {
+    maxBytes: maxUploadBytes,
+  });
 
   if (file.size > maxUploadBytes) {
     throw new Error("이미지 파일은 5MB 이하여야 합니다.");
   }
 
-  if (!allowedUploadTypes.has(file.type)) {
+  if (!allowedUploadTypes.has(validatedFile.contentType)) {
     throw new Error("JPG, PNG, WebP, GIF 이미지만 업로드할 수 있습니다.");
   }
+  return validatedFile;
 }
 
-function sanitizeStorageFileName(
+function sanitizeMagazineStorageFileName(
   value: string,
   contentType: string,
   fallback: string,
@@ -131,14 +134,10 @@ function sanitizeStorageFileName(
   return `${baseName}.${extension}`;
 }
 
-function safeStorageExtension(fileName: string, contentType: string): string {
-  const extension = fileName.split(".").pop()?.toLowerCase() ?? "";
-  if (["gif", "jpg", "jpeg", "png", "webp"].includes(extension)) {
-    return extension === "jpeg" ? "jpg" : extension;
-  }
-
+function safeStorageExtension(_fileName: string, contentType: string): string {
+  if (contentType === "image/jpeg") return "jpg";
   if (contentType === "image/gif") return "gif";
   if (contentType === "image/png") return "png";
   if (contentType === "image/webp") return "webp";
-  return "jpg";
+  throw new Error("Unsupported upload content type.");
 }

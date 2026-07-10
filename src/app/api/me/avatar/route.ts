@@ -45,9 +45,14 @@ export async function POST(request: Request) {
       throw new Error("프로필 이미지를 선택해 주세요.");
     }
 
-    await validateImageUploadFile(file, { maxBytes: maxUploadBytes });
+    const validatedFile = await validateImageUploadFile(file, {
+      maxBytes: maxUploadBytes,
+    });
 
-    const safeName = sanitizeFileName(file.name || "profile-avatar", file.type);
+    const safeName = sanitizeFileName(
+      file.name || "profile-avatar",
+      validatedFile.contentType,
+    );
     const objectPath = [
       sanitizePathSegment(auth.user.id),
       `${Date.now()}-${safeName}`,
@@ -68,7 +73,7 @@ export async function POST(request: Request) {
     const { error: uploadError } = await admin.storage
       .from(bucketName)
       .upload(objectPath, file, {
-        contentType: file.type || "application/octet-stream",
+        contentType: validatedFile.contentType,
         upsert: true,
       });
 
@@ -79,7 +84,7 @@ export async function POST(request: Request) {
     return NextResponse.json(
       {
         data: {
-          contentType: file.type,
+          contentType: validatedFile.contentType,
           fileName: safeName,
           size: file.size,
           storagePath: objectPath,
@@ -114,16 +119,12 @@ function sanitizeFileName(value: string, contentType: string): string {
   return `${baseName}.${extension}`;
 }
 
-function safeExtension(value: string, contentType: string): string {
-  const extension = value.split(".").pop()?.toLowerCase();
-  if (extension && ["gif", "jpeg", "jpg", "png", "webp"].includes(extension)) {
-    return extension === "jpeg" ? "jpg" : extension;
-  }
-
+function safeExtension(_value: string, contentType: string): string {
+  if (contentType === "image/jpeg") return "jpg";
   if (contentType === "image/png") return "png";
   if (contentType === "image/webp") return "webp";
   if (contentType === "image/gif") return "gif";
-  return "jpg";
+  throw new Error("Unsupported upload content type.");
 }
 
 function sanitizePathSegment(value: string): string {

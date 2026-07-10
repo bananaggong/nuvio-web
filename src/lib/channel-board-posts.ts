@@ -6,6 +6,7 @@ import {
   type VillagePageSectionDraft,
 } from "@/lib/village-page-cms";
 import { channelPath } from "@/lib/channel-routing";
+import { sanitizeMagazineHtml } from "@/lib/magazine-content";
 import type { Village } from "@/lib/village-types";
 import type { VillageNotice } from "@/lib/village-template";
 
@@ -22,6 +23,7 @@ const BOARD_PAGE_KEY = "notice";
 const BOARD_SECTION_KEY = "notice_index";
 const BOARD_SECTION_TYPE = "media_preview";
 const BOARD_NEW_DAYS = 10;
+let boardPostIdSequence = 0;
 
 export async function listHostChannelBoardPosts(
   villageSlug: string,
@@ -81,6 +83,51 @@ export async function saveHostChannelBoardPosts({
   return normalizedPosts;
 }
 
+export async function upsertHostChannelBoardPost({
+  post,
+  villageSlug,
+}: {
+  post: unknown;
+  villageSlug: string;
+}): Promise<ChannelBoardPost[]> {
+  const [normalizedPost] = normalizeChannelBoardPosts([post]);
+  if (!normalizedPost) {
+    throw new Error("Board post payload is required.");
+  }
+
+  const existingPosts = await listHostChannelBoardPosts(villageSlug);
+  const existingPost = existingPosts.find((item) => item.id === normalizedPost.id);
+  const savedPost: ChannelBoardPost = {
+    ...normalizedPost,
+    createdAt: existingPost?.createdAt ?? normalizedPost.createdAt,
+    id: existingPost?.id ?? normalizedPost.id,
+  };
+
+  return saveHostChannelBoardPosts({
+    posts: [savedPost, ...existingPosts.filter((item) => item.id !== savedPost.id)],
+    villageSlug,
+  });
+}
+
+export async function deleteHostChannelBoardPost({
+  postId,
+  villageSlug,
+}: {
+  postId: string;
+  villageSlug: string;
+}): Promise<ChannelBoardPost[]> {
+  const normalizedPostId = postId.trim();
+  if (!normalizedPostId) {
+    throw new Error("Board post id is required.");
+  }
+
+  const existingPosts = await listHostChannelBoardPosts(villageSlug);
+  return saveHostChannelBoardPosts({
+    posts: existingPosts.filter((item) => item.id !== normalizedPostId),
+    villageSlug,
+  });
+}
+
 export function buildChannelBoardNoticesFromPosts({
   posts,
   village,
@@ -101,11 +148,23 @@ export function buildChannelBoardNoticesFromPosts({
 export function normalizeChannelBoardPosts(input: unknown): ChannelBoardPost[] {
   if (!Array.isArray(input)) return [];
 
-  return sortChannelBoardPosts(
-    input
-      .map((item, index) => normalizeChannelBoardPost(item, index))
-      .filter((post): post is ChannelBoardPost => Boolean(post)),
-  );
+  const seenIds = new Set<string>();
+  const posts: ChannelBoardPost[] = [];
+
+  input.forEach((item, index) => {
+    const post = normalizeChannelBoardPost(item, index);
+    if (!post) return;
+
+    let id = post.id;
+    while (seenIds.has(id)) {
+      id = createChannelBoardPostId();
+    }
+
+    seenIds.add(id);
+    posts.push({ ...post, id });
+  });
+
+  return sortChannelBoardPosts(posts);
 }
 
 export function isChannelBoardPostNew(createdAt: string): boolean {
@@ -128,7 +187,10 @@ function buildBoardNoticeType(post: ChannelBoardPost): string {
 function sortChannelBoardPosts(posts: ChannelBoardPost[]): ChannelBoardPost[] {
   return [...posts].sort((a, b) => {
     if (Boolean(a.pinned) !== Boolean(b.pinned)) return a.pinned ? -1 : 1;
-    return Date.parse(b.createdAt) - Date.parse(a.createdAt);
+    const createdAtDifference = Date.parse(b.createdAt) - Date.parse(a.createdAt);
+    if (createdAtDifference !== 0) return createdAtDifference;
+
+    return b.id.localeCompare(a.id);
   });
 }
 
@@ -141,15 +203,32 @@ function normalizeChannelBoardPost(
   const value = input as Record<string, unknown>;
   const title = asString(value.title) || "게시글 제목";
   const createdAt = asIsoDate(value.createdAt) ?? new Date().toISOString();
+  const body = sanitizeMagazineHtml(asString(value.body));
+  const safeTitle = title.slice(0, 120);
 
   return {
-    body: asString(value.body) || undefined,
+    body: body || undefined,
     createdAt,
-    id: asString(value.id) || `channel-board-post-${Date.now()}-${index}`,
+    id: asString(value.id).slice(0, 120) || createChannelBoardPostId(index),
     pinned: value.pinned === true,
-    title,
+    title: safeTitle,
     unread: value.unread === true,
   };
+}
+
+function createChannelBoardPostId(index?: number): string {
+  const randomId = globalThis.crypto?.randomUUID?.();
+  if (randomId) return `channel-board-post-${randomId}`;
+
+  boardPostIdSequence += 1;
+  return [
+    "channel-board-post",
+    Date.now().toString(36),
+    boardPostIdSequence.toString(36),
+    typeof index === "number" ? index.toString(36) : "",
+  ]
+    .filter(Boolean)
+    .join("-");
 }
 
 function findBoardSection<

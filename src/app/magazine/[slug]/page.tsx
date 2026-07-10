@@ -5,6 +5,7 @@ import { notFound } from "next/navigation";
 import { ArrowLeft } from "lucide-react";
 import { JsonLdScript } from "@/components/json-ld";
 import { formatDate } from "@/lib/format";
+import { sanitizeMagazineHtml } from "@/lib/magazine-content";
 import { getPublicMagazinePostBySlug } from "@/lib/magazine-db";
 import { getMagazineCategoryLabel } from "@/lib/magazine-types";
 import {
@@ -41,6 +42,7 @@ export default async function MagazineDetailPage({
   const post = await getPublicMagazinePostBySlug(decodeURIComponent(slug));
   if (!post) notFound();
   const canonicalPath = `/magazine/${post.slug}`;
+  const contentHtml = sanitizeMagazineHtml(post.contentHtml);
   const authorName = post.authorName || "누비오";
 
   return (
@@ -48,7 +50,7 @@ export default async function MagazineDetailPage({
       <JsonLdScript
         data={[
           articleJsonLd({
-            body: post.contentHtml,
+            body: contentHtml,
             dateModified: post.updatedAt,
             datePublished: post.publishedAt ?? post.createdAt,
             description: post.excerpt || post.subtitle,
@@ -107,7 +109,7 @@ export default async function MagazineDetailPage({
 
         <div
           className="magazine-content mt-12 text-[17px] font-medium leading-9 text-[#4B3328]"
-          dangerouslySetInnerHTML={{ __html: post.contentHtml }}
+          dangerouslySetInnerHTML={{ __html: contentHtml }}
         />
       </article>
     </div>

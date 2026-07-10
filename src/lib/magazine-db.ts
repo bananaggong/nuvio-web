@@ -1,8 +1,12 @@
 import { and, desc, eq, isNull, ne } from "drizzle-orm";
 import { getDb } from "@/db/client";
 import { magazinePosts, profiles } from "@/db/schema";
-import { normalizeMagazineSlug } from "@/lib/magazine-content";
+import {
+  normalizeMagazineSlug,
+  sanitizeMagazineHtml,
+} from "@/lib/magazine-content";
 import type { MagazinePostStatus } from "@/lib/magazine-types";
+import { trySanitizePublicImageUrl } from "@/lib/url-security";
 
 type MagazinePostRow = typeof magazinePosts.$inferSelect;
 type MagazinePostValues = {
@@ -246,10 +250,12 @@ function mapMagazinePostRow(
     authorId: row.authorId ?? "",
     authorName: author.authorName ?? "",
     category: row.category,
-    contentHtml: row.contentHtml,
+    contentHtml: sanitizeMagazineHtml(row.contentHtml),
     contentJson: row.contentJson,
     coverImageAlt: row.coverImageAlt ?? "",
-    coverImageUrl: row.coverImageUrl ?? "",
+    coverImageUrl: trySanitizePublicImageUrl(row.coverImageUrl ?? "", {
+      allowRelative: true,
+    }),
     createdAt: row.createdAt.toISOString(),
     excerpt: row.excerpt ?? "",
     id: row.id,

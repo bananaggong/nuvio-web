@@ -63,12 +63,16 @@ type HostChannelPayload = {
   data?: Village[];
 };
 
+type HostMediaItem = VillageMediaContent & {
+  imageUrls?: string[];
+};
+
 type HostMediaPayload = {
-  data?: VillageMediaContent[];
+  data?: HostMediaItem[];
 };
 
 type SaveHostMediaPayload = {
-  data?: VillageMediaContent;
+  data?: HostMediaItem;
   error?: string;
 };
 
@@ -81,7 +85,7 @@ type UploadAssetPayload = {
   error?: string;
 };
 
-type ChannelMagazine = VillageMediaContent;
+type ChannelMagazine = HostMediaItem;
 
 export type MagazineEditorDraft = {
   bodyHtml: string;
@@ -110,6 +114,27 @@ export function createEmptyMagazineDraft(): MagazineEditorDraft {
 
 function normalizeMagazineItem(item: VillageMediaContent): ChannelMagazine {
   return item;
+}
+
+function sortMagazineItems(items: ChannelMagazine[]): ChannelMagazine[] {
+  return [...items].sort(compareMagazineItems);
+}
+
+function compareMagazineItems(a: ChannelMagazine, b: ChannelMagazine): number {
+  const dateDifference = parseTime(b.date) - parseTime(a.date);
+  if (dateDifference !== 0) return dateDifference;
+
+  const createdAtDifference =
+    parseTime(b.createdAt ?? b.updatedAt) - parseTime(a.createdAt ?? a.updatedAt);
+  if (createdAtDifference !== 0) return createdAtDifference;
+
+  return String(b.id).localeCompare(String(a.id));
+}
+
+function parseTime(value: string | undefined): number {
+  if (!value) return 0;
+  const time = Date.parse(value);
+  return Number.isNaN(time) ? 0 : time;
 }
 
 export function createMagazineDraftFromItem(item: ChannelMagazine): MagazineEditorDraft {
@@ -218,7 +243,8 @@ export function HostChannelMagazines() {
                 item.provider === "link" &&
                 item.sourceUrl.includes("/host/channels/magazines"),
             )
-            .map(normalizeMagazineItem),
+            .map(normalizeMagazineItem)
+            .sort(compareMagazineItems),
         );
       } else {
         setItems([]);
@@ -357,7 +383,7 @@ export function HostChannelMagazines() {
       const savedItem = normalizeMagazineItem(payload.data);
       setItems((current) => {
         const withoutSaved = current.filter((item) => item.id !== savedItem.id);
-        return [savedItem, ...withoutSaved];
+        return sortMagazineItems([savedItem, ...withoutSaved]);
       });
       setEditorDraft(null);
       setSaveMessage("저장되었습니다. 공개 채널에 반영됩니다.");

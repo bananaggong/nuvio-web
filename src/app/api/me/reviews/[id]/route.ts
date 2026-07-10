@@ -77,6 +77,9 @@ export async function DELETE(
   const crossOrigin = enforceSameOrigin(request);
   if (crossOrigin) return crossOrigin;
 
+  const contentLengthError = enforceContentLength(request, 1024);
+  if (contentLengthError) return contentLengthError;
+
   const limited = await applyPersistentRateLimit(request, {
     identity: auth.user.id,
     key: "me-review:delete",

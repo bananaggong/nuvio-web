@@ -10,6 +10,7 @@ import {
   isMagazinePostStatus,
   type MagazinePostStatus,
 } from "@/lib/magazine-types";
+import { sanitizePublicImageUrl } from "@/lib/url-security";
 
 export function normalizeMagazinePostInput(body: unknown): MagazinePostInput {
   const value =
@@ -68,11 +69,7 @@ function validateOptionalUrl(value: string): string {
   if (!value) return "";
 
   try {
-    const url = new URL(value);
-    if (url.protocol !== "http:" && url.protocol !== "https:") {
-      throw new Error("Only HTTP(S) URLs are allowed.");
-    }
-    return url.toString();
+    return sanitizePublicImageUrl(value, { allowRelative: true });
   } catch {
     throw new Error("대표 이미지는 올바른 URL이어야 합니다.");
   }

@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import {
   apiError,
   applyPersistentRateLimit,
+  enforceContentLength,
   enforceSameOrigin,
   isApiAuthError,
   requireHostRole,
@@ -82,6 +83,9 @@ export async function POST(
 
   const crossOrigin = enforceSameOrigin(request);
   if (crossOrigin) return crossOrigin;
+
+  const contentLengthError = enforceContentLength(request, 1024);
+  if (contentLengthError) return contentLengthError;
 
   const limited = await applyPersistentRateLimit(request, {
     key: "host-review-moderation:refresh",

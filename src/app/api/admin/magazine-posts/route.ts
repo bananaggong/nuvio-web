@@ -5,6 +5,7 @@ import {
   enforceContentLength,
   enforceSameOrigin,
   isApiAuthError,
+  readJsonWithLimit,
   requireAdminRole,
 } from "@/lib/api-security";
 import { safeCreateAuditLog } from "@/lib/audit-log-db";
@@ -64,7 +65,10 @@ export async function POST(request: Request) {
   if (limited) return limited;
 
   try {
-    const input = normalizeMagazinePostInput(await request.json());
+    const { body, response } = await readJsonWithLimit(request, maxJsonBytes);
+    if (response) return response;
+
+    const input = normalizeMagazinePostInput(body);
     const post = await createMagazinePost(input, auth.user.id);
 
     await safeCreateAuditLog({

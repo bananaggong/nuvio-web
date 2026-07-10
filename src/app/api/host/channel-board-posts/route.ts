@@ -5,12 +5,15 @@ import {
   enforceContentLength,
   enforceSameOrigin,
   isApiAuthError,
+  readJsonWithLimit,
   requireHostRole,
 } from "@/lib/api-security";
 import {
+  deleteHostChannelBoardPost,
   listHostChannelBoardPosts,
   normalizeChannelBoardPosts,
   saveHostChannelBoardPosts,
+  upsertHostChannelBoardPost,
 } from "@/lib/channel-board-posts";
 import { canManageHostVillage } from "@/lib/host-village-access";
 import { VillagePageAccessError } from "@/lib/village-page-cms";
@@ -71,17 +74,36 @@ export async function POST(request: Request) {
   if (limited) return limited;
 
   try {
-    const body = (await request.json().catch(() => ({}))) as Record<string, unknown>;
+    const { body: rawBody, response } = await readJsonWithLimit(
+      request,
+      MAX_BOARD_PAYLOAD_BYTES,
+    );
+    if (response) return response;
+    const body =
+      rawBody && typeof rawBody === "object" && !Array.isArray(rawBody)
+        ? (rawBody as Record<string, unknown>)
+        : {};
     const villageSlug = typeof body.villageSlug === "string" ? body.villageSlug : "boseong";
     if (!(await canManageHostVillage(auth, villageSlug))) {
       return apiError("You do not have permission to manage this channel.", 403);
     }
 
-    const posts = normalizeChannelBoardPosts(body.posts);
-    const savedPosts = await saveHostChannelBoardPosts({
-      posts,
-      villageSlug,
-    });
+    const operation = typeof body.operation === "string" ? body.operation : "replace";
+    const savedPosts =
+      operation === "upsert"
+        ? await upsertHostChannelBoardPost({
+            post: body.post,
+            villageSlug,
+          })
+        : operation === "delete"
+          ? await deleteHostChannelBoardPost({
+              postId: typeof body.postId === "string" ? body.postId : "",
+              villageSlug,
+            })
+          : await saveHostChannelBoardPosts({
+              posts: normalizeChannelBoardPosts(body.posts),
+              villageSlug,
+            });
 
     return NextResponse.json({ data: savedPosts }, { status: 201 });
   } catch (error) {

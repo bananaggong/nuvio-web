@@ -5,6 +5,7 @@ import {
   enforceContentLength,
   enforceSameOrigin,
   isApiAuthError,
+  readJsonWithLimit,
   requireHostRole,
 } from "@/lib/api-security";
 import { canManageHostVillage } from "@/lib/host-village-access";
@@ -70,7 +71,11 @@ export async function POST(request: Request) {
     });
     if (rateLimitError) return rateLimitError;
 
-    const body = await request.json().catch(() => ({}));
+    const { body, response } = await readJsonWithLimit(
+      request,
+      MAX_MEDIA_PAYLOAD_BYTES,
+    );
+    if (response) return response;
     const draft = normalizeHostVillageMediaDraft(body);
     if (!(await canManageHostVillage(auth, draft.villageSlug))) {
       return apiError("You do not have permission to manage this channel.", 403);
@@ -104,6 +109,9 @@ export async function DELETE(request: Request) {
     const crossOrigin = enforceSameOrigin(request);
     if (crossOrigin) return crossOrigin;
 
+    const contentLengthError = enforceContentLength(request, MAX_MEDIA_PAYLOAD_BYTES);
+    if (contentLengthError) return contentLengthError;
+
     const rateLimitError = applyRateLimit(request, {
       key: "host-media-delete",
       limit: 60,
@@ -111,7 +119,15 @@ export async function DELETE(request: Request) {
     });
     if (rateLimitError) return rateLimitError;
 
-    const body = (await request.json().catch(() => ({}))) as Record<string, unknown>;
+    const { body: rawBody, response } = await readJsonWithLimit(
+      request,
+      MAX_MEDIA_PAYLOAD_BYTES,
+    );
+    if (response) return response;
+    const body =
+      rawBody && typeof rawBody === "object" && !Array.isArray(rawBody)
+        ? (rawBody as Record<string, unknown>)
+        : {};
     const id = typeof body.id === "string" ? body.id.trim() : "";
     const villageSlug =
       typeof body.villageSlug === "string" ? body.villageSlug.trim() : "";

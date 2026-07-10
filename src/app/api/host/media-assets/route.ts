@@ -61,8 +61,13 @@ export async function POST(request: Request) {
     }
 
     const kind = await validateMediaFile(file);
+    const uploadContentType = normalizeMediaContentType(file.type);
     const usage = sanitizePathSegment(asString(formData.get("usage")) || `gallery-${kind}`);
-    const safeName = sanitizeStorageFileName(file.name || `gallery-${kind}`, file.type, kind);
+    const safeName = sanitizeStorageFileName(
+      file.name || `gallery-${kind}`,
+      uploadContentType,
+      kind,
+    );
     const objectPath = [
       sanitizePathSegment(villageSlug),
       usage,
@@ -92,7 +97,7 @@ export async function POST(request: Request) {
     const { error: uploadError } = await admin.storage
       .from(bucketName)
       .upload(objectPath, file, {
-        contentType: file.type || "application/octet-stream",
+        contentType: uploadContentType,
         upsert: true,
       });
 
@@ -103,7 +108,7 @@ export async function POST(request: Request) {
       altText: asString(formData.get("altText")),
       fileName: safeName,
       metadata: {
-        contentType: file.type,
+        contentType: uploadContentType,
         kind,
         size: file.size,
         source: "upload",
@@ -118,7 +123,7 @@ export async function POST(request: Request) {
       {
         data: {
           asset,
-          contentType: file.type,
+          contentType: uploadContentType,
           fileName: safeName,
           kind,
           size: file.size,
@@ -140,12 +145,14 @@ export async function POST(request: Request) {
 }
 
 async function validateMediaFile(file: File): Promise<"image" | "video"> {
-  if (file.type.startsWith("image/")) {
+  const contentType = normalizeMediaContentType(file.type);
+
+  if (contentType.startsWith("image/")) {
     await validateImageUploadFile(file, { maxBytes: maxImageUploadBytes });
     return "image";
   }
 
-  if (!allowedVideoTypes.has(file.type)) {
+  if (!allowedVideoTypes.has(contentType)) {
     throw new Error("MP4, MOV, WebM 영상만 업로드할 수 있습니다.");
   }
 
@@ -203,23 +210,21 @@ function sanitizePathSegment(value: string): string {
   );
 }
 
-function safeStorageExtension(fileName: string, contentType: string): string {
-  const extension = fileName.split(".").pop()?.toLowerCase() ?? "";
-  if (["gif", "jpg", "jpeg", "png", "webp", "mp4", "mov", "webm"].includes(extension)) {
-    if (extension === "jpeg") return "jpg";
-    if (extension === "mov") return "mov";
-    return extension;
-  }
-
+function safeStorageExtension(_fileName: string, contentType: string): string {
+  if (contentType === "image/jpeg") return "jpg";
   if (contentType === "image/gif") return "gif";
   if (contentType === "image/png") return "png";
   if (contentType === "image/webp") return "webp";
   if (contentType === "video/webm") return "webm";
   if (contentType === "video/quicktime") return "mov";
   if (contentType === "video/mp4") return "mp4";
-  return "jpg";
+  throw new Error("Unsupported upload content type.");
 }
 
 function asString(value: FormDataEntryValue | null): string {
   return typeof value === "string" ? value.trim() : "";
+}
+
+function normalizeMediaContentType(value: string): string {
+  return value.split(";")[0]?.trim().toLowerCase() ?? "";
 }

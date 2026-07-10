@@ -40,12 +40,16 @@ type HostChannelPayload = {
   data?: Village[];
 };
 
+type HostMediaItem = VillageMediaContent & {
+  imageUrls?: string[];
+};
+
 type HostMediaPayload = {
-  data?: VillageMediaContent[];
+  data?: HostMediaItem[];
 };
 
 type SaveHostMediaPayload = {
-  data?: VillageMediaContent;
+  data?: HostMediaItem;
   error?: string;
 };
 
@@ -66,7 +70,7 @@ type DeleteHostMediaPayload = {
 type GalleryFilterMode = "all" | "photo" | "video";
 type UploadStep = "picker" | "image" | "video";
 
-type GalleryItem = VillageMediaContent & {
+type GalleryItem = HostMediaItem & {
   imageCount?: number;
 };
 
@@ -104,11 +108,13 @@ function createEmptyDraft(): GalleryDraft {
   };
 }
 
-function normalizeGalleryItem(item: VillageMediaContent): GalleryItem {
-  const imageUrls = item.images?.length ? item.images : [item.thumbnail].filter(Boolean);
+function normalizeGalleryItem(item: HostMediaItem): GalleryItem {
+  const imageUrls = getGalleryImageUrls(item);
 
   return {
     ...item,
+    images: imageUrls,
+    imageUrls,
     imageCount: imageUrls.length,
   };
 }
@@ -136,9 +142,35 @@ function formatGalleryDate(value: string) {
   return `${year}. ${month}. ${day}`;
 }
 
+function sortGalleryItems(items: GalleryItem[]): GalleryItem[] {
+  return [...items].sort(compareGalleryItems);
+}
+
+function compareGalleryItems(a: GalleryItem, b: GalleryItem): number {
+  const dateDifference = parseTime(b.date) - parseTime(a.date);
+  if (dateDifference !== 0) return dateDifference;
+
+  const createdAtDifference =
+    parseTime(b.createdAt ?? b.updatedAt) - parseTime(a.createdAt ?? a.updatedAt);
+  if (createdAtDifference !== 0) return createdAtDifference;
+
+  return String(b.id).localeCompare(String(a.id));
+}
+
+function parseTime(value: string | undefined): number {
+  if (!value) return 0;
+  const time = Date.parse(value);
+  return Number.isNaN(time) ? 0 : time;
+}
+
+function getGalleryImageUrls(item: HostMediaItem): string[] {
+  const imageUrls = item.imageUrls?.length ? item.imageUrls : item.images;
+  return imageUrls?.length ? imageUrls : [item.thumbnail].filter(Boolean);
+}
+
 function createDraftFromItem(item: GalleryItem): GalleryDraft {
   const isVideo = isVideoItem(item);
-  const imageUrls = item.images?.length ? item.images : [item.thumbnail].filter(Boolean);
+  const imageUrls = getGalleryImageUrls(item);
 
   return {
     bodyText: (item.body.length > 0 ? item.body : [item.summary]).join("\n"),
@@ -309,7 +341,8 @@ export function HostChannelGalleries() {
                 item.villageSlug === selectedChannel.slug &&
                 isManagedGalleryItem(item),
             )
-            .map(normalizeGalleryItem),
+            .map(normalizeGalleryItem)
+            .sort(compareGalleryItems),
         );
       } else {
         setItems([]);
@@ -609,7 +642,7 @@ export function HostChannelGalleries() {
       const savedItem = normalizeGalleryItem(payload.data);
       setItems((current) => {
         const withoutCurrent = current.filter((item) => item.id !== savedItem.id);
-        return [savedItem, ...withoutCurrent];
+        return sortGalleryItems([savedItem, ...withoutCurrent]);
       });
       setSelectedId(savedItem.id);
       setSaveMessage("저장되었습니다. 공개 채널에 반영됩니다.");

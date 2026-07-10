@@ -1,4 +1,4 @@
-import { and, desc, eq, isNotNull } from "drizzle-orm";
+import { and, desc, eq, isNotNull, sql } from "drizzle-orm";
 import { getDb } from "@/db/client";
 import { villageMediaContents as mediaTable } from "@/db/schema";
 import { isDemoModeEnabled } from "@/lib/demo-mode";
@@ -7,6 +7,10 @@ import {
   hasMagazineContent,
   sanitizeMagazineHtml,
 } from "@/lib/magazine-content";
+import {
+  trySanitizeHttpUrl,
+  trySanitizePublicImageUrl,
+} from "@/lib/url-security";
 import { boseongMediaSeeds } from "@/lib/village-media-seeds";
 import type {
   VillageMediaCategory,
@@ -23,10 +27,12 @@ export type HostVillageMediaDraft = {
   summary: string;
   body: string[];
   thumbnail: string;
+  images: string[];
   imageUrls: string[];
   embedUrl?: string;
   sourceName: string;
   sourceUrl: string;
+  createdAt: string;
   date: string;
   featured: boolean;
   published: boolean;
@@ -61,6 +67,8 @@ const mediaProviders: VillageMediaProvider[] = [
   "video",
 ];
 
+const mediaDisplayTimestamp = sql<Date>`coalesce(${mediaTable.publishedAt}, ${mediaTable.createdAt})`;
+
 export async function listPublicVillageMedia(
   villageSlug: string,
   options: { limit?: number } = {},
@@ -73,7 +81,7 @@ export async function listPublicVillageMedia(
       .select()
       .from(mediaTable)
       .where(and(eq(mediaTable.villageSlug, slug), isNotNull(mediaTable.publishedAt)))
-      .orderBy(desc(mediaTable.publishedAt), desc(mediaTable.updatedAt))
+      .orderBy(desc(mediaDisplayTimestamp), desc(mediaTable.createdAt), desc(mediaTable.id))
       .limit(200);
 
     const databaseMedia = rows.map(mapMediaRowToContent);
@@ -96,7 +104,7 @@ export async function listHostVillageMediaFromDb(
       .select()
       .from(mediaTable)
       .where(eq(mediaTable.villageSlug, slug))
-      .orderBy(desc(mediaTable.updatedAt))
+      .orderBy(desc(mediaDisplayTimestamp), desc(mediaTable.createdAt), desc(mediaTable.id))
       .limit(300);
 
     if (rows.length > 0) return rows.map(mapMediaRowToHostDraft);
@@ -256,11 +264,14 @@ export function normalizeHostVillageMediaDraft(
   }
 
   const value = input as Record<string, unknown>;
-  const sourceUrl = asString(value.sourceUrl) || "https://nuvio.kr/boseong/media";
+  const sourceUrl =
+    normalizeSourceUrl(asString(value.sourceUrl)) ||
+    "https://nuvio.kr/boseong/media";
   const isChannelMagazine = sourceUrl.includes("/host/channels/magazines");
   const body = isChannelMagazine
     ? normalizeMagazineMediaBody(value.body)
     : normalizeBody(value.body);
+  const imageUrls = normalizeImageUrls(value.imageUrls ?? value.images);
   const summary =
     asString(value.summary) ||
     (isChannelMagazine ? excerptFromHtml(body[0] ?? "", 140) : "") ||
@@ -276,11 +287,15 @@ export function normalizeHostVillageMediaDraft(
     provider: asMediaProvider(value.provider),
     summary,
     body,
-    thumbnail: asString(value.thumbnail) || asString(value.thumbnailUrl) || "",
-    imageUrls: normalizeImageUrls(value.imageUrls ?? value.images),
+    thumbnail: normalizeImageUrlValue(
+      asString(value.thumbnail) || asString(value.thumbnailUrl),
+    ),
+    images: imageUrls,
+    imageUrls,
     embedUrl: normalizeEmbedUrl(value.embedUrl, value.sourceUrl),
     sourceName: asString(value.sourceName) || "전체차LAB",
     sourceUrl,
+    createdAt: asString(value.createdAt) || now,
     date: normalizeDate(asString(value.date) || asString(value.publishedAt)),
     featured: Boolean(value.featured),
     published: value.published !== false,
@@ -299,17 +314,24 @@ function mapHostDraftToMediaInsert(draft: HostVillageMediaDraft): MediaInsert {
     provider: draft.provider,
     summary: draft.summary.trim(),
     body: draft.body.length > 0 ? draft.body : [draft.summary.trim()],
-    thumbnailUrl: draft.thumbnail.trim(),
-    imageUrls: draft.imageUrls.length > 0 ? draft.imageUrls : [draft.thumbnail].filter(Boolean),
+    thumbnailUrl: normalizeImageUrlValue(draft.thumbnail),
+    imageUrls:
+      draft.imageUrls.length > 0
+        ? normalizeImageUrls(draft.imageUrls)
+        : [normalizeImageUrlValue(draft.thumbnail)].filter(Boolean),
     embedUrl: draft.embedUrl?.trim() || null,
     sourceName: draft.sourceName.trim() || "전체차LAB",
-    sourceUrl: draft.sourceUrl.trim() || "https://nuvio.kr/boseong/media",
+    sourceUrl: normalizeSourceUrl(draft.sourceUrl) || "https://nuvio.kr/boseong/media",
     featured: draft.featured,
     publishedAt: draft.published ? new Date(publishedDate) : null,
   };
 }
 
 function mapMediaRowToContent(row: MediaRow): VillageMediaContent {
+  const images = normalizeImageUrls(row.imageUrls).length > 0
+    ? normalizeImageUrls(row.imageUrls)
+    : [normalizeImageUrlValue(row.thumbnailUrl)].filter(Boolean);
+
   return {
     id: row.id,
     villageSlug: row.villageSlug,
@@ -318,13 +340,12 @@ function mapMediaRowToContent(row: MediaRow): VillageMediaContent {
     provider: asMediaProvider(row.provider),
     summary: row.summary,
     body: row.body,
-    thumbnail: row.thumbnailUrl,
-    images: normalizeImageUrls(row.imageUrls).length > 0
-      ? normalizeImageUrls(row.imageUrls)
-      : [row.thumbnailUrl].filter(Boolean),
+    thumbnail: normalizeImageUrlValue(row.thumbnailUrl),
+    images,
     embedUrl: row.embedUrl ?? undefined,
     sourceName: row.sourceName,
-    sourceUrl: row.sourceUrl,
+    sourceUrl: normalizeSourceUrl(row.sourceUrl) || "",
+    createdAt: row.createdAt.toISOString(),
     date: (row.publishedAt ?? row.createdAt).toISOString(),
     featured: row.featured,
     published: Boolean(row.publishedAt),
@@ -333,6 +354,10 @@ function mapMediaRowToContent(row: MediaRow): VillageMediaContent {
 }
 
 function mapMediaRowToHostDraft(row: MediaRow): HostVillageMediaDraft {
+  const images = normalizeImageUrls(row.imageUrls).length > 0
+    ? normalizeImageUrls(row.imageUrls)
+    : [normalizeImageUrlValue(row.thumbnailUrl)].filter(Boolean);
+
   return {
     id: row.id,
     villageSlug: row.villageSlug,
@@ -341,13 +366,13 @@ function mapMediaRowToHostDraft(row: MediaRow): HostVillageMediaDraft {
     provider: asMediaProvider(row.provider),
     summary: row.summary,
     body: row.body,
-    thumbnail: row.thumbnailUrl,
-    imageUrls: normalizeImageUrls(row.imageUrls).length > 0
-      ? normalizeImageUrls(row.imageUrls)
-      : [row.thumbnailUrl].filter(Boolean),
+    thumbnail: normalizeImageUrlValue(row.thumbnailUrl),
+    images,
+    imageUrls: images,
     embedUrl: row.embedUrl ?? undefined,
     sourceName: row.sourceName,
-    sourceUrl: row.sourceUrl,
+    sourceUrl: normalizeSourceUrl(row.sourceUrl) || "",
+    createdAt: row.createdAt.toISOString(),
     date: (row.publishedAt ?? row.createdAt).toISOString().slice(0, 10),
     featured: row.featured,
     published: Boolean(row.publishedAt),
@@ -366,13 +391,17 @@ function mapContentToHostDraft(
     provider: content.provider ?? "link",
     summary: content.summary,
     body: content.body,
-    thumbnail: content.thumbnail,
+    thumbnail: normalizeImageUrlValue(content.thumbnail),
+    images: normalizeImageUrls(content.images).length > 0
+      ? normalizeImageUrls(content.images)
+      : [normalizeImageUrlValue(content.thumbnail)].filter(Boolean),
     imageUrls: normalizeImageUrls(content.images).length > 0
       ? normalizeImageUrls(content.images)
-      : [content.thumbnail].filter(Boolean),
+      : [normalizeImageUrlValue(content.thumbnail)].filter(Boolean),
     embedUrl: content.embedUrl,
     sourceName: content.sourceName,
-    sourceUrl: content.sourceUrl,
+    sourceUrl: normalizeSourceUrl(content.sourceUrl) || "",
+    createdAt: content.createdAt ?? content.date,
     date: content.date.slice(0, 10),
     featured: Boolean(content.featured),
     published: content.published,
@@ -383,7 +412,7 @@ function mapContentToHostDraft(
 function listSeedMedia(villageSlug: string): VillageMediaContent[] {
   return boseongMediaSeeds
     .filter((content) => content.villageSlug === villageSlug && content.published)
-    .sort((a, b) => Date.parse(b.date) - Date.parse(a.date));
+    .sort(compareMediaContentDesc);
 }
 
 function mergeMedia(
@@ -391,7 +420,7 @@ function mergeMedia(
   seedMedia: VillageMediaContent[],
 ): VillageMediaContent[] {
   return [...databaseMedia, ...seedMedia]
-    .sort((a, b) => Date.parse(b.date) - Date.parse(a.date))
+    .sort(compareMediaContentDesc)
     .filter(
       (content, index, list) =>
         list.findIndex((item) => String(item.id) === String(content.id)) === index,
@@ -403,6 +432,20 @@ function applyLimit(
   limit?: number,
 ): VillageMediaContent[] {
   return typeof limit === "number" ? media.slice(0, limit) : media;
+}
+
+function compareMediaContentDesc(
+  a: VillageMediaContent,
+  b: VillageMediaContent,
+): number {
+  const dateDifference = Date.parse(b.date) - Date.parse(a.date);
+  if (dateDifference !== 0) return dateDifference;
+
+  const createdAtDifference =
+    Date.parse(b.createdAt ?? b.updatedAt) - Date.parse(a.createdAt ?? a.updatedAt);
+  if (createdAtDifference !== 0) return createdAtDifference;
+
+  return String(b.id).localeCompare(String(a.id));
 }
 
 function assertMediaVillageAccess(
@@ -527,10 +570,20 @@ function normalizeImageUrls(value: unknown): string[] {
   return Array.from(
     new Set(
       value
-        .map((item) => (typeof item === "string" ? item.trim() : ""))
+        .map((item) =>
+          typeof item === "string" ? normalizeImageUrlValue(item) : "",
+        )
         .filter(Boolean),
     ),
   );
+}
+
+function normalizeImageUrlValue(value: string): string {
+  return trySanitizePublicImageUrl(value, { allowRelative: true });
+}
+
+function normalizeSourceUrl(value: string): string {
+  return trySanitizeHttpUrl(value, { allowRelative: true });
 }
 
 function normalizeDate(value: string): string {

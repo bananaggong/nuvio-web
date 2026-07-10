@@ -5,6 +5,7 @@ import {
   enforceContentLength,
   enforceSameOrigin,
   isApiAuthError,
+  readJsonWithLimit,
   requireAdminRole,
 } from "@/lib/api-security";
 import { safeCreateAuditLog } from "@/lib/audit-log-db";
@@ -65,9 +66,12 @@ export async function PATCH(
 
   try {
     const { id } = await params;
+    const { body, response } = await readJsonWithLimit(request, maxJsonBytes);
+    if (response) return response;
+
     const post = await updateMagazinePost(
       id,
-      normalizeMagazinePostInput(await request.json()),
+      normalizeMagazinePostInput(body),
     );
 
     if (!post) {
