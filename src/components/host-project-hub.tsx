@@ -443,8 +443,8 @@ export function HostProjectHub({ projectId }: { projectId: string }) {
           ) : null}
 
           {programs.length > 0 ? (
-            <div className="mt-[var(--host-22)] inline-grid grid-cols-[repeat(4,fit-content(100%))] gap-[var(--host-16)] pl-[var(--host-20)] pr-[var(--host-12)] max-xl:grid-cols-[repeat(3,fit-content(100%))] max-lg:grid-cols-[repeat(2,fit-content(100%))] max-md:grid-cols-1 max-md:pl-0">
-              {programs.slice(0, 8).map((program) => {
+            <div className="mt-[var(--host-22)] inline-grid grid-cols-[repeat(4,fit-content(100%))] gap-[var(--host-16)] pl-[var(--host-20)] pr-[var(--host-12)] max-xl:grid-cols-[repeat(3,fit-content(100%))] max-lg:grid-cols-[repeat(2,fit-content(100%))] max-md:grid max-md:w-full max-md:grid-cols-1 max-md:px-0">
+              {programs.slice(0, 8).map((program, index) => {
                 const draft = activeProject.programDrafts.find(
                   (item) =>
                     item.id === program.id ||
@@ -455,6 +455,7 @@ export function HostProjectHub({ projectId }: { projectId: string }) {
                 return (
                   <InsideFolderProgramCard
                     draft={draft}
+                    eager={index === 0}
                     key={program.id}
                     onToggleSelect={() => toggleDeleteProgram(program.id)}
                     program={program}
@@ -471,9 +472,9 @@ export function HostProjectHub({ projectId }: { projectId: string }) {
             </div>
           )}
           {isDeleteMode ? (
-            <div className="mt-[1.806vw] flex justify-end gap-[var(--host-8)]">
+            <div className="mt-[1.806vw] flex justify-end gap-[var(--host-8)] max-md:mt-5 max-md:w-full">
               <button
-                className="inline-flex h-[29px] items-center justify-center rounded-[4px] bg-[#CAC4BC] px-[1.25vw] text-[12px] font-medium leading-[1.253] text-[#FFF6EC]"
+                className="inline-flex h-[29px] items-center justify-center rounded-[4px] bg-[#CAC4BC] px-[1.25vw] text-[12px] font-medium leading-[1.253] text-[#FFF6EC] max-md:min-h-11 max-md:flex-1 max-md:px-4 max-md:text-sm"
                 disabled={isSaving}
                 onClick={() => {
                   setIsDeleteMode(false);
@@ -485,7 +486,7 @@ export function HostProjectHub({ projectId }: { projectId: string }) {
                 취소
               </button>
               <button
-                className="inline-flex h-[29px] items-center justify-center rounded-[4px] bg-[#FE701E] px-[1.25vw] text-[12px] font-medium leading-[1.253] text-[#FFF6EC] disabled:opacity-45"
+                className="inline-flex h-[29px] items-center justify-center rounded-[4px] bg-[#FE701E] px-[1.25vw] text-[12px] font-medium leading-[1.253] text-[#FFF6EC] disabled:opacity-45 max-md:min-h-11 max-md:flex-1 max-md:px-4 max-md:text-sm"
                 disabled={selectedDeleteProgramIds.length === 0 || isSaving}
                 onClick={() => void deleteSelectedPrograms()}
                 type="button"
@@ -551,16 +552,16 @@ function AddFileDialog({
   selectedProgramIds: string[];
 }) {
   return (
-    <div className="fixed inset-0 z-[90] grid place-items-center overflow-y-auto bg-black/20 px-4 py-8">
+    <div className="fixed inset-0 z-[90] grid place-items-center overflow-y-auto bg-black/20 px-4 py-8 max-md:py-4 max-[359px]:px-3 max-[359px]:py-3">
       <div
         aria-modal="true"
-        className="flex w-[var(--host-603)] max-w-[calc(100vw-32px)] flex-col gap-[var(--host-6)] rounded-[12px] border border-[#D9D9D9] bg-[#F9F9F9] px-[var(--host-18)] py-[var(--host-24)] shadow-[0_18px_50px_rgba(0,0,0,0.12)] max-md:w-full"
+        className="flex w-[var(--host-603)] max-w-[calc(100vw-32px)] flex-col gap-[var(--host-6)] rounded-[12px] border border-[#D9D9D9] bg-[#F9F9F9] px-[var(--host-18)] py-[var(--host-24)] shadow-[0_18px_50px_rgba(0,0,0,0.12)] max-md:max-h-[calc(100dvh-32px)] max-md:w-full max-md:overflow-y-auto max-md:p-4 max-[359px]:max-h-[calc(100dvh-24px)] max-[359px]:max-w-none"
         role="dialog"
       >
         <div className="flex w-full justify-end">
           <button
             aria-label="닫기"
-            className="inline-flex size-[var(--host-16)] items-center justify-center text-[#0D0D0C] hover:text-[#FE701E]"
+            className="inline-flex size-[var(--host-16)] items-center justify-center text-[#0D0D0C] hover:text-[#FE701E] max-md:size-11"
             onClick={onClose}
             type="button"
           >
@@ -571,7 +572,7 @@ function AddFileDialog({
           <p className="text-[var(--host-14)] font-medium leading-[1.253] text-[#0D0D0C]">
             추가할 프로그램을 선택하세요.
           </p>
-          <div className="flex w-full items-center gap-[9px]">
+          <div className="flex w-full items-center gap-[9px] pb-1">
             {(["open", "upcoming", "closed"] as const).map((item) => {
               const isActive = filter === item;
               const label =
@@ -583,7 +584,7 @@ function AddFileDialog({
 
               return (
                 <button
-                  className={`flex h-[var(--host-30)] w-[var(--host-110)] items-center justify-center rounded-[20px] text-[var(--host-12)] font-bold leading-[1.253] ${
+                  className={`flex h-[var(--host-30)] w-[var(--host-110)] shrink-0 items-center justify-center rounded-[20px] text-[var(--host-12)] font-bold leading-[1.253] max-md:min-h-11 max-md:w-auto max-md:min-w-0 max-md:flex-1 max-md:px-2 max-md:text-sm ${
                     isActive
                       ? "bg-[#FF9A3D] text-[#F9F9F9]"
                       : "bg-[#CAC4BC] text-[#F3F3F3]"
@@ -601,7 +602,7 @@ function AddFileDialog({
             {programs.length > 0 ? (
               programs.slice(0, 6).map((program) => (
                 <label
-                  className="flex min-w-0 items-center gap-[var(--host-8)] text-[var(--host-14)] font-medium leading-[1.253] text-[#0D0D0C]"
+                  className="flex min-w-0 items-center gap-[var(--host-8)] text-[var(--host-14)] font-medium leading-[1.253] text-[#0D0D0C] max-md:min-h-11"
                   key={program.id}
                 >
                   <input
@@ -622,7 +623,7 @@ function AddFileDialog({
         </div>
         <div className="flex w-full justify-end">
           <button
-            className="inline-flex h-[var(--host-29)] items-center justify-center rounded-[4px] bg-[#FE701E] px-[var(--host-18)] text-[var(--host-12)] font-medium leading-[1.253] text-[#FFF6EC] disabled:opacity-40"
+            className="inline-flex h-[var(--host-29)] items-center justify-center rounded-[4px] bg-[#FE701E] px-[var(--host-18)] text-[var(--host-12)] font-medium leading-[1.253] text-[#FFF6EC] disabled:opacity-40 max-md:min-h-11 max-md:w-full max-md:text-sm"
             disabled={selectedProgramIds.length === 0 || isSaving}
             onClick={onAdd}
             type="button"
@@ -651,9 +652,9 @@ function NewProgramDialog({
   const canCreate = title.trim().length > 0 && !isSaving;
 
   return (
-    <div className="fixed inset-0 z-[90] grid place-items-center overflow-y-auto bg-black/20 px-4 py-8">
+    <div className="fixed inset-0 z-[90] grid place-items-center overflow-y-auto bg-black/20 px-4 py-8 max-md:py-4 max-[359px]:px-3 max-[359px]:py-3">
       <form
-        className="flex w-[var(--host-603)] max-w-[calc(100vw-32px)] flex-col gap-[var(--host-6)] rounded-[12px] border border-[#D9D9D9] bg-[#F9F9F9] px-[var(--host-18)] py-[var(--host-24)] shadow-[0_18px_50px_rgba(0,0,0,0.12)] max-md:w-full max-md:min-w-0 max-md:p-5"
+        className="flex w-[var(--host-603)] max-w-[calc(100vw-32px)] flex-col gap-[var(--host-6)] rounded-[12px] border border-[#D9D9D9] bg-[#F9F9F9] px-[var(--host-18)] py-[var(--host-24)] shadow-[0_18px_50px_rgba(0,0,0,0.12)] max-md:max-h-[calc(100dvh-32px)] max-md:w-full max-md:min-w-0 max-md:overflow-y-auto max-md:p-5 max-[359px]:max-h-[calc(100dvh-24px)] max-[359px]:max-w-none max-[359px]:p-4"
         onSubmit={(event) => {
           event.preventDefault();
           if (canCreate) onCreate();
@@ -662,7 +663,7 @@ function NewProgramDialog({
         <div className="flex justify-end">
           <button
             aria-label="닫기"
-            className="inline-flex size-4 items-center justify-center text-[#0D0D0C]"
+            className="inline-flex size-4 items-center justify-center text-[#0D0D0C] max-md:size-11"
             onClick={onClose}
             type="button"
           >
@@ -678,7 +679,7 @@ function NewProgramDialog({
           </p>
           <input
             autoFocus
-            className="h-[var(--host-30)] rounded-[7px] border-[0.5px] border-[#F7B267] bg-transparent px-[var(--host-12)] text-[var(--host-12)] font-medium leading-[1.253] text-[#0D0D0C] outline-none placeholder:text-[#D9D9D9] focus:border-[#FE701E]"
+            className="h-[var(--host-30)] rounded-[7px] border-[0.5px] border-[#F7B267] bg-transparent px-[var(--host-12)] text-[var(--host-12)] font-medium leading-[1.253] text-[#0D0D0C] outline-none placeholder:text-[#D9D9D9] focus:border-[#FE701E] max-md:h-11 max-md:px-3 max-md:text-base"
             onChange={(event) => onTitleChange(event.target.value)}
             placeholder="프로그램 이름을 입력해주세요."
             value={title}
@@ -686,14 +687,14 @@ function NewProgramDialog({
         </div>
         <div className="mt-[1.111vw] flex justify-end gap-[var(--host-8)]">
           <button
-            className="inline-flex h-[var(--host-29)] items-center justify-center rounded-[4px] border border-[#D9D9D9] bg-white px-[var(--host-18)] text-[var(--host-12)] font-medium leading-[1.253] text-[#6D7A8A]"
+            className="inline-flex h-[var(--host-29)] items-center justify-center rounded-[4px] border border-[#D9D9D9] bg-white px-[var(--host-18)] text-[var(--host-12)] font-medium leading-[1.253] text-[#6D7A8A] max-md:min-h-11 max-md:flex-1 max-md:text-sm"
             onClick={onClose}
             type="button"
           >
             취소
           </button>
           <button
-            className="inline-flex h-[var(--host-29)] items-center justify-center rounded-[4px] bg-[#FE701E] px-[var(--host-18)] text-[var(--host-12)] font-medium leading-[1.253] text-[#FFF6EC] disabled:opacity-45"
+            className="inline-flex h-[var(--host-29)] items-center justify-center rounded-[4px] bg-[#FE701E] px-[var(--host-18)] text-[var(--host-12)] font-medium leading-[1.253] text-[#FFF6EC] disabled:opacity-45 max-md:min-h-11 max-md:flex-1 max-md:text-sm"
             disabled={!canCreate}
             type="submit"
           >
@@ -707,6 +708,7 @@ function NewProgramDialog({
 
 function InsideFolderProgramCard({
   draft,
+  eager = false,
   onToggleSelect,
   program,
   projectPath,
@@ -714,6 +716,7 @@ function InsideFolderProgramCard({
   selected = false,
 }: {
   draft?: HostProgramDraft;
+  eager?: boolean;
   onToggleSelect?: () => void;
   program: HostProgramListItem;
   projectPath: string;
@@ -734,7 +737,7 @@ function InsideFolderProgramCard({
       ? `마감일 :${draft?.recruitEnd ? ` ${formatCompactDate(draft.recruitEnd)}` : ""}`
       : `오픈일 :${draft?.recruitStart ? ` ${formatCompactDate(draft.recruitStart)}` : ""}`;
 
-  const cardClassName = `relative block h-[var(--host-142)] w-[var(--host-235)] min-w-[235px] overflow-hidden rounded-[8px] border border-[#D9D9D9] p-[var(--host-12)] text-left text-[#0D0D0C] transition hover:border-[#FE701E] max-md:w-full ${
+  const cardClassName = `relative block h-[var(--host-142)] w-[var(--host-235)] min-w-[235px] overflow-hidden rounded-[8px] border border-[#D9D9D9] p-[var(--host-12)] text-left text-[#0D0D0C] transition hover:border-[#FE701E] max-md:w-full max-md:min-w-0 ${
     selectable ? "bg-[#F3F3F3]" : "bg-white"
   }`;
   const cardBody = (
@@ -756,6 +759,7 @@ function InsideFolderProgramCard({
                 alt=""
                 className="object-cover"
                 fill
+                loading={eager ? "eager" : "lazy"}
                 sizes="(min-width: 1920px) 92px, 69px"
                 src={program.imageUrl}
               />

@@ -1145,19 +1145,19 @@ export function HostFolderInsideHeader({
   }
 
   return (
-    <div className="flex h-[var(--host-20)] w-full items-center gap-[0.972vw]">
+    <div className="flex h-[var(--host-20)] w-full items-center gap-[0.972vw] max-md:grid max-md:h-auto max-md:min-h-[88px] max-md:grid-cols-[44px_minmax(0,1fr)_44px_44px_44px] max-md:grid-rows-[44px_44px] max-md:gap-x-1 max-md:gap-y-0">
       <Link
         aria-label="내 프로그램으로 돌아가기"
-        className="inline-flex h-[var(--host-20)] w-[0.833vw] min-w-3 items-center justify-center text-[#6D7A8A] transition hover:text-[#FE701E]"
+        className="inline-flex h-[var(--host-20)] w-[0.833vw] min-w-3 items-center justify-center text-[#6D7A8A] transition hover:text-[#FE701E] max-md:col-start-1 max-md:row-start-1 max-md:size-11"
         href="/host"
       >
         <ChevronLeft className="size-[var(--host-18)]" strokeWidth={1.8} />
       </Link>
-      <div className="min-w-0 max-w-[min(66vw,720px)] shrink">
+      <div className="min-w-0 max-w-[min(66vw,720px)] shrink max-md:col-span-4 max-md:col-start-2 max-md:row-start-1 max-md:max-w-none">
         {isEditingTitle ? (
           <input
             aria-label="폴더 이름"
-            className="h-[var(--host-24)] w-[min(66vw,720px)] max-w-full rounded-[4px] border border-[#F7B267] bg-white px-[var(--host-6)] text-[length:var(--host-16)] font-medium leading-[1.253] text-[#4C5968] outline-none focus:border-[#FE701E] disabled:opacity-60"
+            className="h-[var(--host-24)] w-[min(66vw,720px)] max-w-full rounded-[4px] border border-[#F7B267] bg-white px-[var(--host-6)] text-[length:var(--host-16)] font-medium leading-[1.253] text-[#4C5968] outline-none focus:border-[#FE701E] disabled:opacity-60 max-md:h-11 max-md:w-full max-md:px-3 max-md:text-base"
             disabled={isBusy || isCommittingTitle}
             onBlur={cancelTitleEdit}
             onChange={(event) => setDraftTitle(event.target.value)}
@@ -1169,9 +1169,15 @@ export function HostFolderInsideHeader({
         ) : onRename ? (
           <button
             aria-label="폴더 이름 변경"
-            className="group/title -ml-[var(--host-3)] min-w-0 rounded-[4px] border border-transparent px-[var(--host-3)] py-[var(--host-2)] text-left transition hover:border-[#F7B267] hover:bg-[#FFF6EC] focus-visible:border-[#FE701E] focus-visible:bg-[#FFF6EC] focus-visible:outline-none disabled:cursor-default disabled:hover:border-transparent disabled:hover:bg-transparent"
+            className="group/title -ml-[var(--host-3)] min-w-0 rounded-[4px] border border-transparent px-[var(--host-3)] py-[var(--host-2)] text-left transition hover:border-[#F7B267] hover:bg-[#FFF6EC] focus-visible:border-[#FE701E] focus-visible:bg-[#FFF6EC] focus-visible:outline-none disabled:cursor-default disabled:hover:border-transparent disabled:hover:bg-transparent max-md:flex max-md:min-h-11 max-md:w-full max-md:items-center"
             disabled={isBusy}
+            onClick={(event) => {
+              if (event.detail === 0) beginTitleEdit();
+            }}
             onDoubleClick={beginTitleEdit}
+            onPointerUp={(event) => {
+              if (event.pointerType !== "mouse") beginTitleEdit();
+            }}
             title="더블클릭해서 폴더 이름 변경"
             type="button"
           >
@@ -1185,17 +1191,17 @@ export function HostFolderInsideHeader({
           </h1>
         )}
       </div>
-      <div className="flex flex-1 items-center justify-end" />
+      <div className="flex flex-1 items-center justify-end max-md:hidden" />
       <button
         aria-label={deleteActive ? "삭제 선택 취소" : "폴더에서 프로그램 제거"}
-        className="inline-flex size-[var(--host-18)] min-h-[18px] min-w-[18px] items-center justify-center rounded-full transition hover:opacity-80 disabled:opacity-45"
+        className="inline-flex size-[var(--host-18)] min-h-[18px] min-w-[18px] items-center justify-center rounded-full transition hover:opacity-80 disabled:opacity-45 max-md:col-start-3 max-md:row-start-2 max-md:size-11"
         disabled={isBusy}
         onClick={onDelete}
         type="button"
       >
         <Image
           alt=""
-          className="size-full"
+          className="size-full max-md:size-[18px]"
           height={18}
           src={nuvioIcons.quantityMinus}
           width={18}
@@ -1203,14 +1209,14 @@ export function HostFolderInsideHeader({
       </button>
       <button
         aria-label="폴더에 프로그램 추가"
-        className="inline-flex size-[var(--host-18)] min-h-[18px] min-w-[18px] items-center justify-center rounded-full transition hover:opacity-80 disabled:opacity-45"
+        className="inline-flex size-[var(--host-18)] min-h-[18px] min-w-[18px] items-center justify-center rounded-full transition hover:opacity-80 disabled:opacity-45 max-md:col-start-4 max-md:row-start-2 max-md:size-11"
         disabled={isBusy}
         onClick={onAdd}
         type="button"
       >
         <Image
           alt=""
-          className="size-full"
+          className="size-full max-md:size-[18px]"
           height={18}
           src={nuvioIcons.quantityPlus}
           width={18}
@@ -1219,7 +1225,7 @@ export function HostFolderInsideHeader({
       {onRemoveFolder ? (
         <button
           aria-label="폴더 삭제"
-          className="inline-flex size-[var(--host-18)] min-h-[18px] min-w-[18px] items-center justify-center rounded-[4px] transition hover:opacity-70 disabled:opacity-40"
+          className="inline-flex size-[var(--host-18)] min-h-[18px] min-w-[18px] items-center justify-center rounded-[4px] transition hover:opacity-70 disabled:opacity-40 max-md:col-start-5 max-md:row-start-2 max-md:size-11"
           disabled={isBusy}
           onClick={onRemoveFolder}
           title="폴더 삭제"
@@ -1227,7 +1233,7 @@ export function HostFolderInsideHeader({
         >
           <Image
             alt=""
-            className="h-full w-auto"
+            className="h-full w-auto max-md:h-[18px]"
             height={18}
             src={nuvioIcons.formItemTrash}
             width={16}

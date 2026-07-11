@@ -119,7 +119,7 @@ export function HostProgramCreateWizard({ projectId }: { projectId?: string }) {
     return (
       <div className="mx-auto max-w-5xl px-4 py-8 md:px-8">
         <Link
-          className="inline-flex h-10 items-center gap-2 rounded-md border border-[#F3E2D5] bg-white px-3 text-sm font-black text-[#5B3A29]"
+          className="inline-flex h-10 items-center gap-2 rounded-md border border-[#F3E2D5] bg-white px-3 text-sm font-black text-[#5B3A29] max-md:min-h-11"
           href="/host?status=open"
         >
           <ArrowLeft size={16} />
@@ -138,7 +138,7 @@ export function HostProgramCreateWizard({ projectId }: { projectId?: string }) {
     <main className="mx-auto w-full max-w-4xl px-4 py-6 md:px-8">
       <div className="mb-5">
         <Link
-          className="inline-flex h-10 items-center gap-2 rounded-md border border-[#F3E2D5] bg-white px-3 text-sm font-black text-[#5B3A29]"
+          className="inline-flex h-10 items-center gap-2 rounded-md border border-[#F3E2D5] bg-white px-3 text-sm font-black text-[#5B3A29] max-md:min-h-11"
           href={projectPath}
         >
           <ArrowLeft size={16} />
@@ -180,7 +180,9 @@ export function HostProgramCreateWizard({ projectId }: { projectId?: string }) {
           </label>
 
           {errorMessage ? (
-            <p className="text-sm font-bold text-red-600">{errorMessage}</p>
+            <p className="text-sm font-bold text-red-600" role="alert">
+              {errorMessage}
+            </p>
           ) : null}
 
           <button

@@ -110,8 +110,8 @@ public and Mypage functional groups; the total unique page count remains 94.
 | `/host/channels/[section]` | Host console | channel programs/reviews/gallery/magazine/board/settings | pending/auth |
 | `/host/villages/[villageSlug]` | Host console | access guard to `/host/channels` | bridge/auth |
 | `/host/villages/[villageSlug]/editor` | Host console | access guard to channel editor | bridge/auth |
-| `/host/projects/new` | Host console | `HostProjectCreateWizard` | pending/auth |
-| `/host/projects/[projectId]` | Host console | `HostProjectHub` | pending/auth |
+| `/host/projects/new` | Host console | `HostProjectCreateWizard` | pass-1/auth |
+| `/host/projects/[projectId]` | Host console | `HostProjectHub` | pass-1/auth |
 | `/host/projects/[projectId]/activities` | Host console | project hub redirect | bridge/auth |
 | `/host/projects/[projectId]/closeout` | Host console | project hub redirect | bridge/auth |
 | `/host/projects/[projectId]/evidence` | Host console | project hub redirect | bridge/auth |
@@ -119,13 +119,13 @@ public and Mypage functional groups; the total unique page count remains 94.
 | `/host/projects/[projectId]/forms` | Host console | project hub redirect | bridge/auth |
 | `/host/projects/[projectId]/applications` | Host console | project hub redirect | bridge/auth |
 | `/host/projects/[projectId]/applications/[applicationId]` | Host console | project hub redirect | bridge/auth |
-| `/host/projects/[projectId]/programs/new` | Host console | `HostProgramCreateWizard` | pending/auth |
-| `/host/projects/[projectId]/programs/[programId]` | Host console | `HostProgramHub` | pending/auth |
-| `/host/projects/[projectId]/programs/[programId]/messages` | Host console | `HostMessageAutomation` | pending/auth |
-| `/host/projects/[projectId]/programs/[programId]/forms` | Host console | `HostProgramFormAttachment` | pending/auth |
-| `/host/projects/[projectId]/programs/[programId]/applications` | Host console | `HostApplicationsCrm` | pending/auth |
+| `/host/projects/[projectId]/programs/new` | Host console | `HostProgramCreateWizard` | pass-1/auth |
+| `/host/projects/[projectId]/programs/[programId]` | Host console | `HostProgramHub` | pass-1/auth |
+| `/host/projects/[projectId]/programs/[programId]/messages` | Host console | `HostMessageAutomation` | pass-1/auth |
+| `/host/projects/[projectId]/programs/[programId]/forms` | Host console | `HostProgramFormAttachment` | pass-1/auth |
+| `/host/projects/[projectId]/programs/[programId]/applications` | Host console | `HostApplicationsCrm` | pass-1/auth |
 | `/host/projects/[projectId]/programs/[programId]/applications/[applicationId]` | Host console | `HostApplicationDetail` | pending/auth |
-| `/host/programs/new` | Host console | `HostProgramCreateWizard` | pending/auth |
+| `/host/programs/new` | Host console | `HostProgramCreateWizard` | pass-1/auth |
 | `/host/programs/[programId]` | Host console | `HostProgramHub` | pass-1/auth |
 | `/host/programs/[programId]/messages` | Host console | `HostMessageAutomation` | pass-1/auth |
 | `/host/programs/[programId]/forms` | Host console | `HostProgramFormAttachment` | pass-1/auth |

@@ -65,10 +65,10 @@ export function HostProjectCreateWizard() {
   }
 
   return (
-    <div className="mx-auto max-w-4xl px-4 py-6 md:px-8">
+    <main className="mx-auto w-full max-w-4xl px-4 py-6 md:px-8">
       <div className="mb-5 flex flex-wrap gap-2">
         <Link
-          className="inline-flex h-10 items-center gap-2 rounded-md border border-[#F3E2D5] bg-white px-3 text-sm font-black text-[#5B3A29]"
+          className="inline-flex h-10 items-center gap-2 rounded-md border border-[#F3E2D5] bg-white px-3 text-sm font-black text-[#5B3A29] max-md:min-h-11"
           href="/host?status=open"
         >
           <ArrowLeft size={16} />
@@ -89,16 +89,19 @@ export function HostProjectCreateWizard() {
           필요할 때 이 폴더 안에 모아둘 수 있습니다.
         </p>
 
-        <div className="mt-6 grid gap-3">
+        <form
+          className="mt-6 grid gap-3"
+          onSubmit={(event) => {
+            event.preventDefault();
+            void createProject();
+          }}
+        >
           <label className="grid gap-2">
             <span className="text-sm font-black text-[#5B3A29]">폴더 이름</span>
             <input
               autoFocus
               className="h-12 rounded-md border border-[#F3E2D5] px-3 text-base font-bold text-[#0D0D0C] outline-none focus:border-[#FE701E]"
               onChange={(event) => setProjectName(event.target.value)}
-              onKeyDown={(event) => {
-                if (event.key === "Enter") void createProject();
-              }}
               placeholder="예: 2026 봄 프로그램"
               value={projectName}
             />
@@ -107,18 +110,19 @@ export function HostProjectCreateWizard() {
           <button
             className="inline-flex h-11 w-full items-center justify-center gap-2 rounded-md bg-[#FE701E] px-4 text-sm font-black text-white transition hover:bg-[#E85F13] disabled:cursor-not-allowed disabled:opacity-40 sm:w-fit"
             disabled={!canCreate}
-            onClick={() => void createProject()}
-            type="button"
+            type="submit"
           >
             <Plus size={16} />
             {isCreating ? "저장 중" : "폴더 만들기"}
             <ArrowRight size={16} />
           </button>
           {errorMessage ? (
-            <p className="text-sm font-bold text-rose-600">{errorMessage}</p>
+            <p className="text-sm font-bold text-rose-600" role="alert">
+              {errorMessage}
+            </p>
           ) : null}
-        </div>
+        </form>
       </section>
-    </div>
+    </main>
   );
 }
