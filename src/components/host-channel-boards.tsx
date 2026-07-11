@@ -322,7 +322,7 @@ export function HostChannelBoards() {
   return (
     <HostWorkspaceLayout sidebarHeight={showEditor ? "min-h-[var(--host-2053)]" : "min-h-[var(--host-1158)]"}>
       <section className="min-w-0 flex-1 overflow-x-hidden bg-white">
-        <div className="w-full max-w-[var(--host-1230)]">
+        <div className="w-full max-w-[var(--host-1230)] max-[1439px]:max-w-none">
           <ChannelProfileHeader
             activeLabel="게시판형"
             channel={channel}
@@ -330,11 +330,11 @@ export function HostChannelBoards() {
             publicHref={publicHref}
           />
 
-          <section className="relative min-h-[var(--host-1158)] border-b border-[#6D7A8A] pb-[var(--host-30)] pt-[var(--host-62)]">
+          <section className="relative min-h-[var(--host-1158)] border-b border-[#6D7A8A] pb-[var(--host-30)] pt-[var(--host-62)] max-[1439px]:min-h-0 max-lg:px-5 max-lg:pb-8 max-lg:pt-14">
             {!showEditor && canCreatePost ? (
               <button
                 aria-label="새 게시글 작성"
-                className="absolute right-[var(--host-36)] top-[var(--host-40)] size-[var(--host-20)] transition hover:opacity-80"
+                className="absolute right-[var(--host-36)] top-[var(--host-40)] size-[var(--host-20)] transition hover:opacity-80 max-lg:right-4 max-lg:top-3 max-lg:size-11 max-lg:p-2.5"
                 onClick={openNewPostEditor}
                 type="button"
               >
@@ -343,7 +343,7 @@ export function HostChannelBoards() {
             ) : null}
 
             {isLoading ? (
-              <div className="ml-[var(--host-30)] w-[var(--host-1170)] max-w-[calc(100%-var(--host-60))]">
+              <div className="ml-[var(--host-30)] w-[var(--host-1170)] max-w-[calc(100%-var(--host-60))] max-lg:ml-0 max-lg:w-full max-lg:max-w-none">
                 <ChannelContentSkeleton variant="board" />
               </div>
             ) : editorDraft ? (
@@ -352,10 +352,10 @@ export function HostChannelBoards() {
                 closeAriaLabel="게시글 작성 닫기"
                 draft={editorDraft}
                 extraControls={
-                  <label className="inline-flex cursor-pointer items-center gap-[var(--host-8)] text-[length:var(--host-13)] font-semibold leading-[1.253] text-[#5B3A29]">
+                  <label className="inline-flex cursor-pointer items-center gap-[var(--host-8)] text-[length:var(--host-13)] font-semibold leading-[1.253] text-[#5B3A29] max-lg:min-h-11 max-lg:text-sm">
                     <input
                       checked={editorDraft.pinned}
-                      className="size-[var(--host-16)] accent-[#FE701E]"
+                      className="size-[var(--host-16)] accent-[#FE701E] max-lg:size-5"
                       onChange={(event) => updateEditorDraft({ pinned: event.target.checked })}
                       type="checkbox"
                     />
@@ -375,7 +375,7 @@ export function HostChannelBoards() {
                 uploadingImage={uploadingImage}
               />
             ) : posts.length > 0 ? (
-              <div className="ml-[var(--host-30)] w-[var(--host-1170)] max-w-[calc(100%-var(--host-60))]">
+              <div className="ml-[var(--host-30)] w-[var(--host-1170)] max-w-[calc(100%-var(--host-60))] max-lg:ml-0 max-lg:w-full max-lg:max-w-none">
                 {sortBoardPosts(posts).map((post) => (
                   <BoardPostRow
                     key={post.id}
@@ -386,7 +386,7 @@ export function HostChannelBoards() {
                 ))}
               </div>
             ) : (
-              <div className="ml-[var(--host-30)] w-[var(--host-1170)] max-w-[calc(100%-var(--host-60))]">
+              <div className="ml-[var(--host-30)] w-[var(--host-1170)] max-w-[calc(100%-var(--host-60))] max-lg:ml-0 max-lg:w-full max-lg:max-w-none">
                 <ChannelEmptyState
                   description="게시글을 작성하면 게시판형 메뉴에 표시됩니다."
                   title="아직 등록된 게시글이 없습니다."
@@ -396,7 +396,7 @@ export function HostChannelBoards() {
           </section>
 
           {!showEditor && savedMessage ? (
-            <footer className="flex h-[var(--host-69)] items-center gap-[var(--host-12)] border-b border-[#6D7A8A] px-[var(--host-24)]">
+            <footer className="flex h-[var(--host-69)] items-center gap-[var(--host-12)] border-b border-[#6D7A8A] px-[var(--host-24)] max-lg:h-auto max-lg:min-h-16 max-lg:px-5 max-lg:py-4">
               <span className="text-[length:var(--host-12)] font-normal leading-[1.253] text-[#6D7A8A]">
                 {savedMessage}
               </span>
@@ -421,14 +421,16 @@ function BoardPostRow({
   const hasBadge = Boolean(post.pinned || isNew);
 
   return (
-    <article className="relative flex min-h-[var(--host-43)] w-full items-center border-b border-[#F3E2D5] py-[var(--host-9)] text-[length:var(--host-12)] leading-[1.253]">
-      <div className="flex min-w-[clamp(104px,7.222vw,138.667px)] items-center gap-[var(--host-4)]">
+    <article className="relative flex min-h-[var(--host-43)] w-full items-center border-b border-[#F3E2D5] py-[var(--host-9)] text-[length:var(--host-12)] leading-[1.253] max-lg:grid max-lg:grid-cols-[minmax(0,1fr)_44px] max-lg:gap-x-2 max-lg:gap-y-1 max-lg:py-3">
+      <div className={`flex min-w-[clamp(104px,7.222vw,138.667px)] items-center gap-[var(--host-4)] max-lg:col-start-1 max-lg:row-start-1 max-lg:min-w-0 ${hasBadge ? "" : "max-lg:hidden"}`}>
         {post.pinned ? <BoardBadge tone="pinned">고정</BoardBadge> : null}
         {isNew ? <BoardBadge tone="new">새글</BoardBadge> : null}
       </div>
       <button
-        className={`min-w-0 flex-1 truncate text-left text-[length:var(--host-12)] font-semibold leading-[1.253] text-[#5B3A29] transition hover:text-[#FE701E] ${
-          hasBadge ? "" : "pl-[var(--host-44)]"
+        className={`min-w-0 flex-1 truncate text-left text-[length:var(--host-12)] font-semibold leading-[1.253] text-[#5B3A29] transition hover:text-[#FE701E] max-lg:col-start-1 max-lg:min-h-11 max-lg:whitespace-normal max-lg:break-words max-lg:py-2 max-lg:text-sm max-lg:leading-5 ${
+          hasBadge
+            ? "max-lg:row-start-2"
+            : "pl-[var(--host-44)] max-lg:row-start-1 max-lg:pl-0"
         }`}
         onClick={onEdit}
         type="button"
@@ -436,14 +438,14 @@ function BoardPostRow({
         {post.title}
       </button>
       <time
-        className="ml-[var(--host-16)] w-[var(--host-156)] shrink-0 text-right text-[length:var(--host-12)] font-medium leading-[1.253] text-[#CAC4BC]"
+        className={`ml-[var(--host-16)] w-[var(--host-156)] shrink-0 text-right text-[length:var(--host-12)] font-medium leading-[1.253] text-[#CAC4BC] max-lg:col-start-1 max-lg:ml-0 max-lg:w-auto max-lg:text-left max-lg:text-xs ${hasBadge ? "max-lg:row-start-3" : "max-lg:row-start-2"}`}
         dateTime={post.createdAt}
       >
         {formatBoardDate(post.createdAt)}
       </time>
       <button
         aria-label="게시글 수정"
-        className="ml-[var(--host-22)] grid size-[var(--host-24)] place-items-center text-[#6D7A8A] transition hover:text-[#FE701E]"
+        className="ml-[var(--host-22)] grid size-[var(--host-24)] place-items-center text-[#6D7A8A] transition hover:text-[#FE701E] max-lg:col-start-2 max-lg:row-start-1 max-lg:ml-0 max-lg:size-11"
         onClick={onEdit}
         type="button"
       >
@@ -451,7 +453,7 @@ function BoardPostRow({
       </button>
       <button
         aria-label="게시글 삭제"
-        className="ml-[var(--host-4)] grid size-[var(--host-24)] place-items-center text-[#6D7A8A] transition hover:text-[#FE701E]"
+        className="ml-[var(--host-4)] grid size-[var(--host-24)] place-items-center text-[#6D7A8A] transition hover:text-[#FE701E] max-lg:col-start-2 max-lg:row-start-2 max-lg:ml-0 max-lg:size-11"
         onClick={onDelete}
         type="button"
       >
