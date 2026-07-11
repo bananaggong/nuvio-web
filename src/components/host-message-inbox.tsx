@@ -163,6 +163,24 @@ function HostMessageScaleOverrides() {
       [data-host-message-scale] .text-\\[\\#FCFCFC\\] { color: #FCFCFC; }
       [data-host-message-scale] .text-\\[\\#FE701E\\] { color: #FE701E; }
       [data-host-message-scale] .text-\\[\\#FFF6EC\\] { color: #FFF6EC; }
+      @media (max-width: 1023px) {
+        [data-host-message-grid="ongoing"] {
+          grid-template-columns: minmax(0, 1fr) !important;
+          min-width: 0 !important;
+        }
+        [data-host-message-search="ongoing"] {
+          flex-basis: 100%;
+          height: 44px !important;
+          max-width: none !important;
+          min-width: 0 !important;
+          width: 100% !important;
+        }
+        [data-host-message-scale] input,
+        [data-host-message-scale] select,
+        [data-host-message-scale] textarea {
+          font-size: 16px !important;
+        }
+      }
     `}</style>
   );
 }
@@ -395,6 +413,14 @@ function OngoingMessagesView({
   threads: MessageThread[];
 }) {
   const [settingsOpen, setSettingsOpen] = useState(false);
+  const [mobilePane, setMobilePane] = useState<
+    "conversation" | "details" | "threads"
+  >("threads");
+
+  function selectThread(threadId: string) {
+    onSelectThread(threadId);
+    setMobilePane("conversation");
+  }
 
   return (
     <div
@@ -404,12 +430,11 @@ function OngoingMessagesView({
     >
       <section className="flex h-[calc(100vh-4.861vw)] min-h-[658px] flex-col overflow-hidden max-lg:h-auto max-lg:min-h-0">
         <div
-          className="flex items-center gap-[14px] border-b border-[#6D7A8A] px-[1.944vw] max-lg:flex-wrap max-lg:px-5"
-          style={{ height: scaledSize(70), minHeight: scaledSize(70) }}
+          className="flex h-[var(--host-msg-70)] min-h-[var(--host-msg-70)] items-center gap-[14px] border-b border-[#6D7A8A] px-[1.944vw] max-lg:h-auto max-lg:min-h-0 max-lg:flex-wrap max-lg:px-5 max-lg:py-3"
         >
           <Link
             aria-label="호스트 홈으로 돌아가기"
-            className="inline-flex size-[var(--host-msg-20)] items-center justify-center text-[#6D7A8A] transition hover:text-[#FE701E]"
+            className="inline-flex size-11 items-center justify-center text-[#6D7A8A] transition hover:text-[#FE701E] lg:size-[var(--host-msg-20)]"
             href="/host"
           >
             <ChevronLeft size={20} strokeWidth={1.8} />
@@ -419,6 +444,7 @@ function OngoingMessagesView({
           </h1>
           <label
             className="relative h-[var(--host-msg-28)] min-w-[var(--host-msg-280)] flex-1 max-lg:max-w-none"
+            data-host-message-search="ongoing"
             style={{ maxWidth: scaledSize(411), width: scaledSize(411) }}
           >
             <Search
@@ -434,7 +460,7 @@ function OngoingMessagesView({
           </label>
           <div className="ml-auto flex items-center justify-end">
             <button
-              className="inline-flex h-[var(--host-msg-30)] items-center justify-center rounded-[var(--host-msg-6)] bg-[#6D7A8A] px-[var(--host-msg-16)] text-center text-[length:var(--host-msg-12)] font-bold leading-[1.6] text-[#F3F3F3] transition hover:bg-[#5D6876]"
+              className="inline-flex h-[var(--host-msg-30)] min-h-11 items-center justify-center rounded-[var(--host-msg-6)] bg-[#6D7A8A] px-[var(--host-msg-16)] text-center text-[length:var(--host-msg-12)] font-bold leading-[1.6] text-[#F3F3F3] transition hover:bg-[#5D6876] lg:min-h-0"
               onClick={() => setSettingsOpen(true)}
               type="button"
             >
@@ -443,58 +469,88 @@ function OngoingMessagesView({
           </div>
         </div>
 
+        <div className="grid grid-cols-3 border-b border-[#D9D9D9] bg-white px-3 lg:hidden">
+          {(
+            [
+              ["threads", "대화 목록"],
+              ["conversation", "대화"],
+              ["details", "상세 정보"],
+            ] as const
+          ).map(([pane, label]) => (
+            <button
+              aria-pressed={mobilePane === pane}
+              className={`min-h-11 border-b-2 px-2 text-sm font-semibold transition ${
+                mobilePane === pane
+                  ? "border-[#FE701E] text-[#FE701E]"
+                  : "border-transparent text-[#6D7A8A]"
+              }`}
+              key={pane}
+              onClick={() => setMobilePane(pane)}
+              type="button"
+            >
+              {label}
+            </button>
+          ))}
+        </div>
+
         <div className="flex-1 overflow-auto">
           <div
-            className="mx-auto grid h-full min-h-[608px] min-w-[1060px] max-w-[1920px]"
+            className="mx-auto grid h-full min-h-[608px] min-w-[1060px] max-w-[1920px] max-lg:min-h-[520px] max-lg:min-w-0"
             data-host-message-grid="ongoing"
             style={{
               gridTemplateColumns: `${scaledSize(360)} minmax(${scaledSize(620)}, 1fr) ${scaledSize(390)}`,
             }}
           >
-            <aside className="flex min-h-full flex-col border-r border-[#6D7A8A]">
-              <div className="flex-1 px-3 pt-[18px]">
-                <div className="grid gap-[6px]">
-                  {isLoading ? (
-                    <MessageListState label="문의를 불러오는 중입니다." />
-                  ) : loadError ? (
-                    <MessageListState label={loadError} />
-                  ) : threads.length > 0 ? (
-                    threads.slice(0, 8).map((thread) => (
-                    <ThreadListButton
-                      active={thread.id === selectedThreadId}
-                      key={thread.id}
-                      onClick={() => onSelectThread(thread.id)}
-                      thread={thread}
-                    />
-                    ))
-                  ) : (
-                    <MessageListState label="진행 중인 메세지가 없습니다." />
-                  )}
+            <div className={`contents ${mobilePane === "threads" ? "" : "max-lg:hidden"}`}>
+              <aside className="flex min-h-full flex-col border-r border-[#6D7A8A] max-lg:border-r-0">
+                <div className="flex-1 px-3 pt-[18px]">
+                  <div className="grid gap-[6px]">
+                    {isLoading ? (
+                      <MessageListState label="문의를 불러오는 중입니다." />
+                    ) : loadError ? (
+                      <MessageListState label={loadError} />
+                    ) : threads.length > 0 ? (
+                      threads.slice(0, 8).map((thread) => (
+                        <ThreadListButton
+                          active={thread.id === selectedThreadId}
+                          key={thread.id}
+                          onClick={() => selectThread(thread.id)}
+                          thread={thread}
+                        />
+                      ))
+                    ) : (
+                      <MessageListState label="진행 중인 메세지가 없습니다." />
+                    )}
+                  </div>
                 </div>
-              </div>
-              <Link
-                className="flex min-h-[var(--host-msg-47)] items-center border-t-[0.5px] border-[#6D7A8A] px-[var(--host-msg-10)] text-[length:var(--host-msg-14)] font-semibold leading-[1.253] text-[#6D7A8A] transition hover:text-[#FE701E]"
-                href="/host/messages?view=ended"
-              >
-                종료된 메세지
-              </Link>
-            </aside>
+                <Link
+                  className="flex min-h-[var(--host-msg-47)] items-center border-t-[0.5px] border-[#6D7A8A] px-[var(--host-msg-10)] text-[length:var(--host-msg-14)] font-semibold leading-[1.253] text-[#6D7A8A] transition hover:text-[#FE701E]"
+                  href="/host/messages?view=ended"
+                >
+                  종료된 메세지
+                </Link>
+              </aside>
+            </div>
 
-            <ChatConversationPanel
-              replyError={replyError}
-              replying={selectedThread ? replyingThreadId === selectedThread.id : false}
-              thread={selectedThread}
-              onSendReply={onSendReply}
-            />
+            <div className={`contents ${mobilePane === "conversation" ? "" : "max-lg:hidden"}`}>
+              <ChatConversationPanel
+                replyError={replyError}
+                replying={selectedThread ? replyingThreadId === selectedThread.id : false}
+                thread={selectedThread}
+                onSendReply={onSendReply}
+              />
+            </div>
 
-            <ThreadDetailPanel
-              actionError={actionError}
-              closing={selectedThread ? closingThreadId === selectedThread.id : false}
-              previousThreads={closedThreads}
-              onCloseThread={onCloseThread}
-              thread={selectedThread}
-              variant="ongoing"
-            />
+            <div className={`contents ${mobilePane === "details" ? "" : "max-lg:hidden"}`}>
+              <ThreadDetailPanel
+                actionError={actionError}
+                closing={selectedThread ? closingThreadId === selectedThread.id : false}
+                previousThreads={closedThreads}
+                onCloseThread={onCloseThread}
+                thread={selectedThread}
+                variant="ongoing"
+              />
+            </div>
           </div>
         </div>
       </section>
@@ -597,13 +653,13 @@ function EndedMessagesView({
         style={hostMessageScaleStyle}
       >
         <div
-          className="min-w-[430px] px-[1.389vw] pt-[1.667vw] max-lg:w-full max-lg:max-w-none max-lg:px-5"
+          className="min-w-[430px] px-[1.389vw] pt-[1.667vw] max-lg:w-full max-lg:min-w-0 max-lg:max-w-none max-lg:px-5"
           style={{ maxWidth: scaledSize(547), width: scaledSize(547) }}
         >
           <div className="flex h-[var(--host-msg-20)] items-center gap-[var(--host-msg-14)]">
             <Link
               aria-label="진행 중인 메세지로 돌아가기"
-              className="inline-flex size-[var(--host-msg-20)] items-center justify-center text-[#6D7A8A] transition hover:text-[#FE701E]"
+              className="inline-flex size-11 items-center justify-center text-[#6D7A8A] transition hover:text-[#FE701E] lg:size-[var(--host-msg-20)]"
               href="/host/messages"
             >
               <ChevronLeft size={20} strokeWidth={1.8} />
@@ -615,7 +671,7 @@ function EndedMessagesView({
 
           <div className="mt-[2.778vw] grid gap-[var(--host-msg-18)] max-lg:mt-8">
             <div className="grid gap-[var(--host-msg-8)]">
-              <label className="relative h-[var(--host-msg-28)] w-full">
+              <label className="relative h-11 w-full lg:h-[var(--host-msg-28)]">
                 <Search
                   aria-hidden="true"
                   className="absolute left-[var(--host-msg-9)] top-1/2 size-[var(--host-msg-14)] -translate-y-1/2 text-[#6D7A8A]"
@@ -630,11 +686,11 @@ function EndedMessagesView({
                 />
               </label>
 
-              <div className="flex h-[var(--host-msg-28)] items-center gap-[var(--host-msg-10)]">
+              <div className="flex min-h-11 items-center gap-[var(--host-msg-10)] lg:h-[var(--host-msg-28)] lg:min-h-0">
                 <span className="text-[length:var(--host-msg-14)] font-medium leading-[1.253] text-[#0D0D0C]">
                   프로그램
                 </span>
-                <label className="relative h-full flex-1">
+                <label className="relative h-11 flex-1 lg:h-full">
                   <select
                     className="h-full w-full appearance-none rounded-[var(--host-msg-7)] border border-[#6D7A8A] bg-[#F9F9F9] pl-[var(--host-msg-12)] pr-[var(--host-msg-28)] text-left text-[length:var(--host-msg-12)] font-medium leading-[1.253] text-[#6D7A8A] outline-none focus:border-[#FE701E]"
                     onChange={(event) => setProgramFilter(event.target.value)}
@@ -801,7 +857,7 @@ function ChatConversationPanel({
   }
 
   return (
-    <section className="flex min-h-full flex-col px-[var(--host-msg-16)] pt-[var(--host-msg-14)]">
+    <section className="flex min-h-full flex-col px-[var(--host-msg-16)] pt-[var(--host-msg-14)] max-lg:min-h-[520px] max-lg:px-5">
       <div className="flex justify-end px-[10px] py-1">
         <Search aria-hidden="true" className="size-[var(--host-msg-20)] text-[#CAC4BC]" strokeWidth={1.8} />
       </div>
@@ -840,14 +896,16 @@ function ChatConversationPanel({
         className="flex min-h-[var(--host-msg-58)] flex-col items-stretch justify-end gap-[var(--host-msg-6)] pb-[var(--host-msg-11)] pr-[var(--host-msg-15)]"
         onSubmit={(event) => void submitReply(event)}
       >
-        <label className="flex h-[var(--host-msg-37)] w-full items-center gap-[var(--host-msg-8)] rounded-full border border-[#FF9A3D] bg-[#F9F9F9] p-[var(--host-msg-9)]">
+        <label className="flex h-11 w-full items-center gap-[var(--host-msg-8)] rounded-full border border-[#FF9A3D] bg-[#F9F9F9] px-[var(--host-msg-9)] lg:h-[var(--host-msg-37)] lg:p-[var(--host-msg-9)]">
           <button
             aria-label="답장 보내기"
-            className="size-[var(--host-msg-12)] rounded-full bg-[#FF9A3D] text-white"
+            className="grid size-11 shrink-0 place-items-center rounded-full text-white lg:size-[var(--host-msg-12)]"
             disabled={!thread || !draftReply.trim() || replying}
             type="submit"
           >
-            <Plus aria-hidden="true" className="size-full" strokeWidth={3} />
+            <span className="grid size-5 place-items-center rounded-full bg-[#FF9A3D] lg:size-full">
+              <Plus aria-hidden="true" className="size-full" strokeWidth={3} />
+            </span>
           </button>
           <input
             className="min-w-0 flex-1 bg-transparent text-[length:var(--host-msg-12)] font-normal leading-[1.6] text-[#6D7A8A] outline-none placeholder:text-[#D9D9D9]"
@@ -896,7 +954,7 @@ function ThreadDetailPanel({
   if (!thread) {
     return (
       <aside
-        className={`min-w-0 border-l border-[#6D7A8A] px-[var(--host-msg-20)] ${
+        className={`min-w-0 border-l border-[#6D7A8A] px-[var(--host-msg-20)] max-lg:min-h-[520px] max-lg:border-l-0 max-lg:px-5 ${
           isEnded
             ? "flex-1 pt-[var(--host-msg-50)]"
             : "pt-[var(--host-msg-17)] shadow-[2px_5px_5.2px_rgba(0,0,0,0.23)]"
@@ -911,7 +969,7 @@ function ThreadDetailPanel({
 
   return (
     <aside
-      className={`min-w-0 border-l border-[#6D7A8A] px-[var(--host-msg-20)] ${
+      className={`min-w-0 border-l border-[#6D7A8A] px-[var(--host-msg-20)] max-lg:min-h-[520px] max-lg:border-l-0 max-lg:px-5 ${
         isEnded ? "flex-1 pt-[var(--host-msg-50)]" : "pt-[var(--host-msg-17)] shadow-[2px_5px_5.2px_rgba(0,0,0,0.23)]"
       }`}
     >
@@ -958,7 +1016,7 @@ function ThreadDetailPanel({
             </div>
           </div>
           <button
-            className="mt-[var(--host-msg-16)] inline-flex h-[var(--host-msg-30)] w-full items-center justify-center rounded-[var(--host-msg-6)] bg-[#CAC4BC] text-[length:var(--host-msg-12)] font-bold leading-[1.6] text-[#F3F3F3] disabled:cursor-wait disabled:opacity-70"
+            className="mt-[var(--host-msg-16)] inline-flex h-[var(--host-msg-30)] min-h-11 w-full items-center justify-center rounded-[var(--host-msg-6)] bg-[#CAC4BC] text-[length:var(--host-msg-12)] font-bold leading-[1.6] text-[#F3F3F3] disabled:cursor-wait disabled:opacity-70 lg:min-h-0"
             disabled={!thread || closing}
             onClick={() => {
               if (thread && onCloseThread) onCloseThread(thread);
@@ -1364,21 +1422,25 @@ function ToggleButton({
     <button
       aria-label={label}
       aria-pressed={active}
-      className={`inline-flex h-[var(--host-msg-12)] w-[var(--host-msg-23)] items-center rounded-full border transition ${
-        active
-          ? "border-[#FF9A3D] bg-[#FF9A3D]"
-          : "border-[#6D7A8A] bg-[#F9F9F9]"
-      }`}
+      className="inline-flex size-11 items-center justify-center lg:h-[var(--host-msg-12)] lg:w-[var(--host-msg-23)]"
       onClick={onClick}
       type="button"
     >
       <span
-        className={`size-[var(--host-msg-10)] rounded-full bg-white transition ${
+        className={`relative inline-flex h-[var(--host-msg-12)] w-[var(--host-msg-23)] items-center rounded-full border transition ${
           active
-            ? "translate-x-[var(--host-msg-11)]"
-            : "translate-x-[var(--host-msg-2)] bg-[#F9F9F9]"
+            ? "border-[#FF9A3D] bg-[#FF9A3D]"
+            : "border-[#6D7A8A] bg-[#F9F9F9]"
         }`}
-      />
+      >
+        <span
+          className={`size-[var(--host-msg-10)] rounded-full bg-white transition ${
+            active
+              ? "translate-x-[var(--host-msg-11)]"
+              : "translate-x-[var(--host-msg-2)] bg-[#F9F9F9]"
+          }`}
+        />
+      </span>
       <span className="sr-only">{label}</span>
       {active ? (
         <ToggleRight aria-hidden="true" className="hidden" />
@@ -1400,7 +1462,7 @@ function FilterPill({
 }) {
   return (
     <button
-      className={`inline-flex h-[var(--host-msg-30)] min-w-[var(--host-msg-70)] items-center justify-center rounded-full px-[var(--host-msg-20)] text-[length:var(--host-msg-12)] font-bold leading-[1.6] ${
+      className={`inline-flex h-[var(--host-msg-30)] min-h-11 min-w-[var(--host-msg-70)] items-center justify-center rounded-full px-[var(--host-msg-20)] text-[length:var(--host-msg-12)] font-bold leading-[1.6] lg:min-h-0 ${
         active ? "bg-[#FF9A3D] text-[#F9F9F9]" : "bg-[#CAC4BC] text-[#F3F3F3]"
       }`}
       onClick={onClick}

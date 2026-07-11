@@ -79,7 +79,7 @@ export default async function HostSettingsPage({
       <HostWorkspaceContent insideFolder>
         <div className="w-[var(--host-959)] max-w-full pt-[var(--host-24)]">
           <Link
-            className="flex h-[var(--host-20)] w-fit items-center gap-[var(--host-14)] text-[var(--host-16)] font-medium leading-[1.253] text-[#6D7A8A] transition hover:text-[#FE701E]"
+            className="flex h-[var(--host-20)] min-h-11 w-fit items-center gap-[var(--host-14)] text-[var(--host-16)] font-medium leading-[1.253] text-[#6D7A8A] transition hover:text-[#FE701E] md:min-h-0"
             href="/host"
           >
             <Image
@@ -130,7 +130,7 @@ function SettingsAccordion({
   if (!open) {
     return (
       <Link
-        className="flex h-[var(--host-36)] w-[var(--host-782)] max-w-full items-center gap-[var(--host-12)] rounded-[var(--host-4)] border border-[#6D7A8A] px-[var(--host-16)] py-[var(--host-8)] transition hover:border-[#FE701E]"
+        className="flex h-auto min-h-16 w-[var(--host-782)] max-w-full items-start gap-2 rounded-[var(--host-4)] border border-[#6D7A8A] px-[var(--host-16)] py-3 transition hover:border-[#FE701E] md:h-[var(--host-36)] md:min-h-0 md:items-center md:gap-[var(--host-12)] md:py-[var(--host-8)]"
         href={section.href}
       >
         <AccordionHeaderText section={section} />
@@ -142,7 +142,7 @@ function SettingsAccordion({
   return (
     <section className="flex w-[var(--host-782)] max-w-full flex-col items-center gap-[var(--host-22)] rounded-[var(--host-4)] border border-[#6D7A8A] px-[var(--host-16)] pb-[var(--host-18)] pt-[var(--host-12)]">
       <Link
-        className="flex h-[var(--host-44)] w-full items-center gap-[var(--host-12)] border-b border-[#6D7A8A] py-[var(--host-12)] transition hover:text-[#FE701E]"
+        className="flex h-auto min-h-14 w-full items-start gap-2 border-b border-[#6D7A8A] py-3 transition hover:text-[#FE701E] md:h-[var(--host-44)] md:min-h-0 md:items-center md:gap-[var(--host-12)] md:py-[var(--host-12)]"
         href="/host/settings"
       >
         <AccordionHeaderText section={section} />
@@ -159,14 +159,14 @@ function AccordionHeaderText({
   section: (typeof settingSections)[number];
 }) {
   return (
-    <>
+    <span className="flex min-w-0 flex-1 items-center gap-[var(--host-12)] max-md:flex-col max-md:items-start max-md:gap-1">
       <span className="shrink-0 text-[var(--host-16)] font-medium leading-[1.253] text-[#0D0D0C]">
         {section.title}
       </span>
-      <span className="shrink-0 text-[var(--host-14)] font-medium leading-[1.253] text-[#6D7A8A]">
+      <span className="min-w-0 text-[var(--host-14)] font-medium leading-[1.45] text-[#6D7A8A] md:shrink-0 md:leading-[1.253]">
         {section.description}
       </span>
-    </>
+    </span>
   );
 }
 
@@ -196,11 +196,11 @@ function DataSettingsContent() {
           신청 기록과 운영 데이터를 엑셀에서 열 수 있는 CSV 파일로 내보낼 수
           있어요
         </p>
-        <div className="flex w-full items-center gap-[var(--host-28)]">
+        <div className="flex w-full items-center gap-[var(--host-28)] max-md:flex-col max-md:items-stretch max-md:gap-3">
           <SelectShell label="프로그램 선택" widthClass="w-[var(--host-222)]" />
           <SelectShell label="기간 선택" widthClass="w-[var(--host-194)]" />
           <button
-            className="h-[var(--host-30)] w-[var(--host-77)] rounded-[var(--host-6)] bg-[#CAC4BC] text-center text-[var(--host-12)] font-bold leading-[1.6] text-[#F3F3F3] disabled:cursor-not-allowed disabled:opacity-70"
+            className="h-11 w-[var(--host-77)] rounded-[var(--host-6)] bg-[#CAC4BC] text-center text-[var(--host-12)] font-bold leading-[1.6] text-[#F3F3F3] disabled:cursor-not-allowed disabled:opacity-70 md:h-[var(--host-30)]"
             disabled
             type="button"
           >
@@ -225,9 +225,9 @@ function SelectShell({
   widthClass: string;
 }) {
   return (
-    <div className={`relative h-[var(--host-31)] ${widthClass}`}>
+    <div className={`relative h-11 max-md:w-full md:h-[var(--host-31)] ${widthClass}`}>
       <select
-        className="h-full w-full appearance-none rounded-[var(--host-7)] border border-[#CAC4BC] bg-white px-[var(--host-8)] text-[var(--host-12)] font-medium leading-[1.253] text-[#D9D9D9] outline-none"
+        className="h-full w-full appearance-none rounded-[var(--host-7)] border border-[#CAC4BC] bg-white px-[var(--host-8)] text-base font-medium leading-[1.253] text-[#D9D9D9] outline-none md:text-[var(--host-12)]"
         defaultValue=""
       >
         <option disabled value="">

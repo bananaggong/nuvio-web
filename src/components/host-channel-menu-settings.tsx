@@ -253,9 +253,9 @@ export function HostChannelMenuSettings() {
       <UnsavedChangesGuard when={hasUnsavedMenuChanges} />
       <section className="min-w-0 flex-1 overflow-x-hidden">
         <div className="w-full max-w-[var(--host-1230)] max-md:w-full">
-          <section className="relative h-[var(--host-156)] border-b border-[#6D7A8A] bg-white">
-            <div className="flex items-start gap-[var(--host-42)] px-[var(--host-58)] pt-[var(--host-14)] max-md:px-5">
-              <div className="relative size-[var(--host-128)] shrink-0 overflow-hidden rounded-full bg-[#D9D9D9]">
+          <section className="relative h-[var(--host-156)] border-b border-[#6D7A8A] bg-white max-md:h-auto max-md:pb-2">
+            <div className="flex items-start gap-[var(--host-42)] px-[var(--host-58)] pt-[var(--host-14)] max-md:gap-4 max-md:px-5">
+              <div className="relative size-[var(--host-128)] shrink-0 overflow-hidden rounded-full bg-[#D9D9D9] max-md:size-24">
                 {channel?.profileImage ? (
                   <Image
                     alt=""
@@ -299,7 +299,7 @@ export function HostChannelMenuSettings() {
                 )}
               </div>
             </div>
-            <nav className="absolute left-[var(--host-228)] top-[var(--host-128)] flex items-end gap-[var(--host-40-7)] overflow-hidden text-[length:var(--host-16)] font-semibold leading-[1.253] text-[#5B3A29] max-md:static max-md:ml-5 max-md:mt-4 max-md:overflow-x-auto">
+            <nav className="absolute left-[var(--host-228)] top-[var(--host-128)] flex items-end gap-[var(--host-40-7)] overflow-hidden text-[length:var(--host-16)] font-semibold leading-[1.253] text-[#5B3A29] max-md:static max-md:mt-4 max-md:w-full max-md:gap-6 max-md:overflow-x-auto max-md:px-5">
               {previewItems.slice(0, 7).map((item, index) => (
                 <span
                   className={`relative shrink-0 pb-[var(--host-8)] ${
@@ -316,7 +316,7 @@ export function HostChannelMenuSettings() {
             </nav>
           </section>
 
-          <section className="h-[var(--host-129)] px-[var(--host-58)] pt-[var(--host-48)] max-md:px-5">
+          <section className="h-[var(--host-129)] px-[var(--host-58)] pt-[var(--host-48)] max-md:h-auto max-md:px-5 max-md:pb-5 max-md:pt-6">
             <h2 className="text-[length:var(--host-20)] font-semibold leading-[1.253] text-[#6D7A8A]">
               메뉴 설정
             </h2>
@@ -354,7 +354,7 @@ export function HostChannelMenuSettings() {
             </span>
             <button
               aria-label="메뉴 추가"
-              className="mt-[var(--host-5)] grid size-[var(--host-28)] place-items-center transition hover:opacity-80 disabled:cursor-not-allowed disabled:opacity-40"
+              className="mt-[var(--host-5)] grid size-11 place-items-center transition hover:opacity-80 disabled:cursor-not-allowed disabled:opacity-40 md:size-[var(--host-28)]"
               disabled={isLoading || !channel}
               onClick={openCreateTypeDialog}
               type="button"
@@ -365,7 +365,7 @@ export function HostChannelMenuSettings() {
 
           <div className="flex h-[var(--host-69)] items-start border-t border-[#6D7A8A] px-[var(--host-28)] pt-[var(--host-18)]">
             <button
-              className="inline-flex h-[var(--host-29)] w-[var(--host-58)] items-center justify-center rounded-[4px] border border-[#6D7A8A] bg-white text-[length:var(--host-11)] font-medium leading-[1.253] text-[#6D7A8A] transition hover:border-[#FE701E] hover:text-[#FE701E] disabled:cursor-not-allowed disabled:opacity-50"
+              className="inline-flex h-[var(--host-29)] min-h-11 w-[var(--host-58)] items-center justify-center rounded-[4px] border border-[#6D7A8A] bg-white text-[length:var(--host-11)] font-medium leading-[1.253] text-[#6D7A8A] transition hover:border-[#FE701E] hover:text-[#FE701E] disabled:cursor-not-allowed disabled:opacity-50 md:min-h-0"
               disabled={isLoading || isSaving || !channel}
               onClick={saveMenu}
               type="button"
@@ -396,18 +396,13 @@ export function HostChannelMenuSettings() {
 
 function ChannelHomeMenuRow() {
   return (
-    <div className="relative h-[var(--host-68)] w-full border-b border-[#CAC4BC]">
+    <div className="grid min-h-[var(--host-68)] w-full grid-cols-[var(--host-507)_auto_minmax(0,1fr)] items-start gap-[var(--host-22)] border-b border-[#CAC4BC] pl-[var(--host-10)] max-md:grid-cols-1 max-md:gap-2 max-md:pb-3 max-md:pl-0">
       <label
-        className="absolute grid gap-[var(--host-6)]"
-        style={{
-          left: "var(--host-10)",
-          top: 0,
-          width: "var(--host-507)",
-        }}
+        className="grid min-w-0 gap-[var(--host-6)]"
       >
         <input
           aria-label="채널 홈 메뉴 이름"
-          className="h-[var(--host-34)] rounded-[4px] border border-[#6D7A8A] bg-white px-[var(--host-14)] text-[length:var(--host-14)] font-medium leading-[1.253] text-[#6D7A8A] outline-none"
+          className="h-11 rounded-[4px] border border-[#6D7A8A] bg-white px-[var(--host-14)] text-base font-medium leading-[1.253] text-[#6D7A8A] outline-none md:h-[var(--host-34)] md:text-[length:var(--host-14)]"
           readOnly
           value={channelHomeLabel}
         />
@@ -416,8 +411,7 @@ function ChannelHomeMenuRow() {
         </span>
       </label>
       <span
-        className="absolute top-[var(--host-6)] inline-flex h-[var(--host-22)] w-fit min-w-[var(--host-76)] items-center justify-center rounded-full bg-[#6D7A8A] px-[var(--host-12)] text-[length:var(--host-14)] font-semibold leading-[1.253] text-[#F9F9F9]"
-        style={{ left: "calc(var(--host-10) + var(--host-529))" }}
+        className="mt-[var(--host-6)] inline-flex h-[var(--host-22)] w-fit min-w-[var(--host-76)] items-center justify-center rounded-full bg-[#6D7A8A] px-[var(--host-12)] text-[length:var(--host-14)] font-semibold leading-[1.253] text-[#F9F9F9] max-md:mt-0"
       >
         고정 메뉴
       </span>
@@ -450,7 +444,7 @@ function ChannelMenuRow({
 
   return (
     <div
-      className={`group relative h-[var(--host-68)] w-full border-b border-[#CAC4BC] transition ${
+      className={`group grid min-h-[var(--host-68)] w-full grid-cols-[var(--host-22)_var(--host-507)_auto_minmax(0,1fr)_auto] items-start gap-[var(--host-22)] border-b border-[#CAC4BC] pl-[var(--host-10)] transition max-md:min-h-[96px] max-md:grid-cols-[44px_minmax(0,1fr)_auto] max-md:gap-x-2 max-md:gap-y-1 max-md:pb-3 max-md:pl-0 ${
         dragging ? "opacity-60" : "opacity-100"
       }`}
       onDragOver={(event) => {
@@ -461,7 +455,7 @@ function ChannelMenuRow({
     >
       <button
         aria-label={`${item.label} 순서 변경`}
-        className="absolute left-[var(--host-10)] top-[var(--host-6)] grid size-[var(--host-22)] cursor-grab place-items-center text-[#D9D9D9] transition active:cursor-grabbing group-hover:text-[#FE701E]"
+        className="mt-[var(--host-6)] grid size-11 cursor-grab place-items-center text-[#D9D9D9] transition active:cursor-grabbing group-hover:text-[#FE701E] md:size-[var(--host-22)]"
         draggable
         onDragEnd={onDragEnd}
         onDragStart={(event) => {
@@ -480,15 +474,10 @@ function ChannelMenuRow({
         />
       </button>
       <label
-        className="absolute grid gap-[var(--host-6)]"
-        style={{
-          left: "var(--host-53-5)",
-          top: 0,
-          width: "var(--host-507)",
-        }}
+        className="grid min-w-0 gap-[var(--host-6)] max-md:col-start-2 max-md:row-start-1"
       >
         <input
-          className="h-[var(--host-34)] rounded-[4px] border border-[#6D7A8A] bg-white px-[var(--host-14)] text-[length:var(--host-14)] font-medium leading-[1.253] text-[#6D7A8A] outline-none transition placeholder:text-[#CAC4BC] focus:border-[#FE701E]"
+          className="h-11 min-w-0 rounded-[4px] border border-[#6D7A8A] bg-white px-[var(--host-14)] text-base font-medium leading-[1.253] text-[#6D7A8A] outline-none transition placeholder:text-[#CAC4BC] focus:border-[#FE701E] md:h-[var(--host-34)] md:text-[length:var(--host-14)]"
           onChange={(event) => onUpdate({ label: event.target.value })}
           value={item.label}
         />
@@ -497,17 +486,16 @@ function ChannelMenuRow({
         </span>
       </label>
       <span
-        className="absolute top-[var(--host-6)] inline-flex h-[var(--host-22)] w-fit min-w-[var(--host-76)] items-center justify-center rounded-full bg-[#6D7A8A] px-[var(--host-12)] text-[length:var(--host-14)] font-semibold leading-[1.253] text-[#F9F9F9]"
-        style={{ left: "var(--host-583)" }}
+        className="mt-[var(--host-6)] inline-flex h-[var(--host-22)] w-fit min-w-[var(--host-76)] items-center justify-center rounded-full bg-[#6D7A8A] px-[var(--host-12)] text-[length:var(--host-14)] font-semibold leading-[1.253] text-[#F9F9F9] max-md:col-start-2 max-md:row-start-2 max-md:mt-0"
       >
         {channelMenuMeta[item.kind].badge}
       </span>
-      <span className="absolute right-0 top-[var(--host-8)] flex items-center justify-end gap-[var(--host-11)]">
+      <span className="mt-[var(--host-8)] flex items-center justify-end gap-[var(--host-11)] md:col-start-5 max-md:col-start-3 max-md:row-start-1 max-md:mt-0 max-md:gap-0">
         {!item.locked ? (
           <>
             <button
               aria-label={`${item.label} 메뉴 유형 변경`}
-              className="grid size-[var(--host-16)] place-items-center transition hover:opacity-70"
+              className="grid size-11 place-items-center transition hover:opacity-70 md:size-[var(--host-16)]"
               onClick={onSelectType}
               type="button"
             >
@@ -515,7 +503,7 @@ function ChannelMenuRow({
             </button>
             <button
               aria-label={`${item.label} 삭제`}
-              className="grid size-[var(--host-16)] place-items-center transition hover:opacity-70"
+              className="grid size-11 place-items-center transition hover:opacity-70 md:size-[var(--host-16)]"
               onClick={onRemove}
               type="button"
             >
@@ -547,14 +535,14 @@ function SelectMenuTypeDialog({
       className="fixed inset-0 z-[90] flex items-center justify-center bg-[#0D0D0C]/70 px-[var(--host-24)]"
       role="dialog"
     >
-      <section className="flex h-[var(--host-386)] w-[var(--host-457)] max-w-[calc(100vw-var(--host-48))] flex-col rounded-[12px] border border-[#D9D9D9] bg-[#F9F9F9] px-[var(--host-24)] py-[var(--host-24)] shadow-[0_12px_38px_rgba(0,0,0,0.18)]">
+      <section className="flex h-[var(--host-386)] max-h-[calc(100dvh-32px)] w-[var(--host-457)] max-w-[calc(100vw-var(--host-48))] flex-col overflow-y-auto rounded-[12px] border border-[#D9D9D9] bg-[#F9F9F9] px-[var(--host-24)] py-[var(--host-24)] shadow-[0_12px_38px_rgba(0,0,0,0.18)] max-md:h-auto max-md:w-full max-md:max-w-none">
         <div className="flex items-start justify-between">
           <h2 className="pt-[var(--host-36)] text-[length:var(--host-16)] font-semibold leading-[1.253] text-[#0D0D0C]">
             페이지 타입 선택
           </h2>
           <button
             aria-label="닫기"
-            className="grid size-[var(--host-16)] place-items-center transition hover:opacity-70"
+            className="grid size-11 place-items-center transition hover:opacity-70 md:size-[var(--host-16)]"
             onClick={onClose}
             type="button"
           >
@@ -568,7 +556,7 @@ function SelectMenuTypeDialog({
             return (
               <button
                 aria-pressed={selected}
-                className={`w-full rounded-[7px] border-[0.5px] px-[var(--host-16)] py-[var(--host-10)] text-left transition ${
+                className={`min-h-11 w-full rounded-[7px] border-[0.5px] px-[var(--host-16)] py-[var(--host-10)] text-left transition ${
                   selected
                     ? "border-[#FE701E] bg-[#FCFAF7]"
                     : "border-[#D9D9D9] bg-white hover:border-[#F7B267]"
@@ -589,7 +577,7 @@ function SelectMenuTypeDialog({
         </div>
         <div className="mt-auto flex w-full justify-end">
           <button
-            className="inline-flex h-[var(--host-38)] items-center justify-center rounded-[4px] bg-[#FE701E] px-[var(--host-27)] text-[length:var(--host-12)] font-medium leading-[1.253] text-[#FFF6EC] transition hover:bg-[#E96418]"
+            className="inline-flex h-[var(--host-38)] min-h-11 items-center justify-center rounded-[4px] bg-[#FE701E] px-[var(--host-27)] text-[length:var(--host-12)] font-medium leading-[1.253] text-[#FFF6EC] transition hover:bg-[#E96418] md:min-h-0"
             onClick={onConfirm}
             type="button"
           >

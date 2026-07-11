@@ -201,11 +201,11 @@ export function HostFormLibrary({
     <HostWorkspaceLayout>
       <HostWorkspaceContent insideFolder>
         <div className="pt-[var(--host-24)] max-md:pt-5">
-          <div className="flex w-full flex-col items-start gap-[var(--host-46)] pr-[var(--host-52)] max-md:pr-0">
-            <div className="flex h-[var(--host-29)] items-center gap-[14px]">
+          <div className="flex w-full flex-col items-start gap-[var(--host-46)] pr-[var(--host-52)] max-md:gap-6 max-md:pr-0">
+            <div className="flex h-[var(--host-29)] items-center gap-[14px] max-md:h-auto max-md:min-h-11">
               <Link
                 aria-label="뒤로"
-                className="inline-flex h-[18px] w-[12px] items-center justify-center text-[#6D7A8A] hover:text-[#FE701E]"
+                className="inline-flex size-11 items-center justify-center text-[#6D7A8A] hover:text-[#FE701E] md:h-[18px] md:w-[12px]"
                 href="/host"
               >
                 <ChevronLeft size={20} strokeWidth={1.8} />
@@ -270,41 +270,45 @@ function FormRow({
     template.programTitle.trim() || (template.programId ? "연결된 프로그램" : "");
 
   return (
-    <div className="flex h-[var(--host-38)] w-full items-center gap-[12px] rounded-[4px] border border-[#6D7A8A] px-[var(--host-16)] py-[var(--host-8)]">
-      <Link
-        className="min-w-0 flex-1 truncate text-[var(--host-14)] font-medium leading-[1.253] text-[#0D0D0C]"
-        href={`/host/forms/${encodeURIComponent(template.id)}`}
-      >
-        {template.name || "신청서 제목"}
-      </Link>
-      <p className="shrink-0 whitespace-nowrap text-[var(--host-14)] font-medium leading-[1.253] text-[#0D0D0C]">
-        (최근 수정일) {formatFormUpdatedAt(template.updatedAt)}
-      </p>
-      {linkedProgramName ? (
-        <span className="shrink-0 rounded-full bg-[#FFF6EC] px-[8px] py-[3px] text-[var(--host-11)] font-semibold leading-[1.253] text-[#FE701E]">
-          프로그램 연결됨
-        </span>
-      ) : null}
-      <div className="flex min-w-0 flex-1 items-center justify-end gap-[8px]">
+    <div className="flex h-[var(--host-38)] w-full items-center gap-[12px] rounded-[4px] border border-[#6D7A8A] px-[var(--host-16)] py-[var(--host-8)] max-md:h-auto max-md:min-h-[68px] max-md:items-start max-md:gap-2 max-md:px-3 max-md:py-3">
+      <div className="min-w-0 flex-1 md:contents">
+        <Link
+          className="block min-w-0 flex-1 truncate text-[var(--host-14)] font-medium leading-[1.253] text-[#0D0D0C]"
+          href={`/host/forms/${encodeURIComponent(template.id)}`}
+        >
+          {template.name || "신청서 제목"}
+        </Link>
+        <div className="mt-2 flex flex-wrap items-center gap-2 md:contents">
+          <p className="shrink-0 whitespace-nowrap text-[var(--host-14)] font-medium leading-[1.253] text-[#0D0D0C]">
+            (최근 수정일) {formatFormUpdatedAt(template.updatedAt)}
+          </p>
+          {linkedProgramName ? (
+            <span className="shrink-0 rounded-full bg-[#FFF6EC] px-[8px] py-[3px] text-[var(--host-11)] font-semibold leading-[1.253] text-[#FE701E]">
+              프로그램 연결됨
+            </span>
+          ) : null}
+        </div>
+      </div>
+      <div className="flex shrink-0 items-center justify-end gap-1 md:min-w-0 md:flex-1 md:gap-[8px]">
         <button
           aria-label={`${template.name} 복제`}
-          className="inline-flex size-[22px] items-center justify-center text-[#FE701E] transition hover:text-[#D85F14] disabled:opacity-40"
+          className="inline-flex size-11 items-center justify-center text-[#FE701E] transition hover:text-[#D85F14] disabled:opacity-40 md:size-[22px]"
           disabled={disabled}
           onClick={onDuplicate}
           type="button"
         >
           <Copy size={18} strokeWidth={1.9} />
         </button>
+        <button
+          aria-label={`${template.name} 삭제`}
+          className="inline-flex size-11 items-center justify-center text-[#FE701E] transition hover:text-[#D85F14] disabled:opacity-40 md:size-[22px]"
+          disabled={disabled}
+          onClick={onDelete}
+          type="button"
+        >
+          <Trash2 size={18} strokeWidth={1.9} />
+        </button>
       </div>
-      <button
-        aria-label={`${template.name} 삭제`}
-        className="inline-flex size-[22px] items-center justify-center text-[#FE701E] transition hover:text-[#D85F14] disabled:opacity-40"
-        disabled={disabled}
-        onClick={onDelete}
-        type="button"
-      >
-        <Trash2 size={18} strokeWidth={1.9} />
-      </button>
     </div>
   );
 }

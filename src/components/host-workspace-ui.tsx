@@ -4,7 +4,9 @@ import Image from "next/image";
 import Link from "next/link";
 import { usePathname, useSearchParams } from "next/navigation";
 import {
+  ChevronDown,
   ChevronLeft,
+  Menu,
   Plus,
 } from "lucide-react";
 import {
@@ -244,6 +246,7 @@ export function HostWorkspaceLayout({
 function HostWorkspaceSidebar({ sidebarHeight }: { sidebarHeight: string }) {
   const pathname = usePathname();
   const searchParams = useSearchParams();
+  const [mobileNavigationOpen, setMobileNavigationOpen] = useState(false);
   const messagePanel = searchParams.get("panel");
   const messageStatus = searchParams.get("status");
   const messageView = searchParams.get("view");
@@ -263,6 +266,16 @@ function HostWorkspaceSidebar({ sidebarHeight }: { sidebarHeight: string }) {
   const hostProgramStatus = getHostProgramStatusParam(searchParams.get("status"));
   const ongoingMessagesActive = onMessagesPage && !endedMessagesRequested;
   const endedMessagesActive = onMessagesPage && endedMessagesRequested;
+  const mobileNavigationLabel =
+    activeWorkspaceTab === "channel"
+      ? "채널 메뉴"
+      : onMessagesPage
+        ? "메시지"
+        : onFormsPage
+          ? "신청서 양식"
+          : onSettingsPage
+            ? "설정"
+            : "내 프로그램";
 
   return (
     <aside
@@ -298,10 +311,34 @@ function HostWorkspaceSidebar({ sidebarHeight }: { sidebarHeight: string }) {
             </div>
           </section>
 
-          {activeWorkspaceTab === "channel" ? (
-            <HostChannelSidebarNav channelSlug={channelSlug} pathname={pathname} />
-          ) : (
-            <nav className="mt-[0.833vw] px-[0.833vw] text-[#5B3A29]">
+          <button
+            aria-controls="host-workspace-navigation"
+            aria-expanded={mobileNavigationOpen}
+            aria-label={`${mobileNavigationLabel} ${mobileNavigationOpen ? "닫기" : "열기"}`}
+            className="hidden min-h-11 w-full items-center justify-between border-b border-[#D9D9D9] px-5 text-left text-sm font-semibold text-[#5B3A29] max-md:flex"
+            onClick={() => setMobileNavigationOpen((current) => !current)}
+            type="button"
+          >
+            <span className="flex items-center gap-2">
+              <Menu aria-hidden="true" size={18} strokeWidth={1.8} />
+              {mobileNavigationLabel}
+            </span>
+            <ChevronDown
+              aria-hidden="true"
+              className={`transition-transform ${mobileNavigationOpen ? "rotate-180" : ""}`}
+              size={18}
+              strokeWidth={1.8}
+            />
+          </button>
+
+          <div
+            className={`${mobileNavigationOpen ? "block" : "hidden"} max-md:border-b max-md:border-[#D9D9D9] md:block`}
+            id="host-workspace-navigation"
+          >
+            {activeWorkspaceTab === "channel" ? (
+              <HostChannelSidebarNav channelSlug={channelSlug} pathname={pathname} />
+            ) : (
+            <nav className="mt-[0.833vw] px-[0.833vw] text-[#5B3A29] max-md:mt-0 max-md:px-5 max-md:pb-4">
               <section className="flex flex-col gap-[0.417vw]">
                 <Link
                   className="block w-full text-[length:var(--host-14)] font-semibold leading-[1.253]"
@@ -361,7 +398,8 @@ function HostWorkspaceSidebar({ sidebarHeight }: { sidebarHeight: string }) {
                 />
               </div>
             </nav>
-          )}
+            )}
+          </div>
         </div>
       </div>
     </aside>
@@ -379,7 +417,7 @@ export function HostWorkspaceSwitchTab({
 }) {
   return (
     <Link
-      className={`flex h-[2.361vw] min-h-[34px] flex-1 items-center justify-center pb-[0.556vw] pt-[0.347vw] text-[length:var(--host-14)] leading-[1.253] transition ${
+      className={`flex h-[2.361vw] min-h-[34px] flex-1 items-center justify-center pb-[0.556vw] pt-[0.347vw] text-[length:var(--host-14)] leading-[1.253] transition max-md:min-h-11 ${
         active
           ? "border-b-2 border-[#FF9A3D] font-medium text-[#FE701E]"
           : "font-normal text-[#CAC4BC] hover:text-[#FE701E]"
@@ -440,7 +478,7 @@ function HostChannelSidebarNav({
   ];
 
   return (
-    <nav className="mt-[0.833vw] px-[0.833vw] text-[#5B3A29]">
+    <nav className="mt-[0.833vw] px-[0.833vw] text-[#5B3A29] max-md:mt-0 max-md:px-5 max-md:pb-4">
       <section className="flex flex-col gap-[0.556vw] border-b-[0.8px] border-[#6D7A8A] pb-[0.833vw]">
         {channelSidebarItems.map((item) => (
           <HostSidebarRootLink
@@ -475,7 +513,7 @@ export function HostSidebarRootLink({
 }) {
   return (
     <Link
-      className={`block w-fit rounded-[4px] py-[0.139vw] leading-[1.253] transition ${
+      className={`inline-flex min-h-11 w-fit items-center rounded-[4px] leading-[1.253] transition md:min-h-0 md:py-[0.139vw] ${
         active
           ? `${muted ? "text-[length:var(--host-12)] text-[#FE701E]" : "text-[length:var(--host-14)] text-[#5B3A29]"} font-semibold`
           : `${muted ? "text-[length:var(--host-12)] text-[#FE701E]" : "text-[length:var(--host-14)] text-[#5B3A29]"} font-normal hover:text-[#FE701E]`
@@ -498,7 +536,7 @@ export function HostSidebarSubLink({
 }) {
   return (
     <Link
-      className={`block w-fit rounded-[4px] px-[0.556vw] py-[0.139vw] text-[length:var(--host-12)] leading-[1.253] transition ${
+      className={`inline-flex min-h-11 w-fit items-center rounded-[4px] px-3 text-[length:var(--host-12)] leading-[1.253] transition md:min-h-0 md:px-[0.556vw] md:py-[0.139vw] ${
         active
           ? "bg-[#FF9A3D] font-semibold text-[#F9F9F9]"
           : "font-normal text-[#5B3A29] hover:text-[#FE701E]"
@@ -546,7 +584,7 @@ export function HostSectionTitle({
   title: string;
 }) {
   return (
-    <div className="flex h-[var(--host-29)] items-center gap-[var(--host-34)]">
+    <div className="flex h-[var(--host-29)] items-center gap-[var(--host-34)] max-md:h-auto max-md:min-h-11">
       <h2
         className="text-[length:var(--host-16)] font-medium leading-[1.253] text-[#6d7a8a]"
         style={{ color: "#6D7A8A" }}
@@ -568,7 +606,7 @@ export function HostSmallButton({
   if (onClick) {
     return (
       <button
-        className="inline-flex h-[var(--host-29)] items-center justify-center rounded-[4px] bg-[#6d7a8a] px-[var(--host-12)] py-[var(--host-4)] text-[length:var(--host-12)] font-medium leading-[1.253] text-[#fff6ec] transition hover:bg-[#5f6b79]"
+        className="inline-flex h-[var(--host-29)] min-h-11 items-center justify-center rounded-[4px] bg-[#6d7a8a] px-[var(--host-12)] py-[var(--host-4)] text-[length:var(--host-12)] font-medium leading-[1.253] text-[#fff6ec] transition hover:bg-[#5f6b79] md:min-h-0"
         onClick={onClick}
         style={{ backgroundColor: "#6D7A8A", color: "#FFF6EC" }}
         type="button"
@@ -580,7 +618,7 @@ export function HostSmallButton({
 
   return (
     <span
-      className="inline-flex h-[var(--host-29)] items-center justify-center rounded-[4px] bg-[#6d7a8a] px-[var(--host-12)] py-[var(--host-4)] text-[length:var(--host-12)] font-medium leading-[1.253] text-[#fff6ec]"
+      className="inline-flex h-[var(--host-29)] min-h-11 items-center justify-center rounded-[4px] bg-[#6d7a8a] px-[var(--host-12)] py-[var(--host-4)] text-[length:var(--host-12)] font-medium leading-[1.253] text-[#fff6ec] md:min-h-0"
       style={{ backgroundColor: "#6D7A8A", color: "#FFF6EC" }}
     >
       {children}
@@ -721,7 +759,7 @@ export function HostProgramRow({
       className={
         expanded
           ? "min-h-[var(--host-219)] pb-[var(--host-16)]"
-          : "h-[var(--host-219)] min-h-[219px]"
+          : "h-[var(--host-219)] min-h-[219px] max-md:h-auto"
       }
     >
       <div className="flex h-[var(--host-18)] items-center gap-[var(--host-16)]">
@@ -747,7 +785,7 @@ export function HostProgramRow({
         ))}
         {!expanded ? (
           <Link
-            className="flex h-[var(--host-42)] w-[var(--host-42)] shrink-0 flex-col items-center justify-center gap-[var(--host-8)] text-center text-[length:var(--host-12)] font-normal leading-[1.253] text-[#6D7A8A]"
+            className="flex h-[var(--host-42)] min-h-11 w-[var(--host-42)] min-w-11 shrink-0 flex-col items-center justify-center gap-[var(--host-8)] text-center text-[length:var(--host-12)] font-normal leading-[1.253] text-[#6D7A8A] md:min-h-0 md:min-w-0"
             href={`/host?status=${encodeURIComponent(statusFilter)}`}
           >
             <span className="grid size-[var(--host-20)] place-items-center rounded-full bg-[#FF9A3D] text-white">
@@ -833,7 +871,7 @@ export function HostProgramStatusFrame({
       <div className="flex h-[var(--host-29)] items-center">
         <Link
           aria-label="내 프로그램으로 돌아가기"
-          className="mr-[var(--host-14)] inline-flex h-[var(--host-20)] w-[var(--host-10)] items-center justify-center transition hover:opacity-70"
+          className="mr-[var(--host-14)] inline-flex size-11 items-center justify-center transition hover:opacity-70 md:h-[var(--host-20)] md:w-[var(--host-10)]"
           href="/host"
         >
           <Image
@@ -856,7 +894,7 @@ export function HostProgramStatusFrame({
 
           return (
             <Link
-              className={`h-[var(--host-27)] px-0 text-[length:var(--host-12)] leading-[1.253] ${
+              className={`inline-flex h-[var(--host-27)] min-h-11 items-center px-1 text-[length:var(--host-12)] leading-[1.253] md:min-h-0 md:px-0 ${
                 active
                   ? "border-b-2 border-[#FE701E] font-medium text-[#6D7A8A]"
                   : "font-normal text-[#CAC4BC]"
@@ -951,7 +989,7 @@ export function HostMiniProgramCard({
   const href = hostProgramHref(program);
 
   return (
-    <article className="h-[var(--host-142)] w-[var(--host-235)] shrink-0 rounded-[8px] border border-[#D9D9D9] bg-white p-[var(--host-12)]">
+    <article className="h-[var(--host-142)] w-[var(--host-235)] shrink-0 rounded-[8px] border border-[#D9D9D9] bg-white p-[var(--host-12)] max-md:w-full">
       <Link
         className="grid h-full grid-cols-[var(--host-69)_minmax(0,1fr)] gap-[var(--host-10)]"
         href={href}
@@ -1009,7 +1047,7 @@ function hostProgramHref(program: HostProgramListItem): string {
 
 function HostMiniProgramCardPlaceholder() {
   return (
-    <div className="h-[var(--host-142)] w-[var(--host-235)] shrink-0 rounded-[8px] border border-[#D9D9D9] bg-white p-[var(--host-12)]">
+    <div className="h-[var(--host-142)] w-[var(--host-235)] shrink-0 rounded-[8px] border border-[#D9D9D9] bg-white p-[var(--host-12)] max-md:w-full">
       <div className="grid h-full grid-cols-[var(--host-69)_minmax(0,1fr)] gap-[var(--host-10)]">
         <div className="h-[var(--host-82)] w-[var(--host-69)] rounded-[6px] bg-[#D9D9D9]" />
         <div>

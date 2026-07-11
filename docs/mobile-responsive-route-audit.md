@@ -98,15 +98,15 @@ public and Mypage functional groups; the total unique page count remains 94.
 
 | Route | Shell | Primary implementation | Status |
 | --- | --- | --- | --- |
-| `/host` | Host console | `HostCenterHome`/channel creation | pending/auth |
-| `/host/messages` | Host console | `HostMessageInbox` | pending/auth |
-| `/host/forms` | Host console | `HostFormLibrary` | pending/auth |
+| `/host` | Host console | `HostCenterHome`/channel creation | pass-1/auth |
+| `/host/messages` | Host console | `HostMessageInbox` | pass-1/auth |
+| `/host/forms` | Host console | `HostFormLibrary` | pass-1/auth |
 | `/host/forms/[formId]` | Host console | `HostFormBuilder` | pending/auth |
-| `/host/settings` | Host console | host notification/team settings | pending/auth |
+| `/host/settings` | Host console | host notification/team settings | pass-1/auth |
 | `/host/applications` | Host console | `HostApplicationsCrm` | pending/auth |
 | `/host/applications/[id]` | Host console | legacy application resolver | bridge/auth |
-| `/host/channels` | Host console | `HostChannelHome` | pending/auth |
-| `/host/channels/settings` | Host console | `HostChannelMenuSettings` | pending/auth |
+| `/host/channels` | Host console | `HostChannelHome` | pass-1/auth |
+| `/host/channels/settings` | Host console | `HostChannelMenuSettings` | pass-1/auth |
 | `/host/channels/[section]` | Host console | channel programs/reviews/gallery/magazine/board/settings | pending/auth |
 | `/host/villages/[villageSlug]` | Host console | access guard to `/host/channels` | bridge/auth |
 | `/host/villages/[villageSlug]/editor` | Host console | access guard to channel editor | bridge/auth |

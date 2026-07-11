@@ -372,7 +372,7 @@ export function HostCenterHome({
             <div className="flex w-full justify-end">
               <button
                 aria-label="닫기"
-                className="inline-flex size-[var(--host-16)] items-center justify-center text-[#0D0D0C] hover:text-[#FE701E]"
+                className="inline-flex size-11 items-center justify-center text-[#0D0D0C] hover:text-[#FE701E] md:size-[var(--host-16)]"
                 onClick={closeFolderDialog}
                 type="button"
               >
@@ -389,7 +389,7 @@ export function HostCenterHome({
               </label>
               <input
                 autoFocus
-                className="h-[var(--host-30)] w-full rounded-[7px] border-[0.5px] border-[#F7B267] bg-transparent px-[var(--host-12)] text-[var(--host-12)] font-medium leading-[1.253] text-[#0D0D0C] outline-none placeholder:text-[#D9D9D9] focus:border-[#FE701E]"
+                className="h-11 w-full rounded-[7px] border-[0.5px] border-[#F7B267] bg-transparent px-[var(--host-12)] text-base font-medium leading-[1.253] text-[#0D0D0C] outline-none placeholder:text-[#D9D9D9] focus:border-[#FE701E] md:h-[var(--host-30)] md:text-[var(--host-12)]"
                 id="new-folder-name"
                 onChange={(event) => setFolderName(event.target.value)}
                 placeholder="폴더명을 입력하세요."
@@ -412,7 +412,7 @@ export function HostCenterHome({
 
                   return (
                     <button
-                      className={`flex h-[var(--host-30)] w-[var(--host-110)] items-center justify-center rounded-[20px] text-[var(--host-12)] font-bold leading-[1.253] ${
+                      className={`flex h-11 w-[var(--host-110)] items-center justify-center rounded-[20px] text-[var(--host-12)] font-bold leading-[1.253] md:h-[var(--host-30)] ${
                         isActive
                           ? "bg-[#FF9A3D] text-[#F9F9F9]"
                           : "bg-[#CAC4BC] text-[#F3F3F3]"
@@ -430,7 +430,7 @@ export function HostCenterHome({
                 {folderDialogPrograms.length > 0 ? (
                   folderDialogPrograms.slice(0, 6).map((program) => (
                     <label
-                      className="flex min-w-0 items-center gap-[var(--host-8)] text-[var(--host-14)] font-medium leading-[1.253] text-[#0D0D0C]"
+                      className="flex min-h-11 min-w-0 items-center gap-[var(--host-8)] text-[var(--host-14)] font-medium leading-[1.253] text-[#0D0D0C] md:min-h-0"
                       key={program.id}
                     >
                       <input
@@ -454,7 +454,7 @@ export function HostCenterHome({
             ) : null}
             <div className="flex w-full justify-end">
               <button
-                className="inline-flex h-[var(--host-29)] items-center justify-center gap-[var(--host-6)] rounded-[4px] bg-[#FE701E] px-[var(--host-18)] text-[var(--host-12)] font-medium leading-[1.253] text-[#FFF6EC] disabled:opacity-40"
+                className="inline-flex h-[var(--host-29)] min-h-11 items-center justify-center gap-[var(--host-6)] rounded-[4px] bg-[#FE701E] px-[var(--host-18)] text-[var(--host-12)] font-medium leading-[1.253] text-[#FFF6EC] disabled:opacity-40 md:min-h-0"
                 disabled={!trimmedFolderName || isFolderSaving}
                 type="submit"
               >
@@ -485,7 +485,7 @@ export function HostCenterHome({
             <div className="flex w-full justify-end">
               <button
                 aria-label="닫기"
-                className="inline-flex size-[var(--host-16)] items-center justify-center text-[#0D0D0C] hover:text-[#FE701E]"
+                className="inline-flex size-11 items-center justify-center text-[#0D0D0C] hover:text-[#FE701E] md:size-[var(--host-16)]"
                 onClick={closeProgramDialog}
                 type="button"
               >
@@ -502,7 +502,7 @@ export function HostCenterHome({
               </label>
               <input
                 autoFocus
-                className="h-[var(--host-31)] w-full rounded-[7px] border-[0.5px] border-[#F7B267] bg-transparent px-[var(--host-12)] text-[var(--host-12)] font-medium leading-[1.253] text-[#0D0D0C] outline-none placeholder:text-[#D9D9D9] focus:border-[#FE701E]"
+                className="h-11 w-full rounded-[7px] border-[0.5px] border-[#F7B267] bg-transparent px-[var(--host-12)] text-base font-medium leading-[1.253] text-[#0D0D0C] outline-none placeholder:text-[#D9D9D9] focus:border-[#FE701E] md:h-[var(--host-31)] md:text-[var(--host-12)]"
                 id="new-program-name"
                 onChange={(event) => setProgramName(event.target.value)}
                 placeholder="프로그램 이름을 입력하세요."
@@ -517,7 +517,7 @@ export function HostCenterHome({
             <div className="mt-[var(--host-6)] flex w-full justify-end">
               <button
                 aria-disabled={!trimmedProgramName || isProgramSaving}
-                className="inline-flex h-[var(--host-29)] items-center justify-center gap-[var(--host-6)] rounded-[4px] bg-[#FE701E] px-[var(--host-18)] text-[var(--host-12)] font-medium leading-[1.253] text-[#FFF6EC] transition hover:bg-[#E96418] disabled:cursor-wait disabled:opacity-60"
+                className="inline-flex h-[var(--host-29)] min-h-11 items-center justify-center gap-[var(--host-6)] rounded-[4px] bg-[#FE701E] px-[var(--host-18)] text-[var(--host-12)] font-medium leading-[1.253] text-[#FFF6EC] transition hover:bg-[#E96418] disabled:cursor-wait disabled:opacity-60 md:min-h-0"
                 disabled={isProgramSaving}
                 type="submit"
               >
