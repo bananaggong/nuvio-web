@@ -295,7 +295,7 @@ export function ReviewWriter({
                     <button
                       aria-checked={rating === value}
                       aria-label={`${value}점`}
-                      className="group grid h-[clamp(38px,2.6389vw,50.667px)] w-[clamp(38px,2.6389vw,50.667px)] place-items-center rounded-[clamp(4px,0.2778vw,5.333px)] outline-none transition focus-visible:ring-2 focus-visible:ring-[#FE701E] focus-visible:ring-offset-2"
+                      className="group grid size-11 place-items-center rounded-[clamp(4px,0.2778vw,5.333px)] outline-none transition focus-visible:ring-2 focus-visible:ring-[#FE701E] focus-visible:ring-offset-2 min-[1100px]:h-[clamp(38px,2.6389vw,50.667px)] min-[1100px]:w-[clamp(38px,2.6389vw,50.667px)]"
                       key={value}
                       onClick={() => setRating(value)}
                       role="radio"
@@ -321,7 +321,7 @@ export function ReviewWriter({
               <label className="grid gap-[clamp(8px,0.5556vw,10.667px)] text-[clamp(13px,0.9028vw,17.333px)] font-semibold">
                 어떤 점이 좋았나요?
                 <textarea
-                  className="min-h-[clamp(248px,17.2222vw,330.667px)] resize-none rounded-[clamp(4px,0.2778vw,5.333px)] border border-[#D9C8BD] bg-white p-[clamp(14px,0.9722vw,18.667px)] text-[clamp(14px,0.9722vw,18.667px)] font-medium leading-[1.65] text-[#5B3A29] outline-none placeholder:text-[#C7BDB5] focus:border-[#FE701E]"
+                  className="min-h-[clamp(248px,17.2222vw,330.667px)] resize-none rounded-[clamp(4px,0.2778vw,5.333px)] border border-[#D9C8BD] bg-white p-[clamp(14px,0.9722vw,18.667px)] text-base font-medium leading-[1.65] text-[#5B3A29] outline-none placeholder:text-[#C7BDB5] focus:border-[#FE701E] min-[1100px]:text-[clamp(14px,0.9722vw,18.667px)]"
                   maxLength={maxReviewBodyLength}
                   name="body"
                   onChange={(event) => setBody(event.target.value.slice(0, maxReviewBodyLength))}

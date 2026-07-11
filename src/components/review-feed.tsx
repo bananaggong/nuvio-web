@@ -57,9 +57,10 @@ export function ReviewFeed({ reviews, showWriteButton = false }: { reviews: Revi
         <div className="flex gap-2 overflow-x-auto pb-2">
           {reviewCategories.map((item) => (
             <button
-              className={`min-w-fit rounded-md border px-3 py-2 text-sm font-black ${
+              aria-pressed={category === item.key}
+              className={`min-h-11 min-w-fit rounded-md border px-3 py-2 text-sm font-black ${
                 category === item.key
-                  ? "border-[var(--primary)] bg-teal-50 text-[var(--primary)]"
+                  ? "border-[var(--primary)] bg-[#FFF6EC] text-[var(--primary)]"
                   : "border-slate-200 bg-white text-slate-600"
               }`}
               key={item.key}

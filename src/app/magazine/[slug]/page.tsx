@@ -67,7 +67,7 @@ export default async function MagazineDetailPage({
       />
       <article className="mx-auto w-full max-w-[980px] px-5 pb-24 pt-12 md:px-8 md:pt-20">
         <Link
-          className="inline-flex items-center gap-2 text-[14px] font-black text-[#7A6255] transition hover:text-[#fe701e]"
+          className="inline-flex min-h-11 items-center gap-2 text-[14px] font-black text-[#7A6255] transition hover:text-[#fe701e] min-[1100px]:min-h-0"
           href="/magazine"
         >
           <ArrowLeft size={17} strokeWidth={2.2} />

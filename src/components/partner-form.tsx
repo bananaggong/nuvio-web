@@ -90,7 +90,7 @@ export function PartnerForm() {
         <label className="grid gap-2 text-sm font-black text-slate-700">
           채널 소개
           <textarea
-            className="min-h-32 rounded-md border border-slate-200 p-3 font-semibold leading-6 outline-none focus:ring-2 focus:ring-[var(--primary)]"
+            className="min-h-32 rounded-md border border-slate-200 p-3 text-base font-semibold leading-6 outline-none focus:ring-2 focus:ring-[var(--primary)] min-[1100px]:text-sm"
             name="description"
             placeholder="어떤 지역, 공간, 커뮤니티를 운영하는지 알려주세요."
             required
@@ -99,7 +99,7 @@ export function PartnerForm() {
         <label className="grid gap-2 text-sm font-black text-slate-700">
           운영 예정 프로그램
           <textarea
-            className="min-h-28 rounded-md border border-slate-200 p-3 font-semibold leading-6 outline-none focus:ring-2 focus:ring-[var(--primary)]"
+            className="min-h-28 rounded-md border border-slate-200 p-3 text-base font-semibold leading-6 outline-none focus:ring-2 focus:ring-[var(--primary)] min-[1100px]:text-sm"
             name="plannedPrograms"
             placeholder="예: 워케이션, 한달살기, 로컬 클래스, 체류형 커뮤니티"
             required
@@ -145,7 +145,7 @@ function Field({
     <label className="grid gap-2 text-sm font-black text-slate-700">
       {label}
       <input
-        className="h-11 rounded-md border border-slate-200 px-3 font-semibold outline-none focus:ring-2 focus:ring-[var(--primary)]"
+        className="h-11 rounded-md border border-slate-200 px-3 text-base font-semibold outline-none focus:ring-2 focus:ring-[var(--primary)] min-[1100px]:text-sm"
         name={name}
         placeholder={placeholder}
         required={required}

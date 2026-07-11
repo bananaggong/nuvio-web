@@ -6,7 +6,11 @@ export function Footer() {
     <footer className="font-pretendard border-t border-[#f1e7df] bg-white">
       <div className="mx-auto flex w-full flex-col px-[2.083vw] py-8 md:py-10">
         <div className="flex flex-col gap-5 md:flex-row md:items-center md:justify-between">
-          <Link aria-label="누비오 홈" className="inline-flex w-fit items-center" href="/">
+          <Link
+            aria-label="누비오 홈"
+            className="inline-flex min-h-11 w-fit items-center min-[1100px]:min-h-0"
+            href="/"
+          >
             <Image
               alt="누비오"
               className="h-[1.875vw] min-h-[22px] w-[5.594vw] min-w-[66px]"
@@ -17,20 +21,26 @@ export function Footer() {
           </Link>
 
           <nav className="flex flex-wrap items-center gap-x-5 gap-y-3 text-sm font-semibold leading-none text-[#5B3A29]">
-            <Link className="transition-colors hover:text-[#FF9A3D]" href="/terms">
+            <Link
+              className="inline-flex min-h-11 items-center transition-colors hover:text-[#FF9A3D] min-[1100px]:min-h-0"
+              href="/terms"
+            >
               이용약관
             </Link>
-            <Link className="transition-colors hover:text-[#FF9A3D]" href="/privacy">
+            <Link
+              className="inline-flex min-h-11 items-center transition-colors hover:text-[#FF9A3D] min-[1100px]:min-h-0"
+              href="/privacy"
+            >
               개인정보 처리방침
             </Link>
             <Link
-              className="transition-colors hover:text-[#FF9A3D]"
+              className="inline-flex min-h-11 items-center transition-colors hover:text-[#FF9A3D] min-[1100px]:min-h-0"
               href="/privacy/third-party"
             >
               개인정보 제3자 제공 동의
             </Link>
             <Link
-              className="inline-flex h-[34px] items-center justify-center rounded-full border border-[#FF9A3D] px-4 text-sm font-semibold text-[#FE701E] transition-colors hover:bg-[#FFF6EC]"
+              className="inline-flex h-11 items-center justify-center rounded-full border border-[#FF9A3D] px-4 text-sm font-semibold text-[#FE701E] transition-colors hover:bg-[#FFF6EC] min-[1100px]:h-[34px]"
               href="/host"
             >
               호스트센터
@@ -42,7 +52,7 @@ export function Footer() {
           <p>
             문의{" "}
             <a
-              className="font-semibold text-[#5B3A29] transition-colors hover:text-[#FF9A3D]"
+              className="inline-flex min-h-11 items-center font-semibold text-[#5B3A29] transition-colors hover:text-[#FF9A3D] min-[1100px]:min-h-0"
               href="mailto:contact@nuvio.kr"
             >
               contact@nuvio.kr

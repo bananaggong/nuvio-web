@@ -3739,29 +3739,64 @@ function MypageSideMenu({
 }) {
   const pathname = usePathname();
   const supportActive = activeSection === "support" || pathname === "/support";
+  const menuRef = useRef<HTMLElement>(null);
+  const activeLinkRef = useRef<HTMLAnchorElement>(null);
+
+  useEffect(() => {
+    function centerActiveLink() {
+      const menu = menuRef.current;
+      const activeLink = activeLinkRef.current;
+      if (
+        !menu ||
+        !activeLink ||
+        window.matchMedia("(min-width: 1024px)").matches
+      ) {
+        return;
+      }
+
+      const centeredLeft =
+        activeLink.offsetLeft - (menu.clientWidth - activeLink.clientWidth) / 2;
+      menu.scrollTo({ left: Math.max(0, centeredLeft) });
+    }
+
+    centerActiveLink();
+    window.addEventListener("resize", centerActiveLink);
+
+    return () => window.removeEventListener("resize", centerActiveLink);
+  }, [activeSection, pathname]);
 
   return (
-    <aside className="flex gap-3 overflow-x-auto pb-2 lg:block lg:space-y-[clamp(13px,0.9028vw,17.333px)] lg:overflow-visible lg:pb-0">
-      {visibleSideMenuItems.map((item) => (
-        <SideMenuLink
-          active={item.section === activeSection || pathname === item.href}
-          href={item.href}
-          icon={item.icon}
-          key={item.label}
-          label={item.label}
-        />
-      ))}
+    <aside
+      className="flex gap-3 overflow-x-auto pb-2 lg:block lg:space-y-[clamp(13px,0.9028vw,17.333px)] lg:overflow-visible lg:pb-0"
+      ref={menuRef}
+    >
+      {visibleSideMenuItems.map((item) => {
+        const active = item.section === activeSection || pathname === item.href;
+
+        return (
+          <SideMenuLink
+            active={active}
+            href={item.href}
+            icon={item.icon}
+            key={item.label}
+            label={item.label}
+            linkRef={active ? activeLinkRef : undefined}
+          />
+        );
+      })}
       <Link
-        className={`flex shrink-0 items-center gap-2 text-[clamp(14px,0.9722vw,18.667px)] font-medium transition lg:w-full ${
+        aria-current={supportActive ? "page" : undefined}
+        className={`flex min-h-11 shrink-0 items-center gap-2 text-[clamp(14px,0.9722vw,18.667px)] font-medium transition lg:min-h-0 lg:w-full ${
           supportActive ? "text-[var(--mypage-orange)]" : "text-[var(--mypage-brown)] hover:text-[var(--mypage-orange)]"
         }`}
         href="/support"
+        ref={supportActive ? activeLinkRef : undefined}
       >
         <Gift className="lg:hidden" size={16} strokeWidth={1.8} />
         고객센터
       </Link>
       <button
-        className="flex shrink-0 items-center gap-2 text-left text-[clamp(14px,0.9722vw,18.667px)] font-medium text-[#b6a79f] transition hover:text-[var(--mypage-orange)] disabled:cursor-not-allowed disabled:text-[#d5cbc5] lg:w-full"
+        className="flex min-h-11 shrink-0 items-center gap-2 text-left text-[clamp(14px,0.9722vw,18.667px)] font-medium text-[#b6a79f] transition hover:text-[var(--mypage-orange)] disabled:cursor-not-allowed disabled:text-[#d5cbc5] lg:min-h-0 lg:w-full"
         disabled={!signedIn}
         onClick={onLogout}
         type="button"
@@ -3778,18 +3813,22 @@ function SideMenuLink({
   href,
   icon: Icon,
   label,
+  linkRef,
 }: {
   active: boolean;
   href: string;
   icon: ComponentType<{ className?: string; size?: number; strokeWidth?: number }>;
   label: string;
+  linkRef?: Ref<HTMLAnchorElement>;
 }) {
   return (
     <Link
-      className={`flex shrink-0 items-center gap-2 text-[clamp(14px,0.9722vw,18.667px)] font-medium transition lg:w-full ${
+      aria-current={active ? "page" : undefined}
+      className={`flex min-h-11 shrink-0 items-center gap-2 text-[clamp(14px,0.9722vw,18.667px)] font-medium transition lg:min-h-0 lg:w-full ${
         active ? "text-[var(--mypage-orange)]" : "text-[var(--mypage-brown)] hover:text-[var(--mypage-orange)]"
       }`}
       href={href}
+      ref={linkRef}
     >
       <Icon className="lg:hidden" size={16} strokeWidth={1.8} />
       {label}
@@ -4596,25 +4635,15 @@ function useMypageData(): MypageData {
 
     async function loadAccountData() {
       try {
-        const [sessionResponse, programsResponse, reviewsResponse] =
-          await Promise.all([
-            fetch("/api/auth/session", { cache: "no-store" }),
-            fetch("/api/programs", { cache: "no-store" }),
-            launchFeatureFlags.reviews
-              ? fetch("/api/me/reviews", { cache: "no-store" })
-              : undefined,
-          ]);
+        const [sessionResponse, programsResponse] = await Promise.all([
+          fetch("/api/auth/session", { cache: "no-store" }),
+          fetch("/api/programs", { cache: "no-store" }),
+        ]);
         const sessionPayload =
           (await sessionResponse.json()) as AuthSessionResponse;
         const programPayload = (await programsResponse.json()) as {
           data?: Program[];
         };
-        const reviewPayload =
-          reviewsResponse?.ok
-            ? ((await reviewsResponse.json().catch(() => ({ data: [] }))) as {
-                data?: Review[];
-              })
-            : { data: [] };
         const nextSession = sessionPayload.data ?? {
           profile: null,
           user: null,
@@ -4624,27 +4653,37 @@ function useMypageData(): MypageData {
 
         setAuthSession(nextSession);
         setPublicPrograms(programPayload.data ?? []);
-        setReviews(reviewPayload.data ?? []);
 
         if (!nextSession.user) {
           setApplications([]);
           setInquiries([]);
           setNotifications([]);
           setProgramState(EMPTY_PROGRAM_STATE);
+          setReviews([]);
           return;
         }
 
         const [
+          reviewsResponse,
           notificationsResponse,
           programStateResponse,
           applicationsResponse,
           inquiriesResponse,
         ] = await Promise.all([
+          launchFeatureFlags.reviews
+            ? fetch("/api/me/reviews", { cache: "no-store" })
+            : Promise.resolve(undefined),
           fetch("/api/me/notifications", { cache: "no-store" }),
           fetch("/api/me/program-state", { cache: "no-store" }),
           fetch("/api/me/applications", { cache: "no-store" }),
           fetch("/api/me/inquiries", { cache: "no-store" }),
         ]);
+        const reviewPayload =
+          reviewsResponse?.ok
+            ? ((await reviewsResponse.json().catch(() => ({ data: [] }))) as {
+                data?: Review[];
+              })
+            : { data: [] };
         const notificationsPayload = (await notificationsResponse.json()) as {
           data?: UserNotification[];
         };
@@ -4660,6 +4699,7 @@ function useMypageData(): MypageData {
 
         if (!active) return;
 
+        setReviews(reviewPayload.data ?? []);
         setNotifications(notificationsPayload.data ?? []);
         setProgramState(programStatePayload.data ?? EMPTY_PROGRAM_STATE);
         setApplications(applicationPayload.data ?? []);

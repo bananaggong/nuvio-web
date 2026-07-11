@@ -27,21 +27,21 @@ requires a signed-in role for browser verification.
 | --- | --- | --- | --- |
 | `/` | Public chrome | `ProgramExplorer` | pass-1 |
 | `/search` | Public chrome | `SearchPage` | pass-1 |
-| `/support` | Mypage | `Mypage` support view | pending |
-| `/terms` | Public chrome | `LegalDocumentPage` | pending |
-| `/privacy` | Public chrome | `LegalDocumentPage` | pending |
-| `/privacy/third-party` | Public chrome | `LegalDocumentPage` | pending |
-| `/partners/apply` | Public chrome | `PartnerForm` | pending |
+| `/support` | Mypage | `Mypage` support view | pass-1 |
+| `/terms` | Public chrome | `LegalDocumentPage` | pass-1 |
+| `/privacy` | Public chrome | `LegalDocumentPage` | pass-1 |
+| `/privacy/third-party` | Public chrome | `LegalDocumentPage` | pass-1 |
+| `/partners/apply` | Public chrome | `PartnerForm` | pass-1 |
 | `/signup` | Auth chrome | `SignupPanel` | pass-1 |
 | `/login` | Auth chrome | login card/page | pass-1 |
 | `/onboarding` | Auth chrome | `OnboardingPanel` | pass-1/auth |
-| `/half-price-travel` | Public chrome | `ProgramCard` collection | pending |
-| `/reviews` | Public chrome | `ReviewFeed` | pending |
-| `/reviews/new` | Public chrome | `ReviewWriter` | pending/auth |
-| `/magazine` | Public chrome | magazine index | pending |
-| `/magazine/[slug]` | Public chrome | magazine article/content renderer | pending |
-| `/announcements` | Public chrome | announcement index | pending |
-| `/announcements/[id]` | Public chrome | announcement detail | pending |
+| `/half-price-travel` | Public chrome | `ProgramCard` collection | pass-1 |
+| `/reviews` | Public chrome | `ReviewFeed` | pass-1 |
+| `/reviews/new` | Public chrome | `ReviewWriter` | pass-1/auth |
+| `/magazine` | Public chrome | magazine index | pass-1 |
+| `/magazine/[slug]` | Public chrome | magazine article/content renderer | pass-1 |
+| `/announcements` | Public chrome | announcement index | pass-1 |
+| `/announcements/[id]` | Public chrome | announcement detail | pass-1 |
 | `/programs/[id]` | Public chrome | program detail components | pass-1 |
 | `/programs/[id]/apply` | Public chrome | `ProgramApplicationForm` | pass-1 |
 
@@ -88,7 +88,7 @@ requires a signed-in role for browser verification.
 | `/mypage/points` | Mypage | `Mypage` points view | pending/auth |
 | `/mypage/coupons` | Mypage | feature-flagged coupons view | pending/auth |
 | `/mypage/settings` | Mypage | `Mypage` settings view | pending/auth |
-| `/support` | Mypage | shared support view (also listed in public core) | pending |
+| `/support` | Mypage | shared support view (also listed in public core) | pass-1 |
 
 `/support` is one physical route and is intentionally referenced in both the
 public and Mypage functional groups; the total unique page count remains 94.

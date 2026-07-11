@@ -17,7 +17,7 @@ import {
 const MESSAGE_MAX_LENGTH = 2000;
 
 const fieldClassName =
-  "h-[42px] w-full rounded-[6px] border border-[#dccfc7] bg-white px-3 text-[13px] font-medium text-[#4B3328] outline-none transition placeholder:text-[#b8aaa2] focus:border-[#fe701e] focus:ring-2 focus:ring-[#fe701e]/10";
+  "h-11 w-full rounded-[6px] border border-[#dccfc7] bg-white px-3 text-base font-medium text-[#4B3328] outline-none transition placeholder:text-[#b8aaa2] focus:border-[#fe701e] focus:ring-2 focus:ring-[#fe701e]/10 min-[1100px]:h-[42px] min-[1100px]:text-[13px]";
 
 type SupportContactInitialValues = {
   email: string;
@@ -244,7 +244,7 @@ export function SupportContactForm({
           </span>
           <span className="relative block">
             <textarea
-              className="min-h-[116px] w-full resize-y rounded-[6px] border border-[#dccfc7] bg-white px-3 py-3 text-[13px] font-medium leading-relaxed text-[#4B3328] outline-none transition placeholder:text-[#b8aaa2] focus:border-[#fe701e] focus:ring-2 focus:ring-[#fe701e]/10"
+              className="min-h-[116px] w-full resize-y rounded-[6px] border border-[#dccfc7] bg-white px-3 py-3 text-base font-medium leading-relaxed text-[#4B3328] outline-none transition placeholder:text-[#b8aaa2] focus:border-[#fe701e] focus:ring-2 focus:ring-[#fe701e]/10 min-[1100px]:text-[13px]"
               maxLength={MESSAGE_MAX_LENGTH}
               onChange={(event) =>
                 setForm((current) => ({
