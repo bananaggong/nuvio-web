@@ -98,7 +98,7 @@ export type MagazineEditorDraft = {
 
 const magazineSourceUrl = "/host/channels/magazines";
 const tableSizeInputClassName =
-  "h-[var(--host-28)] w-[var(--host-52)] rounded-[3px] border border-[#D9D9D9] bg-white px-[var(--host-6)] text-center text-[length:var(--host-11)] font-semibold text-[#5B3A29] outline-none transition focus:border-[#FE701E]";
+  "h-[var(--host-28)] w-[var(--host-52)] rounded-[3px] border border-[#D9D9D9] bg-white px-[var(--host-6)] text-center text-[length:var(--host-11)] font-semibold text-[#5B3A29] outline-none transition focus:border-[#FE701E] max-lg:h-11 max-lg:w-14 max-lg:text-base";
 const TABLE_SIZE_MIN = 1;
 const TABLE_SIZE_MAX = 20;
 
@@ -399,7 +399,7 @@ export function HostChannelMagazines() {
   return (
     <HostWorkspaceLayout sidebarHeight="min-h-[var(--host-2053)]">
       <section className="min-w-0 flex-1 overflow-x-clip bg-white">
-        <div className="w-full max-w-[var(--host-1230)]">
+        <div className="w-full max-w-[var(--host-1230)] max-[1439px]:max-w-none">
           <ChannelProfileHeader
             activeLabel="매거진형"
             channel={channel}
@@ -407,11 +407,11 @@ export function HostChannelMagazines() {
             publicHref={publicHref}
           />
 
-          <section className="relative min-h-[var(--host-1806)] border-b border-[#6D7A8A] pb-[var(--host-44)] pt-[var(--host-62)]">
+          <section className="relative min-h-[var(--host-1806)] border-b border-[#6D7A8A] pb-[var(--host-44)] pt-[var(--host-62)] max-[1439px]:min-h-0 max-lg:px-5 max-lg:pb-8 max-lg:pt-14">
             {!editorDraft ? (
               <button
                 aria-label="매거진 게시물 추가"
-                className="absolute right-[var(--host-36)] top-[var(--host-34)] size-[var(--host-20)] transition hover:opacity-80"
+                className="absolute right-[var(--host-36)] top-[var(--host-34)] size-[var(--host-20)] transition hover:opacity-80 max-lg:right-4 max-lg:top-3 max-lg:size-11 max-lg:p-2.5"
                 onClick={openNewMagazineEditor}
                 type="button"
               >
@@ -420,7 +420,7 @@ export function HostChannelMagazines() {
             ) : null}
 
             {isLoading ? (
-              <div className="mx-auto w-[var(--host-1103)] max-w-full">
+              <div className="mx-auto w-[var(--host-1103)] max-w-full max-lg:w-full">
                 <ChannelContentSkeleton variant="magazine" />
               </div>
             ) : editorDraft ? (
@@ -436,9 +436,10 @@ export function HostChannelMagazines() {
                 uploadingImage={uploadingImage}
               />
             ) : items.length > 0 ? (
-              <div className="mx-auto grid w-[var(--host-1103)] max-w-full grid-cols-[repeat(2,var(--host-530))] gap-x-[var(--host-43)] gap-y-[var(--host-43)]">
-                {items.map((item) => (
+              <div className="mx-auto grid w-[var(--host-1103)] max-w-full grid-cols-1 gap-6 sm:grid-cols-2 min-[1440px]:grid-cols-[repeat(2,var(--host-530))] min-[1440px]:gap-x-[var(--host-43)] min-[1440px]:gap-y-[var(--host-43)]">
+                {items.map((item, index) => (
                   <MagazineCard
+                    eager={index < 4}
                     item={item}
                     key={item.id}
                     onEdit={() => editMagazine(item)}
@@ -446,7 +447,7 @@ export function HostChannelMagazines() {
                 ))}
               </div>
             ) : (
-              <div className="mx-auto w-[var(--host-1103)] max-w-full">
+              <div className="mx-auto w-[var(--host-1103)] max-w-full max-lg:w-full">
                 <ChannelEmptyState
                   description="매거진 게시물을 추가하면 이 목록에 표시됩니다."
                   title="아직 작성한 매거진 게시물이 없습니다."
@@ -456,7 +457,7 @@ export function HostChannelMagazines() {
           </section>
 
           {!editorDraft && saveMessage ? (
-            <footer className="flex h-[var(--host-69)] items-center gap-[var(--host-12)] border-b border-[#6D7A8A] px-[var(--host-24)]">
+            <footer className="flex h-[var(--host-69)] items-center gap-[var(--host-12)] border-b border-[#6D7A8A] px-[var(--host-24)] max-lg:h-auto max-lg:min-h-16 max-lg:px-5 max-lg:py-4">
               <span className="text-[length:var(--host-12)] font-normal leading-[1.253] text-[#6D7A8A]">
                 {saveMessage}
               </span>
@@ -506,7 +507,7 @@ export function MagazineEditorSurface({
     editorProps: {
       attributes: {
         class:
-          "min-h-[var(--host-760)] px-[var(--host-24)] py-[var(--host-24)] text-[length:var(--host-16)] leading-[1.75] text-[#0D0D0C] outline-none",
+          "min-h-[var(--host-760)] px-[var(--host-24)] py-[var(--host-24)] text-[length:var(--host-16)] leading-[1.75] text-[#0D0D0C] outline-none max-lg:min-h-[420px] max-lg:px-4 max-lg:py-4 max-lg:text-base",
       },
     },
     extensions: [
@@ -514,6 +515,8 @@ export function MagazineEditorSurface({
         heading: {
           levels: [1, 2, 3],
         },
+        link: false,
+        underline: false,
       }),
       Underline,
       LinkExtension.configure({
@@ -573,14 +576,14 @@ export function MagazineEditorSurface({
   }
 
   return (
-    <div className="mx-auto w-[var(--host-1103)] max-w-full">
+    <div className="mx-auto w-[var(--host-1103)] max-w-full max-lg:w-full">
       <div className="mb-[var(--host-22)] flex items-center justify-between">
-        <h2 className="text-[length:var(--host-24)] font-semibold leading-[1.253] text-[#5B3A29]">
+        <h2 className="min-w-0 break-words pr-3 text-[length:var(--host-24)] font-semibold leading-[1.253] text-[#5B3A29] max-lg:text-xl">
           {headingLabel ?? (draft.id ? "매거진 글 수정" : "새 매거진 글 작성")}
         </h2>
         <button
           aria-label={closeAriaLabel ?? "매거진 작성 닫기"}
-          className="grid size-[var(--host-32)] place-items-center rounded-full border border-[#D9D9D9] text-[#6D7A8A] transition hover:border-[#FE701E] hover:text-[#FE701E] disabled:opacity-45"
+          className="grid size-[var(--host-32)] shrink-0 place-items-center rounded-full border border-[#D9D9D9] text-[#6D7A8A] transition hover:border-[#FE701E] hover:text-[#FE701E] disabled:opacity-45 max-lg:size-11"
           disabled={isBusy}
           onClick={onClose}
           type="button"
@@ -596,11 +599,11 @@ export function MagazineEditorSurface({
       ) : null}
 
       <section className="overflow-hidden rounded-[8px] border border-[#D9D9D9] bg-white">
-        <div className="border-b border-[#D9D9D9] p-[var(--host-24)]">
+        <div className="border-b border-[#D9D9D9] p-[var(--host-24)] max-lg:p-4">
           <label className="grid gap-[var(--host-8)] text-[length:var(--host-12)] font-semibold leading-[1.253] text-[#6D7A8A]">
             {titleLabel ?? "제목"}
             <input
-              className="h-[var(--host-48)] rounded-[6px] border border-[#D9D9D9] bg-white px-[var(--host-14)] text-[length:var(--host-22)] font-semibold leading-[1.253] text-[#5B3A29] outline-none transition placeholder:text-[#CAC4BC] focus:border-[#FE701E]"
+              className="h-[var(--host-48)] rounded-[6px] border border-[#D9D9D9] bg-white px-[var(--host-14)] text-[length:var(--host-22)] font-semibold leading-[1.253] text-[#5B3A29] outline-none transition placeholder:text-[#CAC4BC] focus:border-[#FE701E] max-lg:h-12 max-lg:text-lg"
               maxLength={120}
               onChange={(event) => onUpdate({ title: event.target.value })}
               placeholder={titlePlaceholder ?? "제목을 입력해 주세요"}
@@ -624,14 +627,14 @@ export function MagazineEditorSurface({
           ref={bodyImageInputRef}
           type="file"
         />
-        <div className="magazine-editor-content min-h-[var(--host-780)] bg-white">
+        <div className="magazine-editor-content min-h-[var(--host-780)] bg-white max-lg:min-h-[420px]">
           <EditorContent editor={editor} />
         </div>
       </section>
 
-      <footer className="mt-[var(--host-18)] flex h-[var(--host-69)] items-start justify-end gap-[var(--host-12)] border-t border-[#D9D9D9] pt-[var(--host-20)]">
+      <footer className="mt-[var(--host-18)] flex h-[var(--host-69)] items-start justify-end gap-[var(--host-12)] border-t border-[#D9D9D9] pt-[var(--host-20)] max-lg:h-auto max-lg:grid max-lg:grid-cols-2 max-lg:pt-4">
         <button
-          className="h-[var(--host-29)] rounded-[3px] border border-[#6D7A8A] bg-white px-[var(--host-20)] text-[length:var(--host-12)] font-medium leading-[1.253] text-[#6D7A8A] transition hover:border-[#FE701E] hover:text-[#FE701E] disabled:cursor-not-allowed disabled:opacity-45"
+          className="h-[var(--host-29)] rounded-[3px] border border-[#6D7A8A] bg-white px-[var(--host-20)] text-[length:var(--host-12)] font-medium leading-[1.253] text-[#6D7A8A] transition hover:border-[#FE701E] hover:text-[#FE701E] disabled:cursor-not-allowed disabled:opacity-45 max-lg:min-h-11 max-lg:text-sm"
           disabled={isBusy}
           onClick={onClose}
           type="button"
@@ -639,7 +642,7 @@ export function MagazineEditorSurface({
           취소
         </button>
         <button
-          className="inline-flex h-[var(--host-29)] items-center gap-[var(--host-6)] rounded-[3px] bg-[#FE701E] px-[var(--host-20)] text-[length:var(--host-12)] font-semibold leading-[1.253] text-white transition hover:bg-[#E85F12] disabled:cursor-not-allowed disabled:bg-[#CAC4BC]"
+          className="inline-flex h-[var(--host-29)] items-center justify-center gap-[var(--host-6)] rounded-[3px] bg-[#FE701E] px-[var(--host-20)] text-[length:var(--host-12)] font-semibold leading-[1.253] text-white transition hover:bg-[#E85F12] disabled:cursor-not-allowed disabled:bg-[#CAC4BC] max-lg:min-h-11 max-lg:text-sm"
           disabled={isBusy || !editor}
           onClick={handleSave}
           type="button"
@@ -716,7 +719,7 @@ function MagazineEditorToolbar({
   }
 
   return (
-    <div className="flex flex-wrap items-center gap-[var(--host-4)] border-b border-[#D9D9D9] bg-[#FCFCFC] px-[var(--host-14)] py-[var(--host-10)] text-[#6D7A8A]">
+    <div className="flex flex-wrap items-center gap-[var(--host-4)] border-b border-[#D9D9D9] bg-[#FCFCFC] px-[var(--host-14)] py-[var(--host-10)] text-[#6D7A8A] max-lg:flex-nowrap max-lg:overflow-x-auto max-lg:px-2 max-lg:py-2">
       <ToolbarButton
         active={editor.isActive("heading", { level: 1 })}
         onClick={() => editor.chain().focus().toggleHeading({ level: 1 }).run()}
@@ -823,7 +826,7 @@ function MagazineEditorToolbar({
         <LinkIcon className="size-[var(--host-16)]" />
       </ToolbarButton>
       <ToolbarDivider />
-      <div className="flex items-center gap-[var(--host-4)] rounded-[4px] border border-[#D9D9D9] bg-white px-[var(--host-4)] py-[var(--host-3)]">
+      <div className="flex shrink-0 items-center gap-[var(--host-4)] rounded-[4px] border border-[#D9D9D9] bg-white px-[var(--host-4)] py-[var(--host-3)]">
         <label className="flex items-center gap-[var(--host-4)] text-[length:var(--host-11)] font-semibold text-[#6D7A8A]" title="표 열 수">
           <Columns3 className="size-[var(--host-14)]" />
           <input
@@ -850,7 +853,7 @@ function MagazineEditorToolbar({
         </label>
         <button
           aria-pressed={tableHasHeader}
-          className={`inline-flex h-[var(--host-28)] items-center gap-[var(--host-4)] rounded-[3px] px-[var(--host-8)] text-[length:var(--host-11)] font-semibold transition ${
+          className={`inline-flex h-[var(--host-28)] items-center gap-[var(--host-4)] rounded-[3px] px-[var(--host-8)] text-[length:var(--host-11)] font-semibold transition max-lg:min-h-11 ${
             tableHasHeader ? "bg-[#FE701E] text-white" : "text-[#6D7A8A] hover:bg-[#FFF6EC]"
           }`}
           onClick={() => setTableHasHeader((current) => !current)}
@@ -867,7 +870,7 @@ function MagazineEditorToolbar({
       {isTableActive ? (
         <>
           <ToolbarDivider />
-          <div className="flex items-center gap-[var(--host-4)] rounded-[4px] border border-[#D9D9D9] bg-white px-[var(--host-4)] py-[var(--host-3)]">
+          <div className="flex shrink-0 items-center gap-[var(--host-4)] rounded-[4px] border border-[#D9D9D9] bg-white px-[var(--host-4)] py-[var(--host-3)]">
             <ToolbarTextButton onClick={() => editor.chain().focus().addColumnBefore().run()} title="왼쪽에 열 추가">
               열+
             </ToolbarTextButton>
@@ -932,7 +935,7 @@ function ToolbarButton({
 }) {
   return (
     <button
-      className={`inline-flex size-[var(--host-32)] items-center justify-center rounded-[3px] transition ${
+      className={`inline-flex size-[var(--host-32)] shrink-0 items-center justify-center rounded-[3px] transition max-lg:size-11 ${
         active ? "bg-[#FE701E] text-white" : "text-[#6D7A8A] hover:bg-[#FFF6EC] hover:text-[#FE701E]"
       }`}
       onClick={onClick}
@@ -957,7 +960,7 @@ function ToolbarTextButton({
 }) {
   return (
     <button
-      className={`inline-flex h-[var(--host-28)] min-w-[var(--host-30)] items-center justify-center rounded-[3px] px-[var(--host-8)] text-[length:var(--host-11)] font-semibold transition ${
+      className={`inline-flex h-[var(--host-28)] min-w-[var(--host-30)] shrink-0 items-center justify-center rounded-[3px] px-[var(--host-8)] text-[length:var(--host-11)] font-semibold transition max-lg:min-h-11 max-lg:min-w-11 ${
         destructive ? "text-rose-600 hover:bg-rose-50" : "text-[#6D7A8A] hover:bg-[#FFF6EC] hover:text-[#FE701E]"
       }`}
       onClick={onClick}
@@ -970,38 +973,41 @@ function ToolbarTextButton({
 }
 
 function ToolbarDivider() {
-  return <span className="mx-[var(--host-4)] h-[var(--host-22)] w-px bg-[#D9D9D9]" />;
+  return <span className="mx-[var(--host-4)] h-[var(--host-22)] w-px shrink-0 bg-[#D9D9D9]" />;
 }
 
 function MagazineCard({
+  eager = false,
   item,
   onEdit,
 }: {
+  eager?: boolean;
   item: ChannelMagazine;
   onEdit: () => void;
 }) {
   return (
-    <article className="group relative h-[var(--host-550)] w-[var(--host-530)] min-w-0 overflow-hidden rounded-[8px] bg-[#FCFCFC]">
+    <article className="group relative h-[var(--host-550)] w-[var(--host-530)] min-w-0 overflow-hidden rounded-[8px] bg-[#FCFCFC] max-[1439px]:h-auto max-[1439px]:w-full">
       <button
-        className="absolute right-[var(--host-16)] top-[var(--host-16)] z-10 rounded-[4px] bg-white/90 px-[var(--host-10)] py-[var(--host-5)] text-[length:var(--host-12)] font-semibold leading-[1.253] text-[#5B3A29] opacity-0 shadow-sm transition hover:text-[#FE701E] group-hover:opacity-100 focus-visible:opacity-100"
+        className="absolute right-[var(--host-16)] top-[var(--host-16)] z-10 rounded-[4px] bg-white/90 px-[var(--host-10)] py-[var(--host-5)] text-[length:var(--host-12)] font-semibold leading-[1.253] text-[#5B3A29] opacity-0 shadow-sm transition hover:text-[#FE701E] group-hover:opacity-100 focus-visible:opacity-100 max-lg:min-h-11 max-lg:opacity-100"
         onClick={onEdit}
         type="button"
       >
         수정
       </button>
-      <div className="relative h-[var(--host-368)] w-full overflow-hidden rounded-t-[8px] bg-[#D9D9D9]">
+      <div className="relative h-[var(--host-368)] w-full overflow-hidden rounded-t-[8px] bg-[#D9D9D9] max-[1439px]:h-auto max-[1439px]:aspect-[530/368]">
         {item.thumbnail ? (
           <Image
             alt=""
             className="object-cover opacity-70"
             fill
+            loading={eager ? "eager" : "lazy"}
             sizes="(min-width: 1920px) 707px, 530px"
             src={item.thumbnail}
           />
         ) : null}
       </div>
-      <div className="mt-[var(--host-30)] rounded-b-[8px] bg-[#FCFCFC] text-center">
-        <h2 className="text-[length:var(--host-20)] font-semibold leading-[1.253] text-[#5B3A29]">
+      <div className="mt-[var(--host-30)] rounded-b-[8px] bg-[#FCFCFC] px-3 pb-6 text-center max-[1439px]:mt-5">
+        <h2 className="line-clamp-2 break-words text-[length:var(--host-20)] font-semibold leading-[1.35] text-[#5B3A29]">
           {item.title}
         </h2>
         <p className="mt-[var(--host-13)] text-[length:var(--host-14)] font-medium leading-[1.253] text-[#CAC4BC]">
