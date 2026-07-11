@@ -101,7 +101,7 @@ public and Mypage functional groups; the total unique page count remains 94.
 | `/host` | Host console | `HostCenterHome`/channel creation | pass-1/auth |
 | `/host/messages` | Host console | `HostMessageInbox` | pass-1/auth |
 | `/host/forms` | Host console | `HostFormLibrary` | pass-1/auth |
-| `/host/forms/[formId]` | Host console | `HostFormBuilder` | pending/auth |
+| `/host/forms/[formId]` | Host console | `HostFormBuilder` | pass-1/auth |
 | `/host/settings` | Host console | host notification/team settings | pass-1/auth |
 | `/host/applications` | Host console | `HostApplicationsCrm` | pending/auth |
 | `/host/applications/[id]` | Host console | legacy application resolver | bridge/auth |

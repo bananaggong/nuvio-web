@@ -296,7 +296,7 @@ export function HostFormBuilder({
                   : "신청서 양식을 불러오는 중입니다."}
               </p>
               <Link
-                className="mt-[var(--host-16)] inline-flex h-[var(--host-29)] items-center justify-center rounded-[4px] bg-[#6D7A8A] px-[var(--host-12)] text-[var(--host-12)] font-medium leading-[1.253] text-[#FFF6EC]"
+                className="mt-[var(--host-16)] inline-flex h-[var(--host-29)] items-center justify-center rounded-[4px] bg-[#6D7A8A] px-[var(--host-12)] text-[var(--host-12)] font-medium leading-[1.253] text-[#FFF6EC] max-md:min-h-11 max-md:text-sm"
                 href="/host/forms"
               >
                 목록으로
@@ -311,15 +311,15 @@ export function HostFormBuilder({
   return (
     <HostWorkspaceLayout sidebarHeight="min-h-[var(--host-1864)]">
       <UnsavedChangesGuard when={hasUnsavedFormChanges} />
-      <section className="min-w-0 flex-1 overflow-x-auto pl-[var(--host-28)] pr-[var(--host-22)] max-md:px-5">
+      <section className="min-w-0 flex-1 overflow-x-auto pl-[var(--host-28)] pr-[var(--host-22)] max-md:overflow-x-visible max-md:px-5">
         <div className="grid min-w-[var(--host-1158)] grid-cols-[var(--host-577)_var(--host-557)] gap-[var(--host-24)] max-md:min-w-0 max-md:grid-cols-1">
           <section className="min-h-[var(--host-1864)] border-r border-[#6D7A8A] pr-[var(--host-30)] max-md:min-h-0 max-md:border-r-0 max-md:pr-0">
             <div className="flex flex-col gap-[var(--host-46)] pb-[var(--host-24)]">
               <div className="pt-[var(--host-24)]">
-                <div className="flex h-[var(--host-29)] items-center gap-[var(--host-14)]">
+                <div className="flex h-[var(--host-29)] items-center gap-[var(--host-14)] max-md:h-auto max-md:min-h-11">
                   <Link
                     aria-label="목록으로"
-                    className="inline-flex h-[var(--host-29)] w-[var(--host-11)] items-center justify-center"
+                    className="inline-flex h-[var(--host-29)] w-[var(--host-11)] shrink-0 items-center justify-center max-md:size-11"
                     href="/host/forms"
                   >
                     <Image
@@ -335,7 +335,7 @@ export function HostFormBuilder({
                     신청서 양식 편집
                   </h1>
                   <button
-                    className="inline-flex h-[var(--host-29)] w-[var(--host-66)] items-center justify-center rounded-[4px] bg-[#FE701E] p-0 text-[var(--host-12)] font-medium leading-[1.253] text-[#FFF6EC] disabled:opacity-50"
+                    className="inline-flex h-[var(--host-29)] w-[var(--host-66)] shrink-0 items-center justify-center rounded-[4px] bg-[#FE701E] p-0 text-[var(--host-12)] font-medium leading-[1.253] text-[#FFF6EC] disabled:opacity-50 max-md:min-h-11 max-md:w-auto max-md:px-3 max-md:text-sm"
                     disabled={isSaving}
                     onClick={() => void saveTemplate()}
                     type="button"
@@ -389,7 +389,7 @@ export function HostFormBuilder({
                     <Image
                       alt=""
                       aria-hidden
-                      className="pointer-events-none absolute right-[var(--host-14)] top-1/2 h-[var(--host-19)] w-[var(--host-19)] -translate-y-1/2"
+                      className="pointer-events-none absolute right-[var(--host-14)] top-1/2 h-auto w-[var(--host-19)] -translate-y-1/2"
                       height={20}
                       src={nuvioIcons.formSelectDropdown}
                       width={19}
@@ -478,7 +478,7 @@ function FormItemIconButton({
   return (
     <button
       aria-label={ariaLabel}
-      className="inline-flex shrink-0 items-center justify-center p-0 transition-opacity hover:opacity-70"
+      className="inline-flex shrink-0 items-center justify-center p-0 transition-opacity hover:opacity-70 max-md:size-11"
       onClick={onClick}
       type="button"
     >
@@ -555,7 +555,7 @@ function EditableBlockCard({
 
   return (
     <article className="flex w-full flex-col gap-[var(--host-6)] border-b border-[#F3F3F3] py-[var(--host-16)]">
-      <div className="flex h-[var(--host-20)] items-center gap-[var(--host-11)] px-[var(--host-12)]">
+      <div className="flex h-[var(--host-20)] items-center gap-[var(--host-11)] px-[var(--host-12)] max-md:h-auto max-md:flex-wrap max-md:px-0">
         <span className="inline-flex h-[var(--host-19)] shrink-0 items-center rounded-[19px] bg-[#6D7A8A] px-[var(--host-12)] text-[var(--host-12)] font-semibold leading-[1.253] text-[#F9F9F9]">
           {blockTypeLabel}
         </span>
@@ -565,7 +565,7 @@ function EditableBlockCard({
             onChange={(checked) => onUpdate({ required: checked })}
           />
         ) : null}
-        <div className="ml-auto flex items-center gap-[var(--host-15)]">
+        <div className="ml-auto flex items-center gap-[var(--host-15)] max-md:w-full max-md:justify-end max-md:gap-0">
           <FormItemIconButton
             ariaLabel="복제"
             className="h-[var(--host-19)] w-[var(--host-19)]"
@@ -584,10 +584,10 @@ function EditableBlockCard({
               width={16}
             />
             {typeMenuOpen ? (
-              <div className="absolute right-0 top-[calc(100%+var(--host-8))] z-20 flex w-[var(--host-110)] flex-col overflow-hidden rounded-[var(--host-7)] border border-[#6D7A8A] bg-white shadow-[0_8px_18px_rgba(0,0,0,0.14)]">
+              <div className="absolute right-0 top-[calc(100%+var(--host-8))] z-20 flex w-[var(--host-110)] flex-col overflow-hidden rounded-[var(--host-7)] border border-[#6D7A8A] bg-white shadow-[0_8px_18px_rgba(0,0,0,0.14)] max-md:w-36">
                 {editableBlockTypes.map((item) => (
                   <button
-                    className={`h-[var(--host-29)] px-[var(--host-10)] text-left text-[var(--host-12)] font-medium leading-[1.253] transition hover:bg-[#FFF6EC] ${
+                    className={`h-[var(--host-29)] px-[var(--host-10)] text-left text-[var(--host-12)] font-medium leading-[1.253] transition hover:bg-[#FFF6EC] max-md:min-h-11 max-md:text-sm ${
                       item.type === block.type
                         ? "bg-[#F3F3F3] text-[#FE701E]"
                         : "text-[#6D7A8A]"
@@ -630,9 +630,11 @@ function EditableBlockCard({
               className="flex items-center gap-[var(--host-8)] pl-[var(--host-12)]"
               key={`${block.id}-${index}`}
             >
-              <input
-                className="size-[var(--host-14)] accent-[#FF9A3D]"
-                type={block.type === "singleSelect" ? "radio" : "checkbox"}
+              <span
+                aria-hidden="true"
+                className={`size-[var(--host-14)] shrink-0 border border-[#6D7A8A] ${
+                  block.type === "singleSelect" ? "rounded-full" : "rounded-[2px]"
+                }`}
               />
               <input
                 className="host-form-input host-form-input--compact"
@@ -647,7 +649,7 @@ function EditableBlockCard({
             </div>
           ))}
           <button
-            className="w-fit text-[var(--host-12)] font-medium leading-[1.253] text-[#FF9A3D]"
+            className="min-h-[var(--host-20)] w-fit text-[var(--host-12)] font-medium leading-[1.253] text-[#FF9A3D] max-md:min-h-11 max-md:text-sm"
             onClick={() =>
               onUpdate({ options: [...options, ""] })
             }
@@ -662,7 +664,7 @@ function EditableBlockCard({
       block.type === "description" ||
       block.type === "fileRequest" ? (
         <textarea
-          className="min-h-[var(--host-69)] rounded-[7px] border border-[#CAC4BC] px-[var(--host-8)] py-[var(--host-10)] text-[var(--host-12)] font-medium leading-[1.253] text-[#0D0D0C] outline-none placeholder:text-[#D9D9D9]"
+          className="min-h-[var(--host-69)] rounded-[7px] border border-[#CAC4BC] px-[var(--host-8)] py-[var(--host-10)] text-[var(--host-12)] font-medium leading-[1.253] text-[#0D0D0C] outline-none placeholder:text-[#D9D9D9] max-md:min-h-24 max-md:text-base"
           onChange={(event) => onUpdate({ body: event.target.value })}
           placeholder={
             block.type === "fileRequest"
@@ -675,22 +677,17 @@ function EditableBlockCard({
 
       {block.type === "fileAttachment" ? (
         <div className="flex flex-col gap-[var(--host-10)]">
-          <label className="flex items-center gap-[var(--host-8)] text-[var(--host-12)] font-medium leading-[1.253] text-[#5B3A29]">
-            <input
-              checked
-              className="size-[var(--host-14)] accent-[#FE701E]"
-              readOnly
-              type="radio"
-            />
+          <div className="flex items-center gap-[var(--host-8)] text-[var(--host-12)] font-medium leading-[1.253] text-[#5B3A29] max-md:min-h-11 max-md:text-sm">
+            <span aria-hidden="true" className="grid size-[var(--host-14)] place-items-center rounded-full border border-[#FE701E] after:size-2 after:rounded-full after:bg-[#FE701E]" />
             확인버튼
-          </label>
+          </div>
           <input
             className="host-form-input"
             onChange={(event) => onUpdate({ body: event.target.value })}
             placeholder="안내할 내용을 입력해주세요"
             value={block.body ?? ""}
           />
-          <div className="grid grid-cols-[minmax(0,1fr)_minmax(0,1fr)] gap-[var(--host-8)]">
+          <div className="grid grid-cols-[minmax(0,1fr)_minmax(0,1fr)] gap-[var(--host-8)] max-md:grid-cols-1">
             <input
               className="host-form-input"
               onChange={(event) => onUpdate({ fileName: event.target.value })}
@@ -739,7 +736,7 @@ function RequiredToggle({
   return (
     <button
       aria-pressed={checked}
-      className="flex h-[var(--host-20)] items-center gap-[var(--host-7)] text-[var(--host-12)] font-normal leading-[1.253] text-[#0D0D0C]"
+      className="flex h-[var(--host-20)] items-center gap-[var(--host-7)] text-[var(--host-12)] font-normal leading-[1.253] text-[#0D0D0C] max-md:min-h-11 max-md:text-sm"
       onClick={() => onChange(!checked)}
       type="button"
     >
@@ -774,12 +771,12 @@ function FormPreview({ template }: { template: ApplicationFormTemplate }) {
       <p className="text-[13px] font-normal leading-[1.55] text-[#6D7A8A]">
         항목을 추가하면 여기에 미리보기가 표시돼요
       </p>
-      <div className="min-h-[720px] w-full overflow-hidden rounded-[2px] border border-[#6D7A8A] bg-[#F9F9F9] px-[24px] py-[18px]">
+      <div className="min-h-[720px] w-full overflow-hidden rounded-[2px] border border-[#6D7A8A] bg-[#F9F9F9] px-[24px] py-[18px] max-md:px-4">
         <div className="w-full">
           <div className="border-b border-[#FE701E] pb-[22px]">
-            <div className="grid grid-cols-[118px_minmax(0,1fr)_94px_94px] gap-x-[16px]">
-              <div className="h-[118px] w-[118px] shrink-0 rounded-[16px] bg-[#D9D9D9]" />
-              <div className="pt-[13px]">
+            <div className="grid grid-cols-[118px_minmax(0,1fr)_94px_94px] gap-x-[16px] max-md:grid-cols-[96px_minmax(0,1fr)] max-md:gap-x-3 max-md:gap-y-2">
+              <div className="h-[118px] w-[118px] shrink-0 rounded-[16px] bg-[#D9D9D9] max-md:size-24" />
+              <div className="min-w-0 pt-[13px] max-md:pt-0">
                 <p className="line-clamp-2 text-[20px] font-semibold leading-[1.32] text-[#5B3A29]">
                   {previewProgramTitle}
                 </p>
@@ -860,7 +857,7 @@ function PreviewBlock({ block }: { block: ApplicationFormBlock }) {
 
   return (
     <div className="flex w-full flex-col gap-[14px] border-b border-dashed border-[#F3D7C4] py-[18px]">
-      <div className="flex items-baseline gap-[8px] text-[14px] font-semibold leading-[1.45]">
+      <div className="flex flex-wrap items-baseline gap-[8px] text-[14px] font-semibold leading-[1.45]">
         <p className="text-[#5B3A29]">{block.label || "질문내용입니다."}</p>
         {block.required ? (
           <p className="text-[12px] text-[#FE701E]">*필수항목</p>
@@ -880,7 +877,7 @@ function PreviewControl({ block }: { block: ApplicationFormBlock }) {
 
     if (block.type === "singleSelect") {
       return (
-        <div className="relative h-[34px] w-full rounded-[4px] border border-[#FF9A3D] bg-white px-[12px] text-[12px] font-normal leading-[34px] text-[#CAC4BC]">
+        <div className="relative h-[34px] w-full rounded-[4px] border border-[#FF9A3D] bg-white px-[12px] text-[12px] font-normal leading-[34px] text-[#CAC4BC] max-md:h-11 max-md:text-base max-md:leading-[44px]">
           선택해 주세요.
           <ChevronDown
             aria-hidden="true"
@@ -893,10 +890,10 @@ function PreviewControl({ block }: { block: ApplicationFormBlock }) {
     }
 
     return (
-      <div className="grid max-w-[420px] grid-cols-2 gap-x-[48px] gap-y-[12px] px-[14px]">
+      <div className="grid max-w-[420px] grid-cols-2 gap-x-[48px] gap-y-[12px] px-[14px] max-sm:grid-cols-1 max-sm:gap-x-0 max-sm:px-0">
         {options.slice(0, 6).map((option, index) => (
           <label
-            className="flex h-[20px] items-center gap-[8px] whitespace-nowrap text-[14px] font-normal leading-[1.35] text-[#5B3A29]"
+            className="flex h-[20px] items-center gap-[8px] whitespace-nowrap text-[14px] font-normal leading-[1.35] text-[#5B3A29] max-md:min-h-11"
             key={`${option}-${index}`}
           >
             <input
@@ -914,7 +911,7 @@ function PreviewControl({ block }: { block: ApplicationFormBlock }) {
     return (
       <div className="flex flex-col gap-[16px] px-[14px] text-[12px] font-normal leading-[1.6] text-[#6D7A8A]">
         <p>{block.body || "<호스트가 게스트에게 동의를 받는 내용에 대한 안내 사항 내용입니다.>"}</p>
-        <label className="flex items-center gap-[6px] text-[14px] text-[#5B3A29]">
+        <label className="flex min-h-[20px] items-center gap-[6px] text-[14px] text-[#5B3A29] max-md:min-h-11">
           <input className="size-[14px]" type="checkbox" />
           동의함
         </label>
@@ -983,7 +980,7 @@ function PreviewControl({ block }: { block: ApplicationFormBlock }) {
           </p>
         ) : null}
         <AttachmentPreviewCard block={block} />
-        <label className="mt-[14px] inline-flex items-center gap-[8px] text-[14px] font-normal leading-[1.35] text-[#5B3A29]">
+        <label className="mt-[14px] inline-flex min-h-[20px] items-center gap-[8px] text-[14px] font-normal leading-[1.35] text-[#5B3A29] max-md:min-h-11">
           <input className="size-[14px] accent-[#FE701E]" type="checkbox" />
           확인 완료
         </label>
@@ -994,7 +991,7 @@ function PreviewControl({ block }: { block: ApplicationFormBlock }) {
   if (block.type === "longText") {
     return (
       <textarea
-        className="min-h-[86px] w-full resize-none rounded-[4px] border border-[#FF9A3D] bg-white px-[12px] py-[10px] text-[12px] font-normal leading-[1.6] outline-none placeholder:text-[#CAC4BC]"
+        className="min-h-[86px] w-full resize-none rounded-[4px] border border-[#FF9A3D] bg-white px-[12px] py-[10px] text-[12px] font-normal leading-[1.6] outline-none placeholder:text-[#CAC4BC] max-md:text-base"
         placeholder="텍스트 입력"
       />
     );
@@ -1002,7 +999,7 @@ function PreviewControl({ block }: { block: ApplicationFormBlock }) {
 
   return (
     <input
-      className="h-[34px] w-full rounded-[4px] border border-[#FF9A3D] bg-white px-[12px] text-[12px] font-normal leading-[1.253] outline-none placeholder:text-[#CAC4BC]"
+      className="h-[34px] w-full rounded-[4px] border border-[#FF9A3D] bg-white px-[12px] text-[12px] font-normal leading-[1.253] outline-none placeholder:text-[#CAC4BC] max-md:h-11 max-md:text-base"
       placeholder={block.type === "phone" ? "숫자 입력" : "텍스트 입력"}
     />
   );
