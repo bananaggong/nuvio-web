@@ -131,7 +131,7 @@ export function AnnouncementSourceMonitor() {
           </p>
         </div>
         <button
-          className="inline-flex h-10 items-center justify-center gap-2 rounded-md border border-slate-200 px-3 text-xs font-black text-slate-700 hover:border-[var(--primary)] hover:text-[var(--primary)]"
+          className="inline-flex min-h-11 items-center justify-center gap-2 rounded-md border border-slate-200 px-3 text-xs font-black text-slate-700 hover:border-[var(--primary)] hover:text-[var(--primary)]"
           onClick={loadSources}
           type="button"
         >

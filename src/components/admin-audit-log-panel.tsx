@@ -73,7 +73,7 @@ export function AdminAuditLogPanel() {
             </p>
           </div>
           <button
-            className="inline-flex h-10 items-center justify-center gap-2 rounded-md border border-slate-200 bg-white px-3 text-sm font-black text-slate-700 hover:border-[var(--primary)] hover:text-[var(--primary)]"
+            className="inline-flex min-h-11 items-center justify-center gap-2 rounded-md border border-slate-200 bg-white px-3 text-sm font-black text-slate-700 hover:border-[var(--primary)] hover:text-[var(--primary)]"
             disabled={loading}
             onClick={() => void loadLogs()}
             type="button"

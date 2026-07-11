@@ -62,10 +62,10 @@ type AdminMagazineEditorProps = {
 };
 
 const inputClassName =
-  "h-11 w-full rounded-md border border-slate-200 bg-white px-3 text-sm font-semibold text-slate-900 outline-none transition focus:border-[var(--primary)] focus:ring-2 focus:ring-orange-100";
+  "h-11 w-full rounded-md border border-slate-200 bg-white px-3 text-sm font-semibold text-slate-900 outline-none transition focus:border-[var(--primary)] focus:ring-2 focus:ring-orange-100 max-lg:text-base";
 
 const tableSizeInputClassName =
-  "h-7 w-12 rounded-[3px] border border-white/25 bg-white/10 px-2 text-center text-xs font-black text-white outline-none transition focus:border-white focus:bg-white/20";
+  "h-7 w-12 rounded-[3px] border border-white/25 bg-white/10 px-2 text-center text-xs font-black text-white outline-none transition focus:border-white focus:bg-white/20 max-lg:h-11 max-lg:text-base";
 
 const TABLE_SIZE_MIN = 1;
 const TABLE_SIZE_MAX = 20;
@@ -102,6 +102,8 @@ export function AdminMagazineEditor({ postId }: AdminMagazineEditorProps) {
         heading: {
           levels: [1, 2, 3],
         },
+        link: false,
+        underline: false,
       }),
       Underline,
       LinkExtension.configure({
@@ -347,7 +349,7 @@ export function AdminMagazineEditor({ postId }: AdminMagazineEditorProps) {
           <div className="flex flex-wrap gap-2">
             {publicHref ? (
               <Link
-                className="inline-flex h-10 items-center justify-center rounded-md border border-slate-200 px-4 text-sm font-black text-slate-700 hover:border-[var(--primary)] hover:text-[var(--primary)]"
+                className="inline-flex min-h-11 items-center justify-center rounded-md border border-slate-200 px-4 text-sm font-black text-slate-700 hover:border-[var(--primary)] hover:text-[var(--primary)]"
                 href={publicHref}
                 target="_blank"
               >
@@ -355,7 +357,7 @@ export function AdminMagazineEditor({ postId }: AdminMagazineEditorProps) {
               </Link>
             ) : null}
             <Link
-              className="inline-flex h-10 items-center justify-center rounded-md border border-slate-200 px-4 text-sm font-black text-slate-700 hover:border-[var(--primary)] hover:text-[var(--primary)]"
+              className="inline-flex min-h-11 items-center justify-center rounded-md border border-slate-200 px-4 text-sm font-black text-slate-700 hover:border-[var(--primary)] hover:text-[var(--primary)]"
               href="/admin/magazine"
             >
               목록
@@ -421,7 +423,6 @@ export function AdminMagazineEditor({ postId }: AdminMagazineEditorProps) {
             onImageClick={() => bodyImageInputRef.current?.click()}
             uploading={uploading}
           />
-          <div aria-hidden="true" className="h-[44px]" />
           <input
             accept="image/gif,image/jpeg,image/png,image/webp"
             className="hidden"
@@ -506,7 +507,7 @@ export function AdminMagazineEditor({ postId }: AdminMagazineEditorProps) {
               type="file"
             />
             <button
-              className="mt-4 inline-flex h-10 w-full items-center justify-center gap-2 rounded-md border border-slate-200 text-sm font-black text-slate-700 hover:border-[var(--primary)] hover:text-[var(--primary)] disabled:opacity-50"
+              className="mt-4 inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-md border border-slate-200 text-sm font-black text-slate-700 hover:border-[var(--primary)] hover:text-[var(--primary)] disabled:opacity-50"
               disabled={uploading}
               onClick={() => coverImageInputRef.current?.click()}
               type="button"
@@ -544,7 +545,7 @@ export function AdminMagazineEditor({ postId }: AdminMagazineEditorProps) {
             <label className="mt-4 grid gap-2 text-sm font-black text-slate-700">
               요약
               <textarea
-                className="min-h-24 w-full rounded-md border border-slate-200 bg-white px-3 py-2 text-sm font-semibold leading-6 text-slate-900 outline-none transition focus:border-[var(--primary)] focus:ring-2 focus:ring-orange-100"
+                className="min-h-24 w-full rounded-md border border-slate-200 bg-white px-3 py-2 text-sm font-semibold leading-6 text-slate-900 outline-none transition focus:border-[var(--primary)] focus:ring-2 focus:ring-orange-100 max-lg:text-base"
                 maxLength={240}
                 onChange={(event) => setExcerpt(event.target.value)}
                 placeholder="비워두면 본문에서 자동 생성됩니다."
@@ -617,7 +618,7 @@ function EditorToolbar({
   }
 
   return (
-    <div className="fixed left-0 right-0 top-[56px] z-[90] flex flex-wrap items-center gap-1 border-b border-slate-200 bg-[#4a4a4a] px-3 py-2 text-white shadow-sm md:left-64 xl:right-[340px]">
+    <div className="sticky top-[56px] z-[90] flex flex-nowrap items-center gap-1 overflow-x-auto border-b border-slate-200 bg-[#4a4a4a] px-3 py-2 text-white shadow-sm lg:flex-wrap lg:overflow-x-visible">
       <ToolbarButton active={editor.isActive("bold")} onClick={() => editor.chain().focus().toggleBold().run()} title="굵게">
         <Bold size={16} />
       </ToolbarButton>
@@ -667,7 +668,7 @@ function EditorToolbar({
       <ToolbarButton active={editor.isActive("link")} onClick={setLink} title="링크">
         <LinkIcon size={16} />
       </ToolbarButton>
-      <div className="flex items-center gap-1 rounded-[4px] border border-white/15 bg-white/5 px-1 py-0.5">
+      <div className="flex shrink-0 items-center gap-1 rounded-[4px] border border-white/15 bg-white/5 px-1 py-0.5">
         <label className="flex items-center gap-1 text-[11px] font-black text-white/85" title="표 열 수">
           <Columns3 size={14} />
           <input
@@ -694,7 +695,7 @@ function EditorToolbar({
         </label>
         <button
           aria-pressed={tableHasHeader}
-          className={`inline-flex h-7 items-center gap-1 rounded-[3px] px-2 text-[11px] font-black transition ${
+          className={`inline-flex h-7 shrink-0 items-center gap-1 rounded-[3px] px-2 text-[11px] font-black transition max-lg:min-h-11 ${
             tableHasHeader ? "bg-white text-[#4a4a4a]" : "text-white hover:bg-white/15"
           }`}
           onClick={() => setTableHasHeader((current) => !current)}
@@ -711,7 +712,7 @@ function EditorToolbar({
       {isTableActive ? (
         <>
           <ToolbarDivider />
-          <div className="flex items-center gap-1 rounded-[4px] border border-white/15 bg-white/5 px-1 py-0.5">
+          <div className="flex shrink-0 items-center gap-1 rounded-[4px] border border-white/15 bg-white/5 px-1 py-0.5">
             <ToolbarTextButton onClick={() => editor.chain().focus().addColumnBefore().run()} title="왼쪽에 열 추가">
               열 앞+
             </ToolbarTextButton>
@@ -772,7 +773,7 @@ function ToolbarButton({
 }) {
   return (
     <button
-      className={`inline-flex size-8 items-center justify-center rounded-[3px] transition ${
+      className={`inline-flex size-8 shrink-0 items-center justify-center rounded-[3px] transition max-lg:size-11 ${
         active ? "bg-white text-[#4a4a4a]" : "text-white hover:bg-white/15"
       }`}
       onClick={onClick}
@@ -797,7 +798,7 @@ function ToolbarTextButton({
 }) {
   return (
     <button
-      className={`inline-flex h-7 min-w-7 items-center justify-center rounded-[3px] px-2 text-[11px] font-black transition ${
+      className={`inline-flex h-7 min-w-7 shrink-0 items-center justify-center rounded-[3px] px-2 text-[11px] font-black transition max-lg:min-h-11 max-lg:min-w-11 ${
         destructive ? "text-orange-100 hover:bg-red-500/25" : "text-white hover:bg-white/15"
       }`}
       onClick={onClick}
@@ -810,5 +811,5 @@ function ToolbarTextButton({
 }
 
 function ToolbarDivider() {
-  return <span className="mx-1 h-5 w-px bg-white/25" />;
+  return <span className="mx-1 h-5 w-px shrink-0 bg-white/25" />;
 }

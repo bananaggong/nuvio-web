@@ -120,7 +120,7 @@ export function AdminMagazineList() {
             </p>
           </div>
           <Link
-            className="inline-flex h-10 items-center justify-center gap-2 rounded-md bg-[var(--primary)] px-4 text-sm font-black text-white hover:bg-[var(--primary-strong)]"
+            className="inline-flex min-h-11 items-center justify-center gap-2 rounded-md bg-[var(--primary)] px-4 text-sm font-black text-white hover:bg-[var(--primary-strong)]"
             href="/admin/magazine/new"
           >
             <Plus size={17} strokeWidth={2.2} />
@@ -147,7 +147,7 @@ export function AdminMagazineList() {
           </div>
         ) : (
           <div className="overflow-x-auto">
-            <table className="min-w-full text-left text-sm">
+            <table className="w-full min-w-[760px] text-left text-sm">
               <thead className="bg-slate-50 text-xs font-black uppercase tracking-[0.08em] text-slate-500">
                 <tr>
                   <th className="px-5 py-3">글</th>
@@ -183,7 +183,7 @@ export function AdminMagazineList() {
                       <div className="flex justify-end gap-2">
                         {post.status === "published" ? (
                           <Link
-                            className="inline-flex size-9 items-center justify-center rounded-md border border-slate-200 text-slate-700 hover:border-[var(--primary)] hover:text-[var(--primary)]"
+                            className="inline-flex size-11 items-center justify-center rounded-md border border-slate-200 text-slate-700 hover:border-[var(--primary)] hover:text-[var(--primary)]"
                             href={`/magazine/${post.slug}`}
                             target="_blank"
                             title="공개 글 보기"
@@ -192,7 +192,7 @@ export function AdminMagazineList() {
                           </Link>
                         ) : null}
                         <Link
-                          className="inline-flex size-9 items-center justify-center rounded-md border border-slate-200 text-slate-700 hover:border-[var(--primary)] hover:text-[var(--primary)]"
+                          className="inline-flex size-11 items-center justify-center rounded-md border border-slate-200 text-slate-700 hover:border-[var(--primary)] hover:text-[var(--primary)]"
                           href={`/admin/magazine/${post.id}/edit`}
                           title="수정"
                         >
@@ -200,7 +200,7 @@ export function AdminMagazineList() {
                         </Link>
                         {post.status !== "archived" ? (
                           <button
-                            className="inline-flex size-9 items-center justify-center rounded-md border border-slate-200 text-slate-700 hover:border-rose-300 hover:text-rose-600 disabled:opacity-50"
+                            className="inline-flex size-11 items-center justify-center rounded-md border border-slate-200 text-slate-700 hover:border-rose-300 hover:text-rose-600 disabled:opacity-50"
                             disabled={archivingId === post.id}
                             onClick={() => void archivePost(post)}
                             title="보관"

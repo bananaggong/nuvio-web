@@ -160,7 +160,7 @@ export function AdminHomeHeroPanel() {
           </p>
         </div>
         <button
-          className="inline-flex h-10 items-center justify-center gap-2 rounded-md bg-[var(--primary)] px-4 text-sm font-black text-white hover:bg-[var(--primary-strong)] disabled:cursor-not-allowed disabled:bg-slate-300"
+          className="inline-flex min-h-11 items-center justify-center gap-2 rounded-md bg-[var(--primary)] px-4 text-sm font-black text-white hover:bg-[var(--primary-strong)] disabled:cursor-not-allowed disabled:bg-slate-300"
           disabled={loading || saveState === "saving"}
           onClick={saveSlides}
           type="button"
@@ -192,7 +192,7 @@ export function AdminHomeHeroPanel() {
               슬라이드 {slides.length}개
             </p>
             <button
-              className="inline-flex h-9 items-center justify-center gap-2 rounded-md border border-slate-200 px-3 text-xs font-black text-slate-700 hover:border-[var(--primary)] hover:text-[var(--primary)]"
+              className="inline-flex min-h-11 items-center justify-center gap-2 rounded-md border border-slate-200 px-3 text-xs font-black text-slate-700 hover:border-[var(--primary)] hover:text-[var(--primary)]"
               onClick={addSlide}
               type="button"
             >
@@ -335,7 +335,7 @@ export function AdminHomeHeroPanel() {
               </div>
               <div className="grid grid-cols-3 gap-2">
                 <button
-                  className="inline-flex h-10 items-center justify-center gap-2 rounded-md border border-slate-200 text-xs font-black text-slate-700 hover:border-[var(--primary)] hover:text-[var(--primary)] disabled:opacity-40"
+                  className="inline-flex min-h-11 items-center justify-center gap-2 rounded-md border border-slate-200 text-xs font-black text-slate-700 hover:border-[var(--primary)] hover:text-[var(--primary)] disabled:opacity-40"
                   disabled={slides[0]?.id === selectedSlide.id}
                   onClick={() => moveSelected(-1)}
                   type="button"
@@ -344,7 +344,7 @@ export function AdminHomeHeroPanel() {
                   위로
                 </button>
                 <button
-                  className="inline-flex h-10 items-center justify-center gap-2 rounded-md border border-slate-200 text-xs font-black text-slate-700 hover:border-[var(--primary)] hover:text-[var(--primary)] disabled:opacity-40"
+                  className="inline-flex min-h-11 items-center justify-center gap-2 rounded-md border border-slate-200 text-xs font-black text-slate-700 hover:border-[var(--primary)] hover:text-[var(--primary)] disabled:opacity-40"
                   disabled={slides.at(-1)?.id === selectedSlide.id}
                   onClick={() => moveSelected(1)}
                   type="button"
@@ -353,7 +353,7 @@ export function AdminHomeHeroPanel() {
                   아래
                 </button>
                 <button
-                  className="inline-flex h-10 items-center justify-center gap-2 rounded-md border border-rose-200 text-xs font-black text-rose-700 hover:bg-rose-50"
+                  className="inline-flex min-h-11 items-center justify-center gap-2 rounded-md border border-rose-200 text-xs font-black text-rose-700 hover:bg-rose-50"
                   onClick={removeSelected}
                   type="button"
                 >

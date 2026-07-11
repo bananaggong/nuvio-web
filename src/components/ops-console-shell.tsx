@@ -241,14 +241,14 @@ function Header({
           <button
             aria-expanded={mobileOpen}
             aria-label={mobileOpen ? "메뉴 닫기" : "메뉴 열기"}
-            className="inline-flex size-10 items-center justify-center rounded-md border border-[#F3E2D5] text-[#5B3A29] hover:border-[#FE701E] hover:text-[#FE701E] md:hidden"
+            className="inline-flex size-11 items-center justify-center rounded-md border border-[#F3E2D5] text-[#5B3A29] hover:border-[#FE701E] hover:text-[#FE701E] md:hidden"
             onClick={onToggleMobile}
             type="button"
           >
             {mobileOpen ? <X size={22} /> : <Menu size={22} />}
           </button>
           <Link
-            className="flex items-center gap-3 text-sm font-black text-[#5B3A29] hover:text-[#FE701E]"
+            className="flex min-h-11 items-center gap-3 text-sm font-black text-[#5B3A29] hover:text-[#FE701E]"
             href={area === "host" ? "/host" : "/admin"}
           >
             <Image
@@ -284,7 +284,7 @@ function Header({
             {area === "host" ? "관리자 페이지" : "호스트센터"}
           </Link>
           <Link
-            className="inline-flex items-center gap-2 rounded-full border border-[#F3E2D5] bg-[#FFFDFB] px-2 py-1.5 text-sm font-semibold text-[#5B3A29] hover:border-[#FE701E]"
+            className="inline-flex min-h-11 items-center gap-2 rounded-full border border-[#F3E2D5] bg-[#FFFDFB] px-2 py-1.5 text-sm font-semibold text-[#5B3A29] hover:border-[#FE701E]"
             href="/mypage"
           >
             <span className="grid size-8 place-items-center rounded-full bg-[#FFF6EC] text-[#FE701E]">
@@ -486,7 +486,7 @@ function NavigationGroup({
     return (
       <Link
         aria-current={active ? "page" : undefined}
-        className={`group flex items-center rounded-md px-2 py-2 text-sm font-bold transition ${
+        className={`group flex items-center rounded-md px-2 py-2 text-sm font-bold transition max-md:min-h-11 ${
           active
             ? "border-r-2 border-[#FE701E] bg-[#FFF6EC] text-[#FE701E]"
             : "text-[#5B3A29] hover:bg-[#FFF8F1] hover:text-[#FE701E]"
@@ -508,7 +508,7 @@ function NavigationGroup({
     <div>
       <button
         aria-expanded={expanded}
-        className={`group flex w-full items-center rounded-md px-2 py-2 text-left text-sm font-bold transition ${
+        className={`group flex w-full items-center rounded-md px-2 py-2 text-left text-sm font-bold transition max-md:min-h-11 ${
           activeGroup
             ? "border-r-2 border-[#FE701E] bg-[#FFF6EC] text-[#FE701E]"
             : "text-[#5B3A29] hover:bg-[#FFF8F1] hover:text-[#FE701E]"
@@ -539,7 +539,7 @@ function NavigationGroup({
             return (
               <Link
                 aria-current={activeChild ? "page" : undefined}
-                className={`block rounded-md px-2 py-1.5 text-sm font-semibold transition ${
+                className={`flex rounded-md px-2 py-1.5 text-sm font-semibold transition max-md:min-h-11 max-md:items-center ${
                   activeChild
                     ? "bg-[#FFF6EC] text-[#FE701E]"
                     : "text-[#7D6F65] hover:bg-[#FFF8F1] hover:text-[#FE701E]"

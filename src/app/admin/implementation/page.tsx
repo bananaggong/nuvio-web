@@ -43,7 +43,7 @@ export default function ImplementationStatusPage() {
         </p>
       </section>
 
-      <section className="mt-5 grid gap-3 sm:grid-cols-4">
+      <section className="mt-5 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
         <Metric label="전체 항목" value={summary.total} />
         <Metric label="구현 완료" value={summary.implemented} />
         <Metric label="검증 준비" value={summary.readyForVerification} />
@@ -79,11 +79,11 @@ export default function ImplementationStatusPage() {
                     <CheckCircle2 className="text-[var(--primary)]" size={22} />
                   </div>
                   <div className="mt-4 flex flex-wrap gap-2">
-                    {item.routes.map((route) => (
+                    {item.routes.map((route, routeIndex) => (
                       <Link
-                        className="inline-flex items-center gap-1 rounded-md border border-slate-200 px-3 py-2 text-xs font-black text-slate-700 hover:border-[var(--primary)] hover:text-[var(--primary)]"
+                        className="inline-flex min-h-11 items-center gap-1 rounded-md border border-slate-200 px-3 py-2 text-xs font-black text-slate-700 hover:border-[var(--primary)] hover:text-[var(--primary)]"
                         href={route.href}
-                        key={`${item.title}-${route.href}`}
+                        key={`${item.title}-${route.href}-${route.label}-${routeIndex}`}
                       >
                         {route.label}
                         <ExternalLink size={13} />
