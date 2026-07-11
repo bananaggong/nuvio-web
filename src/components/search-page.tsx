@@ -55,7 +55,7 @@ export function SearchPage({ currentMonth }: { currentMonth: number }) {
           <div className="flex w-full justify-end pr-3">
             <Link
               aria-label="검색 닫기"
-              className="inline-flex size-[17px] items-center justify-center text-[#5B3A29] transition-colors hover:text-[#FE701E]"
+              className="inline-flex size-11 items-center justify-center text-[#5B3A29] transition-colors hover:text-[#FE701E] min-[1100px]:size-[17px]"
               href="/"
             >
               <X aria-hidden="true" className="size-[17px]" strokeWidth={1.8} />
@@ -73,7 +73,7 @@ export function SearchPage({ currentMonth }: { currentMonth: number }) {
               strokeWidth={2}
             />
             <input
-              className="min-w-0 flex-1 bg-transparent text-xs font-normal leading-[1.6] text-[#5B3A29] outline-none placeholder:text-[#6D7A8A]"
+              className="min-w-0 flex-1 bg-transparent text-base font-normal leading-[1.6] text-[#5B3A29] outline-none placeholder:text-[#6D7A8A] min-[1100px]:text-xs"
               onChange={(event) => setKeyword(event.target.value)}
               onKeyDown={(event) => {
                 if (event.key === "Enter") submitSearch();
@@ -115,7 +115,7 @@ export function SearchPage({ currentMonth }: { currentMonth: number }) {
               <label className="grid gap-1 text-xs font-semibold text-[#6D7A8A]">
                 시작일
                 <input
-                  className="h-[34px] rounded border border-[#E8E7E2] px-3 text-xs text-[#5B3A29] outline-none focus:border-[#FF9A3D]"
+                  className="h-11 rounded border border-[#E8E7E2] px-3 text-base text-[#5B3A29] outline-none focus:border-[#FF9A3D] min-[1100px]:h-[34px] min-[1100px]:text-xs"
                   onChange={(event) => setStartDate(event.target.value)}
                   type="date"
                   value={startDate}
@@ -124,7 +124,7 @@ export function SearchPage({ currentMonth }: { currentMonth: number }) {
               <label className="grid gap-1 text-xs font-semibold text-[#6D7A8A]">
                 종료일
                 <input
-                  className="h-[34px] rounded border border-[#E8E7E2] px-3 text-xs text-[#5B3A29] outline-none focus:border-[#FF9A3D]"
+                  className="h-11 rounded border border-[#E8E7E2] px-3 text-base text-[#5B3A29] outline-none focus:border-[#FF9A3D] min-[1100px]:h-[34px] min-[1100px]:text-xs"
                   onChange={(event) => setEndDate(event.target.value)}
                   type="date"
                   value={endDate}
@@ -136,14 +136,14 @@ export function SearchPage({ currentMonth }: { currentMonth: number }) {
 
         <div className="flex w-full items-center border-t-[0.8px] border-[#FFF6EC] pt-2">
           <button
-            className="pl-4 text-sm font-semibold leading-[1.253] text-[#6D7A8A]"
+            className="inline-flex min-h-11 items-center px-4 text-sm font-semibold leading-[1.253] text-[#6D7A8A] min-[1100px]:min-h-0 min-[1100px]:pl-4 min-[1100px]:pr-0"
             onClick={resetSearch}
             type="button"
           >
             초기화
           </button>
           <button
-            className="ml-auto inline-flex h-[29px] items-center justify-center rounded bg-[#FE701E] px-[18px] pb-[5px] pt-[6px] text-xs font-medium leading-[1.253] text-[#FFF6EC] transition-colors hover:bg-[#f05f12]"
+            className="ml-auto inline-flex h-11 items-center justify-center rounded bg-[#FE701E] px-[18px] text-sm font-medium leading-[1.253] text-[#FFF6EC] transition-colors hover:bg-[#f05f12] min-[1100px]:h-[29px] min-[1100px]:pb-[5px] min-[1100px]:pt-[6px] min-[1100px]:text-xs"
             onClick={submitSearch}
             type="button"
           >
@@ -200,7 +200,7 @@ function FilterButton({
 }) {
   return (
     <button
-      className={`h-[30px] min-w-[110px] rounded-[20px] px-3 pb-1.5 pt-[5px] text-center text-xs font-bold transition-colors ${
+      className={`h-11 min-w-[110px] rounded-[20px] px-3 text-center text-sm font-bold transition-colors min-[1100px]:h-[30px] min-[1100px]:pb-1.5 min-[1100px]:pt-[5px] min-[1100px]:text-xs ${
         selected
           ? "bg-[#FF9A3D] text-[#F9F9F9]"
           : "bg-[#F3F3F3] text-[#5B3A29] hover:bg-[#FFF6EC]"

@@ -14,6 +14,9 @@ type ProgramExplorerProps = {
   programs: Program[];
 };
 
+const boseongTeaFieldImage =
+  "upload.wikimedia.org/wikipedia/commons/b/b3/Boseong_Green_Tea_Field.jpg";
+
 export function ProgramExplorer({
   heroSlides = [],
   programs,
@@ -104,7 +107,7 @@ export function ProgramExplorer({
               key={activeSlide.id}
               priority
               sizes="(max-width: 768px) 100vw, 75vw"
-              src={activeSlide.imageUrl}
+              src={resolveHeroImageUrl(activeSlide.imageUrl)}
             />
           ) : null}
           <div className="absolute inset-0 bg-black/40" />
@@ -140,18 +143,23 @@ export function ProgramExplorer({
                 "가볍게 떠나보고, 나와 맞는 로컬의 시간을 발견해보세요."}
             </p>
 
-            <div className="pointer-events-auto mt-[6.25vw] flex items-center gap-[1.181vw] max-md:mt-12 max-md:gap-3">
+            <div className="pointer-events-auto mt-[6.25vw] flex items-center gap-[0.347vw] max-md:mt-12 max-md:gap-0">
               {Array.from({ length: Math.max(slides.length, 1) }).map((_, dot) => (
                 <button
                   aria-label={`${dot + 1}번째 배너 보기`}
-                  className={`size-[0.556vw] min-h-2.5 min-w-2.5 rounded-full transition ${
-                    dot === safeActiveIndex ? "bg-[#FFB25F]" : "bg-[#E8E7E2]"
-                  }`}
+                  className="inline-flex size-11 items-center justify-center rounded-full"
                   disabled={dot >= slides.length}
                   key={dot}
                   onClick={() => showSlide(dot)}
                   type="button"
-                />
+                >
+                  <span
+                    aria-hidden="true"
+                    className={`size-[0.556vw] min-h-2.5 min-w-2.5 rounded-full transition ${
+                      dot === safeActiveIndex ? "bg-[#FFB25F]" : "bg-[#E8E7E2]"
+                    }`}
+                  />
+                </button>
               ))}
             </div>
           </div>
@@ -281,4 +289,12 @@ export function ProgramExplorer({
       </section>
     </div>
   );
+}
+
+function resolveHeroImageUrl(imageUrl: string): string {
+  if (imageUrl.includes(boseongTeaFieldImage)) {
+    return "/images/program-boseong-fallback.jpg";
+  }
+
+  return imageUrl;
 }

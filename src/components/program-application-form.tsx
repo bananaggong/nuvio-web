@@ -67,10 +67,10 @@ const initialFormState: ApplicationFormState = {
 };
 
 const applicationInputClassName =
-  "h-[34px] w-full rounded-[4px] border border-[#FF9A3D] bg-white px-[12px] text-[12px] font-normal leading-[1.253] text-[#5B3A29] outline-none placeholder:text-[#CAC4BC] focus:border-[#FE701E] focus:ring-1 focus:ring-[#FE701E]";
+  "h-11 w-full rounded-[4px] border border-[#FF9A3D] bg-white px-[12px] text-base font-normal leading-[1.253] text-[#5B3A29] outline-none placeholder:text-[#CAC4BC] focus:border-[#FE701E] focus:ring-1 focus:ring-[#FE701E] min-[1100px]:h-[34px] min-[1100px]:text-[12px]";
 
 const applicationTextareaClassName =
-  "min-h-[86px] w-full resize-none rounded-[4px] border border-[#FF9A3D] bg-white px-[12px] py-[10px] text-[12px] font-normal leading-[1.6] text-[#5B3A29] outline-none placeholder:text-[#CAC4BC] focus:border-[#FE701E] focus:ring-1 focus:ring-[#FE701E]";
+  "min-h-[104px] w-full resize-none rounded-[4px] border border-[#FF9A3D] bg-white px-[12px] py-[10px] text-base font-normal leading-[1.6] text-[#5B3A29] outline-none placeholder:text-[#CAC4BC] focus:border-[#FE701E] focus:ring-1 focus:ring-[#FE701E] min-[1100px]:min-h-[86px] min-[1100px]:text-[12px]";
 
 export function ProgramApplicationForm({
   formTemplate,

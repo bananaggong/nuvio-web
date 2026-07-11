@@ -64,7 +64,7 @@ function QuantityIconButton({
   return (
     <button
       aria-label={ariaLabel}
-      className="inline-flex size-[14px] items-center justify-center rounded-full border-0 bg-transparent p-0 transition-opacity disabled:cursor-not-allowed disabled:opacity-100"
+      className="inline-flex size-[14px] items-center justify-center rounded-full border-0 bg-transparent p-0 transition-opacity disabled:cursor-not-allowed disabled:opacity-100 max-[1099px]:size-11"
       disabled={disabled}
       onClick={onClick}
       type="button"

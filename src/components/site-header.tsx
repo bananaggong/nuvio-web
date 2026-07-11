@@ -130,7 +130,7 @@ export function SiteHeader() {
       <div className="mx-auto flex h-full w-full items-center px-[2.083vw] min-[1440px]:px-[2.083vw]">
         <Link
           aria-label="누비오 홈"
-          className="flex min-w-fit items-center"
+          className="flex min-h-11 min-w-fit items-center"
           href="/"
           onClick={() => setOpen(false)}
         >
@@ -144,7 +144,7 @@ export function SiteHeader() {
           />
         </Link>
 
-        <div className="ml-auto hidden items-center gap-[1.458vw] md:flex">
+        <div className="ml-auto hidden items-center gap-[1.458vw] lg:flex">
           <Link
             className="inline-flex h-[2.292vw] min-h-[29px] w-[16.111vw] min-w-[196px] items-center gap-[0.486vw] rounded-full border border-[#FF9A3D] bg-white px-[0.694vw] text-[0.833vw] font-semibold leading-none text-[#6D7A8A] transition-colors hover:bg-[#fff8f1]"
             href="/search"
@@ -178,7 +178,7 @@ export function SiteHeader() {
         <button
           aria-expanded={open}
           aria-label="메뉴 열기"
-          className="ml-auto inline-flex size-10 items-center justify-center rounded-[8px] border border-[#FF9A3D] text-[#FF9A3D] md:hidden"
+          className="ml-auto inline-flex size-11 items-center justify-center rounded-[8px] border border-[#FF9A3D] text-[#FF9A3D] lg:hidden"
           onClick={() => setOpen((value) => !value)}
           type="button"
         >
@@ -187,7 +187,7 @@ export function SiteHeader() {
       </div>
 
       {open ? (
-        <div className="border-t border-[#f1e7df] bg-white px-5 py-4 shadow-[0_12px_28px_rgba(91,58,41,0.08)] md:hidden">
+        <div className="border-t border-[#f1e7df] bg-white px-5 py-4 shadow-[0_12px_28px_rgba(91,58,41,0.08)] lg:hidden">
           <div className="mx-auto flex max-w-[1440px] flex-col gap-2">
             <Link
               className="mb-2 inline-flex min-h-11 items-center gap-2 rounded-full border border-[#FF9A3D] px-3 text-[12px] font-semibold text-[#6D7A8A]"

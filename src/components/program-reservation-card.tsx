@@ -32,7 +32,7 @@ export function ProgramReservationCard({
 
   return (
     <section
-      className="flex min-h-[333px] w-full flex-col items-center gap-[17px] rounded-md border border-[#F5E1D3] bg-[#FCFCFC] p-4 max-md:w-full"
+      className="flex min-h-[333px] w-full flex-col items-center gap-[17px] rounded-md border border-[#F5E1D3] bg-[#FCFCFC] p-4 max-[1099px]:w-full"
       id="apply"
     >
       <div className="grid min-h-[35px] w-[93.208%] grid-cols-[minmax(0,1fr)_minmax(0,1fr)] items-center rounded-[7px] border-[0.5px] border-[#F5E1D3] max-md:w-full max-md:grid-cols-2">
@@ -102,7 +102,7 @@ export function ProgramReservationCard({
       </div>
 
       <Link
-        className="-mt-px flex h-[29px] w-full items-center justify-center rounded bg-[#FE701E] text-xs font-medium leading-[1.253] text-[#FFF6EC]"
+        className="-mt-px flex h-[29px] w-full items-center justify-center rounded bg-[#FE701E] text-xs font-medium leading-[1.253] text-[#FFF6EC] max-[1099px]:h-11 max-[1099px]:text-sm"
         href={applyWithQuantity}
       >
         신청하기

@@ -38,6 +38,16 @@ export function ProgramDetailActions({
 
     async function loadBookmarkState() {
       try {
+        const sessionResponse = await fetch("/api/auth/session", {
+          cache: "no-store",
+        });
+        if (!sessionResponse.ok) return;
+
+        const sessionPayload = (await sessionResponse.json()) as {
+          data?: { user?: { id?: string } | null };
+        };
+        if (!sessionPayload.data?.user) return;
+
         const response = await fetch("/api/me/program-state", {
           cache: "no-store",
         });
@@ -129,10 +139,10 @@ export function ProgramDetailActions({
   }
 
   return (
-    <div className="flex w-[99px] items-center justify-between text-[#CAC4BC]">
+    <div className="flex w-[99px] shrink-0 items-center justify-between text-[#CAC4BC] max-[1099px]:w-[132px]">
       <button
         aria-label="공유하기"
-        className="inline-flex size-[21px] items-center justify-center border-0 bg-transparent p-0"
+        className="inline-flex size-[21px] items-center justify-center border-0 bg-transparent p-0 max-[1099px]:size-11"
         onClick={() => void shareProgram()}
         type="button"
       >
@@ -148,7 +158,7 @@ export function ProgramDetailActions({
       <button
         aria-label={bookmarked ? "저장 취소" : "저장하기"}
         aria-pressed={bookmarked}
-        className="inline-flex size-[21px] items-center justify-center border-0 bg-transparent p-0 disabled:cursor-wait disabled:opacity-60"
+        className="inline-flex size-[21px] items-center justify-center border-0 bg-transparent p-0 disabled:cursor-wait disabled:opacity-60 max-[1099px]:size-11"
         disabled={pending}
         onClick={() => void toggleBookmark()}
         type="button"
@@ -164,7 +174,7 @@ export function ProgramDetailActions({
       </button>
       <Link
         aria-label="프로그램 관리자 메시지함 열기"
-        className="inline-flex size-[21px] items-center justify-center border-0 bg-transparent p-0"
+        className="inline-flex size-[21px] items-center justify-center border-0 bg-transparent p-0 max-[1099px]:size-11"
         href={messageHref}
       >
         <Image

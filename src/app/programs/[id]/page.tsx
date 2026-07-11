@@ -229,14 +229,14 @@ export default async function ProgramDetailPage({
       <ProgramGalleryCarousel images={galleryImages} title={program.title} />
 
       <ProgramDetailScale>
-      <div className="relative grid w-[1031px] grid-cols-[minmax(0,692px)_minmax(0,297px)] items-start gap-[42px] pt-10 max-md:block max-md:w-[90vw] max-md:pt-7">
+      <div className="relative grid w-[1031px] grid-cols-[minmax(0,692px)_minmax(0,297px)] items-start gap-[42px] pt-10 max-[1099px]:block max-[1099px]:w-[90vw] max-[1099px]:pt-7">
         <article className="flex w-full min-w-0 flex-col gap-3 min-[1440px]:gap-[0.833vw] max-md:w-full">
-          <header className="flex w-full items-start justify-between pb-1.5 min-[1440px]:pb-[0.417vw] max-md:pb-2">
-            <div className="flex w-[188px] flex-col items-start gap-2">
-              <h1 className="whitespace-nowrap text-xl font-semibold leading-[1.253] text-[#5B3A29]">
+          <header className="flex w-full items-start justify-between pb-1.5 min-[1440px]:pb-[0.417vw] max-[1099px]:gap-3 max-[1099px]:pb-2">
+            <div className="flex w-[188px] flex-col items-start gap-2 max-[1099px]:min-w-0 max-[1099px]:flex-1">
+              <h1 className="whitespace-nowrap text-xl font-semibold leading-[1.253] text-[#5B3A29] max-[1099px]:whitespace-normal max-[1099px]:break-keep">
                 {program.title}
               </h1>
-              <p className="whitespace-nowrap text-xs font-normal leading-[1.6] text-[#6D7A8A]">
+              <p className="whitespace-nowrap text-xs font-normal leading-[1.6] text-[#6D7A8A] max-[1099px]:whitespace-normal">
                 {locationLabel}
               </p>
               <span className="inline-flex whitespace-nowrap rounded-md bg-[#F7B267] px-1.5 py-[3px] text-xs font-semibold leading-[1.253] text-[#FCFCFC]">
@@ -382,7 +382,7 @@ export default async function ProgramDetailPage({
           </section>
         </article>
 
-        <aside className="sticky top-[86px] flex w-full min-w-0 flex-col items-start gap-[11px] self-start min-[1440px]:gap-[0.764vw] max-md:static max-md:mt-[34px] max-md:w-full">
+        <aside className="sticky top-[86px] flex w-full min-w-0 flex-col items-start gap-[11px] self-start min-[1440px]:gap-[0.764vw] max-[1099px]:static max-[1099px]:mt-[34px] max-[1099px]:w-full">
           <ProgramReservationCard applyHref={applyHref} program={program} />
 
           {launchFeatureFlags.coupons || launchFeatureFlags.promotions ? (

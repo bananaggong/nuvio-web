@@ -5,7 +5,7 @@ import { useEffect, useState } from "react";
 
 const FIGMA_DESKTOP_WIDTH = 1440;
 const MAX_DESKTOP_WIDTH = 1920;
-const DESKTOP_BREAKPOINT = 768;
+const DESKTOP_BREAKPOINT = 1100;
 const MAX_SCALE = MAX_DESKTOP_WIDTH / FIGMA_DESKTOP_WIDTH;
 
 type ZoomStyle = CSSProperties & {
