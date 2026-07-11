@@ -17,10 +17,10 @@ were moved to `next.config.ts` redirects.
 | Host console | `/host/*` | `OpsConsoleShell`, host workspace/sidebar components |
 | Admin console | `/admin/*` | `OpsConsoleShell`, admin panels |
 
-Status values: `pass-1` completed the first responsive pass, `pending` is not
-visually verified yet, `bridge` is a redirect/compatibility route, `deferred`
-is intentionally excluded from the current pass, `feature` is disabled by a
-launch flag, and `auth` requires a signed-in role for browser verification.
+Status values: `pass-1` completed responsive implementation and route-specific
+checks, `bridge` is a redirect/compatibility route, `deferred` is intentionally
+excluded from the current pass, `feature` is disabled by a launch flag, and
+`auth` requires a signed-in role for browser verification.
 
 ## Public core routes (19)
 
@@ -103,11 +103,11 @@ public and Mypage functional groups; the total unique page count remains 94.
 | `/host/forms` | Host console | `HostFormLibrary` | pass-1/auth |
 | `/host/forms/[formId]` | Host console | `HostFormBuilder` | pass-1/auth |
 | `/host/settings` | Host console | host notification/team settings | pass-1/auth |
-| `/host/applications` | Host console | `HostApplicationsCrm` | pending/auth |
+| `/host/applications` | Host console | `HostApplicationsCrm` | pass-1/auth |
 | `/host/applications/[id]` | Host console | legacy application resolver | bridge/auth |
 | `/host/channels` | Host console | `HostChannelHome` | pass-1/auth |
 | `/host/channels/settings` | Host console | `HostChannelMenuSettings` | pass-1/auth |
-| `/host/channels/[section]` | Host console | channel programs/reviews/gallery/magazine/board/settings | pending/auth |
+| `/host/channels/[section]` | Host console | channel programs/reviews/gallery/magazine/board/settings | pass-1/auth |
 | `/host/villages/[villageSlug]` | Host console | access guard to `/host/channels` | bridge/auth |
 | `/host/villages/[villageSlug]/editor` | Host console | access guard to channel editor | bridge/auth |
 | `/host/projects/new` | Host console | `HostProjectCreateWizard` | pass-1/auth |
@@ -124,26 +124,26 @@ public and Mypage functional groups; the total unique page count remains 94.
 | `/host/projects/[projectId]/programs/[programId]/messages` | Host console | `HostMessageAutomation` | pass-1/auth |
 | `/host/projects/[projectId]/programs/[programId]/forms` | Host console | `HostProgramFormAttachment` | pass-1/auth |
 | `/host/projects/[projectId]/programs/[programId]/applications` | Host console | `HostApplicationsCrm` | pass-1/auth |
-| `/host/projects/[projectId]/programs/[programId]/applications/[applicationId]` | Host console | `HostApplicationDetail` | pending/auth |
+| `/host/projects/[projectId]/programs/[programId]/applications/[applicationId]` | Host console | `HostApplicationDetail` | pass-1/auth |
 | `/host/programs/new` | Host console | `HostProgramCreateWizard` | pass-1/auth |
 | `/host/programs/[programId]` | Host console | `HostProgramHub` | pass-1/auth |
 | `/host/programs/[programId]/messages` | Host console | `HostMessageAutomation` | pass-1/auth |
 | `/host/programs/[programId]/forms` | Host console | `HostProgramFormAttachment` | pass-1/auth |
 | `/host/programs/[programId]/applications` | Host console | `HostApplicationsCrm` | pass-1/auth |
-| `/host/programs/[programId]/applications/[applicationId]` | Host console | `HostApplicationDetail` | pending/auth |
+| `/host/programs/[programId]/applications/[applicationId]` | Host console | `HostApplicationDetail` | pass-1/auth |
 
 ## Admin routes (8)
 
 | Route | Shell | Primary implementation | Status |
 | --- | --- | --- | --- |
-| `/admin` | Admin console | `AdminDashboard` | pending/auth |
-| `/admin/reports` | Admin console | `AdminReportReview` | pending/auth |
-| `/admin/logs` | Admin console | `AdminAuditLogPanel` | pending/auth |
-| `/admin/implementation` | Admin console | implementation status page | pending/auth |
-| `/admin/health` | Admin console | `AdminSystemHealthPanel` | pending/auth |
-| `/admin/magazine` | Admin console | `AdminMagazineList` | pending/auth |
-| `/admin/magazine/new` | Admin console | `AdminMagazineEditor` | pending/auth |
-| `/admin/magazine/[id]/edit` | Admin console | `AdminMagazineEditor` | pending/auth |
+| `/admin` | Admin console | `AdminDashboard` | pass-1/auth |
+| `/admin/reports` | Admin console | `AdminReportReview` | pass-1/auth |
+| `/admin/logs` | Admin console | `AdminAuditLogPanel` | pass-1/auth |
+| `/admin/implementation` | Admin console | implementation status page | pass-1/auth |
+| `/admin/health` | Admin console | `AdminSystemHealthPanel` | pass-1/auth |
+| `/admin/magazine` | Admin console | `AdminMagazineList` | pass-1/auth |
+| `/admin/magazine/new` | Admin console | `AdminMagazineEditor` | pass-1/auth |
+| `/admin/magazine/[id]/edit` | Admin console | `AdminMagazineEditor` | pass-1/auth |
 
 ## Required viewport matrix
 
@@ -162,3 +162,20 @@ For each completed functional group:
 4. Run route-specific `verify:overflow` with `NUVIO_VERIFY_VIEWPORTS`.
 5. Run `verify:host-program-flow` after host program changes.
 6. Finish the work unit with lint, build, `git diff --check`, commit, and push.
+
+## Final verification snapshot
+
+- Physical route count: 94 `src/app/**/page.tsx` files.
+- Viewport matrix: `320x568`, `360x800`, `390x844`, `430x932`,
+  `768x1024`, `844x390`, `1280x800`, `1440x900`, and `1920x1080`.
+- Public, auth, magazine, announcement, review, legal, general channel, Mypage,
+  host, channel-management, and admin templates completed document-overflow and
+  representative visual checks.
+- Host and admin checks used local development role authentication only; no
+  production authentication or authorization behavior was changed.
+- Boseong-specific screens, content, data, and assets were explicitly deferred
+  by request. Shared shell changes were checked without editing Boseong-owned
+  source files.
+- `/mypage/coupons` remains deferred because the launch feature is disabled.
+- Bridge routes retain compatibility behavior and resolve to their canonical
+  implementation instead of maintaining a second responsive UI.
