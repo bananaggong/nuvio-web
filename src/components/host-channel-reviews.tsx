@@ -1,9 +1,10 @@
 "use client";
 
 import Image from "next/image";
-import { ChevronDown, Star } from "lucide-react";
+import { ChevronDown } from "lucide-react";
 import { useSearchParams } from "next/navigation";
 import { useEffect, useMemo, useState, type ReactNode } from "react";
+import { ReviewIcon } from "@/components/icons/review-icon";
 import {
   ChannelContentSkeleton,
   ChannelEmptyState,
@@ -279,7 +280,7 @@ function ReviewManagerToolbar({
         <span>{String(reviewCount).padStart(2, "0")}개</span>
         <span>/</span>
         <span>평균</span>
-        <Star aria-hidden="true" className="size-[var(--host-13)] fill-[#FE701E] text-[#FE701E]" />
+        <ReviewIcon className="text-[#FE701E]" size="var(--host-13)" />
         <span>{averageRating}</span>
       </div>
 
@@ -316,7 +317,7 @@ function ReviewManagerToolbar({
             >
               <RadioDot active={ratingFilter === option.value} />
               <span>{option.label}</span>
-              {option.value !== "all" ? <RatingStars count={Number(option.value)} /> : null}
+              {option.value !== "all" ? <RatingReviewIcons count={Number(option.value)} /> : null}
             </button>
           ))}
         </FilterRow>
@@ -399,7 +400,7 @@ function HostReviewCard({
           {review.programTitle || review.title || "해당 프로그램 명"}
         </p>
         <div className="flex min-w-0 flex-1 items-center gap-[var(--host-2)]">
-          <Star aria-hidden="true" className="size-[var(--host-9)] fill-[#FE701E] text-[#FE701E]" />
+          <ReviewIcon className="text-[#FE701E]" size="var(--host-9)" />
           <p className="text-[length:var(--host-12)] font-normal leading-[1.6] text-[#FE701E]">
             {(review.rating ?? 5).toFixed(1)}
           </p>
@@ -476,15 +477,11 @@ function RadioDot({ active }: { active: boolean }) {
   );
 }
 
-function RatingStars({ count }: { count: number }) {
+function RatingReviewIcons({ count }: { count: number }) {
   return (
     <span className="inline-flex items-center gap-[var(--host-2)]">
       {Array.from({ length: count }, (_, index) => (
-        <Star
-          aria-hidden="true"
-          className="size-[var(--host-9)] fill-[#FE701E] text-[#FE701E]"
-          key={index}
-        />
+        <ReviewIcon className="text-[#FE701E]" key={index} size="var(--host-9)" />
       ))}
     </span>
   );

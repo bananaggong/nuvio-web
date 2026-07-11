@@ -1,8 +1,7 @@
 "use client";
 
 import Image from "next/image";
-import Link from "next/link";
-import { Loader2, Send, Trash2 } from "lucide-react";
+import { Loader2, Trash2 } from "lucide-react";
 import {
   ChangeEvent,
   FormEvent,
@@ -12,6 +11,7 @@ import {
   useState,
 } from "react";
 import { nuvioIcons } from "@/components/icons/nuvio-icons";
+import { ReviewIcon } from "@/components/icons/review-icon";
 
 type UploadedReviewImage = {
   contentType: string;
@@ -21,14 +21,16 @@ type UploadedReviewImage = {
   url: string;
 };
 
-const maxReviewBodyLength = 3000;
+const maxReviewBodyLength = 500;
 const maxReviewImages = 6;
 
 export function ReviewWriter({
   applicationId = "",
+  programTitle = "",
   requestToken = "",
 }: {
   applicationId?: string;
+  programTitle?: string;
   requestToken?: string;
 }) {
   const fileInputRef = useRef<HTMLInputElement | null>(null);
@@ -37,8 +39,6 @@ export function ReviewWriter({
   const [uploading, setUploading] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
   const [rating, setRating] = useState(0);
-  const [category, setCategory] = useState("trip");
-  const [title, setTitle] = useState("");
   const [body, setBody] = useState("");
   const [images, setImages] = useState<UploadedReviewImage[]>([]);
 
@@ -47,7 +47,6 @@ export function ReviewWriter({
     !isSubmitting &&
     !uploading &&
     rating > 0 &&
-    title.trim().length >= 2 &&
     body.trim().length >= 10 &&
     body.length <= maxReviewBodyLength;
   const bodyCountLabel = useMemo(
@@ -138,11 +137,7 @@ export function ReviewWriter({
     setErrorMessage("");
 
     if (rating <= 0) {
-      setErrorMessage("불꽃 평점을 선택해 주세요.");
-      return;
-    }
-    if (title.trim().length < 2) {
-      setErrorMessage("후기 제목을 2자 이상 입력해 주세요.");
+      setErrorMessage("평점을 선택해 주세요.");
       return;
     }
     if (body.trim().length < 10) {
@@ -161,12 +156,9 @@ export function ReviewWriter({
         body: JSON.stringify({
           applicationId,
           body: body.trim(),
-          category,
-          excerpt: createReviewExcerpt(body, title),
           images: images.map((image) => image.url),
           rating,
           requestToken: requestToken || undefined,
-          title: title.trim(),
         }),
         headers: { "Content-Type": "application/json" },
         method: "POST",
@@ -179,8 +171,6 @@ export function ReviewWriter({
 
       setSubmitted(true);
       setRating(0);
-      setCategory("trip");
-      setTitle("");
       setBody("");
       setImages([]);
     } catch (error) {
@@ -197,21 +187,10 @@ export function ReviewWriter({
   return (
     <main className="min-h-screen bg-[#FBFAF8] text-[#5B3A29]">
       <div className="mx-auto w-full max-w-[clamp(1025px,71.1806vw,1366.667px)] px-[clamp(30px,2.0833vw,40px)] py-[clamp(46px,3.1944vw,61.333px)]">
-        <div className="mb-[clamp(22px,1.5278vw,29.333px)] flex items-center justify-between">
-          <div>
-            <p className="text-[clamp(12px,0.8333vw,16px)] font-semibold tracking-[0.08em] text-[#FE701E]">
-              REVIEW
-            </p>
-            <h1 className="mt-[clamp(7px,0.4861vw,9.333px)] text-[clamp(28px,1.9444vw,37.333px)] font-semibold leading-[1.2]">
-              여행 후기 작성
-            </h1>
-          </div>
-          <Link
-            className="inline-flex h-[clamp(40px,2.7778vw,53.333px)] items-center rounded-[clamp(4px,0.2778vw,5.333px)] border border-[#E6DDD6] bg-white px-[clamp(18px,1.25vw,24px)] text-[clamp(13px,0.9028vw,17.333px)] font-semibold text-[#748190] transition hover:border-[#FE701E] hover:text-[#FE701E]"
-            href="/mypage/reviews"
-          >
-            후기 목록
-          </Link>
+        <div className="mb-[clamp(22px,1.5278vw,29.333px)]">
+          <h1 className="text-[clamp(28px,1.9444vw,37.333px)] font-semibold leading-[1.2]">
+            {programTitle ? `${programTitle} 후기 작성` : "후기 작성"}
+          </h1>
         </div>
 
         {submitted ? (
@@ -244,16 +223,15 @@ export function ReviewWriter({
                   type="button"
                 >
                   <span>
-                    <span className="mx-auto grid h-[clamp(54px,3.75vw,72px)] w-[clamp(54px,3.75vw,72px)] place-items-center rounded-full bg-[#FE701E]">
-                      <Image
-                        alt=""
-                        height={28}
-                        src={nuvioIcons.channelUpload}
-                        width={28}
-                      />
-                    </span>
+                    <Image
+                      alt=""
+                      className="mx-auto"
+                      height={31}
+                      src={nuvioIcons.channelUploadMuted}
+                      width={31}
+                    />
                     <span className="mt-[clamp(14px,0.9722vw,18.667px)] block text-[clamp(15px,1.0417vw,20px)] font-semibold">
-                      여행의 장면을 올려주세요
+                      추억을 공유해주세요
                     </span>
                     <span className="mt-[clamp(6px,0.4167vw,8px)] block text-[clamp(12px,0.8333vw,16px)] font-medium text-[#748190]">
                       JPG, PNG, WebP, GIF · 최대 {maxReviewImages}장
@@ -306,69 +284,47 @@ export function ReviewWriter({
 
           <section className="rounded-[clamp(8px,0.5556vw,10.667px)] border border-[#E6DDD6] bg-white px-[clamp(24px,1.6667vw,32px)] py-[clamp(24px,1.6667vw,32px)]">
             <div className="grid gap-[clamp(18px,1.25vw,24px)]">
-              <label className="grid gap-[clamp(8px,0.5556vw,10.667px)] text-[clamp(13px,0.9028vw,17.333px)] font-semibold">
-                후기 종류
-                <select
-                  className="h-[clamp(46px,3.1944vw,61.333px)] rounded-[clamp(4px,0.2778vw,5.333px)] border border-[#D9C8BD] bg-white px-[clamp(14px,0.9722vw,18.667px)] text-[clamp(14px,0.9722vw,18.667px)] font-medium text-[#5F6C7B] outline-none focus:border-[#FE701E]"
-                  name="category"
-                  onChange={(event) => setCategory(event.target.value)}
-                  value={category}
-                >
-                  <option value="trip">참여 후기</option>
-                  <option value="programTip">프로그램 팁</option>
-                  <option value="selected">선정 후기</option>
-                  <option value="rejected">미선정 후기</option>
-                  <option value="free">자유 후기</option>
-                  <option value="question">질문</option>
-                </select>
-              </label>
-
-              <div className="grid gap-[clamp(8px,0.5556vw,10.667px)]">
-                <p className="text-[clamp(13px,0.9028vw,17.333px)] font-semibold">
-                  불꽃 평점
-                </p>
-                <div aria-label="후기 평점" className="flex items-center gap-[clamp(8px,0.5556vw,10.667px)]" role="radiogroup">
-                  {[1, 2, 3, 4, 5].map((value) => {
-                    const selected = rating >= value;
-                    return (
-                      <button
-                        aria-checked={rating === value}
-                        aria-label={`${value}점`}
-                        className={`grid h-[clamp(38px,2.6389vw,50.667px)] w-[clamp(38px,2.6389vw,50.667px)] place-items-center rounded-full transition ${
+              <div
+                aria-label="후기 평점"
+                className="flex items-center gap-[clamp(3px,0.2083vw,4px)]"
+                role="radiogroup"
+              >
+                {[1, 2, 3, 4, 5].map((value) => {
+                  const selected = rating >= value;
+                  return (
+                    <button
+                      aria-checked={rating === value}
+                      aria-label={`${value}점`}
+                      className="group grid h-[clamp(38px,2.6389vw,50.667px)] w-[clamp(38px,2.6389vw,50.667px)] place-items-center rounded-[clamp(4px,0.2778vw,5.333px)] outline-none transition focus-visible:ring-2 focus-visible:ring-[#FE701E] focus-visible:ring-offset-2"
+                      key={value}
+                      onClick={() => setRating(value)}
+                      role="radio"
+                      title={`${value}점`}
+                      type="button"
+                    >
+                      <ReviewIcon
+                        className={`transition ${
                           selected
-                            ? "bg-[#FE701E] shadow-[0_8px_18px_rgba(254,112,30,0.24)]"
-                            : "bg-[#D8D2CB] hover:bg-[#FFB07F]"
+                            ? "text-[#FE701E]"
+                            : "text-[#748190] opacity-45 group-hover:opacity-75"
                         }`}
-                        key={value}
-                        onClick={() => setRating(value)}
-                        role="radio"
-                        type="button"
-                      >
-                        <Image alt="" height={18} src={nuvioIcons.review} width={18} />
-                      </button>
-                    );
-                  })}
-                </div>
+                        size="clamp(24px,1.6667vw,32px)"
+                      />
+                    </button>
+                  );
+                })}
+                <span className="sr-only">
+                  {rating > 0 ? `${rating}점 선택됨` : "평점을 선택해 주세요"}
+                </span>
               </div>
 
               <label className="grid gap-[clamp(8px,0.5556vw,10.667px)] text-[clamp(13px,0.9028vw,17.333px)] font-semibold">
-                제목
-                <input
-                  className="h-[clamp(46px,3.1944vw,61.333px)] rounded-[clamp(4px,0.2778vw,5.333px)] border border-[#D9C8BD] bg-white px-[clamp(14px,0.9722vw,18.667px)] text-[clamp(14px,0.9722vw,18.667px)] font-medium text-[#5B3A29] outline-none placeholder:text-[#C7BDB5] focus:border-[#FE701E]"
-                  name="title"
-                  onChange={(event) => setTitle(event.target.value)}
-                  placeholder="여행을 한 문장으로 남겨주세요"
-                  required
-                  value={title}
-                />
-              </label>
-
-              <label className="grid gap-[clamp(8px,0.5556vw,10.667px)] text-[clamp(13px,0.9028vw,17.333px)] font-semibold">
-                내용
+                어떤 점이 좋았나요?
                 <textarea
                   className="min-h-[clamp(248px,17.2222vw,330.667px)] resize-none rounded-[clamp(4px,0.2778vw,5.333px)] border border-[#D9C8BD] bg-white p-[clamp(14px,0.9722vw,18.667px)] text-[clamp(14px,0.9722vw,18.667px)] font-medium leading-[1.65] text-[#5B3A29] outline-none placeholder:text-[#C7BDB5] focus:border-[#FE701E]"
+                  maxLength={maxReviewBodyLength}
                   name="body"
-                  onChange={(event) => setBody(event.target.value.slice(0, maxReviewBodyLength + 1))}
+                  onChange={(event) => setBody(event.target.value.slice(0, maxReviewBodyLength))}
                   placeholder="좋았던 장면, 함께한 사람, 다음 참여자에게 전하고 싶은 팁을 적어주세요."
                   required
                   value={body}
@@ -387,8 +343,8 @@ export function ReviewWriter({
                 disabled={!canSubmit}
                 type="submit"
               >
-                {isSubmitting ? <Loader2 className="animate-spin" size={18} /> : <Send size={18} />}
-                후기 접수하기
+                {isSubmitting ? <Loader2 className="animate-spin" size={18} /> : null}
+                등록하기
               </button>
             </div>
           </section>
@@ -396,12 +352,6 @@ export function ReviewWriter({
       </div>
     </main>
   );
-}
-
-function createReviewExcerpt(body: string, title: string): string {
-  const text = body.trim().replace(/\s+/g, " ");
-  if (text) return text.slice(0, 180);
-  return title.trim().slice(0, 180);
 }
 
 function isUuid(value: string): boolean {

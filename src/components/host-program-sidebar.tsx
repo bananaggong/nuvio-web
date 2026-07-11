@@ -1,9 +1,13 @@
 "use client";
 
 import Image from "next/image";
-import Link from "next/link";
-import type { CSSProperties } from "react";
 import { nuvioIcons } from "@/components/icons/nuvio-icons";
+import {
+  HostSidebarRootLink,
+  HostSidebarSubLink,
+  HostWorkspaceSwitchTab,
+  hostWorkspaceScaleStyle,
+} from "@/components/host-workspace-ui";
 import { formatProgramDisplayCode } from "@/lib/display-code";
 import { launchFeatureFlags } from "@/lib/launch-feature-flags";
 
@@ -34,25 +38,6 @@ type HostProgramSidebarProps = {
   title: string;
 };
 
-const hostProgramSidebarScaleStyle = {
-  "--host-program-sidebar-8": "clamp(8px, 0.556vw, 10.667px)",
-  "--host-program-sidebar-12": "clamp(12px, 0.833vw, 16px)",
-  "--host-program-sidebar-14": "clamp(14px, 0.972vw, 18.667px)",
-  "--host-program-sidebar-16": "clamp(16px, 1.111vw, 21.333px)",
-  "--host-program-sidebar-18": "clamp(18px, 1.25vw, 24px)",
-  "--host-program-sidebar-20": "clamp(20px, 1.389vw, 26.667px)",
-  "--host-program-sidebar-22": "clamp(22px, 1.528vw, 29.333px)",
-  "--host-program-sidebar-24": "clamp(24px, 1.667vw, 32px)",
-  "--host-program-sidebar-28": "clamp(28px, 1.944vw, 37.333px)",
-  "--host-program-sidebar-34": "clamp(34px, 2.361vw, 45.333px)",
-  "--host-program-sidebar-40": "clamp(40px, 2.778vw, 53.333px)",
-  "--host-program-sidebar-46": "clamp(46px, 3.194vw, 61.333px)",
-  "--host-program-sidebar-86": "clamp(86px, 5.972vw, 114.667px)",
-  "--host-program-sidebar-176": "clamp(176px, 12.222vw, 234.667px)",
-  "--host-program-sidebar-216": "clamp(216px, 15vw, 288px)",
-  "--host-program-sidebar-228": "clamp(228px, 15.833vw, 304px)",
-} as CSSProperties;
-
 const settingsItems: Array<{
   activeItem: HostProgramSidebarActiveItem;
   label: string;
@@ -77,59 +62,59 @@ export function HostProgramSidebar({
 }: HostProgramSidebarProps) {
   return (
     <aside
-      className="w-[var(--host-program-sidebar-228)] min-w-[228px] shrink-0 border-r border-[#6D7A8A] bg-white shadow-[2px_5px_5.2px_rgba(0,0,0,0.23)] max-md:w-full max-md:min-h-0 max-md:border-r-0 max-md:shadow-none"
-      style={hostProgramSidebarScaleStyle}
+      className="w-[var(--host-210)] min-w-[210px] shrink-0 border-r border-[#6D7A8A] bg-white shadow-[2px_5px_5.2px_rgba(0,0,0,0.23)] max-md:w-full max-md:min-h-0 max-md:border-r-0 max-md:shadow-none"
+      style={hostWorkspaceScaleStyle}
     >
       <div className="min-h-[650px] px-[0.417vw] max-md:px-5">
-        <div className="w-[var(--host-program-sidebar-216)] min-w-[216px] max-md:w-full">
-          <section className="h-[var(--host-program-sidebar-86)] min-h-[86px] border-b border-[#D9D9D9]">
-            <div className="flex h-[var(--host-program-sidebar-40)] min-h-10 items-center justify-center pb-[var(--host-program-sidebar-8)] pt-[var(--host-program-sidebar-12)]">
-              <span className="w-[var(--host-program-sidebar-176)] min-w-0 text-[var(--host-program-sidebar-16)] font-semibold leading-[1.253] text-[#5B3A29]">
+        <div className="w-[var(--host-198)] min-w-[198px] max-md:w-full">
+          <section className="h-[var(--host-86)] min-h-[86px]">
+            <div className="flex h-[var(--host-40)] min-h-10 items-center justify-center pb-[var(--host-8)] pt-[var(--host-12)]">
+              <span className="w-[var(--host-176)] min-w-[176px] text-[length:var(--host-16)] font-semibold leading-[1.253] text-[#5B3A29]">
                 로컬 호스트님
               </span>
               <Image
                 alt="알림"
-                className="size-[var(--host-program-sidebar-20)] shrink-0"
+                className="size-[var(--host-20)] shrink-0"
                 height={20}
                 src={nuvioIcons.bell}
                 width={20}
               />
             </div>
-            <div className="flex h-[var(--host-program-sidebar-46)] min-h-[46px] items-end pt-[var(--host-program-sidebar-12)] text-center">
-              <HostProgramWorkspaceTab active href="/host" label="호스트" />
-              <span className="mb-[var(--host-program-sidebar-8)] h-[var(--host-program-sidebar-22)] min-h-[22px] w-px bg-[#D9D9D9]" />
-              <HostProgramWorkspaceTab href="/host/channels" label="채널" />
+            <div className="flex h-[var(--host-46)] min-h-[46px] items-end border-b border-[#D9D9D9] pt-[var(--host-12)] text-center">
+              <HostWorkspaceSwitchTab active href="/host" label="호스트" />
+              <span className="mb-[var(--host-6)] h-[var(--host-22)] min-h-[22px] w-px bg-[#D9D9D9]" />
+              <HostWorkspaceSwitchTab href="/host/channels" label="채널" />
             </div>
           </section>
 
-        <section className="border-b border-[#D9D9D9] px-[12px] pb-[var(--host-program-sidebar-12)] pt-[var(--host-program-sidebar-12)]">
-          <div className="flex items-start gap-[var(--host-program-sidebar-8)]">
-            <p className="min-h-[40px] min-w-0 flex-1 break-keep text-[var(--host-program-sidebar-16)] font-semibold leading-[1.253] text-[#5B3A29]">
+        <section className="border-b border-[#D9D9D9] px-[var(--host-12)] pb-[var(--host-12)] pt-[var(--host-12)]">
+          <div className="flex items-start gap-[var(--host-8)]">
+            <p className="min-h-[40px] min-w-0 flex-1 break-keep text-[length:var(--host-16)] font-semibold leading-[1.253] text-[#5B3A29]">
               {title || "프로그램 제목"}
             </p>
-            <span className="mt-[1px] shrink-0 rounded-[6px] bg-[#7A8B52] px-[6px] py-[3px] text-[12px] font-semibold leading-[1.253] text-[#F3F3F3]">
+            <span className="mt-[1px] shrink-0 rounded-[var(--host-6)] bg-[#7A8B52] px-[var(--host-6)] py-[var(--host-3)] text-[length:var(--host-12)] font-semibold leading-[1.253] text-[#F3F3F3]">
               {status}
             </span>
           </div>
-          <p className="mt-[var(--host-program-sidebar-8)] text-[var(--host-program-sidebar-14)] font-semibold leading-[1.253] text-[#5B3A29]">
+          <p className="mt-[var(--host-8)] text-[length:var(--host-14)] font-semibold leading-[1.253] text-[#5B3A29]">
             프로그램 넘버 :{" "}
             <span className="text-[#FE701E]">{formatProgramNumber(programId)}</span>
           </p>
         </section>
 
-        <nav className="px-[12px] pt-[var(--host-program-sidebar-24)] text-[#5B3A29]">
-          <section className="border-b-[0.8px] border-[#6D7A8A] pb-[var(--host-program-sidebar-16)]">
-            <SidebarNavLink
+        <nav className="px-[var(--host-12)] pt-[var(--host-12)] text-[#5B3A29]">
+          <section className="border-b-[0.8px] border-[#6D7A8A] pb-[var(--host-12)]">
+            <HostSidebarRootLink
               active={activeItem === "dashboard"}
               href={`${programPath}?panel=dashboard`}
               label="대시보드"
             />
-            <p className="mt-[var(--host-program-sidebar-18)] text-[14px] font-normal leading-[1.253]">
+            <p className="mt-[var(--host-13)] text-[length:var(--host-14)] font-normal leading-[1.253]">
               프로그램 설정
             </p>
-            <div className="mt-[var(--host-program-sidebar-8)] flex flex-col gap-[var(--host-program-sidebar-8)] pl-[var(--host-program-sidebar-18)]">
+            <div className="mt-[var(--host-6)] flex flex-col gap-[3px] pl-[var(--host-6)]">
               {settingsItems.map((item) => (
-                <SidebarSubLink
+                <HostSidebarSubLink
                   active={activeItem === item.activeItem}
                   href={`${programPath}?panel=${item.panel}`}
                   key={item.panel}
@@ -139,22 +124,22 @@ export function HostProgramSidebar({
             </div>
           </section>
 
-          <section className="mt-[var(--host-program-sidebar-28)] border-b-[0.8px] border-[#6D7A8A] pb-[var(--host-program-sidebar-16)]">
-            <p className="text-[14px] font-normal leading-[1.253]">
+          <section className="mt-[var(--host-13)] border-b-[0.8px] border-[#6D7A8A] pb-[var(--host-12)]">
+            <p className="text-[length:var(--host-14)] font-normal leading-[1.253]">
               신청폼 현황
             </p>
-            <div className="mt-[var(--host-program-sidebar-8)] flex flex-col gap-[var(--host-program-sidebar-8)] pl-[var(--host-program-sidebar-18)]">
-              <SidebarSubLink
+            <div className="mt-[var(--host-6)] flex flex-col gap-[3px] pl-[var(--host-6)]">
+              <HostSidebarSubLink
                 active={activeItem === "forms"}
                 href={formsHref}
                 label="신청폼 연결"
               />
-              <SidebarSubLink
+              <HostSidebarSubLink
                 active={activeItem === "applications"}
                 href={applicationsHref}
                 label="신청 관리"
               />
-              <SidebarSubLink
+              <HostSidebarSubLink
                 active={activeItem === "result"}
                 href={messagesHref}
                 label="결과 메세지 관리"
@@ -162,32 +147,32 @@ export function HostProgramSidebar({
             </div>
           </section>
 
-          <div className="mt-[var(--host-program-sidebar-22)] flex flex-col gap-[var(--host-program-sidebar-22)]">
+          <div className="mt-[var(--host-13)] flex flex-col gap-[var(--host-13)]">
             {launchFeatureFlags.coupons || launchFeatureFlags.promotions ? (
-              <SidebarNavLink
+              <HostSidebarRootLink
                 active={activeItem === "management"}
                 href={`${programPath}?panel=management`}
                 label="쿠폰 / 프로모션"
               />
             ) : null}
-            <SidebarNavLink
+            <HostSidebarRootLink
               active={activeItem === "messages"}
               href="/host/messages"
               label="메시지함"
             />
-            <SidebarNavLink
+            <HostSidebarRootLink
               active={activeItem === "receipts"}
               href={`${applicationsHref}?panel=receipts`}
               label="결제 관리"
             />
             {launchFeatureFlags.reviews ? (
-              <SidebarNavLink
+              <HostSidebarRootLink
                 active={activeItem === "reviews"}
                 href={`${applicationsHref}?panel=reviews`}
                 label="후기 관리"
               />
             ) : null}
-            <SidebarNavLink
+            <HostSidebarRootLink
               active={activeItem === "delete"}
               href={`${programPath}?panel=delete`}
               label="프로그램 삭제"
@@ -197,73 +182,6 @@ export function HostProgramSidebar({
         </div>
       </div>
     </aside>
-  );
-}
-
-function HostProgramWorkspaceTab({
-  active = false,
-  href,
-  label,
-}: {
-  active?: boolean;
-  href: string;
-  label: string;
-}) {
-  return (
-    <Link
-      className={`flex h-full flex-1 items-end justify-center border-b-[2px] pb-[var(--host-program-sidebar-12)] text-[var(--host-program-sidebar-14)] leading-[1.253] ${
-        active
-          ? "border-[#FE701E] font-semibold text-[#FE701E]"
-          : "border-transparent font-normal text-[#CAC4BC]"
-      }`}
-      href={href}
-    >
-      {label}
-    </Link>
-  );
-}
-
-function SidebarNavLink({
-  active = false,
-  href,
-  label,
-}: {
-  active?: boolean;
-  href: string;
-  label: string;
-}) {
-  return (
-    <Link
-      className={`block text-[var(--host-program-sidebar-14)] leading-[1.253] text-[#5B3A29] ${
-        active ? "font-semibold" : "font-normal"
-      }`}
-      href={href}
-    >
-      {label}
-    </Link>
-  );
-}
-
-function SidebarSubLink({
-  active = false,
-  href,
-  label,
-}: {
-  active?: boolean;
-  href: string;
-  label: string;
-}) {
-  return (
-    <Link
-      className={`flex h-[19px] w-fit items-center rounded-[4px] px-[5px] text-[var(--host-program-sidebar-12)] leading-[1.253] ${
-        active
-          ? "bg-[#FF9A3D] font-semibold text-[#F9F9F9]"
-          : "font-normal text-[#5B3A29]"
-      }`}
-      href={href}
-    >
-      {label}
-    </Link>
   );
 }
 

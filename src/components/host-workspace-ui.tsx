@@ -26,7 +26,7 @@ import { buildChannelScopedHref, selectHostChannel } from "@/lib/host-channel-se
 import { hostProjectPath, type HostProgramOverview } from "@/lib/host-projects";
 import type { Village } from "@/lib/village-types";
 
-const hostWorkspaceScaleStyle = {
+export const hostWorkspaceScaleStyle = {
   "--host-scale": "clamp(1, calc(min(100vw, 1920px) / 1440), 1.333333)",
   "--host-2": "clamp(2px, 0.139vw, 2.667px)",
   "--host-3": "clamp(3px, 0.208vw, 4px)",
@@ -368,7 +368,7 @@ function HostWorkspaceSidebar({ sidebarHeight }: { sidebarHeight: string }) {
   );
 }
 
-function HostWorkspaceSwitchTab({
+export function HostWorkspaceSwitchTab({
   active = false,
   href,
   label,
@@ -462,7 +462,7 @@ function HostChannelSidebarNav({
   );
 }
 
-function HostSidebarRootLink({
+export function HostSidebarRootLink({
   active = false,
   href,
   label,
@@ -487,7 +487,7 @@ function HostSidebarRootLink({
   );
 }
 
-function HostSidebarSubLink({
+export function HostSidebarSubLink({
   active = false,
   href,
   label,

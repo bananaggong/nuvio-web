@@ -1,7 +1,9 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { ReviewWriter } from "@/components/review-writer";
+import { getOptionalAuthenticatedUser } from "@/lib/api-security";
 import { launchFeatureFlags } from "@/lib/launch-feature-flags";
+import { getMyReviewEligibilityFromDb } from "@/lib/review-eligibility-db";
 import { createSeoMetadata } from "@/lib/seo";
 
 export const dynamic = "force-dynamic";
@@ -21,5 +23,24 @@ export default async function NewReviewPage({
   if (!launchFeatureFlags.reviews) notFound();
 
   const { applicationId, requestToken } = await searchParams;
-  return <ReviewWriter applicationId={applicationId} requestToken={requestToken} />;
+  let programTitle = "";
+
+  try {
+    const auth = await getOptionalAuthenticatedUser();
+    const eligibility =
+      auth && applicationId
+        ? await getMyReviewEligibilityFromDb(applicationId, auth)
+        : null;
+    programTitle = eligibility?.programTitle ?? "";
+  } catch {
+    // A temporary context lookup failure should not hide the review form.
+  }
+
+  return (
+    <ReviewWriter
+      applicationId={applicationId}
+      programTitle={programTitle}
+      requestToken={requestToken}
+    />
+  );
 }

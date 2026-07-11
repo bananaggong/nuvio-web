@@ -14,7 +14,6 @@ import {
   Plus,
   Search,
   Settings,
-  Star,
   Ticket,
   UserRound,
   WalletCards,
@@ -32,6 +31,7 @@ import {
   type Ref,
   type ReactNode,
 } from "react";
+import { ReviewIcon } from "@/components/icons/review-icon";
 import { getProgramById } from "@/lib/data";
 import { NuvioEmptyState } from "@/components/nuvio-empty-state";
 import { SupportContactForm } from "@/components/support-contact-form";
@@ -317,7 +317,6 @@ const nuvioIconSources = {
   messageOrange: "/icons/nuvio/message-orange.svg",
   mypageBack: "/icons/nuvio/mypage-back.svg",
   phone: "/icons/nuvio/phone.svg",
-  review: "/icons/nuvio/review.svg",
   settings: "/icons/nuvio/settings.svg",
   summaryCalendar: "/icons/nuvio/summary-calendar.svg",
   summaryMessage: "/icons/nuvio/summary-message.svg",
@@ -333,6 +332,17 @@ const tripStatusLabels: Record<HostApplication["status"], string> = {
   submitted: "신청완료",
 };
 
+function ReviewMenuIcon({
+  className,
+  size,
+}: {
+  className?: string;
+  size?: number;
+  strokeWidth?: number;
+}) {
+  return <ReviewIcon className={className} size={size} />;
+}
+
 const sideMenuItems: Array<{
   href: string;
   icon: ComponentType<{ className?: string; size?: number; strokeWidth?: number }>;
@@ -345,7 +355,7 @@ const sideMenuItems: Array<{
     icon: CalendarDays,
     section: "trips",
   },
-  { href: "/mypage/reviews", label: "후기", icon: Star, section: "reviews" },
+  { href: "/mypage/reviews", label: "후기", icon: ReviewMenuIcon, section: "reviews" },
   {
     href: "/mypage/bookmarks",
     label: "북마크",
@@ -944,14 +954,11 @@ function ReviewFireRating({ rating }: { rating: number }) {
       {Array.from({ length: 5 }, (_, index) => {
         const active = rating >= index + 1;
         return (
-          <span
-            className={`grid h-[clamp(13px,0.9028vw,17.333px)] w-[clamp(13px,0.9028vw,17.333px)] place-items-center rounded-full ${
-              active ? "bg-[var(--mypage-orange)]" : "bg-[#D8D2CB]"
-            }`}
+          <ReviewIcon
+            className={active ? "text-[var(--mypage-orange)]" : "text-[#D8D2CB]"}
             key={index}
-          >
-            <NuvioAssetIcon alt="" name="review" size={8} />
-          </span>
+            size="clamp(15px,1.0417vw,20px)"
+          />
         );
       })}
     </div>
@@ -1009,7 +1016,7 @@ function ReviewsContent({ context }: { context: MypageContext }) {
             ))
           ) : (
             <EmptyState
-              icon={Star}
+              icon={ReviewMenuIcon}
               title="아직 작성할 후기가 없어요"
               body="완료된 여행 프로그램이 생기면 이곳에 보여요."
             />
@@ -1033,7 +1040,7 @@ function ReviewsContent({ context }: { context: MypageContext }) {
               : null}
           </>
         ) : (
-          <EmptyState icon={Star} title="아직 후기가 없어요" />
+          <EmptyState icon={ReviewMenuIcon} title="아직 후기가 없어요" />
         )}
       </div>
     </section>
