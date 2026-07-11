@@ -398,18 +398,18 @@ export function HostProgramFormAttachment({
 
         <section className="flex min-w-0 flex-1 flex-col">
           <main className="min-h-[calc(100vh-4.861vw-var(--form-69))] flex-1 bg-white">
-            <div className="w-[var(--form-562)] pl-[var(--form-40)] pt-[var(--form-44)]">
+            <div className="w-[var(--form-562)] pl-[var(--form-40)] pt-[var(--form-44)] max-md:w-full max-md:px-5 max-md:pt-6">
               {linkedTemplate ? (
                 <FormConnectionBlock
                   helper="연결된 신청폼으로 게스트가 신청할 수 있어요"
                   title="신청폼 연결"
                 >
-                  <div className="relative h-[var(--form-34)]">
+                  <div className="relative h-[var(--form-34)] max-md:grid max-md:h-auto max-md:grid-cols-[8px_minmax(0,1fr)] max-md:items-center max-md:gap-3">
                     <span
                       aria-hidden="true"
-                      className="absolute left-0 top-[13px] size-[8px] rounded-full bg-[#7A8B52]"
+                      className="absolute left-0 top-[13px] size-[8px] rounded-full bg-[#7A8B52] max-md:static"
                     />
-                    <div className="absolute left-[var(--form-22)] top-0 flex h-[var(--form-34)] w-[var(--form-441)] items-center rounded-[3px] border border-[#6D7A8A] bg-white px-[var(--form-16)] text-[14px] font-semibold leading-[1.253] text-[#33241C]">
+                    <div className="absolute left-[var(--form-22)] top-0 flex h-[var(--form-34)] w-[var(--form-441)] items-center rounded-[3px] border border-[#6D7A8A] bg-white px-[var(--form-16)] text-[14px] font-semibold leading-[1.253] text-[#33241C] max-md:static max-md:h-auto max-md:min-h-11 max-md:w-full max-md:flex-col max-md:items-start max-md:justify-center max-md:gap-1 max-md:px-3 max-md:py-2">
                       <span className="min-w-0 flex-1 truncate">
                         {linkedTemplate.name || "신청서 제목"}
                       </span>
@@ -418,9 +418,9 @@ export function HostProgramFormAttachment({
                       </span>
                     </div>
                   </div>
-                  <div className="mt-[var(--form-24)] flex h-[var(--form-29)] items-center gap-[var(--form-24)] pl-[var(--form-28)]">
+                  <div className="mt-[var(--form-24)] flex h-[var(--form-29)] items-center gap-[var(--form-24)] pl-[var(--form-28)] max-md:h-auto max-md:min-h-11 max-md:pl-5">
                     <button
-                      className="inline-flex h-[var(--form-29)] w-[var(--form-58)] items-center justify-center rounded-[4px] border border-[#FE701E] bg-white text-[12px] font-normal leading-[1.253] text-[#FE701E] disabled:cursor-not-allowed disabled:opacity-40"
+                      className="inline-flex h-[var(--form-29)] w-[var(--form-58)] items-center justify-center rounded-[4px] border border-[#FE701E] bg-white text-[12px] font-normal leading-[1.253] text-[#FE701E] disabled:cursor-not-allowed disabled:opacity-40 max-md:min-h-11 max-md:w-auto max-md:px-4 max-md:text-sm"
                       disabled={isBusy}
                       onClick={() => setIsConnectionDialogOpen(true)}
                       type="button"
@@ -428,7 +428,7 @@ export function HostProgramFormAttachment({
                       변경
                     </button>
                     <button
-                      className="inline-flex h-[var(--form-29)] w-[var(--form-79)] items-center justify-center rounded-[4px] border border-[#6D7A8A] bg-white text-[12px] font-normal leading-[1.253] text-[#6D7A8A] disabled:cursor-not-allowed disabled:opacity-40"
+                      className="inline-flex h-[var(--form-29)] w-[var(--form-79)] items-center justify-center rounded-[4px] border border-[#6D7A8A] bg-white text-[12px] font-normal leading-[1.253] text-[#6D7A8A] disabled:cursor-not-allowed disabled:opacity-40 max-md:min-h-11 max-md:w-auto max-md:px-4 max-md:text-sm"
                       disabled={isBusy}
                       onClick={() => void detachTemplate()}
                       type="button"
@@ -444,7 +444,7 @@ export function HostProgramFormAttachment({
                 <FormConnectionBlock
                   action={
                     <button
-                      className="inline-flex h-[var(--form-29)] w-[var(--form-92)] items-center justify-center rounded-[4px] border border-[#FE701E] bg-white text-[12px] font-normal leading-[1.253] text-[#FE701E] disabled:cursor-not-allowed disabled:opacity-40"
+                      className="inline-flex h-[var(--form-29)] w-[var(--form-92)] items-center justify-center rounded-[4px] border border-[#FE701E] bg-white text-[12px] font-normal leading-[1.253] text-[#FE701E] disabled:cursor-not-allowed disabled:opacity-40 max-md:min-h-11 max-md:w-auto max-md:px-4 max-md:text-sm"
                       data-host-form-connect-open
                       disabled={isBusy}
                       onClick={() => setIsConnectionDialogOpen(true)}
@@ -480,9 +480,9 @@ export function HostProgramFormAttachment({
             </div>
           </main>
 
-          <div className="flex h-[var(--form-69)] shrink-0 items-start border-t border-[#6D7A8A] bg-white pl-[var(--form-28)] pt-[var(--form-20)]">
+          <div className="flex h-[var(--form-69)] shrink-0 items-start border-t border-[#6D7A8A] bg-white pl-[var(--form-28)] pt-[var(--form-20)] max-md:items-center max-md:px-5 max-md:pt-0">
             <button
-              className="inline-flex h-[var(--form-29)] w-[var(--form-79)] items-center justify-center rounded-[4px] bg-[#FE701E] text-[12px] font-medium leading-[1.253] text-[#FFF6EC] disabled:cursor-not-allowed disabled:opacity-50"
+              className="inline-flex h-[var(--form-29)] w-[var(--form-79)] items-center justify-center rounded-[4px] bg-[#FE701E] text-[12px] font-medium leading-[1.253] text-[#FFF6EC] disabled:cursor-not-allowed disabled:opacity-50 max-md:min-h-11 max-md:w-auto max-md:px-4 max-md:text-sm"
               disabled={isBusy}
               onClick={() => void saveConnection()}
               type="button"
@@ -533,7 +533,7 @@ function FormConnectionBlock({
   title: string;
 }) {
   return (
-    <section className={`w-[var(--form-562)] ${className}`}>
+    <section className={`w-[var(--form-562)] max-md:w-full ${className}`}>
       <div className="h-[46px]">
         <h1 className="text-[16px] font-bold leading-[1.253] text-[#0D0D0C]">
           {title}
@@ -568,11 +568,11 @@ function FormConnectionDialog({
     <div
       aria-labelledby="form-connection-dialog-title"
       aria-modal="true"
-      className="fixed inset-0 z-50 flex items-center justify-center bg-transparent"
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/20 px-4 py-6"
       data-host-form-connection-dialog
       role="dialog"
     >
-      <div className="w-[var(--form-384)] rounded-[8px] border border-[#D9D9D9] bg-white px-[var(--form-17)] pb-[var(--form-18)] pt-[var(--form-16)] shadow-[0_8px_20px_rgba(0,0,0,0.08)]">
+      <div className="max-h-full w-[var(--form-384)] overflow-y-auto rounded-[8px] border border-[#D9D9D9] bg-white px-[var(--form-17)] pb-[var(--form-18)] pt-[var(--form-16)] shadow-[0_8px_20px_rgba(0,0,0,0.08)] max-md:w-full max-md:p-5">
         <div className="flex items-start">
           <h2
             className="text-[length:var(--form-12)] font-semibold leading-[1.253] text-[#0D0D0C]"
@@ -582,7 +582,7 @@ function FormConnectionDialog({
           </h2>
           <button
             aria-label="닫기"
-            className="ml-auto grid size-[var(--form-18)] place-items-center text-[length:var(--form-20)] font-normal leading-none text-[#0D0D0C]"
+            className="ml-auto grid size-[var(--form-18)] place-items-center text-[length:var(--form-20)] font-normal leading-none text-[#0D0D0C] max-md:size-11"
             onClick={onClose}
             type="button"
           >
@@ -600,7 +600,7 @@ function FormConnectionDialog({
 
               return (
                 <label
-                  className="flex h-[var(--form-21)] cursor-pointer items-center gap-[var(--form-6)]"
+                  className="flex h-[var(--form-21)] cursor-pointer items-center gap-[var(--form-6)] max-md:min-h-11"
                   key={template.id}
                 >
                   <input
@@ -643,7 +643,7 @@ function FormConnectionDialog({
 
         <div className="mt-[var(--form-7)] flex items-center">
           <Link
-            className="inline-flex items-center gap-[var(--form-4)] text-[length:var(--form-10)] font-normal leading-[1.253] text-[#FE701E]"
+            className="inline-flex items-center gap-[var(--form-4)] text-[length:var(--form-10)] font-normal leading-[1.253] text-[#FE701E] max-md:min-h-11 max-md:text-sm"
             href={formsLibraryHref}
           >
             <span
@@ -655,7 +655,7 @@ function FormConnectionDialog({
             새 신청폼 만들기
           </Link>
           <button
-            className="ml-auto inline-flex h-[var(--form-24)] w-[var(--form-42)] items-center justify-center rounded-[3px] bg-[#FE701E] text-[length:var(--form-10)] font-semibold leading-[1.253] text-white disabled:cursor-not-allowed disabled:opacity-50"
+            className="ml-auto inline-flex h-[var(--form-24)] w-[var(--form-42)] items-center justify-center rounded-[3px] bg-[#FE701E] text-[length:var(--form-10)] font-semibold leading-[1.253] text-white disabled:cursor-not-allowed disabled:opacity-50 max-md:min-h-11 max-md:w-auto max-md:px-4 max-md:text-sm"
             disabled={templates.length === 0 || isAttaching}
             onClick={onConnect}
             type="button"

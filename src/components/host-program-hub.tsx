@@ -5,7 +5,6 @@ import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { EditorContent, useEditor, type Editor } from "@tiptap/react";
 import StarterKit from "@tiptap/starter-kit";
-import UnderlineExtension from "@tiptap/extension-underline";
 import {
   ArrowLeft,
   Bold,
@@ -273,6 +272,13 @@ function HostProgramFigmaScaleOverrides() {
       [data-host-program-content-scale] .preview-thumbnail-small-title {
         font-size: var(--figma-5-7);
         line-height: 1.253;
+      }
+      @media (max-width: 767px) {
+        [data-host-program-content-scale] input:not([type="checkbox"]):not([type="radio"]):not([type="file"]),
+        [data-host-program-content-scale] select,
+        [data-host-program-content-scale] textarea {
+          font-size: 16px;
+        }
       }
     `}</style>
   );
@@ -849,7 +855,7 @@ export function HostProgramHub({
           data-host-program-content-scale
         >
           {showUpdatedAtHeader ? (
-          <div className="ml-[2.778vw] flex h-[var(--figma-96)] w-[64.236vw] max-w-[1233px] items-start justify-end pt-[var(--figma-44)] text-[length:var(--figma-16)] font-normal leading-[1.253] text-[#6D7A8A]">
+          <div className="ml-[2.778vw] flex h-[var(--figma-96)] w-[64.236vw] max-w-[1233px] items-start justify-end pt-[var(--figma-44)] text-[length:var(--figma-16)] font-normal leading-[1.253] text-[#6D7A8A] max-md:ml-0 max-md:h-auto max-md:w-full max-md:px-5 max-md:pt-6 max-md:text-sm">
             최근 수정일 : {formatDateTime(currentUpdatedAt)}
           </div>
           ) : null}
@@ -976,9 +982,9 @@ export function HostProgramHub({
               onSave={() => void saveDraft()}
             />
           ) : activePanel === "delete" || activePanel === "management" ? null : (
-          <div className="flex w-full border-t border-[#6D7A8A] bg-white px-[1.944vw] py-[1.389vw]">
+          <div className="flex w-full border-t border-[#6D7A8A] bg-white px-[1.944vw] py-[1.389vw] max-md:px-5 max-md:py-3">
             <button
-              className="inline-flex h-[29px] items-center justify-center rounded-[4px] bg-[#FE701E] px-[19px] text-[12px] font-medium leading-[1.253] text-[#FFF6EC] transition hover:bg-[#E85F13] disabled:cursor-not-allowed disabled:opacity-40"
+              className="inline-flex h-[29px] items-center justify-center rounded-[4px] bg-[#FE701E] px-[19px] text-[12px] font-medium leading-[1.253] text-[#FFF6EC] transition hover:bg-[#E85F13] disabled:cursor-not-allowed disabled:opacity-40 max-md:min-h-11 max-md:text-sm"
               disabled={!draft || !draft.title.trim() || isSaving}
               onClick={() => void saveDraft()}
               type="button"
@@ -1294,24 +1300,24 @@ function DashboardStatusPanel({
 
   return (
     <div
-      className="flex flex-col gap-[var(--figma-32)] pl-[var(--figma-40)] pt-[var(--figma-44)]"
+      className="flex flex-col gap-[var(--figma-32)] pl-[var(--figma-40)] pt-[var(--figma-44)] max-md:gap-5 max-md:px-5 max-md:pt-6"
       data-program-dashboard={dashboardState}
       style={figmaScaleStyle}
     >
-      <div className="flex w-[64.236vw] max-w-[1233px] items-center justify-end text-[16px] font-normal leading-[1.253] text-[#6D7A8A]">
+      <div className="flex w-[64.236vw] max-w-[1233px] items-center justify-end text-[16px] font-normal leading-[1.253] text-[#6D7A8A] max-md:w-full max-md:text-sm">
         최근 수정일 : {formatDateTime(draft?.updatedAt ?? program.updatedAt)}
       </div>
 
-      <section className="flex w-[64.236vw] max-w-[1233px] items-start justify-end gap-[var(--figma-44)] rounded-[8px] border border-[#6D7A8A] px-[var(--figma-22)] py-[var(--figma-24)]">
+      <section className="flex w-[64.236vw] max-w-[1233px] items-start justify-end gap-[var(--figma-44)] rounded-[8px] border border-[#6D7A8A] px-[var(--figma-22)] py-[var(--figma-24)] max-md:w-full max-md:flex-col max-md:gap-4 max-md:p-4">
         <div
-          className="h-[15.649vw] max-h-[301px] min-h-[225px] w-[15.069vw] min-w-[217px] max-w-[289px] shrink-0 rounded-[16px] bg-[#D9D9D9] bg-cover bg-center"
+          className="h-[15.649vw] max-h-[301px] min-h-[225px] w-[15.069vw] min-w-[217px] max-w-[289px] shrink-0 rounded-[16px] bg-[#D9D9D9] bg-cover bg-center max-md:aspect-[16/9] max-md:h-auto max-md:max-h-none max-md:min-h-0 max-md:w-full max-md:max-w-none max-md:min-w-0 max-md:rounded-md"
           style={
             draft?.image || program.imageUrl
               ? { backgroundImage: `url("${escapeCssUrl(draft?.image || program.imageUrl)}")` }
               : undefined
           }
         />
-        <div className="flex w-[43.056vw] max-w-[827px] min-w-[620px] flex-col items-center gap-[var(--figma-8)]">
+        <div className="flex w-[43.056vw] max-w-[827px] min-w-[620px] flex-col items-center gap-[var(--figma-8)] max-md:w-full max-md:min-w-0 max-md:gap-3">
           <div className="flex w-full justify-end">
             <span
               className={`shrink-0 rounded-[6px] px-[6px] py-[3px] text-[12px] font-semibold leading-[1.253] ${statusMeta.badgeClassName}`}
@@ -1319,19 +1325,19 @@ function DashboardStatusPanel({
               {statusMeta.label}
             </span>
           </div>
-          <h1 className="w-full text-[24px] font-medium leading-[1.253] text-[#0D0D0C]">
+          <h1 className="w-full text-[24px] font-medium leading-[1.253] text-[#0D0D0C] max-md:text-xl">
             {program.title || draft?.title || "프로그램 제목"}
           </h1>
-          <div className="flex w-full items-start gap-[var(--figma-8)] text-[16px] font-normal leading-[1.253] text-[#0D0D0C]">
+          <div className="flex w-full items-start gap-[var(--figma-8)] text-[16px] font-normal leading-[1.253] text-[#0D0D0C] max-md:flex-col max-md:text-sm">
             <p className="shrink-0 whitespace-nowrap">
               프로그램 코드 : {formatProgramNumber(program.id)}
             </p>
-            <p className="min-w-0 flex-1 text-center">
+            <p className="min-w-0 flex-1 text-center max-md:text-left">
               프로그램 진행일 : {activityRange}
             </p>
           </div>
 
-          <div className="flex w-full items-center gap-[var(--figma-12)]">
+          <div className="flex w-full items-center gap-[var(--figma-12)] max-md:grid max-md:grid-cols-1">
             {dashboardState === "upcoming" ? (
               <>
                 <DashboardSummaryCard
@@ -1384,7 +1390,7 @@ function DashboardStatusPanel({
         </div>
       </section>
 
-      <section className="grid w-[64.236vw] max-w-[1233px] grid-cols-4 gap-[var(--figma-10)]">
+      <section className="grid w-[64.236vw] max-w-[1233px] grid-cols-4 gap-[var(--figma-10)] max-md:w-full max-md:grid-cols-2 max-[359px]:grid-cols-1">
         <DashboardMetricCard
           helper={`승인 ${acceptedCount}/${extractCapacityCount(draft?.capacity ?? "") || "00"}`}
           label="신청자"
@@ -1396,7 +1402,7 @@ function DashboardStatusPanel({
         <DashboardMetricCard label="저장" value="0" valueSuffix="회" />
       </section>
 
-      <section className="flex w-[64.236vw] max-w-[1233px] items-center gap-[var(--figma-12)]">
+      <section className="flex w-[64.236vw] max-w-[1233px] items-center gap-[var(--figma-12)] max-md:w-full max-md:flex-col max-md:items-stretch">
         <DashboardListCard
           emptyText="아직 받은 신청서가 없어요"
           rows={applicationRows.map((application) => ({
@@ -1443,11 +1449,11 @@ function DashboardSummaryCard({
   value: string;
 }) {
   return (
-    <div className="flex h-[9.167vw] min-h-[132px] max-h-[176px] min-w-0 flex-1 flex-col justify-center gap-[var(--figma-6)] rounded-[8px] border border-[#6D7A8A] px-[var(--figma-6)]">
+    <div className="flex h-[9.167vw] min-h-[132px] max-h-[176px] min-w-0 flex-1 flex-col justify-center gap-[var(--figma-6)] rounded-[8px] border border-[#6D7A8A] px-[var(--figma-6)] max-md:h-auto max-md:max-h-none max-md:px-3 max-md:py-4">
       {actionLabel ? (
         <div className="flex w-full justify-end px-[var(--figma-12)]">
           <button
-            className="rounded-[12px] bg-[#FFF6EC] px-[8px] py-[2px] text-[12px] font-medium leading-[1.253] text-[#6D7A8A]"
+            className="rounded-[12px] bg-[#FFF6EC] px-[8px] py-[2px] text-[12px] font-medium leading-[1.253] text-[#6D7A8A] max-md:min-h-11 max-md:px-3 max-md:text-sm"
             onClick={onAction}
             type="button"
           >
@@ -1460,7 +1466,7 @@ function DashboardSummaryCard({
           {label}
         </p>
       </div>
-      <div className="flex w-full items-center justify-between gap-[var(--figma-12)] px-[var(--figma-16)] text-[#0D0D0C]">
+      <div className="flex w-full items-center justify-between gap-[var(--figma-12)] px-[var(--figma-16)] text-[#0D0D0C] max-md:flex-wrap max-md:px-3">
         <p className="min-w-0 whitespace-pre-line text-[16px] font-semibold leading-[1.253]">
           {primary}
         </p>
@@ -1486,16 +1492,16 @@ function DashboardMetricCard({
   valueSuffix: string;
 }) {
   return (
-    <div className="flex h-[9.167vw] min-h-[132px] max-h-[176px] flex-col items-center justify-center rounded-[8px] border border-[#6D7A8A]">
+    <div className="flex h-[9.167vw] min-h-[132px] max-h-[176px] flex-col items-center justify-center rounded-[8px] border border-[#6D7A8A] max-md:h-auto max-md:min-h-28 max-md:max-h-none">
       <div className="flex flex-col gap-[var(--figma-6)] px-[var(--figma-6)] py-[var(--figma-2)]">
-        <div className="flex items-center gap-[var(--figma-8)] whitespace-nowrap text-[16px] font-medium leading-[1.253]">
+        <div className="flex items-center gap-[var(--figma-8)] whitespace-nowrap text-[16px] font-medium leading-[1.253] max-md:flex-col max-md:gap-1 max-md:text-sm">
           <span className="text-[#6D7A8A]">{label}</span>
-          <span className="text-[24px] text-[#FF9A3D]">
+          <span className="text-[24px] text-[#FF9A3D] max-md:text-xl">
             {padDashboardCount(value)} {valueSuffix}
           </span>
         </div>
         {helper ? (
-          <p className="whitespace-nowrap text-[16px] font-semibold leading-[1.253] text-[#0D0D0C]">
+          <p className="whitespace-nowrap text-[16px] font-semibold leading-[1.253] text-[#0D0D0C] max-md:text-sm">
             {helper}
           </p>
         ) : null}
@@ -1519,7 +1525,7 @@ function DashboardListCard({
   title: string;
 }) {
   return (
-    <div className="flex h-[14.653vw] min-h-[211px] max-h-[281px] min-w-0 flex-1 flex-col gap-[var(--figma-12)] rounded-[8px] border border-[#6D7A8A] p-[var(--figma-22)]">
+    <div className="flex h-[14.653vw] min-h-[211px] max-h-[281px] min-w-0 flex-1 flex-col gap-[var(--figma-12)] rounded-[8px] border border-[#6D7A8A] p-[var(--figma-22)] max-md:h-auto max-md:max-h-none max-md:p-4">
       <div className="flex w-full items-center gap-[var(--figma-8)] px-[var(--figma-6)] py-[var(--figma-2)] text-[16px] font-medium leading-[1.253]">
         <p className="shrink-0 whitespace-nowrap text-[#6D7A8A]">{title}</p>
         <p className="min-w-0 flex-1 text-right text-[14px] text-[#CAC4BC]">
@@ -1591,7 +1597,7 @@ function BasicPanel({
 
   return (
     <section className="bg-white">
-      <div className="flex w-[64.236vw] max-w-[1233px] flex-col gap-[var(--figma-32)]">
+      <div className="flex w-[64.236vw] max-w-[1233px] flex-col gap-[var(--figma-32)] max-md:w-full max-md:gap-5">
         <SettingsFormBlock className="min-h-[var(--figma-113)]">
           <div className="flex w-full flex-col gap-[var(--figma-14)]">
             <SettingsFieldLabel>프로그램 명</SettingsFieldLabel>
@@ -1747,7 +1753,7 @@ function SettingsFormBlock({
 }) {
   return (
     <div
-      className={`flex w-full items-start justify-end border-b border-[#6D7A8A] px-[1.528vw] py-[1.667vw] ${className}`}
+      className={`flex w-full items-start justify-end border-b border-[#6D7A8A] px-[1.528vw] py-[1.667vw] max-md:px-4 max-md:py-5 ${className}`}
     >
       <div className="w-full">{children}</div>
     </div>
@@ -1777,11 +1783,10 @@ function FigmaTextInput({
 }) {
   return (
     <input
-      className={`h-[var(--figma-31)] rounded-[var(--figma-7)] border-[0.5px] border-[#F7B267] bg-transparent px-[var(--figma-12)] text-[length:var(--figma-12)] font-medium leading-[1.253] text-[#0D0D0C] outline-none placeholder:text-[#D9D9D9] focus:border-[#FE701E] ${className}`}
+      className={`h-[var(--figma-31)] rounded-[var(--figma-7)] border-[0.5px] border-[#F7B267] bg-transparent px-[var(--figma-12)] text-[length:var(--figma-12)] font-medium leading-[1.253] text-[#0D0D0C] outline-none placeholder:text-[#D9D9D9] focus:border-[#FE701E] ${className} max-md:h-11 max-md:w-full max-md:text-base`}
       inputMode={inputMode}
       onChange={(event) => onChange(event.target.value)}
       placeholder={placeholder}
-      style={{ fontSize: "var(--figma-12)" }}
       type="text"
       value={value}
     />
@@ -1804,7 +1809,7 @@ function DateRangeInputs({
   startValue: string;
 }) {
   return (
-    <div className="flex items-center gap-[var(--figma-21)]">
+    <div className="flex items-center gap-[var(--figma-21)] max-md:grid max-md:grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] max-md:gap-2 max-[359px]:grid-cols-1">
       <DateInputBox
         label={startLabel}
         onChange={onStartChange}
@@ -1842,20 +1847,19 @@ function DateInputBox({
   }
 
   return (
-    <label className="relative block w-[17.708vw] max-w-[340px]">
+    <label className="relative block w-[17.708vw] max-w-[340px] max-md:w-full">
       <span className="sr-only">{label}</span>
       <input
-        className="h-[var(--figma-31)] w-full rounded-[var(--figma-7)] border-[0.5px] border-[#F7B267] bg-transparent px-[var(--figma-12)] pr-[var(--figma-32)] text-[length:var(--figma-12)] font-medium leading-[1.253] text-[#0D0D0C] outline-none placeholder:text-[#D9D9D9] focus:border-[#FE701E]"
+        className="h-[var(--figma-31)] w-full rounded-[var(--figma-7)] border-[0.5px] border-[#F7B267] bg-transparent px-[var(--figma-12)] pr-[var(--figma-32)] text-[length:var(--figma-12)] font-medium leading-[1.253] text-[#0D0D0C] outline-none placeholder:text-[#D9D9D9] focus:border-[#FE701E] max-md:h-11 max-md:pr-11 max-md:text-base"
         inputMode="numeric"
         onChange={(event) => onChange(normalizeDateInput(event.target.value))}
         placeholder={label}
-        style={{ fontSize: "var(--figma-12)" }}
         type="text"
         value={normalizedValue}
       />
       <button
         aria-label={`${label} 선택`}
-        className="absolute right-[var(--figma-10)] top-1/2 grid size-[var(--figma-14)] -translate-y-1/2 place-items-center text-[#0D0D0C]"
+        className="absolute right-[var(--figma-10)] top-1/2 grid size-[var(--figma-14)] -translate-y-1/2 place-items-center text-[#0D0D0C] max-md:right-0 max-md:size-11"
         onClick={openNativeDatePicker}
         type="button"
       >
@@ -1890,7 +1894,7 @@ function BasicRadioOption({
   return (
     <div className="flex flex-col gap-[var(--figma-6)]">
       <button
-        className="flex w-fit items-center gap-[var(--figma-6)] px-[var(--figma-6)] text-left"
+        className="flex min-h-[var(--figma-20)] w-fit items-center gap-[var(--figma-6)] px-[var(--figma-6)] text-left max-md:min-h-11"
         onClick={onClick}
         type="button"
       >
@@ -1932,11 +1936,11 @@ function DetailPanel({
   return (
     <section className="flex w-full max-w-[1563px] items-start gap-[1.706%] bg-white max-lg:flex-col max-lg:gap-[1.389vw]">
       <div className="w-[50.852%] max-w-[795px] shrink-0 max-lg:w-full max-lg:max-w-none">
-        <div className="flex h-[var(--figma-96)] items-start justify-end pt-[var(--figma-44)] text-[length:var(--figma-16)] font-normal leading-[1.253] text-[#6D7A8A]">
+        <div className="flex h-[var(--figma-96)] items-start justify-end pt-[var(--figma-44)] text-[length:var(--figma-16)] font-normal leading-[1.253] text-[#6D7A8A] max-md:h-auto max-md:pt-6 max-md:text-sm">
           최근 수정일 : {formatDateTime(updatedAt)}
         </div>
 
-        <div className="flex flex-col gap-[2.222vw]">
+        <div className="flex flex-col gap-[2.222vw] max-md:gap-5">
           <DetailFormBlock>
             <div className="flex w-full flex-col gap-[var(--figma-14)]">
               <SettingsFieldLabel>카테고리 선택</SettingsFieldLabel>
@@ -1956,7 +1960,7 @@ function DetailPanel({
                 </p>
               </div>
 
-              <div className="mt-[2.778vw] flex items-start gap-[3.056vw]">
+              <div className="mt-[2.778vw] flex items-start gap-[3.056vw] max-md:grid max-md:grid-cols-1 max-md:gap-5">
                 <DetailImageUploadSlot
                   heightClass="h-[var(--figma-152)]"
                   image={draft.image}
@@ -1994,13 +1998,12 @@ function DetailPanel({
                   썸네일 카드에 표시돼요 (최대 60자)
                 </p>
               </div>
-              <div className="relative h-[var(--figma-50)]">
+              <div className="relative h-[var(--figma-50)] max-md:h-[68px]">
                 <textarea
-                  className="h-[var(--figma-31)] w-full resize-none rounded-[var(--figma-7)] border-[0.5px] border-[#F7B267] bg-transparent px-[var(--figma-12)] py-[var(--figma-8)] text-[#0D0D0C] outline-none placeholder:text-[#D9D9D9] focus:border-[#FE701E]"
+                  className="h-[var(--figma-31)] w-full resize-none rounded-[var(--figma-7)] border-[0.5px] border-[#F7B267] bg-transparent px-[var(--figma-12)] py-[var(--figma-8)] text-[#0D0D0C] outline-none placeholder:text-[#D9D9D9] focus:border-[#FE701E] max-md:h-11 max-md:text-base"
                   maxLength={60}
                   onChange={(event) => updateDraft({ summary: event.target.value })}
                   placeholder="프로그램을 한눈에 설명하는 짧은 소개글을 작성해 주세요"
-                  style={{ fontSize: "var(--figma-12)" }}
                   value={draft.summary}
                 />
                 <p className="absolute bottom-0 right-0 w-full text-right text-[length:var(--figma-12)] font-normal leading-[1.253] text-[#D9D9D9]">
@@ -2045,7 +2048,7 @@ function DetailFormBlock({
 }) {
   return (
     <section
-      className={`flex w-full ${borderClassName} ${paddingClassName} ${className}`}
+      className={`flex w-full ${borderClassName} ${paddingClassName} ${className} max-lg:max-h-none max-md:px-4 max-md:py-5`}
     >
       {children}
     </section>
@@ -2061,9 +2064,8 @@ function DetailCategorySelect({
 }) {
   return (
     <select
-      className="h-[var(--figma-35)] w-full rounded-[var(--figma-7)] border-[0.5px] border-[#F7B267] bg-transparent px-[var(--figma-12)] text-[#0D0D0C] outline-none focus:border-[#FE701E]"
+      className="h-[var(--figma-35)] w-full rounded-[var(--figma-7)] border-[0.5px] border-[#F7B267] bg-transparent px-[var(--figma-12)] text-[#0D0D0C] outline-none focus:border-[#FE701E] max-md:h-11 max-md:text-base"
       onChange={(event) => onChange(event.target.value as ThemeKey)}
-      style={{ fontSize: "var(--figma-12)" }}
       value={value}
     >
       <option value="">카테고리는 선택해주세요</option>
@@ -2135,7 +2137,7 @@ function DetailImageUploadSlot({
   }
 
   return (
-    <div className={`flex shrink-0 flex-col gap-[var(--figma-14)] ${widthClass}`}>
+    <div className={`flex shrink-0 flex-col gap-[var(--figma-14)] ${widthClass} max-md:w-full max-md:max-w-none`}>
       <p className="text-[length:var(--figma-16)] font-medium leading-[1.253] text-[#6D7A8A]">
         {label}
       </p>
@@ -2191,7 +2193,6 @@ function ProgramRichTextEditor({
           levels: [1, 2],
         },
       }),
-      UnderlineExtension,
     ],
     immediatelyRender: false,
     onUpdate: ({ editor: nextEditor }) => onChange(nextEditor.getHTML()),
@@ -2298,7 +2299,7 @@ function RichToolbarButton({
   return (
     <button
       aria-label={title}
-      className={`grid size-[var(--figma-28)] place-items-center rounded-[4px] border text-[#5B3A29] transition disabled:opacity-40 ${
+      className={`grid size-[var(--figma-28)] place-items-center rounded-[4px] border text-[#5B3A29] transition disabled:opacity-40 max-md:size-11 ${
         active
           ? "border-[#FE701E] bg-[#FFF6EC] text-[#FE701E]"
           : "border-[#E6D6CA] bg-white hover:border-[#FE701E] hover:text-[#FE701E]"
@@ -2327,7 +2328,7 @@ function DetailPreviewRail({
   const previewProgram = useMemo(() => mapHostDraftToPreviewProgram(draft), [draft]);
 
   return (
-    <aside className="min-h-[120.962vw] w-[47.442%] max-w-[741px] shrink-0 border-l border-[#6D7A8A] bg-white max-lg:w-full max-lg:max-w-none">
+    <aside className="min-h-[120.962vw] w-[47.442%] max-w-[741px] shrink-0 border-l border-[#6D7A8A] bg-white max-lg:w-full max-lg:max-w-none max-lg:border-l-0 max-lg:border-t">
       <p className="pt-[var(--figma-63)] text-center text-[length:var(--figma-16)] font-medium leading-[1.253] text-[#6D7A8A]">
         미리보기
       </p>
@@ -2375,21 +2376,21 @@ function PreviewFrame({
   const toggleIcon = collapsed ? nuvioIcons.dropdown : nuvioIcons.dropup;
 
   return (
-    <section className="min-w-0 rounded-[var(--figma-7)] border border-[#6D7A8A] bg-[#F9F9F9] p-[1.389vw]">
-      <div className="flex h-[var(--figma-30)] items-start justify-between gap-[var(--figma-14)]">
+    <section className="min-w-0 rounded-[var(--figma-7)] border border-[#6D7A8A] bg-[#F9F9F9] p-[1.389vw] max-md:p-4">
+      <div className="flex h-[var(--figma-30)] items-start justify-between gap-[var(--figma-14)] max-md:min-h-11">
         <span className="rounded-full bg-[#FF9A3D] px-[var(--figma-14)] py-[var(--figma-6)] text-[length:var(--figma-12)] font-bold leading-[1.253] text-[#F9F9F9]">
           {title}
         </span>
         <button
           aria-label={`${title} ${collapsed ? "펼치기" : "접기"}`}
-          className="grid size-[var(--figma-21)] place-items-center border-0 bg-transparent p-0"
+          className="grid size-[var(--figma-21)] place-items-center border-0 bg-transparent p-0 max-md:size-11"
           onClick={onToggle}
           type="button"
         >
           <Image
             alt=""
             aria-hidden="true"
-            className="size-full"
+            className="size-[var(--figma-21)]"
             height={21}
             src={toggleIcon}
             width={21}
@@ -2414,7 +2415,7 @@ function ThumbnailPreviewContent({ program }: { program: Program }) {
     : undefined;
 
   return (
-    <div className="flex min-h-[var(--figma-262)] items-center justify-center gap-[var(--figma-20)] px-[var(--figma-12)] py-[var(--figma-14)]">
+    <div className="flex min-h-[var(--figma-262)] items-center justify-center gap-[var(--figma-20)] px-[var(--figma-12)] py-[var(--figma-14)] max-md:flex-col">
       <article className="w-[var(--figma-193)] overflow-hidden">
         <div
           aria-label={`${program.title} 썸네일 이미지`}
@@ -2525,8 +2526,11 @@ function DetailPagePreviewContent({ program }: { program: Program }) {
             <span>매거진</span>
             <span>채널</span>
             <span className="h-[18px] w-px bg-[#F5B16F]" />
-            <Image alt="" height={20} src={nuvioIcons.bell} width={20} />
-            <Image alt="" height={20} src={nuvioIcons.user} width={20} />
+            {/* These local SVG icons already have exact intrinsic dimensions. */}
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img alt="" className="h-[21px] w-[20px]" src={nuvioIcons.bell} />
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img alt="" className="size-[20px]" src={nuvioIcons.user} />
           </div>
         </div>
 
@@ -3041,7 +3045,7 @@ function ScheduleDayFigmaEditor({
         </button>
 
         {expanded ? (
-          <div className="px-[var(--figma-22)] pt-[var(--figma-12)]">
+          <div className="px-[var(--figma-22)] pt-[var(--figma-12)] max-md:px-0">
             <p className="text-[length:var(--figma-14)] font-normal leading-[1.253] text-[#6D7A8A]">
               JPG, PNG, WebP, GIF 파일을 5MB 이하로 업로드할 수 있어요
             </p>
@@ -3063,11 +3067,10 @@ function ScheduleDayFigmaEditor({
             <div className="mt-[var(--figma-26)] flex flex-col gap-[var(--figma-10)]">
               <SettingsFieldLabel>일정 소개</SettingsFieldLabel>
               <textarea
-                className="h-[var(--figma-31)] resize-none rounded-[var(--figma-7)] border-[0.5px] border-[#F7B267] bg-transparent px-[var(--figma-8)] py-[var(--figma-6)] text-[#0D0D0C] outline-none placeholder:text-[#D9D9D9] focus:border-[#FE701E]"
+                className="h-[var(--figma-31)] resize-none rounded-[var(--figma-7)] border-[0.5px] border-[#F7B267] bg-transparent px-[var(--figma-8)] py-[var(--figma-6)] text-[#0D0D0C] outline-none placeholder:text-[#D9D9D9] focus:border-[#FE701E] max-md:h-11 max-md:text-base"
                 maxLength={100}
                 onChange={(event) => onChange({ summary: event.target.value })}
                 placeholder="이날의 여행 컨셉과 체험 내용을 간략히 소개해주세요"
-                style={{ fontSize: "var(--figma-12)" }}
                 value={day.summary}
               />
               <p className="text-right text-[length:var(--figma-10)] font-normal leading-[1.253] text-[#D9D9D9]">
@@ -3080,17 +3083,12 @@ function ScheduleDayFigmaEditor({
               <div className="grid gap-[var(--figma-6)]">
                 {timetableRows.map((row, index) => (
                   <div
-                    className="flex items-center pl-[var(--figma-22)]"
+                    className="flex items-center pl-[var(--figma-22)] max-md:grid max-md:grid-cols-[72px_minmax(0,1fr)_44px] max-md:gap-2 max-md:pl-0"
                     key={`${index}-${timetableRows.length}`}
                   >
                     <input
-                      aria-label={`${dayNumber}일차 ${index + 1}번째 일정 선택`}
-                      className="size-[var(--figma-10)] shrink-0 rounded-[2px] border border-[#AEB8C2] accent-[#FE701E]"
-                      type="checkbox"
-                    />
-                    <input
                       aria-label={`${dayNumber}일차 ${index + 1}번째 일정 시간`}
-                      className="ml-[var(--figma-12)] h-[var(--figma-31)] w-[var(--figma-55)] rounded-[var(--figma-7)] border-[0.5px] border-[#D9D9D9] bg-white px-[var(--figma-4)] text-center text-[length:var(--figma-10)] font-medium leading-[1.253] text-[#6D7A8A] outline-none placeholder:text-[#D9D9D9] focus:border-[#FE701E]"
+                      className="ml-[var(--figma-12)] h-[var(--figma-31)] w-[var(--figma-55)] rounded-[var(--figma-7)] border-[0.5px] border-[#D9D9D9] bg-white px-[var(--figma-4)] text-center text-[length:var(--figma-10)] font-medium leading-[1.253] text-[#6D7A8A] outline-none placeholder:text-[#D9D9D9] focus:border-[#FE701E] max-md:ml-0 max-md:h-11 max-md:w-full max-md:text-base"
                       inputMode="numeric"
                       onChange={(event) =>
                         updateTimetableRow(index, {
@@ -3102,7 +3100,7 @@ function ScheduleDayFigmaEditor({
                     />
                     <input
                       aria-label={`${dayNumber}일차 ${index + 1}번째 일정 내용`}
-                      className="ml-[var(--figma-8)] h-[var(--figma-31)] w-[var(--figma-379)] rounded-[var(--figma-7)] border-[0.5px] border-[#D9D9D9] bg-white px-[var(--figma-8)] text-[length:var(--figma-10)] font-medium leading-[1.253] text-[#0D0D0C] outline-none placeholder:text-[#D9D9D9] focus:border-[#FE701E]"
+                      className="ml-[var(--figma-8)] h-[var(--figma-31)] w-[var(--figma-379)] rounded-[var(--figma-7)] border-[0.5px] border-[#D9D9D9] bg-white px-[var(--figma-8)] text-[length:var(--figma-10)] font-medium leading-[1.253] text-[#0D0D0C] outline-none placeholder:text-[#D9D9D9] focus:border-[#FE701E] max-md:ml-0 max-md:h-11 max-md:w-full max-md:text-base"
                       onChange={(event) =>
                         updateTimetableRow(index, { text: event.target.value })
                       }
@@ -3111,18 +3109,20 @@ function ScheduleDayFigmaEditor({
                     />
                     <button
                       aria-label={`${dayNumber}일차 ${index + 1}번째 일정 삭제`}
-                      className="ml-[var(--figma-8)] grid size-[var(--figma-12)] shrink-0 place-items-center rounded-full bg-[#CAC4BC] text-white transition hover:bg-[#AEB8C2] disabled:cursor-not-allowed disabled:opacity-40"
+                      className="ml-[var(--figma-8)] grid size-[var(--figma-12)] shrink-0 place-items-center text-white transition hover:opacity-75 disabled:cursor-not-allowed disabled:opacity-40 max-md:ml-0 max-md:size-11"
                       disabled={timetableRows.length <= 1}
                       onClick={() => removeTimetableRow(index)}
                       type="button"
                     >
-                      <Minus aria-hidden="true" className="size-[var(--figma-6)]" strokeWidth={3} />
+                      <span className="grid size-[var(--figma-12)] place-items-center rounded-full bg-[#CAC4BC] max-md:size-5">
+                        <Minus aria-hidden="true" className="size-[var(--figma-6)]" strokeWidth={3} />
+                      </span>
                     </button>
                   </div>
                 ))}
               </div>
               <button
-                className="mx-auto inline-flex items-center gap-[var(--figma-4)] text-[length:var(--figma-10)] font-medium leading-[1.253] text-[#CAC4BC] transition hover:text-[#FE701E] disabled:cursor-not-allowed disabled:opacity-50"
+                className="mx-auto inline-flex items-center gap-[var(--figma-4)] text-[length:var(--figma-10)] font-medium leading-[1.253] text-[#CAC4BC] transition hover:text-[#FE701E] disabled:cursor-not-allowed disabled:opacity-50 max-md:min-h-11 max-md:text-sm"
                 disabled={timetableRows.length >= 8}
                 onClick={addTimetableRow}
                 type="button"
@@ -3219,12 +3219,12 @@ function SchedulePhotoSlots({
   }
 
   return (
-    <div className="mt-[var(--figma-8)] flex gap-[var(--figma-12)]">
+    <div className="mt-[var(--figma-8)] flex gap-[var(--figma-12)] max-md:grid max-md:grid-cols-3 max-md:gap-2">
       {Array.from({ length: 5 }).map((_, index) => {
         const image = images[index] ?? "";
         return (
           <label
-            className="flex h-[var(--figma-111)] w-[var(--figma-96)] cursor-pointer flex-col items-center justify-center gap-[var(--figma-7)] rounded-[var(--figma-7)] border-[0.5px] border-solid border-[#F7B267] bg-[#F9F9F9] bg-cover bg-center text-[length:var(--figma-12)] font-medium leading-[1.253] text-[#D9D9D9] transition hover:border-[#FE701E] hover:text-[#FE701E]"
+            className="flex h-[var(--figma-111)] w-[var(--figma-96)] cursor-pointer flex-col items-center justify-center gap-[var(--figma-7)] rounded-[var(--figma-7)] border-[0.5px] border-solid border-[#F7B267] bg-[#F9F9F9] bg-cover bg-center text-[length:var(--figma-12)] font-medium leading-[1.253] text-[#D9D9D9] transition hover:border-[#FE701E] hover:text-[#FE701E] max-md:h-24 max-md:w-full max-md:text-sm"
             key={index}
             style={image ? { backgroundImage: `url("${image}")` } : undefined}
           >
@@ -3290,7 +3290,7 @@ function PlacePanel({
         <DetailFormBlock>
           <div className="flex w-full flex-col gap-[var(--figma-14)]">
             <SettingsFieldLabel>프로그램 지역</SettingsFieldLabel>
-            <div className="grid grid-cols-2 gap-[var(--figma-14)]">
+            <div className="grid grid-cols-2 gap-[var(--figma-14)] max-sm:grid-cols-1">
               <FigmaTextInput
                 onChange={(region) => updateDraft({ region })}
                 placeholder="시 / 도 입력"
@@ -3327,7 +3327,7 @@ function PlacePanel({
               value={draft.placeInfo.meetingMemo}
             />
             <SettingsFieldLabel>담당자 연락처 (선택)</SettingsFieldLabel>
-            <div className="grid grid-cols-2 gap-[var(--figma-22)]">
+            <div className="grid grid-cols-2 gap-[var(--figma-22)] max-sm:grid-cols-1">
               <FigmaTextInput
                 onChange={(phone) => updateDraft({ phone })}
                 placeholder="전화번호"
@@ -3382,7 +3382,7 @@ function PlacePanel({
                 }
               />
             </div>
-            <label className="flex items-center gap-[var(--figma-8)] text-[length:var(--figma-14)] font-normal leading-[1.253] text-[#6D7A8A]">
+            <label className="flex min-h-[var(--figma-20)] items-center gap-[var(--figma-8)] text-[length:var(--figma-14)] font-normal leading-[1.253] text-[#6D7A8A] max-md:min-h-11">
               <input
                 checked={accommodationSameAsMeeting}
                 className="size-[var(--figma-18)] rounded-[4px] border border-[#6D7A8A] accent-[#FE701E]"
@@ -3415,7 +3415,7 @@ function PlacePanel({
               value={draft.placeInfo.accommodationMemo}
             />
             <SettingsFieldLabel>담당자 연락처 (선택)</SettingsFieldLabel>
-            <div className="grid grid-cols-2 gap-[var(--figma-22)]">
+            <div className="grid grid-cols-2 gap-[var(--figma-22)] max-sm:grid-cols-1">
               <FigmaTextInput
                 onChange={(phone) => updateDraft({ phone })}
                 placeholder="전화번호"
@@ -3459,10 +3459,9 @@ function FigmaTextarea({
         </p>
       ) : null}
       <textarea
-        className={`${heightClass} resize-none rounded-[var(--figma-7)] border-[0.5px] border-[#F7B267] bg-transparent px-[var(--figma-12)] py-[var(--figma-8)] text-[#0D0D0C] outline-none placeholder:text-[#D9D9D9] focus:border-[#FE701E]`}
+        className={`${heightClass} resize-none rounded-[var(--figma-7)] border-[0.5px] border-[#F7B267] bg-transparent px-[var(--figma-12)] py-[var(--figma-8)] text-[#0D0D0C] outline-none placeholder:text-[#D9D9D9] focus:border-[#FE701E] max-md:min-h-11 max-md:text-base`}
         onChange={(event) => onChange(event.target.value)}
         placeholder={placeholder}
-        style={{ fontSize: "var(--figma-12)" }}
         value={value}
       />
     </div>
@@ -3566,7 +3565,7 @@ function GuideItemsBlock({
         <div className="flex flex-col gap-[var(--figma-14)]">
           {items.map((item, index) => (
             <div
-              className="grid min-h-[var(--figma-31)] grid-cols-[var(--figma-8)_minmax(0,1fr)_var(--figma-14)] items-center gap-[var(--figma-8)]"
+              className="grid min-h-[var(--figma-31)] grid-cols-[var(--figma-8)_minmax(0,1fr)_var(--figma-14)] items-center gap-[var(--figma-8)] max-md:grid-cols-[var(--figma-8)_minmax(0,1fr)_44px]"
               key={index}
             >
               <span
@@ -3581,17 +3580,19 @@ function GuideItemsBlock({
               />
               <button
                 aria-label={`${title} 항목 삭제`}
-                className="grid size-[var(--figma-12)] place-items-center justify-self-center rounded-full bg-[#CAC4BC] text-white transition hover:bg-[#6D7A8A]"
+                className="grid size-[var(--figma-12)] place-items-center justify-self-center text-white transition hover:opacity-75 max-md:size-11"
                 onClick={() => removeItem(index)}
                 type="button"
               >
-                <Minus aria-hidden="true" className="size-[var(--figma-6)]" strokeWidth={2} />
+                <span className="grid size-[var(--figma-12)] place-items-center rounded-full bg-[#CAC4BC] max-md:size-5">
+                  <Minus aria-hidden="true" className="size-[var(--figma-6)]" strokeWidth={2} />
+                </span>
               </button>
             </div>
           ))}
         </div>
         <button
-          className="mx-auto mt-[var(--figma-2)] flex min-h-[var(--figma-18)] items-center gap-[var(--figma-4)] text-[length:var(--figma-12)] font-normal leading-[1.253] text-[#6D7A8A] transition hover:text-[#FE701E]"
+          className="mx-auto mt-[var(--figma-2)] flex min-h-[var(--figma-18)] items-center gap-[var(--figma-4)] text-[length:var(--figma-12)] font-normal leading-[1.253] text-[#6D7A8A] transition hover:text-[#FE701E] max-md:min-h-11 max-md:text-sm"
           onClick={addItem}
           type="button"
         >
@@ -3659,46 +3660,54 @@ function RefundRulesBlock({
         <div className="flex flex-col gap-[var(--figma-14)]">
           {rules.map((rule, index) => (
             <div
-              className="grid min-h-[var(--figma-31)] grid-cols-[var(--figma-8)_var(--figma-72)_var(--figma-72)_var(--figma-72)_var(--figma-40)_var(--figma-14)] items-center gap-[var(--figma-8)]"
+              className="grid min-h-[var(--figma-31)] grid-cols-[var(--figma-8)_var(--figma-72)_var(--figma-72)_var(--figma-72)_var(--figma-40)_var(--figma-14)] items-center gap-[var(--figma-8)] max-md:grid-cols-[var(--figma-8)_minmax(0,1fr)_44px]"
               key={rule.id}
             >
               <span
                 aria-hidden="true"
                 className="size-[var(--figma-8)] shrink-0 rounded-full bg-[#CAC4BC]"
               />
-              <FigmaTextInput
-                className="w-[var(--figma-72)] shrink-0 !border-[#CAC4BC]"
-                inputMode="numeric"
-                onChange={(daysBefore) => updateRule(index, { daysBefore })}
-                placeholder="00"
-                value={rule.daysBefore}
-              />
-              <span className="w-[var(--figma-72)] shrink-0 text-[length:var(--figma-14)] font-normal leading-[1.253] text-[#6D7A8A]">
-                일 전 취소 시
-              </span>
-              <FigmaTextInput
-                className="w-[var(--figma-72)] shrink-0 !border-[#CAC4BC]"
-                inputMode="numeric"
-                onChange={(refundRate) => updateRule(index, { refundRate })}
-                placeholder="00"
-                value={rule.refundRate}
-              />
-              <span className="w-[var(--figma-40)] shrink-0 text-[length:var(--figma-14)] font-normal leading-[1.253] text-[#6D7A8A]">
-                % 환불
-              </span>
+              <div className="contents max-md:flex max-md:min-w-0 max-md:flex-wrap max-md:items-center max-md:gap-2">
+                <div className="contents max-md:flex max-md:items-center max-md:gap-2">
+                  <FigmaTextInput
+                    className="w-[var(--figma-72)] shrink-0 !border-[#CAC4BC] max-md:!w-20"
+                    inputMode="numeric"
+                    onChange={(daysBefore) => updateRule(index, { daysBefore })}
+                    placeholder="00"
+                    value={rule.daysBefore}
+                  />
+                  <span className="w-[var(--figma-72)] shrink-0 text-[length:var(--figma-14)] font-normal leading-[1.253] text-[#6D7A8A]">
+                    일 전 취소 시
+                  </span>
+                </div>
+                <div className="contents max-md:flex max-md:items-center max-md:gap-2">
+                  <FigmaTextInput
+                    className="w-[var(--figma-72)] shrink-0 !border-[#CAC4BC] max-md:!w-20"
+                    inputMode="numeric"
+                    onChange={(refundRate) => updateRule(index, { refundRate })}
+                    placeholder="00"
+                    value={rule.refundRate}
+                  />
+                  <span className="w-[var(--figma-40)] shrink-0 text-[length:var(--figma-14)] font-normal leading-[1.253] text-[#6D7A8A]">
+                    % 환불
+                  </span>
+                </div>
+              </div>
               <button
                 aria-label="환불 규정 삭제"
-                className="grid size-[var(--figma-12)] place-items-center justify-self-center rounded-full bg-[#CAC4BC] text-white transition hover:bg-[#6D7A8A]"
+                className="grid size-[var(--figma-12)] place-items-center justify-self-center text-white transition hover:opacity-75 max-md:size-11"
                 onClick={() => removeRule(index)}
                 type="button"
               >
-                <Minus aria-hidden="true" className="size-[var(--figma-6)]" strokeWidth={2} />
+                <span className="grid size-[var(--figma-12)] place-items-center rounded-full bg-[#CAC4BC] max-md:size-5">
+                  <Minus aria-hidden="true" className="size-[var(--figma-6)]" strokeWidth={2} />
+                </span>
               </button>
             </div>
           ))}
         </div>
         <button
-          className="mt-[var(--figma-2)] flex min-h-[var(--figma-18)] w-fit items-center gap-[var(--figma-4)] text-[length:var(--figma-12)] font-normal leading-[1.253] text-[#6D7A8A] transition hover:text-[#FE701E]"
+          className="mt-[var(--figma-2)] flex min-h-[var(--figma-18)] w-fit items-center gap-[var(--figma-4)] text-[length:var(--figma-12)] font-normal leading-[1.253] text-[#6D7A8A] transition hover:text-[#FE701E] max-md:min-h-11 max-md:text-sm"
           onClick={addRule}
           type="button"
         >
@@ -4163,7 +4172,7 @@ function DashboardFooter({
 }) {
   if (dashboardState === "creating") {
     return (
-      <div className="flex w-full gap-[1.806vw] border-t border-[#6D7A8A] bg-white px-[1.944vw] py-[1.389vw]">
+      <div className="flex w-full gap-[1.806vw] border-t border-[#6D7A8A] bg-white px-[1.944vw] py-[1.389vw] max-md:gap-3 max-md:px-5 max-md:py-3">
         <DashboardFooterButton onClick={onOpenSchedule} tone="orange">
           오픈 예약하기
         </DashboardFooterButton>
@@ -4176,7 +4185,7 @@ function DashboardFooter({
 
   if (dashboardState === "ended") {
     return (
-      <div className="flex w-full gap-[1.806vw] border-t border-[#6D7A8A] bg-white px-[1.944vw] py-[1.389vw]">
+      <div className="flex w-full gap-[1.806vw] border-t border-[#6D7A8A] bg-white px-[1.944vw] py-[1.389vw] max-md:gap-3 max-md:px-5 max-md:py-3">
         <DashboardFooterButton onClick={onNextRound} tone="outline-orange">
           다음 기수 모집
         </DashboardFooterButton>
@@ -4188,7 +4197,7 @@ function DashboardFooter({
   }
 
   return (
-    <div className="flex w-full gap-[1.806vw] border-t border-[#6D7A8A] bg-white px-[1.944vw] py-[1.389vw]">
+    <div className="flex w-full gap-[1.806vw] border-t border-[#6D7A8A] bg-white px-[1.944vw] py-[1.389vw] max-md:gap-3 max-md:px-5 max-md:py-3">
       <DashboardFooterButton onClick={onSave} tone="orange">
         저장하기
       </DashboardFooterButton>
@@ -4221,7 +4230,7 @@ function DashboardFooterButton({
 
   return (
     <button
-      className={`inline-flex h-[29px] items-center justify-center rounded-[4px] px-[19px] text-[12px] font-medium leading-[1.253] disabled:cursor-not-allowed disabled:opacity-60 ${toneClassName}`}
+      className={`inline-flex h-[29px] items-center justify-center rounded-[4px] px-[19px] text-[12px] font-medium leading-[1.253] disabled:cursor-not-allowed disabled:opacity-60 max-md:min-h-11 max-md:flex-1 max-md:px-3 max-md:text-sm ${toneClassName}`}
       disabled={disabled}
       onClick={onClick}
       type="button"
@@ -4868,7 +4877,7 @@ function AddressSearchField({
           value={address}
         />
         <button
-          className="inline-flex h-[var(--figma-31)] items-center justify-center rounded-[var(--figma-7)] border border-[#6D7A8A] bg-white text-[length:var(--figma-12)] font-medium text-[#5B3A29] transition hover:border-[#FE701E] hover:text-[#FE701E]"
+          className="inline-flex h-[var(--figma-31)] items-center justify-center rounded-[var(--figma-7)] border border-[#6D7A8A] bg-white text-[length:var(--figma-12)] font-medium text-[#5B3A29] transition hover:border-[#FE701E] hover:text-[#FE701E] max-md:min-h-11 max-md:text-sm"
           onClick={() => {
             setAddressSearchError("");
             setPostcodeEmbedded(false);
@@ -4880,11 +4889,10 @@ function AddressSearchField({
         </button>
       </div>
       <input
-        className="h-[var(--figma-31)] w-full rounded-[var(--figma-7)] border-[0.5px] border-[#F7B267] bg-transparent px-[var(--figma-12)] text-[#0D0D0C] outline-none placeholder:text-[#D9D9D9] focus:border-[#FE701E]"
+        className="h-[var(--figma-31)] w-full rounded-[var(--figma-7)] border-[0.5px] border-[#F7B267] bg-transparent px-[var(--figma-12)] text-[#0D0D0C] outline-none placeholder:text-[#D9D9D9] focus:border-[#FE701E] max-md:h-11 max-md:text-base"
         onChange={(event) => onAddressDetailChange(event.target.value)}
         placeholder="상세주소를 입력해주세요."
         ref={detailAddressInputRef}
-        style={{ fontSize: "var(--figma-12)" }}
         type="text"
         value={addressDetail}
       />
@@ -5010,7 +5018,7 @@ function ToggleRow({
   return (
     <button
       aria-pressed={checked}
-      className="ml-auto flex h-[var(--figma-20)] flex-1 items-center justify-end gap-[var(--figma-8)] border-0 bg-transparent p-0 text-left"
+      className="ml-auto flex h-[var(--figma-20)] flex-1 items-center justify-end gap-[var(--figma-8)] border-0 bg-transparent p-0 text-left max-md:min-h-11"
       onClick={() => onChange(!checked)}
       type="button"
     >

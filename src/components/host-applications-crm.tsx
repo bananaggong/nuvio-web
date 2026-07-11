@@ -183,6 +183,7 @@ export function HostApplicationsCrm({
     useHostOperationsData();
   const [activeTab, setActiveTab] = useState<ReviewTab>("all");
   const [selectedApplicationId, setSelectedApplicationId] = useState("");
+  const [mobilePane, setMobilePane] = useState<"list" | "detail">("list");
   const [checkedApplicationIds, setCheckedApplicationIds] = useState<string[]>([]);
   const [applicationFormTemplates, setApplicationFormTemplates] =
     useState<ApplicationFormTemplate[]>([]);
@@ -348,6 +349,11 @@ export function HostApplicationsCrm({
   const selectedMessageTemplate =
     messageTemplates.find((template) => template.id === selectedMessageTemplateId) ??
     messageTemplates[0];
+
+  function selectApplication(applicationId: string) {
+    setSelectedApplicationId(applicationId);
+    setMobilePane("detail");
+  }
 
   useEffect(() => {
     let cancelled = false;
@@ -605,6 +611,28 @@ export function HostApplicationsCrm({
         />
 
         <section className="flex min-h-0 min-w-0 flex-1 flex-col">
+          {activePanel === "applications" ? (
+            <div className="hidden min-h-11 grid-cols-2 border-b border-[#D9D9D9] bg-white px-5 max-md:grid">
+              {([
+                ["list", "신청자 목록"],
+                ["detail", "신청 정보"],
+              ] as const).map(([pane, label]) => (
+                <button
+                  aria-pressed={mobilePane === pane}
+                  className={`min-h-11 border-b-2 text-sm font-semibold ${
+                    mobilePane === pane
+                      ? "border-[#FE701E] text-[#FE701E]"
+                      : "border-transparent text-[#6D7A8A]"
+                  }`}
+                  key={pane}
+                  onClick={() => setMobilePane(pane)}
+                  type="button"
+                >
+                  {label}
+                </button>
+              ))}
+            </div>
+          ) : null}
           <main
             className={
               activePanel === "applications"
@@ -640,30 +668,34 @@ export function HostApplicationsCrm({
             ) : null}
             {activePanel === "applications" ? (
               <>
-                <ApplicationListPanel
-                  activeTab={activeTab}
-                  applications={filteredApplications}
-                  checkedApplicationIds={checkedApplicationIds}
-                  onSelect={(applicationId) => setSelectedApplicationId(applicationId)}
-                  onTabChange={setActiveTab}
-                  onToggleChecked={toggleCheckedApplication}
-                  selectedApplicationId={selectedApplication?.id ?? ""}
-                />
-                <ApplicationDetailPanel
-                  application={selectedApplication}
-                  formTemplate={selectedApplicationTemplate}
-                  program={program}
-                  programDraft={sidebarDraft}
-                  programTitle={sidebarTitle}
-                />
+                <div className={`contents ${mobilePane === "list" ? "" : "max-md:hidden"}`}>
+                  <ApplicationListPanel
+                    activeTab={activeTab}
+                    applications={filteredApplications}
+                    checkedApplicationIds={checkedApplicationIds}
+                    onSelect={selectApplication}
+                    onTabChange={setActiveTab}
+                    onToggleChecked={toggleCheckedApplication}
+                    selectedApplicationId={selectedApplication?.id ?? ""}
+                  />
+                </div>
+                <div className={`contents ${mobilePane === "detail" ? "" : "max-md:hidden"}`}>
+                  <ApplicationDetailPanel
+                    application={selectedApplication}
+                    formTemplate={selectedApplicationTemplate}
+                    program={program}
+                    programDraft={sidebarDraft}
+                    programTitle={sidebarTitle}
+                  />
+                </div>
               </>
             ) : null}
           </main>
 
           {activePanel === "applications" ? (
-            <div className="flex h-[var(--app-69)] shrink-0 items-start gap-[10px] border-t border-[#6D7A8A] bg-white pl-[var(--app-29)] pt-[var(--app-20)]">
+            <div className="flex h-[var(--app-69)] shrink-0 items-start gap-[10px] border-t border-[#6D7A8A] bg-white pl-[var(--app-29)] pt-[var(--app-20)] max-md:items-center max-md:px-5 max-md:pt-0">
               <button
-                className={`inline-flex h-[var(--app-29)] w-[var(--app-91)] items-center justify-center rounded-[4px] border text-[12px] font-normal leading-[1.253] ${
+                className={`inline-flex h-[var(--app-29)] w-[var(--app-91)] items-center justify-center rounded-[4px] border text-[12px] font-normal leading-[1.253] max-md:min-h-11 max-md:flex-1 max-md:text-sm ${
                   checkedCount > 0
                     ? "border-[#FE701E] bg-white text-[#FE701E]"
                     : "border-[#D9D9D9] bg-[#F3F3F3] text-[#AEB8C2]"
@@ -675,7 +707,7 @@ export function HostApplicationsCrm({
                 메시지 전송
               </button>
               <button
-                className={`inline-flex h-[var(--app-29)] w-[var(--app-77)] items-center justify-center rounded-[4px] border text-[12px] font-normal leading-[1.253] ${
+                className={`inline-flex h-[var(--app-29)] w-[var(--app-77)] items-center justify-center rounded-[4px] border text-[12px] font-normal leading-[1.253] max-md:min-h-11 max-md:flex-1 max-md:text-sm ${
                   checkedCount > 0
                     ? "border-[#7A8B52] bg-[#7A8B52] text-white"
                     : "border-[#D9D9D9] bg-[#F3F3F3] text-[#AEB8C2]"
@@ -687,7 +719,7 @@ export function HostApplicationsCrm({
                 승인
               </button>
               <button
-                className={`inline-flex h-[var(--app-29)] w-[var(--app-91)] items-center justify-center rounded-[4px] border text-[12px] font-normal leading-[1.253] ${
+                className={`inline-flex h-[var(--app-29)] w-[var(--app-91)] items-center justify-center rounded-[4px] border text-[12px] font-normal leading-[1.253] max-md:min-h-11 max-md:flex-1 max-md:text-sm ${
                   checkedCount > 0
                     ? "border-[#6D7A8A] bg-white text-[#5B3A29]"
                     : "border-[#D9D9D9] bg-[#F3F3F3] text-[#AEB8C2]"
@@ -755,12 +787,12 @@ function ApplicationListPanel({
   selectedApplicationId: string;
 }) {
   return (
-    <section className="w-[var(--app-625)] shrink-0 overflow-y-auto border-r border-[#6D7A8A] bg-white">
-      <div className="ml-[var(--app-40)] mt-[var(--app-47)] w-[var(--app-577)] border-b border-[#CAC4BC]">
-        <div className="flex h-[27px] items-start gap-[12px]">
+    <section className="w-[var(--app-625)] shrink-0 overflow-y-auto border-r border-[#6D7A8A] bg-white max-md:w-full max-md:border-r-0">
+      <div className="ml-[var(--app-40)] mt-[var(--app-47)] w-[var(--app-577)] border-b border-[#CAC4BC] max-md:ml-0 max-md:mt-5 max-md:w-full max-md:px-5">
+        <div className="flex h-[27px] items-start gap-[12px] max-md:h-11">
           {reviewTabs.map((tab) => (
             <button
-              className={`relative h-[27px] text-[14px] leading-[1.253] ${
+              className={`relative h-[27px] text-[14px] leading-[1.253] max-md:min-h-11 max-md:min-w-11 ${
                 activeTab === tab.value
                   ? "font-semibold text-[#5B3A29] after:absolute after:bottom-0 after:left-0 after:h-[1px] after:w-full after:bg-[#FE701E]"
                   : "font-normal text-[#CAC4BC]"
@@ -775,7 +807,7 @@ function ApplicationListPanel({
         </div>
       </div>
 
-      <div className="ml-[var(--app-40)] mt-[23px] grid w-[var(--app-577)] gap-[9px]">
+      <div className="ml-[var(--app-40)] mt-[23px] grid w-[var(--app-577)] gap-[9px] max-md:ml-0 max-md:w-full max-md:px-5">
         {applications.length > 0 ? (
           applications.map((application) => (
             <ApplicationRow
@@ -815,35 +847,38 @@ function ApplicationRow({
 
   return (
     <div
-      className={`grid h-[34px] w-full grid-cols-[22px_112px_70px_160px_84px_minmax(0,1fr)] items-center text-left text-[14px] leading-[1.253] ${
+      className={`grid h-[34px] w-full grid-cols-[22px_112px_70px_160px_84px_minmax(0,1fr)] items-center text-left text-[14px] leading-[1.253] max-md:h-auto max-md:min-h-14 max-md:grid-cols-[44px_minmax(0,1fr)] ${
         selected ? "bg-[#F3F3F3]" : "bg-white"
       }`}
     >
-      <input
-        aria-label={`${application.applicantName || "신청자"} 선택`}
-        checked={checked}
-        className="ml-[6px] size-[14px] accent-[#FE701E]"
-        onChange={() => onToggleChecked(application.id)}
-        type="checkbox"
-      />
+      <label className="grid size-11 place-items-center">
+        <span className="sr-only">{application.applicantName || "신청자"} 선택</span>
+        <input
+          aria-label={`${application.applicantName || "신청자"} 선택`}
+          checked={checked}
+          className="size-[14px] accent-[#FE701E] max-md:size-5"
+          onChange={() => onToggleChecked(application.id)}
+          type="checkbox"
+        />
+      </label>
       <button
-        className="contents text-left"
+        className="contents text-left max-md:flex max-md:min-h-14 max-md:min-w-0 max-md:items-center max-md:gap-2"
         onClick={() => onSelect(application.id)}
         type="button"
       >
         <span className="truncate font-semibold text-[#0D0D0C]">
           {application.applicantName || "이름 미입력"}
         </span>
-        <span className="font-semibold text-[#0D0D0C]">성별</span>
-        <span className="font-normal text-[#6D7A8A]">
+        <span className="font-semibold text-[#0D0D0C] max-md:hidden">성별</span>
+        <span className="font-normal text-[#6D7A8A] max-md:ml-auto max-md:shrink-0 max-md:text-xs">
           접수일 {formatShortDate(application.submittedAt)}
         </span>
         <span
-          className={`inline-flex h-[21px] w-fit items-center rounded-[6px] px-[8px] text-[12px] font-semibold leading-[1.253] ${reviewStatus.className}`}
+          className={`inline-flex h-[21px] w-fit items-center rounded-[6px] px-[8px] text-[12px] font-semibold leading-[1.253] max-md:hidden ${reviewStatus.className}`}
         >
           {reviewStatus.label}
         </span>
-        <span className="flex items-center justify-end gap-[3px] pr-[8px] text-[12px] font-normal leading-[1.253] text-[#6D7A8A]">
+        <span className="flex items-center justify-end gap-[3px] pr-[8px] text-[12px] font-normal leading-[1.253] text-[#6D7A8A] max-md:hidden">
           <span className={`size-[4px] rounded-full ${messageStatus.dotClassName}`} />
           {messageStatus.label}
         </span>
@@ -910,13 +945,13 @@ function ApplicationDetailPanel({
   const endDate = formatApplicationPanelDate(programDraft?.activityEnd);
 
   return (
-    <section className="min-h-0 min-w-0 flex-1 bg-white pl-[var(--app-20)] pr-[11px] pt-[var(--app-52)]">
-      <div className="flex h-[28px] items-start text-[16px] font-semibold leading-[1.253] text-[#0D0D0C]">
+    <section className="min-h-0 min-w-0 flex-1 bg-white pl-[var(--app-20)] pr-[11px] pt-[var(--app-52)] max-md:flex max-md:w-full max-md:flex-col max-md:px-5 max-md:pt-5">
+      <div className="flex h-[28px] items-start text-[16px] font-semibold leading-[1.253] text-[#0D0D0C] max-md:h-auto max-md:flex-wrap max-md:gap-x-4 max-md:gap-y-2">
         <span>{application.applicantName || "이름 미입력"}</span>
-        <span className="ml-[28px]">{applicantGender}</span>
-        <span className="ml-[28px]">{application.phone || "연락처 미입력"}</span>
+        <span className="ml-[28px] max-md:ml-0">{applicantGender}</span>
+        <span className="ml-[28px] max-md:ml-0">{application.phone || "연락처 미입력"}</span>
         {statusMeta ? (
-          <div className="ml-auto flex items-center gap-[8px] pr-[8px] text-[14px] font-normal">
+          <div className="ml-auto flex items-center gap-[8px] pr-[8px] text-[14px] font-normal max-md:ml-0 max-md:w-full max-md:pr-0">
             <span className="text-[#6D7A8A]">현재 상태</span>
             <span
               className={`inline-flex h-[23px] items-center rounded-[999px] px-[10px] text-[12px] font-semibold leading-[1.253] ${statusMeta.className}`}
@@ -935,9 +970,9 @@ function ApplicationDetailPanel({
         </p>
       ) : null}
 
-      <article className="mt-[13px] h-[calc(100vh_-_4.861vw_-_var(--app-69)_-_107px)] min-h-0 w-[var(--app-555)] overflow-y-auto rounded-[6px] border border-[#6D7A8A] bg-[#F9F9F9] px-[24px] py-[18px]">
-        <div className="grid grid-cols-[96px_minmax(0,1fr)_108px_108px] gap-x-[12px] border-b border-[#FE701E] pb-[22px]">
-          <div className="h-[96px] w-[96px] overflow-hidden rounded-[16px] bg-[#D9D9D9]">
+      <article className="mt-[13px] h-[calc(100vh_-_4.861vw_-_var(--app-69)_-_107px)] min-h-0 w-[var(--app-555)] overflow-y-auto rounded-[6px] border border-[#6D7A8A] bg-[#F9F9F9] px-[24px] py-[18px] max-md:h-auto max-md:w-full max-md:flex-1 max-md:px-4">
+        <div className="grid grid-cols-[96px_minmax(0,1fr)_108px_108px] gap-x-[12px] border-b border-[#FE701E] pb-[22px] max-md:grid-cols-[80px_minmax(0,1fr)] max-md:gap-y-3">
+          <div className="h-[96px] w-[96px] overflow-hidden rounded-[16px] bg-[#D9D9D9] max-md:size-20 max-md:rounded-md">
             {programImageUrl ? (
               // eslint-disable-next-line @next/next/no-img-element
               <img
@@ -958,13 +993,13 @@ function ApplicationDetailPanel({
               {hostName}
             </p>
           </div>
-          <div className="pt-[17px] text-[12px] font-normal leading-[1.253] text-[#6D7A8A]">
+          <div className="pt-[17px] text-[12px] font-normal leading-[1.253] text-[#6D7A8A] max-md:col-span-2 max-md:flex max-md:items-center max-md:gap-3 max-md:pt-0">
             <p>시작일</p>
-            <p className="mt-[18px] whitespace-nowrap font-semibold">{startDate}</p>
+            <p className="mt-[18px] whitespace-nowrap font-semibold max-md:mt-0">{startDate}</p>
           </div>
-          <div className="pt-[17px] text-[12px] font-normal leading-[1.253] text-[#6D7A8A]">
+          <div className="pt-[17px] text-[12px] font-normal leading-[1.253] text-[#6D7A8A] max-md:col-span-2 max-md:flex max-md:items-center max-md:gap-3 max-md:pt-0">
             <p>종료일</p>
-            <p className="mt-[18px] whitespace-nowrap font-semibold">{endDate}</p>
+            <p className="mt-[18px] whitespace-nowrap font-semibold max-md:mt-0">{endDate}</p>
           </div>
         </div>
 
@@ -1034,11 +1069,16 @@ function SendMessageDialog({
     !isScheduling;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/20 px-[24px] py-[24px]">
-      <section className="relative flex h-[clamp(635px,44.097vw,846.667px)] max-h-[calc(100vh-48px)] w-[clamp(457px,31.736vw,609.333px)] max-w-[calc(100vw-48px)] flex-col overflow-y-auto rounded-[8px] border border-[#D9D9D9] bg-white px-[20px] pb-[24px] pt-[49px] shadow-[0_18px_42px_rgba(13,13,12,0.12)]">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/20 px-[24px] py-[24px] max-md:px-4 max-md:py-4 max-[359px]:px-3 max-[359px]:py-3">
+      <section
+        aria-labelledby="send-message-dialog-title"
+        aria-modal="true"
+        className="relative flex h-[clamp(635px,44.097vw,846.667px)] max-h-[calc(100vh-48px)] w-[clamp(457px,31.736vw,609.333px)] max-w-[calc(100vw-48px)] flex-col overflow-y-auto rounded-[8px] border border-[#D9D9D9] bg-white px-[20px] pb-[24px] pt-[49px] shadow-[0_18px_42px_rgba(13,13,12,0.12)] max-md:h-auto max-md:max-h-[calc(100dvh-32px)] max-md:w-full max-md:max-w-none max-md:px-4 max-md:pb-4 max-md:pt-14 max-[359px]:max-h-[calc(100dvh-24px)]"
+        role="dialog"
+      >
         <button
           aria-label="메시지 전송 닫기"
-          className="absolute right-[17px] top-[18px] grid size-[30px] place-items-center text-[#0D0D0C] transition hover:text-[#FE701E]"
+          className="absolute right-[17px] top-[18px] grid size-[30px] place-items-center text-[#0D0D0C] transition hover:text-[#FE701E] max-md:right-2 max-md:top-2 max-md:size-11"
           onClick={onClose}
           type="button"
         >
@@ -1046,7 +1086,10 @@ function SendMessageDialog({
         </button>
 
         <div>
-          <h2 className="text-[14px] font-medium leading-[1.253] text-[#0D0D0C]">
+          <h2
+            className="text-[14px] font-medium leading-[1.253] text-[#0D0D0C] max-md:text-base"
+            id="send-message-dialog-title"
+          >
             메세지 전송
           </h2>
           <p className="mt-[13px] text-[14px] font-normal leading-[1.253] text-[#6D7A8A]">
@@ -1058,24 +1101,28 @@ function SendMessageDialog({
           <h3 className="text-[14px] font-medium leading-[1.253] text-[#6D7A8A]">
             수신자 ({String(recipients.length).padStart(2, "0")}명)
           </h3>
-          <div className="ml-[20px] mt-[11px] h-[108px] overflow-y-auto pr-[2px]">
+          <div className="ml-[20px] mt-[11px] h-[108px] overflow-y-auto pr-[2px] max-md:ml-0 max-md:h-auto max-md:max-h-40">
             {recipients.length > 0 ? (
               recipients.map((recipient) => (
                 <div
-                  className="grid h-[27px] grid-cols-[58px_47px_minmax(0,1fr)_14px] items-center border-b border-[#E9E9E9] px-[4px] text-[12px] font-medium leading-[1.253] text-[#6D7A8A] last:border-b-0"
+                  className="grid h-[27px] grid-cols-[58px_47px_minmax(0,1fr)_14px] items-center border-b border-[#E9E9E9] px-[4px] text-[12px] font-medium leading-[1.253] text-[#6D7A8A] last:border-b-0 max-md:h-auto max-md:min-h-12 max-md:grid-cols-[minmax(0,1fr)_44px] max-md:gap-x-2 max-md:px-2 max-md:py-1"
                   key={recipient.id}
                 >
                   <span className="truncate">{recipient.applicantName || "신청자"}</span>
-                  <span className="truncate">{getApplicationGenderLabel(recipient)}</span>
-                  <span className="truncate">
+                  <span className="truncate max-md:col-start-1 max-md:text-[11px]">
+                    {getApplicationGenderLabel(recipient)}
+                  </span>
+                  <span className="truncate max-md:col-start-1 max-md:text-[11px]">
                     접수일 {formatShortDate(recipient.submittedAt)}
                   </span>
                   <button
                     aria-label={`${recipient.applicantName || "신청자"} 수신자 제거`}
-                    className="ml-auto size-[9px] rounded-full bg-[#CAC4BC]"
+                    className="ml-auto grid size-[22px] place-items-center rounded-full text-[#AEB8C2] transition hover:text-[#FE701E] max-md:col-start-2 max-md:row-span-3 max-md:row-start-1 max-md:size-11"
                     onClick={() => onRemoveRecipient(recipient.id)}
                     type="button"
-                  />
+                  >
+                    <X aria-hidden="true" className="size-4" strokeWidth={2} />
+                  </button>
                 </div>
               ))
             ) : (
@@ -1099,14 +1146,14 @@ function SendMessageDialog({
 
               return (
                 <label
-                  className={`grid cursor-pointer grid-cols-[14px_minmax(0,1fr)] items-start gap-[6px] ${
+                  className={`grid cursor-pointer grid-cols-[14px_minmax(0,1fr)] items-start gap-[6px] max-md:min-h-11 max-md:grid-cols-[20px_minmax(0,1fr)] max-md:items-start max-md:gap-2 ${
                     selected ? "text-[#0D0D0C]" : "text-[#6D7A8A]"
                   }`}
                   key={template.id}
                 >
                   <input
                     checked={selected}
-                    className="mt-[8px] size-[12px] accent-[#FE701E]"
+                    className="mt-[8px] size-[12px] accent-[#FE701E] max-md:size-4"
                     onChange={() => onTemplateChange(template.id)}
                     type="radio"
                   />
@@ -1139,7 +1186,7 @@ function SendMessageDialog({
               );
             })}
             <Link
-              className="ml-[14px] flex w-fit items-center gap-[4px] text-[12px] font-normal leading-[1.253] text-[#FF9A3D]"
+              className="ml-[14px] flex w-fit items-center gap-[4px] text-[12px] font-normal leading-[1.253] text-[#FF9A3D] max-md:ml-0 max-md:min-h-11 max-md:text-sm"
               href="/host/settings?panel=notifications"
             >
               <span className="grid size-[12px] place-items-center rounded-full bg-[#FF9A3D] text-[10px] font-semibold leading-none text-white">
@@ -1154,10 +1201,10 @@ function SendMessageDialog({
           <h3 className="text-[14px] font-medium leading-[1.253] text-[#6D7A8A]">
             발송 일정
           </h3>
-          <div className="mt-[8px] grid grid-cols-[minmax(0,242px)_75px] gap-[7px]">
+          <div className="mt-[8px] grid grid-cols-[minmax(0,242px)_75px] gap-[7px] max-md:grid-cols-1">
             <label className="relative">
               <input
-                className="h-[36px] w-full rounded-[4px] border border-[#F7B267] bg-white px-[10px] pr-[34px] text-[12px] font-normal leading-[1.253] text-[#6D7A8A] outline-none"
+                className="h-[36px] w-full rounded-[4px] border border-[#F7B267] bg-white px-[10px] pr-[34px] text-[12px] font-normal leading-[1.253] text-[#6D7A8A] outline-none max-md:h-11 max-md:text-base"
                 onChange={(event) => onScheduleDateChange(event.target.value)}
                 type="date"
                 value={scheduleDate}
@@ -1169,7 +1216,7 @@ function SendMessageDialog({
               />
             </label>
             <input
-              className="h-[36px] rounded-[4px] border border-[#F7B267] bg-white px-[8px] text-[12px] font-normal leading-[1.253] text-[#6D7A8A] outline-none"
+              className="h-[36px] rounded-[4px] border border-[#F7B267] bg-white px-[8px] text-[12px] font-normal leading-[1.253] text-[#6D7A8A] outline-none max-md:h-11 max-md:w-full max-md:text-base"
               onChange={(event) => onScheduleTimeChange(event.target.value)}
               type="time"
               value={scheduleTime}
@@ -1184,7 +1231,7 @@ function SendMessageDialog({
         ) : null}
 
         <button
-          className="ml-auto mt-auto inline-flex h-[29px] min-w-[80px] items-center justify-center rounded-[4px] bg-[#FE701E] px-[10px] text-[12px] font-semibold leading-[1.253] text-white disabled:cursor-not-allowed disabled:bg-[#D9D9D9]"
+          className="ml-auto mt-auto inline-flex h-[29px] min-w-[80px] items-center justify-center rounded-[4px] bg-[#FE701E] px-[10px] text-[12px] font-semibold leading-[1.253] text-white disabled:cursor-not-allowed disabled:bg-[#D9D9D9] max-md:mt-5 max-md:min-h-11 max-md:w-full max-md:text-sm"
           disabled={!canSchedule}
           onClick={() => {
             void onSchedule();
@@ -1216,14 +1263,22 @@ function StatusChangeDialog({
   value: HostApplicationStatus;
 }) {
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/35 px-[24px]">
-      <section className="w-[420px] max-w-full rounded-[8px] bg-white px-[24px] py-[22px] shadow-[0_16px_45px_rgba(13,13,12,0.18)]">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/35 px-[24px] max-md:px-4 max-[359px]:px-3">
+      <section
+        aria-labelledby="status-change-dialog-title"
+        aria-modal="true"
+        className="w-[420px] max-w-full rounded-[8px] bg-white px-[24px] py-[22px] shadow-[0_16px_45px_rgba(13,13,12,0.18)] max-md:max-h-[calc(100dvh-32px)] max-md:overflow-y-auto max-md:px-4"
+        role="dialog"
+      >
         <div className="flex items-start justify-between gap-[18px]">
           <div>
             <p className="text-[12px] font-semibold uppercase tracking-[0.14em] text-[#FE701E]">
               Status
             </p>
-            <h2 className="mt-[8px] text-[20px] font-semibold leading-[1.253] text-[#0D0D0C]">
+            <h2
+              className="mt-[8px] text-[20px] font-semibold leading-[1.253] text-[#0D0D0C]"
+              id="status-change-dialog-title"
+            >
               신청 상태 수정
             </h2>
             <p className="mt-[8px] text-[13px] font-normal leading-[1.55] text-[#6D7A8A]">
@@ -1232,7 +1287,7 @@ function StatusChangeDialog({
           </div>
           <button
             aria-label="닫기"
-            className="inline-flex size-[32px] items-center justify-center rounded-full border border-[#D9D9D9] text-[18px] leading-none text-[#6D7A8A]"
+            className="inline-flex size-[32px] items-center justify-center rounded-full border border-[#D9D9D9] text-[18px] leading-none text-[#6D7A8A] max-md:size-11 max-md:shrink-0"
             onClick={onClose}
             type="button"
           >
@@ -1243,7 +1298,7 @@ function StatusChangeDialog({
         <div className="mt-[20px] grid gap-[8px]">
           {applicationStatusOptions.map((option) => (
             <label
-              className={`grid cursor-pointer grid-cols-[18px_minmax(0,1fr)] gap-[10px] rounded-[6px] border px-[12px] py-[10px] ${
+              className={`grid min-h-11 cursor-pointer grid-cols-[18px_minmax(0,1fr)] gap-[10px] rounded-[6px] border px-[12px] py-[10px] ${
                 value === option.value
                   ? "border-[#FE701E] bg-[#FFF7F0]"
                   : "border-[#D9D9D9] bg-white"
@@ -1270,14 +1325,14 @@ function StatusChangeDialog({
 
         <div className="mt-[22px] flex justify-end gap-[8px]">
           <button
-            className="inline-flex h-[36px] items-center justify-center rounded-[4px] border border-[#D9D9D9] bg-white px-[14px] text-[13px] font-normal text-[#6D7A8A]"
+            className="inline-flex h-[36px] items-center justify-center rounded-[4px] border border-[#D9D9D9] bg-white px-[14px] text-[13px] font-normal text-[#6D7A8A] max-md:min-h-11 max-md:flex-1 max-md:text-sm"
             onClick={onClose}
             type="button"
           >
             취소
           </button>
           <button
-            className="inline-flex h-[36px] items-center justify-center rounded-[4px] bg-[#0D0D0C] px-[16px] text-[13px] font-semibold text-white"
+            className="inline-flex h-[36px] items-center justify-center rounded-[4px] bg-[#0D0D0C] px-[16px] text-[13px] font-semibold text-white max-md:min-h-11 max-md:flex-1 max-md:text-sm"
             onClick={onSubmit}
             type="button"
           >
@@ -1420,7 +1475,7 @@ function ApplicationResponseControl({
     return (
       <div className="mt-[14px] space-y-[12px]">
         <ApplicationAttachmentPreview block={block} />
-        <label className="inline-flex items-center gap-[8px] px-[14px] text-[14px] font-normal leading-[1.253] text-[#5B3A29]">
+        <label className="inline-flex min-h-[20px] items-center gap-[8px] px-[14px] text-[14px] font-normal leading-[1.253] text-[#5B3A29] max-md:min-h-11">
           <input
             checked={checked}
             className="size-[14px] accent-[#FE701E]"
@@ -1437,7 +1492,7 @@ function ApplicationResponseControl({
   if (block.type === "longText") {
     return (
       <textarea
-        className="mt-[14px] min-h-[86px] w-full resize-none rounded-[4px] border border-[#FF9A3D] bg-white px-[12px] py-[10px] text-[12px] font-normal leading-[1.6] text-[#6D7A8A] outline-none placeholder:text-[#CAC4BC]"
+        className="mt-[14px] min-h-[86px] w-full resize-none rounded-[4px] border border-[#FF9A3D] bg-white px-[12px] py-[10px] text-[12px] font-normal leading-[1.6] text-[#6D7A8A] outline-none placeholder:text-[#CAC4BC] max-md:text-base"
         placeholder="응답 없음"
         readOnly
         value={displayValue}
@@ -1464,11 +1519,11 @@ function ApplicationResponseControl({
           : ["응답 없음"];
 
     return (
-      <div className="mt-[16px] grid grid-cols-2 gap-x-[58px] gap-y-[12px] px-[14px] text-[14px] font-normal leading-[1.253] text-[#5B3A29]">
+      <div className="mt-[16px] grid grid-cols-2 gap-x-[58px] gap-y-[12px] px-[14px] text-[14px] font-normal leading-[1.253] text-[#5B3A29] max-sm:grid-cols-1 max-sm:gap-x-0 max-sm:px-0">
         {options.map((option, index) => {
           const checked = selectedValues.includes(option);
           return (
-            <label className="inline-flex items-center gap-[8px]" key={`${option}-${index}`}>
+            <label className="inline-flex min-h-[20px] items-center gap-[8px] max-md:min-h-11" key={`${option}-${index}`}>
               <input
                 checked={checked}
                 className="size-[14px] accent-[#FE701E]"
@@ -1489,7 +1544,7 @@ function ApplicationResponseControl({
   if (block.type === "checkbox") {
     const checked = isTruthyAnswer(value);
     return (
-      <label className="mt-[16px] inline-flex items-center gap-[8px] px-[14px] text-[14px] font-normal leading-[1.253] text-[#5B3A29]">
+      <label className="mt-[16px] inline-flex min-h-[20px] items-center gap-[8px] px-[14px] text-[14px] font-normal leading-[1.253] text-[#5B3A29] max-md:min-h-11">
         <input
           checked={checked}
           className="size-[14px] accent-[#FE701E]"
@@ -1504,7 +1559,7 @@ function ApplicationResponseControl({
 
   return (
     <input
-      className="mt-[14px] h-[30px] w-full rounded-[4px] border border-[#FF9A3D] bg-white px-[12px] text-[12px] font-normal leading-[1.253] text-[#6D7A8A] outline-none placeholder:text-[#CAC4BC]"
+      className="mt-[14px] h-[30px] w-full rounded-[4px] border border-[#FF9A3D] bg-white px-[12px] text-[12px] font-normal leading-[1.253] text-[#6D7A8A] outline-none placeholder:text-[#CAC4BC] max-md:h-11 max-md:text-base"
       inputMode={block.type === "phone" ? "tel" : "text"}
       placeholder="응답 없음"
       readOnly

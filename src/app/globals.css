@@ -89,6 +89,11 @@ a {
     height: 44px !important;
     font-size: 16px;
   }
+
+  .program-rich-text-editor .ProseMirror {
+    min-height: 180px !important;
+    font-size: 16px !important;
+  }
 }
 
 ::selection {

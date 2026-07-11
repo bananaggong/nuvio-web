@@ -249,7 +249,7 @@ export function KakaoMap({
       ) : null}
       {showExternalLink && kakaoMapUrl ? (
         <a
-          className="absolute bottom-3 right-3 z-20 inline-flex items-center gap-1 rounded-full bg-white/95 px-3 py-2 text-xs font-semibold text-[#5B3A29] shadow-sm ring-1 ring-black/5 transition hover:bg-white"
+          className="absolute bottom-3 right-3 z-20 inline-flex min-h-11 items-center gap-1 rounded-full bg-white/95 px-3 py-2 text-xs font-semibold text-[#5B3A29] shadow-sm ring-1 ring-black/5 transition hover:bg-white"
           href={kakaoMapUrl}
           rel="noreferrer"
           target="_blank"

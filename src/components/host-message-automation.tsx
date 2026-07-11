@@ -84,6 +84,7 @@ export function HostMessageAutomation({
     HostScheduledMessage[]
   >([]);
   const [selectedBatchId, setSelectedBatchId] = useState("");
+  const [mobilePane, setMobilePane] = useState<"list" | "detail">("list");
   const [messageListTab, setMessageListTab] = useState<MessageListTab>("all");
   const [isLoadingMessages, setIsLoadingMessages] = useState(false);
   const [messageError, setMessageError] = useState("");
@@ -373,6 +374,11 @@ export function HostMessageAutomation({
     : undefined;
   const sidebarStatus = getHostProgramSidebarStatus(program, sidebarDraft);
 
+  function selectMessageBatch(batchId: string) {
+    setSelectedBatchId(batchId);
+    setMobilePane("detail");
+  }
+
   return (
     <div
       className="font-pretendard min-h-[calc(100vh_-_var(--msg-header-height))] bg-white text-[#5B3A29]"
@@ -390,28 +396,52 @@ export function HostMessageAutomation({
           title={sidebarTitle}
         />
 
-        <section className="min-w-0 flex-1 overflow-x-auto bg-white">
-          <div className="flex min-h-[calc(100vh_-_var(--msg-header-height))] w-[calc(var(--msg-list-width)_+_var(--msg-detail-width))] flex-col bg-white">
-          <main className="grid min-h-[calc(100vh_-_var(--msg-header-height)_-_var(--msg-bottom-height))] grid-cols-[var(--msg-list-width)_var(--msg-detail-width)] bg-white">
-            <MessageScheduleListPanel
-              activeTab={messageListTab}
-              batches={visibleMessageBatches}
-              error={messageError}
-              isLoading={isLoadingMessages}
-              notice={messageNotice}
-              onSelect={setSelectedBatchId}
-              onTabChange={setMessageListTab}
-              selectedBatchId={selectedBatch?.id}
-            />
-            <MessageScheduleDetailPanel
-              batch={selectedBatch}
-              onCopyBody={copySelectedBatchBody}
-            />
+        <section className="min-w-0 flex-1 overflow-x-auto bg-white max-md:overflow-x-hidden">
+          <div className="flex min-h-[calc(100vh_-_var(--msg-header-height))] w-[calc(var(--msg-list-width)_+_var(--msg-detail-width))] flex-col bg-white max-md:w-full">
+          <div className="hidden min-h-11 grid-cols-2 border-b border-[#D9D9D9] bg-white px-5 max-md:grid">
+            {([
+              ["list", "메시지 목록"],
+              ["detail", "발송 정보"],
+            ] as const).map(([pane, label]) => (
+              <button
+                aria-pressed={mobilePane === pane}
+                className={`min-h-11 border-b-2 text-sm font-semibold ${
+                  mobilePane === pane
+                    ? "border-[#FE701E] text-[#FE701E]"
+                    : "border-transparent text-[#6D7A8A]"
+                }`}
+                key={pane}
+                onClick={() => setMobilePane(pane)}
+                type="button"
+              >
+                {label}
+              </button>
+            ))}
+          </div>
+          <main className="grid min-h-[calc(100vh_-_var(--msg-header-height)_-_var(--msg-bottom-height))] grid-cols-[var(--msg-list-width)_var(--msg-detail-width)] bg-white max-md:grid-cols-1">
+            <div className={`contents ${mobilePane === "list" ? "" : "max-md:hidden"}`}>
+              <MessageScheduleListPanel
+                activeTab={messageListTab}
+                batches={visibleMessageBatches}
+                error={messageError}
+                isLoading={isLoadingMessages}
+                notice={messageNotice}
+                onSelect={selectMessageBatch}
+                onTabChange={setMessageListTab}
+                selectedBatchId={selectedBatch?.id}
+              />
+            </div>
+            <div className={`contents ${mobilePane === "detail" ? "" : "max-md:hidden"}`}>
+              <MessageScheduleDetailPanel
+                batch={selectedBatch}
+                onCopyBody={copySelectedBatchBody}
+              />
+            </div>
           </main>
 
-          <div className="flex h-[var(--msg-bottom-height)] shrink-0 items-start gap-[10px] border-t border-[#6D7A8A] bg-white pl-[28px] pt-[20px]">
+          <div className="flex h-[var(--msg-bottom-height)] shrink-0 items-start gap-[10px] border-t border-[#6D7A8A] bg-white pl-[28px] pt-[20px] max-md:items-center max-md:px-5 max-md:pt-0">
             <button
-              className="inline-flex h-[28px] w-[92px] items-center justify-center rounded-[4px] border border-[#7A8B52] bg-[#7A8B52] text-[12px] font-normal leading-[1.253] text-white disabled:cursor-not-allowed disabled:opacity-40"
+              className="inline-flex h-[28px] w-[92px] items-center justify-center rounded-[4px] border border-[#7A8B52] bg-[#7A8B52] text-[12px] font-normal leading-[1.253] text-white disabled:cursor-not-allowed disabled:opacity-40 max-md:min-h-11 max-md:flex-1 max-md:text-sm"
               disabled={
                 !selectedBatch ||
                 selectedBatch.isDemo ||
@@ -424,7 +454,7 @@ export function HostMessageAutomation({
               {isMarkingSent ? "처리 중" : "발송완료"}
             </button>
             <button
-              className="inline-flex h-[28px] w-[92px] items-center justify-center rounded-[4px] border border-[#FE701E] bg-white text-[12px] font-normal leading-[1.253] text-[#FE701E] disabled:cursor-not-allowed disabled:opacity-40"
+              className="inline-flex h-[28px] w-[92px] items-center justify-center rounded-[4px] border border-[#FE701E] bg-white text-[12px] font-normal leading-[1.253] text-[#FE701E] disabled:cursor-not-allowed disabled:opacity-40 max-md:min-h-11 max-md:flex-1 max-md:text-sm"
               disabled={!selectedBatch || selectedBatch.isDemo || isDeletingMessage}
               onClick={deleteSelectedBatch}
               type="button"
@@ -470,12 +500,12 @@ function MessageScheduleListPanel({
   ];
 
   return (
-    <section className="w-[var(--msg-list-width)] shrink-0 border-r border-[#6D7A8A] bg-white px-[40px] pt-[48px]">
+    <section className="w-[var(--msg-list-width)] shrink-0 border-r border-[#6D7A8A] bg-white px-[40px] pt-[48px] max-md:w-full max-md:border-r-0 max-md:px-5 max-md:pt-5">
       <div className="border-b border-[#CAC4BC]">
-        <div className="flex h-[28px] items-start gap-[12px]">
+        <div className="flex h-[28px] items-start gap-[12px] max-md:h-11">
           {tabs.map((tab) => (
             <button
-              className={`relative h-[28px] text-[13px] leading-[1.253] ${
+              className={`relative h-[28px] text-[13px] leading-[1.253] max-md:min-h-11 max-md:min-w-11 max-md:text-sm ${
                 activeTab === tab.value
                   ? "font-semibold text-[#5B3A29] after:absolute after:bottom-0 after:left-0 after:h-[1px] after:w-full after:bg-[#FE701E]"
                   : "font-normal text-[#CAC4BC]"
@@ -539,21 +569,21 @@ function MessageScheduleRow({
 
   return (
     <button
-      className={`grid h-[28px] w-full grid-cols-[20px_80px_92px_58px_82px_minmax(0,1fr)] items-center text-left text-[12px] font-normal leading-[1.253] text-[#6D7A8A] ${
+      className={`grid h-[28px] w-full grid-cols-[20px_80px_92px_58px_82px_minmax(0,1fr)] items-center text-left text-[12px] font-normal leading-[1.253] text-[#6D7A8A] max-md:flex max-md:h-auto max-md:min-h-16 max-md:flex-wrap max-md:gap-x-3 max-md:gap-y-1 max-md:px-2 max-md:py-2 ${
         selected ? "bg-[#F3F3F3]" : "bg-white"
       }`}
       onClick={() => onSelect(batch.id)}
       type="button"
     >
-      <span className="ml-[6px] size-[12px] border border-[#6D7A8A] bg-white" />
+      <span className="ml-[6px] size-[12px] border border-[#6D7A8A] bg-white max-md:hidden" />
       <span className="flex items-center gap-[4px]">
         <span className={`size-[4px] rounded-full ${status.dotClassName}`} />
         {status.label}
       </span>
       <span>{dateTime.date}</span>
       <span>{dateTime.time}</span>
-      <span>수신자 ({String(batch.messages.length).padStart(2, "0")})</span>
-      <span className="truncate">{batch.title}</span>
+      <span className="max-md:ml-auto">수신자 ({String(batch.messages.length).padStart(2, "0")})</span>
+      <span className="truncate max-md:w-full max-md:text-sm max-md:font-semibold max-md:text-[#5B3A29]">{batch.title}</span>
     </button>
   );
 }
@@ -572,7 +602,7 @@ function MessageScheduleDetailPanel({
   const recipients = batch?.messages ?? [];
 
   return (
-    <section className="w-[var(--msg-detail-width)] shrink-0 bg-white px-[30px] pt-[58px]">
+    <section className="w-[var(--msg-detail-width)] shrink-0 bg-white px-[30px] pt-[58px] max-md:w-full max-md:px-5 max-md:pt-5">
       <div className="flex items-start">
         <div>
           <h1 className="text-[14px] font-semibold leading-[1.253] text-[#0D0D0C]">
@@ -595,7 +625,7 @@ function MessageScheduleDetailPanel({
         <span className="ml-[28px]">{dateTime.time}</span>
         <button
           aria-label="발송 시간 수정"
-          className="ml-auto grid size-[20px] place-items-center rounded-[4px] text-[16px] font-normal text-[#6D7A8A]"
+          className="ml-auto grid size-[20px] place-items-center rounded-[4px] text-[16px] font-normal text-[#6D7A8A] max-md:size-11"
           disabled={!batch || batch.deliveryStatus === "sent"}
           type="button"
         >
@@ -610,7 +640,7 @@ function MessageScheduleDetailPanel({
           </h2>
           <button
             aria-label="메시지 본문 복사"
-            className="ml-auto grid size-[18px] place-items-center rounded-[4px] border border-[#6D7A8A] text-[12px] text-[#6D7A8A] disabled:cursor-not-allowed disabled:opacity-40"
+            className="ml-auto grid size-[18px] place-items-center rounded-[4px] border border-[#6D7A8A] text-[12px] text-[#6D7A8A] disabled:cursor-not-allowed disabled:opacity-40 max-md:size-11"
             disabled={!batch}
             onClick={onCopyBody}
             type="button"
@@ -641,15 +671,15 @@ function MessageScheduleDetailPanel({
           {recipients.length > 0 ? (
             recipients.map((recipient) => (
               <div
-                className="grid h-[36px] grid-cols-[64px_104px_1fr_48px] items-center border-b border-[#D9D9D9] px-[22px] text-[12px] font-normal leading-[1.253] text-[#6D7A8A] last:border-b-0"
+                className="grid h-[36px] grid-cols-[64px_104px_1fr_48px] items-center border-b border-[#D9D9D9] px-[22px] text-[12px] font-normal leading-[1.253] text-[#6D7A8A] last:border-b-0 max-md:min-h-14 max-md:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_44px] max-md:px-3"
                 key={recipient.id}
               >
                 <span className="truncate">{recipient.applicantName}</span>
                 <span className="truncate">{recipient.recipient}</span>
-                <span>접수일 {formatCampaignDateTime(recipient.submittedAt).date}</span>
+                <span className="max-md:hidden">접수일 {formatCampaignDateTime(recipient.submittedAt).date}</span>
                 {recipient.recipient ? (
                   <a
-                    className="ml-auto inline-flex h-[22px] w-[38px] items-center justify-center rounded-[4px] border border-[#6D7A8A] text-[11px] font-semibold text-[#6D7A8A]"
+                    className="ml-auto inline-flex h-[22px] w-[38px] items-center justify-center rounded-[4px] border border-[#6D7A8A] text-[11px] font-semibold text-[#6D7A8A] max-md:size-11"
                     href={getSmsHref(recipient.recipient)}
                   >
                     SMS
@@ -662,13 +692,13 @@ function MessageScheduleDetailPanel({
           ) : (
             Array.from({ length: 5 }).map((_, index) => (
               <div
-                className="grid h-[36px] grid-cols-[64px_104px_1fr_48px] items-center border-b border-[#D9D9D9] px-[22px] text-[12px] font-normal leading-[1.253] text-[#6D7A8A] last:border-b-0"
+                className="grid h-[36px] grid-cols-[64px_104px_1fr_48px] items-center border-b border-[#D9D9D9] px-[22px] text-[12px] font-normal leading-[1.253] text-[#6D7A8A] last:border-b-0 max-md:min-h-14 max-md:grid-cols-[minmax(0,1fr)_minmax(0,1fr)] max-md:px-3"
                 key={`placeholder-recipient-${index}`}
               >
                 <span>신청자</span>
                 <span>연락처</span>
-                <span>접수일 0000. 00. 00</span>
-                <span className="ml-auto size-[10px] rounded-full bg-[#CAC4BC]" />
+                <span className="max-md:hidden">접수일 0000. 00. 00</span>
+                <span className="ml-auto size-[10px] rounded-full bg-[#CAC4BC] max-md:hidden" />
               </div>
             ))
           )}

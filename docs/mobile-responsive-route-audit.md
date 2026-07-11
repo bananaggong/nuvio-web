@@ -126,10 +126,10 @@ public and Mypage functional groups; the total unique page count remains 94.
 | `/host/projects/[projectId]/programs/[programId]/applications` | Host console | `HostApplicationsCrm` | pending/auth |
 | `/host/projects/[projectId]/programs/[programId]/applications/[applicationId]` | Host console | `HostApplicationDetail` | pending/auth |
 | `/host/programs/new` | Host console | `HostProgramCreateWizard` | pending/auth |
-| `/host/programs/[programId]` | Host console | `HostProgramHub` | pending/auth |
-| `/host/programs/[programId]/messages` | Host console | `HostMessageAutomation` | pending/auth |
-| `/host/programs/[programId]/forms` | Host console | `HostProgramFormAttachment` | pending/auth |
-| `/host/programs/[programId]/applications` | Host console | `HostApplicationsCrm` | pending/auth |
+| `/host/programs/[programId]` | Host console | `HostProgramHub` | pass-1/auth |
+| `/host/programs/[programId]/messages` | Host console | `HostMessageAutomation` | pass-1/auth |
+| `/host/programs/[programId]/forms` | Host console | `HostProgramFormAttachment` | pass-1/auth |
+| `/host/programs/[programId]/applications` | Host console | `HostApplicationsCrm` | pass-1/auth |
 | `/host/programs/[programId]/applications/[applicationId]` | Host console | `HostApplicationDetail` | pending/auth |
 
 ## Admin routes (8)
