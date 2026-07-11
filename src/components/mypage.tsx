@@ -543,7 +543,7 @@ function MypageOverview({ context }: { context: MypageContext }) {
           <MypageSkeletonBlock className="h-[clamp(30px,2.0833vw,40px)] w-[clamp(112px,7.7778vw,149.333px)]" />
         ) : (
           <Link
-            className="inline-flex h-[clamp(30px,2.0833vw,40px)] w-fit items-center justify-center rounded-[clamp(4px,0.2778vw,5.333px)] border border-[#d9d9d9] px-[clamp(16px,1.1111vw,21.333px)] text-[clamp(12px,0.8333vw,16px)] font-medium text-[#6B5145] transition hover:border-[#ffa143] hover:text-[var(--mypage-orange)]"
+            className="inline-flex h-[clamp(30px,2.0833vw,40px)] min-h-11 w-fit items-center justify-center rounded-[clamp(4px,0.2778vw,5.333px)] border border-[#d9d9d9] px-[clamp(16px,1.1111vw,21.333px)] text-[clamp(12px,0.8333vw,16px)] font-medium text-[#6B5145] transition hover:border-[#ffa143] hover:text-[var(--mypage-orange)] lg:min-h-0"
             href={context.signedIn ? "/mypage/member-information" : "/login"}
           >
             회원 정보 수정하기
@@ -761,7 +761,7 @@ function ReviewsContentV2({ context }: { context: MypageContext }) {
           setSort("reserved");
         }}
       />
-      <div className="flex h-[clamp(31px,2.1528vw,41.333px)] items-center gap-[clamp(10px,0.6944vw,13.333px)] border-b border-[#f7eee7] pl-[clamp(7px,0.4861vw,9.333px)]">
+      <div className="flex min-h-11 items-center gap-[clamp(10px,0.6944vw,13.333px)] border-b border-[#f7eee7] pl-[clamp(7px,0.4861vw,9.333px)] lg:h-[clamp(31px,2.1528vw,41.333px)] lg:min-h-0">
         <BookmarkSortButton
           active={sort === "reserved"}
           label="예약일 순"
@@ -857,7 +857,7 @@ function WritableReviewTripCard({
         </p>
       </div>
       <Link
-        className="inline-flex h-[clamp(38px,2.6389vw,50.667px)] min-w-[clamp(108px,7.5vw,144px)] items-center justify-center rounded-[clamp(4px,0.2778vw,5.333px)] border border-[var(--mypage-orange)] px-[clamp(18px,1.25vw,24px)] text-[clamp(13px,0.9028vw,17.333px)] font-semibold text-[var(--mypage-orange)] transition hover:bg-[#fff3eb]"
+        className="inline-flex h-[clamp(38px,2.6389vw,50.667px)] min-h-11 min-w-[clamp(108px,7.5vw,144px)] items-center justify-center rounded-[clamp(4px,0.2778vw,5.333px)] border border-[var(--mypage-orange)] px-[clamp(18px,1.25vw,24px)] text-[clamp(13px,0.9028vw,17.333px)] font-semibold text-[var(--mypage-orange)] transition hover:bg-[#fff3eb] lg:min-h-0"
         href={`/reviews/new?applicationId=${application.id}`}
       >
         후기 작성
@@ -1085,7 +1085,7 @@ function BookmarksContent({ context }: { context: MypageContext }) {
           setSort("bookmarked");
         }}
       />
-      <div className="flex h-[clamp(31px,2.1528vw,41.333px)] items-center gap-[clamp(10px,0.6944vw,13.333px)] border-b border-[#f7eee7] pl-[clamp(7px,0.4861vw,9.333px)]">
+      <div className="flex min-h-11 items-center gap-[clamp(10px,0.6944vw,13.333px)] border-b border-[#f7eee7] pl-[clamp(7px,0.4861vw,9.333px)] lg:h-[clamp(31px,2.1528vw,41.333px)] lg:min-h-0">
         <BookmarkSortButton
           active={sort === "bookmarked"}
           label="북마크순"
@@ -1390,7 +1390,7 @@ function MessagesContent({ context }: { context: MypageContext }) {
       <div className="mx-auto flex h-full min-h-0 w-full max-w-[1025px] flex-col px-5 pb-5 pt-3 lg:px-0 min-[1440px]:w-[71.181vw] min-[1440px]:max-w-none min-[1440px]:pb-[1.389vw] min-[1440px]:pt-[0.833vw]">
         <Link
           aria-label="마이페이지로 돌아가기"
-          className="flex shrink-0 items-center gap-[19px] rounded-[8px] transition hover:text-[#FE701E] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[#FE701E] min-[1440px]:gap-[1.319vw]"
+          className="flex min-h-11 shrink-0 items-center gap-[19px] rounded-[8px] transition hover:text-[#FE701E] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[#FE701E] lg:min-h-0 min-[1440px]:gap-[1.319vw]"
           href="/mypage"
         >
           <Image
@@ -1452,7 +1452,7 @@ function MessageThreadSearch({
   value: string;
 }) {
   return (
-    <label className="flex h-6 w-full items-center gap-2 rounded-[40px] border border-[#6D7A8A] bg-[#F9F9F9] px-[9px] py-1 min-[1440px]:h-[1.667vw] min-[1440px]:gap-[0.556vw] min-[1440px]:px-[0.625vw] min-[1440px]:py-[0.278vw]">
+    <label className="flex h-11 w-full items-center gap-2 rounded-[40px] border border-[#6D7A8A] bg-[#F9F9F9] px-[13px] lg:h-6 lg:px-[9px] lg:py-1 min-[1440px]:h-[1.667vw] min-[1440px]:gap-[0.556vw] min-[1440px]:px-[0.625vw] min-[1440px]:py-[0.278vw]">
       <Search
         aria-hidden="true"
         className="h-[14px] w-[14px] shrink-0 text-[#6D7A8A] min-[1440px]:h-[0.972vw] min-[1440px]:w-[0.972vw]"
@@ -1460,7 +1460,7 @@ function MessageThreadSearch({
       />
       <input
         aria-label="메세지 검색"
-        className="min-w-0 flex-1 bg-transparent pl-[3px] pr-[6px] text-[12px] font-semibold leading-[1.253] text-[#6D7A8A] outline-none placeholder:text-[#6D7A8A]"
+        className="h-11 min-w-0 flex-1 bg-transparent pl-[3px] pr-[6px] text-base font-semibold leading-[1.253] text-[#6D7A8A] outline-none placeholder:text-[#6D7A8A] lg:h-full lg:text-[12px]"
         onChange={(event) => onChange(event.target.value)}
         placeholder="검색"
         value={value}
@@ -3208,7 +3208,7 @@ function MemberInformationReadOnly({
           {status}
         </p>
         <Link
-          className="inline-flex h-[42px] w-[136px] items-center justify-center rounded-[4px] bg-[#ff6f1a] !text-[14px] font-semibold text-white transition hover:bg-[#f05f0d]"
+          className="inline-flex h-[42px] min-h-11 w-[136px] items-center justify-center rounded-[4px] bg-[#ff6f1a] !text-[14px] font-semibold text-white transition hover:bg-[#f05f0d] lg:min-h-0"
           href="/mypage/member-information?edit=1"
           onClick={onEdit}
         >
@@ -3274,7 +3274,7 @@ function SettingsContent({ context }: { context: MypageContext }) {
       <div className="mt-6 grid gap-3">
         <SettingRow label="마케팅 수신 동의" value="미설정" />
         <HostCenterNavSettingRow context={context} />
-        <BrowserPushSettingRow />
+        <BrowserPushSettingRow signedIn={context.signedIn} />
         <SettingRow label="계정 보안" value="소셜 로그인" />
       </div>
     </section>
@@ -3353,12 +3353,10 @@ function HostCenterNavSettingRow({ context }: { context: MypageContext }) {
             {enabled ? "사용 중" : "꺼짐"}
           </span>
           <button
+            aria-label="호스트센터 메뉴 표시"
             aria-pressed={enabled}
             className={[
-              "relative h-7 w-12 rounded-full border transition",
-              enabled
-                ? "border-[#ff6b1a] bg-[#ff6b1a]"
-                : "border-[#cfc7c0] bg-[#f4f1ee]",
+              "flex h-11 w-12 items-center justify-center",
               busy ? "cursor-not-allowed opacity-50" : "",
             ].join(" ")}
             disabled={busy || !profile}
@@ -3367,10 +3365,19 @@ function HostCenterNavSettingRow({ context }: { context: MypageContext }) {
           >
             <span
               className={[
-                "absolute top-1/2 h-5 w-5 -translate-y-1/2 rounded-full bg-white shadow-sm transition",
-                enabled ? "left-6" : "left-1",
+                "relative block h-7 w-12 rounded-full border transition",
+                enabled
+                  ? "border-[#ff6b1a] bg-[#ff6b1a]"
+                  : "border-[#cfc7c0] bg-[#f4f1ee]",
               ].join(" ")}
-            />
+            >
+              <span
+                className={[
+                  "absolute top-1/2 h-5 w-5 -translate-y-1/2 rounded-full bg-white shadow-sm transition",
+                  enabled ? "left-6" : "left-1",
+                ].join(" ")}
+              />
+            </span>
           </button>
         </div>
       </div>
@@ -3400,7 +3407,7 @@ type BrowserPushSettingState =
   | "on"
   | "unsupported";
 
-function BrowserPushSettingRow() {
+function BrowserPushSettingRow({ signedIn }: { signedIn: boolean }) {
   const [state, setState] = useState<BrowserPushSettingState>("loading");
   const [message, setMessage] = useState("");
   const [busy, setBusy] = useState(false);
@@ -3409,6 +3416,14 @@ function BrowserPushSettingRow() {
     let cancelled = false;
 
     async function loadBrowserPushState() {
+      if (!signedIn) {
+        if (!cancelled) {
+          setState("off");
+          setMessage("로그인 후 알림을 설정할 수 있어요.");
+        }
+        return;
+      }
+
       if (!isBrowserPushSupported()) {
         if (!cancelled) {
           setState("unsupported");
@@ -3458,10 +3473,10 @@ function BrowserPushSettingRow() {
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [signedIn]);
 
   async function handleToggle() {
-    if (busy || state === "unsupported" || state === "denied") return;
+    if (!signedIn || busy || state === "unsupported" || state === "denied") return;
 
     setBusy(true);
     setMessage("");
@@ -3493,7 +3508,12 @@ function BrowserPushSettingRow() {
   }
 
   const enabled = state === "on";
-  const disabled = busy || state === "loading" || state === "unsupported" || state === "denied";
+  const disabled =
+    !signedIn ||
+    busy ||
+    state === "loading" ||
+    state === "unsupported" ||
+    state === "denied";
   const valueLabel = getBrowserPushSettingLabel(state);
 
   return (
@@ -3511,12 +3531,10 @@ function BrowserPushSettingRow() {
         <div className="flex shrink-0 items-center gap-3">
           <span className="text-[13px] text-[#8F7A6C]">{valueLabel}</span>
           <button
+            aria-label="브라우저 알림"
             aria-pressed={enabled}
             className={[
-              "relative h-7 w-12 rounded-full border transition",
-              enabled
-                ? "border-[#ff6b1a] bg-[#ff6b1a]"
-                : "border-[#cfc7c0] bg-[#f4f1ee]",
+              "flex h-11 w-12 items-center justify-center",
               disabled ? "cursor-not-allowed opacity-50" : "",
             ].join(" ")}
             disabled={disabled}
@@ -3525,10 +3543,19 @@ function BrowserPushSettingRow() {
           >
             <span
               className={[
-                "absolute top-1/2 h-5 w-5 -translate-y-1/2 rounded-full bg-white shadow-sm transition",
-                enabled ? "left-6" : "left-1",
+                "relative block h-7 w-12 rounded-full border transition",
+                enabled
+                  ? "border-[#ff6b1a] bg-[#ff6b1a]"
+                  : "border-[#cfc7c0] bg-[#f4f1ee]",
               ].join(" ")}
-            />
+            >
+              <span
+                className={[
+                  "absolute top-1/2 h-5 w-5 -translate-y-1/2 rounded-full bg-white shadow-sm transition",
+                  enabled ? "left-6" : "left-1",
+                ].join(" ")}
+              />
+            </span>
           </button>
         </div>
       </div>
@@ -3855,7 +3882,7 @@ function DashboardSection({
         </h2>
         <span className="h-px bg-[var(--mypage-line)]" />
         <Link
-          className="inline-flex items-center gap-1 text-[clamp(12px,0.8333vw,16px)] font-medium text-[#8F7A6C] transition hover:text-[var(--mypage-orange)]"
+          className="inline-flex min-h-11 items-center gap-1 text-[clamp(12px,0.8333vw,16px)] font-medium text-[#8F7A6C] transition hover:text-[var(--mypage-orange)] lg:min-h-0"
           href={href}
         >
           더보기
@@ -3910,7 +3937,7 @@ function SegmentedTabs<T extends string>({
     <div className="mt-5 flex flex-wrap gap-2">
       {items.map((item) => (
         <button
-          className={`h-9 rounded-full border px-4 text-[13px] font-semibold transition ${
+          className={`min-h-11 rounded-full border px-4 text-[13px] font-semibold transition lg:h-9 lg:min-h-0 ${
             active === item.key
               ? "border-[#f7983a] bg-[#fff7ef] text-[#f7983a]"
               : "border-[#d9d9d9] bg-white text-[#8F7A6C] hover:border-[#f7983a]"
@@ -3939,7 +3966,7 @@ function TripFrameTabs<T extends string>({
     <div className="flex items-end gap-[clamp(28px,1.9444vw,37.333px)] border-b border-[var(--mypage-line)]">
       {items.map((item) => (
         <button
-          className={`relative pb-[clamp(11px,0.7639vw,14.667px)] text-[clamp(14px,0.9722vw,18.667px)] font-medium transition ${
+          className={`relative inline-flex min-h-11 items-end pb-[clamp(11px,0.7639vw,14.667px)] text-[clamp(14px,0.9722vw,18.667px)] font-medium transition lg:min-h-0 ${
             active === item.key
               ? "text-[var(--mypage-brown)]"
               : "text-[var(--mypage-muted)] hover:text-[#8F7A6C]"
@@ -3969,7 +3996,7 @@ function BookmarkSortButton({
 }) {
   return (
     <button
-      className={`text-[clamp(11px,0.7639vw,14.667px)] font-medium leading-none transition ${
+      className={`inline-flex min-h-11 items-center px-1 text-[clamp(11px,0.7639vw,14.667px)] font-medium leading-none transition lg:min-h-0 lg:px-0 ${
         active ? "text-[#748190]" : "text-[var(--mypage-muted)] hover:text-[#8F7A6C]"
       }`}
       onClick={onClick}
@@ -4182,7 +4209,7 @@ function TripDetailCard({
       : typeof people === "string" && people.trim()
         ? people
         : "00명";
-  const actionButtonClass = `inline-flex h-[clamp(28px,1.9444vw,37.333px)] min-w-[clamp(70px,4.8611vw,93.333px)] items-center justify-center rounded-[clamp(4px,0.2778vw,5.333px)] px-[clamp(14px,0.9722vw,18.667px)] text-[clamp(12px,0.8333vw,16px)] font-semibold text-white transition ${
+  const actionButtonClass = `inline-flex h-[clamp(28px,1.9444vw,37.333px)] min-h-11 min-w-[clamp(70px,4.8611vw,93.333px)] items-center justify-center rounded-[clamp(4px,0.2778vw,5.333px)] px-[clamp(14px,0.9722vw,18.667px)] text-[clamp(12px,0.8333vw,16px)] font-semibold text-white transition lg:min-h-0 ${
     actionLabel?.includes("보기")
       ? "bg-[var(--mypage-olive)] hover:bg-[#6E7F45]"
       : "bg-[#FF9A3D] hover:bg-[var(--mypage-orange)]"
@@ -4201,7 +4228,7 @@ function TripDetailCard({
 
   const messageHref = `/mypage/messages?${messageSearchParams.toString()}`;
   const quickActionClass =
-    "grid size-[clamp(20px,1.3889vw,26.667px)] place-items-center rounded-full transition hover:bg-[#FFF3EA] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--mypage-orange)] disabled:cursor-not-allowed disabled:opacity-40";
+    "grid size-11 place-items-center rounded-full transition hover:bg-[#FFF3EA] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--mypage-orange)] disabled:cursor-not-allowed disabled:opacity-40 lg:size-[clamp(20px,1.3889vw,26.667px)]";
 
   return (
     <article className="grid border-b border-[var(--mypage-line)] py-[clamp(16px,1.1111vw,21.333px)] md:grid-cols-[clamp(84px,5.8333vw,112px)_minmax(0,1fr)_auto] md:items-start md:gap-[clamp(18px,1.25vw,24px)]">
@@ -4269,7 +4296,7 @@ function TripDetailCard({
             strong
             value={formatApplicationDisplayCode(application.id, application.submittedAt)}
           />
-          <div className="mt-[clamp(4px,0.2778vw,5.333px)] flex h-[clamp(20px,1.3889vw,26.667px)] w-[clamp(87px,6.0417vw,116px)] items-center justify-between">
+          <div className="mt-[clamp(4px,0.2778vw,5.333px)] flex h-11 w-[132px] items-center justify-between lg:h-[clamp(20px,1.3889vw,26.667px)] lg:w-[clamp(87px,6.0417vw,116px)]">
             {phoneHref ? (
               <a
                 aria-label={`${displayTitle} 전화 문의`}

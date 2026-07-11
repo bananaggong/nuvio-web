@@ -62,7 +62,7 @@ export function NuvioEmptyState({
         ) : null}
         {actionHref && actionLabel ? (
           <Link
-            className="mt-5 inline-flex h-10 items-center justify-center rounded-[4px] border border-[#F7983A] px-4 text-[13px] font-semibold text-[#F7983A] transition hover:bg-[#FFF6EC]"
+            className="mt-5 inline-flex h-11 items-center justify-center rounded-[4px] border border-[#F7983A] px-4 text-[13px] font-semibold text-[#F7983A] transition hover:bg-[#FFF6EC] lg:h-10"
             href={actionHref}
           >
             {actionLabel}

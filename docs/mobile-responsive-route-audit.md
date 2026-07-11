@@ -19,8 +19,8 @@ were moved to `next.config.ts` redirects.
 
 Status values: `pass-1` completed the first responsive pass, `pending` is not
 visually verified yet, `bridge` is a redirect/compatibility route, `deferred`
-is intentionally excluded from the current pass, and `auth` requires a signed-in
-role for browser verification.
+is intentionally excluded from the current pass, `feature` is disabled by a
+launch flag, and `auth` requires a signed-in role for browser verification.
 
 ## Public core routes (19)
 
@@ -80,15 +80,15 @@ role for browser verification.
 
 | Route | Shell | Primary implementation | Status |
 | --- | --- | --- | --- |
-| `/mypage` | Mypage | `Mypage` home view | pending/auth |
-| `/mypage/trips` | Mypage | `Mypage` trips view | pending/auth |
-| `/mypage/reviews` | Mypage | `Mypage` reviews view | pending/auth |
-| `/mypage/bookmarks` | Mypage | `Mypage` bookmarks view | pending/auth |
-| `/mypage/messages` | Mypage | `Mypage` messages view | pending/auth |
-| `/mypage/member-information` | Mypage | `Mypage` member view | pending/auth |
-| `/mypage/points` | Mypage | `Mypage` points view | pending/auth |
-| `/mypage/coupons` | Mypage | feature-flagged coupons view | pending/auth |
-| `/mypage/settings` | Mypage | `Mypage` settings view | pending/auth |
+| `/mypage` | Mypage | `Mypage` home view | pass-1/auth |
+| `/mypage/trips` | Mypage | `Mypage` trips view | pass-1/auth |
+| `/mypage/reviews` | Mypage | `Mypage` reviews view | pass-1/auth |
+| `/mypage/bookmarks` | Mypage | `Mypage` bookmarks view | pass-1/auth |
+| `/mypage/messages` | Mypage | `Mypage` messages view | pass-1/auth |
+| `/mypage/member-information` | Mypage | `Mypage` member view | pass-1/auth |
+| `/mypage/points` | Mypage | `Mypage` points view | pass-1/auth |
+| `/mypage/coupons` | Mypage | feature-flagged coupons view | deferred/feature |
+| `/mypage/settings` | Mypage | `Mypage` settings view | pass-1/auth |
 | `/support` | Mypage | shared support view (also listed in public core) | pass-1 |
 
 `/support` is one physical route and is intentionally referenced in both the
