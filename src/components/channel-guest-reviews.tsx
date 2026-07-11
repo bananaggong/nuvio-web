@@ -3,11 +3,8 @@
 import Image from "next/image";
 import { ChevronDown, ChevronLeft, ChevronRight, Star } from "lucide-react";
 import { useMemo, useState, type CSSProperties, type ReactNode } from "react";
-import {
-  ChannelProfileHeader,
-  channelGuestScaleRootStyle,
-  px,
-} from "@/components/channel-guest-gallery";
+import { ChannelGuestProfileHeader } from "@/components/channel-guest-profile-header";
+import { channelGuestScaleRootStyle, px } from "@/components/channel-guest-shared";
 import { NuvioEmptyState } from "@/components/nuvio-empty-state";
 import { channelPath } from "@/lib/channel-routing";
 import type { Program, Review } from "@/lib/types";
@@ -65,14 +62,14 @@ export function ChannelGuestReviewsPage({
 
   return (
     <div
-      className="min-h-screen overflow-x-clip bg-white font-pretendard text-[#5B3A29]"
+      className="channel-guest-page min-h-screen overflow-x-clip bg-white font-pretendard text-[#5B3A29]"
       style={channelGuestScaleRootStyle}
     >
       <main className="mx-auto w-full max-w-[1920px]">
-        <ChannelProfileHeader activeTab="review" homeHref={homeHref} village={village} />
+        <ChannelGuestProfileHeader activeTab="review" homeHref={homeHref} village={village} wide />
 
         <section
-          className="mx-auto flex flex-col items-start"
+          className="channel-guest-content mx-auto flex flex-col items-start"
           style={{
             ...reviewPageStyle,
             gap: px(30),
@@ -92,7 +89,7 @@ export function ChannelGuestReviewsPage({
           />
 
           <div
-            className="flex w-full flex-col items-start"
+            className="channel-review-list flex w-full flex-col items-start"
             style={{ paddingLeft: px(32), paddingRight: px(32) }}
           >
             {cards.length > 0 ? (
@@ -136,7 +133,7 @@ function ReviewToolbar({
 }) {
   return (
     <div
-      className="flex w-full flex-col items-start"
+      className="channel-review-toolbar flex w-full flex-col items-start"
       style={{
         gap: px(12),
         paddingLeft: px(18),
@@ -165,14 +162,17 @@ function ReviewToolbar({
       </div>
 
       <div className="flex w-full flex-col items-start" style={{ gap: px(12) }}>
-        <div className="flex items-center" style={{ gap: px(2), width: px(522.434) }}>
+        <div
+          className="channel-review-program-filter flex items-center"
+          style={{ gap: px(2), width: px(522.434) }}
+        >
           <FilterLabel width={83}>프로그램 선택</FilterLabel>
           <div
             className="flex items-center border-l border-[#6D7A8A]"
             style={{ paddingLeft: px(5), paddingRight: px(5) }}
           >
             <label
-              className="relative flex items-center rounded-[4px] border border-[#6D7A8A]"
+              className="channel-review-select relative flex items-center rounded-[4px] border border-[#6D7A8A]"
               style={{
                 gap: px(8),
                 height: px(21),
@@ -239,10 +239,10 @@ function ReviewToolbar({
 
 function FilterLine({ children, label }: { children: ReactNode; label: string }) {
   return (
-    <div className="flex items-center" style={{ gap: px(2) }}>
+    <div className="channel-review-filter-line flex items-center" style={{ gap: px(2) }}>
       <FilterLabel>{label}</FilterLabel>
       <div
-        className="flex items-center border-l border-[#6D7A8A]"
+        className="channel-review-filter-options flex items-center border-l border-[#6D7A8A]"
         style={{
           gap: px(22),
           paddingLeft: px(5),
@@ -283,7 +283,7 @@ function RadioChoice({
   return (
     <button
       aria-pressed={active}
-      className={`flex items-center justify-center transition hover:text-[#FE701E] ${
+      className={`channel-review-choice flex items-center justify-center transition hover:text-[#FE701E] ${
         active ? "text-[#FE701E]" : "text-[#6D7A8A]"
       }`}
       onClick={onClick}
@@ -319,7 +319,7 @@ function RatingChoice({
   return (
     <button
       aria-pressed={active}
-      className={`flex items-center justify-center transition hover:text-[#FE701E] ${
+      className={`channel-review-choice flex items-center justify-center transition hover:text-[#FE701E] ${
         active ? "text-[#FE701E]" : "text-[#6D7A8A]"
       }`}
       onClick={onClick}
@@ -358,7 +358,7 @@ function RatingChoice({
 function ReviewCard({ review }: { review: ReviewCardModel }) {
   return (
     <article
-      className="flex w-full flex-col items-start justify-center border-b border-[#F5E1D3]"
+      className="channel-review-card flex w-full flex-col items-start justify-center border-b border-[#F5E1D3]"
       style={{
         padding: `${px(16)} ${px(32)}`,
       }}
@@ -416,7 +416,7 @@ function ReviewCard({ review }: { review: ReviewCardModel }) {
       </div>
 
       <details
-        className="group text-[#0D0D0C]"
+        className="channel-review-body group text-[#0D0D0C]"
         style={{
           padding: `${px(8)} ${px(8)} 0`,
           width: px(775),
@@ -426,7 +426,7 @@ function ReviewCard({ review }: { review: ReviewCardModel }) {
           className="cursor-pointer list-none [&::-webkit-details-marker]:hidden"
         >
           <p
-            className="line-clamp-4 whitespace-pre-wrap group-open:hidden"
+            className="channel-review-body-text line-clamp-4 whitespace-pre-wrap group-open:hidden"
             style={{ fontSize: px(12), fontWeight: 400, lineHeight: 1.6, width: px(759) }}
           >
             {review.body}
@@ -449,7 +449,7 @@ function ReviewCard({ review }: { review: ReviewCardModel }) {
           </span>
         </summary>
         <p
-          className="whitespace-pre-wrap"
+          className="channel-review-body-text whitespace-pre-wrap"
           style={{ fontSize: px(12), fontWeight: 400, lineHeight: 1.6, width: px(759) }}
         >
           {review.body}
@@ -457,7 +457,10 @@ function ReviewCard({ review }: { review: ReviewCardModel }) {
       </details>
 
       {review.images.length > 0 ? (
-        <div className="relative flex items-center" style={{ gap: px(6), paddingBottom: px(16) }}>
+        <div
+          className="channel-review-images relative flex items-center"
+          style={{ gap: px(6), paddingBottom: px(16) }}
+        >
           {review.images.slice(0, 7).map((image, index) => (
             <div
               className="relative block shrink-0 overflow-hidden bg-[#D9D9D9]"

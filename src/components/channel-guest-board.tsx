@@ -1,10 +1,7 @@
 import Link from "next/link";
 import type { CSSProperties } from "react";
-import {
-  ChannelProfileHeader,
-  channelGuestScaleRootStyle,
-  px,
-} from "@/components/channel-guest-gallery";
+import { ChannelGuestProfileHeader } from "@/components/channel-guest-profile-header";
+import { channelGuestScaleRootStyle, px } from "@/components/channel-guest-shared";
 import { NuvioEmptyState } from "@/components/nuvio-empty-state";
 import type { ChannelBoardPost } from "@/lib/channel-board-posts";
 import { sanitizeMagazineHtml } from "@/lib/magazine-content";
@@ -39,14 +36,14 @@ export function ChannelGuestBoardPage({
 
   return (
     <div
-      className="min-h-screen overflow-x-clip bg-white font-pretendard text-[#5B3A29]"
+      className="channel-guest-page min-h-screen overflow-x-clip bg-white font-pretendard text-[#5B3A29]"
       style={channelGuestScaleRootStyle}
     >
       <main className="mx-auto w-full max-w-[1920px]">
-        <ChannelProfileHeader activeTab="board" homeHref={homeHref} village={village} />
+        <ChannelGuestProfileHeader activeTab="board" homeHref={homeHref} village={village} />
 
         <section
-          className="mx-auto"
+          className="channel-guest-content mx-auto"
           style={{
             ...boardListStyle,
             paddingBottom: px(48),
@@ -55,7 +52,7 @@ export function ChannelGuestBoardPage({
         >
           {rows.length > 0 ? (
             <div
-              className="w-full"
+              className="channel-board-list w-full"
               style={{
                 borderRadius: px(6),
                 padding: `${px(8)} ${px(30)} ${px(14)}`,
@@ -87,14 +84,14 @@ export function ChannelGuestBoardDetailPage({
 
   return (
     <div
-      className="min-h-screen overflow-x-clip bg-white font-pretendard text-[#5B3A29]"
+      className="channel-guest-page min-h-screen overflow-x-clip bg-white font-pretendard text-[#5B3A29]"
       style={channelGuestScaleRootStyle}
     >
       <main className="mx-auto w-full max-w-[1920px]">
-        <ChannelProfileHeader activeTab="board" homeHref={homeHref} village={village} />
+        <ChannelGuestProfileHeader activeTab="board" homeHref={homeHref} village={village} />
 
         <section
-          className="mx-auto"
+          className="channel-guest-content mx-auto"
           style={{
             ...boardListStyle,
             paddingBottom: px(88),
@@ -102,7 +99,7 @@ export function ChannelGuestBoardDetailPage({
           }}
         >
           <Link
-            className="inline-flex items-center font-semibold leading-[1.253] text-[#6D7A8A] transition hover:text-[#FE701E]"
+            className="channel-board-back inline-flex items-center font-semibold leading-[1.253] text-[#6D7A8A] transition hover:text-[#FE701E]"
             href={boardHref}
             style={{ fontSize: px(13), marginBottom: px(24) }}
           >
@@ -110,14 +107,17 @@ export function ChannelGuestBoardDetailPage({
           </Link>
 
           <article
-            className="border-y border-[#F7B267]"
+            className="channel-board-article border-y border-[#F7B267]"
             style={{
               paddingBottom: px(52),
               paddingTop: px(31),
             }}
           >
             <div className="flex flex-wrap items-center justify-between" style={{ gap: px(18) }}>
-              <div className="flex min-w-0 items-center" style={{ gap: px(8) }}>
+              <div
+                className="channel-board-title-row flex min-w-0 items-center"
+                style={{ gap: px(8) }}
+              >
                 {post.pinned ? <BoardBadge type="fixed" /> : null}
                 {isRecentBoardDate(post.createdAt) ? <BoardBadge type="new" /> : null}
                 <h1
@@ -163,7 +163,7 @@ export function ChannelGuestBoardDetailPage({
 function BoardListRow({ row }: { row: BoardRow }) {
   return (
     <Link
-      className="grid items-center border-b border-[#F7B267] transition hover:bg-[#FFF9F4]"
+      className="channel-board-row grid items-center border-b border-[#F7B267] transition hover:bg-[#FFF9F4]"
       href={row.href}
       style={{
         borderBottomWidth: px(0.5),

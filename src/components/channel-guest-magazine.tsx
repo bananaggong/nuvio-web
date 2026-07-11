@@ -1,11 +1,8 @@
 import Image from "next/image";
 import Link from "next/link";
 import type { CSSProperties } from "react";
-import {
-  ChannelProfileHeader,
-  channelGuestScaleRootStyle,
-  px,
-} from "@/components/channel-guest-gallery";
+import { ChannelGuestProfileHeader } from "@/components/channel-guest-profile-header";
+import { channelGuestScaleRootStyle, px } from "@/components/channel-guest-shared";
 import { NuvioEmptyState } from "@/components/nuvio-empty-state";
 import { channelPath } from "@/lib/channel-routing";
 import type { VillageMediaContent } from "@/lib/types";
@@ -38,14 +35,14 @@ export function ChannelGuestMagazinePage({
 
   return (
     <div
-      className="min-h-screen overflow-x-clip bg-white font-pretendard text-[#5B3A29]"
+      className="channel-guest-page min-h-screen overflow-x-clip bg-white font-pretendard text-[#5B3A29]"
       style={channelGuestScaleRootStyle}
     >
       <main className="mx-auto w-full max-w-[1920px]">
-        <ChannelProfileHeader activeTab="magazine" homeHref={homeHref} village={village} />
+        <ChannelGuestProfileHeader activeTab="magazine" homeHref={homeHref} village={village} />
 
         <section
-          className="mx-auto"
+          className="channel-guest-content mx-auto"
           style={{
             ...magazineGridStyle,
             paddingBottom: px(82),
@@ -54,15 +51,15 @@ export function ChannelGuestMagazinePage({
         >
           {items.length > 0 ? (
             <div
-              className="grid"
+              className="channel-magazine-grid grid"
               style={{
                 columnGap: px(43),
                 gridTemplateColumns: "repeat(2, minmax(0, 1fr))",
                 rowGap: px(43),
               }}
             >
-              {items.map((item) => (
-                <MagazineCard item={item} key={item.id} />
+              {items.map((item, index) => (
+                <MagazineCard item={item} key={item.id} priority={index === 0} />
               ))}
             </div>
           ) : (
@@ -74,17 +71,17 @@ export function ChannelGuestMagazinePage({
   );
 }
 
-function MagazineCard({ item }: { item: MagazineItem }) {
+function MagazineCard({ item, priority = false }: { item: MagazineItem; priority?: boolean }) {
   return (
     <article
-      className="overflow-hidden bg-[#FCFCFC]"
+      className="channel-magazine-card overflow-hidden bg-[#FCFCFC]"
       style={{
         borderRadius: px(16),
         height: px(550),
       }}
     >
       <Link
-        className="relative block overflow-hidden bg-[#D9D9D9]"
+        className="channel-magazine-image relative block overflow-hidden bg-[#D9D9D9]"
         href={item.href}
         style={{
           borderTopLeftRadius: px(16),
@@ -97,6 +94,7 @@ function MagazineCard({ item }: { item: MagazineItem }) {
             alt={item.title}
             className="object-cover"
             fill
+            priority={priority}
             sizes="(max-width: 1919px) 38vw, 704px"
             src={item.image}
           />

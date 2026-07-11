@@ -19,7 +19,7 @@ export function ChannelHomeBlockView({ block, px }: ChannelHomeBlockViewProps) {
   if (block.mode === "image") {
     return (
       <section
-        className="relative overflow-hidden"
+        className="channel-home-block channel-home-block-image relative overflow-hidden"
         style={{
           backgroundColor: block.backgroundColor,
           borderRadius: px(4),
@@ -34,7 +34,7 @@ export function ChannelHomeBlockView({ block, px }: ChannelHomeBlockViewProps) {
   if (block.mode === "split") {
     return (
       <section
-        className="grid overflow-hidden"
+        className="channel-home-block channel-home-block-split grid overflow-hidden"
         style={{
           alignItems: block.verticalAlign === "top"
             ? "start"
@@ -50,7 +50,7 @@ export function ChannelHomeBlockView({ block, px }: ChannelHomeBlockViewProps) {
         }}
       >
         <div
-          className="relative overflow-hidden bg-[#D9D9D9]"
+          className="channel-home-block-media relative overflow-hidden bg-[#D9D9D9]"
           style={{ borderRadius: px(4), minHeight: px(190) }}
         >
           <BlockImage alt="채널 홈 분할 블록 이미지" block={block} px={px} />
@@ -62,7 +62,7 @@ export function ChannelHomeBlockView({ block, px }: ChannelHomeBlockViewProps) {
 
   return (
     <section
-      className="overflow-hidden"
+      className="channel-home-block overflow-hidden"
       style={{
         backgroundColor: block.backgroundColor,
         borderRadius: px(4),

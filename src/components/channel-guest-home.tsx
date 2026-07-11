@@ -2,13 +2,17 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { useMemo, useState, type CSSProperties } from "react";
+import { useMemo, useState } from "react";
 import { ChannelHomeBlockView } from "@/components/channel-home-block-view";
+import { ChannelGuestProfileHeader } from "@/components/channel-guest-profile-header";
+import {
+  channelGuestContentStyle,
+  channelGuestScaleRootStyle,
+  px,
+} from "@/components/channel-guest-shared";
 import { nuvioIcons } from "@/components/icons/nuvio-icons";
 import { NuvioEmptyState } from "@/components/nuvio-empty-state";
 import {
-  channelGuestHref,
-  channelHomeLabel,
   getChannelMenuDisplayLabel,
   getVisibleChannelMenuItems,
   type ChannelMenuItem,
@@ -107,23 +111,6 @@ const text = {
   upcoming: "\uC608\uC815",
 } as const;
 
-const px = (value: number) =>
-  `clamp(${value}px, ${(value / 14.4).toFixed(6)}vw, ${(value * 4 / 3).toFixed(6)}px)`;
-
-const scaleRootStyle = {
-  "--channel-font-11": px(11),
-  "--channel-font-12": px(12),
-  "--channel-font-14": px(14),
-  "--channel-font-16": px(16),
-  "--channel-font-20": px(20),
-  "--channel-font-24": px(24),
-} as CSSProperties;
-
-const contentStyle = {
-  maxWidth: `calc(100% - ${px(298)})`,
-  width: px(1142),
-} as CSSProperties;
-
 const programFilterOptions: Array<{ label: string; value: ProgramStatusFilter }> = [
   { label: text.all, value: "all" },
   { label: text.open, value: "open" },
@@ -154,13 +141,13 @@ export function ChannelGuestHomePage({
 
   return (
     <div
-      className="min-h-screen overflow-x-clip bg-white font-pretendard text-[#5B3A29]"
-      style={scaleRootStyle}
+      className="channel-guest-page min-h-screen overflow-x-clip bg-white font-pretendard text-[#5B3A29]"
+      style={channelGuestScaleRootStyle}
     >
       <main className="mx-auto w-full max-w-[1920px]">
         {village.heroImage ? (
           <section
-            className="relative flex items-center justify-center overflow-hidden bg-[#F3F3F3]"
+            className="channel-guest-hero relative flex items-center justify-center overflow-hidden bg-[#F3F3F3]"
             style={{ height: px(560) }}
           >
             <Image
@@ -174,12 +161,12 @@ export function ChannelGuestHomePage({
           </section>
         ) : null}
 
-        <ChannelProfileHeader homeHref={homeHref} village={village} />
+        <ChannelGuestProfileHeader homeHref={homeHref} village={village} wide />
 
         <div
-          className="mx-auto flex flex-col"
+          className="channel-guest-content mx-auto flex flex-col"
           style={{
-            ...contentStyle,
+            ...channelGuestContentStyle,
             gap: px(40),
             paddingBottom: px(70),
             paddingTop: px(22),
@@ -203,150 +190,6 @@ export function ChannelGuestHomePage({
         </div>
       </main>
     </div>
-  );
-}
-
-function ChannelProfileHeader({
-  homeHref,
-  village,
-}: {
-  homeHref: string;
-  village: Village;
-}) {
-  const menuItems = getVisibleChannelMenuItems(village);
-
-  return (
-    <section
-      className="mx-auto flex items-end border-b border-[#6D7A8A]"
-      style={{
-        ...contentStyle,
-        gap: px(39),
-        minHeight: px(185.658),
-        padding: `${px(22)} ${px(58)} 0`,
-      }}
-    >
-      <div
-        className="relative shrink-0 overflow-hidden rounded-full bg-[#D9D9D9]"
-        style={{
-          height: px(128),
-          marginBottom: px(22),
-          width: px(128),
-        }}
-      >
-        {village.profileImage ? (
-          <Image
-            alt={`${village.name} profile`}
-            className="object-cover"
-            fill
-            sizes="170px"
-            src={village.profileImage}
-          />
-        ) : (
-          <span
-            className="flex h-full w-full items-center justify-center font-semibold leading-[1] text-[#6D7A8A]"
-            style={{ fontSize: px(24) }}
-          >
-            {(village.name || village.logoText || "N").slice(0, 1)}
-          </span>
-        )}
-      </div>
-      <div className="flex flex-col" style={{ gap: px(4) }}>
-        <div className="flex items-end" style={{ gap: px(8) }}>
-          <h1 className="text-[length:var(--channel-font-24)] font-medium leading-[1.253] text-[#0D0D0C]">
-            {village.name}
-          </h1>
-          <span
-            className="text-[length:var(--channel-font-14)] font-medium leading-[1.253] text-[#6D7A8A]"
-            style={{ paddingBottom: px(2) }}
-          >
-            {village.city || village.region}
-          </span>
-        </div>
-        <p className="text-[length:var(--channel-font-16)] font-medium leading-[1.253] text-[#6D7A8A]">
-          {village.tagline || village.summary}
-        </p>
-        <div className="flex items-center" style={{ gap: px(8) }}>
-          <Image
-            alt=""
-            height={12}
-            src={nuvioIcons.channelLink}
-            style={{ height: px(12), width: px(12) }}
-            width={12}
-          />
-          <span className="text-[length:var(--channel-font-16)] font-medium leading-[1.253] text-[#6D7A8A]">
-            {village.region}
-          </span>
-          <span className="text-[length:var(--channel-font-16)] font-medium leading-[1.253] text-[#6D7A8A]">
-            {village.slug}
-          </span>
-        </div>
-        <div
-          className="flex items-center"
-          style={{
-            gap: px(8),
-            marginTop: px(4),
-            paddingLeft: px(2),
-          }}
-        >
-          <Image
-            alt={text.notification}
-            height={20}
-            src={nuvioIcons.bell}
-            style={{ height: px(20), width: px(19) }}
-            width={19}
-          />
-          <Image
-            alt={text.message}
-            height={18}
-            src={nuvioIcons.message}
-            style={{ height: px(18), width: px(18) }}
-            width={18}
-          />
-        </div>
-        <nav
-          className="flex items-end"
-          style={{
-            gap: px(40),
-            paddingTop: px(14),
-          }}
-        >
-          <ChannelTab active href={homeHref} label={channelHomeLabel} />
-          {menuItems.map((item) => (
-            <ChannelTab
-              href={channelGuestHref(item.kind, village)}
-              key={item.id}
-              label={getChannelMenuDisplayLabel(item)}
-            />
-          ))}
-        </nav>
-      </div>
-    </section>
-  );
-}
-
-function ChannelTab({
-  active = false,
-  href,
-  label,
-}: {
-  active?: boolean;
-  href: string;
-  label: string;
-}) {
-  return (
-    <Link
-      className={`flex items-center justify-center whitespace-nowrap text-[length:var(--channel-font-16)] font-semibold leading-[1.253] text-[#5B3A29] ${
-        active ? "border-b-2 border-[#FF9A3D]" : ""
-      }`}
-      href={href}
-      style={{
-        height: px(36),
-        paddingBottom: px(8),
-        paddingTop: active ? px(5) : px(8),
-      }}
-    >
-      {label}
-    </Link>
   );
 }
 
@@ -431,7 +274,7 @@ function ChannelProgramSection({
     <section>
       <SectionHeading title={title} />
       <div
-        className="flex items-center border-b border-[#6D7A8A]"
+        className="channel-program-filter-row flex items-center border-b border-[#6D7A8A]"
         style={{
           gap: px(10),
           height: px(48),
@@ -443,7 +286,7 @@ function ChannelProgramSection({
         {programFilterOptions.map((option) => (
           <button
             aria-pressed={activeFilter === option.value}
-            className={`flex items-center justify-center rounded-full text-center text-[length:var(--channel-font-12)] font-bold leading-[1.6] ${
+            className={`channel-filter-pill flex items-center justify-center rounded-full text-center text-[length:var(--channel-font-12)] font-bold leading-[1.6] ${
               activeFilter === option.value ? "bg-[#FF9A3D] text-[#F9F9F9]" : "bg-[#CAC4BC] text-[#F3F3F3]"
             }`}
             key={option.value}
@@ -457,7 +300,7 @@ function ChannelProgramSection({
       </div>
       {visiblePrograms.length > 0 ? (
         <div
-          className="flex items-start"
+          className="channel-program-strip flex items-start"
           style={{
             gap: px(40),
             padding: `${px(30)} ${px(20)} 0`,
@@ -488,9 +331,13 @@ function MiniProgramCard({ program }: { program: ProgramCardModel }) {
   const status = getProgramStatus(program.status);
 
   return (
-    <Link className="block shrink-0" href={program.href} style={{ width: px(186) }}>
+    <Link
+      className="channel-mini-program-card block shrink-0"
+      href={program.href}
+      style={{ width: px(186) }}
+    >
       <div
-        className="relative overflow-hidden bg-[#D9D9D9]"
+        className="channel-mini-program-image relative overflow-hidden bg-[#D9D9D9]"
         style={{ borderRadius: px(8.65), height: px(232.5) }}
       >
         {program.image ? (
@@ -560,7 +407,7 @@ function ChannelGallerySection({
       <SectionHeading title={title} />
       {items.length > 0 ? (
         <div
-          className="grid items-start"
+          className="channel-home-gallery-grid grid items-start"
           style={{
             gap: px(40),
             gridTemplateColumns: `repeat(3, minmax(0, ${px(290)})) ${px(112)}`,
@@ -582,10 +429,13 @@ function ChannelGallerySection({
 function GalleryTile({ item }: { item: GalleryCardModel }) {
   return (
     <article
-      className="overflow-hidden bg-[#D9D9D9]"
+      className="channel-home-gallery-card overflow-hidden bg-[#D9D9D9]"
       style={{ borderRadius: px(4), height: px(380), width: px(290) }}
     >
-      <div className="relative overflow-hidden" style={{ height: px(299) }}>
+      <div
+        className="channel-home-gallery-image relative overflow-hidden"
+        style={{ height: px(299) }}
+      >
         {item.image ? (
           <Image
             alt={item.caption}
@@ -636,7 +486,7 @@ function ChannelStorySection({
       <SectionHeading title={title} />
       {stories.length > 0 ? (
         <div
-          className="grid"
+          className="channel-home-story-grid grid"
           style={{
             gap: px(40),
             gridTemplateColumns: `repeat(3, minmax(0, ${px(386)}))`,
@@ -645,11 +495,14 @@ function ChannelStorySection({
         >
           {stories.map((story) => (
             <article
-              className="overflow-hidden bg-[#F9F9F9]"
+              className="channel-home-story-card overflow-hidden bg-[#F9F9F9]"
               key={story.id}
               style={{ borderRadius: px(10), width: px(386) }}
             >
-              <div className="relative overflow-hidden bg-[#D9D9D9]" style={{ height: px(368) }}>
+              <div
+                className="channel-home-story-image relative overflow-hidden bg-[#D9D9D9]"
+                style={{ height: px(368) }}
+              >
                 {story.image ? (
                   <Image
                     alt={story.title}
@@ -689,10 +542,13 @@ function ChannelNoticeSection({
     <section>
       <SectionHeading title={title} />
       {notices.length > 0 ? (
-        <div className="border-t border-[#F5E1D3]" style={{ margin: `${px(26)} ${px(20)} 0` }}>
+        <div
+          className="channel-home-notice-list border-t border-[#F5E1D3]"
+          style={{ margin: `${px(26)} ${px(20)} 0` }}
+        >
           {notices.map((notice, index) => (
             <Link
-              className="grid items-center border-b border-[#F5E1D3]"
+              className="channel-home-notice-row grid items-center border-b border-[#F5E1D3]"
               href={notice.href}
               key={`${notice.title}-${index}`}
               style={{
@@ -736,7 +592,7 @@ function ChannelNoticeSection({
 function MoreLink({ href, tall = false }: { href: string; tall?: boolean }) {
   return (
     <Link
-      className="flex flex-col items-center justify-center text-[length:var(--channel-font-12)] font-medium leading-[1.253] text-[#6D7A8A]"
+      className="channel-more-link flex flex-col items-center justify-center text-[length:var(--channel-font-12)] font-medium leading-[1.253] text-[#6D7A8A]"
       href={href}
       style={{
         gap: px(8),

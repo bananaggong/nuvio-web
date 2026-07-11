@@ -4,8 +4,11 @@ export const px = (value: number) =>
   `clamp(${value}px, ${(value / 14.4).toFixed(6)}vw, ${(value * 4 / 3).toFixed(6)}px)`;
 
 export const channelGuestScaleRootStyle = {
+  "--channel-font-11": px(11),
+  "--channel-font-12": px(12),
   "--channel-font-14": px(14),
   "--channel-font-16": px(16),
+  "--channel-font-20": px(20),
   "--channel-font-24": px(24),
 } as CSSProperties;
 

@@ -18,8 +18,9 @@ were moved to `next.config.ts` redirects.
 | Admin console | `/admin/*` | `OpsConsoleShell`, admin panels |
 
 Status values: `pass-1` completed the first responsive pass, `pending` is not
-visually verified yet, `bridge` is a redirect/compatibility route, and `auth`
-requires a signed-in role for browser verification.
+visually verified yet, `bridge` is a redirect/compatibility route, `deferred`
+is intentionally excluded from the current pass, and `auth` requires a signed-in
+role for browser verification.
 
 ## Public core routes (19)
 
@@ -49,30 +50,30 @@ requires a signed-in role for browser verification.
 
 | Route | Shell | Primary implementation | Status |
 | --- | --- | --- | --- |
-| `/[villageSlug]` | Channel microsite | `VillageHomePage` (`BoseongFigmaHomePage` or `ChannelGuestHomePage`) | pending |
+| `/[villageSlug]` | Channel microsite | `VillageHomePage` (`BoseongFigmaHomePage` or `ChannelGuestHomePage`) | pass-1/general; deferred/boseong |
 | `/[villageSlug]/[programSlug]` | Channel microsite | DB-backed canonical program redirect | bridge |
-| `/[villageSlug]/about` | Channel microsite | `VillageAboutIndexPage` | pending |
-| `/[villageSlug]/media` | Channel microsite | `VillageMediaIndexPage` | pending |
-| `/[villageSlug]/media/[mediaId]` | Channel microsite | `VillageMediaDetailPage` | pending |
-| `/[villageSlug]/notice` | Channel microsite | `VillageNoticeIndexPage` | pending |
-| `/[villageSlug]/notice/[postId]` | Channel microsite | `ChannelGuestBoardDetailPage` | pending |
-| `/[villageSlug]/reviews` | Channel microsite | `VillageReviewsIndexPage` | pending |
-| `/[villageSlug]/reviews/[reviewId]` | Channel microsite | `VillageReviewDetailPage` | pending |
-| `/[villageSlug]/programs` | Channel microsite | `VillageProgramsIndexPage` | pending |
-| `/[villageSlug]/terms` | Channel microsite | `VillageLegalPage` | pending |
-| `/[villageSlug]/privacy` | Channel microsite | `VillageLegalPage` | pending |
-| `/[villageSlug]/privacy/third-party` | Channel microsite | `VillageLegalPage` | pending |
-| `/channels` | Public chrome | public channel directory | pending |
-| `/channels/[slug]` | Channel microsite | wrapper for `/villages/[slug]` | pending |
-| `/channels/[slug]/about` | Channel microsite | wrapper for village about | pending |
-| `/channels/[slug]/media` | Channel microsite | wrapper for village media index | pending |
-| `/channels/[slug]/media/[mediaId]` | Channel microsite | wrapper for village media detail | pending |
-| `/channels/[slug]/notice` | Channel microsite | wrapper for village notice index | pending |
-| `/channels/[slug]/notice/[postId]` | Channel microsite | wrapper for village notice detail | pending |
-| `/channels/[slug]/programs` | Channel microsite | wrapper for village programs | pending |
+| `/[villageSlug]/about` | Channel microsite | `VillageAboutIndexPage` | pass-1/general; deferred/boseong |
+| `/[villageSlug]/media` | Channel microsite | `VillageMediaIndexPage` | pass-1/general; deferred/boseong |
+| `/[villageSlug]/media/[mediaId]` | Channel microsite | `VillageMediaDetailPage` | pass-1/general; deferred/boseong |
+| `/[villageSlug]/notice` | Channel microsite | `VillageNoticeIndexPage` | pass-1/general; deferred/boseong |
+| `/[villageSlug]/notice/[postId]` | Channel microsite | `ChannelGuestBoardDetailPage` | pass-1/general; deferred/boseong |
+| `/[villageSlug]/reviews` | Channel microsite | `VillageReviewsIndexPage` | pass-1/general; deferred/boseong |
+| `/[villageSlug]/reviews/[reviewId]` | Channel microsite | `VillageReviewDetailPage` | deferred/boseong |
+| `/[villageSlug]/programs` | Channel microsite | `VillageProgramsIndexPage` | pass-1/general; deferred/boseong |
+| `/[villageSlug]/terms` | Channel microsite | `VillageLegalPage` | pass-1/general |
+| `/[villageSlug]/privacy` | Channel microsite | `VillageLegalPage` | pass-1/general |
+| `/[villageSlug]/privacy/third-party` | Channel microsite | `VillageLegalPage` | pass-1/general |
+| `/channels` | Public chrome | public channel directory | pass-1/general; deferred/boseong asset |
+| `/channels/[slug]` | Channel microsite | wrapper for `/villages/[slug]` | pass-1/general; deferred/boseong |
+| `/channels/[slug]/about` | Channel microsite | wrapper for village about | pass-1/general; deferred/boseong |
+| `/channels/[slug]/media` | Channel microsite | wrapper for village media index | pass-1/general; deferred/boseong |
+| `/channels/[slug]/media/[mediaId]` | Channel microsite | wrapper for village media detail | pass-1/general; deferred/boseong |
+| `/channels/[slug]/notice` | Channel microsite | wrapper for village notice index | pass-1/general; deferred/boseong |
+| `/channels/[slug]/notice/[postId]` | Channel microsite | wrapper for village notice detail | pass-1/general; deferred/boseong |
+| `/channels/[slug]/programs` | Channel microsite | wrapper for village programs | pass-1/general; deferred/boseong |
 | `/channels/[slug]/programs/[programSlug]` | Channel microsite | canonical program redirect bridge | bridge |
-| `/channels/[slug]/reviews` | Channel microsite | wrapper for village reviews | pending |
-| `/villages/[slug]` | Channel microsite | canonical `VillageHomePage` implementation | pending |
+| `/channels/[slug]/reviews` | Channel microsite | wrapper for village reviews | pass-1/general; deferred/boseong |
+| `/villages/[slug]` | Channel microsite | canonical `VillageHomePage` implementation | pass-1/general; deferred/boseong |
 | `/villages/[slug]/programs/[programSlug]` | Channel microsite | canonical program redirect bridge | bridge |
 
 ## Mypage routes (10)

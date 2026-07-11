@@ -50,7 +50,7 @@ function GalleryViewSwitch({
 
   return (
     <div
-      className="flex items-center justify-center"
+      className="channel-gallery-view-switch flex items-center justify-center"
       style={{
         gap: px(82),
         height: px(48),
@@ -62,7 +62,7 @@ function GalleryViewSwitch({
         <button
           aria-label={tab.label}
           aria-pressed={activeMode === tab.mode}
-          className="grid place-items-center transition hover:opacity-80"
+          className="channel-gallery-view-button grid place-items-center transition hover:opacity-80"
           key={tab.mode}
           onClick={() => onChange(tab.mode)}
           style={{
@@ -115,7 +115,7 @@ function MaskIcon({
 function GalleryGrid({ items }: { items: GalleryItem[] }) {
   return (
     <div
-      className="grid"
+      className="channel-gallery-grid grid"
       style={{
         columnGap: px(6.211),
         gridTemplateColumns: `repeat(5, ${px(222.031)})`,
@@ -123,20 +123,23 @@ function GalleryGrid({ items }: { items: GalleryItem[] }) {
         rowGap: px(36),
       }}
     >
-      {items.map((item) => (
-        <GalleryCard item={item} key={item.id} />
+      {items.map((item, index) => (
+        <GalleryCard item={item} key={item.id} priority={index === 0} />
       ))}
     </div>
   );
 }
 
-function GalleryCard({ item }: { item: GalleryItem }) {
+function GalleryCard({ item, priority = false }: { item: GalleryItem; priority?: boolean }) {
   const isVideo = isVideoGalleryItem(item);
 
   return (
-    <article className="flex flex-col" style={{ gap: px(8.54), width: px(222.031) }}>
+    <article
+      className="channel-gallery-card flex flex-col"
+      style={{ gap: px(8.54), width: px(222.031) }}
+    >
       <Link
-        className="relative block overflow-hidden bg-[#D9D9D9]"
+        className="channel-gallery-card-image relative block overflow-hidden bg-[#D9D9D9]"
         href={item.href}
         style={{
           aspectRatio: "4 / 5",
@@ -149,6 +152,7 @@ function GalleryCard({ item }: { item: GalleryItem }) {
             alt={item.caption}
             className="object-cover"
             fill
+            priority={priority}
             sizes="(max-width: 1919px) 16vw, 296px"
             src={item.image}
           />
@@ -167,7 +171,7 @@ function GalleryCard({ item }: { item: GalleryItem }) {
         ) : null}
       </Link>
       <Link
-        className="line-clamp-2 text-[length:var(--channel-font-14)] font-medium leading-[1.253] text-[#0D0D0C]"
+        className="channel-gallery-card-caption line-clamp-2 text-[length:var(--channel-font-14)] font-medium leading-[1.253] text-[#0D0D0C]"
         href={item.href}
         style={{
           paddingLeft: px(6.211),
@@ -213,7 +217,7 @@ function GalleryVideoPreview({ item }: { item: GalleryItem }) {
 function ChannelGalleryEmptyState({ message }: { message: string }) {
   return (
     <div
-      className="border border-dashed border-[#D6D6D6]"
+      className="channel-gallery-empty border border-dashed border-[#D6D6D6]"
       style={{
         marginTop: px(28),
         minHeight: px(320),

@@ -2,16 +2,16 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { useMemo, type CSSProperties } from "react";
+import { useMemo } from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
+import { ChannelGuestProfileHeader } from "@/components/channel-guest-profile-header";
+import {
+  channelGuestContentStyle,
+  channelGuestScaleRootStyle,
+  px,
+} from "@/components/channel-guest-shared";
 import { nuvioIcons } from "@/components/icons/nuvio-icons";
 import { NuvioEmptyState } from "@/components/nuvio-empty-state";
-import {
-  channelGuestHref,
-  channelHomeLabel,
-  getChannelMenuDisplayLabel,
-  getVisibleChannelMenuItems,
-} from "@/lib/channel-menu";
 import {
   buildChannelProgramsHref,
   normalizeChannelProgramSortOrder,
@@ -71,22 +71,6 @@ const text = {
   upcoming: "예정",
 } as const;
 
-const px = (value: number) =>
-  `clamp(${value}px, ${(value / 14.4).toFixed(6)}vw, ${(value * 4 / 3).toFixed(6)}px)`;
-
-const scaleRootStyle = {
-  "--channel-font-11": px(11),
-  "--channel-font-12": px(12),
-  "--channel-font-14": px(14),
-  "--channel-font-16": px(16),
-  "--channel-font-24": px(24),
-} as CSSProperties;
-
-const contentStyle = {
-  maxWidth: `calc(100% - ${px(298)})`,
-  width: px(1142),
-} as CSSProperties;
-
 const programFilterOptions: Array<{ label: string; value: ProgramStatusFilter }> = [
   { label: text.all, value: "all" },
   { label: text.open, value: "open" },
@@ -143,16 +127,21 @@ export function ChannelGuestProgramsPage({
 
   return (
     <div
-      className="min-h-screen overflow-x-clip bg-white font-pretendard text-[#5B3A29]"
-      style={scaleRootStyle}
+      className="channel-guest-page min-h-screen overflow-x-clip bg-white font-pretendard text-[#5B3A29]"
+      style={channelGuestScaleRootStyle}
     >
       <main className="mx-auto w-full max-w-[1920px]">
-        <ChannelProfileHeader activeTab="program" homeHref={homeHref} village={village} />
+        <ChannelGuestProfileHeader
+          activeTab="program"
+          homeHref={homeHref}
+          village={village}
+          wide
+        />
 
         <section
-          className="mx-auto flex flex-col"
+          className="channel-guest-content mx-auto flex flex-col"
           style={{
-            ...contentStyle,
+            ...channelGuestContentStyle,
             gap: px(30),
             paddingBottom: px(90),
             paddingTop: px(8),
@@ -166,7 +155,7 @@ export function ChannelGuestProgramsPage({
           />
           {visibleCards.length > 0 ? (
             <div
-              className="grid"
+              className="channel-program-grid grid"
               style={{
                 columnGap: px(36.6667),
                 gridTemplateColumns: `repeat(3, ${px(344)})`,
@@ -189,158 +178,6 @@ export function ChannelGuestProgramsPage({
   );
 }
 
-function ChannelProfileHeader({
-  activeTab,
-  homeHref,
-  village,
-}: {
-  activeTab: "home" | "program";
-  homeHref: string;
-  village: Village;
-}) {
-  const menuItems = getVisibleChannelMenuItems(village);
-
-  return (
-    <section
-      className="mx-auto flex items-end border-b border-[#6D7A8A]"
-      style={{
-        ...contentStyle,
-        gap: px(39),
-        minHeight: px(185.658),
-        padding: `${px(22)} ${px(58)} 0`,
-      }}
-    >
-      <div
-        className="relative shrink-0 overflow-hidden rounded-full bg-[#D9D9D9]"
-        style={{
-          height: px(128),
-          marginBottom: px(22),
-          width: px(128),
-        }}
-      >
-        {village.profileImage ? (
-          <Image
-            alt={`${village.name} profile`}
-            className="object-cover"
-            fill
-            sizes="170px"
-            src={village.profileImage}
-          />
-        ) : (
-          <span
-            className="flex h-full w-full items-center justify-center font-semibold leading-[1] text-[#6D7A8A]"
-            style={{ fontSize: px(24) }}
-          >
-            {(village.name || village.logoText || "N").slice(0, 1)}
-          </span>
-        )}
-      </div>
-
-      <div className="flex min-w-0 flex-col" style={{ gap: px(4) }}>
-        <div className="flex items-end" style={{ gap: px(8) }}>
-          <h1 className="text-[length:var(--channel-font-24)] font-medium leading-[1.253] text-[#0D0D0C]">
-            {village.name}
-          </h1>
-          <span
-            className="text-[length:var(--channel-font-14)] font-medium leading-[1.253] text-[#6D7A8A]"
-            style={{ paddingBottom: px(2) }}
-          >
-            {village.city || village.region}
-          </span>
-        </div>
-        <p className="max-w-[60ch] truncate text-[length:var(--channel-font-16)] font-medium leading-[1.253] text-[#6D7A8A]">
-          {village.tagline || village.summary}
-        </p>
-        <div className="flex items-center" style={{ gap: px(8) }}>
-          <Image
-            alt=""
-            height={12}
-            src={nuvioIcons.channelLink}
-            style={{ height: px(12), width: px(12) }}
-            width={12}
-          />
-          <span className="text-[length:var(--channel-font-16)] font-medium leading-[1.253] text-[#6D7A8A]">
-            {village.region}
-          </span>
-          <span className="text-[length:var(--channel-font-16)] font-medium leading-[1.253] text-[#6D7A8A]">
-            {village.slug}
-          </span>
-        </div>
-        <div
-          className="flex items-center"
-          style={{
-            gap: px(8),
-            marginTop: px(4),
-            paddingLeft: px(2),
-          }}
-        >
-          <Image
-            alt={text.bell}
-            height={20}
-            src={nuvioIcons.bell}
-            style={{ height: px(20), width: px(19) }}
-            width={19}
-          />
-          <Image
-            alt={text.notice}
-            height={18}
-            src={nuvioIcons.message}
-            style={{ height: px(18), width: px(18) }}
-            width={18}
-          />
-        </div>
-        <nav
-          className="flex items-end"
-          style={{
-            gap: px(40),
-            paddingTop: px(14),
-          }}
-        >
-          <ChannelTab
-            active={activeTab === "home"}
-            href={homeHref}
-            label={channelHomeLabel}
-          />
-          {menuItems.map((item) => (
-            <ChannelTab
-              active={activeTab === item.kind}
-              href={channelGuestHref(item.kind, village)}
-              key={item.id}
-              label={getChannelMenuDisplayLabel(item)}
-            />
-          ))}
-        </nav>
-      </div>
-    </section>
-  );
-}
-
-function ChannelTab({
-  active = false,
-  href,
-  label,
-}: {
-  active?: boolean;
-  href: string;
-  label: string;
-}) {
-  return (
-    <Link
-      className={`flex items-center justify-center whitespace-nowrap text-[length:var(--channel-font-16)] font-semibold leading-[1.253] text-[#5B3A29] ${
-        active ? "border-b-2 border-[#FF9A3D]" : ""
-      }`}
-      href={href}
-      style={{
-        height: px(36),
-        paddingBottom: px(8),
-        paddingTop: active ? px(5) : px(8),
-      }}
-    >
-      {label}
-    </Link>
-  );
-}
-
 function FilterAndSortRow({
   activeFilter,
   onFilterChange,
@@ -354,7 +191,7 @@ function FilterAndSortRow({
 }) {
   return (
     <div
-      className="flex items-center"
+      className="channel-program-toolbar flex items-center"
       style={{
         height: px(48),
         paddingLeft: px(9),
@@ -372,7 +209,7 @@ function FilterAndSortRow({
       </div>
 
       <div
-        className="ml-auto flex items-center justify-end text-[length:var(--channel-font-14)] font-medium leading-[1.253] text-[#6D7A8A]"
+        className="channel-program-sort ml-auto flex items-center justify-end text-[length:var(--channel-font-14)] font-medium leading-[1.253] text-[#6D7A8A]"
         style={{
           gap: px(10),
           minWidth: px(330),
@@ -408,7 +245,7 @@ function FilterButton({
   return (
     <button
       aria-pressed={active}
-      className={`rounded-full text-[length:var(--channel-font-12)] font-semibold leading-[1.253] ${
+      className={`channel-filter-pill rounded-full text-[length:var(--channel-font-12)] font-semibold leading-[1.253] ${
         active ? "bg-[#FF9A3D] text-white" : "bg-[#CAC4BC] text-white"
       }`}
       onClick={onClick}
@@ -435,7 +272,7 @@ function SortChoice({
   return (
     <button
       aria-pressed={active}
-      className="flex items-center"
+      className="channel-sort-choice flex items-center"
       onClick={onClick}
       style={{ gap: px(4) }}
       type="button"
@@ -466,14 +303,14 @@ function ProgramGridCard({ program }: { program: ProgramCardModel }) {
 
   return (
     <article
-      className="flex flex-col"
+      className="channel-program-card flex flex-col"
       style={{
         gap: px(13),
         width: px(344),
       }}
     >
       <Link
-        className="relative block overflow-hidden bg-[#D9D9D9]"
+        className="channel-program-card-image relative block overflow-hidden bg-[#D9D9D9]"
         href={program.href}
         style={{
           borderRadius: px(16),
@@ -529,7 +366,7 @@ function ProgramGridCard({ program }: { program: ProgramCardModel }) {
               marginLeft: "auto",
               width: px(program.status === "open" ? 17 : 19),
             }}
-            width={19}
+            width={program.status === "open" ? 17 : 19}
           />
         </div>
 

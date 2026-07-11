@@ -357,3 +357,493 @@ a {
   overflow-x: auto;
   padding: 1rem;
 }
+
+@media (max-width: 1100px) {
+  .channel-guest-page {
+    --channel-font-11: 12px !important;
+    --channel-font-12: 13px !important;
+    --channel-font-14: 14px !important;
+    --channel-font-16: 16px !important;
+    --channel-font-20: 20px !important;
+    --channel-font-24: 22px !important;
+  }
+
+  .channel-guest-hero {
+    height: clamp(180px, 46vw, 280px) !important;
+  }
+
+  .channel-guest-profile {
+    display: grid !important;
+    gap: 12px 16px !important;
+    grid-template-columns: 80px minmax(0, 1fr);
+    grid-template-rows: auto auto;
+    max-width: none !important;
+    min-height: 0 !important;
+    padding: 24px 0 0 !important;
+    width: calc(100% - 2rem) !important;
+  }
+
+  .channel-guest-profile-avatar {
+    align-self: start;
+    grid-column: 1;
+    grid-row: 1;
+    height: 80px !important;
+    margin-bottom: 0 !important;
+    width: 80px !important;
+  }
+
+  .channel-guest-profile-body {
+    display: contents !important;
+  }
+
+  .channel-guest-profile-details {
+    align-self: start;
+    grid-column: 2;
+    grid-row: 1;
+  }
+
+  .channel-guest-profile-title,
+  .channel-guest-profile-meta {
+    flex-wrap: wrap;
+  }
+
+  .channel-guest-profile-title h1 {
+    overflow-wrap: anywhere;
+  }
+
+  .channel-guest-profile-summary {
+    display: -webkit-box;
+    overflow: hidden;
+    text-overflow: clip;
+    white-space: normal;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2;
+  }
+
+  .channel-guest-profile-actions {
+    min-height: 32px;
+  }
+
+  .channel-guest-tabs {
+    grid-column: 1 / -1;
+    grid-row: 2;
+    gap: 24px !important;
+    max-width: 100%;
+    overflow-x: auto;
+    overscroll-behavior-inline: contain;
+    padding-top: 4px !important;
+    scroll-snap-type: inline proximity;
+    scrollbar-width: none;
+  }
+
+  .channel-guest-tabs::-webkit-scrollbar {
+    display: none;
+  }
+
+  .channel-guest-tab {
+    height: 44px !important;
+    min-height: 44px;
+    padding-bottom: 9px !important;
+    padding-top: 9px !important;
+    scroll-snap-align: start;
+  }
+
+  .channel-guest-content {
+    max-width: none !important;
+    width: calc(100% - 2rem) !important;
+  }
+
+  .channel-program-filter-row,
+  .channel-program-toolbar > div:first-child {
+    gap: 8px !important;
+    overflow-x: auto;
+    overscroll-behavior-inline: contain;
+    scrollbar-width: none;
+  }
+
+  .channel-program-filter-row {
+    height: auto !important;
+    min-height: 56px;
+    padding: 6px 0 8px !important;
+  }
+
+  .channel-program-filter-row::-webkit-scrollbar,
+  .channel-program-toolbar > div:first-child::-webkit-scrollbar {
+    display: none;
+  }
+
+  .channel-filter-pill {
+    flex: 0 0 auto;
+    height: 44px !important;
+    min-width: 64px;
+    width: auto !important;
+    padding-inline: 16px;
+  }
+
+  .channel-program-strip {
+    gap: 16px !important;
+    margin-inline: -16px;
+    overflow-x: auto;
+    overscroll-behavior-inline: contain;
+    padding: 20px 16px 8px !important;
+    scroll-padding-inline: 16px;
+    scroll-snap-type: inline proximity;
+    scrollbar-width: none;
+  }
+
+  .channel-program-strip::-webkit-scrollbar {
+    display: none;
+  }
+
+  .channel-mini-program-card {
+    scroll-snap-align: start;
+    width: min(70vw, 220px) !important;
+  }
+
+  .channel-mini-program-image {
+    aspect-ratio: 4 / 5;
+    height: auto !important;
+  }
+
+  .channel-home-gallery-grid {
+    display: flex !important;
+    gap: 16px !important;
+    grid-template-columns: none !important;
+    margin-inline: -16px;
+    overflow-x: auto;
+    overscroll-behavior-inline: contain;
+    padding: 20px 16px 8px !important;
+    scroll-padding-inline: 16px;
+    scroll-snap-type: inline proximity;
+    scrollbar-width: none;
+  }
+
+  .channel-home-gallery-grid::-webkit-scrollbar {
+    display: none;
+  }
+
+  .channel-home-gallery-card {
+    flex: 0 0 min(78vw, 290px);
+    height: auto !important;
+    min-height: 320px;
+    scroll-snap-align: start;
+    width: min(78vw, 290px) !important;
+  }
+
+  .channel-home-gallery-image {
+    aspect-ratio: 1 / 1;
+    height: auto !important;
+  }
+
+  .channel-home-story-grid {
+    gap: 16px !important;
+    grid-template-columns: minmax(0, 1fr) !important;
+    padding: 20px 0 0 !important;
+  }
+
+  .channel-home-story-card {
+    width: 100% !important;
+  }
+
+  .channel-home-story-image {
+    aspect-ratio: 16 / 10;
+    height: auto !important;
+  }
+
+  .channel-home-notice-list {
+    margin: 20px 0 0 !important;
+  }
+
+  .channel-home-notice-row {
+    gap: 2px 10px;
+    grid-template-columns: auto minmax(0, 1fr) !important;
+    height: auto !important;
+    min-height: 56px;
+    padding: 9px 0 !important;
+  }
+
+  .channel-home-notice-row > :last-child {
+    grid-column: 2;
+    text-align: left;
+  }
+
+  .channel-more-link {
+    flex: 0 0 96px;
+    height: 220px !important;
+    min-height: 44px;
+    width: 96px !important;
+  }
+
+  .channel-program-toolbar {
+    align-items: stretch;
+    flex-wrap: wrap;
+    gap: 9px;
+    height: auto !important;
+    padding: 8px 0 !important;
+  }
+
+  .channel-program-toolbar > div:first-child {
+    min-width: 100%;
+  }
+
+  .channel-program-sort {
+    justify-content: flex-start;
+    min-width: 0 !important;
+    padding-right: 0 !important;
+    width: 100%;
+  }
+
+  .channel-sort-choice {
+    min-height: 44px;
+    padding-inline: 4px;
+  }
+
+  .channel-program-grid {
+    column-gap: 16px !important;
+    grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)) !important;
+    padding-left: 0 !important;
+    row-gap: 28px !important;
+  }
+
+  .channel-program-card {
+    width: 100% !important;
+  }
+
+  .channel-program-card-image {
+    aspect-ratio: 4 / 5;
+    height: auto !important;
+    width: 100% !important;
+  }
+
+  .channel-gallery-view-switch {
+    gap: clamp(40px, 15vw, 96px) !important;
+    height: 56px !important;
+    width: 100% !important;
+  }
+
+  .channel-gallery-view-button {
+    height: 44px !important;
+    width: 44px !important;
+  }
+
+  .channel-gallery-grid {
+    column-gap: 12px !important;
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+    row-gap: 24px !important;
+    width: 100%;
+  }
+
+  .channel-gallery-card,
+  .channel-gallery-card-image,
+  .channel-gallery-card-caption {
+    width: 100% !important;
+  }
+
+  .channel-gallery-empty {
+    min-height: 220px !important;
+    width: 100% !important;
+  }
+
+  .channel-magazine-grid {
+    gap: 20px !important;
+    grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)) !important;
+  }
+
+  .channel-magazine-card {
+    height: auto !important;
+    min-height: 0;
+  }
+
+  .channel-magazine-image {
+    aspect-ratio: 16 / 10;
+    height: auto !important;
+  }
+
+  .channel-review-toolbar {
+    gap: 12px !important;
+    padding: 20px 0 0 !important;
+  }
+
+  .channel-review-program-filter,
+  .channel-review-filter-line {
+    align-items: flex-start;
+    flex-wrap: wrap;
+    width: 100% !important;
+  }
+
+  .channel-review-program-filter > div,
+  .channel-review-filter-options {
+    border-left: 0;
+    padding: 0 !important;
+    width: 100%;
+  }
+
+  .channel-review-select {
+    height: 44px !important;
+    width: 100% !important;
+  }
+
+  .channel-review-select select {
+    font-size: 16px !important;
+  }
+
+  .channel-review-filter-options {
+    gap: 8px !important;
+    min-height: 44px;
+    overflow-x: auto;
+    overscroll-behavior-inline: contain;
+    scrollbar-width: none;
+  }
+
+  .channel-review-filter-options::-webkit-scrollbar {
+    display: none;
+  }
+
+  .channel-review-choice {
+    flex: 0 0 auto;
+    min-height: 44px;
+    padding-inline: 2px;
+  }
+
+  .channel-review-list {
+    padding-left: 0 !important;
+    padding-right: 0 !important;
+  }
+
+  .channel-review-card {
+    padding: 16px 0 !important;
+  }
+
+  .channel-review-body,
+  .channel-review-body-text {
+    width: 100% !important;
+  }
+
+  .channel-review-images {
+    max-width: 100%;
+    overflow-x: auto;
+    overscroll-behavior-inline: contain;
+    scrollbar-width: none;
+  }
+
+  .channel-review-images::-webkit-scrollbar {
+    display: none;
+  }
+
+  .channel-board-list {
+    padding: 8px 0 14px !important;
+  }
+
+  .channel-board-row {
+    gap: 2px 10px;
+    grid-template-columns: auto minmax(0, 1fr) !important;
+    min-height: 56px !important;
+    padding: 9px 0 !important;
+  }
+
+  .channel-board-row > :last-child {
+    grid-column: 2;
+    padding-right: 0 !important;
+    text-align: left;
+  }
+
+  .channel-board-back,
+  .channel-gallery-back {
+    min-height: 44px;
+  }
+
+  .channel-board-article {
+    padding-bottom: 32px !important;
+    padding-top: 24px !important;
+  }
+
+  .channel-board-title-row {
+    flex-wrap: wrap;
+  }
+
+  .channel-board-title-row h1 {
+    overflow-wrap: anywhere;
+  }
+
+  .channel-gallery-detail {
+    flex-direction: column;
+    gap: 24px !important;
+  }
+
+  .channel-gallery-detail-media,
+  .channel-gallery-detail-copy {
+    width: 100% !important;
+  }
+
+  .channel-gallery-detail-media > .channel-gallery-media-wide,
+  .channel-gallery-detail-media > .channel-gallery-media-portrait {
+    height: auto !important;
+    width: 100% !important;
+  }
+
+  .channel-gallery-detail-media > .channel-gallery-media-wide {
+    aspect-ratio: 16 / 9;
+  }
+
+  .channel-gallery-detail-media > .channel-gallery-media-portrait {
+    aspect-ratio: 4 / 5;
+  }
+
+  .channel-gallery-detail-body {
+    height: auto !important;
+    max-height: none;
+    overflow-y: visible;
+  }
+
+  .channel-gallery-related {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+    gap: 20px 12px !important;
+  }
+
+  .channel-gallery-related-card {
+    width: 100% !important;
+  }
+
+  .channel-gallery-related-card > span:first-child {
+    width: 100% !important;
+  }
+
+  .channel-home-block-split {
+    grid-template-columns: minmax(0, 1fr) !important;
+  }
+
+  .channel-about-card p,
+  .channel-about-card h3 {
+    overflow-wrap: anywhere;
+  }
+}
+
+@media (max-width: 599px) {
+  .channel-about-grid {
+    grid-template-columns: minmax(0, 1fr) !important;
+    padding-left: 0 !important;
+    padding-right: 0 !important;
+  }
+
+  .channel-about-card {
+    min-height: 0 !important;
+  }
+}
+
+@media (min-width: 600px) and (max-width: 1100px) {
+  .channel-gallery-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+  }
+}
+
+@media (max-width: 359px) {
+  .channel-guest-profile {
+    gap: 10px 12px !important;
+    grid-template-columns: 72px minmax(0, 1fr);
+  }
+
+  .channel-guest-profile-avatar {
+    height: 72px !important;
+    width: 72px !important;
+  }
+}

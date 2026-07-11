@@ -1,9 +1,10 @@
+import { ChannelGuestProfileHeader } from "@/components/channel-guest-profile-header";
 import {
-  ChannelProfileHeader,
   channelGuestContentStyle,
   channelGuestScaleRootStyle,
   px,
-} from "@/components/channel-guest-gallery";
+} from "@/components/channel-guest-shared";
+import { isChannelMenuSection } from "@/lib/channel-menu";
 import { channelPath } from "@/lib/channel-routing";
 import type { Village, VillageSection } from "@/lib/village-types";
 
@@ -23,14 +24,14 @@ export function ChannelGuestAboutPage({ village }: ChannelGuestAboutPageProps) {
 
   return (
     <div
-      className="min-h-screen overflow-x-clip bg-white font-pretendard text-[#5B3A29]"
+      className="channel-guest-page min-h-screen overflow-x-clip bg-white font-pretendard text-[#5B3A29]"
       style={channelGuestScaleRootStyle}
     >
       <main className="mx-auto w-full max-w-[1920px]">
-        <ChannelProfileHeader activeTab="home" homeHref={homeHref} village={village} />
+        <ChannelGuestProfileHeader activeTab="home" homeHref={homeHref} village={village} />
 
         <section
-          className="mx-auto"
+          className="channel-guest-content mx-auto"
           style={{
             ...channelGuestContentStyle,
             paddingBottom: px(90),
@@ -48,7 +49,7 @@ export function ChannelGuestAboutPage({ village }: ChannelGuestAboutPageProps) {
           </h2>
 
           <div
-            className="grid"
+            className="channel-about-grid grid"
             style={{
               gap: px(24),
               gridTemplateColumns: "repeat(2, minmax(0, 1fr))",
@@ -68,7 +69,7 @@ export function ChannelGuestAboutPage({ village }: ChannelGuestAboutPageProps) {
 function AboutSectionCard({ section }: { section: VillageSection }) {
   return (
     <article
-      className="border border-[#F0D8C8] bg-[#FCFCFC]"
+      className="channel-about-card border border-[#F0D8C8] bg-[#FCFCFC]"
       style={{
         borderRadius: px(10),
         minHeight: px(180),
@@ -111,7 +112,10 @@ function AboutSectionCard({ section }: { section: VillageSection }) {
 }
 
 function getAboutSections(village: Village): VillageSection[] {
-  if (village.sections.length > 0) return village.sections;
+  const publicSections = village.sections.filter(
+    (section) => section.visible !== false && !isChannelMenuSection(section),
+  );
+  if (publicSections.length > 0) return publicSections;
 
   return [
     {
