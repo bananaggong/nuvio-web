@@ -242,16 +242,16 @@ export function HostChannelSettings() {
     <HostWorkspaceLayout sidebarHeight="min-h-[var(--host-1076)]">
       <UnsavedChangesGuard when={hasUnsavedChannelChanges} />
       <section className="min-w-0 flex-1 overflow-x-clip bg-white">
-        <div className="flex min-h-[var(--host-1076)] w-full max-w-[var(--host-1230)] flex-col">
-          <div className="h-[var(--host-1007)] shrink-0">
-            <section className="relative h-[var(--host-257)]">
+        <div className="flex min-h-[var(--host-1076)] w-full max-w-[var(--host-1230)] flex-col max-[1439px]:max-w-none">
+          <div className="h-[var(--host-1007)] shrink-0 max-[1439px]:h-auto max-[1439px]:shrink">
+            <section className="relative h-[var(--host-257)] max-[1439px]:h-auto max-[1439px]:px-[var(--host-58)] max-[1439px]:pb-[var(--host-28)] max-[1439px]:pt-[var(--host-48)] max-lg:px-5 max-lg:pb-8 max-lg:pt-6">
               <SettingHeading
-                className="absolute left-[var(--host-58)] top-[var(--host-48)]"
+                className="absolute left-[var(--host-58)] top-[var(--host-48)] max-[1439px]:static"
                 description="채널 헤더에 표시되는 대표 이미지예요"
                 title="사진 설정"
               />
-              <div className="absolute left-[var(--host-58)] top-[var(--host-129)] flex h-[var(--host-128)] items-start">
-                <div className="relative size-[var(--host-128)] shrink-0 overflow-hidden rounded-full bg-[#D9D9D9]">
+              <div className="absolute left-[var(--host-58)] top-[var(--host-129)] flex h-[var(--host-128)] items-start max-[1439px]:static max-[1439px]:mt-6 max-[1439px]:h-auto max-sm:flex-col max-sm:gap-4">
+                <div className="relative size-[var(--host-128)] shrink-0 overflow-hidden rounded-full bg-[#D9D9D9] max-lg:size-24">
                   {channel.profileImage ? (
                     <Image
                       alt=""
@@ -266,7 +266,7 @@ export function HostChannelSettings() {
                     </span>
                   )}
                 </div>
-                <div className="ml-[var(--host-14)] mt-[var(--host-17)] w-[var(--host-352)]">
+                <div className="ml-[var(--host-14)] mt-[var(--host-17)] w-[var(--host-352)] max-lg:min-w-0 max-lg:flex-1 max-lg:w-auto max-sm:ml-0 max-sm:mt-0">
                   <input
                     accept="image/gif,image/jpeg,image/png,image/webp"
                     className="sr-only"
@@ -274,14 +274,14 @@ export function HostChannelSettings() {
                     ref={profileInputRef}
                     type="file"
                   />
-                  <p className="text-[length:var(--host-14)] font-medium leading-[1.286] text-[#6D7A8A]">
+                  <p className="text-[length:var(--host-14)] font-medium leading-[1.286] text-[#6D7A8A] max-lg:text-base">
                     <span className="block">98x98픽셀 이상</span>
-                    <span className="block whitespace-nowrap">
+                    <span className="block whitespace-nowrap max-lg:whitespace-normal">
                       JPG, PNG, WebP, GIF 파일을 5MB 이하로 업로드할 수 있어요
                     </span>
                   </p>
                   <button
-                    className="mt-[var(--host-18)] inline-flex h-[var(--host-40)] w-[var(--host-113)] items-center justify-center gap-[var(--host-9)] rounded-[4px] bg-[#6D7A8A] text-[length:var(--host-12)] font-medium leading-[1.253] text-[#F9F9F9] transition hover:bg-[#5F6B79]"
+                    className="mt-[var(--host-18)] inline-flex h-[var(--host-40)] w-[var(--host-113)] items-center justify-center gap-[var(--host-9)] rounded-[4px] bg-[#6D7A8A] text-[length:var(--host-12)] font-medium leading-[1.253] text-[#F9F9F9] transition hover:bg-[#5F6B79] max-lg:min-h-11 max-lg:w-auto max-lg:px-4 max-lg:text-sm"
                     disabled={isLoading || isUploadingProfile}
                     onClick={() => profileInputRef.current?.click()}
                     type="button"
@@ -290,7 +290,7 @@ export function HostChannelSettings() {
                     {isUploadingProfile ? "업로드 중" : "프로필 추가"}
                   </button>
                   {profileMessage ? (
-                    <p className="mt-[var(--host-8)] text-[length:var(--host-12)] font-medium leading-[1.253] text-[#6D7A8A]">
+                    <p className="mt-[var(--host-8)] break-words text-[length:var(--host-12)] font-medium leading-[1.253] text-[#6D7A8A] max-lg:text-sm">
                       {profileMessage}
                     </p>
                   ) : null}
@@ -314,7 +314,7 @@ export function HostChannelSettings() {
               description="호스트가 활동하는 지역이에요"
               title="지역 설정"
             >
-              <div className="flex w-[var(--host-730)] gap-[var(--host-12)]">
+              <div className="flex w-[var(--host-730)] gap-[var(--host-12)] max-[1439px]:w-full max-sm:flex-col">
                 <SelectField
                   disabled={isLoading}
                   onChange={updateRegion}
@@ -346,39 +346,44 @@ export function HostChannelSettings() {
               />
             </SettingRow>
 
-            <section className="relative mt-[var(--host-28)] h-[var(--host-138)]">
+            <section className="relative mt-[var(--host-28)] h-[var(--host-138)] max-[1439px]:h-auto max-[1439px]:px-[var(--host-58)] max-[1439px]:pb-[var(--host-28)] max-lg:mt-0 max-lg:px-5 max-lg:pb-8">
               <SettingHeading
-                className="absolute left-[var(--host-58)] top-0"
+                className="absolute left-[var(--host-58)] top-0 max-[1439px]:static"
                 description="채널 헤더에 표시되는 링크예요"
                 title="외부 링크 설정"
               />
-              <div className="absolute left-[var(--host-58)] top-[var(--host-85)] flex h-[var(--host-34)] w-[var(--host-1114)] items-center gap-[var(--host-12)]">
+              <div className="absolute left-[var(--host-58)] top-[var(--host-85)] flex h-[var(--host-34)] w-[var(--host-1114)] items-center gap-[var(--host-12)] max-[1439px]:static max-[1439px]:mt-4 max-[1439px]:grid max-[1439px]:h-auto max-[1439px]:w-full max-[1439px]:grid-cols-[minmax(160px,0.3fr)_minmax(0,1fr)_44px] max-lg:grid-cols-1 max-lg:gap-3">
                 <TextField
                   disabled={isLoading}
                   onChange={(value) => updatePrimaryLink({ label: value })}
                   placeholder="링크이름"
                   value={primaryLink.label}
-                  widthClassName="w-[var(--host-247)]"
+                  widthClassName="w-[var(--host-247)] max-[1439px]:w-full"
                 />
                 <TextField
                   disabled={isLoading}
                   onChange={(value) => updatePrimaryLink({ url: value })}
                   placeholder="링크 URL"
                   value={primaryLink.url}
-                  widthClassName="w-[var(--host-827)]"
+                  widthClassName="w-[var(--host-827)] max-[1439px]:w-full"
                 />
                 <button
                   aria-label="링크 삭제"
-                  className="grid h-[var(--host-34)] w-[var(--host-18)] shrink-0 place-items-center transition hover:opacity-70"
+                  className="grid h-[var(--host-34)] w-[var(--host-18)] shrink-0 place-items-center transition hover:opacity-70 max-[1439px]:size-11 max-lg:justify-self-end"
                   disabled={isLoading}
                   onClick={removePrimaryLink}
                   type="button"
                 >
-                  <Image alt="" height={18} src={nuvioIcons.formItemTrash} width={16} />
+                  <Image
+                    alt=""
+                    height={18}
+                    src={nuvioIcons.formItemTrash}
+                    width={16}
+                  />
                 </button>
               </div>
               <button
-                className="absolute left-[var(--host-58)] top-[var(--host-123)] inline-flex h-[var(--host-15)] items-center gap-[var(--host-4)] text-[length:var(--host-12)] font-medium leading-[1.253] text-[#6D7A8A] transition hover:text-[#FE701E]"
+                className="absolute left-[var(--host-58)] top-[var(--host-123)] inline-flex h-[var(--host-15)] items-center gap-[var(--host-4)] text-[length:var(--host-12)] font-medium leading-[1.253] text-[#6D7A8A] transition hover:text-[#FE701E] max-[1439px]:static max-[1439px]:mt-3 max-lg:min-h-11 max-lg:text-sm"
                 onClick={addEmptyLink}
                 type="button"
               >
@@ -387,27 +392,27 @@ export function HostChannelSettings() {
               </button>
             </section>
 
-            <section className="relative mt-[var(--host-28)] h-[var(--host-99)]">
+            <section className="relative mt-[var(--host-28)] h-[var(--host-99)] max-[1439px]:h-auto max-[1439px]:px-[var(--host-58)] max-[1439px]:pb-[var(--host-28)] max-lg:mt-0 max-lg:px-5 max-lg:pb-8">
               <SettingHeading
-                className="absolute left-[var(--host-58)] top-0"
+                className="absolute left-[var(--host-58)] top-0 max-[1439px]:static"
                 description="비활성화 시 게스트에게 채널이 보이지 않아요"
                 title="채널 활성화 설정"
               />
-              <div className="absolute left-[var(--host-58)] top-[var(--host-81)] flex h-[var(--host-18)] items-center gap-[var(--host-6)]">
+              <div className="absolute left-[var(--host-58)] top-[var(--host-81)] flex h-[var(--host-18)] items-center gap-[var(--host-6)] max-[1439px]:static max-[1439px]:mt-4 max-lg:min-h-11">
                 <span className="text-[length:var(--host-12)] font-medium leading-[1.253] text-[#FE701E]">
                   채널 활성
                 </span>
                 <button
                   aria-label="채널 활성 전환"
                   aria-pressed={channel.published}
-                  className="grid h-[var(--host-18)] w-[var(--host-23)] place-items-center"
+                  className="grid h-[var(--host-18)] w-[var(--host-23)] place-items-center max-lg:size-11"
                   disabled={isLoading}
                   onClick={() => updateChannel({ published: !channel.published })}
                   type="button"
                 >
                   <Image
                     alt=""
-                    height={12}
+                    height={20}
                     src={
                       channel.published
                         ? nuvioIcons.formRequiredToggleOn
@@ -420,9 +425,9 @@ export function HostChannelSettings() {
             </section>
           </div>
 
-          <footer className="flex h-[var(--host-69)] shrink-0 items-start border-t border-[#6D7A8A] px-[var(--host-28)] pt-[var(--host-20)]">
+          <footer className="flex h-[var(--host-69)] shrink-0 items-start border-t border-[#6D7A8A] px-[var(--host-28)] pt-[var(--host-20)] max-lg:h-auto max-lg:px-5 max-lg:py-4">
             <button
-              className="inline-flex h-[var(--host-29)] w-[var(--host-58)] items-center justify-center rounded-[4px] border border-[#6D7A8A] bg-white text-[length:var(--host-11)] font-medium leading-[1.253] text-[#6D7A8A] transition hover:border-[#FE701E] hover:text-[#FE701E] disabled:cursor-not-allowed disabled:opacity-50"
+              className="inline-flex h-[var(--host-29)] w-[var(--host-58)] items-center justify-center rounded-[4px] border border-[#6D7A8A] bg-white text-[length:var(--host-11)] font-medium leading-[1.253] text-[#6D7A8A] transition hover:border-[#FE701E] hover:text-[#FE701E] disabled:cursor-not-allowed disabled:opacity-50 max-lg:min-h-11 max-lg:w-full max-lg:text-sm"
               disabled={isLoading || isSaving}
               onClick={saveChannel}
               type="button"
@@ -446,11 +451,11 @@ function SettingHeading({
   title: string;
 }) {
   return (
-    <header className={`h-[var(--host-81)] ${className}`}>
-      <h1 className="pt-[var(--host-12)] text-[length:var(--host-20)] font-semibold leading-[1.253] text-[#6D7A8A]">
+    <header className={`h-[var(--host-81)] max-[1439px]:h-auto ${className}`}>
+      <h1 className="pt-[var(--host-12)] text-[length:var(--host-20)] font-semibold leading-[1.253] text-[#6D7A8A] max-[1439px]:pt-0">
         {title}
       </h1>
-      <p className="mt-[var(--host-12)] text-[length:var(--host-16)] font-medium leading-[1.253] text-[#6D7A8A]">
+      <p className="mt-[var(--host-12)] text-[length:var(--host-16)] font-medium leading-[1.45] text-[#6D7A8A] max-lg:text-base">
         {description}
       </p>
     </header>
@@ -467,13 +472,13 @@ function SettingRow({
   title: string;
 }) {
   return (
-    <section className="relative mt-[var(--host-28)] h-[var(--host-115)]">
+    <section className="relative mt-[var(--host-28)] h-[var(--host-115)] max-[1439px]:h-auto max-[1439px]:px-[var(--host-58)] max-[1439px]:pb-[var(--host-28)] max-lg:mt-0 max-lg:px-5 max-lg:pb-8">
       <SettingHeading
-        className="absolute left-[var(--host-58)] top-0"
+        className="absolute left-[var(--host-58)] top-0 max-[1439px]:static"
         description={description}
         title={title}
       />
-      <div className="absolute left-[var(--host-58)] top-[var(--host-81)]">{children}</div>
+      <div className="absolute left-[var(--host-58)] top-[var(--host-81)] max-[1439px]:static max-[1439px]:mt-4">{children}</div>
     </section>
   );
 }
@@ -493,7 +498,7 @@ function TextField({
 }) {
   return (
     <input
-      className={`h-[var(--host-34)] rounded-[4px] border border-[#6D7A8A] bg-white px-[var(--host-12)] text-[length:var(--host-14)] font-medium leading-[1.253] text-[#6D7A8A] outline-none placeholder:text-[#CAC4BC] focus:border-[#FE701E] disabled:opacity-60 ${widthClassName}`}
+      className={`h-[var(--host-34)] rounded-[4px] border border-[#6D7A8A] bg-white px-[var(--host-12)] text-[length:var(--host-14)] font-medium leading-[1.253] text-[#6D7A8A] outline-none placeholder:text-[#CAC4BC] focus:border-[#FE701E] disabled:opacity-60 max-lg:h-11 max-lg:text-base ${widthClassName}`}
       disabled={disabled}
       onChange={(event) => onChange(event.target.value)}
       placeholder={placeholder}
@@ -518,9 +523,9 @@ function SelectField({
   const normalizedOptions = value && !options.includes(value) ? [value, ...options] : options;
 
   return (
-    <label className="relative h-[var(--host-34)] w-[var(--host-359)] shrink-0">
+    <label className="relative h-[var(--host-34)] w-[var(--host-359)] shrink-0 max-[1439px]:min-w-0 max-[1439px]:flex-1 max-lg:h-11 max-sm:w-full max-sm:flex-none">
       <select
-        className="h-full w-full appearance-none rounded-[4px] border border-[#6D7A8A] bg-white px-[var(--host-12)] pr-[var(--host-38)] text-[length:var(--host-14)] font-medium leading-[1.253] text-[#6D7A8A] outline-none focus:border-[#FE701E] disabled:opacity-60"
+        className="h-full w-full appearance-none rounded-[4px] border border-[#6D7A8A] bg-white px-[var(--host-12)] pr-[var(--host-38)] text-[length:var(--host-14)] font-medium leading-[1.253] text-[#6D7A8A] outline-none focus:border-[#FE701E] disabled:opacity-60 max-lg:text-base"
         disabled={disabled}
         onChange={(event) => onChange(event.target.value)}
         value={value}
@@ -534,10 +539,10 @@ function SelectField({
       </select>
       <Image
         alt=""
-        className="pointer-events-none absolute right-[var(--host-14)] top-1/2 -translate-y-1/2 opacity-45"
-        height={8}
+        className="pointer-events-none absolute right-[var(--host-14)] top-1/2 h-auto w-[13px] -translate-y-1/2 opacity-45"
+        height={20}
         src={nuvioIcons.formSelectDropdown}
-        width={13}
+        width={19}
       />
     </label>
   );

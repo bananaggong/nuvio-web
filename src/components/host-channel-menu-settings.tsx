@@ -252,10 +252,10 @@ export function HostChannelMenuSettings() {
     <HostWorkspaceLayout sidebarHeight="min-h-[var(--host-1086)]">
       <UnsavedChangesGuard when={hasUnsavedMenuChanges} />
       <section className="min-w-0 flex-1 overflow-x-hidden">
-        <div className="w-full max-w-[var(--host-1230)] max-md:w-full">
-          <section className="relative h-[var(--host-156)] border-b border-[#6D7A8A] bg-white max-md:h-auto max-md:pb-2">
-            <div className="flex items-start gap-[var(--host-42)] px-[var(--host-58)] pt-[var(--host-14)] max-md:gap-4 max-md:px-5">
-              <div className="relative size-[var(--host-128)] shrink-0 overflow-hidden rounded-full bg-[#D9D9D9] max-md:size-24">
+        <div className="w-full max-w-[var(--host-1230)] max-[1439px]:max-w-none">
+          <section className="relative h-[var(--host-156)] border-b border-[#6D7A8A] bg-white max-lg:h-auto max-lg:pb-2">
+            <div className="flex items-start gap-[var(--host-42)] px-[var(--host-58)] pt-[var(--host-14)] max-lg:gap-4 max-lg:px-5 max-lg:pb-3 max-lg:pt-5">
+              <div className="relative size-[var(--host-128)] shrink-0 overflow-hidden rounded-full bg-[#D9D9D9] max-lg:size-20">
                 {channel?.profileImage ? (
                   <Image
                     alt=""
@@ -272,19 +272,19 @@ export function HostChannelMenuSettings() {
               </div>
               <div className="min-w-0 flex-1">
                 <div className="flex flex-wrap items-end gap-[var(--host-10)] pt-[var(--host-3)]">
-                  <h1 className="text-[length:var(--host-24)] font-medium leading-[1.253] text-[#0D0D0C]">
+                  <h1 className="break-words text-[length:var(--host-24)] font-medium leading-[1.253] text-[#0D0D0C] max-lg:text-xl">
                     {channelName}
                   </h1>
-                  <span className="pb-[var(--host-2)] text-[length:var(--host-14)] font-medium leading-[1.253] text-[#6D7A8A]">
+                  <span className="pb-[var(--host-2)] text-[length:var(--host-14)] font-medium leading-[1.253] text-[#6D7A8A] max-lg:text-xs">
                     {channelRegion}
                   </span>
                 </div>
-                <p className="mt-[var(--host-8)] text-[length:var(--host-16)] font-medium leading-[1.253] text-[#6D7A8A]">
+                <p className="mt-[var(--host-8)] line-clamp-3 break-words text-[length:var(--host-16)] font-medium leading-[1.45] text-[#6D7A8A] max-lg:text-sm max-lg:leading-6">
                   {channelSummary}
                 </p>
                 {publicLinkEnabled ? (
                   <Link
-                    className="mt-[var(--host-10)] inline-flex items-center gap-[var(--host-8)] text-[length:var(--host-16)] font-medium leading-[1.253] text-[#6D7A8A] transition hover:text-[#FE701E]"
+                    className="mt-[var(--host-10)] inline-flex items-center gap-[var(--host-8)] text-[length:var(--host-16)] font-medium leading-[1.253] text-[#6D7A8A] transition hover:text-[#FE701E] max-lg:min-h-11 max-lg:text-sm"
                     href={publicHref}
                     target="_blank"
                   >
@@ -292,17 +292,17 @@ export function HostChannelMenuSettings() {
                     공개 채널 보기
                   </Link>
                 ) : (
-                  <p className="mt-[var(--host-10)] inline-flex items-center gap-[var(--host-8)] text-[length:var(--host-14)] font-medium leading-[1.253] text-[#AEB8C2]">
+                  <p className="mt-[var(--host-10)] inline-flex items-center gap-[var(--host-8)] text-[length:var(--host-14)] font-medium leading-[1.253] text-[#AEB8C2] max-lg:text-xs max-lg:leading-5">
                     <Image alt="" height={16} src={nuvioIcons.channelLink} width={16} />
                     채널 활성화 후 공개 링크가 표시됩니다
                   </p>
                 )}
               </div>
             </div>
-            <nav className="absolute left-[var(--host-228)] top-[var(--host-128)] flex items-end gap-[var(--host-40-7)] overflow-hidden text-[length:var(--host-16)] font-semibold leading-[1.253] text-[#5B3A29] max-md:static max-md:mt-4 max-md:w-full max-md:gap-6 max-md:overflow-x-auto max-md:px-5">
+            <nav className="absolute left-[var(--host-228)] top-[var(--host-128)] flex items-end gap-[var(--host-40-7)] overflow-hidden text-[length:var(--host-16)] font-semibold leading-[1.253] text-[#5B3A29] max-lg:static max-lg:mt-4 max-lg:w-full max-lg:gap-6 max-lg:overflow-x-auto max-lg:px-5">
               {previewItems.slice(0, 7).map((item, index) => (
                 <span
-                  className={`relative shrink-0 pb-[var(--host-8)] ${
+                  className={`relative flex min-h-11 shrink-0 items-end pb-[var(--host-8)] ${
                     index === 0 ? "text-[#5B3A29]" : ""
                   }`}
                   key={item.id}
@@ -316,7 +316,7 @@ export function HostChannelMenuSettings() {
             </nav>
           </section>
 
-          <section className="h-[var(--host-129)] px-[var(--host-58)] pt-[var(--host-48)] max-md:h-auto max-md:px-5 max-md:pb-5 max-md:pt-6">
+          <section className="h-[var(--host-129)] px-[var(--host-58)] pt-[var(--host-48)] max-lg:h-auto max-lg:px-5 max-lg:pb-5 max-lg:pt-6">
             <h2 className="text-[length:var(--host-20)] font-semibold leading-[1.253] text-[#6D7A8A]">
               메뉴 설정
             </h2>
@@ -328,7 +328,7 @@ export function HostChannelMenuSettings() {
             </p>
           </section>
 
-          <section className="px-[var(--host-58)] pt-[var(--host-30)] max-md:px-5">
+          <section className="px-[var(--host-58)] pt-[var(--host-30)] max-lg:px-5">
             <ChannelHomeMenuRow />
             {items.map((item, index) => (
               <ChannelMenuRow
@@ -354,7 +354,7 @@ export function HostChannelMenuSettings() {
             </span>
             <button
               aria-label="메뉴 추가"
-              className="mt-[var(--host-5)] grid size-11 place-items-center transition hover:opacity-80 disabled:cursor-not-allowed disabled:opacity-40 md:size-[var(--host-28)]"
+              className="mt-[var(--host-5)] grid size-11 place-items-center transition hover:opacity-80 disabled:cursor-not-allowed disabled:opacity-40 lg:size-[var(--host-28)]"
               disabled={isLoading || !channel}
               onClick={openCreateTypeDialog}
               type="button"
@@ -365,7 +365,7 @@ export function HostChannelMenuSettings() {
 
           <div className="flex h-[var(--host-69)] items-start border-t border-[#6D7A8A] px-[var(--host-28)] pt-[var(--host-18)]">
             <button
-              className="inline-flex h-[var(--host-29)] min-h-11 w-[var(--host-58)] items-center justify-center rounded-[4px] border border-[#6D7A8A] bg-white text-[length:var(--host-11)] font-medium leading-[1.253] text-[#6D7A8A] transition hover:border-[#FE701E] hover:text-[#FE701E] disabled:cursor-not-allowed disabled:opacity-50 md:min-h-0"
+              className="inline-flex h-[var(--host-29)] min-h-11 w-[var(--host-58)] items-center justify-center rounded-[4px] border border-[#6D7A8A] bg-white text-[length:var(--host-11)] font-medium leading-[1.253] text-[#6D7A8A] transition hover:border-[#FE701E] hover:text-[#FE701E] disabled:cursor-not-allowed disabled:opacity-50 max-lg:w-full max-lg:text-sm lg:min-h-0"
               disabled={isLoading || isSaving || !channel}
               onClick={saveMenu}
               type="button"
@@ -396,13 +396,13 @@ export function HostChannelMenuSettings() {
 
 function ChannelHomeMenuRow() {
   return (
-    <div className="grid min-h-[var(--host-68)] w-full grid-cols-[var(--host-507)_auto_minmax(0,1fr)] items-start gap-[var(--host-22)] border-b border-[#CAC4BC] pl-[var(--host-10)] max-md:grid-cols-1 max-md:gap-2 max-md:pb-3 max-md:pl-0">
+    <div className="grid min-h-[var(--host-68)] w-full grid-cols-[var(--host-507)_auto_minmax(0,1fr)] items-start gap-[var(--host-22)] border-b border-[#CAC4BC] pl-[var(--host-10)] max-lg:grid-cols-1 max-lg:gap-2 max-lg:pb-3 max-lg:pl-0">
       <label
         className="grid min-w-0 gap-[var(--host-6)]"
       >
         <input
           aria-label="채널 홈 메뉴 이름"
-          className="h-11 rounded-[4px] border border-[#6D7A8A] bg-white px-[var(--host-14)] text-base font-medium leading-[1.253] text-[#6D7A8A] outline-none md:h-[var(--host-34)] md:text-[length:var(--host-14)]"
+          className="h-11 rounded-[4px] border border-[#6D7A8A] bg-white px-[var(--host-14)] text-base font-medium leading-[1.253] text-[#6D7A8A] outline-none lg:h-[var(--host-34)] lg:text-[length:var(--host-14)]"
           readOnly
           value={channelHomeLabel}
         />
@@ -411,7 +411,7 @@ function ChannelHomeMenuRow() {
         </span>
       </label>
       <span
-        className="mt-[var(--host-6)] inline-flex h-[var(--host-22)] w-fit min-w-[var(--host-76)] items-center justify-center rounded-full bg-[#6D7A8A] px-[var(--host-12)] text-[length:var(--host-14)] font-semibold leading-[1.253] text-[#F9F9F9] max-md:mt-0"
+        className="mt-[var(--host-6)] inline-flex h-[var(--host-22)] w-fit min-w-[var(--host-76)] items-center justify-center rounded-full bg-[#6D7A8A] px-[var(--host-12)] text-[length:var(--host-14)] font-semibold leading-[1.253] text-[#F9F9F9] max-lg:mt-0"
       >
         고정 메뉴
       </span>
@@ -444,7 +444,7 @@ function ChannelMenuRow({
 
   return (
     <div
-      className={`group grid min-h-[var(--host-68)] w-full grid-cols-[var(--host-22)_var(--host-507)_auto_minmax(0,1fr)_auto] items-start gap-[var(--host-22)] border-b border-[#CAC4BC] pl-[var(--host-10)] transition max-md:min-h-[96px] max-md:grid-cols-[44px_minmax(0,1fr)_auto] max-md:gap-x-2 max-md:gap-y-1 max-md:pb-3 max-md:pl-0 ${
+      className={`group grid min-h-[var(--host-68)] w-full grid-cols-[var(--host-22)_var(--host-507)_auto_minmax(0,1fr)_auto] items-start gap-[var(--host-22)] border-b border-[#CAC4BC] pl-[var(--host-10)] transition max-lg:min-h-[96px] max-lg:grid-cols-[44px_minmax(0,1fr)_auto] max-lg:gap-x-2 max-lg:gap-y-1 max-lg:pb-3 max-lg:pl-0 ${
         dragging ? "opacity-60" : "opacity-100"
       }`}
       onDragOver={(event) => {
@@ -455,7 +455,7 @@ function ChannelMenuRow({
     >
       <button
         aria-label={`${item.label} 순서 변경`}
-        className="mt-[var(--host-6)] grid size-11 cursor-grab place-items-center text-[#D9D9D9] transition active:cursor-grabbing group-hover:text-[#FE701E] md:size-[var(--host-22)]"
+        className="mt-[var(--host-6)] grid size-11 cursor-grab place-items-center text-[#D9D9D9] transition active:cursor-grabbing group-hover:text-[#FE701E] lg:size-[var(--host-22)]"
         draggable
         onDragEnd={onDragEnd}
         onDragStart={(event) => {
@@ -474,28 +474,28 @@ function ChannelMenuRow({
         />
       </button>
       <label
-        className="grid min-w-0 gap-[var(--host-6)] max-md:col-start-2 max-md:row-start-1"
+        className="grid min-w-0 gap-[var(--host-6)] max-lg:col-start-2 max-lg:row-start-1"
       >
         <input
-          className="h-11 min-w-0 rounded-[4px] border border-[#6D7A8A] bg-white px-[var(--host-14)] text-base font-medium leading-[1.253] text-[#6D7A8A] outline-none transition placeholder:text-[#CAC4BC] focus:border-[#FE701E] md:h-[var(--host-34)] md:text-[length:var(--host-14)]"
+          className="h-11 min-w-0 rounded-[4px] border border-[#6D7A8A] bg-white px-[var(--host-14)] text-base font-medium leading-[1.253] text-[#6D7A8A] outline-none transition placeholder:text-[#CAC4BC] focus:border-[#FE701E] lg:h-[var(--host-34)] lg:text-[length:var(--host-14)]"
           onChange={(event) => onUpdate({ label: event.target.value })}
           value={item.label}
         />
-        <span className="text-[length:var(--host-14)] font-normal leading-[1.253] text-[#CAC4BC]">
+        <span className="break-words text-[length:var(--host-14)] font-normal leading-[1.45] text-[#CAC4BC]">
           {item.description}
         </span>
       </label>
       <span
-        className="mt-[var(--host-6)] inline-flex h-[var(--host-22)] w-fit min-w-[var(--host-76)] items-center justify-center rounded-full bg-[#6D7A8A] px-[var(--host-12)] text-[length:var(--host-14)] font-semibold leading-[1.253] text-[#F9F9F9] max-md:col-start-2 max-md:row-start-2 max-md:mt-0"
+        className="mt-[var(--host-6)] inline-flex h-[var(--host-22)] w-fit min-w-[var(--host-76)] items-center justify-center rounded-full bg-[#6D7A8A] px-[var(--host-12)] text-[length:var(--host-14)] font-semibold leading-[1.253] text-[#F9F9F9] max-lg:col-start-2 max-lg:row-start-2 max-lg:mt-0"
       >
         {channelMenuMeta[item.kind].badge}
       </span>
-      <span className="mt-[var(--host-8)] flex items-center justify-end gap-[var(--host-11)] md:col-start-5 max-md:col-start-3 max-md:row-start-1 max-md:mt-0 max-md:gap-0">
+      <span className="mt-[var(--host-8)] flex items-center justify-end gap-[var(--host-11)] max-lg:col-start-3 max-lg:row-start-1 max-lg:mt-0 max-lg:gap-0 lg:col-start-5">
         {!item.locked ? (
           <>
             <button
               aria-label={`${item.label} 메뉴 유형 변경`}
-              className="grid size-11 place-items-center transition hover:opacity-70 md:size-[var(--host-16)]"
+              className="grid size-11 place-items-center transition hover:opacity-70 lg:size-[var(--host-16)]"
               onClick={onSelectType}
               type="button"
             >
@@ -503,11 +503,16 @@ function ChannelMenuRow({
             </button>
             <button
               aria-label={`${item.label} 삭제`}
-              className="grid size-11 place-items-center transition hover:opacity-70 md:size-[var(--host-16)]"
+              className="grid size-11 place-items-center transition hover:opacity-70 lg:size-[var(--host-16)]"
               onClick={onRemove}
               type="button"
             >
-              <Image alt="" height={16} src={nuvioIcons.formItemTrash} width={16} />
+              <Image
+                alt=""
+                height={18}
+                src={nuvioIcons.formItemTrash}
+                width={16}
+              />
             </button>
           </>
         ) : null}
@@ -532,17 +537,17 @@ function SelectMenuTypeDialog({
   return (
     <div
       aria-modal="true"
-      className="fixed inset-0 z-[90] flex items-center justify-center bg-[#0D0D0C]/70 px-[var(--host-24)]"
+      className="fixed inset-0 z-[90] flex items-center justify-center bg-[#0D0D0C]/70 px-[var(--host-24)] max-lg:px-4"
       role="dialog"
     >
-      <section className="flex h-[var(--host-386)] max-h-[calc(100dvh-32px)] w-[var(--host-457)] max-w-[calc(100vw-var(--host-48))] flex-col overflow-y-auto rounded-[12px] border border-[#D9D9D9] bg-[#F9F9F9] px-[var(--host-24)] py-[var(--host-24)] shadow-[0_12px_38px_rgba(0,0,0,0.18)] max-md:h-auto max-md:w-full max-md:max-w-none">
+      <section className="flex h-[var(--host-386)] max-h-[calc(100dvh-32px)] w-[var(--host-457)] max-w-[calc(100vw-var(--host-48))] flex-col overflow-y-auto rounded-[12px] border border-[#D9D9D9] bg-[#F9F9F9] px-[var(--host-24)] py-[var(--host-24)] shadow-[0_12px_38px_rgba(0,0,0,0.18)] max-lg:h-auto max-lg:w-full max-lg:max-w-none max-lg:px-5 max-lg:py-5">
         <div className="flex items-start justify-between">
-          <h2 className="pt-[var(--host-36)] text-[length:var(--host-16)] font-semibold leading-[1.253] text-[#0D0D0C]">
+          <h2 className="pt-[var(--host-36)] text-[length:var(--host-16)] font-semibold leading-[1.253] text-[#0D0D0C] max-lg:pt-0">
             페이지 타입 선택
           </h2>
           <button
             aria-label="닫기"
-            className="grid size-11 place-items-center transition hover:opacity-70 md:size-[var(--host-16)]"
+            className="grid size-11 place-items-center transition hover:opacity-70 lg:size-[var(--host-16)]"
             onClick={onClose}
             type="button"
           >
@@ -577,7 +582,7 @@ function SelectMenuTypeDialog({
         </div>
         <div className="mt-auto flex w-full justify-end">
           <button
-            className="inline-flex h-[var(--host-38)] min-h-11 items-center justify-center rounded-[4px] bg-[#FE701E] px-[var(--host-27)] text-[length:var(--host-12)] font-medium leading-[1.253] text-[#FFF6EC] transition hover:bg-[#E96418] md:min-h-0"
+            className="inline-flex h-[var(--host-38)] min-h-11 items-center justify-center rounded-[4px] bg-[#FE701E] px-[var(--host-27)] text-[length:var(--host-12)] font-medium leading-[1.253] text-[#FFF6EC] transition hover:bg-[#E96418] max-lg:w-full max-lg:text-sm lg:min-h-0"
             onClick={onConfirm}
             type="button"
           >
