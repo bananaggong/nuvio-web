@@ -61,6 +61,76 @@ const securityHeaders = [
 const nextConfig: NextConfig = {
   allowedDevOrigins: ["127.0.0.1"],
   poweredByHeader: false,
+  async redirects() {
+    return [
+      { source: "/me", destination: "/mypage", permanent: false },
+      {
+        source: "/editor",
+        destination: "/host/villages/boseong/editor",
+        permanent: false,
+      },
+      { source: "/villages", destination: "/channels", permanent: false },
+      { source: "/programs", destination: "/", permanent: false },
+      {
+        source: "/mypage/bookmark",
+        destination: "/mypage/bookmarks",
+        permanent: false,
+      },
+      {
+        source: "/mypage/mytrip",
+        destination: "/mypage/trips",
+        permanent: false,
+      },
+      {
+        source: "/mypage/profile",
+        destination: "/mypage/member-information",
+        permanent: false,
+      },
+      {
+        source: "/mypage/point",
+        destination: "/mypage/points",
+        permanent: false,
+      },
+      {
+        source: "/mypage/review",
+        destination: "/mypage/reviews",
+        permanent: false,
+      },
+      {
+        source: "/mypage/coupon",
+        destination: "/mypage",
+        permanent: false,
+      },
+      {
+        source: "/host/boseong",
+        destination: "/host/channels?channel=boseong",
+        permanent: false,
+      },
+      {
+        source: "/host/boseong/editor",
+        destination: "/host/channels/settings?channel=boseong",
+        permanent: false,
+      },
+      {
+        source: "/host/villages",
+        destination: "/host/channels",
+        permanent: false,
+      },
+      { source: "/host/programs", destination: "/host", permanent: false },
+      { source: "/host/projects", destination: "/host", permanent: false },
+      { source: "/host/reports", destination: "/host", permanent: false },
+      {
+        source: "/host/channels/menu",
+        destination: "/host/channels/settings",
+        permanent: false,
+      },
+      {
+        source: "/boseong/media2",
+        destination: "/boseong/media?type=magazine",
+        permanent: false,
+      },
+    ];
+  },
   async headers() {
     return [
       {

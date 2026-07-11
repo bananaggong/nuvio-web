@@ -712,7 +712,7 @@ function getSafeNextPath(value: string | null): string | null {
 
 function getDestinationPath(intent: OnboardingIntent, nextPath: string | null) {
   if (nextPath && !nextPath.startsWith("/onboarding")) return nextPath;
-  return intent === "host" ? "/host" : "/programs";
+  return intent === "host" ? "/host" : "/";
 }
 
 function getMetadataText(

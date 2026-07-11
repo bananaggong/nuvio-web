@@ -60,7 +60,7 @@ export const implementationStatus: {
             { label: "Seed apply", href: "/programs/1001/apply" },
           ],
           verification:
-            "Open a DB-published program slug from /host/programs after publishing it.",
+            "Open a DB-published program from /host after publishing it.",
         },
         {
           title: "Channel home pages and path-first routing",
@@ -146,7 +146,7 @@ export const implementationStatus: {
             "Host screens are available to any authenticated account, while admin routes remain restricted.",
           routes: [
             { label: "Host console", href: "/host" },
-            { label: "Program studio", href: "/host/programs" },
+            { label: "Program studio", href: "/host" },
           ],
           verification:
             "Sign in with a regular user account and confirm host screens and APIs load.",
@@ -157,7 +157,7 @@ export const implementationStatus: {
           summary:
             "Hosts can draft, preview, publish, and persist channel home data including slug, program links, and contact channels.",
           routes: [
-            { label: "Channel studio", href: "/host/villages" },
+            { label: "Channel studio", href: "/host/channels" },
             { label: "Channels API", href: "/api/host/channels" },
           ],
           verification:
@@ -171,10 +171,10 @@ export const implementationStatus: {
           routes: [
             { label: "Admin", href: "/admin" },
             { label: "Leads API", href: "/api/program-leads" },
-            { label: "Program studio", href: "/host/programs" },
+            { label: "Program studio", href: "/host" },
           ],
           verification:
-            "Approve a lead in /admin, then confirm a new draft appears in /host/programs.",
+            "Approve a lead in /admin, then confirm a new draft appears in /host.",
         },
         {
           title: "Cron-backed external announcement ingestion",

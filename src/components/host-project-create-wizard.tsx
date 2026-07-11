@@ -69,7 +69,7 @@ export function HostProjectCreateWizard() {
       <div className="mb-5 flex flex-wrap gap-2">
         <Link
           className="inline-flex h-10 items-center gap-2 rounded-md border border-[#F3E2D5] bg-white px-3 text-sm font-black text-[#5B3A29]"
-          href="/host/programs"
+          href="/host?status=open"
         >
           <ArrowLeft size={16} />
           프로그램 목록

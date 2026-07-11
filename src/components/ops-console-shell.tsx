@@ -50,7 +50,7 @@ const navigationByArea: Record<ConsoleArea, NavigationItem[]> = {
     },
     {
       name: "프로그램",
-      href: "/host/programs",
+      href: "/host?status=open",
       icon: ClipboardList,
       children: [],
     },
@@ -94,10 +94,10 @@ const navigationByArea: Record<ConsoleArea, NavigationItem[]> = {
     },
     {
       name: "프로그램",
-      href: "/host/programs",
+      href: "/host?status=open",
       icon: FolderOpen,
       children: [
-        { name: "프로그램 검수", href: "/host/programs" },
+        { name: "프로그램 검수", href: "/host?status=open" },
         { name: "공고 피드", href: "/announcements" },
       ],
     },

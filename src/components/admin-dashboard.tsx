@@ -68,7 +68,7 @@ const adminQuickLinks = [
     icon: BarChart3,
   },
   {
-    href: "/host/programs",
+    href: "/host?status=open",
     label: "프로그램 검수",
     helper: "초안 등록, 발행, 공개 노출",
     icon: ClipboardList,
@@ -364,14 +364,14 @@ function AdminQueue({
 }) {
   const queueItems = [
     {
-      href: "/host/programs",
+      href: "/host?status=open",
       label: "모집중 프로그램",
       value: `${openProgramsCount}개`,
       helper: "공개 화면 노출과 신청 링크를 확인합니다.",
       icon: CheckCircle2,
     },
     {
-      href: "/host/programs",
+      href: "/host?status=upcoming",
       label: "모집 예정",
       value: `${upcomingProgramsCount}개`,
       helper: "오픈 전 문구와 접수 기간을 검수합니다.",
@@ -385,7 +385,7 @@ function AdminQueue({
       icon: Users,
     },
     {
-      href: "/host/programs",
+      href: "/host?status=open",
       label: "저장된 초안",
       value: `${draftsCount}건`,
       helper: "외부 공고 승인 후 생성된 프로그램 후보입니다.",
@@ -450,7 +450,7 @@ function RecentPrograms({ programs }: { programs: Program[] }) {
         </div>
         <Link
           className="inline-flex h-10 items-center justify-center gap-2 rounded-md border border-slate-200 px-3 text-sm font-black text-slate-700 hover:border-[var(--primary)] hover:text-[var(--primary)]"
-          href="/host/programs"
+          href="/host?status=open"
         >
           프로그램 관리
           <ArrowRight size={15} />

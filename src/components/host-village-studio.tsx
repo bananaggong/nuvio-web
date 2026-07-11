@@ -197,7 +197,7 @@ export function HostVillageStudio() {
             </button>
             <Link
               className="inline-flex h-10 items-center justify-center rounded-md bg-slate-950 px-3 text-sm font-black text-white"
-              href="/login?intent=host&next=/host/villages"
+              href="/login?intent=host&next=/host/channels"
             >
               로그인 확인
             </Link>

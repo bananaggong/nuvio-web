@@ -444,7 +444,7 @@ function HostChannelSidebarNav({
       <section className="flex flex-col gap-[0.556vw] border-b-[0.8px] border-[#6D7A8A] pb-[0.833vw]">
         {channelSidebarItems.map((item) => (
           <HostSidebarRootLink
-            active={pathname === item.href || (item.href === "/host/channels/settings" && pathname === "/host/channels/menu")}
+            active={pathname === item.href}
             href={buildChannelScopedHref(item.href, channelSlug)}
             key={item.href}
             label={item.label}

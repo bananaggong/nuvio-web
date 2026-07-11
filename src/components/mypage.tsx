@@ -596,7 +596,7 @@ function MypageHomeContent({ context }: { context: MypageContext }) {
           </div>
         ) : (
           <DashboardEmptyPanel
-            actionHref="/programs"
+            actionHref="/"
             actionLabel="프로그램 찾아보기"
             message="아직 여행 프로그램이 없어요"
           />
@@ -606,7 +606,7 @@ function MypageHomeContent({ context }: { context: MypageContext }) {
       <DashboardSection
         className="mt-[clamp(56px,3.8889vw,74.667px)]"
         heading="최근 본 프로그램"
-        href="/programs"
+        href="/"
       >
         {showRecentLoading ? (
           <div className="grid gap-[var(--mypage-mini-gap)] sm:grid-cols-2 lg:grid-cols-[repeat(4,var(--mypage-mini-card))]">
@@ -1116,7 +1116,7 @@ function BookmarksContent({ context }: { context: MypageContext }) {
           </div>
         ) : (
           <DashboardEmptyPanel
-            actionHref="/programs"
+            actionHref="/"
             actionLabel="프로그램 찾아보기"
             message="저장한 프로그램이 없어요"
           />
@@ -4421,7 +4421,7 @@ function EmptyState({
 function RecentEmptyState() {
   return (
     <DashboardEmptyPanel
-      actionHref="/programs"
+      actionHref="/"
       actionLabel="프로그램 찾아보기"
       message="아직 최근 본 프로그램이 없어요"
     />
