@@ -660,7 +660,7 @@ export function HostChannelGalleries() {
     <HostWorkspaceLayout sidebarHeight={sidebarHeight}>
       <UnsavedChangesGuard when={isDirty && uploadOpen} />
       <section className="min-w-0 flex-1 overflow-x-clip bg-white">
-        <div className="w-full max-w-[var(--host-1230)]">
+        <div className="w-full max-w-[var(--host-1230)] max-[1439px]:max-w-none">
           <ChannelProfileHeader
             activeLabel="갤러리형"
             channel={channel}
@@ -693,17 +693,17 @@ export function HostChannelGalleries() {
             />
           ) : (
             <>
-              <section className="relative border-b border-[#6D7A8A] pb-[var(--host-24)] pt-[var(--host-24)]">
+              <section className="relative border-b border-[#6D7A8A] pb-[var(--host-24)] pt-[var(--host-24)] max-lg:px-5 max-lg:pb-6 max-lg:pt-3">
                 <button
                   aria-label="갤러리 게시물 추가"
-                  className="absolute right-[var(--host-37)] top-[var(--host-24)] size-[var(--host-22)] text-[#6D7A8A] transition hover:text-[#FE701E]"
+                  className="absolute right-[var(--host-37)] top-[var(--host-24)] size-[var(--host-22)] text-[#6D7A8A] transition hover:text-[#FE701E] max-lg:right-4 max-lg:top-3 max-lg:size-11 max-lg:p-2.5"
                   onClick={openUploadPicker}
                   type="button"
                 >
                   <MaskIcon icon={nuvioIcons.channelAddCircle} />
                 </button>
 
-                <div className="mx-auto w-[var(--host-1142)] max-w-full">
+                <div className="mx-auto w-[var(--host-1142)] max-w-full max-lg:w-full">
                   <GalleryFilterTabs activeMode={filterMode} onChange={setFilterMode} />
 
                   {isLoading ? (
@@ -733,9 +733,9 @@ export function HostChannelGalleries() {
                 </div>
               </section>
 
-              <footer className="flex h-[var(--host-69)] items-start gap-[var(--host-12)] border-b border-[#6D7A8A] px-[var(--host-24)] pt-[var(--host-18)]">
+              <footer className="flex h-[var(--host-69)] items-start gap-[var(--host-12)] border-b border-[#6D7A8A] px-[var(--host-24)] pt-[var(--host-18)] max-lg:h-auto max-lg:flex-wrap max-lg:px-5 max-lg:py-4">
                 <button
-                  className="h-[var(--host-29)] rounded-[3px] border border-[#6D7A8A] bg-white px-[var(--host-20)] text-[length:var(--host-12)] font-medium leading-[1.253] text-[#6D7A8A] transition hover:border-[#FE701E] hover:text-[#FE701E] disabled:cursor-not-allowed disabled:opacity-50"
+                  className="h-[var(--host-29)] rounded-[3px] border border-[#6D7A8A] bg-white px-[var(--host-20)] text-[length:var(--host-12)] font-medium leading-[1.253] text-[#6D7A8A] transition hover:border-[#FE701E] hover:text-[#FE701E] disabled:cursor-not-allowed disabled:opacity-50 max-lg:min-h-11 max-lg:w-full max-lg:text-sm"
                   disabled={saving}
                   onClick={() => setSaveMessage("저장할 변경사항이 없습니다.")}
                   type="button"
@@ -777,23 +777,27 @@ function GalleryFilterTabs({
   ];
 
   return (
-    <div className="mx-auto flex h-[var(--host-48)] items-start justify-center gap-[var(--host-82)] pt-[var(--host-6)]">
+    <div className="mx-auto flex h-[var(--host-48)] items-start justify-center gap-[var(--host-82)] pt-[var(--host-6)] max-lg:min-h-11 max-lg:justify-start max-lg:gap-2 max-lg:overflow-x-auto max-lg:pr-12 max-lg:pt-0">
       {tabs.map((tab) => (
         <button
           aria-label={tab.label}
           aria-pressed={activeMode === tab.mode}
-          className={`${
-            tab.mode === "video"
-              ? "h-[var(--host-22)] w-[var(--host-25)]"
-              : "size-[var(--host-25)]"
-          } transition ${
+          className={`grid place-items-center transition max-lg:size-11 ${
             activeMode === tab.mode ? "text-[#FF9A3D]" : "text-[#D9D9D9] hover:text-[#CAC4BC]"
           }`}
           key={tab.mode}
           onClick={() => onChange(tab.mode)}
           type="button"
         >
-          <MaskIcon icon={tab.icon} />
+          <span
+            className={
+              tab.mode === "video"
+                ? "h-[var(--host-22)] w-[var(--host-25)]"
+                : "size-[var(--host-25)]"
+            }
+          >
+            <MaskIcon icon={tab.icon} />
+          </span>
         </button>
       ))}
     </div>
@@ -808,21 +812,22 @@ function GalleryGrid({
   onSelect: (id: string) => void;
 }) {
   return (
-    <div className="mt-[var(--host-12)] grid w-full grid-cols-[repeat(5,minmax(0,var(--host-222)))] gap-x-[var(--host-6)] gap-y-[var(--host-36)]">
-      {items.map((item) => (
+    <div className="mt-[var(--host-12)] grid w-full grid-cols-2 gap-x-3 gap-y-6 sm:grid-cols-3 lg:grid-cols-4 min-[1440px]:grid-cols-[repeat(5,minmax(0,var(--host-222)))] min-[1440px]:gap-x-[var(--host-6)] min-[1440px]:gap-y-[var(--host-36)]">
+      {items.map((item, index) => (
         <button
-          className="group w-[var(--host-222)] min-w-0 text-left"
+          className="group min-w-0 text-left min-[1440px]:w-[var(--host-222)]"
           key={item.id}
           onClick={() => onSelect(item.id)}
           type="button"
         >
           <MediaFrame
-            className="aspect-[4/5] w-[var(--host-222)] rounded-[5px]"
+            className="aspect-[4/5] w-full rounded-[5px] min-[1440px]:w-[var(--host-222)]"
+            eager={index < 3}
             imageCount={item.imageCount}
             item={item}
             small
           />
-          <p className="mt-[var(--host-8)] line-clamp-2 w-[var(--host-200)] px-[var(--host-6)] text-[length:var(--host-14)] font-medium leading-[1.253] text-[#0D0D0C]">
+          <p className="mt-[var(--host-8)] line-clamp-2 w-full px-[var(--host-6)] text-[length:var(--host-14)] font-medium leading-[1.45] text-[#0D0D0C] min-[1440px]:w-[var(--host-200)] min-[1440px]:leading-[1.253]">
             {item.summary || item.title}
           </p>
         </button>
@@ -844,11 +849,11 @@ function GalleryDetailView({
   const bodyLines = item.body.length > 0 ? item.body : [item.summary];
 
   return (
-    <article className="mt-[var(--host-40)] flex w-full items-start gap-[var(--host-12)] pb-[var(--host-50)]">
-      <div className="relative flex min-w-0 flex-1 items-start justify-center">
+    <article className="mt-[var(--host-40)] flex w-full items-start gap-[var(--host-12)] pb-[var(--host-50)] max-lg:mt-4 max-lg:flex-col max-lg:gap-4 max-lg:pb-2">
+      <div className="relative flex min-w-0 flex-1 items-start justify-center max-lg:w-full">
         <button
           aria-label="이전 게시물"
-          className="absolute left-[var(--host-42)] top-[var(--host-281)] h-[var(--host-42)] w-[var(--host-27)] text-[#D9D9D9] transition hover:text-[#CAC4BC]"
+          className="absolute left-[var(--host-42)] top-[var(--host-281)] z-10 h-[var(--host-42)] w-[var(--host-27)] text-[#D9D9D9] transition hover:text-[#CAC4BC] max-lg:left-0 max-lg:top-1/2 max-lg:size-11 max-lg:-translate-y-1/2 max-lg:rounded-full max-lg:bg-white/75 max-lg:p-2"
           type="button"
         >
           <ChevronShape direction="left" />
@@ -856,28 +861,29 @@ function GalleryDetailView({
         <MediaFrame
           className={
             video
-              ? "mt-[var(--host-22)] h-[var(--host-430)] w-[var(--host-765)] rounded-[6px]"
-              : "mt-[var(--host-22)] h-[var(--host-600)] w-[var(--host-480)] rounded-[6px]"
+              ? "mt-[var(--host-22)] h-[var(--host-430)] w-[var(--host-765)] rounded-[6px] max-lg:mt-0 max-lg:h-auto max-lg:w-full max-lg:aspect-video"
+              : "mt-[var(--host-22)] h-[var(--host-600)] w-[var(--host-480)] rounded-[6px] max-lg:mt-0 max-lg:h-auto max-lg:w-full max-lg:aspect-[4/5]"
           }
+          eager
           imageCount={item.imageCount}
           item={item}
         />
         <button
           aria-label="다음 게시물"
-          className="absolute right-[var(--host-42)] top-[var(--host-281)] h-[var(--host-42)] w-[var(--host-27)] text-[#D9D9D9] transition hover:text-[#CAC4BC]"
+          className="absolute right-[var(--host-42)] top-[var(--host-281)] z-10 h-[var(--host-42)] w-[var(--host-27)] text-[#D9D9D9] transition hover:text-[#CAC4BC] max-lg:right-0 max-lg:top-1/2 max-lg:size-11 max-lg:-translate-y-1/2 max-lg:rounded-full max-lg:bg-white/75 max-lg:p-2"
           type="button"
         >
           <ChevronShape direction="right" />
         </button>
       </div>
 
-      <div className="relative h-[var(--host-501)] w-[var(--host-340)] shrink-0 pt-[var(--host-20)]">
+      <div className="relative h-[var(--host-501)] w-[var(--host-340)] shrink-0 pt-[var(--host-20)] max-lg:h-auto max-lg:w-full max-lg:pt-0">
         <div className="mb-[var(--host-12)] flex w-full items-start gap-[var(--host-12)] px-[var(--host-12)] text-[#6D7A8A]">
           <span className="min-w-0 flex-1" />
-          <button aria-label="게시물 편집" className="size-[var(--host-16)] transition hover:text-[#FE701E]" onClick={onEdit} type="button">
+          <button aria-label="게시물 편집" className="size-[var(--host-16)] transition hover:text-[#FE701E] max-lg:grid max-lg:size-11 max-lg:place-items-center max-lg:p-3" onClick={onEdit} type="button">
             <Pencil className="h-full w-full" strokeWidth={1.8} />
           </button>
-          <button aria-label="게시물 삭제" className="size-[var(--host-16)] transition hover:text-[#FE701E]" onClick={onDelete} type="button">
+          <button aria-label="게시물 삭제" className="size-[var(--host-16)] transition hover:text-[#FE701E] max-lg:grid max-lg:size-11 max-lg:place-items-center max-lg:p-3" onClick={onDelete} type="button">
             <Trash2 className="h-full w-full" strokeWidth={1.8} />
           </button>
         </div>
@@ -885,7 +891,7 @@ function GalleryDetailView({
           {formatGalleryDate(item.date)} <span className="font-normal">(작성일)</span>
         </p>
         <GalleryRichText
-          className="mt-[var(--host-16)] h-[var(--host-429)] overflow-y-auto whitespace-pre-wrap text-[length:var(--host-16)] font-normal leading-[1.253] text-[#0D0D0C] [&>p]:mb-[var(--host-2)]"
+          className="mt-[var(--host-16)] h-[var(--host-429)] overflow-y-auto whitespace-pre-wrap text-[length:var(--host-16)] font-normal leading-[1.253] text-[#0D0D0C] [&>p]:mb-[var(--host-2)] max-lg:h-auto max-lg:max-h-72 max-lg:leading-6"
           lines={bodyLines}
         />
       </div>
@@ -951,10 +957,10 @@ function GalleryUploadSurface({
       />
 
       {step === "picker" ? (
-        <div className="relative flex h-[var(--host-464)] flex-col items-center justify-center gap-[var(--host-51)] bg-[#D9D9D9]/20 pb-[var(--host-105)]">
+        <div className="relative flex h-[var(--host-464)] flex-col items-center justify-center gap-[var(--host-51)] bg-[#D9D9D9]/20 pb-[var(--host-105)] max-lg:h-auto max-lg:min-h-[420px] max-lg:gap-8 max-lg:px-5 max-lg:pb-10 max-lg:pt-16">
           <CloseUploadButton onClose={onClose} />
           <button
-            className="flex flex-col items-center gap-[var(--host-17)] rounded-[6px] bg-[#6D7A8A] p-[var(--host-18)] text-[#FCFCFC] transition hover:bg-[#5F6B7B] disabled:cursor-not-allowed disabled:opacity-60"
+            className="flex flex-col items-center gap-[var(--host-17)] rounded-[6px] bg-[#6D7A8A] p-[var(--host-18)] text-[#FCFCFC] transition hover:bg-[#5F6B7B] disabled:cursor-not-allowed disabled:opacity-60 max-lg:min-h-11"
             disabled={uploading}
             onClick={onUploadClick}
             type="button"
@@ -964,15 +970,15 @@ function GalleryUploadSurface({
               파일 업로드
             </span>
           </button>
-          <div className="flex w-[var(--host-360)] flex-col gap-[var(--host-7)]">
+          <div className="flex w-[var(--host-360)] flex-col gap-[var(--host-7)] max-lg:w-full max-lg:max-w-md">
             <input
-              className="h-[var(--host-34)] rounded-[6px] border border-[#6D7A8A] bg-white px-[var(--host-8)] text-[length:var(--host-16)] font-medium leading-[1.253] text-[#6D7A8A] outline-none placeholder:text-[#D3CFC8]"
+              className="h-[var(--host-34)] rounded-[6px] border border-[#6D7A8A] bg-white px-[var(--host-8)] text-[length:var(--host-16)] font-medium leading-[1.253] text-[#6D7A8A] outline-none placeholder:text-[#D3CFC8] max-lg:h-11 max-lg:text-base"
               onChange={(event) => onVideoLinkChange(event.target.value)}
               placeholder="동영상 링크 입력"
               value={draft.videoUrl}
             />
             <button
-              className="h-[var(--host-29)] rounded-[6px] bg-[#6D7A8A] px-[var(--host-8)] text-[length:var(--host-16)] font-medium leading-[1.253] text-[#FCFCFC] transition hover:bg-[#5F6B7B]"
+              className="h-[var(--host-29)] rounded-[6px] bg-[#6D7A8A] px-[var(--host-8)] text-[length:var(--host-16)] font-medium leading-[1.253] text-[#FCFCFC] transition hover:bg-[#5F6B7B] max-lg:min-h-11 max-lg:text-base"
               onClick={onEmbedVideo}
               type="button"
             >
@@ -982,14 +988,14 @@ function GalleryUploadSurface({
         </div>
       ) : (
         <div className="bg-[#D9D9D9]/20">
-          <div className="relative flex h-[var(--host-65)] items-start justify-center bg-[#D9D9D9] px-[var(--host-40)] pb-[var(--host-16)] pt-[var(--host-27)]">
+          <div className="relative flex h-[var(--host-65)] items-start justify-center bg-[#D9D9D9] px-[var(--host-40)] pb-[var(--host-16)] pt-[var(--host-27)] max-lg:h-auto max-lg:min-h-16 max-lg:items-center max-lg:px-5 max-lg:py-2">
             <p className="min-w-0 flex-1 text-center text-[length:var(--host-16)] font-semibold leading-[1.253] text-[#6D7A8A]">
               새 게시물 만들기
             </p>
             <CloseUploadButton onClose={onClose} inline />
           </div>
 
-          <div className="flex w-full items-start justify-end">
+          <div className="flex w-full items-start justify-end max-[1439px]:grid max-[1439px]:grid-cols-[minmax(0,1.35fr)_minmax(300px,0.65fr)] max-lg:grid-cols-1">
             {step === "image" ? (
               <ImageUploadPreview draft={draft} onUploadClick={onUploadClick} />
             ) : (
@@ -1016,14 +1022,14 @@ function GalleryUploadSurface({
             <ImageThumbnailRail draft={draft} onUploadClick={onUploadClick} />
           ) : null}
 
-          <div className="flex h-[var(--host-69)] items-start justify-end gap-[var(--host-12)] border-t border-[#D9D9D9] px-[var(--host-28)] pt-[var(--host-20)]">
+          <div className="flex h-[var(--host-69)] items-start justify-end gap-[var(--host-12)] border-t border-[#D9D9D9] px-[var(--host-28)] pt-[var(--host-20)] max-lg:h-auto max-lg:flex-wrap max-lg:px-5 max-lg:py-4">
             {saveMessage ? (
               <span className="mr-auto text-[length:var(--host-12)] font-normal leading-[1.253] text-[#6D7A8A]">
                 {saveMessage}
               </span>
             ) : null}
             <button
-              className="h-[var(--host-29)] rounded-[3px] border border-[#6D7A8A] bg-[#FCFCFC] px-[var(--host-20)] text-[length:var(--host-12)] font-medium leading-[1.253] text-[#6D7A8A] transition hover:border-[#FE701E] hover:text-[#FE701E] disabled:cursor-not-allowed disabled:opacity-50"
+              className="h-[var(--host-29)] rounded-[3px] border border-[#6D7A8A] bg-[#FCFCFC] px-[var(--host-20)] text-[length:var(--host-12)] font-medium leading-[1.253] text-[#6D7A8A] transition hover:border-[#FE701E] hover:text-[#FE701E] disabled:cursor-not-allowed disabled:opacity-50 max-lg:min-h-11 max-lg:w-full max-lg:text-sm"
               disabled={saving || uploading}
               onClick={onSave}
               type="button"
@@ -1045,9 +1051,9 @@ function ImageUploadPreview({
   onUploadClick: () => void;
 }) {
   return (
-    <div className="flex w-[clamp(792px,55vw,1056px)] shrink-0 flex-col items-center border-r-2 border-[#D9D9D9] py-[var(--host-18)]">
-      <div className="relative flex h-[var(--host-643)] w-full items-start justify-center">
-        <div className="relative mt-[var(--host-22)] h-[var(--host-600)] w-[var(--host-480)] overflow-hidden rounded-[6px] bg-[#D9D9D9]">
+    <div className="flex w-[clamp(792px,55vw,1056px)] shrink-0 flex-col items-center border-r-2 border-[#D9D9D9] py-[var(--host-18)] max-[1439px]:w-full max-lg:border-b-2 max-lg:border-r-0 max-lg:px-5">
+      <div className="relative flex h-[var(--host-643)] w-full items-start justify-center max-lg:h-auto">
+        <div className="relative mt-[var(--host-22)] h-[var(--host-600)] w-[var(--host-480)] overflow-hidden rounded-[6px] bg-[#D9D9D9] max-lg:mt-0 max-lg:h-auto max-lg:w-full max-lg:max-w-[480px] max-lg:aspect-[4/5]">
           {draft.thumbnail ? (
             <Image alt="" className="object-cover" fill sizes="(min-width: 1920px) 640px, 480px" src={draft.thumbnail} />
           ) : (
@@ -1087,10 +1093,10 @@ function VideoUploadPreview({
   uploading: boolean;
 }) {
   return (
-    <div className="flex w-[clamp(792px,55vw,1056px)] shrink-0 flex-col gap-[var(--host-18)] border-r-2 border-[#D9D9D9] pt-[var(--host-18)]">
-      <div className="flex w-full items-start justify-center gap-[var(--host-22)] px-[var(--host-32)]">
+    <div className="flex w-[clamp(792px,55vw,1056px)] shrink-0 flex-col gap-[var(--host-18)] border-r-2 border-[#D9D9D9] pt-[var(--host-18)] max-[1439px]:w-full max-lg:border-b-2 max-lg:border-r-0 max-lg:pb-5">
+      <div className="flex w-full items-start justify-center gap-[var(--host-22)] px-[var(--host-32)] max-lg:flex-col max-lg:gap-3 max-lg:px-5">
         <button
-          className="flex h-[var(--host-36)] items-center justify-center gap-[var(--host-4)] rounded-[6px] bg-[#6D7A8A] px-[var(--host-11)] text-[length:var(--host-16)] font-medium leading-[1.253] text-[#FCFCFC] transition hover:bg-[#5F6B7B] disabled:cursor-not-allowed disabled:opacity-60"
+          className="flex h-[var(--host-36)] items-center justify-center gap-[var(--host-4)] rounded-[6px] bg-[#6D7A8A] px-[var(--host-11)] text-[length:var(--host-16)] font-medium leading-[1.253] text-[#FCFCFC] transition hover:bg-[#5F6B7B] disabled:cursor-not-allowed disabled:opacity-60 max-lg:min-h-11 max-lg:w-full max-lg:text-base"
           disabled={uploading}
           onClick={onUploadClick}
           type="button"
@@ -1098,15 +1104,15 @@ function VideoUploadPreview({
           {uploading ? <Loader2 className="size-[var(--host-20)] animate-spin" /> : <Upload className="size-[var(--host-20)]" strokeWidth={1.7} />}
           파일 변경
         </button>
-        <div className="flex min-w-0 flex-1 gap-[var(--host-7)]">
+        <div className="flex min-w-0 flex-1 gap-[var(--host-7)] max-lg:w-full max-lg:flex-col">
           <input
-            className="h-[var(--host-36)] w-[var(--host-456)] rounded-[6px] border border-[#6D7A8A] bg-white px-[var(--host-8)] text-[length:var(--host-16)] font-medium leading-[1.253] text-[#6D7A8A] outline-none placeholder:text-[#D3CFC8]"
+            className="h-[var(--host-36)] w-[var(--host-456)] rounded-[6px] border border-[#6D7A8A] bg-white px-[var(--host-8)] text-[length:var(--host-16)] font-medium leading-[1.253] text-[#6D7A8A] outline-none placeholder:text-[#D3CFC8] max-lg:h-11 max-lg:w-full max-lg:text-base"
             onChange={(event) => onVideoLinkChange(event.target.value)}
             placeholder="동영상 링크 입력"
             value={draft.videoUrl}
           />
           <button
-            className="h-[var(--host-36)] min-w-[var(--host-132)] flex-1 rounded-[6px] bg-[#6D7A8A] px-[var(--host-8)] text-[length:var(--host-16)] font-medium leading-[1.253] text-[#FCFCFC] transition hover:bg-[#5F6B7B]"
+            className="h-[var(--host-36)] min-w-[var(--host-132)] flex-1 rounded-[6px] bg-[#6D7A8A] px-[var(--host-8)] text-[length:var(--host-16)] font-medium leading-[1.253] text-[#FCFCFC] transition hover:bg-[#5F6B7B] max-lg:min-h-11 max-lg:w-full max-lg:text-base"
             onClick={onEmbedVideo}
             type="button"
           >
@@ -1115,12 +1121,12 @@ function VideoUploadPreview({
         </div>
       </div>
 
-      <div className="flex h-[var(--host-643)] w-full flex-col gap-[var(--host-14)] px-[var(--host-18)]">
-        <div className="relative h-[var(--host-430)] w-full overflow-hidden bg-[#D9D9D9]">
+      <div className="flex h-[var(--host-643)] w-full flex-col gap-[var(--host-14)] px-[var(--host-18)] max-lg:h-auto max-lg:px-5">
+        <div className="relative h-[var(--host-430)] w-full overflow-hidden bg-[#D9D9D9] max-lg:h-auto max-lg:aspect-video">
           <VideoPreview draft={draft} />
         </div>
-        <div className="flex items-end gap-[var(--host-14)]">
-          <div className="relative h-[clamp(178px,12.361vw,237px)] w-[clamp(142px,9.861vw,189px)] overflow-hidden rounded-[6px] bg-[#D9D9D9]">
+        <div className="flex items-end gap-[var(--host-14)] max-lg:flex-wrap">
+          <div className="relative h-[clamp(178px,12.361vw,237px)] w-[clamp(142px,9.861vw,189px)] overflow-hidden rounded-[6px] bg-[#D9D9D9] max-lg:h-auto max-lg:w-28 max-lg:aspect-[4/5]">
             {draft.thumbnail ? (
               <Image alt="" className="object-cover" fill sizes="190px" src={draft.thumbnail} />
             ) : (
@@ -1130,7 +1136,7 @@ function VideoUploadPreview({
             )}
           </div>
           <button
-            className="flex items-center justify-center gap-[var(--host-9)] rounded-[3px] bg-[#6D7A8A] p-[var(--host-10)] text-[#FCFCFC] transition hover:bg-[#5F6B7B]"
+            className="flex items-center justify-center gap-[var(--host-9)] rounded-[3px] bg-[#6D7A8A] p-[var(--host-10)] text-[#FCFCFC] transition hover:bg-[#5F6B7B] max-lg:min-h-11"
             onClick={onThumbnailClick}
             type="button"
           >
@@ -1159,10 +1165,10 @@ function CaptionEditor({
   onLinkChange: (value: string) => void;
 }) {
   return (
-    <aside className="flex min-w-0 flex-1 flex-col gap-[var(--host-19)]">
-      <div className="flex h-[var(--host-575)] flex-col bg-[#FCFCFC] pl-[var(--host-12)] pt-[var(--host-40)]">
+    <aside className="flex min-w-0 flex-1 flex-col gap-[var(--host-19)] max-lg:w-full max-lg:px-5 max-lg:py-5">
+      <div className="flex h-[var(--host-575)] flex-col bg-[#FCFCFC] pl-[var(--host-12)] pt-[var(--host-40)] max-lg:h-80 max-lg:rounded-[6px] max-lg:border max-lg:border-[#D9D9D9] max-lg:pt-4">
         <textarea
-          className="min-h-0 flex-1 resize-none bg-transparent pr-[var(--host-12)] text-[length:var(--host-16)] font-normal leading-[1.253] text-[#0D0D0C] outline-none placeholder:text-[#CAC4BC]"
+          className="min-h-0 flex-1 resize-none bg-transparent pr-[var(--host-12)] text-[length:var(--host-16)] font-normal leading-[1.253] text-[#0D0D0C] outline-none placeholder:text-[#CAC4BC] max-lg:text-base max-lg:leading-6"
           maxLength={maxCaptionLength}
           onChange={(event) => onBodyChange(event.target.value)}
           placeholder="게시물과 함께 게시될 내용을 작성해주세요"
@@ -1176,15 +1182,15 @@ function CaptionEditor({
         </div>
       </div>
 
-      <div className="flex flex-col gap-[var(--host-7)] px-[var(--host-8)]">
+      <div className="flex flex-col gap-[var(--host-7)] px-[var(--host-8)] max-lg:px-0">
         <input
-          className="h-[var(--host-34)] rounded-[6px] border border-[#6D7A8A] bg-white px-[var(--host-8)] text-[length:var(--host-16)] font-medium leading-[1.253] text-[#6D7A8A] outline-none placeholder:text-[#D3CFC8]"
+          className="h-[var(--host-34)] rounded-[6px] border border-[#6D7A8A] bg-white px-[var(--host-8)] text-[length:var(--host-16)] font-medium leading-[1.253] text-[#6D7A8A] outline-none placeholder:text-[#D3CFC8] max-lg:h-11 max-lg:text-base"
           onChange={(event) => onLinkChange(event.target.value)}
           placeholder="링크 입력"
           value={linkInput}
         />
         <button
-          className="h-[var(--host-29)] rounded-[6px] bg-[#6D7A8A] px-[var(--host-8)] text-[length:var(--host-16)] font-medium leading-[1.253] text-[#FCFCFC] transition hover:bg-[#5F6B7B]"
+          className="h-[var(--host-29)] rounded-[6px] bg-[#6D7A8A] px-[var(--host-8)] text-[length:var(--host-16)] font-medium leading-[1.253] text-[#FCFCFC] transition hover:bg-[#5F6B7B] max-lg:min-h-11 max-lg:text-base"
           onClick={onAppendBodyLink}
           type="button"
         >
@@ -1203,16 +1209,16 @@ function ImageThumbnailRail({
   onUploadClick: () => void;
 }) {
   return (
-    <div className="flex h-[var(--host-127)] items-center gap-[var(--host-8)] border-t border-[#D9D9D9] px-[var(--host-14)] py-[var(--host-18)]">
+    <div className="flex h-[var(--host-127)] items-center gap-[var(--host-8)] overflow-x-auto border-t border-[#D9D9D9] px-[var(--host-14)] py-[var(--host-18)] max-lg:h-auto max-lg:min-h-28 max-lg:px-5">
       <button
         aria-label="이미지 순서 변경"
-        className="grid size-[var(--host-22)] place-items-center text-[#6D7A8A]"
+        className="grid size-[var(--host-22)] shrink-0 place-items-center text-[#6D7A8A] max-lg:size-11 max-lg:p-2.5"
         type="button"
       >
         <MaskIcon icon={nuvioIcons.menuReorder} />
       </button>
       {draft.imageUrls.map((url) => (
-        <div className="relative size-[var(--host-91)] overflow-hidden rounded-[4px] bg-[#D9D9D9]" key={url}>
+        <div className="relative size-[var(--host-91)] shrink-0 overflow-hidden rounded-[4px] bg-[#D9D9D9] max-lg:size-20" key={url}>
           <Image alt="" className="object-cover" fill sizes="122px" src={url} />
           <span className="absolute right-[var(--host-6)] top-[var(--host-4)] text-[length:var(--host-16)] font-semibold text-white">
             x
@@ -1221,7 +1227,7 @@ function ImageThumbnailRail({
       ))}
       <button
         aria-label="이미지 추가"
-        className="grid size-[var(--host-25)] place-items-center rounded-full bg-[#6D7A8A] text-white transition hover:bg-[#5F6B7B]"
+        className="grid size-[var(--host-25)] shrink-0 place-items-center rounded-full bg-[#6D7A8A] text-white transition hover:bg-[#5F6B7B] max-lg:size-11"
         onClick={onUploadClick}
         type="button"
       >
@@ -1241,8 +1247,8 @@ function CloseUploadButton({
   return (
     <button
       aria-label="닫기"
-      className={`grid size-[var(--host-22)] place-items-center rounded-full bg-[#6D7A8A] text-[#FCFCFC] transition hover:bg-[#5F6B7B] ${
-        inline ? "relative shrink-0" : "absolute right-[var(--host-40)] top-[var(--host-27)]"
+      className={`grid size-[var(--host-22)] place-items-center rounded-full bg-[#6D7A8A] text-[#FCFCFC] transition hover:bg-[#5F6B7B] max-lg:size-11 ${
+        inline ? "relative shrink-0" : "absolute right-[var(--host-40)] top-[var(--host-27)] max-lg:right-4 max-lg:top-3"
       }`}
       onClick={onClose}
       type="button"
@@ -1254,11 +1260,13 @@ function CloseUploadButton({
 
 function MediaFrame({
   className,
+  eager = false,
   imageCount,
   item,
   small = false,
 }: {
   className: string;
+  eager?: boolean;
   imageCount?: number;
   item: Pick<VillageMediaContent, "embedUrl" | "provider" | "sourceUrl" | "summary" | "thumbnail" | "title">;
   small?: boolean;
@@ -1272,6 +1280,7 @@ function MediaFrame({
           alt={item.summary || item.title}
           className="object-cover"
           fill
+          loading={eager ? "eager" : "lazy"}
           sizes={small ? "(min-width: 1920px) 296px, 222px" : "(min-width: 1920px) 640px, 480px"}
           src={item.thumbnail}
         />
@@ -1373,7 +1382,7 @@ function DiscardDialog({
       className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/30 px-5"
       role="dialog"
     >
-      <section className="w-[320px] overflow-hidden bg-white text-[#0D0D0C] shadow-[0_18px_50px_rgba(0,0,0,0.22)]">
+      <section className="w-[320px] max-w-full overflow-hidden bg-white text-[#0D0D0C] shadow-[0_18px_50px_rgba(0,0,0,0.22)]">
         <div className="px-5 py-5">
           <h2 className="text-[16px] font-semibold leading-[1.4]">입력을 취소하시겠습니까?</h2>
           <p className="mt-2 text-[15px] font-medium leading-[1.4]">
