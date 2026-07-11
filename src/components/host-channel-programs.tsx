@@ -129,15 +129,15 @@ export function HostChannelPrograms() {
             publicHref={publicHref}
           />
 
-          <section className="px-[var(--host-44)] pt-[var(--host-8)]">
-            <div className="flex h-[var(--host-48)] items-start justify-between pt-[var(--host-6)]">
-              <div className="flex items-center gap-[var(--host-10)] pl-[var(--host-9)] text-[length:var(--host-12)] font-semibold leading-[1.253]">
+          <section className="px-[var(--host-44)] pt-[var(--host-8)] max-lg:px-5 max-lg:pt-5">
+            <div className="flex h-[var(--host-48)] items-start justify-between pt-[var(--host-6)] max-lg:h-auto max-lg:flex-col max-lg:gap-2 max-lg:pt-0">
+              <div className="flex max-w-full items-center gap-[var(--host-10)] overflow-x-auto pl-[var(--host-9)] text-[length:var(--host-12)] font-semibold leading-[1.253] max-lg:w-full max-lg:pl-0">
                 {filters.map((filter) => {
                   const active = activeFilter === filter.value;
 
                   return (
                     <button
-                      className={`inline-flex h-[var(--host-30)] w-[var(--host-70)] items-center justify-center rounded-full transition ${
+                      className={`inline-flex h-[var(--host-30)] w-[var(--host-70)] shrink-0 items-center justify-center rounded-full transition max-lg:min-h-11 max-lg:w-16 ${
                         active
                           ? "bg-[#FF9A3D] text-white"
                           : "bg-[#CAC4BC] text-white hover:bg-[#BEB7AF]"
@@ -151,29 +151,29 @@ export function HostChannelPrograms() {
                   );
                 })}
               </div>
-              <div className="flex h-[var(--host-18)] items-center gap-[var(--host-6)] pt-[var(--host-6)] text-[length:var(--host-14)] font-medium leading-[1.253] text-[#6D7A8A]">
+              <div className="flex h-[var(--host-18)] items-center gap-[var(--host-6)] pt-[var(--host-6)] text-[length:var(--host-14)] font-medium leading-[1.253] text-[#6D7A8A] max-lg:min-h-11 max-lg:w-full max-lg:justify-end max-lg:pt-0 max-lg:text-sm">
                 <span className="mr-[var(--host-2)] text-[#6D7A8A]">순서</span>
                 <SortButton active={sortOrder === "latest"} label="최신순" onClick={() => setSortOrder("latest")} />
                 <SortButton active={sortOrder === "oldest"} label="오래된순" onClick={() => setSortOrder("oldest")} />
               </div>
             </div>
 
-            <p className="mt-[var(--host-30)] text-[length:var(--host-12)] font-medium leading-[1.253] text-[#6D7A8A]">
+            <p className="mt-[var(--host-30)] text-[length:var(--host-12)] font-medium leading-[1.253] text-[#6D7A8A] max-lg:mt-4 max-lg:leading-5">
               편집을 원하는 프로그램을 클릭 시, 해당 프로그램의 설정 페이지로 이동해요
             </p>
 
             {isLoading ? (
-              <div className="mt-[var(--host-30)] pl-[var(--host-20)]">
+              <div className="mt-[var(--host-30)] pl-[var(--host-20)] max-lg:mt-5 max-lg:pl-0">
                 <ChannelContentSkeleton variant="programs" />
               </div>
             ) : visiblePrograms.length > 0 ? (
-              <div className="mt-[var(--host-30)] grid grid-cols-[repeat(3,var(--host-344))] gap-x-[var(--host-36-7)] gap-y-[var(--host-40)] pl-[var(--host-20)]">
+              <div className="mt-5 grid grid-cols-1 gap-6 pl-0 sm:grid-cols-2 lg:mt-[var(--host-30)] lg:grid-cols-3 lg:gap-x-[var(--host-36-7)] lg:gap-y-[var(--host-40)] lg:pl-[var(--host-20)] min-[1440px]:grid-cols-[repeat(3,var(--host-344))]">
                 {visiblePrograms.map((program, index) => (
                   <ChannelProgramCard key={`${program.id}-${index}`} program={program} />
                 ))}
               </div>
             ) : (
-              <div className="mt-[var(--host-30)] pl-[var(--host-20)]">
+              <div className="mt-[var(--host-30)] pl-[var(--host-20)] max-lg:mt-5 max-lg:pl-0">
                 <ChannelEmptyState
                   description="호스트센터에서 프로그램을 생성하고 공개하면 채널 프로그램 목록에 표시됩니다."
                   title="아직 표시할 프로그램이 없습니다."
@@ -182,9 +182,9 @@ export function HostChannelPrograms() {
             )}
           </section>
 
-          <footer className="mt-[var(--host-8)] flex h-[var(--host-69)] items-start border-t border-[#6D7A8A] px-[var(--host-28)] pt-[var(--host-20)]">
+          <footer className="mt-[var(--host-8)] flex h-[var(--host-69)] items-start border-t border-[#6D7A8A] px-[var(--host-28)] pt-[var(--host-20)] max-lg:items-center max-lg:px-5 max-lg:pt-0">
             <button
-              className="inline-flex h-[var(--host-29)] w-[var(--host-58)] items-center justify-center rounded-[4px] border border-[#6D7A8A] bg-white text-[length:var(--host-11)] font-medium leading-[1.253] text-[#6D7A8A] transition hover:border-[#FE701E] hover:text-[#FE701E]"
+              className="inline-flex h-[var(--host-29)] w-[var(--host-58)] items-center justify-center rounded-[4px] border border-[#6D7A8A] bg-white text-[length:var(--host-11)] font-medium leading-[1.253] text-[#6D7A8A] transition hover:border-[#FE701E] hover:text-[#FE701E] max-lg:min-h-11 max-lg:w-full max-lg:text-sm"
               type="button"
             >
               저장
@@ -207,7 +207,7 @@ function SortButton({
 }) {
   return (
     <button
-      className={`inline-flex h-[var(--host-18)] items-center gap-[var(--host-3)] transition ${
+      className={`inline-flex h-[var(--host-18)] items-center gap-[var(--host-3)] transition max-lg:min-h-11 ${
         active ? "text-[#6D7A8A]" : "text-[#CAC4BC]"
       }`}
       onClick={onClick}
@@ -237,9 +237,9 @@ function ChannelProgramCard({ program }: { program: HostProgramDraft }) {
   const imageSrc = getDisplayableImage(program.image);
 
   return (
-    <article className="h-[var(--host-591)] w-[var(--host-344)]" data-channel-program-card>
+    <article className="h-[var(--host-591)] w-[var(--host-344)] max-[1439px]:h-auto max-[1439px]:w-full" data-channel-program-card>
       <Link className="group block h-full" href={href}>
-        <div className="relative h-[var(--host-430)] w-full overflow-hidden rounded-[16px] bg-[#D9D9D9]" data-channel-program-thumb>
+        <div className="relative h-[var(--host-430)] w-full overflow-hidden rounded-[16px] bg-[#D9D9D9] max-[1439px]:h-auto max-[1439px]:aspect-[4/5] max-lg:rounded-[8px]" data-channel-program-thumb>
           {imageSrc ? (
             <Image
               alt=""

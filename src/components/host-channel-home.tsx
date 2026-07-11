@@ -357,7 +357,7 @@ export function HostChannelHome() {
     <HostWorkspaceLayout sidebarHeight="min-h-[var(--host-3942)]">
       <section className="min-w-0 flex-1 overflow-x-clip bg-white">
         <div className="w-full max-w-[var(--host-1230)]">
-          <section className="relative grid h-[var(--host-560)] place-items-center overflow-hidden border-b border-[#D9D9D9] bg-[#F3F3F3]">
+          <section className="relative grid h-[var(--host-560)] place-items-center overflow-hidden border-b border-[#D9D9D9] bg-[#F3F3F3] max-lg:h-[220px]">
             <input
               accept="image/gif,image/jpeg,image/png,image/webp"
               className="sr-only"
@@ -427,7 +427,7 @@ export function HostChannelHome() {
             variant="home"
           />
 
-          <section className="px-[var(--host-58)] pb-[var(--host-70)] pt-[var(--host-20)]">
+          <section className="px-[var(--host-58)] pb-[var(--host-70)] pt-[var(--host-20)] max-lg:px-5 max-lg:pb-10 max-lg:pt-5">
             {isLoading ? (
               <ChannelContentSkeleton variant="home" />
             ) : (
@@ -484,23 +484,23 @@ function ChannelHomeMenuSection({
         title={item.label || channelMenuMeta.program.defaultLabel}
         toggleOn={item.visible}
       >
-        <div className="mb-[var(--host-24)] flex items-center gap-[var(--host-8)] text-[length:var(--host-12)] font-medium leading-[1.253]">
-          <span className="rounded-full bg-[#FF9A3D] px-[var(--host-16)] py-[var(--host-5)] text-white">
+        <div className="mb-[var(--host-24)] flex items-center gap-[var(--host-8)] overflow-x-auto pb-1 text-[length:var(--host-12)] font-medium leading-[1.253]">
+          <span className="inline-flex min-h-11 shrink-0 items-center rounded-full bg-[#FF9A3D] px-[var(--host-16)] py-[var(--host-5)] text-white lg:min-h-0">
             전체
           </span>
-          <span className="rounded-full bg-[#CAC4BC] px-[var(--host-16)] py-[var(--host-5)] text-white">
+          <span className="inline-flex min-h-11 shrink-0 items-center rounded-full bg-[#CAC4BC] px-[var(--host-16)] py-[var(--host-5)] text-white lg:min-h-0">
             오픈
           </span>
-          <span className="rounded-full bg-[#CAC4BC] px-[var(--host-16)] py-[var(--host-5)] text-white">
+          <span className="inline-flex min-h-11 shrink-0 items-center rounded-full bg-[#CAC4BC] px-[var(--host-16)] py-[var(--host-5)] text-white lg:min-h-0">
             예정
           </span>
-          <span className="rounded-full bg-[#CAC4BC] px-[var(--host-16)] py-[var(--host-5)] text-white">
+          <span className="inline-flex min-h-11 shrink-0 items-center rounded-full bg-[#CAC4BC] px-[var(--host-16)] py-[var(--host-5)] text-white lg:min-h-0">
             마감
           </span>
         </div>
         {visiblePrograms.length > 0 ? (
-          <div className="flex items-start justify-between gap-[var(--host-32)]">
-            <div className="flex min-w-0 flex-wrap gap-x-[var(--host-40)] gap-y-[var(--host-36)]">
+          <div className="flex items-start justify-between gap-[var(--host-32)] max-lg:flex-col max-lg:gap-4">
+            <div className="flex min-w-0 flex-wrap gap-x-[var(--host-40)] gap-y-[var(--host-36)] max-lg:w-full max-lg:flex-nowrap max-lg:overflow-x-auto max-lg:pb-2">
               {visiblePrograms.slice(0, 4).map((program, index) => (
                 <ChannelProgramMiniCard
                   key={program.id ?? `program-${index}`}
@@ -510,7 +510,7 @@ function ChannelHomeMenuSection({
               ))}
             </div>
             <Link
-              className="mt-[var(--host-84)] inline-flex shrink-0 flex-col items-center gap-[var(--host-6)] text-[length:var(--host-12)] font-medium leading-[1.253] text-[#6D7A8A] transition hover:text-[#FE701E]"
+              className="mt-[var(--host-84)] inline-flex shrink-0 flex-col items-center gap-[var(--host-6)] text-[length:var(--host-12)] font-medium leading-[1.253] text-[#6D7A8A] transition hover:text-[#FE701E] max-lg:mt-0 max-lg:min-h-11 max-lg:flex-row max-lg:self-end"
               href="/host/channels/programs"
             >
               <span className="grid size-[var(--host-28)] place-items-center rounded-full bg-[#FF9A3D] text-[length:var(--host-22)] font-semibold leading-none text-white">
@@ -540,10 +540,10 @@ function ChannelHomeMenuSection({
         toggleOn={item.visible}
       >
         {visibleGalleryCards.length > 0 ? (
-          <div className="grid grid-cols-3 gap-[var(--host-36)]">
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 lg:gap-[var(--host-36)]">
             {visibleGalleryCards.map((card) => (
               <article key={card.id}>
-                <div className="relative h-[var(--host-354)] overflow-hidden rounded-[4px] bg-[#D9D9D9]">
+                <div className="relative h-[var(--host-354)] overflow-hidden rounded-[4px] bg-[#D9D9D9] max-lg:h-auto max-lg:aspect-[4/3]">
                   {card.image ? (
                     <Image
                       alt={card.title}
@@ -591,13 +591,13 @@ function ChannelHomeMenuSection({
         toggleOn={item.visible}
       >
         {visibleStoryCards.length > 0 ? (
-          <div className="grid grid-cols-3 gap-[var(--host-36)]">
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 lg:gap-[var(--host-36)]">
             {visibleStoryCards.map((card) => (
               <article
                 className="min-w-0 overflow-hidden rounded-[8px] bg-[#F9F9F9]"
                 key={card.id}
               >
-                <div className="relative h-[var(--host-288)] overflow-hidden rounded-t-[8px] bg-[#D9D9D9]">
+                <div className="relative h-[var(--host-288)] overflow-hidden rounded-t-[8px] bg-[#D9D9D9] max-lg:h-auto max-lg:aspect-[16/10]">
                   {card.image ? (
                     <Image
                       alt={card.title}
@@ -644,7 +644,7 @@ function ChannelHomeMenuSection({
           <div className="border-t border-[#F3E2D5]">
             {visibleNoticeRows.map((row, index) => (
               <div
-                className="grid h-[var(--host-37)] grid-cols-[var(--host-82)_minmax(0,1fr)_var(--host-166)] items-center border-b border-[#F3E2D5] text-[length:var(--host-11)] leading-[1.253]"
+                className="grid h-[var(--host-37)] grid-cols-[var(--host-82)_minmax(0,1fr)_var(--host-166)] items-center border-b border-[#F3E2D5] text-[length:var(--host-11)] leading-[1.253] max-lg:h-auto max-lg:min-h-14 max-lg:grid-cols-[64px_minmax(0,1fr)] max-lg:gap-x-2 max-lg:py-2"
                 key={`${row.title}-${index}`}
               >
                 <div>
@@ -658,8 +658,8 @@ function ChannelHomeMenuSection({
                     </span>
                   ) : null}
                 </div>
-                <p className="font-medium text-[#5B3A29]">{row.title}</p>
-                <p className="text-right font-normal text-[#CAC4BC]">
+                <p className="min-w-0 truncate font-medium text-[#5B3A29]">{row.title}</p>
+                <p className="text-right font-normal text-[#CAC4BC] max-lg:col-start-2 max-lg:text-left">
                   {formatChannelHomeNoticeDate(row.date)}
                 </p>
               </div>
@@ -722,16 +722,16 @@ export function ChannelProfileHeader({
 
   return (
     <section
-      className={`relative border-b border-[#6D7A8A] bg-white ${
+      className={`relative border-b border-[#6D7A8A] bg-white max-lg:h-auto ${
         sectionVariant ? "h-[var(--host-178)]" : "h-[var(--host-156)]"
       }`}
     >
       <div
-        className={`flex items-start gap-[var(--host-42)] px-[var(--host-58)] ${
+        className={`flex items-start gap-[var(--host-42)] px-[var(--host-58)] max-lg:gap-4 max-lg:px-5 max-lg:pb-3 ${
           sectionVariant ? "pt-[var(--host-36)]" : "pt-[var(--host-14)]"
-        }`}
+        } max-lg:pt-5`}
       >
-        <div className="relative size-[var(--host-128)] shrink-0 overflow-hidden rounded-full bg-[#D9D9D9]">
+        <div className="relative size-[var(--host-128)] shrink-0 overflow-hidden rounded-full bg-[#D9D9D9] max-lg:size-20">
           {channel?.profileImage ? (
             <Image
               alt=""
@@ -747,20 +747,20 @@ export function ChannelProfileHeader({
           )}
         </div>
         <div className="min-w-0 flex-1">
-          <div className="flex flex-wrap items-end gap-[var(--host-10)] pt-[var(--host-3)]">
-            <h1 className="text-[length:var(--host-24)] font-medium leading-[1.253] text-[#0D0D0C]">
+          <div className="flex flex-wrap items-end gap-[var(--host-10)] pt-[var(--host-3)] max-lg:gap-2 max-lg:pt-0">
+            <h1 className="break-words text-[length:var(--host-24)] font-medium leading-[1.253] text-[#0D0D0C] max-lg:text-xl">
               {channelName}
             </h1>
-            <span className="pb-[var(--host-2)] text-[length:var(--host-14)] font-medium leading-[1.253] text-[#6D7A8A]">
+            <span className="pb-[var(--host-2)] text-[length:var(--host-14)] font-medium leading-[1.253] text-[#6D7A8A] max-lg:text-xs">
               {channelRegion}
             </span>
           </div>
-          <p className="mt-[var(--host-8)] text-[length:var(--host-16)] font-medium leading-[1.253] text-[#6D7A8A]">
+          <p className="mt-[var(--host-8)] line-clamp-3 break-words text-[length:var(--host-16)] font-medium leading-[1.253] text-[#6D7A8A] max-lg:text-sm max-lg:leading-6">
             {channelSummary}
           </p>
           {publicLinkEnabled ? (
             <Link
-              className="mt-[var(--host-10)] inline-flex items-center gap-[var(--host-8)] text-[length:var(--host-16)] font-medium leading-[1.253] text-[#6D7A8A] transition hover:text-[#FE701E]"
+              className="mt-[var(--host-10)] inline-flex items-center gap-[var(--host-8)] text-[length:var(--host-16)] font-medium leading-[1.253] text-[#6D7A8A] transition hover:text-[#FE701E] max-lg:min-h-11 max-lg:text-sm"
               href={publicHref}
               target="_blank"
             >
@@ -768,18 +768,18 @@ export function ChannelProfileHeader({
               공개 채널 보기
             </Link>
           ) : (
-            <p className="mt-[var(--host-10)] inline-flex items-center gap-[var(--host-8)] text-[length:var(--host-14)] font-medium leading-[1.253] text-[#AEB8C2]">
+            <p className="mt-[var(--host-10)] inline-flex items-center gap-[var(--host-8)] text-[length:var(--host-14)] font-medium leading-[1.253] text-[#AEB8C2] max-lg:text-xs max-lg:leading-5">
               <Image alt="" height={16} src={nuvioIcons.channelLink} width={16} />
               채널 활성화 후 공개 링크가 표시됩니다.
             </p>
           )}
         </div>
       </div>
-      <nav className="absolute bottom-0 left-[var(--host-228)] flex items-end gap-[var(--host-40-7)] text-[length:var(--host-16)] font-semibold leading-[1.253] text-[#5B3A29]">
+      <nav className="absolute bottom-0 left-[var(--host-228)] flex items-end gap-[var(--host-40-7)] text-[length:var(--host-16)] font-semibold leading-[1.253] text-[#5B3A29] max-lg:static max-lg:min-h-11 max-lg:w-full max-lg:gap-6 max-lg:overflow-x-auto max-lg:px-5 max-lg:text-sm">
         {menuLabels.map((item) => (
           <Link
             aria-current={item.active ? "page" : undefined}
-            className="relative shrink-0 pb-[var(--host-8)] text-[#5B3A29] transition hover:text-[#FE701E]"
+            className="relative shrink-0 pb-[var(--host-8)] text-[#5B3A29] transition hover:text-[#FE701E] max-lg:flex max-lg:min-h-11 max-lg:min-w-11 max-lg:items-center max-lg:justify-center"
             href={buildChannelScopedHref(item.href, channel?.slug)}
             key={item.id}
           >
@@ -805,26 +805,26 @@ function ChannelProfileHeaderSkeleton({
     <section
       aria-busy="true"
       aria-label="채널 정보를 불러오는 중"
-      className={`relative border-b border-[#6D7A8A] bg-white ${
+      className={`relative border-b border-[#6D7A8A] bg-white max-lg:h-auto ${
         sectionVariant ? "h-[var(--host-178)]" : "h-[var(--host-156)]"
       }`}
     >
       <div
-        className={`flex items-start gap-[var(--host-42)] px-[var(--host-58)] ${
+        className={`flex items-start gap-[var(--host-42)] px-[var(--host-58)] max-lg:gap-4 max-lg:px-5 max-lg:pb-3 ${
           sectionVariant ? "pt-[var(--host-36)]" : "pt-[var(--host-14)]"
-        }`}
+        } max-lg:pt-5`}
       >
-        <ChannelSkeletonBlock className="size-[var(--host-128)] shrink-0 rounded-full" />
+        <ChannelSkeletonBlock className="size-[var(--host-128)] shrink-0 rounded-full max-lg:size-20" />
         <div className="min-w-0 flex-1 pt-[var(--host-4)]">
-          <div className="flex items-end gap-[var(--host-12)]">
-            <ChannelSkeletonBlock className="h-[var(--host-28)] w-[var(--host-135)]" />
-            <ChannelSkeletonBlock className="h-[var(--host-16)] w-[var(--host-150)]" />
+          <div className="flex items-end gap-[var(--host-12)] max-lg:gap-2">
+            <ChannelSkeletonBlock className="h-[var(--host-28)] w-[var(--host-135)] max-lg:w-[55%]" />
+            <ChannelSkeletonBlock className="h-[var(--host-16)] w-[var(--host-150)] max-lg:w-[35%]" />
           </div>
-          <ChannelSkeletonBlock className="mt-[var(--host-14)] h-[var(--host-18)] w-[var(--host-430)] max-w-[70%]" />
-          <ChannelSkeletonBlock className="mt-[var(--host-14)] h-[var(--host-16)] w-[var(--host-166)]" />
+          <ChannelSkeletonBlock className="mt-[var(--host-14)] h-[var(--host-18)] w-[var(--host-430)] max-w-[70%] max-lg:max-w-full" />
+          <ChannelSkeletonBlock className="mt-[var(--host-14)] h-[var(--host-16)] w-[var(--host-166)] max-lg:max-w-full" />
         </div>
       </div>
-      <nav className="absolute bottom-0 left-[var(--host-228)] flex items-end gap-[var(--host-40-7)]">
+      <nav className="absolute bottom-0 left-[var(--host-228)] flex items-end gap-[var(--host-40-7)] max-lg:static max-lg:min-h-11 max-lg:w-full max-lg:gap-6 max-lg:overflow-hidden max-lg:px-5">
         {[
           "w-[var(--host-90)]",
           "w-[var(--host-72)]",
@@ -854,12 +854,12 @@ export function ChannelContentSkeleton({
         <ChannelSkeletonBlock className="h-[var(--host-24)] w-[var(--host-210)]" />
         {Array.from({ length: 6 }).map((_, index) => (
           <div
-            className="grid h-[var(--host-42)] grid-cols-[var(--host-95)_minmax(0,1fr)_var(--host-156)] items-center gap-[var(--host-18)] border-b border-[#F3E2D5]"
+            className="grid h-[var(--host-42)] grid-cols-[var(--host-95)_minmax(0,1fr)_var(--host-156)] items-center gap-[var(--host-18)] border-b border-[#F3E2D5] max-lg:min-h-14 max-lg:grid-cols-[64px_minmax(0,1fr)] max-lg:gap-2"
             key={index}
           >
             <ChannelSkeletonBlock className="h-[var(--host-18)] w-[var(--host-62)]" />
             <ChannelSkeletonBlock className="h-[var(--host-18)] w-full" />
-            <ChannelSkeletonBlock className="h-[var(--host-16)] w-[var(--host-119)] justify-self-end" />
+            <ChannelSkeletonBlock className="h-[var(--host-16)] w-[var(--host-119)] justify-self-end max-lg:hidden" />
           </div>
         ))}
       </div>
@@ -870,13 +870,13 @@ export function ChannelContentSkeleton({
     return (
       <div aria-busy="true" className="flex flex-col gap-[var(--host-34)]">
         <ChannelSkeletonSectionHeader />
-        <div className="grid grid-cols-4 gap-[var(--host-36)]">
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4 lg:gap-[var(--host-36)]">
           {Array.from({ length: 4 }).map((_, index) => (
             <ChannelSkeletonCard key={index} />
           ))}
         </div>
         <ChannelSkeletonSectionHeader />
-        <div className="grid grid-cols-3 gap-[var(--host-36)]">
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 lg:gap-[var(--host-36)]">
           {Array.from({ length: 3 }).map((_, index) => (
             <ChannelSkeletonMediaCard key={index} />
           ))}
@@ -895,7 +895,7 @@ export function ChannelContentSkeleton({
     return (
       <div
         aria-busy="true"
-        className="grid w-full grid-cols-[repeat(2,minmax(0,1fr))] gap-[var(--host-43)]"
+        className="grid w-full grid-cols-1 gap-4 sm:grid-cols-2 lg:gap-[var(--host-43)]"
       >
         {Array.from({ length: 4 }).map((_, index) => (
           <ChannelSkeletonMagazineCard key={index} />
@@ -907,15 +907,15 @@ export function ChannelContentSkeleton({
   const cardCount = variant === "programs" ? 6 : 9;
   const gridClass =
     variant === "gallery"
-      ? "grid grid-cols-3 gap-[var(--host-20)]"
-      : "grid grid-cols-3 gap-x-[var(--host-36-7)] gap-y-[var(--host-40)]";
+      ? "grid grid-cols-1 gap-[var(--host-20)] sm:grid-cols-2 lg:grid-cols-3"
+      : "grid grid-cols-1 gap-y-[var(--host-40)] sm:grid-cols-2 lg:grid-cols-3 lg:gap-x-[var(--host-36-7)]";
 
   return (
     <div aria-busy="true" className="flex flex-col gap-[var(--host-28)]">
-      <div className="flex items-center gap-[var(--host-10)]">
+      <div className="flex items-center gap-[var(--host-10)] overflow-x-auto">
         {Array.from({ length: 4 }).map((_, index) => (
           <ChannelSkeletonBlock
-            className="h-[var(--host-30)] w-[var(--host-70)] rounded-full"
+            className="h-[var(--host-30)] w-[var(--host-70)] shrink-0 rounded-full max-lg:h-11 max-lg:w-16"
             key={index}
           />
         ))}
@@ -1010,11 +1010,11 @@ export function ChannelSectionShell({
   toggleOn?: boolean;
 }) {
   return (
-    <section className="border-t border-[#D9D9D9] py-[var(--host-22)]">
-      <div className="mb-[var(--host-24)] flex items-center justify-between">
-        <div className="flex items-center gap-[var(--host-8)]">
+    <section className="border-t border-[#D9D9D9] py-[var(--host-22)] max-lg:py-5">
+      <div className="mb-[var(--host-24)] flex items-center justify-between gap-3 max-lg:flex-wrap">
+        <div className="flex min-w-0 items-center gap-[var(--host-8)]">
           <SectionMoveIcon label={`${title} 섹션 이동`} />
-          <h2 className="text-[length:var(--host-20)] font-semibold leading-[1.253] text-[#5B3A29]">
+          <h2 className="min-w-0 break-words text-[length:var(--host-20)] font-semibold leading-[1.253] text-[#5B3A29] max-lg:text-lg">
             {title}
           </h2>
           {badge ? (
@@ -1023,10 +1023,10 @@ export function ChannelSectionShell({
             </span>
           ) : null}
         </div>
-        <div className="flex items-center gap-[var(--host-10)]">
+        <div className="ml-auto flex items-center gap-[var(--host-10)]">
           {actionLabel ? (
             <button
-              className="text-[length:var(--host-11)] font-medium leading-[1.253] text-[#FE701E]"
+              className="inline-flex min-h-11 items-center text-[length:var(--host-11)] font-medium leading-[1.253] text-[#FE701E] lg:min-h-0"
               type="button"
             >
               {actionLabel}
@@ -1036,7 +1036,7 @@ export function ChannelSectionShell({
             <button
               aria-label={`${title} 메뉴 ${toggleOn ? "숨기기" : "표시하기"}`}
               aria-pressed={toggleOn}
-              className="inline-flex h-[var(--host-22)] w-[var(--host-28)] items-center justify-center rounded-full transition hover:bg-[#FFF3EA] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#FE701E] disabled:cursor-wait disabled:opacity-55"
+              className="inline-flex h-[var(--host-22)] w-[var(--host-28)] items-center justify-center rounded-full transition hover:bg-[#FFF3EA] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#FE701E] disabled:cursor-wait disabled:opacity-55 max-lg:size-11"
               disabled={toggleBusy}
               onClick={onToggle}
               type="button"
@@ -1093,7 +1093,7 @@ export function ChannelEmptyState({
   title: string;
 }) {
   return (
-    <div className="flex min-h-[var(--host-160)] w-full flex-col items-center justify-center rounded-[8px] border border-dashed border-[#D9D9D9] bg-[#FCFCFC] px-[var(--host-24)] py-[var(--host-28)] text-center">
+    <div className="flex min-h-[var(--host-160)] w-full flex-col items-center justify-center rounded-[8px] border border-dashed border-[#D9D9D9] bg-[#FCFCFC] px-[var(--host-24)] py-[var(--host-28)] text-center max-lg:min-h-32 max-lg:px-4">
       <p className="text-[length:var(--host-14)] font-semibold leading-[1.253] text-[#5B3A29]">
         {title}
       </p>
@@ -1120,14 +1120,10 @@ function ChannelProgramMiniCard({
   const summary = getMiniProgramSummary(program);
 
   return (
-    <article className="min-w-0 shrink-0" style={{ width: "calc(186px * var(--host-scale))" }}>
+    <article className="w-[clamp(186px,12.917vw,248px)] min-w-0 shrink-0">
       <Link className="group block" href={href} target={program ? "_blank" : undefined}>
         <div
-          className="relative overflow-hidden bg-[#D9D9D9]"
-          style={{
-            borderRadius: "calc(8.65px * var(--host-scale))",
-            height: "calc(232.5px * var(--host-scale))",
-          }}
+          className="relative h-[clamp(232.5px,16.146vw,310px)] overflow-hidden rounded-[clamp(8.65px,0.601vw,11.53px)] bg-[#D9D9D9]"
         >
           {imageUrl ? (
             <Image

@@ -192,7 +192,7 @@ export function HostChannelReviews() {
             publicHref={publicHref}
           />
 
-          <section className="ml-[var(--host-44)] flex w-[var(--host-1142)] flex-col gap-[var(--host-30)] pt-[var(--host-8)]">
+          <section className="ml-[var(--host-44)] flex w-[var(--host-1142)] flex-col gap-[var(--host-30)] pt-[var(--host-8)] max-[1439px]:ml-0 max-[1439px]:w-full max-[1439px]:px-5 max-lg:gap-5 max-lg:pt-5">
             <ReviewManagerToolbar
               averageRating={averageRating}
               programs={programs}
@@ -207,7 +207,7 @@ export function HostChannelReviews() {
               visibilityFilter={visibilityFilter}
             />
 
-            <div className="flex w-full flex-col px-[var(--host-32)]">
+            <div className="flex w-full flex-col px-[var(--host-32)] max-lg:px-0">
               {isLoading ? (
                 <ChannelContentSkeleton variant="board" />
               ) : visibleReviews.length > 0 ? (
@@ -228,9 +228,9 @@ export function HostChannelReviews() {
             </div>
           </section>
 
-          <footer className="mt-[var(--host-8)] flex h-[var(--host-69)] items-start border-t border-[#6D7A8A] px-[var(--host-28)] pt-[var(--host-20)]">
+          <footer className="mt-[var(--host-8)] flex h-[var(--host-69)] items-start border-t border-[#6D7A8A] px-[var(--host-28)] pt-[var(--host-20)] max-lg:items-center max-lg:px-5 max-lg:pt-0">
             <button
-              className="inline-flex h-[var(--host-29)] w-[var(--host-58)] items-center justify-center rounded-[4px] border border-[#6D7A8A] bg-white text-[length:var(--host-11)] font-medium leading-[1.253] text-[#6D7A8A] transition hover:border-[#FE701E] hover:text-[#FE701E]"
+              className="inline-flex h-[var(--host-29)] w-[var(--host-58)] items-center justify-center rounded-[4px] border border-[#6D7A8A] bg-white text-[length:var(--host-11)] font-medium leading-[1.253] text-[#6D7A8A] transition hover:border-[#FE701E] hover:text-[#FE701E] max-lg:min-h-11 max-lg:min-w-20 max-lg:text-sm"
               onClick={() => setStatusMessage("변경사항이 저장되었습니다.")}
               type="button"
             >
@@ -274,8 +274,8 @@ function ReviewManagerToolbar({
   visibilityFilter: ReviewVisibilityFilter;
 }) {
   return (
-    <div className="flex h-[var(--host-179)] w-full flex-col gap-[var(--host-12)] pt-[var(--host-24)] text-[length:var(--host-14)] leading-[1.253]">
-      <div className="flex items-center gap-[var(--host-5)] font-semibold text-[#0D0D0C]">
+    <div className="flex h-[var(--host-179)] w-full flex-col gap-[var(--host-12)] pt-[var(--host-24)] text-[length:var(--host-14)] leading-[1.253] max-lg:h-auto max-lg:pt-0 max-lg:text-sm">
+      <div className="flex flex-wrap items-center gap-[var(--host-5)] font-semibold text-[#0D0D0C]">
         <span>전체 후기</span>
         <span>{String(reviewCount).padStart(2, "0")}개</span>
         <span>/</span>
@@ -285,11 +285,11 @@ function ReviewManagerToolbar({
       </div>
 
       <div className="flex flex-col gap-[var(--host-12)] text-[#6D7A8A]">
-        <div className="flex h-[var(--host-21)] items-center gap-[var(--host-2)]">
-          <span className="w-[var(--host-82)] font-semibold">프로그램 선택</span>
-          <label className="relative flex h-[var(--host-21)] w-[var(--host-235)] items-center border-l border-[#6D7A8A] pl-[var(--host-5)]">
+        <div className="flex h-[var(--host-21)] items-center gap-[var(--host-2)] max-lg:h-auto max-lg:flex-col max-lg:items-stretch max-lg:gap-2">
+          <span className="w-[var(--host-82)] font-semibold max-lg:w-auto">프로그램 선택</span>
+          <label className="relative flex h-[var(--host-21)] w-[var(--host-235)] items-center border-l border-[#6D7A8A] pl-[var(--host-5)] max-lg:h-11 max-lg:w-full max-lg:border-l-0 max-lg:pl-0">
             <select
-              className="h-full w-full appearance-none rounded-[4px] border border-[#6D7A8A] bg-white pl-[var(--host-8)] pr-[var(--host-28)] text-[length:var(--host-14)] font-medium leading-[1.253] text-[#6D7A8A] outline-none"
+              className="h-full w-full appearance-none rounded-[4px] border border-[#6D7A8A] bg-white pl-[var(--host-8)] pr-[var(--host-28)] text-[length:var(--host-14)] font-medium leading-[1.253] text-[#6D7A8A] outline-none max-lg:px-3 max-lg:pr-10 max-lg:text-base"
               onChange={(event) => setSelectedProgram(event.target.value)}
               value={selectedProgram}
             >
@@ -333,10 +333,10 @@ function ReviewManagerToolbar({
           </button>
         </FilterRow>
 
-        <div className="flex h-[var(--host-30)] items-start gap-[var(--host-16)] border-b border-[#CAC4BC]">
+        <div className="flex h-[var(--host-30)] items-start gap-[var(--host-16)] border-b border-[#CAC4BC] max-lg:h-11 max-lg:overflow-x-auto">
           {visibilityTabs.map((tab) => (
             <button
-              className={`relative h-[var(--host-30)] text-[length:var(--host-14)] font-semibold leading-[1.253] ${
+              className={`relative h-[var(--host-30)] shrink-0 text-[length:var(--host-14)] font-semibold leading-[1.253] max-lg:min-h-11 ${
                 visibilityFilter === tab.value ? "text-[#0D0D0C]" : "text-[#CAC4BC]"
               }`}
               key={tab.value}
@@ -370,7 +370,7 @@ function HostReviewCard({
 
   return (
     <article
-      className={`flex w-full flex-col border-b border-[#F5E1D3] px-[var(--host-32)] py-[var(--host-16)] ${
+      className={`flex w-full flex-col border-b border-[#F5E1D3] px-[var(--host-32)] py-[var(--host-16)] max-lg:px-0 max-lg:py-4 ${
         hidden ? "bg-[#F3F3F3]" : "bg-white"
       }`}
     >
@@ -382,7 +382,7 @@ function HostReviewCard({
           </p>
         </div>
         <button
-          className={`h-[var(--host-20)] rounded-full border px-[var(--host-10)] text-[length:var(--host-11)] font-normal leading-[1.253] transition disabled:cursor-wait disabled:opacity-50 ${
+          className={`h-[var(--host-20)] rounded-full border px-[var(--host-10)] text-[length:var(--host-11)] font-normal leading-[1.253] transition disabled:cursor-wait disabled:opacity-50 max-lg:min-h-11 max-lg:shrink-0 ${
             hidden
               ? "border-[#CAC4BC] bg-[#CAC4BC] text-white"
               : "border-[#6D7A8A] bg-white text-[#6D7A8A] hover:border-[#FE701E] hover:text-[#FE701E]"
@@ -395,8 +395,8 @@ function HostReviewCard({
         </button>
       </div>
 
-      <div className="flex w-full items-center gap-[var(--host-12)] rounded-[3px] px-[var(--host-3)]">
-        <p className="max-w-[var(--host-219)] shrink-0 truncate text-[length:var(--host-12)] font-normal leading-[1.6] text-[#D9D9D9]">
+      <div className="flex w-full items-center gap-[var(--host-12)] rounded-[3px] px-[var(--host-3)] max-lg:flex-wrap max-lg:gap-2">
+        <p className="max-w-[var(--host-219)] shrink-0 truncate text-[length:var(--host-12)] font-normal leading-[1.6] text-[#D9D9D9] max-lg:max-w-full max-lg:flex-1">
           {review.programTitle || review.title || "해당 프로그램 명"}
         </p>
         <div className="flex min-w-0 flex-1 items-center gap-[var(--host-2)]">
@@ -405,7 +405,7 @@ function HostReviewCard({
             {(review.rating ?? 5).toFixed(1)}
           </p>
         </div>
-        <time className="shrink-0 text-[length:var(--host-12)] font-normal leading-[1.6] text-[#D9D9D9]" dateTime={date}>
+        <time className="shrink-0 text-[length:var(--host-12)] font-normal leading-[1.6] text-[#D9D9D9] max-lg:w-full" dateTime={date}>
           {formatReviewDate(date)}
         </time>
       </div>
@@ -415,7 +415,7 @@ function HostReviewCard({
       </p>
 
       <button
-        className="ml-auto inline-flex h-[var(--host-31)] items-center gap-[var(--host-3)] pb-[var(--host-12)] text-[length:var(--host-12)] font-normal leading-[1.6] text-[#6D7A8A]"
+        className="ml-auto inline-flex h-[var(--host-31)] items-center gap-[var(--host-3)] pb-[var(--host-12)] text-[length:var(--host-12)] font-normal leading-[1.6] text-[#6D7A8A] max-lg:min-h-11 max-lg:min-w-11 max-lg:pb-0"
         type="button"
       >
         펼치기
@@ -423,7 +423,7 @@ function HostReviewCard({
       </button>
 
       {images.length > 0 ? (
-        <div className="flex items-center gap-[var(--host-6)] pb-[var(--host-16)]">
+        <div className="flex items-center gap-[var(--host-6)] overflow-x-auto pb-[var(--host-16)]">
           {images.slice(0, 7).map((image, index) => (
             <div
               className="relative size-[var(--host-119)] shrink-0 overflow-hidden rounded-[6px] bg-[#D9D9D9]"
@@ -443,7 +443,7 @@ function HostReviewCard({
 
       <div className="flex items-center justify-end border-t border-[#6D7A8A] pt-[var(--host-10)]">
         <button
-          className="inline-flex items-center gap-[var(--host-3)] text-[length:var(--host-12)] font-normal leading-[1.6] text-[#6D7A8A]"
+          className="inline-flex items-center gap-[var(--host-3)] text-[length:var(--host-12)] font-normal leading-[1.6] text-[#6D7A8A] max-lg:min-h-11 max-lg:min-w-11"
           type="button"
         >
           편집기
@@ -456,9 +456,9 @@ function HostReviewCard({
 
 function FilterRow({ children, label }: { children: ReactNode; label: string }) {
   return (
-    <div className="flex h-[var(--host-18)] items-center gap-[var(--host-2)]">
-      <span className="w-[var(--host-32)] shrink-0 font-semibold">{label}</span>
-      <div className="flex items-center gap-[var(--host-22)] border-l border-[#6D7A8A] px-[var(--host-5)]">
+    <div className="flex h-[var(--host-18)] items-center gap-[var(--host-2)] max-lg:h-auto max-lg:flex-col max-lg:items-stretch max-lg:gap-1">
+      <span className="w-[var(--host-32)] shrink-0 font-semibold max-lg:w-auto">{label}</span>
+      <div className="flex items-center gap-[var(--host-22)] border-l border-[#6D7A8A] px-[var(--host-5)] max-lg:flex-wrap max-lg:border-l-0 max-lg:px-0 max-lg:[&>button]:min-h-11 max-lg:[&>button]:min-w-11">
         {children}
       </div>
     </div>
