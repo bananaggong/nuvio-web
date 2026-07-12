@@ -56,21 +56,7 @@ export function discoverSensitiveApiCases(): SensitiveApiCase[] {
     })
     .filter((value): value is SensitiveApiCase => Boolean(value));
 
-  const announcements = discovered.find(
-    (item) => item.route === "/api/announcements" && item.method === "GET",
-  );
-  const sourcePath = "src/app/api/announcements/route.ts";
-  const source = readFileSync(path.resolve(process.cwd(), sourcePath), "utf8");
-  const adminRefreshCase: SensitiveApiCase = {
-    method: "GET",
-    policy: "admin",
-    requestPath: "/api/announcements?refresh=1",
-    route: "/api/announcements?refresh=1",
-    source: announcements?.source ?? source,
-    sourcePath,
-  };
-
-  return [...discovered, adminRefreshCase].sort((left, right) =>
+  return discovered.sort((left, right) =>
     `${left.requestPath}:${left.method}`.localeCompare(
       `${right.requestPath}:${right.method}`,
     ),
@@ -90,14 +76,6 @@ export function resolveSensitivePolicy(
 ): SensitiveApiPolicy | null {
   if (route.startsWith("/api/cron/")) return "cron";
   if (route.startsWith("/api/admin/")) return "admin";
-  if (
-    route === "/api/announcement-sources" ||
-    route === "/api/implementation-status" ||
-    route === "/api/program-leads" ||
-    (route === "/api/partner-submissions" && method === "GET")
-  ) {
-    return "admin";
-  }
 
   if (route === "/api/host/facebook/callback") return "oauth-callback";
   if (

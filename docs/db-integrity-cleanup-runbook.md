@@ -8,7 +8,7 @@ This runbook is a plan, not an executed cleanup record. No production mutation w
 2. Run `npm run audit:db-integrity -- --json` and archive the aggregate result.
 3. Resolve identities and canonical application choices with an authorized operator. Do not expose emails or application answers in tickets or logs.
 4. Perform cleanup in a dedicated reviewed change window using an explicit transaction.
-5. Do not apply `20260712010000_preflight_core_integrity_constraints.sql` in the same change that cleans rows.
+5. Do not apply `20260712013000_preflight_core_integrity_constraints.sql` in the same change that cleans rows.
 6. Rerun the read-only audit after cleanup. Apply constraints only in a later change after a clean preflight and a non-production restore test.
 
 ## Duplicate application review
@@ -101,7 +101,7 @@ The audit found one semantic pair with different thumbnails and image arrays. Co
 
 1. Restore a recent production snapshot to a non-production PostgreSQL environment.
 2. Run the read-only audit with `--fail-on-findings` against that restore.
-3. Apply `20260712010000_preflight_core_integrity_constraints.sql` to the restore.
+3. Apply `20260712013000_preflight_core_integrity_constraints.sql` to the restore.
 4. Run `npm run test:db-concurrency`, application/review API tests, and a full build.
 5. Verify profile deletion/account-erasure behavior because `submitted_by` becomes `NOT NULL` with `ON DELETE RESTRICT`.
 6. Schedule the production constraint migration separately. The migration has no cleanup DML and must abort on any drift.

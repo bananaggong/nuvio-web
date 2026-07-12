@@ -4,7 +4,7 @@ import { join } from "node:path";
 const root = process.cwd();
 const read = (path) => readFileSync(join(root, path), "utf8");
 const migration = read(
-  "supabase/migrations/20260712010000_preflight_core_integrity_constraints.sql",
+  "supabase/migrations/20260712013000_preflight_core_integrity_constraints.sql",
 );
 const audit = read("scripts/audit-db-integrity.mjs");
 const applications = read("src/lib/host-application-db.ts");

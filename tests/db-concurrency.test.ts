@@ -8,7 +8,7 @@ import { isReviewApplicationDuplicateDatabaseError } from "@/lib/review-db";
 
 const migration = readFileSync(
   new URL(
-    "../supabase/migrations/20260712010000_preflight_core_integrity_constraints.sql",
+    "../supabase/migrations/20260712013000_preflight_core_integrity_constraints.sql",
     import.meta.url,
   ),
   "utf8",

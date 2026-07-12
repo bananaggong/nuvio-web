@@ -116,7 +116,7 @@ No broad semantic unique index is proposed. A content owner must inspect the pai
 
 - `scripts/audit-db-integrity.mjs`: repeatable, PII-free, production-safe read-only audit.
 - `tests/db-concurrency.test.ts`: local parallel insert and retry tests.
-- `supabase/migrations/20260712010000_preflight_core_integrity_constraints.sql`: preflight-first constraint proposal with no cleanup DML.
+- `supabase/migrations/20260712013000_preflight_core_integrity_constraints.sql`: preflight-first constraint proposal with no cleanup DML.
 - `docs/db-integrity-cleanup-runbook.md`: reviewed cleanup and release sequence.
 
 ## Release decision
