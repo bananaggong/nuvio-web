@@ -17,11 +17,19 @@ import {
 } from "@/lib/host-application-db";
 import { queueApplicationSubmittedNotification } from "@/lib/notification-db";
 import { sanitizeJsonRecord } from "@/lib/safe-json";
+import { logServerPersistenceError } from "@/lib/server-error-diagnostics";
 import { updateUserProgramState } from "@/lib/user-program-state-db";
 
 export const runtime = "nodejs";
 
 const MAX_APPLICATION_PAYLOAD_BYTES = 64 * 1024;
+
+class ApplicationPayloadError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = "ApplicationPayloadError";
+  }
+}
 
 export async function POST(request: Request) {
   const crossOrigin = enforceSameOrigin(request);
@@ -108,14 +116,17 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: error.message }, { status: 409 });
     }
 
+    if (error instanceof ApplicationPayloadError) {
+      return NextResponse.json({ error: error.message }, { status: 400 });
+    }
+
+    logServerPersistenceError("Program application persistence failed.", error);
+
     return NextResponse.json(
       {
-        error:
-          error instanceof Error
-            ? error.message
-            : "Failed to create program application.",
+        error: "Failed to create program application.",
       },
-      { status: 400 },
+      { status: 500 },
     );
   }
 }
@@ -153,24 +164,28 @@ function validateApplicationPayload(
   answers: Record<string, unknown>,
 ) {
   const programId = String(body.programId ?? "").trim();
-  if (!programId) throw new Error("Program id is required.");
-  if (programId.length > 160) throw new Error("Program id is too long.");
+  if (!programId) throw new ApplicationPayloadError("Program id is required.");
+  if (programId.length > 160) {
+    throw new ApplicationPayloadError("Program id is too long.");
+  }
 
   const applicantName = normalizeText(body.applicantName, 80);
-  if (applicantName.length < 2) throw new Error("Applicant name is required.");
+  if (applicantName.length < 2) {
+    throw new ApplicationPayloadError("Applicant name is required.");
+  }
 
   const email = normalizeText(body.email, 120).toLowerCase();
   if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/u.test(email)) {
-    throw new Error("A valid email is required.");
+    throw new ApplicationPayloadError("A valid email is required.");
   }
 
   if (JSON.stringify(answers).length > 20_000) {
-    throw new Error("Application answers are too large.");
+    throw new ApplicationPayloadError("Application answers are too large.");
   }
 
   const legalConsent = answers.legalConsent;
   if (!legalConsent || typeof legalConsent !== "object" || Array.isArray(legalConsent)) {
-    throw new Error("Required consent is missing.");
+    throw new ApplicationPayloadError("Required consent is missing.");
   }
 
   const consent = legalConsent as Record<string, unknown>;
@@ -179,7 +194,7 @@ function validateApplicationPayload(
     !isRequiredLegalConsentAgreed(consent, "privacyCollection") ||
     !isRequiredLegalConsentAgreed(consent, "thirdParty")
   ) {
-    throw new Error("Required consent is missing.");
+    throw new ApplicationPayloadError("Required consent is missing.");
   }
 }
 

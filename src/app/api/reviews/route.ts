@@ -15,8 +15,10 @@ import {
   listPublicReviewsPageFromDb,
   PublicReviewCursorError,
   ReviewEligibilityError,
+  ReviewPayloadError,
 } from "@/lib/review-db";
 import { PublicReviewQueryError } from "@/lib/review-public-query";
+import { logServerPersistenceError } from "@/lib/server-error-diagnostics";
 
 export const runtime = "nodejs";
 
@@ -44,13 +46,8 @@ export async function GET(request: Request) {
       return NextResponse.json({ error: error.message }, { status: 400 });
     }
 
-    return NextResponse.json(
-      {
-        error:
-          error instanceof Error ? error.message : "Failed to load reviews.",
-      },
-      { status: 500 },
-    );
+    logServerPersistenceError("Public review listing failed.", error);
+    return NextResponse.json({ error: "Failed to load reviews." }, { status: 500 });
   }
 }
 
@@ -89,14 +86,13 @@ export async function POST(request: Request) {
     if (error instanceof ReviewEligibilityError) {
       return NextResponse.json({ error: error.message }, { status: 403 });
     }
+    if (error instanceof ReviewPayloadError) {
+      return NextResponse.json({ error: error.message }, { status: 400 });
+    }
 
-    return NextResponse.json(
-      {
-        error:
-          error instanceof Error ? error.message : "Failed to create review.",
-      },
-      { status: 400 },
-    );
+    logServerPersistenceError("Participant review persistence failed.", error);
+
+    return NextResponse.json({ error: "Failed to create review." }, { status: 500 });
   }
 }
 type ReviewSubmissionResult = Awaited<ReturnType<typeof createParticipantReview>>;

@@ -7,7 +7,9 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
-    "test:security": "node --test tests/browser-push-security.test.mjs tests/image-upload-security.test.mjs && tsx --test tests/content-security.test.ts tests/request-security.test.ts tests/security-boundaries.test.ts",
+    "test:security": "node --test tests/browser-push-security.test.mjs tests/image-upload-security.test.mjs && tsx --test tests/content-security.test.ts tests/request-security.test.ts tests/security-boundaries.test.ts tests/server-error-diagnostics.test.ts",
+    "test:e2e:release": "playwright test --config=playwright.release.config.ts",
+    "test:e2e:release:headed": "playwright test --config=playwright.release.config.ts --headed",
     "verify:host-program-flow": "node scripts/verify-host-program-flow.mjs",
     "verify:overflow": "node scripts/verify-route-overflow.mjs",
     "db:generate": "drizzle-kit generate",
@@ -46,6 +48,7 @@
     "web-push": "^3.6.7"
   },
   "devDependencies": {
+    "@playwright/test": "^1.61.1",
     "@tailwindcss/postcss": "^4",
     "@types/node": "^20",
     "@types/react": "^19",
