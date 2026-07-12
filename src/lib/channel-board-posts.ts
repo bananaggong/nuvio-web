@@ -1,7 +1,9 @@
+import { and, eq, sql } from "drizzle-orm";
+import { getDb } from "@/db/client";
+import { villagePageRevisions, villagePageSections } from "@/db/schema";
 import {
   listHostVillagePageSections,
   listPublicVillagePageSections,
-  publishHostVillagePageSection,
   type PublishedVillagePageSection,
   type VillagePageSectionDraft,
 } from "@/lib/village-page-cms";
@@ -62,36 +64,8 @@ export async function saveHostChannelBoardPosts({
   villageSlug: string;
 }): Promise<ChannelBoardPost[]> {
   const normalizedPosts = normalizeChannelBoardPosts(posts);
-  const existingSections = await listHostVillagePageSections(villageSlug, BOARD_PAGE_KEY);
-  const existingSection = findBoardSection(existingSections);
-  const now = new Date().toISOString();
 
-  const draft: VillagePageSectionDraft = {
-    id: existingSection?.id ?? `${villageSlug}-${BOARD_PAGE_KEY}-${BOARD_SECTION_KEY}`,
-    villageSlug,
-    pageKey: BOARD_PAGE_KEY,
-    sectionKey: BOARD_SECTION_KEY,
-    sectionType: BOARD_SECTION_TYPE,
-    label: existingSection?.label ?? "게시판",
-    draftContent: {
-      ...(existingSection?.draftContent ?? {}),
-      posts: normalizedPosts,
-    },
-    publishedContent: existingSection?.publishedContent,
-    orderIndex: existingSection?.orderIndex ?? 10,
-    publishedOrderIndex: existingSection?.publishedOrderIndex,
-    visible: existingSection?.visible ?? true,
-    publishedVisible: existingSection?.publishedVisible,
-    status: "published",
-    publishedAt: existingSection?.publishedAt,
-    updatedAt: existingSection?.updatedAt ?? now,
-  };
-
-  await publishHostVillagePageSection(draft, {
-    allowedVillageSlug: villageSlug,
-  });
-
-  return normalizedPosts;
+  return mutateHostChannelBoardPosts(villageSlug, () => normalizedPosts);
 }
 
 export async function upsertHostChannelBoardPost({
@@ -106,17 +80,20 @@ export async function upsertHostChannelBoardPost({
     throw new Error("Board post payload is required.");
   }
 
-  const existingPosts = await listHostChannelBoardPosts(villageSlug);
-  const existingPost = existingPosts.find((item) => item.id === normalizedPost.id);
-  const savedPost: ChannelBoardPost = {
-    ...normalizedPost,
-    createdAt: existingPost?.createdAt ?? normalizedPost.createdAt,
-    id: existingPost?.id ?? normalizedPost.id,
-  };
+  return mutateHostChannelBoardPosts(villageSlug, (existingPosts) => {
+    const existingPost = existingPosts.find(
+      (item) => item.id === normalizedPost.id,
+    );
+    const savedPost: ChannelBoardPost = {
+      ...normalizedPost,
+      createdAt: existingPost?.createdAt ?? normalizedPost.createdAt,
+      id: existingPost?.id ?? normalizedPost.id,
+    };
 
-  return saveHostChannelBoardPosts({
-    posts: [savedPost, ...existingPosts.filter((item) => item.id !== savedPost.id)],
-    villageSlug,
+    return [
+      savedPost,
+      ...existingPosts.filter((item) => item.id !== savedPost.id),
+    ];
   });
 }
 
@@ -132,10 +109,90 @@ export async function deleteHostChannelBoardPost({
     throw new Error("Board post id is required.");
   }
 
-  const existingPosts = await listHostChannelBoardPosts(villageSlug);
-  return saveHostChannelBoardPosts({
-    posts: existingPosts.filter((item) => item.id !== normalizedPostId),
-    villageSlug,
+  return mutateHostChannelBoardPosts(villageSlug, (existingPosts) =>
+    existingPosts.filter((item) => item.id !== normalizedPostId),
+  );
+}
+
+async function mutateHostChannelBoardPosts(
+  villageSlug: string,
+  mutate: (posts: ChannelBoardPost[]) => ChannelBoardPost[],
+): Promise<ChannelBoardPost[]> {
+  const normalizedVillageSlug = villageSlug.trim().toLowerCase();
+  if (!normalizedVillageSlug) {
+    throw new Error("Village slug is required.");
+  }
+
+  return getDb().transaction(async (tx) => {
+    await tx.execute(
+      sql`select pg_advisory_xact_lock(hashtext(${`channel-board:${normalizedVillageSlug}`}))`,
+    );
+
+    const [existingSection] = await tx
+      .select()
+      .from(villagePageSections)
+      .where(
+        and(
+          eq(villagePageSections.villageSlug, normalizedVillageSlug),
+          eq(villagePageSections.pageKey, BOARD_PAGE_KEY),
+          eq(villagePageSections.sectionKey, BOARD_SECTION_KEY),
+        ),
+      )
+      .limit(1);
+    const currentPosts = normalizeChannelBoardPosts(
+      existingSection?.draftContent.posts,
+    );
+    const savedPosts = normalizeChannelBoardPosts(mutate(currentPosts));
+    const draftContent = {
+      ...(existingSection?.draftContent ?? {}),
+      posts: savedPosts,
+    };
+    const now = new Date();
+
+    const [savedSection] = existingSection
+      ? await tx
+          .update(villagePageSections)
+          .set({
+            draftContent,
+            publishedAt: now,
+            publishedContent: draftContent,
+            publishedOrderIndex: existingSection.orderIndex,
+            publishedVisible: existingSection.visible,
+            status: "published",
+            updatedAt: now,
+          })
+          .where(eq(villagePageSections.id, existingSection.id))
+          .returning()
+      : await tx
+          .insert(villagePageSections)
+          .values({
+            draftContent,
+            label: "게시판",
+            orderIndex: 10,
+            pageKey: BOARD_PAGE_KEY,
+            publishedAt: now,
+            publishedContent: draftContent,
+            publishedOrderIndex: 10,
+            publishedVisible: true,
+            sectionKey: BOARD_SECTION_KEY,
+            sectionType: BOARD_SECTION_TYPE,
+            status: "published",
+            villageSlug: normalizedVillageSlug,
+            visible: true,
+          })
+          .returning();
+
+    await tx.insert(villagePageRevisions).values({
+      content: draftContent,
+      orderIndex: savedSection.orderIndex,
+      pageKey: savedSection.pageKey,
+      sectionId: savedSection.id,
+      sectionKey: savedSection.sectionKey,
+      villageSlug: savedSection.villageSlug,
+      visible: savedSection.visible,
+    });
+
+    return savedPosts;
   });
 }
 

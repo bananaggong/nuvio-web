@@ -7,6 +7,9 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
+    "audit:db-integrity": "node scripts/audit-db-integrity.mjs",
+    "test:db-concurrency": "tsx --test tests/db-concurrency.test.ts",
+    "verify:db-integrity": "node scripts/verify-db-integrity-artifacts.mjs && npm run test:db-concurrency",
     "test:security": "node --test tests/browser-push-security.test.mjs tests/image-upload-security.test.mjs && tsx --test tests/content-security.test.ts tests/request-security.test.ts tests/security-boundaries.test.ts",
     "verify:host-program-flow": "node scripts/verify-host-program-flow.mjs",
     "verify:overflow": "node scripts/verify-route-overflow.mjs",
@@ -46,6 +49,7 @@
     "web-push": "^3.6.7"
   },
   "devDependencies": {
+    "@electric-sql/pglite": "^0.5.4",
     "@tailwindcss/postcss": "^4",
     "@types/node": "^20",
     "@types/react": "^19",
