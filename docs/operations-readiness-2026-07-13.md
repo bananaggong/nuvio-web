@@ -14,7 +14,7 @@ Audit date: 2026-07-13 KST
 
 Release gate: **blocked**.
 
-The source fixes and tests are ready for review, but production still has undelivered work, missing delivery configuration, and no deployed claim-token protection. Supabase physical-backup status also remains unverified because the local Supabase management CLI and dashboard are not authenticated.
+The source fixes and tests are ready for review, but production still has undelivered work, missing delivery configuration, and no deployed claim-token protection. The production Supabase project is on the Free plan, which does not include guaranteed automatic backups or PITR; an operator-managed logical backup is therefore required before a destructive rollout.
 
 The latest read-only production snapshot completed at `2026-07-12T16:09:38.138Z`. It reported 12 blocking findings: six terminal email failures, two due scheduled messages, two missing migrations, and one missing protection finding for each delivery claim path.
 
@@ -74,11 +74,16 @@ The patched registry replaces the external-announcement refresh with an isolated
 
 The latest production deployment was created after the previous daily Cron window. Available runtime logs contain no authenticated Cron execution for that deployment yet. The four unauthenticated probes correctly returned `401`.
 
-### P1: physical backup status is not verified
+### P1: Free plan has no guaranteed operator-accessible automatic backup
 
-Database and Storage access were verified through the application connection, but Supabase Management API access was unavailable and the dashboard opened at the sign-in page. No current physical-backup timestamp or restore point can therefore be claimed.
+The project owner confirmed that production uses the Supabase Free plan. Supabase pricing lists automatic backups and PITR as unavailable on Free, and the backup guide recommends that Free projects regularly create logical exports with `supabase db dump` and keep them off site. A platform-internal snapshot that might become available after a future plan upgrade is not an operator-accessible or guaranteed recovery point and is not counted as release evidence.
 
-Before release, an authorized operator must capture the latest backup timestamp and prove a restore into a non-production project. The procedure is in `docs/operations-rollback-runbook.md`.
+Database and Storage access were verified through the application connection. This workstation has neither `pg_dump` nor Docker, so no production logical export was created during this audit. Before a destructive rollout, create roles, schema, and data dumps from a trusted backup workstation, encrypt and retain them outside the repository, separately export Storage object bytes, and prove a restore into a non-production target. The procedure is in `docs/operations-rollback-runbook.md`.
+
+Official policy references:
+
+- https://supabase.com/pricing
+- https://supabase.com/docs/guides/platform/backups
 
 ### P1: browser push cannot provide absolute provider-level exactly-once delivery
 
@@ -140,4 +145,4 @@ npx.cmd drizzle-kit check
 npm.cmd run build
 ```
 
-The release gate opens only after the queue audit has no blocking findings, delivery providers are intentionally configured, both migrations have completed in the documented order, an authenticated Cron run is visible, and backup/restore evidence is attached.
+The release gate opens only after the queue audit has no blocking findings, delivery providers are intentionally configured, both migrations have completed in the documented order, an authenticated Cron run is visible, and either a verified operator-managed logical backup and restore rehearsal is attached or the project has been upgraded and its managed recovery point has been verified.

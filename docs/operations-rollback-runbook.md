@@ -4,12 +4,51 @@ This runbook is a procedure, not a record that production changes were applied.
 
 ## Before rollout
 
-1. Authenticate the Supabase CLI with an operator account that can read backup metadata.
-2. Run `supabase backups list --project-ref <project-ref>` and archive only the backup timestamp/status, never access tokens or connection strings.
-3. Restore the selected backup into a non-production Supabase project and run the application smoke suite against it.
-4. Run the production read-only queue audit and confirm there are no processing rows.
-5. Configure email and exactly one SMS path. Keep automatic SMS disabled while manual dispatch is the chosen workflow.
-6. Record the current Vercel production deployment ID and one known-good previous deployment ID.
+1. Record the Supabase plan. The current Free plan does not include guaranteed automatic backups or PITR.
+2. For a Free project, create the logical backup set below from a trusted workstation and retain it off site. For a paid project, verify the managed recovery point instead.
+3. Export Storage object bytes separately; database dumps contain Storage metadata, not the stored files.
+4. Restore the backup into a non-production target and run row-count, migration, Storage, and application smoke checks.
+5. Run the production read-only queue audit and confirm there are no processing rows.
+6. Configure email and exactly one SMS path. Keep automatic SMS disabled while manual dispatch is the chosen workflow.
+7. Record the current Vercel production deployment ID and one known-good previous deployment ID.
+
+## Free-plan logical backup
+
+Supabase recommends regular `db dump` exports for Free projects. Run these commands only in a trusted operator terminal. Keep the output outside the repository, encrypt it at rest, and never attach the SQL files to tickets or commits.
+
+```powershell
+if (-not $env:DIRECT_DATABASE_URL) {
+  throw "DIRECT_DATABASE_URL is required in the operator environment."
+}
+
+$backupDir = Join-Path $HOME (
+  "nuvio-backups\\" + (Get-Date -Format "yyyyMMdd-HHmmss")
+)
+New-Item -ItemType Directory -Path $backupDir | Out-Null
+
+npx.cmd --yes supabase@latest db dump `
+  --db-url "$env:DIRECT_DATABASE_URL" `
+  --role-only `
+  --file (Join-Path $backupDir "roles.sql")
+npx.cmd --yes supabase@latest db dump `
+  --db-url "$env:DIRECT_DATABASE_URL" `
+  --file (Join-Path $backupDir "schema.sql")
+npx.cmd --yes supabase@latest db dump `
+  --db-url "$env:DIRECT_DATABASE_URL" `
+  --data-only `
+  --use-copy `
+  --file (Join-Path $backupDir "data.sql")
+
+Get-ChildItem -LiteralPath $backupDir -File |
+  Select-Object Name, Length
+Get-ChildItem -LiteralPath $backupDir -File |
+  Get-FileHash -Algorithm SHA256 |
+  Select-Object Path, Hash
+```
+
+The current audit workstation has neither `pg_dump` nor Docker, so it cannot execute this export yet. Install a supported PostgreSQL client or Docker on the dedicated backup workstation before relying on this procedure. A successful command is not enough: prove that the three files are non-empty, archive their hashes, and restore them into an isolated target.
+
+Storage objects are not included in database backups. Maintain an encrypted off-site copy of every production bucket's object bytes and a manifest containing bucket name, object count, byte count, and checksum. Do not log object paths when they contain personal information.
 
 ## Three-phase database and application rollout
 
@@ -62,13 +101,13 @@ The Phase 1 columns are additive, so the preferred rollback is to restore the pr
 
 ## Database restore
 
-A production restore is a last resort and requires an incident decision. First restore the selected physical backup into a non-production project, compare row counts and migration history, and validate the application there.
+A production restore is a last resort and requires an incident decision. Free projects have no guaranteed Dashboard restore point, so first restore the operator-managed logical backup into a non-production project, compare row counts and migration history, and validate the application there. On a paid plan, use the verified managed recovery point instead.
 
 If production restore is approved:
 
 1. Stop or redirect all Cron invocations and user writes.
 2. Record the restore point and deployment ID.
-3. Restore through the Supabase-supported process.
+3. Restore the verified logical backup in roles, schema, then data order, or use the Supabase-managed recovery point when the plan supports it.
 4. Reapply only migrations newer than the restore point after reviewing their data effects.
 5. Deploy the matching application version.
 6. Run read-only queue, storage, migration, header, and smoke checks before reopening traffic.
@@ -83,5 +122,7 @@ Archive these redacted artifacts:
 - async queue audit JSON;
 - Supabase applied migration versions;
 - Storage bucket/object aggregate counts;
-- physical-backup timestamp and non-production restore result;
+- Supabase plan and the applicable managed or operator-managed backup policy;
+- logical dump timestamps, sizes, hashes, and non-production restore result;
+- Storage object export count, bytes, manifest hash, and restore result;
 - rollback target deployment ID and operator approval.

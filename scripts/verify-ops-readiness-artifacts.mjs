@@ -110,9 +110,15 @@ assertDeepEqual(
 
 assertIncludes(report, "Release gate: **blocked**", "honest release gate");
 assertIncludes(report, "No email, SMS, or browser push was sent", "external send boundary");
-assertIncludes(report, "physical backup status is not verified", "backup evidence gap");
+assertIncludes(
+  report,
+  "Free plan has no guaranteed operator-accessible automatic backup",
+  "Free plan backup boundary",
+);
 assertIncludes(rollback, "Three-phase database and application rollout", "compatible rollout sequence");
 assertIncludes(rollback, "A Vercel rollback does not roll back database migrations", "rollback boundary");
+assertIncludes(rollback, "Free-plan logical backup", "Free plan logical backup procedure");
+assertIncludes(rollback, "Storage objects are not included", "Storage backup boundary");
 
 console.log("Operations readiness artifact verification passed.");
 
