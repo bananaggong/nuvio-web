@@ -29,7 +29,7 @@ export type ProgramApplicationInput = {
   phone: string;
   answers: Record<string, unknown>;
   memo?: string;
-  submittedBy?: string;
+  submittedBy: string;
 };
 
 export type HostApplicationStatusEvent = {
@@ -85,6 +85,10 @@ export async function createProgramApplication(
 ): Promise<HostApplication> {
   const program = await resolveApplicationProgram(input.programId);
   const email = input.email.trim().toLowerCase();
+  const submittedBy = input.submittedBy.trim();
+  if (!isUuid(submittedBy)) {
+    throw new Error("A valid submitting user is required.");
+  }
   const programRunId = isUuid(input.programRunId ?? "")
     ? input.programRunId
     : await ensureDefaultProgramRunForProgram(program.id);
@@ -159,7 +163,7 @@ export async function createProgramApplication(
         applicantName: input.applicantName,
         email,
         phone: input.phone,
-        submittedBy: isUuid(input.submittedBy ?? "") ? input.submittedBy : null,
+        submittedBy,
         answers: input.answers,
         consentSnapshot,
         formSnapshot,
@@ -179,6 +183,11 @@ export async function createProgramApplication(
         signatureCompleted: programApplications.signatureCompleted,
         reviewSubmitted: programApplications.reviewSubmitted,
       });
+  }).catch((error: unknown) => {
+    if (isProgramApplicationDuplicateDatabaseError(error)) {
+      throw new DuplicateProgramApplicationError();
+    }
+    throw error;
   });
 
   return {
@@ -203,6 +212,22 @@ export async function createProgramApplication(
     reviewSubmitted: row.reviewSubmitted,
     memo: input.memo ?? String(input.answers.motivation ?? "").slice(0, 72),
   };
+}
+
+export function isProgramApplicationDuplicateDatabaseError(
+  error: unknown,
+): boolean {
+  if (!error || typeof error !== "object") return false;
+
+  const record = error as Record<string, unknown>;
+  const constraint = String(
+    record.constraint_name ?? record.constraint ?? "",
+  );
+
+  return (
+    record.code === "23505" &&
+    constraint === "program_applications_program_normalized_email_uidx"
+  );
 }
 
 export type ExistingProgramApplication = Pick<

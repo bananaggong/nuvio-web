@@ -156,6 +156,22 @@ export class ReviewEligibilityError extends Error {
   }
 }
 
+export function isReviewApplicationDuplicateDatabaseError(
+  error: unknown,
+): boolean {
+  if (!error || typeof error !== "object") return false;
+
+  const record = error as Record<string, unknown>;
+  const constraint = String(
+    record.constraint_name ?? record.constraint ?? "",
+  );
+
+  return (
+    record.code === "23505" &&
+    constraint === "reviews_application_id_unique_idx"
+  );
+}
+
 const reviewCategories: ReviewCategory[] = [
   "programTip",
   "selected",
@@ -597,6 +613,11 @@ export async function createParticipantReview(
           }
         : null,
     ] as const;
+  }).catch((error: unknown) => {
+    if (isReviewApplicationDuplicateDatabaseError(error)) {
+      throw new DuplicateReviewError();
+    }
+    throw error;
   });
 
   void safeCreateAuditLog({

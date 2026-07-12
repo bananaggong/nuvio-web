@@ -89,7 +89,7 @@ export function mapApplicationFormTemplateToInsert(
 
 export function mapHostApplicationToInsert(
   application: HostApplication,
-  params: { programId: string; formId?: string },
+  params: { programId: string; formId?: string; submittedBy: string },
 ): ProgramApplicationInsert {
   return {
     programId: params.programId,
@@ -106,6 +106,7 @@ export function mapHostApplicationToInsert(
     receiptCount: application.receiptCount,
     signatureCompleted: application.signatureCompleted,
     reviewSubmitted: application.reviewSubmitted,
+    submittedBy: params.submittedBy,
     submittedAt: new Date(application.submittedAt),
   };
 }

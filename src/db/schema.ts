@@ -1,6 +1,7 @@
 import { sql } from "drizzle-orm";
 import {
   boolean,
+  check,
   date,
   index,
   integer,
@@ -259,9 +260,20 @@ export const hostVillageMemberships = pgTable(
     updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
   },
   (table) => [
-    uniqueIndex("host_village_memberships_village_account_email_idx").on(
+    uniqueIndex("host_village_memberships_village_normalized_email_uidx").on(
       table.villageId,
-      table.accountEmail,
+      sql`lower(btrim(${table.accountEmail}))`,
+    ),
+    uniqueIndex("host_village_memberships_village_active_user_uidx")
+      .on(table.villageId, table.userId)
+      .where(sql`${table.status} = 'active' and ${table.userId} is not null`),
+    check(
+      "host_village_memberships_account_email_normalized_chk",
+      sql`${table.accountEmail} = lower(btrim(${table.accountEmail}))`,
+    ),
+    check(
+      "host_village_memberships_active_user_required_chk",
+      sql`${table.status} <> 'active' or ${table.userId} is not null`,
     ),
     index("host_village_memberships_village_id_idx").on(table.villageId),
     index("host_village_memberships_user_id_idx").on(table.userId),
@@ -893,6 +905,15 @@ export const villageMediaContents = pgTable(
   },
   (table) => [
     uniqueIndex("village_media_contents_legacy_id_idx").on(table.legacyId),
+    uniqueIndex("village_media_contents_external_source_uidx")
+      .on(
+        table.villageSlug,
+        table.provider,
+        sql`lower(rtrim(btrim(${table.sourceUrl}), '/'))`,
+      )
+      .where(
+        sql`${table.provider} in ('instagram', 'youtube', 'naver', 'video') and btrim(${table.sourceUrl}) <> ''`,
+      ),
     index("village_media_contents_village_slug_idx").on(table.villageSlug),
     index("village_media_contents_published_at_idx").on(table.publishedAt),
   ],
@@ -966,6 +987,14 @@ export const villagePageSections = pgTable(
       table.publishedAt,
     ),
     index("village_page_sections_status_idx").on(table.status),
+    check(
+      "village_page_sections_board_draft_post_ids_chk",
+      sql`${table.pageKey} <> 'notice' or ${table.sectionKey} <> 'notice_index' or public.jsonb_array_has_unique_nonempty_ids(${table.draftContent} -> 'posts')`,
+    ),
+    check(
+      "village_page_sections_board_published_post_ids_chk",
+      sql`${table.pageKey} <> 'notice' or ${table.sectionKey} <> 'notice_index' or public.jsonb_array_has_unique_nonempty_ids(${table.publishedContent} -> 'posts')`,
+    ),
   ],
 );
 
@@ -1183,9 +1212,9 @@ export const programApplications = pgTable(
     applicantName: text("applicant_name").notNull(),
     email: text("email").notNull(),
     phone: text("phone"),
-    submittedBy: uuid("submitted_by").references(() => profiles.id, {
-      onDelete: "set null",
-    }),
+    submittedBy: uuid("submitted_by")
+      .notNull()
+      .references(() => profiles.id, { onDelete: "restrict" }),
     status: applicationStatusEnum("status").default("submitted").notNull(),
     answers: jsonb("answers").$type<Record<string, unknown>>().default(emptyObject).notNull(),
     formSnapshot: jsonb("form_snapshot").$type<Record<string, unknown>>(),
@@ -1200,6 +1229,14 @@ export const programApplications = pgTable(
     updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
   },
   (table) => [
+    uniqueIndex("program_applications_program_normalized_email_uidx").on(
+      table.programId,
+      sql`lower(btrim(${table.email}))`,
+    ),
+    check(
+      "program_applications_email_normalized_chk",
+      sql`${table.email} = lower(btrim(${table.email}))`,
+    ),
     index("program_applications_program_id_idx").on(table.programId),
     index("program_applications_program_run_id_idx").on(table.programRunId),
     index("program_applications_status_idx").on(table.status),
