@@ -27,7 +27,10 @@ import {
   markManualDispatchRowsSent,
   type ManualDispatchSheetSyncResult,
 } from "@/lib/manual-dispatch-sheet";
-import { sendSmsMessage } from "@/lib/sms-provider";
+import {
+  getSmsDeliveryReadiness,
+  sendSmsMessage,
+} from "@/lib/sms-provider";
 
 type ScheduleSelectedMessagesInput = {
   applicationIds: string[];
@@ -418,9 +421,14 @@ export async function markHostScheduledMessagesSent(
 
 export async function processDueScheduledSmsMessages(
   options: { limit?: number } = {},
-): Promise<{ failed: number; processed: number; sent: number }> {
+): Promise<{ failed: number; processed: number; retried: number; sent: number }> {
   if (process.env.SMS_AUTO_DELIVERY_ENABLED !== "true") {
-    return { failed: 0, processed: 0, sent: 0 };
+    return { failed: 0, processed: 0, retried: 0, sent: 0 };
+  }
+
+  const readiness = getSmsDeliveryReadiness();
+  if (!readiness.configured || !readiness.productionSafe) {
+    throw new Error(readiness.detail);
   }
 
   const limit = Math.min(Math.max(options.limit ?? 50, 1), 100);
@@ -435,8 +443,11 @@ export async function processDueScheduledSmsMessages(
     await tx
       .update(scheduledMessages)
       .set({
+        claimedAt: null,
+        claimToken: null,
         deliveryStatus: "scheduled",
         error: "Recovered stale SMS processing claim.",
+        nextAttemptAt: now,
         updatedAt: now,
       })
       .where(
@@ -462,41 +473,66 @@ export async function processDueScheduledSmsMessages(
             isNull(scheduledMessages.scheduledFor),
             lte(scheduledMessages.scheduledFor, now),
           ),
+          or(
+            isNull(scheduledMessages.nextAttemptAt),
+            lte(scheduledMessages.nextAttemptAt, now),
+          ),
         ),
       )
       .orderBy(asc(scheduledMessages.scheduledFor))
       .limit(limit);
 
     const ids = dueRows.map((row) => row.id);
-    if (ids.length > 0) {
-      await tx
-        .update(scheduledMessages)
-        .set({
-          deliveryStatus: "processing",
-          error: null,
-          updatedAt: now,
-        })
-        .where(inArray(scheduledMessages.id, ids));
-    }
+    if (ids.length === 0) return [];
 
-    return dueRows;
+    return tx
+      .update(scheduledMessages)
+      .set({
+        attemptCount: sql`${scheduledMessages.attemptCount} + 1`,
+        claimedAt: now,
+        claimToken: sql`gen_random_uuid()`,
+        deliveryStatus: "processing",
+        error: null,
+        lastAttemptAt: now,
+        nextAttemptAt: null,
+        updatedAt: now,
+      })
+      .where(
+        and(
+          inArray(scheduledMessages.id, ids),
+          eq(scheduledMessages.deliveryStatus, "scheduled"),
+        ),
+      )
+      .returning({
+        attemptCount: scheduledMessages.attemptCount,
+        body: scheduledMessages.body,
+        claimToken: scheduledMessages.claimToken,
+        id: scheduledMessages.id,
+        maxAttempts: scheduledMessages.maxAttempts,
+        recipient: scheduledMessages.recipient,
+      });
   });
 
   let sent = 0;
   let failed = 0;
+  let retried = 0;
 
   for (const row of rows) {
     try {
-      await sendSmsMessage({
+      const delivery = await sendSmsMessage({
         body: row.body,
         idempotencyKey: row.id,
         to: row.recipient,
       });
-      await getDb()
+      const [updated] = await getDb()
         .update(scheduledMessages)
         .set({
+          claimedAt: null,
+          claimToken: null,
           deliveryStatus: "sent",
           error: null,
+          nextAttemptAt: null,
+          providerMessageId: delivery.providerMessageId,
           sentAt: new Date(),
           updatedAt: new Date(),
         })
@@ -504,28 +540,57 @@ export async function processDueScheduledSmsMessages(
           and(
             eq(scheduledMessages.id, row.id),
             eq(scheduledMessages.deliveryStatus, "processing"),
+            eq(scheduledMessages.claimToken, row.claimToken!),
           ),
-        );
-      sent += 1;
-    } catch (error) {
-      await getDb()
+        )
+        .returning({ id: scheduledMessages.id });
+      if (updated) sent += 1;
+    } catch {
+      const terminal = row.attemptCount >= row.maxAttempts;
+      const nextAttemptAt = terminal
+        ? null
+        : getNextScheduledMessageAttemptAt(row.attemptCount, new Date());
+      const [updated] = await getDb()
         .update(scheduledMessages)
         .set({
-          deliveryStatus: "failed",
-          error: error instanceof Error ? error.message : "SMS delivery failed.",
+          claimedAt: null,
+          claimToken: null,
+          deliveryStatus: terminal ? "failed" : "scheduled",
+          error: terminal
+            ? "SMS delivery failed after the maximum number of attempts."
+            : `SMS delivery will retry at ${nextAttemptAt?.toISOString()}.`,
+          nextAttemptAt,
           updatedAt: new Date(),
         })
         .where(
           and(
             eq(scheduledMessages.id, row.id),
             eq(scheduledMessages.deliveryStatus, "processing"),
+            eq(scheduledMessages.claimToken, row.claimToken!),
           ),
-        );
-      failed += 1;
+        )
+        .returning({ id: scheduledMessages.id });
+      if (updated) {
+        failed += 1;
+        if (!terminal) retried += 1;
+      }
     }
   }
 
-  return { failed, processed: rows.length, sent };
+  return { failed, processed: rows.length, retried, sent };
+}
+
+export function getNextScheduledMessageAttemptAt(
+  attemptCount: number,
+  now: Date,
+): Date {
+  const baseDelayMs = 5 * 60 * 1000;
+  const maxDelayMs = 6 * 60 * 60 * 1000;
+  const delayMs = Math.min(
+    baseDelayMs * 2 ** Math.max(attemptCount - 1, 0),
+    maxDelayMs,
+  );
+  return new Date(now.getTime() + delayMs);
 }
 
 function parseKoreaLocalDatetime(value: string): Date | null {

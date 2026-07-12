@@ -334,6 +334,8 @@ async function claimNotificationEventForImmediateProcessing(
     .update(notificationEvents)
     .set({
       attemptCount: sql`${notificationEvents.attemptCount} + 1`,
+      claimedAt: now,
+      claimToken: sql`gen_random_uuid()`,
       error: null,
       lastAttemptAt: now,
       nextAttemptAt: null,
@@ -367,6 +369,8 @@ async function claimDueNotificationEvents(
     await tx
       .update(notificationEvents)
       .set({
+        claimedAt: null,
+        claimToken: null,
         error: "Recovered stale notification processing claim.",
         nextAttemptAt: now,
         status: "pending",
@@ -405,13 +409,20 @@ async function claimDueNotificationEvents(
       .update(notificationEvents)
       .set({
         attemptCount: sql`${notificationEvents.attemptCount} + 1`,
+        claimedAt: now,
+        claimToken: sql`gen_random_uuid()`,
         error: null,
         lastAttemptAt: now,
         nextAttemptAt: null,
         status: "processing",
         updatedAt: now,
       })
-      .where(inArray(notificationEvents.id, ids))
+      .where(
+        and(
+          inArray(notificationEvents.id, ids),
+          eq(notificationEvents.status, "pending"),
+        ),
+      )
       .returning();
   });
 }
@@ -500,7 +511,7 @@ export async function queueApplicationStatusNotification(input: {
   }
 }
 
-export async function queueReviewRequestNotification(input: {
+export type ReviewRequestNotificationInput = {
   applicationId: string;
   programId?: string | null;
   programTitle: string;
@@ -511,11 +522,14 @@ export async function queueReviewRequestNotification(input: {
   requestId: string;
   scheduledFor?: Date;
   writeUrl?: string;
-}) {
-  const recipientEmail = normalizeEmail(input.recipientEmail);
-  if (!recipientEmail) return;
+};
 
-  const recipientUserId = await findProfileIdByEmail(recipientEmail);
+export function buildReviewRequestNotificationPlan(
+  input: ReviewRequestNotificationInput,
+) {
+  const recipientEmail = normalizeEmail(input.recipientEmail);
+  if (!recipientEmail) return null;
+
   const eventType = input.reminder
     ? "review.request.reminder"
     : "review.request.created";
@@ -539,8 +553,7 @@ export async function queueReviewRequestNotification(input: {
     ...baseMessage,
     href: input.writeUrl ?? authenticatedWriteUrl,
   };
-
-  await queueNotificationEvent({
+  const emailEvent: NotificationEventInput = {
     ...emailMessage,
     channel: "email",
     dedupeKey: buildReviewRequestNotificationDedupeKey({
@@ -551,8 +564,23 @@ export async function queueReviewRequestNotification(input: {
     }),
     eventType,
     recipient: recipientEmail,
-    recipientUserId,
     scheduledFor: input.scheduledFor,
+  };
+
+  return { baseMessage, emailEvent, eventType, recipientEmail };
+}
+
+export async function queueReviewRequestNotification(
+  input: ReviewRequestNotificationInput,
+) {
+  const plan = buildReviewRequestNotificationPlan(input);
+  if (!plan) return;
+  const { baseMessage, emailEvent, eventType, recipientEmail } = plan;
+  const recipientUserId = await findProfileIdByEmail(recipientEmail);
+
+  await queueNotificationEvent({
+    ...emailEvent,
+    recipientUserId,
   });
 
   if (recipientUserId) {
@@ -876,6 +904,7 @@ async function deliverInAppEvent(
 
   await createUserNotification({
     body: event.body,
+    dedupeKey: `notification-event:${event.id}`,
     href: event.href ?? undefined,
     metadata: event.metadata,
     title: event.title,
@@ -988,9 +1017,8 @@ async function deliverEmailEvent(
   }
 
   if (!isEmailDeliveryConfigured()) {
-    return markNotificationEvent(
+    return markNotificationDeliveryFailure(
       event,
-      "failed",
       "Email delivery provider is not configured.",
     );
   }
@@ -1057,9 +1085,11 @@ async function markNotificationEvent(
   options: { providerMessageId?: string } = {},
 ): Promise<NotificationProcessSummary["details"][number]> {
   const now = new Date();
-  await getDb()
+  const [updated] = await getDb()
     .update(notificationEvents)
     .set({
+      claimedAt: null,
+      claimToken: null,
       deliveredAt: status === "sent" || status === "skipped" ? now : null,
       error: message,
       href: getTerminalNotificationHref(event),
@@ -1068,7 +1098,12 @@ async function markNotificationEvent(
       status,
       updatedAt: now,
     })
-    .where(eq(notificationEvents.id, event.id));
+    .where(notificationClaimPredicate(event))
+    .returning({ id: notificationEvents.id });
+
+  if (!updated) {
+    return supersededNotificationClaimDetail(event);
+  }
 
   return {
     channel: event.channel,
@@ -1098,16 +1133,23 @@ async function markNotificationDeliveryFailure(
   const nextAttemptAt = getNextNotificationAttemptAt(attemptCount, now);
   const retryMessage = `${message} Retrying at ${nextAttemptAt.toISOString()} (${attemptCount}/${maxAttempts}).`;
 
-  await getDb()
+  const [updated] = await getDb()
     .update(notificationEvents)
     .set({
+      claimedAt: null,
+      claimToken: null,
       deliveredAt: null,
       error: retryMessage,
       nextAttemptAt,
       status: "pending",
       updatedAt: now,
     })
-    .where(eq(notificationEvents.id, event.id));
+    .where(notificationClaimPredicate(event))
+    .returning({ id: notificationEvents.id });
+
+  if (!updated) {
+    return supersededNotificationClaimDetail(event);
+  }
 
   return {
     channel: event.channel,
@@ -1115,6 +1157,28 @@ async function markNotificationDeliveryFailure(
     id: event.id,
     message: retryMessage,
     status: "failed",
+  };
+}
+
+function notificationClaimPredicate(event: NotificationEventRow) {
+  return and(
+    eq(notificationEvents.id, event.id),
+    eq(notificationEvents.status, "processing"),
+    event.claimToken
+      ? eq(notificationEvents.claimToken, event.claimToken)
+      : isNull(notificationEvents.claimToken),
+  );
+}
+
+function supersededNotificationClaimDetail(
+  event: NotificationEventRow,
+): NotificationProcessSummary["details"][number] {
+  return {
+    channel: event.channel,
+    eventType: event.eventType,
+    id: event.id,
+    message: "Notification claim was superseded before finalization.",
+    status: "skipped",
   };
 }
 

@@ -1,7 +1,9 @@
 import { and, count, eq } from "drizzle-orm";
 import { getDb } from "@/db/client";
 import { adminAuditLogs, notificationEvents, userNotifications } from "@/db/schema";
+import { isBrowserPushConfigured } from "@/lib/browser-push";
 import { getEmailDeliveryReadiness } from "@/lib/email-provider";
+import { getSmsDeliveryReadiness } from "@/lib/sms-provider";
 
 export type SystemHealthStatus = "fail" | "ok" | "warn";
 
@@ -26,6 +28,12 @@ export type SystemHealthSnapshot = {
 
 export async function getSystemHealthSnapshot(): Promise<SystemHealthSnapshot> {
   const emailReadiness = getEmailDeliveryReadiness();
+  const smsReadiness = getSmsDeliveryReadiness();
+  const smsAutoDeliveryEnabled = process.env.SMS_AUTO_DELIVERY_ENABLED === "true";
+  const manualSmsConfigured =
+    hasEnv("GOOGLE_SERVICE_ACCOUNT_EMAIL") &&
+    hasEnv("GOOGLE_SERVICE_ACCOUNT_PRIVATE_KEY") &&
+    hasEnv("GOOGLE_MANUAL_MESSAGE_SPREADSHEET_ID");
   const checks: SystemHealthCheck[] = [
     envCheck("database-url", "Database URL", hasEnv("DATABASE_URL", "DIRECT_DATABASE_URL")),
     envCheck(
@@ -56,6 +64,36 @@ export async function getSystemHealthSnapshot(): Promise<SystemHealthSnapshot> {
           : process.env.NODE_ENV === "production"
             ? "fail"
             : "warn",
+    },
+    {
+      detail: smsAutoDeliveryEnabled
+        ? smsReadiness.detail
+        : manualSmsConfigured
+          ? "Manual SMS dispatch sheet is configured."
+          : "Configure the manual dispatch sheet or a production-safe SMS provider.",
+      id: "sms-delivery",
+      label: "SMS delivery",
+      status: smsAutoDeliveryEnabled
+        ? smsReadiness.configured && smsReadiness.productionSafe
+          ? "ok"
+          : "fail"
+        : manualSmsConfigured
+          ? "ok"
+          : process.env.NODE_ENV === "production"
+            ? "fail"
+            : "warn",
+    },
+    {
+      detail: isBrowserPushConfigured()
+        ? "Browser push delivery is configured."
+        : "Browser push VAPID keys are missing.",
+      id: "browser-push",
+      label: "Browser push",
+      status: isBrowserPushConfigured()
+        ? "ok"
+        : process.env.NODE_ENV === "production"
+          ? "fail"
+          : "warn",
     },
   ];
 

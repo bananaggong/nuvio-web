@@ -106,7 +106,7 @@ export async function sendEmailMessage(
 
     return {
       provider,
-      providerMessageId: `mock-${Date.now()}`,
+      providerMessageId: `mock-${input.idempotencyKey ?? Date.now()}`,
     };
   }
 

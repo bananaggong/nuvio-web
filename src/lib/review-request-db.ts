@@ -1,6 +1,7 @@
 import { and, asc, desc, eq, inArray, lte, or, sql, type SQL } from "drizzle-orm";
 import { getDb } from "@/db/client";
 import {
+  notificationEvents,
   programApplications,
   programs as programsTable,
   reviewRequests,
@@ -9,7 +10,10 @@ import {
 } from "@/db/schema";
 import type { ApiAuthContext } from "@/lib/api-security";
 import { safeCreateAuditLog } from "@/lib/audit-log-db";
-import { queueReviewRequestNotification } from "@/lib/notification-db";
+import {
+  buildReviewRequestNotificationPlan,
+  queueReviewRequestNotification,
+} from "@/lib/notification-db";
 import { safeRecordReviewRequestEvent } from "@/lib/review-request-event-db";
 import {
   createReviewRequestToken,
@@ -412,6 +416,35 @@ export async function processDueReviewRequestReminders(
         .returning();
 
       if (updated) {
+        const plan = buildReviewRequestNotificationPlan({
+          applicationId: updated.applicationId,
+          programId: updated.programId,
+          programTitle: row.programTitle?.trim() || "누비오 프로그램",
+          recipientEmail: updated.recipientEmail,
+          recipientName: updated.recipientName,
+          reminder: true,
+          requestCount: updated.requestCount,
+          requestId: updated.id,
+          writeUrl: buildReviewRequestWriteUrl(updated.applicationId, requestToken.token),
+        });
+        if (!plan) {
+          throw new Error("Review request email outbox payload is invalid.");
+        }
+        await tx
+          .insert(notificationEvents)
+          .values({
+            body: plan.emailEvent.body,
+            channel: plan.emailEvent.channel,
+            dedupeKey: plan.emailEvent.dedupeKey,
+            eventType: plan.emailEvent.eventType,
+            href: plan.emailEvent.href,
+            metadata: plan.emailEvent.metadata ?? {},
+            recipient: plan.emailEvent.recipient,
+            scheduledFor: plan.emailEvent.scheduledFor,
+            status: "pending",
+            title: plan.emailEvent.title,
+          })
+          .onConflictDoNothing();
         updatedRows.push({
           previousStatus,
           programTitle: row.programTitle,
@@ -447,6 +480,7 @@ export async function processDueReviewRequestReminders(
     });
 
     const queued = await safeQueueReviewRequestNotification(row.request, {
+      emailOutboxQueued: true,
       programTitle: row.programTitle,
       reminder: true,
       requestToken: row.token,
@@ -502,83 +536,131 @@ export async function requestHostReviewForApplication(
       .where(eq(reviewRequests.applicationId, context.applicationId))
       .limit(1);
 
-    if (existing) {
-      const previousStatus = asReviewRequestStatus(existing.status);
+    const result = await (async () => {
+      if (existing) {
+        const previousStatus = asReviewRequestStatus(existing.status);
 
-      if (context.reviewId || existing.status === "completed") {
-        if (terminalReviewRequestStatuses.has(previousStatus)) {
-          return [existing, previousStatus, false] as const;
+        if (context.reviewId || existing.status === "completed") {
+          if (terminalReviewRequestStatuses.has(previousStatus)) {
+            return [existing, previousStatus, false] as const;
+          }
+
+          const [updatedCompleted] = await tx
+            .update(reviewRequests)
+            .set({
+              cancelledAt: null,
+              completedAt: existing.completedAt ?? now,
+              nextReminderAt: null,
+              requestTokenExpiresAt: null,
+              requestTokenHash: null,
+              reviewId: context.reviewId ?? existing.reviewId,
+              status: "completed",
+              updatedAt: now,
+            })
+            .where(eq(reviewRequests.id, existing.id))
+            .returning();
+          return [updatedCompleted, previousStatus, true] as const;
         }
 
-        const [updatedCompleted] = await tx
+        if (existing.requestCount >= maxReviewRequestCount) {
+          throw new ReviewRequestLimitError();
+        }
+
+        if (!normalized.force && isWithinCooldown(existing.lastRequestedAt, now)) {
+          throw new ReviewRequestCooldownError();
+        }
+
+        const [updated] = await tx
           .update(reviewRequests)
           .set({
             cancelledAt: null,
-            completedAt: existing.completedAt ?? now,
-            nextReminderAt: null,
-            requestTokenExpiresAt: null,
-            requestTokenHash: null,
-            reviewId: context.reviewId ?? existing.reviewId,
-            status: "completed",
+            completedAt: null,
+            expiresAt: requestExpiresAt,
+            lastRequestedAt: now,
+            nextReminderAt: existing.requestCount + 1 >= maxReviewRequestCount
+              ? null
+              : nextReminderAt,
+            openedAt: existing.status === "opened" ? existing.openedAt ?? now : null,
+            requestCount: sql`${reviewRequests.requestCount} + 1`,
+            requestTokenExpiresAt: requestExpiresAt,
+            requestTokenHash: requestToken.hash,
+            reviewId: null,
+            status: existing.status === "opened" ? "opened" : "sent",
             updatedAt: now,
           })
           .where(eq(reviewRequests.id, existing.id))
           .returning();
-        return [updatedCompleted, previousStatus, true] as const;
+        return [updated, previousStatus, true] as const;
       }
 
-      if (existing.requestCount >= maxReviewRequestCount) {
-        throw new ReviewRequestLimitError();
-      }
+      const insertValue: ReviewRequestInsert = {
+        applicationId: context.applicationId,
+        completedAt: context.reviewId ? now : null,
+        createdBy: options.actorId ?? null,
+        expiresAt: requestExpiresAt,
+        lastRequestedAt: now,
+        nextReminderAt: context.reviewId ? null : nextReminderAt,
+        programId: context.programId,
+        programRunId: context.programRunId,
+        recipientEmail: context.email.trim().toLowerCase(),
+        recipientName: context.applicantName.trim() || "Participant",
+        requestCount: context.reviewId ? 0 : 1,
+        requestTokenExpiresAt: context.reviewId ? null : requestExpiresAt,
+        requestTokenHash: context.reviewId ? null : requestToken.hash,
+        reviewId: context.reviewId,
+        status: context.reviewId ? "completed" : "sent",
+        villageSlug: context.villageSlug,
+      };
 
-      if (!normalized.force && isWithinCooldown(existing.lastRequestedAt, now)) {
-        throw new ReviewRequestCooldownError();
-      }
-
-      const [updated] = await tx
-        .update(reviewRequests)
-        .set({
-          cancelledAt: null,
-          completedAt: null,
-          expiresAt: requestExpiresAt,
-          lastRequestedAt: now,
-          nextReminderAt: existing.requestCount + 1 >= maxReviewRequestCount
-            ? null
-            : nextReminderAt,
-          openedAt: existing.status === "opened" ? existing.openedAt ?? now : null,
-          requestCount: sql`${reviewRequests.requestCount} + 1`,
-          requestTokenExpiresAt: requestExpiresAt,
-          requestTokenHash: requestToken.hash,
-          reviewId: null,
-          status: existing.status === "opened" ? "opened" : "sent",
-          updatedAt: now,
-        })
-        .where(eq(reviewRequests.id, existing.id))
+      const [created] = await tx
+        .insert(reviewRequests)
+        .values(insertValue)
         .returning();
-      return [updated, previousStatus, true] as const;
+      return [created, null, true] as const;
+    })();
+
+    const [nextRow, , didChange] = result;
+    const nextStatus = asReviewRequestStatus(nextRow.status);
+    if (
+      didChange &&
+      activeReviewRequestStatuses.includes(nextStatus) &&
+      !nextRow.reviewId
+    ) {
+      const plan = buildReviewRequestNotificationPlan({
+        applicationId: nextRow.applicationId,
+        programId: nextRow.programId,
+        programTitle: context.programTitle?.trim() || "누비오 프로그램",
+        recipientEmail: nextRow.recipientEmail,
+        recipientName: nextRow.recipientName,
+        reminder: nextRow.requestCount > 1,
+        requestCount: nextRow.requestCount,
+        requestId: nextRow.id,
+        writeUrl: buildReviewRequestWriteUrl(
+          nextRow.applicationId,
+          requestToken.token,
+        ),
+      });
+      if (!plan) {
+        throw new Error("Review request email outbox payload is invalid.");
+      }
+      await tx
+        .insert(notificationEvents)
+        .values({
+          body: plan.emailEvent.body,
+          channel: plan.emailEvent.channel,
+          dedupeKey: plan.emailEvent.dedupeKey,
+          eventType: plan.emailEvent.eventType,
+          href: plan.emailEvent.href,
+          metadata: plan.emailEvent.metadata ?? {},
+          recipient: plan.emailEvent.recipient,
+          scheduledFor: plan.emailEvent.scheduledFor,
+          status: "pending",
+          title: plan.emailEvent.title,
+        })
+        .onConflictDoNothing();
     }
 
-    const insertValue: ReviewRequestInsert = {
-      applicationId: context.applicationId,
-      completedAt: context.reviewId ? now : null,
-      createdBy: options.actorId ?? null,
-      expiresAt: requestExpiresAt,
-      lastRequestedAt: now,
-      nextReminderAt: context.reviewId ? null : nextReminderAt,
-      programId: context.programId,
-      programRunId: context.programRunId,
-      recipientEmail: context.email.trim().toLowerCase(),
-      recipientName: context.applicantName.trim() || "Participant",
-      requestCount: context.reviewId ? 0 : 1,
-      requestTokenExpiresAt: context.reviewId ? null : requestExpiresAt,
-      requestTokenHash: context.reviewId ? null : requestToken.hash,
-      reviewId: context.reviewId,
-      status: context.reviewId ? "completed" : "sent",
-      villageSlug: context.villageSlug,
-    };
-
-    const [created] = await tx.insert(reviewRequests).values(insertValue).returning();
-    return [created, null, true] as const;
+    return result;
   });
 
   if (!changed) {
@@ -619,6 +701,7 @@ export async function requestHostReviewForApplication(
   }, options);
 
   await safeQueueReviewRequestNotification(row, {
+    emailOutboxQueued: requestStatus !== "completed",
     programTitle: context.programTitle,
     reminder: row.requestCount > 1,
     requestToken: requestStatus === "completed" ? undefined : requestToken.token,
@@ -769,7 +852,12 @@ export async function reopenReviewRequestForApplication(applicationId: string): 
 
 async function safeQueueReviewRequestNotification(
   request: ReviewRequestRow,
-  options: { programTitle?: string | null; reminder?: boolean; requestToken?: string } = {},
+  options: {
+    emailOutboxQueued?: boolean;
+    programTitle?: string | null;
+    reminder?: boolean;
+    requestToken?: string;
+  } = {},
 ): Promise<boolean> {
   if (!activeReviewRequestStatuses.includes(asReviewRequestStatus(request.status))) {
     return false;
@@ -800,7 +888,7 @@ async function safeQueueReviewRequestNotification(
         requestCount: request.requestCount,
       },
     });
-    return false;
+    return options.emailOutboxQueued === true;
   }
 }
 

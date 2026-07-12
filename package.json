@@ -7,6 +7,9 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
+    "test:async-ops": "tsx --test tests/async-operations.test.ts",
+    "audit:async-ops": "node scripts/audit-async-operations.mjs",
+    "verify:ops-readiness": "node scripts/verify-ops-readiness-artifacts.mjs && npm run test:async-ops",
     "test:security": "node --test tests/browser-push-security.test.mjs tests/image-upload-security.test.mjs && tsx --test tests/content-security.test.ts tests/request-security.test.ts tests/security-boundaries.test.ts tests/server-error-diagnostics.test.ts",
     "test:e2e:release": "playwright test --config=playwright.release.config.ts",
     "test:e2e:release:headed": "playwright test --config=playwright.release.config.ts --headed",
@@ -48,6 +51,7 @@
     "web-push": "^3.6.7"
   },
   "devDependencies": {
+    "@electric-sql/pglite": "^0.5.4",
     "@playwright/test": "^1.61.1",
     "@tailwindcss/postcss": "^4",
     "@types/node": "^20",

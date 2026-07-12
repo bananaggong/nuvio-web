@@ -37,6 +37,7 @@ export function getBrowserPushPublicKey(): string {
 }
 
 export function isBrowserPushConfigured(): boolean {
+  if (isBrowserPushMockDelivery()) return true;
   return Boolean(getBrowserPushConfig());
 }
 
@@ -80,6 +81,13 @@ export async function sendBrowserPushNotification(
     return {
       message: "Browser push endpoint is not supported.",
       status: "failed",
+    };
+  }
+
+  if (isBrowserPushMockDelivery()) {
+    return {
+      message: "Mock browser push delivery completed.",
+      status: "sent",
     };
   }
 
@@ -131,6 +139,13 @@ export async function sendBrowserPushNotification(
       status: "failed",
     };
   }
+}
+
+function isBrowserPushMockDelivery(): boolean {
+  return (
+    process.env.WEB_PUSH_DELIVERY_MODE?.trim().toLowerCase() === "mock" &&
+    process.env.NODE_ENV !== "production"
+  );
 }
 
 function getBrowserPushConfig(): WebPushConfig | null {
