@@ -20,22 +20,6 @@ function getSafeSignupIntent(value: string | null): SignupIntent | null {
     : null;
 }
 
-function getInitialSignupParams() {
-  if (typeof window === "undefined") {
-    return {
-      intent: null,
-      nextPath: null,
-    };
-  }
-
-  const params = new URLSearchParams(window.location.search);
-
-  return {
-    intent: getSafeSignupIntent(params.get("intent")),
-    nextPath: getSafeNextPath(params.get("next")),
-  };
-}
-
 function getLoginPath(nextPath: string | null, intent: SignupIntent | null) {
   const params = new URLSearchParams();
   if (intent) params.set("intent", intent);
@@ -55,9 +39,18 @@ function getPostSignupPath(nextPath: string | null, intent: SignupIntent | null)
   return query ? `/onboarding?${query}` : "/onboarding";
 }
 
-export function SignupPanel() {
+export function SignupPanel({
+  intent,
+  nextPath,
+}: {
+  intent?: string | null;
+  nextPath?: string | null;
+}) {
   const router = useRouter();
-  const [initialParams] = useState(getInitialSignupParams);
+  const [initialParams] = useState(() => ({
+    intent: getSafeSignupIntent(intent ?? null),
+    nextPath: getSafeNextPath(nextPath ?? null),
+  }));
   const loginPath = getLoginPath(initialParams.nextPath, initialParams.intent);
   const [agreementsAccepted, setAgreementsAccepted] = useState(false);
   const [email, setEmail] = useState("");

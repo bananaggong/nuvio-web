@@ -128,6 +128,60 @@ test("stored HTML render sinks retain an explicit sanitizer boundary", () => {
   assert.match(boardStorage, /body = sanitizeMagazineHtml/u);
 });
 
+test("release-critical trigger fixes preserve application and review writes", () => {
+  const applicationStatusFix = read(
+    "supabase/migrations/20260712010000_fix_application_status_review_sync_config.sql",
+  );
+  const reviewVersionAuthorization = read(
+    "supabase/migrations/20260712011000_restore_review_content_version_trigger_authorization.sql",
+  );
+  const reviewMaintenanceDelete = read(
+    "supabase/migrations/20260712012000_restore_review_content_version_maintenance_delete.sql",
+  );
+
+  assert.match(applicationStatusFix, /new\.status::text/u);
+  assert.match(
+    reviewVersionAuthorization,
+    /set_config\('app\.review_audit_insert_allowed', 'true', true\)/u,
+  );
+  assert.match(
+    reviewMaintenanceDelete,
+    /current_setting\('app\.review_hard_delete_allowed', true\) = 'true'/u,
+  );
+});
+
+test("public persistence routes keep unexpected database details server-side", () => {
+  const applicationRoute = read("src/app/api/program-applications/route.ts");
+  const reviewRoute = read("src/app/api/reviews/route.ts");
+
+  assert.match(applicationRoute, /logServerPersistenceError/u);
+  assert.match(applicationRoute, /error: "Failed to create program application\."/u);
+  assert.match(
+    applicationRoute,
+    /error: "Failed to create program application\."[\s\S]*?status: 500/u,
+  );
+  assert.doesNotMatch(
+    applicationRoute,
+    /error instanceof Error\s*\?\s*error\.message\s*:\s*"Failed to create program application\."/u,
+  );
+  assert.match(reviewRoute, /logServerPersistenceError/u);
+  assert.match(reviewRoute, /error: "Failed to create review\."/u);
+  assert.match(reviewRoute, /error: "Failed to create review\."[\s\S]*?status: 500/u);
+  assert.match(reviewRoute, /error: "Failed to load reviews\."/u);
+});
+
+test("authentication failures keep provider and database details server-side", () => {
+  const apiSecurity = read("src/lib/api-security.ts");
+
+  assert.match(apiSecurity, /unstable_rethrow\(error\)/u);
+  assert.match(apiSecurity, /logServerPersistenceError\("API authentication failed\."/u);
+  assert.match(apiSecurity, /apiError\("Authentication is unavailable\.", 500\)/u);
+  assert.doesNotMatch(
+    apiSecurity,
+    /apiError\([\s\S]{0,120}error instanceof Error\s*\?\s*error\.message/u,
+  );
+});
+
 function read(path: string): string {
   return readFileSync(new URL(path, root), "utf8");
 }

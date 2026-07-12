@@ -1,6 +1,7 @@
 import { createHash } from "node:crypto";
 import type { User } from "@supabase/supabase-js";
 import { and, eq, isNull, sql } from "drizzle-orm";
+import { unstable_rethrow } from "next/navigation";
 import { NextResponse } from "next/server";
 import { getDb } from "@/db/client";
 import { apiRateLimits, hostVillageMemberships } from "@/db/schema";
@@ -11,6 +12,7 @@ import {
 } from "@/lib/auth-profile-db";
 import { getConfirmedAuthEmail } from "@/lib/auth-email";
 import { getLocalDevAuthContext } from "@/lib/local-dev-auth";
+import { logServerPersistenceError } from "@/lib/server-error-diagnostics";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 
 export type ApiRole = AuthProfile["role"];
@@ -105,11 +107,10 @@ export async function requireApiRole(
 
     return { profile, user };
   } catch (error) {
+    unstable_rethrow(error);
+    logServerPersistenceError("API authentication failed.", error);
     return {
-      response: apiError(
-        error instanceof Error ? error.message : "Authentication is unavailable.",
-        500,
-      ),
+      response: apiError("Authentication is unavailable.", 500),
     };
   }
 }

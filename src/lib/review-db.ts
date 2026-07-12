@@ -172,6 +172,13 @@ export function isReviewApplicationDuplicateDatabaseError(
   );
 }
 
+export class ReviewPayloadError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = "ReviewPayloadError";
+  }
+}
+
 const reviewCategories: ReviewCategory[] = [
   "programTip",
   "selected",
@@ -419,7 +426,14 @@ export async function createParticipantReview(
   input: ParticipantReviewInput,
   auth?: ApiAuthContext | null,
 ): Promise<HostReviewDraft> {
-  const normalized = normalizeParticipantReviewInput(input);
+  let normalized: NormalizedParticipantReviewInput;
+  try {
+    normalized = normalizeParticipantReviewInput(input);
+  } catch (error) {
+    throw new ReviewPayloadError(
+      error instanceof Error ? error.message : "Review payload is invalid.",
+    );
+  }
   let application: ParticipantApplicationRow | null = null;
   let actorId: string | undefined;
   let actorRole: string | undefined;
