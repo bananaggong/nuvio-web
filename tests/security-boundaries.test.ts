@@ -156,6 +156,18 @@ test("public persistence routes keep unexpected database details server-side", (
   assert.match(reviewRoute, /error: "Failed to load reviews\."/u);
 });
 
+test("authentication failures keep provider and database details server-side", () => {
+  const apiSecurity = read("src/lib/api-security.ts");
+
+  assert.match(apiSecurity, /unstable_rethrow\(error\)/u);
+  assert.match(apiSecurity, /logServerPersistenceError\("API authentication failed\."/u);
+  assert.match(apiSecurity, /apiError\("Authentication is unavailable\.", 500\)/u);
+  assert.doesNotMatch(
+    apiSecurity,
+    /apiError\([\s\S]{0,120}error instanceof Error\s*\?\s*error\.message/u,
+  );
+});
+
 function read(path: string): string {
   return readFileSync(new URL(path, root), "utf8");
 }
