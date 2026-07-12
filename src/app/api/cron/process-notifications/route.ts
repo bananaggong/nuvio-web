@@ -33,6 +33,7 @@ async function handleNotificationCron(request: Request) {
         headers: {
           "Cache-Control": "no-store",
         },
+        status: result.failed > 0 ? 500 : 200,
       },
     );
   } catch (error) {

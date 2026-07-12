@@ -6,9 +6,8 @@ import {
 import { processDueHostProgramRiskNotifications } from "@/lib/host-program-risk-notifications";
 import { processDueHostOperationReminderNotifications } from "@/lib/host-operation-reminder-notifications";
 import { processDueHostReportRiskNotifications } from "@/lib/host-report-risk-notifications";
-import { processPendingNotificationEvents } from "@/lib/notification-db";
 import { processDueProgramReminderNotifications } from "@/lib/program-reminder-notifications";
-import { processDueScheduledSmsMessages } from "@/lib/scheduled-message-db";
+import { runCronSteps } from "@/lib/cron-step-runner";
 
 export const runtime = "nodejs";
 export const maxDuration = 60;
@@ -29,40 +28,24 @@ async function handleReminderCron(request: Request) {
 
   try {
     const limit = readCronLimit(request, { defaultLimit: 100, maxLimit: 300 });
-    const [
-      programReminders,
-      hostOperationReminders,
-      hostProgramRisks,
-      hostReportRisks,
-    ] =
-      await Promise.all([
-        processDueProgramReminderNotifications({ limit }),
+    const result = await runCronSteps({
+      hostOperationReminders: () =>
         processDueHostOperationReminderNotifications({ limit }),
-        processDueHostProgramRiskNotifications({ limit }),
-        processDueHostReportRiskNotifications({ limit }),
-      ]);
-    const pendingNotifications = await processPendingNotificationEvents({
-      limit: Math.min(limit, 100),
-    });
-    const scheduledSmsMessages = await processDueScheduledSmsMessages({
-      limit: Math.min(limit, 100),
+      hostProgramRisks: () => processDueHostProgramRiskNotifications({ limit }),
+      hostReportRisks: () => processDueHostReportRiskNotifications({ limit }),
+      programReminders: () => processDueProgramReminderNotifications({ limit }),
     });
 
     return NextResponse.json(
       {
-        data: {
-          hostOperationReminders,
-          hostProgramRisks,
-          hostReportRisks,
-          pendingNotifications,
-          programReminders,
-          scheduledSmsMessages,
-        },
+        data: result.data,
+        errors: result.errors,
       },
       {
         headers: {
           "Cache-Control": "no-store",
         },
+        status: result.ok ? 200 : 500,
       },
     );
   } catch (error) {

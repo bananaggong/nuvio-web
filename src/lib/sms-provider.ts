@@ -14,12 +14,24 @@ export type SmsSendResult = {
   providerMessageId?: string;
 };
 
+export type SmsDeliveryReadiness = {
+  configured: boolean;
+  detail: string;
+  provider: string;
+  productionSafe: boolean;
+};
+
 const SMS_WEBHOOK_TIMEOUT_MS = 10_000;
 const SMS_WEBHOOK_MAX_ERROR_BYTES = 2048;
 const SMS_WEBHOOK_MAX_RESPONSE_BYTES = 16 * 1024;
 
 export async function sendSmsMessage(input: SmsSendInput): Promise<SmsSendResult> {
-  const provider = (process.env.SMS_PROVIDER ?? "mock").trim().toLowerCase();
+  const readiness = getSmsDeliveryReadiness();
+  const provider = readiness.provider;
+
+  if (!readiness.configured) {
+    throw new Error(readiness.detail);
+  }
 
   if (provider === "webhook") {
     return sendWebhookSms(input);
@@ -27,7 +39,42 @@ export async function sendSmsMessage(input: SmsSendInput): Promise<SmsSendResult
 
   return {
     provider: "mock",
-    providerMessageId: `mock-${Date.now()}`,
+    providerMessageId: `mock-${input.idempotencyKey ?? Date.now()}`,
+  };
+}
+
+export function getSmsDeliveryReadiness(): SmsDeliveryReadiness {
+  const provider = (process.env.SMS_PROVIDER ?? "mock").trim().toLowerCase();
+
+  if (provider === "webhook") {
+    const configured = Boolean(process.env.SMS_WEBHOOK_URL?.trim());
+    return {
+      configured,
+      detail: configured
+        ? "SMS webhook delivery is configured."
+        : "SMS_WEBHOOK_URL is required when SMS_PROVIDER=webhook.",
+      productionSafe: configured,
+      provider,
+    };
+  }
+
+  if (provider === "mock") {
+    const productionSafe = process.env.NODE_ENV !== "production";
+    return {
+      configured: productionSafe,
+      detail: productionSafe
+        ? "Mock SMS delivery is enabled for development."
+        : "Mock SMS delivery must not be used in production.",
+      productionSafe,
+      provider,
+    };
+  }
+
+  return {
+    configured: false,
+    detail: "Set SMS_PROVIDER to webhook or mock.",
+    productionSafe: false,
+    provider,
   };
 }
 

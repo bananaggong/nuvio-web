@@ -1324,6 +1324,13 @@ export const scheduledMessages = pgTable(
       .notNull(),
     scheduledFor: timestamp("scheduled_for", { withTimezone: true }),
     sentAt: timestamp("sent_at", { withTimezone: true }),
+    attemptCount: integer("attempt_count").default(0).notNull(),
+    maxAttempts: integer("max_attempts").default(5).notNull(),
+    lastAttemptAt: timestamp("last_attempt_at", { withTimezone: true }),
+    nextAttemptAt: timestamp("next_attempt_at", { withTimezone: true }),
+    providerMessageId: text("provider_message_id"),
+    claimToken: uuid("claim_token"),
+    claimedAt: timestamp("claimed_at", { withTimezone: true }),
     error: text("error"),
     createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
     updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
@@ -1331,6 +1338,11 @@ export const scheduledMessages = pgTable(
   (table) => [
     index("scheduled_messages_application_id_idx").on(table.applicationId),
     index("scheduled_messages_delivery_status_idx").on(table.deliveryStatus),
+    index("scheduled_messages_delivery_due_idx").on(
+      table.deliveryStatus,
+      table.nextAttemptAt,
+      table.scheduledFor,
+    ),
   ],
 );
 
@@ -1546,6 +1558,8 @@ export const notificationEvents = pgTable(
     lastAttemptAt: timestamp("last_attempt_at", { withTimezone: true }),
     nextAttemptAt: timestamp("next_attempt_at", { withTimezone: true }),
     providerMessageId: text("provider_message_id"),
+    claimToken: uuid("claim_token"),
+    claimedAt: timestamp("claimed_at", { withTimezone: true }),
     error: text("error"),
     createdAt: timestamp("created_at", { withTimezone: true })
       .defaultNow()
