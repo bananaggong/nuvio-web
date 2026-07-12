@@ -14,7 +14,7 @@
       "schedule": "15 0 * * *"
     },
     {
-      "path": "/api/cron/refresh-announcements",
+      "path": "/api/cron/process-scheduled-messages",
       "schedule": "0 18 * * *"
     }
   ]

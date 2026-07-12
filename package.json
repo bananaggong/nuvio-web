@@ -35,7 +35,6 @@
     "@types/sanitize-html": "^2.16.1",
     "@types/web-push": "^3.6.4",
     "drizzle-orm": "^0.45.2",
-    "fast-xml-parser": "^5.7.2",
     "lucide-react": "^1.14.0",
     "next": "16.2.10",
     "postgres": "^3.4.9",

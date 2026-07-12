@@ -1,7 +1,6 @@
 import { and, desc, eq, isNotNull, notInArray, or, type SQL } from "drizzle-orm";
 import { getDb } from "@/db/client";
 import { programs as programsTable } from "@/db/schema";
-import { getCrawledProgramByIdentifier } from "@/lib/crawled-programs";
 import { getProgramById, programs as seedPrograms } from "@/lib/data";
 import { isDemoModeEnabled } from "@/lib/demo-mode";
 import {
@@ -66,13 +65,6 @@ export async function getPublicProgramByIdentifier(
       .limit(1);
 
     if (row) return mapProgramRowToProgram(row);
-  } catch {
-    // Continue to crawled and optional demo fallback.
-  }
-
-  try {
-    const crawledProgram = await getCrawledProgramByIdentifier(key);
-    if (crawledProgram) return crawledProgram;
   } catch {
     // Continue to optional demo fallback.
   }

@@ -3,7 +3,7 @@
 Updated: 2026-07-11
 
 This checklist is the source of truth for the responsive pass. It was generated
-from the 94 current `src/app/**/page.tsx` entries after legacy static aliases
+from the 90 current `src/app/**/page.tsx` entries after legacy static aliases
 were moved to `next.config.ts` redirects.
 
 ## Shared shells
@@ -15,7 +15,7 @@ were moved to `next.config.ts` redirects.
 | Channel microsite | Public channel routes | `AppShell` chrome hidden, `VillageSiteHeader`/`VillageSiteFooter` or channel guest chrome |
 | Mypage | `/mypage/*`, support | Public chrome plus `Mypage`/`MypageFrame` |
 | Host console | `/host/*` | `OpsConsoleShell`, host workspace/sidebar components |
-| Admin console | `/admin/*` | `OpsConsoleShell`, admin panels |
+| Admin console | `/admin/magazine/*` | `OpsConsoleShell`, magazine editor/list |
 
 Status values: `pass-1` completed responsive implementation and route-specific
 checks, `bridge` is a redirect/compatibility route, `deferred` is intentionally
@@ -132,15 +132,11 @@ public and Mypage functional groups; the total unique page count remains 94.
 | `/host/programs/[programId]/applications` | Host console | `HostApplicationsCrm` | pass-1/auth |
 | `/host/programs/[programId]/applications/[applicationId]` | Host console | `HostApplicationDetail` | pass-1/auth |
 
-## Admin routes (8)
+## Admin routes (4)
 
 | Route | Shell | Primary implementation | Status |
 | --- | --- | --- | --- |
-| `/admin` | Admin console | `AdminDashboard` | pass-1/auth |
-| `/admin/reports` | Admin console | `AdminReportReview` | pass-1/auth |
-| `/admin/logs` | Admin console | `AdminAuditLogPanel` | pass-1/auth |
-| `/admin/implementation` | Admin console | implementation status page | pass-1/auth |
-| `/admin/health` | Admin console | `AdminSystemHealthPanel` | pass-1/auth |
+| `/admin` | Admin console | redirect to `/admin/magazine` | bridge/auth |
 | `/admin/magazine` | Admin console | `AdminMagazineList` | pass-1/auth |
 | `/admin/magazine/new` | Admin console | `AdminMagazineEditor` | pass-1/auth |
 | `/admin/magazine/[id]/edit` | Admin console | `AdminMagazineEditor` | pass-1/auth |

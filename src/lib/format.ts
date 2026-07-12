@@ -79,9 +79,5 @@ export function getStatusTone(status: ProgramStatus): string {
 }
 
 export function getProgramStatusText(program: Program): string {
-  if (program.dataSource === "external" && program.status === "upcoming") {
-    return "원문 확인";
-  }
-
   return statusLabels[program.status];
 }

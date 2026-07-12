@@ -1,4 +1,3 @@
-import { desc } from "drizzle-orm";
 import { getDb } from "@/db/client";
 import { partnerSubmissions } from "@/db/schema";
 
@@ -43,16 +42,6 @@ export async function createPartnerSubmission(
     .returning();
 
   return mapPartnerSubmissionRow(row);
-}
-
-export async function listPartnerSubmissions(): Promise<PartnerSubmissionRecord[]> {
-  const rows = await getDb()
-    .select()
-    .from(partnerSubmissions)
-    .orderBy(desc(partnerSubmissions.createdAt))
-    .limit(200);
-
-  return rows.map(mapPartnerSubmissionRow);
 }
 
 export function normalizePartnerSubmissionInput(

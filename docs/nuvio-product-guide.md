@@ -150,7 +150,7 @@ Last updated: 2026-05-25
 | `saved_programs` | DB 테이블명 |
 | `village`, `village_page_sections` | 기존 로컬페이지 모델과 CMS 테이블명 |
 | `projectId`, `/host/projects`, `report_projects` | 호스트 폴더 기능의 기존 라우트/DB 호환성 |
-| 참가자, 참여자 | 외부 공고 크롤링 키워드 또는 원문 후기 인용문 |
+| 참가자, 참여자 | 공식 공지 또는 원문 후기 인용문 |
 | 운영자 | 법무 문서에서 서비스 운영 주체를 뜻하는 경우 |
 
 ## Copy Style

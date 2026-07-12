@@ -86,6 +86,20 @@ test("external dispatch and notification jobs are idempotent and literal", () =>
   assert.match(scheduledMessages, /idempotencyKey: row\.id/u);
 });
 
+test("external announcement ingestion is removed without dropping scheduled messages", () => {
+  const schema = read("src/db/schema.ts");
+  const migration = read(
+    "supabase/migrations/20260712000000_remove_external_announcement_pipeline.sql",
+  );
+  const vercel = read("vercel.json");
+
+  assert.doesNotMatch(schema, /externalAnnouncementSources|programLeads/u);
+  assert.match(migration, /drop table if exists public\.external_announcements/u);
+  assert.match(migration, /drop table if exists public\.program_leads/u);
+  assert.doesNotMatch(vercel, /refresh-announcements/u);
+  assert.match(vercel, /process-scheduled-messages/u);
+});
+
 test("API JSON bodies are parsed through the bounded helper", () => {
   const routeFiles = [
     "src/app/api/program-applications/route.ts",

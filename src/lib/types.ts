@@ -89,9 +89,7 @@ export type Program = {
   itineraryDays?: ProgramItineraryDay[];
   placeInfo?: ProgramPlaceInfo;
   guideInfo?: ProgramGuideInfo;
-  dataSource?: "database" | "external" | "seed";
-  sourcePublishedAt?: string;
-  sourceFetchedAt?: string;
+  dataSource?: "database" | "seed";
 };
 
 export type ReviewCategory =
@@ -141,34 +139,6 @@ export type Announcement = {
   date: string;
   programId?: number;
   body: string;
-};
-
-export type LiveAnnouncement = Omit<Announcement, "id"> & {
-  id: string;
-  internalId?: number;
-  sourceId?: string;
-  sourceName: string;
-  sourceUrl?: string;
-  isExternal: boolean;
-  relevance: number;
-  fetchedAt?: string;
-};
-
-export type ProgramLead = {
-  id: string;
-  title: string;
-  summary: string;
-  sourceAnnouncementId: string;
-  sourceName: string;
-  sourceUrl?: string;
-  publishedAt: string;
-  confidence: "high" | "medium" | "low";
-  score: number;
-  suggestedRegion?: string;
-  suggestedThemes: ThemeKey[];
-  suggestedStatus: ProgramStatus;
-  reasons: string[];
-  status?: "new" | "approved" | "rejected" | "draftCreated";
 };
 
 export type VillageMediaCategory = "original" | "broadcast" | "archive";

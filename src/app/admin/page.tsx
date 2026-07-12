@@ -1,10 +1,5 @@
-import type { Metadata } from "next";
-import { AdminDashboard } from "@/components/admin-dashboard";
-
-export const metadata: Metadata = {
-  title: "관리자 콘솔",
-};
+import { redirect } from "next/navigation";
 
 export default function AdminPage() {
-  return <AdminDashboard />;
+  redirect("/admin/magazine");
 }

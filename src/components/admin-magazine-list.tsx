@@ -146,9 +146,43 @@ export function AdminMagazineList() {
             아직 작성된 소식지 글이 없습니다.
           </div>
         ) : (
-          <div className="overflow-x-auto">
+          <>
+            <div className="divide-y divide-slate-100 md:hidden">
+              {posts.map((post) => (
+                <article className="p-5" key={post.id}>
+                  <div className="flex flex-wrap items-center gap-2">
+                    <span
+                      className={`inline-flex rounded-md px-2 py-1 text-xs font-black ring-1 ${statusClasses[post.status]}`}
+                    >
+                      {statusLabels[post.status]}
+                    </span>
+                    <span className="text-xs font-bold text-slate-500">
+                      {getMagazineCategoryLabel(post.category)}
+                    </span>
+                  </div>
+                  <h3 className="mt-3 text-base font-black leading-6 text-slate-950">
+                    {post.title}
+                  </h3>
+                  <p className="mt-1 line-clamp-1 text-xs font-bold text-slate-500">
+                    /magazine/{post.slug}
+                  </p>
+                  <div className="mt-4 flex items-center justify-between gap-3">
+                    <time className="text-xs font-bold text-slate-500">
+                      {new Date(post.updatedAt).toLocaleString("ko-KR")}
+                    </time>
+                    <PostActions
+                      archiving={archivingId === post.id}
+                      onArchive={() => void archivePost(post)}
+                      post={post}
+                    />
+                  </div>
+                </article>
+              ))}
+            </div>
+
+            <div className="hidden overflow-x-auto md:block">
             <table className="w-full min-w-[760px] text-left text-sm">
-              <thead className="bg-slate-50 text-xs font-black uppercase tracking-[0.08em] text-slate-500">
+              <thead className="bg-slate-50 text-xs font-black text-slate-500">
                 <tr>
                   <th className="px-5 py-3">글</th>
                   <th className="px-5 py-3">상태</th>
@@ -180,48 +214,70 @@ export function AdminMagazineList() {
                       {new Date(post.updatedAt).toLocaleString("ko-KR")}
                     </td>
                     <td className="px-5 py-4">
-                      <div className="flex justify-end gap-2">
-                        {post.status === "published" ? (
-                          <Link
-                            className="inline-flex size-11 items-center justify-center rounded-md border border-slate-200 text-slate-700 hover:border-[var(--primary)] hover:text-[var(--primary)]"
-                            href={`/magazine/${post.slug}`}
-                            target="_blank"
-                            title="공개 글 보기"
-                          >
-                            <Eye size={16} />
-                          </Link>
-                        ) : null}
-                        <Link
-                          className="inline-flex size-11 items-center justify-center rounded-md border border-slate-200 text-slate-700 hover:border-[var(--primary)] hover:text-[var(--primary)]"
-                          href={`/admin/magazine/${post.id}/edit`}
-                          title="수정"
-                        >
-                          <Edit3 size={16} />
-                        </Link>
-                        {post.status !== "archived" ? (
-                          <button
-                            className="inline-flex size-11 items-center justify-center rounded-md border border-slate-200 text-slate-700 hover:border-rose-300 hover:text-rose-600 disabled:opacity-50"
-                            disabled={archivingId === post.id}
-                            onClick={() => void archivePost(post)}
-                            title="보관"
-                            type="button"
-                          >
-                            {archivingId === post.id ? (
-                              <Loader2 className="animate-spin" size={16} />
-                            ) : (
-                              <Archive size={16} />
-                            )}
-                          </button>
-                        ) : null}
-                      </div>
+                      <PostActions
+                        archiving={archivingId === post.id}
+                        onArchive={() => void archivePost(post)}
+                        post={post}
+                      />
                     </td>
                   </tr>
                 ))}
               </tbody>
             </table>
-          </div>
+            </div>
+          </>
         )}
       </section>
+    </div>
+  );
+}
+
+function PostActions({
+  archiving,
+  onArchive,
+  post,
+}: {
+  archiving: boolean;
+  onArchive: () => void;
+  post: MagazinePost;
+}) {
+  return (
+    <div className="flex shrink-0 justify-end gap-2">
+      {post.status === "published" ? (
+        <Link
+          aria-label="공개 글 보기"
+          className="inline-flex size-11 items-center justify-center rounded-md border border-slate-200 text-slate-700 hover:border-[var(--primary)] hover:text-[var(--primary)]"
+          href={`/magazine/${post.slug}`}
+          target="_blank"
+          title="공개 글 보기"
+        >
+          <Eye size={16} />
+        </Link>
+      ) : null}
+      <Link
+        aria-label="수정"
+        className="inline-flex size-11 items-center justify-center rounded-md border border-slate-200 text-slate-700 hover:border-[var(--primary)] hover:text-[var(--primary)]"
+        href={`/admin/magazine/${post.id}/edit`}
+        title="수정"
+      >
+        <Edit3 size={16} />
+      </Link>
+      {post.status !== "archived" ? (
+        <button
+          aria-label="보관"
+          className="inline-flex size-11 items-center justify-center rounded-md border border-slate-200 text-slate-700 hover:border-rose-300 hover:text-rose-600 disabled:opacity-50"
+          disabled={archiving}
+          onClick={onArchive}
+          title="보관"
+          type="button"
+        >
+          {archiving ? (
+            <Loader2 className="animate-spin" size={16} />
+          ) : (
+            <Archive size={16} />
+          )}
+        </button>
+      ) : null}
     </div>
   );
 }

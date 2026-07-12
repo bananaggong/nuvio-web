@@ -37,7 +37,7 @@ export type LoginPanelInitialParams = {
 const socialOrder: SocialProviderKey[] = ["kakao", "naver", "google"];
 
 function getRoleLandingPath(role?: ProfileRole): string {
-  if (role === "admin") return "/admin";
+  if (role === "admin") return "/admin/magazine";
   if (role === "partner") return "/host";
   return "/mypage";
 }

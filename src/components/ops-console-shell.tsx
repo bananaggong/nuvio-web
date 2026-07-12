@@ -5,7 +5,6 @@ import Link from "next/link";
 import { usePathname, useSearchParams } from "next/navigation";
 import {
   BarChart3,
-  Calendar,
   ChevronDown,
   ChevronRight,
   ClipboardList,
@@ -81,45 +80,6 @@ const navigationByArea: Record<ConsoleArea, NavigationItem[]> = {
   ],
   admin: [
     {
-      name: "대시보드",
-      href: "/admin",
-      icon: Home,
-      children: [],
-    },
-    {
-      name: "캘린더",
-      href: "/admin",
-      icon: Calendar,
-      children: [],
-    },
-    {
-      name: "프로그램",
-      href: "/host?status=open",
-      icon: FolderOpen,
-      children: [
-        { name: "프로그램 검수", href: "/host?status=open" },
-        { name: "공고 피드", href: "/announcements" },
-      ],
-    },
-    {
-      name: "회원",
-      href: "/host/applications",
-      icon: Users,
-      children: [
-        { name: "신청자 CRM", href: "/host/applications" },
-        { name: "운영 문의", href: "/partners/apply" },
-      ],
-    },
-    {
-      name: "운영 검토",
-      href: "/admin/reports",
-      icon: BarChart3,
-      children: [
-        { name: "마감 검토", href: "/admin/reports" },
-        { name: "구현 현황", href: "/admin/implementation" },
-      ],
-    },
-    {
       name: "소식지",
       href: "/admin/magazine",
       icon: FilePlus2,
@@ -128,36 +88,17 @@ const navigationByArea: Record<ConsoleArea, NavigationItem[]> = {
         { name: "새 글 작성", href: "/admin/magazine/new" },
       ],
     },
-    {
-      name: "채널 관리",
-      href: "/host/channels/settings",
-      icon: Settings,
-      children: [
-        { name: "호스트센터", href: "/host" },
-        { name: "공개 홈", href: "/" },
-      ],
-    },
-    {
-      name: "관리자 전용",
-      href: "/admin/implementation",
-      icon: Settings,
-      children: [
-        { name: "PRD 구현 현황", href: "/admin/implementation" },
-        { name: "감사 로그", href: "/admin/logs" },
-        { name: "시스템 상태", href: "/admin/health" },
-      ],
-    },
   ],
 };
 
 const titleByArea: Record<ConsoleArea, string> = {
   host: "호스트센터",
-  admin: "관리자 운영",
+  admin: "소식지 관리",
 };
 
 const headerTitleByArea: Record<ConsoleArea, string> = {
   host: "호스트센터",
-  admin: "관리자 운영",
+  admin: "소식지 관리",
 };
 
 export function OpsConsoleShell({
@@ -249,7 +190,7 @@ function Header({
           </button>
           <Link
             className="flex min-h-11 items-center gap-3 text-sm font-black text-[#5B3A29] hover:text-[#FE701E]"
-            href={area === "host" ? "/host" : "/admin"}
+            href={area === "host" ? "/host" : "/admin/magazine"}
           >
             <Image
               alt="누비오"
@@ -265,21 +206,25 @@ function Header({
           </Link>
         </div>
 
-        <div className="hidden max-w-md flex-1 md:block">
-          <label className="relative block">
-            <Search className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-[#FF9A3D]" />
-            <input
-              className="w-full rounded-full border border-[#F3C3A5] bg-[#FFFDFB] py-2 pl-10 pr-4 text-sm font-semibold text-[#5B3A29] outline-none placeholder:text-[#A59A92] focus:border-[#FE701E] focus:ring-2 focus:ring-[#FE701E]/10"
-              placeholder="프로그램, 문의, 양식 검색..."
-              type="text"
-            />
-          </label>
-        </div>
+        {area === "host" ? (
+          <div className="hidden max-w-md flex-1 md:block">
+            <label className="relative block">
+              <Search className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-[#FF9A3D]" />
+              <input
+                className="w-full rounded-full border border-[#F3C3A5] bg-[#FFFDFB] py-2 pl-10 pr-4 text-sm font-semibold text-[#5B3A29] outline-none placeholder:text-[#A59A92] focus:border-[#FE701E] focus:ring-2 focus:ring-[#FE701E]/10"
+                placeholder="프로그램, 문의, 양식 검색..."
+                type="text"
+              />
+            </label>
+          </div>
+        ) : (
+          <div className="flex-1" />
+        )}
 
         <div className="flex min-w-fit items-center gap-2">
           <Link
             className="hidden rounded-md px-3 py-2 text-sm font-bold text-[#5B3A29] hover:bg-[#FFF6EC] hover:text-[#FE701E] lg:inline-flex"
-            href={area === "host" ? "/admin" : "/host"}
+            href={area === "host" ? "/admin/magazine" : "/host"}
           >
             {area === "host" ? "관리자 페이지" : "호스트센터"}
           </Link>
@@ -346,7 +291,10 @@ function SidebarContent({
   return (
     <div className="flex h-full flex-col overflow-y-auto pt-5">
       <div className="flex shrink-0 items-center px-4">
-        <Link className="flex min-w-0 items-center gap-3" href={area === "host" ? "/host" : "/admin"}>
+        <Link
+          className="flex min-w-0 items-center gap-3"
+          href={area === "host" ? "/host" : "/admin/magazine"}
+        >
           <Image
             alt="누비오"
             className="h-[30px] w-auto shrink-0"

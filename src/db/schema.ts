@@ -83,19 +83,6 @@ export const villageMediaCategoryEnum = pgEnum("village_media_category", [
   "broadcast",
   "archive",
 ]);
-export const sourceTypeEnum = pgEnum("external_source_type", ["rss"]);
-export const leadConfidenceEnum = pgEnum("lead_confidence", [
-  "high",
-  "medium",
-  "low",
-]);
-export const leadStatusEnum = pgEnum("lead_status", [
-  "new",
-  "approved",
-  "rejected",
-  "draftCreated",
-]);
-export const leadDecisionEnum = pgEnum("lead_decision", ["approved", "rejected"]);
 export const partnerSubmissionStatusEnum = pgEnum("partner_submission_status", [
   "submitted",
   "reviewing",
@@ -385,47 +372,6 @@ export const homepageHeroSlides = pgTable(
   ],
 );
 
-export const externalAnnouncementSources = pgTable("external_announcement_sources", {
-  id: text("id").primaryKey(),
-  name: text("name").notNull(),
-  type: sourceTypeEnum("type").default("rss").notNull(),
-  url: text("url").notNull(),
-  enabled: boolean("enabled").default(true).notNull(),
-  keywords: jsonb("keywords").$type<string[]>().default(emptyArray).notNull(),
-  minimumKeywordMatches: integer("minimum_keyword_matches").default(0).notNull(),
-  notes: text("notes"),
-  lastFetchedAt: timestamp("last_fetched_at", { withTimezone: true }),
-  lastError: text("last_error"),
-  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
-  updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
-});
-
-export const externalAnnouncements = pgTable(
-  "external_announcements",
-  {
-    id: text("id").primaryKey(),
-    sourceId: text("source_id").references(() => externalAnnouncementSources.id, {
-      onDelete: "cascade",
-    }),
-    title: text("title").notNull(),
-    body: text("body").notNull(),
-    type: announcementTypeEnum("type").$type<AnnouncementType>().notNull(),
-    sourceUrl: text("source_url").notNull(),
-    publishedAt: timestamp("published_at", { withTimezone: true }).notNull(),
-    relevance: integer("relevance").default(0).notNull(),
-    raw: jsonb("raw").$type<Record<string, unknown>>().default(emptyObject).notNull(),
-    fetchedAt: timestamp("fetched_at", { withTimezone: true }).defaultNow().notNull(),
-    createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
-  },
-  (table) => [
-    uniqueIndex("external_announcements_source_url_idx").on(
-      table.sourceId,
-      table.sourceUrl,
-    ),
-    index("external_announcements_published_at_idx").on(table.publishedAt),
-  ],
-);
-
 export const announcements = pgTable(
   "announcements",
   {
@@ -438,12 +384,6 @@ export const announcements = pgTable(
     programId: uuid("program_id").references(() => programs.id, {
       onDelete: "set null",
     }),
-    sourceId: text("source_id"),
-    sourceName: text("source_name").default("누비오").notNull(),
-    sourceUrl: text("source_url"),
-    isExternal: boolean("is_external").default(false).notNull(),
-    relevance: integer("relevance").default(0).notNull(),
-    fetchedAt: timestamp("fetched_at", { withTimezone: true }),
     createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
     updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
   },
@@ -485,51 +425,6 @@ export const magazinePosts = pgTable(
     index("magazine_posts_category_idx").on(table.category),
     index("magazine_posts_author_id_idx").on(table.authorId),
   ],
-);
-
-export const programLeads = pgTable(
-  "program_leads",
-  {
-    id: uuid("id").defaultRandom().primaryKey(),
-    sourceAnnouncementId: text("source_announcement_id").references(
-      () => externalAnnouncements.id,
-      { onDelete: "set null" },
-    ),
-    title: text("title").notNull(),
-    summary: text("summary").notNull(),
-    sourceName: text("source_name").notNull(),
-    sourceUrl: text("source_url"),
-    publishedAt: timestamp("published_at", { withTimezone: true }).notNull(),
-    confidence: leadConfidenceEnum("confidence").default("low").notNull(),
-    score: integer("score").default(0).notNull(),
-    suggestedRegion: text("suggested_region"),
-    suggestedThemes: jsonb("suggested_themes").$type<ThemeKey[]>().default(emptyArray).notNull(),
-    suggestedStatus: programStatusEnum("suggested_status").$type<ProgramStatus>().notNull(),
-    reasons: jsonb("reasons").$type<string[]>().default(emptyArray).notNull(),
-    status: leadStatusEnum("status").default("new").notNull(),
-    createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
-    updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
-  },
-  (table) => [
-    uniqueIndex("program_leads_source_announcement_idx").on(table.sourceAnnouncementId),
-    index("program_leads_status_idx").on(table.status),
-    index("program_leads_score_idx").on(table.score),
-  ],
-);
-
-export const programLeadDecisions = pgTable(
-  "program_lead_decisions",
-  {
-    id: uuid("id").defaultRandom().primaryKey(),
-    leadId: uuid("lead_id")
-      .references(() => programLeads.id, { onDelete: "cascade" })
-      .notNull(),
-    decision: leadDecisionEnum("decision").notNull(),
-    note: text("note"),
-    decidedBy: uuid("decided_by"),
-    createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
-  },
-  (table) => [uniqueIndex("program_lead_decisions_lead_id_idx").on(table.leadId)],
 );
 
 export const reviews = pgTable(

@@ -17,7 +17,9 @@ export default async function AdminLayout({
 }>) {
   const auth = await requireAdminRole();
   if (isApiAuthError(auth)) {
-    redirect(auth.response.status === 401 ? "/login?next=/admin" : "/");
+    redirect(
+      auth.response.status === 401 ? "/login?next=/admin/magazine" : "/",
+    );
   }
 
   return (

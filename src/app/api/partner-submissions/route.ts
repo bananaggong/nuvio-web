@@ -1,46 +1,15 @@
 import { NextResponse } from "next/server";
 import {
   applyPersistentRateLimit,
-  applyRateLimit,
   enforceSameOrigin,
-  isApiAuthError,
   readJsonWithLimit,
-  requireAdminRole,
 } from "@/lib/api-security";
 import {
   createPartnerSubmission,
-  listPartnerSubmissions,
   normalizePartnerSubmissionInput,
 } from "@/lib/partner-submission-db";
 
 export const runtime = "nodejs";
-
-export async function GET(request: Request) {
-  const auth = await requireAdminRole();
-  if (isApiAuthError(auth)) return auth.response;
-
-  const limited = applyRateLimit(request, {
-    key: "admin-partner-submissions:list",
-    limit: 90,
-    windowMs: 15 * 60 * 1000,
-  });
-  if (limited) return limited;
-
-  try {
-    const submissions = await listPartnerSubmissions();
-    return NextResponse.json({ data: submissions });
-  } catch (error) {
-    return NextResponse.json(
-      {
-        error:
-          error instanceof Error
-            ? error.message
-            : "Failed to load partner submissions.",
-      },
-      { status: 500 },
-    );
-  }
-}
 
 export async function POST(request: Request) {
   const crossOrigin = enforceSameOrigin(request);
