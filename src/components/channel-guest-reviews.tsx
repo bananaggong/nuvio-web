@@ -1,10 +1,12 @@
 "use client";
 
 import Image from "next/image";
-import { ChevronDown, ChevronLeft, ChevronRight, Star } from "lucide-react";
+import { ChevronDown, ChevronLeft, ChevronRight } from "lucide-react";
 import { useMemo, useState, type CSSProperties, type ReactNode } from "react";
 import { ChannelGuestProfileHeader } from "@/components/channel-guest-profile-header";
 import { channelGuestScaleRootStyle, px } from "@/components/channel-guest-shared";
+import { ChannelReviewBody } from "@/components/channel-review-body";
+import { ReviewIcon } from "@/components/icons/review-icon";
 import { NuvioEmptyState } from "@/components/nuvio-empty-state";
 import { channelPath } from "@/lib/channel-routing";
 import type { Program, Review } from "@/lib/types";
@@ -153,11 +155,7 @@ function ReviewToolbar({
         <span>{String(reviewCount).padStart(2, "0")}개</span>
         <span>/</span>
         <span>평균</span>
-        <Star
-          aria-hidden="true"
-          className="fill-[#FE701E] text-[#FE701E]"
-          style={{ height: px(13), width: px(13) }}
-        />
+        <ReviewIcon className="text-[#FE701E]" size={px(13)} />
         <span>{averageRating}</span>
       </div>
 
@@ -343,12 +341,7 @@ function RatingChoice({
       </span>
       <span className="flex items-center" style={{ gap: px(2) }}>
         {Array.from({ length: rating }, (_, index) => (
-          <Star
-            aria-hidden="true"
-            className="fill-[#FE701E] text-[#FE701E]"
-            key={index}
-            style={{ height: px(9), width: px(9) }}
-          />
+          <ReviewIcon className="text-[#FE701E]" key={index} size={px(9)} />
         ))}
       </span>
     </button>
@@ -397,11 +390,7 @@ function ReviewCard({ review }: { review: ReviewCardModel }) {
           {review.programTitle}
         </p>
         <div className="flex min-w-0 flex-1 items-center" style={{ gap: px(2) }}>
-          <Star
-            aria-hidden="true"
-            className="fill-[#FE701E] text-[#FE701E]"
-            style={{ height: px(9), width: px(9) }}
-          />
+          <ReviewIcon className="text-[#FE701E]" size={px(9)} />
           <p className="text-[#FE701E]" style={{ fontSize: px(12), fontWeight: 400, lineHeight: 1.6 }}>
             {review.rating.toFixed(1)}
           </p>
@@ -415,46 +404,25 @@ function ReviewCard({ review }: { review: ReviewCardModel }) {
         </time>
       </div>
 
-      <details
-        className="channel-review-body group text-[#0D0D0C]"
+      <ChannelReviewBody
+        body={review.body}
+        className="channel-review-body text-[#0D0D0C]"
+        contentClassName="channel-review-body-text whitespace-pre-wrap"
+        contentStyle={{ fontSize: px(12), fontWeight: 400, lineHeight: 1.6, width: px(759) }}
+        toggleClassName="flex w-full items-center justify-end text-[#6D7A8A]"
+        toggleIconSize={px(9)}
+        toggleStyle={{
+          fontSize: px(12),
+          fontWeight: 400,
+          gap: px(3),
+          lineHeight: 1.6,
+          paddingBottom: review.images.length > 0 ? px(12) : 0,
+        }}
         style={{
           padding: `${px(8)} ${px(8)} 0`,
           width: px(775),
         }}
-      >
-        <summary
-          className="cursor-pointer list-none [&::-webkit-details-marker]:hidden"
-        >
-          <p
-            className="channel-review-body-text line-clamp-4 whitespace-pre-wrap group-open:hidden"
-            style={{ fontSize: px(12), fontWeight: 400, lineHeight: 1.6, width: px(759) }}
-          >
-            {review.body}
-          </p>
-          <span
-            className="flex w-full items-center justify-end text-[#6D7A8A]"
-            style={{
-              gap: px(3),
-              paddingBottom: review.images.length > 0 ? px(12) : 0,
-            }}
-          >
-            <span style={{ fontSize: px(12), fontWeight: 400, lineHeight: 1.6 }}>
-              펼치기
-            </span>
-            <ChevronDown
-              aria-hidden="true"
-              className="transition-transform group-open:rotate-180"
-              style={{ height: px(9), width: px(9) }}
-            />
-          </span>
-        </summary>
-        <p
-          className="channel-review-body-text whitespace-pre-wrap"
-          style={{ fontSize: px(12), fontWeight: 400, lineHeight: 1.6, width: px(759) }}
-        >
-          {review.body}
-        </p>
-      </details>
+      />
 
       {review.images.length > 0 ? (
         <div

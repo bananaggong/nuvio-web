@@ -4,6 +4,11 @@ import type { User } from "@supabase/supabase-js";
 import { enforceSameOrigin } from "@/lib/api-security";
 import { getConfirmedAuthEmail } from "@/lib/auth-email";
 import {
+  getLoginErrorMessage,
+  getOAuthLoginErrorCode,
+} from "@/lib/auth-errors";
+import { createSocialProviders } from "@/lib/auth-providers";
+import {
   isSafeRelativePath,
   trySanitizeHttpUrl,
   trySanitizePublicImageUrl,
@@ -59,5 +64,45 @@ test("only confirmed Supabase email claims can activate invitations", () => {
       email_confirmed_at: new Date(0).toISOString(),
     }),
     "user@example.com",
+  );
+});
+
+test("OAuth callback errors recover through stable login messages", () => {
+  assert.equal(
+    getOAuthLoginErrorCode({
+      error: "invalid_request",
+      errorCode: "bad_oauth_state",
+    }),
+    "oauth_state",
+  );
+  assert.equal(
+    getOAuthLoginErrorCode({ error: "access_denied" }),
+    "oauth_cancelled",
+  );
+  assert.equal(
+    getOAuthLoginErrorCode({ error: "server_error" }),
+    "auth_callback",
+  );
+  assert.equal(getOAuthLoginErrorCode({}), null);
+  assert.match(getLoginErrorMessage("oauth_state"), /다시 로그인/u);
+  assert.equal(getLoginErrorMessage(undefined), "");
+  assert.doesNotMatch(
+    getLoginErrorMessage("<script>alert(1)</script>"),
+    /script/u,
+  );
+});
+
+test("optional social providers stay hidden until explicitly configured", () => {
+  assert.deepEqual(
+    createSocialProviders(undefined).map(({ key }) => key),
+    ["google", "kakao"],
+  );
+  assert.deepEqual(
+    createSocialProviders("custom:naver").map(({ key }) => key),
+    ["google", "kakao", "naver"],
+  );
+  assert.deepEqual(
+    createSocialProviders("naver").map(({ key }) => key),
+    ["google", "kakao"],
   );
 });

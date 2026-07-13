@@ -3,6 +3,7 @@ import {
   LoginPanel,
   type LoginIntent,
 } from "@/components/login-panel";
+import { getLoginErrorMessage } from "@/lib/auth-errors";
 import { createSeoMetadata } from "@/lib/seo";
 import { isSafeRelativePath } from "@/lib/url-security";
 
@@ -22,7 +23,7 @@ export default async function LoginPage({ searchParams }: LoginPageProps) {
   return (
     <LoginPanel
       initialParams={{
-        errorMessage: params.error ? "소셜 로그인 처리 중 문제가 발생했습니다." : "",
+        errorMessage: getLoginErrorMessage(getFirstParam(params.error)),
         intent: normalizeIntent(getFirstParam(params.intent)),
         mode: getFirstParam(params.mode) === "email" ? "email" : "choice",
         nextPath: getSafeNextPath(getFirstParam(params.next)),

@@ -35,6 +35,9 @@ export type LoginPanelInitialParams = {
 };
 
 const socialOrder: SocialProviderKey[] = ["kakao", "naver", "google"];
+const availableSocialProviderKeys = socialOrder.filter((providerKey) =>
+  socialProviders.some((provider) => provider.key === providerKey),
+);
 
 function getRoleLandingPath(role?: ProfileRole): string {
   if (role === "admin") return "/admin/magazine";
@@ -401,7 +404,7 @@ export function LoginPanel({
           <p className="text-center text-[13px] font-semibold text-[#888]">
             간편 로그인
           </p>
-          {socialOrder.map((providerKey) => (
+          {availableSocialProviderKeys.map((providerKey) => (
             <SocialButton
               disabled={Boolean(pendingProvider)}
               key={providerKey}

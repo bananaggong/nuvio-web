@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 import { JsonLdScript } from "@/components/json-ld";
 import { ProgramExplorer } from "@/components/program-explorer";
+import { getOAuthLoginErrorCode } from "@/lib/auth-errors";
 import { listPublishedHomeHeroSlides } from "@/lib/home-hero-db";
 import { listPublicPrograms } from "@/lib/public-program-db";
 import {
@@ -25,7 +26,7 @@ type HomeProps = {
 };
 
 export default async function Home({ searchParams }: HomeProps) {
-  const callbackPath = getOAuthCallbackPath(await searchParams);
+  const callbackPath = getOAuthLandingRedirectPath(await searchParams);
 
   if (callbackPath) {
     redirect(callbackPath);
@@ -49,9 +50,18 @@ export default async function Home({ searchParams }: HomeProps) {
   );
 }
 
-function getOAuthCallbackPath(
+function getOAuthLandingRedirectPath(
   searchParams?: Record<string, string | string[] | undefined>,
 ): string | null {
+  const oauthError = getOAuthLoginErrorCode({
+    error: getSingleValue(searchParams?.error),
+    errorCode: getSingleValue(searchParams?.error_code),
+  });
+
+  if (oauthError) {
+    return `/login?error=${oauthError}`;
+  }
+
   const code = getSingleValue(searchParams?.code);
 
   if (!code) return null;

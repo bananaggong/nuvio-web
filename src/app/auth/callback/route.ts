@@ -5,6 +5,10 @@ import {
   type AuthProfile,
   type OnboardingIntent,
 } from "@/lib/auth-profile-db";
+import {
+  getOAuthLoginErrorCode,
+  type LoginErrorCode,
+} from "@/lib/auth-errors";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { getTrustedRequestOrigin } from "@/lib/trusted-request-origin";
 import { isSafeRelativePath } from "@/lib/url-security";
@@ -16,16 +20,33 @@ export async function GET(request: Request) {
   const code = requestUrl.searchParams.get("code");
   const next = getSafeNextPath(requestUrl.searchParams.get("next"));
   const intent = getSafeOnboardingIntent(requestUrl.searchParams.get("intent"));
+  const oauthError = getOAuthLoginErrorCode({
+    error: requestUrl.searchParams.get("error"),
+    errorCode: requestUrl.searchParams.get("error_code"),
+  });
+
+  if (oauthError) {
+    return redirectToTrustedPath(
+      getLoginErrorPath(oauthError, next, intent),
+      requestUrl,
+    );
+  }
 
   if (!code) {
-    return redirectToTrustedPath("/login?error=missing_code", requestUrl);
+    return redirectToTrustedPath(
+      getLoginErrorPath("missing_code", next, intent),
+      requestUrl,
+    );
   }
 
   const supabase = await createSupabaseServerClient();
   const { error } = await supabase.auth.exchangeCodeForSession(code);
 
   if (error) {
-    return redirectToTrustedPath("/login?error=auth_callback", requestUrl);
+    return redirectToTrustedPath(
+      getLoginErrorPath("auth_callback", next, intent),
+      requestUrl,
+    );
   }
 
   const {
@@ -40,6 +61,17 @@ export async function GET(request: Request) {
 
 function getSafeNextPath(value: string | null): string | null {
   return value && isSafeRelativePath(value) ? value : null;
+}
+
+function getLoginErrorPath(
+  error: LoginErrorCode,
+  next: string | null,
+  intent: OnboardingIntent | null,
+): string {
+  const params = new URLSearchParams({ error });
+  if (next) params.set("next", next);
+  if (intent) params.set("intent", intent);
+  return `/login?${params.toString()}`;
 }
 
 function redirectToTrustedPath(path: string, requestUrl: URL): NextResponse {

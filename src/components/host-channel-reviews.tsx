@@ -4,6 +4,7 @@ import Image from "next/image";
 import { ChevronDown } from "lucide-react";
 import { useSearchParams } from "next/navigation";
 import { useEffect, useMemo, useState, type ReactNode } from "react";
+import { ChannelReviewBody } from "@/components/channel-review-body";
 import { ReviewIcon } from "@/components/icons/review-icon";
 import {
   ChannelContentSkeleton,
@@ -410,17 +411,13 @@ function HostReviewCard({
         </time>
       </div>
 
-      <p className="line-clamp-4 whitespace-pre-wrap px-[var(--host-8)] pt-[var(--host-8)] text-[length:var(--host-12)] font-normal leading-[1.6] text-[#0D0D0C]">
-        {review.body || review.excerpt || "후기 내용이 없습니다."}
-      </p>
-
-      <button
-        className="ml-auto inline-flex h-[var(--host-31)] items-center gap-[var(--host-3)] pb-[var(--host-12)] text-[length:var(--host-12)] font-normal leading-[1.6] text-[#6D7A8A] max-lg:min-h-11 max-lg:min-w-11 max-lg:pb-0"
-        type="button"
-      >
-        펼치기
-        <ChevronDown aria-hidden="true" className="size-[var(--host-9)]" />
-      </button>
+      <ChannelReviewBody
+        body={review.body || review.excerpt || "후기 내용이 없습니다."}
+        className="flex w-full flex-col"
+        contentClassName="whitespace-pre-wrap px-[var(--host-8)] pt-[var(--host-8)] text-[length:var(--host-12)] font-normal leading-[1.6] text-[#0D0D0C]"
+        toggleClassName="ml-auto inline-flex h-[var(--host-31)] items-center gap-[var(--host-3)] pb-[var(--host-12)] text-[length:var(--host-12)] font-normal leading-[1.6] text-[#6D7A8A] max-lg:min-h-11 max-lg:min-w-11 max-lg:pb-0"
+        toggleIconSize="var(--host-9)"
+      />
 
       {images.length > 0 ? (
         <div className="flex items-center gap-[var(--host-6)] overflow-x-auto pb-[var(--host-16)]">
