@@ -170,6 +170,16 @@ const reviewVisibilityFilterOptions: Array<{
   { label: "숨김처리된 후기", value: "hidden" },
 ];
 
+const halfHourTimeOptions = Array.from({ length: 48 }, (_, index) => {
+  const hour = Math.floor(index / 2);
+  const minute = index % 2 === 0 ? "00" : "30";
+  const value = `${String(hour).padStart(2, "0")}:${minute}`;
+  const period = hour < 12 ? "오전" : "오후";
+  const displayHour = hour % 12 || 12;
+
+  return { label: `${period} ${displayHour}:${minute}`, value };
+});
+
 export function HostApplicationsCrm({
   programId,
   projectId,
@@ -510,12 +520,11 @@ export function HostApplicationsCrm({
   function openMessageDialog() {
     if (checkedCount === 0) return;
 
-    const now = new Date();
-    const localNow = new Date(now.getTime() - now.getTimezoneOffset() * 60000);
+    const defaultSchedule = getDefaultMessageSchedule(new Date());
     setMessageRecipientIds(checkedApplicationIds);
     setSelectedMessageTemplateId((currentId) => currentId || messageTemplates[0]?.id || "");
-    setMessageScheduleDate((currentDate) => currentDate || localNow.toISOString().slice(0, 10));
-    setMessageScheduleTime((currentTime) => currentTime || localNow.toISOString().slice(11, 16));
+    setMessageScheduleDate((currentDate) => currentDate || defaultSchedule.date);
+    setMessageScheduleTime((currentTime) => currentTime || defaultSchedule.time);
     setMessageDialogStatus("");
     setIsMessageDialogOpen(true);
   }
@@ -729,7 +738,6 @@ export function HostApplicationsCrm({
       </div>
       {isStatusDialogOpen ? (
         <StatusChangeDialog
-          applicationCount={checkedCount}
           onClose={() => setIsStatusDialogOpen(false)}
           onSubmit={submitStatusDialog}
           onValueChange={setStatusDialogValue}
@@ -1189,7 +1197,7 @@ function SendMessageDialog({
           <h3 className="text-[14px] font-medium leading-[1.253] text-[#6D7A8A]">
             발송 일정
           </h3>
-          <div className="mt-[8px] grid grid-cols-[minmax(0,1fr)_120px] gap-[8px] max-md:grid-cols-1">
+          <div className="mt-[8px] grid grid-cols-[280px_140px] gap-[8px] max-md:grid-cols-1">
             <label className="relative">
               <input
                 className="h-[36px] w-full rounded-[4px] border border-[#F7B267] bg-white px-[10px] pr-[34px] text-[12px] font-normal leading-[1.253] text-[#6D7A8A] outline-none max-md:h-11 max-md:text-base"
@@ -1203,12 +1211,18 @@ function SendMessageDialog({
                 strokeWidth={1.8}
               />
             </label>
-            <input
-              className="h-[36px] rounded-[4px] border border-[#F7B267] bg-white px-[8px] text-[12px] font-normal leading-[1.253] text-[#6D7A8A] outline-none max-md:h-11 max-md:w-full max-md:text-base"
+            <select
+              aria-label="발송 시간"
+              className="h-[36px] rounded-[4px] border border-[#F7B267] bg-white px-[10px] text-[12px] font-normal leading-[1.253] text-[#6D7A8A] outline-none max-md:h-11 max-md:w-full max-md:text-base"
               onChange={(event) => onScheduleTimeChange(event.target.value)}
-              type="time"
               value={scheduleTime}
-            />
+            >
+              {halfHourTimeOptions.map((option) => (
+                <option key={option.value} value={option.value}>
+                  {option.label}
+                </option>
+              ))}
+            </select>
           </div>
         </section>
 
@@ -1238,13 +1252,11 @@ function SendMessageDialog({
 }
 
 function StatusChangeDialog({
-  applicationCount,
   onClose,
   onSubmit,
   onValueChange,
   value,
 }: {
-  applicationCount: number;
   onClose: () => void;
   onSubmit: () => void;
   onValueChange: (status: HostApplicationStatus) => void;
@@ -1260,18 +1272,12 @@ function StatusChangeDialog({
       >
         <div className="flex items-start justify-between gap-[18px]">
           <div>
-            <p className="text-[12px] font-semibold uppercase tracking-[0.14em] text-[#FE701E]">
-              Status
-            </p>
             <h2
-              className="mt-[8px] text-[20px] font-semibold leading-[1.253] text-[#0D0D0C]"
+              className="text-[20px] font-semibold leading-[1.253] text-[#0D0D0C]"
               id="status-change-dialog-title"
             >
               신청 상태 수정
             </h2>
-            <p className="mt-[8px] text-[13px] font-normal leading-[1.55] text-[#6D7A8A]">
-              선택한 {applicationCount}명의 신청 상태를 변경합니다.
-            </p>
           </div>
           <button
             aria-label="닫기"
@@ -2463,6 +2469,25 @@ function getMessageStatus(status: HostApplicationStatus) {
     return { dotClassName: "bg-[#1D70D6]", label: "예약중" };
   }
   return { dotClassName: "bg-[#CAC4BC]", label: "전송전" };
+}
+
+function getDefaultMessageSchedule(now: Date): { date: string; time: string } {
+  const rounded = new Date(now);
+  rounded.setSeconds(0, 0);
+  const minuteRemainder = rounded.getMinutes() % 30;
+  if (minuteRemainder > 0) {
+    rounded.setMinutes(rounded.getMinutes() + 30 - minuteRemainder);
+  }
+
+  const local = new Date(
+    rounded.getTime() - rounded.getTimezoneOffset() * 60 * 1000,
+  );
+  const localIso = local.toISOString();
+
+  return {
+    date: localIso.slice(0, 10),
+    time: localIso.slice(11, 16),
+  };
 }
 
 function formatShortDate(value?: string) {
