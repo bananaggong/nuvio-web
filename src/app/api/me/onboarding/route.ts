@@ -10,6 +10,10 @@ import {
   readJsonWithLimit,
   requireAuthenticatedUser,
 } from "@/lib/api-security";
+import {
+  KOREAN_MOBILE_PHONE_ERROR,
+  normalizeKoreanMobilePhone,
+} from "@/lib/korean-mobile-phone";
 
 export const runtime = "nodejs";
 
@@ -43,11 +47,17 @@ export async function POST(request: Request) {
     }
 
     const displayName = normalizeRequiredText(body.displayName, 80);
-    const phone = normalizeRequiredText(body.phone, 40);
+    const phone = normalizeKoreanMobilePhone(body.phone);
     const contactEmail = normalizeRequiredText(body.contactEmail, 120);
     const address = normalizeRequiredText(body.address, 200);
 
     if (!displayName || !phone || !contactEmail || !address) {
+      if (!phone) {
+        return NextResponse.json(
+          { error: KOREAN_MOBILE_PHONE_ERROR },
+          { status: 400 },
+        );
+      }
       return NextResponse.json(
         { error: "이름, 전화번호, 연락 가능한 이메일, 주소를 모두 입력해 주세요." },
         { status: 400 },

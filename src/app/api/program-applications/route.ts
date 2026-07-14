@@ -19,6 +19,11 @@ import { queueApplicationSubmittedNotification } from "@/lib/notification-db";
 import { sanitizeJsonRecord } from "@/lib/safe-json";
 import { logServerPersistenceError } from "@/lib/server-error-diagnostics";
 import { updateUserProgramState } from "@/lib/user-program-state-db";
+import { getUserProfile } from "@/lib/auth-profile-db";
+import {
+  KOREAN_MOBILE_PHONE_ERROR,
+  normalizeKoreanMobilePhone,
+} from "@/lib/korean-mobile-phone";
 
 export const runtime = "nodejs";
 
@@ -65,6 +70,16 @@ export async function POST(request: Request) {
         { status: 403 },
       );
     }
+    const profile = await getUserProfile(auth.user.id);
+    const verifiedPhone = normalizeKoreanMobilePhone(profile?.phone);
+    if (!verifiedPhone) {
+      return NextResponse.json(
+        {
+          error: `${KOREAN_MOBILE_PHONE_ERROR} 마이페이지에서 연락처를 수정한 뒤 다시 신청해 주세요.`,
+        },
+        { status: 400 },
+      );
+    }
 
     const programId = normalizeProgramId(body.programId);
     const existingApplication = await findExistingProgramApplication({
@@ -82,7 +97,7 @@ export async function POST(request: Request) {
         typeof body.memo === "string"
           ? normalizeText(body.memo, 120)
           : undefined,
-      phone: normalizeText(body.phone, 40),
+      phone: verifiedPhone,
       programId,
       programRunId:
         typeof body.programRunId === "string" ? body.programRunId : undefined,

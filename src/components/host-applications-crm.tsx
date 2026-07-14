@@ -41,6 +41,7 @@ import {
 import type { ReviewStatus } from "@/lib/types";
 import { useHostMessageTemplates } from "@/lib/use-host-message-templates";
 import { useHostOperationsData } from "@/lib/use-host-operations-data";
+import { formatKoreanMobilePhone } from "@/lib/korean-mobile-phone";
 
 type ReviewTab = "all" | "pending" | "accepted" | "rejected";
 type ApplicationsPanel = "applications" | "receipts" | "reviews";
@@ -945,7 +946,9 @@ function ApplicationDetailPanel({
       <div className="flex h-[28px] items-start text-[16px] font-semibold leading-[1.253] text-[#0D0D0C] max-md:h-auto max-md:flex-wrap max-md:gap-x-4 max-md:gap-y-2">
         <span>{application.applicantName || "이름 미입력"}</span>
         <span className="ml-[28px] max-md:ml-0">{applicantGender}</span>
-        <span className="ml-[28px] max-md:ml-0">{application.phone || "연락처 미입력"}</span>
+        <span className="ml-[28px] max-md:ml-0">
+          {formatKoreanMobilePhone(application.phone) || "연락처 미입력"}
+        </span>
         {statusMeta ? (
           <div className="ml-auto flex items-center gap-[8px] pr-[8px] text-[14px] font-normal max-md:ml-0 max-md:w-full max-md:pr-0">
             <span className="text-[#6D7A8A]">현재 상태</span>

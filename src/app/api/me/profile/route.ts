@@ -13,6 +13,10 @@ import {
   requireAuthenticatedUser,
 } from "@/lib/api-security";
 import { sanitizePublicImageUrl } from "@/lib/url-security";
+import {
+  KOREAN_MOBILE_PHONE_ERROR,
+  normalizeKoreanMobilePhone,
+} from "@/lib/korean-mobile-phone";
 
 export const runtime = "nodejs";
 
@@ -63,6 +67,7 @@ export async function PATCH(request: Request) {
       unknown
     >;
     const displayName = normalizeText(body.displayName, 80);
+    const phone = normalizeProfilePhone(body.phone);
 
     if (displayName !== undefined && !displayName) {
       return NextResponse.json(
@@ -89,7 +94,7 @@ export async function PATCH(request: Request) {
       fullName: normalizeText(body.fullName, 80),
       displayName,
       loginId: normalizeText(body.loginId, 40),
-      phone: normalizeText(body.phone, 40),
+      phone,
       contactEmail: normalizeContactEmail(body.contactEmail),
       address: normalizeText(body.address, 200),
       addressDetail: normalizeText(body.addressDetail, 200),
@@ -116,6 +121,13 @@ export async function PATCH(request: Request) {
 
 function normalizeText(value: unknown, maxLength: number): string | undefined {
   return typeof value === "string" ? value.trim().slice(0, maxLength) : undefined;
+}
+
+function normalizeProfilePhone(value: unknown): string | undefined {
+  if (value === undefined) return undefined;
+  const normalized = normalizeKoreanMobilePhone(value);
+  if (!normalized) throw new Error(KOREAN_MOBILE_PHONE_ERROR);
+  return normalized;
 }
 
 function normalizeDisplayNameForComparison(displayName: string): string {

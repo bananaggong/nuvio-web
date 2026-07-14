@@ -16,6 +16,12 @@ import {
 import { useEffect, useMemo, useState, type FormEvent, type ReactNode } from "react";
 import { AuthHeader } from "@/components/auth-ui";
 import { isSafeRelativePath } from "@/lib/url-security";
+import {
+  formatKoreanMobilePhone,
+  formatKoreanMobilePhoneInput,
+  isKoreanMobilePhone,
+  KOREAN_MOBILE_PHONE_ERROR,
+} from "@/lib/korean-mobile-phone";
 
 type OnboardingIntent = "participant" | "host";
 type OnboardingStep = 1 | 2 | 3;
@@ -129,7 +135,11 @@ export function OnboardingPanel() {
 
         setAccountEmail(user.email ?? profile?.email ?? "");
         setDisplayName(name);
-        setPhone(profile?.phone || getMetadataText(user.userMetadata, "phone") || "");
+        setPhone(
+          formatKoreanMobilePhone(
+            profile?.phone || getMetadataText(user.userMetadata, "phone") || "",
+          ),
+        );
         setContactEmail(profile?.contactEmail || profile?.email || user.email || "");
         setAddress(profile?.address || getMetadataText(user.userMetadata, "address") || "");
 
@@ -155,7 +165,7 @@ export function OnboardingPanel() {
 
   function updateField(key: FieldKey, value: string) {
     if (key === "displayName") setDisplayName(value);
-    if (key === "phone") setPhone(value);
+    if (key === "phone") setPhone(formatKoreanMobilePhoneInput(value));
     if (key === "contactEmail") setContactEmail(value);
     if (key === "address") setAddress(value);
 
@@ -198,8 +208,8 @@ export function OnboardingPanel() {
       errors.displayName = "이름 또는 활동명을 입력해 주세요.";
     }
 
-    if (!phone.trim()) {
-      errors.phone = "연락 가능한 전화번호를 입력해 주세요.";
+    if (!isKoreanMobilePhone(phone)) {
+      errors.phone = KOREAN_MOBILE_PHONE_ERROR;
     }
 
     if (!contactEmail.trim()) {

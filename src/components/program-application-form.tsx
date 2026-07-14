@@ -19,6 +19,11 @@ import {
 import { ProgramQuantityControl } from "@/components/program-quantity-control";
 import { programPath } from "@/lib/program-routing";
 import type { Program } from "@/lib/types";
+import {
+  formatKoreanMobilePhone,
+  isKoreanMobilePhone,
+  KOREAN_MOBILE_PHONE_ERROR,
+} from "@/lib/korean-mobile-phone";
 
 type ProgramApplicationFormProps = {
   program: Program;
@@ -136,7 +141,7 @@ export function ProgramApplicationForm({
               : "";
         const nextName = profile?.displayName || metadataName;
         const nextEmail = profile?.contactEmail || profile?.email || user?.email || "";
-        const nextPhone = profile?.phone || "";
+        const nextPhone = formatKoreanMobilePhone(profile?.phone || "");
 
         setForm((current) => ({
           ...current,
@@ -283,6 +288,9 @@ export function ProgramApplicationForm({
     const memo = buildMemo();
 
     try {
+      if (!isKoreanMobilePhone(form.phone)) {
+        throw new Error(KOREAN_MOBILE_PHONE_ERROR);
+      }
       const response = await fetch("/api/program-applications", {
         body: JSON.stringify({
           programId: program.id,
@@ -417,8 +425,13 @@ export function ProgramApplicationForm({
                 <Field label="연락처" required>
                   <input
                     className={applicationInputClassName}
-                    onChange={(event) => updateField("phone", event.target.value)}
+                    autoComplete="tel"
+                    inputMode="tel"
+                    placeholder="010-1234-5678"
+                    readOnly
                     required
+                    title="마이페이지에 저장된 연락처가 사용됩니다."
+                    type="tel"
                     value={form.phone}
                   />
                 </Field>

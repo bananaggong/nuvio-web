@@ -2,6 +2,10 @@ import { eq, sql } from "drizzle-orm";
 import type { User } from "@supabase/supabase-js";
 import { getDb } from "@/db/client";
 import { profiles } from "@/db/schema";
+import {
+  normalizeKoreanMobilePhone,
+  requireKoreanMobilePhone,
+} from "@/lib/korean-mobile-phone";
 
 export type ProfileGender = "female" | "male" | "neutral";
 export type OnboardingIntent = "participant" | "host";
@@ -111,11 +115,12 @@ export async function completeUserOnboarding(
   userId: string,
   input: CompleteOnboardingInput,
 ): Promise<AuthProfile | undefined> {
+  const phone = requireKoreanMobilePhone(input.phone);
   const [row] = await getDb()
     .update(profiles)
     .set({
       displayName: input.displayName,
-      phone: input.phone,
+      phone,
       contactEmail: input.contactEmail,
       address: input.address,
       onboardingIntent: input.intent,
@@ -189,13 +194,15 @@ export async function updateUserProfile(
   userId: string,
   patch: ProfilePatch,
 ): Promise<AuthProfile | undefined> {
+  const phone =
+    patch.phone === undefined ? undefined : requireKoreanMobilePhone(patch.phone);
   const [row] = await getDb()
     .update(profiles)
     .set({
       fullName: patch.fullName,
       displayName: patch.displayName,
       loginId: patch.loginId,
-      phone: patch.phone,
+      phone,
       avatarUrl: patch.avatarUrl,
       contactEmail: patch.contactEmail,
       address: patch.address,
@@ -233,7 +240,7 @@ function buildProfileFromUser(user: User): AuthProfile {
       stringMetadata(metadata.avatar_url) ||
       stringMetadata(metadata.picture) ||
       "",
-    phone: stringMetadata(metadata.phone),
+    phone: normalizeKoreanMobilePhone(stringMetadata(metadata.phone)) ?? "",
     contactEmail: stringMetadata(metadata.contact_email) || user.email || "",
     address: stringMetadata(metadata.address),
     addressDetail: stringMetadata(metadata.address_detail),

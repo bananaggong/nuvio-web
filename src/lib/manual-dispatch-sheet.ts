@@ -5,6 +5,7 @@ import {
   notifyManualDispatchDiscord,
   type ManualDispatchDiscordResult,
 } from "@/lib/manual-dispatch-discord";
+import { formatKoreanMobilePhone } from "@/lib/korean-mobile-phone";
 
 const GOOGLE_SHEETS_SCOPE = "https://www.googleapis.com/auth/spreadsheets";
 const GOOGLE_TOKEN_URL = "https://oauth2.googleapis.com/token";
@@ -439,7 +440,7 @@ function buildDispatchSheetRow(row: ManualDispatchSheetRow): string[] {
     row.programTitle,
     row.applicationId,
     row.applicantName,
-    row.phone,
+    formatKoreanMobilePhone(row.phone),
     row.channel,
     row.templateName ?? "",
     row.body,

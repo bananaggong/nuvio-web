@@ -54,6 +54,12 @@ import {
 import { launchFeatureFlags } from "@/lib/launch-feature-flags";
 import { programPath } from "@/lib/program-routing";
 import {
+  formatKoreanMobilePhone,
+  formatKoreanMobilePhoneInput,
+  isKoreanMobilePhone,
+  KOREAN_MOBILE_PHONE_ERROR,
+} from "@/lib/korean-mobile-phone";
+import {
   disableBrowserPushNotifications,
   enableBrowserPushNotifications,
   getBrowserNotificationPermission,
@@ -2327,7 +2333,7 @@ function MemberInformationForm({
     name: profile?.fullName ?? "",
     nickname: profile?.displayName ?? "",
     paymentMethod: profile?.paymentMethod ?? "",
-    phone: profile?.phone ?? "",
+    phone: formatKoreanMobilePhone(profile?.phone ?? ""),
     refundAccount: profile?.refundAccount ?? "",
     refundBank: profile?.refundBank ?? "",
   });
@@ -2590,6 +2596,11 @@ function MemberInformationForm({
       return;
     }
 
+    if (!isKoreanMobilePhone(form.phone)) {
+      setStatus(KOREAN_MOBILE_PHONE_ERROR);
+      return;
+    }
+
     setSaving(true);
     setStatus("");
     try {
@@ -2639,7 +2650,7 @@ function MemberInformationForm({
         name: updatedProfile.fullName ?? "",
         nickname: updatedProfile.displayName ?? "",
         paymentMethod: updatedProfile.paymentMethod ?? "",
-        phone: updatedProfile.phone ?? "",
+        phone: formatKoreanMobilePhone(updatedProfile.phone ?? ""),
         refundAccount: updatedProfile.refundAccount ?? "",
         refundBank: updatedProfile.refundBank ?? "",
       };
@@ -2880,8 +2891,13 @@ function MemberInformationForm({
             <MemberLabel>연락처</MemberLabel>
             <div className="flex min-w-0 items-end gap-[clamp(8px,0.5556vw,10.667px)]">
               <MemberLineInput
+                autoComplete="tel"
+                inputMode="tel"
                 onChange={(value) =>
-                  setForm((current) => ({ ...current, phone: value }))
+                  setForm((current) => ({
+                    ...current,
+                    phone: formatKoreanMobilePhoneInput(value),
+                  }))
                 }
                 placeholder="010-0000-0000"
                 value={form.phone}
@@ -3179,7 +3195,7 @@ function MemberInformationReadOnly({
 
         <div className="grid gap-x-[clamp(13px,0.9028vw,17.333px)] gap-y-3 md:grid-cols-[clamp(50px,3.4722vw,66.667px)_clamp(260px,18.0556vw,346.667px)] md:items-end">
           <MemberLabel>연락처</MemberLabel>
-          <MemberTextValue>{form.phone || "-"}</MemberTextValue>
+          <MemberTextValue>{formatKoreanMobilePhone(form.phone) || "-"}</MemberTextValue>
         </div>
 
         <div className="grid gap-x-[clamp(13px,0.9028vw,17.333px)] gap-y-3 md:grid-cols-[clamp(50px,3.4722vw,66.667px)_minmax(0,1fr)] md:items-end">
@@ -4540,11 +4556,15 @@ function MemberLineDisplay({ children }: { children: ReactNode }) {
 }
 
 function MemberLineInput({
+  autoComplete,
+  inputMode,
   inputRef,
   onChange,
   placeholder,
   value,
 }: {
+  autoComplete?: string;
+  inputMode?: "email" | "numeric" | "tel" | "text";
   inputRef?: Ref<HTMLInputElement>;
   onChange: (value: string) => void;
   placeholder: string;
@@ -4552,7 +4572,9 @@ function MemberLineInput({
 }) {
   return (
     <input
+      autoComplete={autoComplete}
       className="h-[clamp(22px,1.5278vw,29.333px)] w-full min-w-0 border-0 border-b border-[#cfc7c0] bg-transparent px-0 pb-[clamp(3px,0.2083vw,4px)] !text-[clamp(12px,0.8333vw,16px)] font-medium leading-none text-[#4B3328] outline-none transition placeholder:text-[#8B98A6] focus:border-[#f7983a]"
+      inputMode={inputMode}
       onChange={(event) => onChange(event.target.value)}
       placeholder={placeholder}
       ref={inputRef}

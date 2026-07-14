@@ -40,6 +40,7 @@ import type { HostApplication, MessageTemplate } from "@/lib/host-operations";
 import { HostProgramSidebar } from "@/components/host-program-sidebar";
 import { formatProgramDisplayName } from "@/lib/display-code";
 import { useHostOperationsData } from "@/lib/use-host-operations-data";
+import { formatKoreanMobilePhone } from "@/lib/korean-mobile-phone";
 
 type MessageListTab = "all" | "scheduled" | "sent";
 
@@ -675,7 +676,11 @@ function MessageScheduleDetailPanel({
                 key={recipient.id}
               >
                 <span className="truncate">{recipient.applicantName}</span>
-                <span className="truncate">{recipient.recipient}</span>
+                <span className="truncate">
+                  {recipient.channel === "sms"
+                    ? formatKoreanMobilePhone(recipient.recipient)
+                    : recipient.recipient}
+                </span>
                 <span className="max-md:hidden">접수일 {formatCampaignDateTime(recipient.submittedAt).date}</span>
                 {recipient.recipient ? (
                   <a
