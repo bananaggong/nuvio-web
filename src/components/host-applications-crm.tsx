@@ -562,24 +562,12 @@ export function HostApplicationsCrm({
       }
 
       const insertedCount = payload.data?.insertedCount ?? 0;
-      const sheetSync = payload.data?.sheetSync;
-      const sheetMessage =
-        sheetSync?.status === "synced"
-          ? " Google Sheet에도 추가했습니다."
-          : sheetSync?.status === "skipped"
-            ? ` Google Sheet 동기화는 건너뜀: ${sheetSync.message ?? ""}`
-            : sheetSync?.status === "failed"
-              ? ` Google Sheet 동기화 실패: ${sheetSync.message ?? ""}`
-              : "";
       if (insertedCount > 0) {
-        setMessageDialogStatus(`${insertedCount}명에게 보낼 메시지를 예약했습니다.`);
+        setMessageDialogStatus(`${insertedCount}명에게 보낼 메시지 예약을 완료했습니다.`);
       } else {
         setMessageDialogStatus(
           "데모 신청자는 화면에서만 확인됩니다. 실제 신청자 데이터에서는 예약 메시지로 저장됩니다.",
         );
-      }
-      if (sheetMessage) {
-        setMessageDialogStatus((currentMessage) => `${currentMessage}${sheetMessage}`);
       }
       setCheckedApplicationIds((currentIds) =>
         currentIds.filter((id) => !messageRecipientIds.includes(id)),
@@ -847,11 +835,11 @@ function ApplicationRow({
 
   return (
     <div
-      className={`grid h-[34px] w-full grid-cols-[22px_112px_70px_160px_84px_minmax(0,1fr)] items-center text-left text-[14px] leading-[1.253] max-md:h-auto max-md:min-h-14 max-md:grid-cols-[44px_minmax(0,1fr)] ${
+      className={`grid h-[34px] w-full grid-cols-[30px_104px_70px_160px_84px_minmax(0,1fr)] items-center text-left text-[14px] leading-[1.253] max-md:h-auto max-md:min-h-14 max-md:grid-cols-[44px_minmax(0,1fr)] ${
         selected ? "bg-[#F3F3F3]" : "bg-white"
       }`}
     >
-      <label className="grid size-11 place-items-center">
+      <label className="grid h-[34px] w-[30px] place-items-center max-md:size-11">
         <span className="sr-only">{application.applicantName || "신청자"} 선택</span>
         <input
           aria-label={`${application.applicantName || "신청자"} 선택`}
@@ -1073,7 +1061,7 @@ function SendMessageDialog({
       <section
         aria-labelledby="send-message-dialog-title"
         aria-modal="true"
-        className="relative flex h-[clamp(635px,44.097vw,846.667px)] max-h-[calc(100vh-48px)] w-[clamp(457px,31.736vw,609.333px)] max-w-[calc(100vw-48px)] flex-col overflow-y-auto rounded-[8px] border border-[#D9D9D9] bg-white px-[20px] pb-[24px] pt-[49px] shadow-[0_18px_42px_rgba(13,13,12,0.12)] max-md:h-auto max-md:max-h-[calc(100dvh-32px)] max-md:w-full max-md:max-w-none max-md:px-4 max-md:pb-4 max-md:pt-14 max-[359px]:max-h-[calc(100dvh-24px)]"
+        className="relative flex h-[clamp(635px,44.097vw,846.667px)] max-h-[calc(100vh-48px)] w-[clamp(560px,38.889vw,746.667px)] max-w-[calc(100vw-48px)] flex-col overflow-y-auto rounded-[8px] border border-[#D9D9D9] bg-white px-[20px] pb-[24px] pt-[49px] shadow-[0_18px_42px_rgba(13,13,12,0.12)] max-md:h-auto max-md:max-h-[calc(100dvh-32px)] max-md:w-full max-md:max-w-none max-md:px-4 max-md:pb-4 max-md:pt-14 max-[359px]:max-h-[calc(100dvh-24px)]"
         role="dialog"
       >
         <button
@@ -1101,11 +1089,11 @@ function SendMessageDialog({
           <h3 className="text-[14px] font-medium leading-[1.253] text-[#6D7A8A]">
             수신자 ({String(recipients.length).padStart(2, "0")}명)
           </h3>
-          <div className="ml-[20px] mt-[11px] h-[108px] overflow-y-auto pr-[2px] max-md:ml-0 max-md:h-auto max-md:max-h-40">
+          <div className="mt-[11px] h-[108px] overflow-y-auto pr-[2px] max-md:h-auto max-md:max-h-40">
             {recipients.length > 0 ? (
               recipients.map((recipient) => (
                 <div
-                  className="grid h-[27px] grid-cols-[58px_47px_minmax(0,1fr)_14px] items-center border-b border-[#E9E9E9] px-[4px] text-[12px] font-medium leading-[1.253] text-[#6D7A8A] last:border-b-0 max-md:h-auto max-md:min-h-12 max-md:grid-cols-[minmax(0,1fr)_44px] max-md:gap-x-2 max-md:px-2 max-md:py-1"
+                  className="grid h-[27px] grid-cols-[120px_90px_minmax(0,1fr)_30px] items-center gap-x-[8px] border-b border-[#E9E9E9] px-[8px] text-[12px] font-medium leading-[1.253] text-[#6D7A8A] last:border-b-0 max-md:h-auto max-md:min-h-12 max-md:grid-cols-[minmax(0,1fr)_44px] max-md:gap-x-2 max-md:px-2 max-md:py-1"
                   key={recipient.id}
                 >
                   <span className="truncate">{recipient.applicantName || "신청자"}</span>
@@ -1201,7 +1189,7 @@ function SendMessageDialog({
           <h3 className="text-[14px] font-medium leading-[1.253] text-[#6D7A8A]">
             발송 일정
           </h3>
-          <div className="mt-[8px] grid grid-cols-[minmax(0,242px)_75px] gap-[7px] max-md:grid-cols-1">
+          <div className="mt-[8px] grid grid-cols-[minmax(0,1fr)_120px] gap-[8px] max-md:grid-cols-1">
             <label className="relative">
               <input
                 className="h-[36px] w-full rounded-[4px] border border-[#F7B267] bg-white px-[10px] pr-[34px] text-[12px] font-normal leading-[1.253] text-[#6D7A8A] outline-none max-md:h-11 max-md:text-base"
