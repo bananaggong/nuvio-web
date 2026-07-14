@@ -75,12 +75,17 @@ test("public application responses do not return database application records", 
 
 test("external dispatch and notification jobs are idempotent and literal", () => {
   const sheet = read("src/lib/manual-dispatch-sheet.ts");
+  const discord = read("src/lib/manual-dispatch-discord.ts");
   const notifications = read("src/lib/notification-db.ts");
   const scheduledMessages = read("src/lib/scheduled-message-db.ts");
 
   assert.doesNotMatch(sheet, /USER_ENTERED/u);
   assert.match(sheet, /valueInputOption=RAW/u);
   assert.match(sheet, /GOOGLE_MANUAL_MESSAGE_SPREADSHEET_ID is required/u);
+  assert.match(sheet, /notifyManualDispatchDiscord\(rows\)/u);
+  assert.match(discord, /allowed_mentions:\s*\{ parse: \[\] \}/u);
+  assert.match(discord, /rows\.length/u);
+  assert.doesNotMatch(discord, /applicantName|\.phone|\.body/u);
   assert.match(notifications, /program-reminder:[^`]*reminderKey/u);
   assert.match(notifications, /idempotencyKey: event\.id/u);
   assert.match(scheduledMessages, /idempotencyKey: row\.id/u);

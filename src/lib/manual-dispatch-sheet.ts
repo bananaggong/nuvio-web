@@ -1,6 +1,10 @@
 import { createSign } from "node:crypto";
 
 import { readLimitedResponseText } from "@/lib/outbound-fetch-security";
+import {
+  notifyManualDispatchDiscord,
+  type ManualDispatchDiscordResult,
+} from "@/lib/manual-dispatch-discord";
 
 const GOOGLE_SHEETS_SCOPE = "https://www.googleapis.com/auth/spreadsheets";
 const GOOGLE_TOKEN_URL = "https://oauth2.googleapis.com/token";
@@ -45,6 +49,7 @@ export type ManualDispatchSheetRow = {
 };
 
 export type ManualDispatchSheetSyncResult = {
+  discordNotification?: ManualDispatchDiscordResult;
   message: string;
   missingIds?: string[];
   rowCount?: number;
@@ -106,8 +111,10 @@ export async function appendManualDispatchRows(
       }),
       method: "POST",
     });
+    const discordNotification = await notifyManualDispatchDiscord(rows);
 
     return {
+      discordNotification,
       message: `${rows.length} dispatch rows appended to Google Sheets.`,
       rowCount: rows.length,
       sheetTitle,
