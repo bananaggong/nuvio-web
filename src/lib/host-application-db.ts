@@ -8,6 +8,7 @@ import {
 } from "@/db/schema";
 import { getApplicationFormSnapshotForSubmission } from "@/lib/application-form-db";
 import { programs } from "@/lib/data";
+import { isDemoModeEnabled } from "@/lib/demo-mode";
 import { safeCreateAuditLog } from "@/lib/audit-log-db";
 import type {
   HostApplication,
@@ -67,6 +68,13 @@ export class ProgramNotAcceptingApplicationsError extends Error {
   constructor() {
     super("This program is not accepting applications.");
     this.name = "ProgramNotAcceptingApplicationsError";
+  }
+}
+
+export class ProgramNotFoundError extends Error {
+  constructor() {
+    super("Program was not found.");
+    this.name = "ProgramNotFoundError";
   }
 }
 
@@ -274,20 +282,6 @@ async function resolveApplicationProgram(
   programId: number | string,
 ): Promise<{ createdBy?: string | null; id: string; title: string; villageId?: string | null }> {
   const key = String(programId).trim();
-  const numericId = Number(key);
-  const staticProgram = Number.isInteger(numericId)
-    ? programs.find((item) => item.id === numericId)
-    : undefined;
-
-  if (staticProgram) {
-    return {
-      id: await ensureProgramRecord(staticProgram),
-      title: staticProgram.title,
-      createdBy: null,
-      villageId: null,
-    };
-  }
-
   const programRecord = await getProgramRecordByIdentifier(key);
   if (programRecord) {
     return {
@@ -298,7 +292,23 @@ async function resolveApplicationProgram(
     };
   }
 
-  throw new Error(`Program ${key} was not found.`);
+  if (isDemoModeEnabled()) {
+    const numericId = Number(key);
+    const staticProgram = Number.isInteger(numericId)
+      ? programs.find((item) => item.id === numericId)
+      : undefined;
+
+    if (staticProgram) {
+      return {
+        id: await ensureProgramRecord(staticProgram),
+        title: staticProgram.title,
+        createdBy: null,
+        villageId: null,
+      };
+    }
+  }
+
+  throw new ProgramNotFoundError();
 }
 
 function isApplicationWindowOpen(

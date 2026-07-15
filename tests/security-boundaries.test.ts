@@ -1,8 +1,70 @@
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import test from "node:test";
+import { isDemoModeEnabledForEnvironment } from "../src/lib/demo-mode";
 
 const root = new URL("../", import.meta.url);
+
+test("production cannot enable static demo seeds", () => {
+  assert.equal(
+    isDemoModeEnabledForEnvironment({
+      NEXT_PUBLIC_NUVIO_DEMO_MODE: "true",
+      NODE_ENV: "production",
+      NUVIO_DEMO_MODE: "true",
+    }),
+    false,
+  );
+  assert.equal(
+    isDemoModeEnabledForEnvironment({ NODE_ENV: "development" }),
+    true,
+  );
+  assert.equal(isDemoModeEnabledForEnvironment({ NODE_ENV: "test" }), true);
+  assert.equal(isDemoModeEnabledForEnvironment({}), false);
+});
+
+test("release routes and application writes keep static seeds out of production", () => {
+  const applicationDb = read("src/lib/host-application-db.ts");
+  const applicationRoute = read("src/app/api/program-applications/route.ts");
+  const announcementPage = read("src/app/announcements/page.tsx");
+  const announcementDetailPage = read("src/app/announcements/[id]/page.tsx");
+  const halfPricePage = read("src/app/half-price-travel/page.tsx");
+  const llmsRoute = read("src/app/llms.txt/route.ts");
+  const programApplyPage = read("src/app/programs/[id]/apply/page.tsx");
+  const publicProgramDb = read("src/lib/public-program-db.ts");
+  const sitemap = read("src/app/sitemap.ts");
+  const villageDb = read("src/lib/village-db.ts");
+
+  assert.match(applicationDb, /if \(isDemoModeEnabled\(\)\)[\s\S]*ensureProgramRecord/u);
+  assert.match(applicationDb, /throw new ProgramNotFoundError\(\)/u);
+  assert.match(applicationRoute, /ProgramNotFoundError[\s\S]*status: 404/u);
+  assert.match(announcementPage, /if \(!isDemoModeEnabled\(\)\) notFound\(\)/u);
+  assert.match(announcementDetailPage, /if \(!isDemoModeEnabled\(\)\) return \[\]/u);
+  assert.match(halfPricePage, /await listPublicPrograms\(\)/u);
+  assert.doesNotMatch(halfPricePage, /@\/lib\/data/u);
+  assert.match(llmsRoute, /isDemoModeEnabled\(\)[\s\S]*Public announcements/u);
+  assert.match(programApplyPage, /if \(!isDemoModeEnabled\(\)\) return \[\]/u);
+  assert.match(publicProgramDb, /if \(!isDemoModeEnabled\(\)\) return undefined/u);
+  assert.match(sitemap, /isDemoModeEnabled\(\)[\s\S]*\/announcements/u);
+  assert.match(villageDb, /isDemoModeEnabled\(\) \? reviews : \[\]/u);
+});
+
+test("public auto replies reject missing or non-public programs", () => {
+  const route = read("src/app/api/program-auto-replies/route.ts");
+
+  assert.match(
+    route,
+    /!program[\s\S]*!program\.publishedAt[\s\S]*program\.status === "closed"[\s\S]*program\.status === "earlyClosed"[\s\S]*status: 404/u,
+  );
+  assert.match(
+    route,
+    /getProgramAutoReplyConfigByProgramId\(program\.id\)/u,
+  );
+  assert.match(
+    route,
+    /createDefaultProgramAutoReplyConfig\(program\.id\)/u,
+  );
+  assert.doesNotMatch(route, /program\?\.id \?\? programIdentifier/u);
+});
 
 test("database migration revokes browser writes and protects profile identity", () => {
   const migration = read("supabase/migrations/20260711000000_lock_browser_data_writes.sql");

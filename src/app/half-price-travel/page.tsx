@@ -2,8 +2,10 @@ import type { Metadata } from "next";
 import Image from "next/image";
 import Link from "next/link";
 import { ArrowRight, BadgePercent, CheckCircle2, MapPinned } from "lucide-react";
+import { NuvioEmptyState } from "@/components/nuvio-empty-state";
 import { ProgramCard } from "@/components/program-card";
-import { programs } from "@/lib/data";
+import { formatDate } from "@/lib/format";
+import { listPublicPrograms } from "@/lib/public-program-db";
 import { createSeoMetadata } from "@/lib/seo";
 
 export const metadata: Metadata = createSeoMetadata({
@@ -14,16 +16,16 @@ export const metadata: Metadata = createSeoMetadata({
   keywords: ["반값여행", "여행 페이백", "지역상품권", "여행경비 지원"],
 });
 
-const schedule = [
-  ["3월 4주", "남해, 밀양"],
-  ["4월 1주", "고흥, 하동, 합천"],
-  ["4월 3주", "고창, 전주, 완도"],
-  ["5월", "제천, 제주, 울릉"],
-  ["6월", "강진, 평창"],
-];
+export const dynamic = "force-dynamic";
+export const runtime = "nodejs";
 
-export default function HalfPriceTravelPage() {
+export default async function HalfPriceTravelPage() {
+  const programs = await listPublicPrograms();
   const halfPrograms = programs.filter((program) => program.categories.includes("half"));
+  const schedule = halfPrograms.map((program) => [
+    formatDate(program.recruitStart),
+    [program.region, program.city].filter(Boolean).join(" "),
+  ] as const);
 
   return (
     <div>
@@ -79,17 +81,25 @@ export default function HalfPriceTravelPage() {
             <MapPinned className="text-[var(--primary)]" size={22} />
             지역별 오픈 흐름
           </h2>
-          <div className="mt-5 space-y-3">
-            {schedule.map(([week, cities]) => (
-              <div
-                className="grid grid-cols-[90px_1fr] gap-4 rounded-md bg-[var(--surface-muted)] p-3 text-sm"
-                key={week}
-              >
-                <div className="font-black text-[var(--primary)]">{week}</div>
-                <div className="font-bold text-slate-700">{cities}</div>
-              </div>
-            ))}
-          </div>
+          {schedule.length > 0 ? (
+            <div className="mt-5 space-y-3">
+              {schedule.map(([date, location]) => (
+                <div
+                  className="grid grid-cols-[90px_1fr] gap-4 rounded-md bg-[var(--surface-muted)] p-3 text-sm"
+                  key={`${date}-${location}`}
+                >
+                  <div className="font-black text-[var(--primary)]">{date}</div>
+                  <div className="font-bold text-slate-700">{location}</div>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <NuvioEmptyState
+              className="mt-5 bg-[var(--surface-muted)]"
+              description="새 모집이 등록되면 지역별 일정을 확인할 수 있어요."
+              label="지역별 오픈 일정"
+            />
+          )}
         </div>
 
         <div className="rounded-md border border-slate-200 bg-white p-5" id="guide">
@@ -119,9 +129,17 @@ export default function HalfPriceTravelPage() {
           </p>
         </div>
         <div className="grid gap-4">
-          {halfPrograms.map((program) => (
-            <ProgramCard key={program.id} program={program} />
-          ))}
+          {halfPrograms.length > 0 ? (
+            halfPrograms.map((program) => (
+              <ProgramCard key={program.id} program={program} />
+            ))
+          ) : (
+            <NuvioEmptyState
+              className="rounded-md border border-slate-200 bg-white"
+              description="새 모집이 등록되면 이곳에서 확인할 수 있어요."
+              label="반값여행 모집"
+            />
+          )}
         </div>
       </section>
     </div>

@@ -4,12 +4,13 @@ import {
 } from "@/lib/host-operations";
 import type { HostProgramDraft } from "@/lib/host-program-studio";
 import type { ProgramStatus } from "@/lib/types";
-import { programs } from "@/lib/data";
 import {
   getReportApplications,
   summarizeReportProject,
   type ReportProject,
 } from "@/lib/report-automation";
+
+const hostProgramFallbackImage = "/brand/nuvio-logo-combined.svg";
 
 export type HostProjectKind = "operation" | "program";
 
@@ -326,7 +327,7 @@ function buildProgramOverviewFromDraft(
     activityEnd: program.activityEnd,
     activityStart: program.activityStart,
     id: program.id,
-    imageUrl: program.image || resolveProgramImage(program.title),
+    imageUrl: program.image || hostProgramFallbackImage,
     missingEvidenceCount: countMissingEvidence(programApplications),
     pendingCount,
     periodLabel: formatProgramDraftPeriod(program),
@@ -365,7 +366,7 @@ function buildStandaloneProgramOverviewFromDraft(
     activityEnd: program.activityEnd,
     activityStart: program.activityStart,
     id: program.id,
-    imageUrl: program.image || resolveProgramImage(program.title),
+    imageUrl: program.image || hostProgramFallbackImage,
     missingEvidenceCount: countMissingEvidence(programApplications),
     pendingCount,
     periodLabel: formatProgramDraftPeriod(program),
@@ -401,7 +402,7 @@ function buildProgramOverviewFromTitle(
     applicationCount: programApplications.length,
     applications: programApplications,
     id: hostProgramId(title),
-    imageUrl: resolveProgramImage(title),
+    imageUrl: hostProgramFallbackImage,
     missingEvidenceCount: countMissingEvidence(programApplications),
     pendingCount,
     periodLabel: project.periodLabel,
@@ -432,7 +433,7 @@ function buildStandaloneProgramOverviewFromTitle(
     applicationCount: programApplications.length,
     applications: programApplications,
     id: hostProgramId(title),
-    imageUrl: resolveProgramImage(title),
+    imageUrl: hostProgramFallbackImage,
     missingEvidenceCount: countMissingEvidence(programApplications),
     pendingCount,
     periodLabel: "",
@@ -481,46 +482,7 @@ function resolveProjectImage(
   const programImage = programDrafts.find((program) => program.image)?.image;
   if (programImage) return programImage;
 
-  const candidates = [
-    project.programTitle,
-    ...project.connectedProgramTitles,
-    project.title,
-  ];
-
-  for (const candidate of candidates) {
-    const image = resolveProgramImage(candidate, false);
-    if (image) return image;
-  }
-
-  if (
-    project.villageName.includes("전체차") ||
-    project.title.includes("보성") ||
-    project.title.includes("차")
-  ) {
-    return "/boseong/hero-illustration.png";
-  }
-
-  return programs[0]?.image ?? "/brand/nuvio-logo-combined.svg";
-}
-
-function resolveProgramImage(programTitle: string, useFallback = true): string {
-  const normalizedTitle = normalizeTitle(programTitle);
-  const program = programs.find((item) => {
-    const normalizedProgramTitle = normalizeTitle(item.title);
-    return (
-      normalizedProgramTitle === normalizedTitle ||
-      normalizedProgramTitle.includes(normalizedTitle) ||
-      normalizedTitle.includes(normalizedProgramTitle)
-    );
-  });
-
-  if (program?.image) return program.image;
-  if (!useFallback) return "";
-
-  if (programTitle.includes("차") || programTitle.includes("보성")) {
-    return "/boseong/home-tea-time.png";
-  }
-  return programs[0]?.image ?? "/brand/nuvio-logo-combined.svg";
+  return hostProgramFallbackImage;
 }
 
 function resolveProjectProgramDrafts(

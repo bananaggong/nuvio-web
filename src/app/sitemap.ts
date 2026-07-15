@@ -1,5 +1,6 @@
 import type { MetadataRoute } from "next";
 import { announcements } from "@/lib/data";
+import { isDemoModeEnabled } from "@/lib/demo-mode";
 import { launchFeatureFlags } from "@/lib/launch-feature-flags";
 import { programPath } from "@/lib/program-routing";
 import { listPublicPrograms } from "@/lib/public-program-db";
@@ -25,7 +26,9 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     route("/open", "monthly", 0.9, now),
     route("/half-price-travel", "weekly", 0.8, now),
     route("/channels", "daily", 0.8, now),
-    route("/announcements", "hourly", 0.7, now),
+    ...(isDemoModeEnabled()
+      ? [route("/announcements", "hourly", 0.7, now)]
+      : []),
     ...(launchFeatureFlags.reviews
       ? [route("/reviews", "daily", 0.7, now)]
       : []),
@@ -111,9 +114,11 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       )
     : [];
 
-  const announcementRoutes = announcements.map((announcement) =>
-    route(`/announcements/${announcement.id}`, "weekly", 0.45, announcement.date),
-  );
+  const announcementRoutes = isDemoModeEnabled()
+    ? announcements.map((announcement) =>
+        route(`/announcements/${announcement.id}`, "weekly", 0.45, announcement.date),
+      )
+    : [];
 
   return uniqueRoutes([
     ...staticRoutes,

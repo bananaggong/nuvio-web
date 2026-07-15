@@ -1,11 +1,10 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { readMessageTemplates } from "@/lib/message-automation";
 import type { MessageTemplate } from "@/lib/host-operations";
 
 export function useHostMessageTemplates() {
-  const [templates, setTemplates] = useState<MessageTemplate[]>(readMessageTemplates);
+  const [templates, setTemplates] = useState<MessageTemplate[]>([]);
   const [isLoadingTemplates, setIsLoadingTemplates] = useState(false);
   const [templateError, setTemplateError] = useState("");
 
@@ -29,8 +28,10 @@ export function useHostMessageTemplates() {
           throw new Error(payload.error ?? "메세지 템플릿을 불러오지 못했습니다.");
         }
 
-        if (isMounted && Array.isArray(payload.data) && payload.data.length > 0) {
-          setTemplates(payload.data.map(normalizeTemplate));
+        if (isMounted) {
+          setTemplates(
+            Array.isArray(payload.data) ? payload.data.map(normalizeTemplate) : [],
+          );
         }
       } catch (error) {
         if (isMounted) {
@@ -39,7 +40,7 @@ export function useHostMessageTemplates() {
               ? error.message
               : "메세지 템플릿을 불러오지 못했습니다.",
           );
-          setTemplates(readMessageTemplates());
+          setTemplates([]);
         }
       } finally {
         if (isMounted) setIsLoadingTemplates(false);

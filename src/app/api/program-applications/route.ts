@@ -14,6 +14,7 @@ import {
   DuplicateProgramApplicationError,
   findExistingProgramApplication,
   ProgramNotAcceptingApplicationsError,
+  ProgramNotFoundError,
 } from "@/lib/host-application-db";
 import { queueApplicationSubmittedNotification } from "@/lib/notification-db";
 import { sanitizeJsonRecord } from "@/lib/safe-json";
@@ -129,6 +130,10 @@ export async function POST(request: Request) {
 
     if (error instanceof ProgramNotAcceptingApplicationsError) {
       return NextResponse.json({ error: error.message }, { status: 409 });
+    }
+
+    if (error instanceof ProgramNotFoundError) {
+      return NextResponse.json({ error: error.message }, { status: 404 });
     }
 
     if (error instanceof ApplicationPayloadError) {

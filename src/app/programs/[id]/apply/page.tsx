@@ -3,6 +3,7 @@ import { notFound } from "next/navigation";
 import { ProgramApplicationForm } from "@/components/program-application-form";
 import { getApplicationFormTemplateForProgram } from "@/lib/application-form-db";
 import { programs } from "@/lib/data";
+import { isDemoModeEnabled } from "@/lib/demo-mode";
 import { getPublicProgramByIdentifier } from "@/lib/public-program-db";
 import { programPath } from "@/lib/program-routing";
 import { createSeoMetadata } from "@/lib/seo";
@@ -11,6 +12,7 @@ export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
 
 export function generateStaticParams() {
+  if (!isDemoModeEnabled()) return [];
   return programs.map((program) => ({ id: String(program.id) }));
 }
 

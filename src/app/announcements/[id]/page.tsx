@@ -4,6 +4,7 @@ import { notFound } from "next/navigation";
 import { ArrowRight, Megaphone } from "lucide-react";
 import { JsonLdScript } from "@/components/json-ld";
 import { announcements, getAnnouncementById, getProgramById } from "@/lib/data";
+import { isDemoModeEnabled } from "@/lib/demo-mode";
 import { formatDateTime } from "@/lib/format";
 import { programPath } from "@/lib/program-routing";
 import {
@@ -12,7 +13,10 @@ import {
   createSeoMetadata,
 } from "@/lib/seo";
 
+export const dynamic = "force-dynamic";
+
 export function generateStaticParams() {
+  if (!isDemoModeEnabled()) return [];
   return announcements.map((announcement) => ({ id: String(announcement.id) }));
 }
 
@@ -21,6 +25,8 @@ export async function generateMetadata({
 }: {
   params: Promise<{ id: string }>;
 }): Promise<Metadata> {
+  if (!isDemoModeEnabled()) return {};
+
   const { id } = await params;
   const announcement = getAnnouncementById(Number(id));
   if (!announcement) return {};
@@ -36,6 +42,8 @@ export default async function AnnouncementDetailPage({
 }: {
   params: Promise<{ id: string }>;
 }) {
+  if (!isDemoModeEnabled()) notFound();
+
   const { id } = await params;
   const announcement = getAnnouncementById(Number(id));
   if (!announcement) notFound();

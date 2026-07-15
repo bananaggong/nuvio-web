@@ -5,8 +5,8 @@ import Link from "next/link";
 import { Heart, MessageCircle, Search, Share2 } from "lucide-react";
 import { useMemo, useState } from "react";
 import { NuvioEmptyState } from "@/components/nuvio-empty-state";
-import { getProgramById, reviewCategories } from "@/lib/data";
 import { formatDateTime } from "@/lib/format";
+import { reviewCategories } from "@/lib/program-ui-options";
 import type { Review, ReviewCategory } from "@/lib/types";
 
 export function ReviewFeed({ reviews, showWriteButton = false }: { reviews: Review[]; showWriteButton?: boolean }) {
@@ -16,12 +16,10 @@ export function ReviewFeed({ reviews, showWriteButton = false }: { reviews: Revi
   const filteredReviews = useMemo(() => {
     const normalized = keyword.trim().toLowerCase();
     return reviews.filter((review) => {
-      const program = review.programId ? getProgramById(review.programId) : undefined;
-      const programTitle = review.programTitle ?? program?.title;
       const matchesCategory = category === "all" || review.category === category;
       const matchesKeyword =
         !normalized ||
-        [review.title, review.excerpt, review.body, review.author, programTitle ?? ""]
+        [review.title, review.excerpt, review.body, review.author, review.programTitle ?? ""]
           .join(" ")
           .toLowerCase()
           .includes(normalized);
@@ -74,8 +72,7 @@ export function ReviewFeed({ reviews, showWriteButton = false }: { reviews: Revi
 
         <div className="mt-4 grid gap-4">
           {filteredReviews.map((review) => {
-            const program = review.programId ? getProgramById(review.programId) : undefined;
-            const programTitle = review.programTitle ?? program?.title;
+            const programTitle = review.programTitle;
             const categoryLabel =
               reviewCategories.find((item) => item.key === review.category)?.label ?? "후기";
             return (

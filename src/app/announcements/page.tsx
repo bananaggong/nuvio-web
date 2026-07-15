@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import { notFound } from "next/navigation";
 import {
   AlertTriangle,
   BellRing,
@@ -8,6 +9,7 @@ import {
   Megaphone,
 } from "lucide-react";
 import { announcements, getProgramById } from "@/lib/data";
+import { isDemoModeEnabled } from "@/lib/demo-mode";
 import { formatDateTime } from "@/lib/format";
 import { createSeoMetadata } from "@/lib/seo";
 import type { AnnouncementType } from "@/lib/types";
@@ -18,6 +20,8 @@ export const metadata: Metadata = createSeoMetadata({
   path: "/announcements",
   keywords: ["여행지원금 공지", "모집 마감", "프로그램 변경"],
 });
+
+export const dynamic = "force-dynamic";
 
 const typeMeta: Record<AnnouncementType, { label: string; icon: typeof Megaphone; className: string }> = {
   close: {
@@ -43,6 +47,8 @@ const typeMeta: Record<AnnouncementType, { label: string; icon: typeof Megaphone
 };
 
 export default function AnnouncementsPage() {
+  if (!isDemoModeEnabled()) notFound();
+
   return (
     <div>
       <section className="border-b border-[var(--line)] bg-white">

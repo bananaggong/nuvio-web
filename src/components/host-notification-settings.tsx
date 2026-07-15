@@ -18,7 +18,6 @@ import {
   isBrowserPushSupported,
 } from "@/lib/browser-push-client";
 import {
-  defaultHostMessageTemplates,
   joinMessageTemplateParts,
   messageTemplateVariables,
   normalizeMessageTemplateTokens,
@@ -60,9 +59,7 @@ export function HostNotificationSettingsContent() {
   >(() => readStoredNotificationSettings().notifications);
   const [editingKeys, setEditingKeys] = useState<Set<string>>(new Set());
   const [saveState, setSaveState] = useState<SaveState>("idle");
-  const [templates, setTemplates] = useState<TemplateRecord[]>(
-    defaultHostMessageTemplates,
-  );
+  const [templates, setTemplates] = useState<TemplateRecord[]>([]);
   const [browserPushMessage, setBrowserPushMessage] = useState("");
   const [isBrowserPushBusy, setIsBrowserPushBusy] = useState(false);
 
@@ -142,7 +139,7 @@ export function HostNotificationSettingsContent() {
           setTemplates(payload.data.map(normalizeTemplateRecord));
         }
       } catch {
-        if (isMounted) setTemplates(defaultHostMessageTemplates);
+        if (isMounted) setTemplates([]);
       }
     }
 

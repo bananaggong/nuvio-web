@@ -1,11 +1,12 @@
 import { and, asc, eq, isNull } from "drizzle-orm";
 import { getDb } from "@/db/client";
 import { messageTemplates } from "@/db/schema";
+import { isDemoModeEnabled } from "@/lib/demo-mode";
 import {
-  defaultHostMessageTemplates,
   normalizeMessageTemplateTokens,
   type HostMessageTemplateCatalogItem,
 } from "@/lib/message-template-catalog";
+import { defaultHostMessageTemplates } from "@/lib/message-template-seeds";
 
 type MessageTemplateInsert = typeof messageTemplates.$inferInsert;
 type MessageTemplateRow = typeof messageTemplates.$inferSelect;
@@ -152,6 +153,14 @@ export async function deleteHostMessageTemplate(
 function mergeDefaultAndSavedTemplates(
   rows: MessageTemplateRow[],
 ): HostMessageTemplateRecord[] {
+  if (!isDemoModeEnabled()) {
+    return rows
+      .map((row) => mapTemplateRowToRecord(row))
+      .sort(
+        (a, b) => a.sortOrder - b.sortOrder || a.name.localeCompare(b.name, "ko"),
+      );
+  }
+
   const consumedRowIds = new Set<string>();
 
   const defaults = defaultHostMessageTemplates.map((defaultTemplate) => {
@@ -206,11 +215,16 @@ function normalizeTemplatePayload(
 ): HostMessageTemplateCatalogItem {
   const rawKey = asString(payload.key);
   const rawName = asString(payload.name);
+  const allowDefaultFallback = isDemoModeEnabled();
   const inferredDefaultKey =
-    defaultTemplatesByKey.has(rawKey)
+    allowDefaultFallback && defaultTemplatesByKey.has(rawKey)
       ? rawKey
-      : defaultKeysByName.get(rawName) ?? "";
-  const fallbackDefault = defaultTemplatesByKey.get(inferredDefaultKey);
+      : allowDefaultFallback
+        ? defaultKeysByName.get(rawName) ?? ""
+        : "";
+  const fallbackDefault = allowDefaultFallback
+    ? defaultTemplatesByKey.get(inferredDefaultKey)
+    : undefined;
   const key =
     inferredDefaultKey ||
     normalizeCustomKey(rawKey) ||

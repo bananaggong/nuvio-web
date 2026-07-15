@@ -174,7 +174,7 @@ export function HostProgramCreateWizard({ projectId }: { projectId?: string }) {
               autoFocus
               className="h-12 rounded-md border border-[#E6D6CA] bg-white px-3 text-base font-bold text-[#0D0D0C] outline-none transition placeholder:text-[#B7A89D] focus:border-[#FE701E] focus:ring-2 focus:ring-[#FE701E]/15"
               onChange={(event) => setTitle(event.target.value)}
-              placeholder="예: 나를 담는 차 실험실"
+              placeholder="예: 프로그램 이름을 입력하세요"
               value={title}
             />
           </label>

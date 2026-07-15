@@ -22,10 +22,6 @@ import {
   hostProjectPath,
   hostStandaloneProgramPath,
 } from "@/lib/host-projects";
-import {
-  renderMessageTemplate,
-} from "@/lib/message-automation";
-import { useHostMessageTemplates } from "@/lib/use-host-message-templates";
 import type {
   HostScheduledMessage,
   ScheduledMessageDeliveryStatus,
@@ -36,7 +32,7 @@ import {
   type HostInquiry,
   type HostInquiryStatus,
 } from "@/lib/host-inquiries";
-import type { HostApplication, MessageTemplate } from "@/lib/host-operations";
+import type { HostApplication } from "@/lib/host-operations";
 import { HostProgramSidebar } from "@/components/host-program-sidebar";
 import { formatProgramDisplayName } from "@/lib/display-code";
 import { useHostOperationsData } from "@/lib/use-host-operations-data";
@@ -50,7 +46,6 @@ type MessageBatch = {
   createdAt: string;
   deliveryStatus: ScheduledMessageDeliveryStatus;
   id: string;
-  isDemo: boolean;
   messages: HostScheduledMessage[];
   programTitle: string;
   scheduledFor: string;
@@ -80,7 +75,6 @@ export function HostMessageAutomation({
     programs: hostPrograms,
     reportProjects,
   } = useHostOperationsData();
-  const { templates } = useHostMessageTemplates();
   const [scheduledMessages, setScheduledMessages] = useState<
     HostScheduledMessage[]
   >([]);
@@ -199,19 +193,9 @@ export function HostMessageAutomation({
     () => filterMessagesByScope(scheduledMessages, projectApplications, program),
     [program, projectApplications, scheduledMessages],
   );
-  const demoMessages = useMemo(
-    () =>
-      createDemoScheduledMessages(
-        projectApplications,
-        templates,
-        program?.title ?? project?.title,
-      ),
-    [program?.title, project?.title, projectApplications, templates],
-  );
-  const effectiveMessages = scopedMessages.length > 0 ? scopedMessages : demoMessages;
   const messageBatches = useMemo(
-    () => groupScheduledMessageBatches(effectiveMessages),
-    [effectiveMessages],
+    () => groupScheduledMessageBatches(scopedMessages),
+    [scopedMessages],
   );
   const visibleMessageBatches = useMemo(() => {
     if (messageListTab === "sent") {
@@ -239,7 +223,7 @@ export function HostMessageAutomation({
   }
 
   async function deleteSelectedBatch() {
-    if (!selectedBatch || selectedBatch.isDemo || isDeletingMessage) return;
+    if (!selectedBatch || isDeletingMessage) return;
 
     const messageIds = selectedBatch.messages.map((message) => message.id);
     setIsDeletingMessage(true);
@@ -292,7 +276,6 @@ export function HostMessageAutomation({
   async function markSelectedBatchSent() {
     if (
       !selectedBatch ||
-      selectedBatch.isDemo ||
       selectedBatch.deliveryStatus === "sent" ||
       isMarkingSent
     ) {
@@ -445,7 +428,6 @@ export function HostMessageAutomation({
               className="inline-flex h-[28px] w-[92px] items-center justify-center rounded-[4px] border border-[#7A8B52] bg-[#7A8B52] text-[12px] font-normal leading-[1.253] text-white disabled:cursor-not-allowed disabled:opacity-40 max-md:min-h-11 max-md:flex-1 max-md:text-sm"
               disabled={
                 !selectedBatch ||
-                selectedBatch.isDemo ||
                 selectedBatch.deliveryStatus === "sent" ||
                 isMarkingSent
               }
@@ -456,17 +438,12 @@ export function HostMessageAutomation({
             </button>
             <button
               className="inline-flex h-[28px] w-[92px] items-center justify-center rounded-[4px] border border-[#FE701E] bg-white text-[12px] font-normal leading-[1.253] text-[#FE701E] disabled:cursor-not-allowed disabled:opacity-40 max-md:min-h-11 max-md:flex-1 max-md:text-sm"
-              disabled={!selectedBatch || selectedBatch.isDemo || isDeletingMessage}
+              disabled={!selectedBatch || isDeletingMessage}
               onClick={deleteSelectedBatch}
               type="button"
             >
               메시지 삭제
             </button>
-            {selectedBatch?.isDemo ? (
-              <span className="mt-[7px] text-[12px] font-normal leading-[1.253] text-[#A68B7B]">
-                실제 예약 메시지가 생성되면 삭제할 수 있어요.
-              </span>
-            ) : null}
           </div>
           </div>
         </section>
@@ -651,10 +628,10 @@ function MessageScheduleDetailPanel({
         </div>
         <div className="mt-[13px] h-[188px] w-full rounded-[4px] border border-[#6D7A8A] bg-white">
           <div className="flex h-[34px] items-center border-b border-[#6D7A8A] px-[12px] text-[12px] font-normal leading-[1.253] text-[#6D7A8A]">
-            {batch?.title ?? "템플릿 제목"}
+            {batch?.title ?? "선택된 메시지가 없습니다."}
           </div>
           <div className="h-[154px] overflow-y-auto whitespace-pre-line px-[12px] py-[12px] text-[12px] font-normal leading-[1.6] text-[#6D7A8A]">
-            {batch?.body ?? "템플릿 메시지 내용 보여지는 중"}
+            {batch?.body ?? ""}
           </div>
         </div>
       </section>
@@ -695,17 +672,9 @@ function MessageScheduleDetailPanel({
               </div>
             ))
           ) : (
-            Array.from({ length: 5 }).map((_, index) => (
-              <div
-                className="grid h-[36px] grid-cols-[64px_104px_1fr_48px] items-center border-b border-[#D9D9D9] px-[22px] text-[12px] font-normal leading-[1.253] text-[#6D7A8A] last:border-b-0 max-md:min-h-14 max-md:grid-cols-[minmax(0,1fr)_minmax(0,1fr)] max-md:px-3"
-                key={`placeholder-recipient-${index}`}
-              >
-                <span>신청자</span>
-                <span>연락처</span>
-                <span className="max-md:hidden">접수일 0000. 00. 00</span>
-                <span className="ml-auto size-[10px] rounded-full bg-[#CAC4BC] max-md:hidden" />
-              </div>
-            ))
+            <div className="grid h-full min-h-24 place-items-center px-4 text-center text-[12px] text-[#6D7A8A]">
+              수신자가 없습니다.
+            </div>
           )}
         </div>
       </section>
@@ -742,47 +711,6 @@ function filterMessagesByScope(
   );
 }
 
-function createDemoScheduledMessages(
-  applications: HostApplication[],
-  templates: MessageTemplate[],
-  fallbackProgramTitle?: string,
-): HostScheduledMessage[] {
-  const template = templates[0];
-  const baseCreatedAt = "2026-06-14T09:00:00+09:00";
-  const baseScheduledFor = "2026-06-15T14:00:00+09:00";
-  const sourceApplications = applications.slice(0, 5);
-
-  if (sourceApplications.length === 0) return [];
-
-  return sourceApplications.map((application, index) => {
-    const sent = index >= 3;
-    return {
-      applicationId: application.id,
-      applicantName: application.applicantName,
-      body: renderMessageTemplate(
-        template?.body ??
-          "{name}님, {program} 운영팀입니다. 신청 결과와 준비 절차를 안내드립니다.",
-        application,
-      ),
-      channel: "sms",
-      createdAt: baseCreatedAt,
-      deliveryStatus: sent ? "sent" : "scheduled",
-      error: "",
-      id: `demo-scheduled-${application.id}`,
-      programId: application.programId ?? "",
-      programTitle: formatProgramDisplayName(
-        application.programTitle || fallbackProgramTitle,
-        application.programId,
-      ),
-      recipient: application.phone || application.email,
-      scheduledFor: sent ? "" : baseScheduledFor,
-      sentAt: sent ? "2026-06-14T15:30:00+09:00" : "",
-      submittedAt: application.submittedAt,
-      updatedAt: baseCreatedAt,
-    };
-  });
-}
-
 function groupScheduledMessageBatches(
   messages: HostScheduledMessage[],
 ): MessageBatch[] {
@@ -809,7 +737,6 @@ function groupScheduledMessageBatches(
         createdAt: firstMessage.createdAt,
         deliveryStatus: firstMessage.deliveryStatus,
         id: key,
-        isDemo: firstMessage.id.startsWith("demo-scheduled-"),
         messages: batchMessages,
         programTitle: firstMessage.programTitle,
         scheduledFor: firstMessage.scheduledFor,

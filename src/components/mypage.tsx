@@ -32,7 +32,6 @@ import {
   type ReactNode,
 } from "react";
 import { ReviewIcon } from "@/components/icons/review-icon";
-import { getProgramById } from "@/lib/data";
 import { NuvioEmptyState } from "@/components/nuvio-empty-state";
 import { SupportContactForm } from "@/components/support-contact-form";
 import { UnsavedChangesGuard } from "@/components/unsaved-changes-guard";
@@ -2228,15 +2227,12 @@ function findProgramForRequestedMessage(
 ): Program | undefined {
   const id = requested.programId;
   const title = requested.programTitle;
-  const program =
-    programs.find(
-      (item) =>
-        String(item.id) === id ||
-        item.slug === id ||
-        (title ? item.title === title : false),
-    ) ?? (Number.isInteger(Number(id)) ? getProgramById(Number(id)) : undefined);
-
-  return program;
+  return programs.find(
+    (item) =>
+      String(item.id) === id ||
+      item.slug === id ||
+      (title ? item.title === title : false),
+  );
 }
 
 function findApplicationForMessageNotification(
@@ -4878,13 +4874,9 @@ function findProgramByStateKey(
   id: string,
   publicPrograms: Program[],
 ): Program | undefined {
-  const program = publicPrograms.find(
+  return publicPrograms.find(
     (item) => String(item.id) === id || item.slug === id,
   );
-  if (program) return program;
-
-  const numericId = Number(id);
-  return Number.isInteger(numericId) ? getProgramById(numericId) : undefined;
 }
 
 function getProgramIdentity(program: Program): string {

@@ -1,10 +1,7 @@
 import {
   applicationStatusFlow,
   applicationStatusLabels,
-  seedMessageTemplates,
 } from "@/lib/host-operations";
-import { isDemoModeEnabled } from "@/lib/demo-mode";
-import { launchFeatureFlags } from "@/lib/launch-feature-flags";
 import { renderMessageTemplateTokens } from "@/lib/message-template-catalog";
 import type {
   HostApplication,
@@ -59,43 +56,6 @@ export const targetStatusLabels: Record<MessageTargetStatus, string> = {
   ...applicationStatusLabels,
 };
 
-export const seedMessageCampaigns: MessageCampaign[] = [
-  {
-    id: "campaign-accepted",
-    name: "합격자 서명 안내",
-    templateId: "msg-accepted",
-    channel: "sms",
-    targetStatus: "accepted",
-    scheduledAt: "2026-06-15T14:00",
-    status: "scheduled",
-    updatedAt: "2026-06-14T00:00:00+09:00",
-  },
-  {
-    id: "campaign-review",
-    name: "참여 후기 요청",
-    templateId: "msg-review",
-    channel: "kakao",
-    targetStatus: "completed",
-    scheduledAt: "2026-06-16T10:00",
-    status: "draft",
-    updatedAt: "2026-06-14T00:00:00+09:00",
-  },
-];
-
-export function readMessageTemplates(): MessageTemplate[] {
-  return seedMessageTemplates.filter((template) =>
-    template.id === "msg-review" ? launchFeatureFlags.reviews : true,
-  );
-}
-
-export function readMessageCampaigns(): MessageCampaign[] {
-  return isDemoModeEnabled()
-    ? seedMessageCampaigns.filter((campaign) =>
-        campaign.templateId === "msg-review" ? launchFeatureFlags.reviews : true,
-      )
-    : [];
-}
-
 export function mergeMessageCampaigns(
   primaryCampaigns: MessageCampaign[],
   secondaryCampaigns: MessageCampaign[],
@@ -115,12 +75,12 @@ export function mergeMessageCampaigns(
 }
 
 export function createMessageCampaign(
-  templates = readMessageTemplates(),
+  templates: MessageTemplate[] = [],
 ): MessageCampaign {
   return {
     id: `campaign-${Date.now()}`,
     name: "새 메시지 캠페인",
-    templateId: templates[0]?.id ?? "msg-accepted",
+    templateId: templates[0]?.id ?? "",
     channel: "sms",
     targetStatus: "all",
     scheduledAt: toLocalDatetimeInputValue(new Date()),
@@ -131,7 +91,7 @@ export function createMessageCampaign(
 
 export function buildMessageRecipientPreview(
   campaign: MessageCampaign,
-  templates = readMessageTemplates(),
+  templates: MessageTemplate[] = [],
   applications: HostApplication[] = [],
 ): MessageRecipientPreview[] {
   const template =
@@ -150,7 +110,7 @@ export function buildMessageRecipientPreview(
 
 export function buildMessageExportCsv(
   campaign: MessageCampaign,
-  templates = readMessageTemplates(),
+  templates: MessageTemplate[] = [],
   applications: HostApplication[] = [],
 ): string {
   const rows = buildMessageRecipientPreview(campaign, templates, applications);

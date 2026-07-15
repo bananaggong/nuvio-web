@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { applyRateLimit } from "@/lib/api-security";
-import { getProgramAutoReplyConfigByIdentifier } from "@/lib/program-auto-reply-db";
+import { getProgramAutoReplyConfigByProgramId } from "@/lib/program-auto-reply-db";
 import { createDefaultProgramAutoReplyConfig } from "@/lib/program-auto-replies";
 import { getProgramRecordByIdentifier } from "@/lib/program-db";
 
@@ -32,10 +32,22 @@ export async function GET(request: Request) {
     }
 
     const program = await getProgramRecordByIdentifier(programIdentifier);
-    const config = await getProgramAutoReplyConfigByIdentifier(programIdentifier);
+    if (
+      !program ||
+      !program.publishedAt ||
+      program.status === "closed" ||
+      program.status === "earlyClosed"
+    ) {
+      return NextResponse.json(
+        { error: "Program was not found." },
+        { status: 404 },
+      );
+    }
+
+    const config = await getProgramAutoReplyConfigByProgramId(program.id);
 
     return NextResponse.json({
-      data: config ?? createDefaultProgramAutoReplyConfig(program?.id ?? programIdentifier),
+      data: config ?? createDefaultProgramAutoReplyConfig(program.id),
     });
   } catch (error) {
     return NextResponse.json(

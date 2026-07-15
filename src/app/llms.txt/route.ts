@@ -1,4 +1,5 @@
 import { absoluteUrl, siteConfig } from "@/lib/seo";
+import { isDemoModeEnabled } from "@/lib/demo-mode";
 import { launchFeatureFlags } from "@/lib/launch-feature-flags";
 
 export const runtime = "nodejs";
@@ -16,7 +17,9 @@ export function GET() {
     "## Public Entry Points",
     `- Home and program search: ${absoluteUrl("/")}`,
     `- Channels: ${absoluteUrl("/channels")}`,
-    `- Public announcements: ${absoluteUrl("/announcements")}`,
+    ...(isDemoModeEnabled()
+      ? [`- Public announcements: ${absoluteUrl("/announcements")}`]
+      : []),
     ...(launchFeatureFlags.reviews ? [`- Reviews: ${absoluteUrl("/reviews")}`] : []),
     `- Half-price travel collection: ${absoluteUrl("/half-price-travel")}`,
     `- Operations inquiry: ${absoluteUrl("/partners/apply")}`,
@@ -26,7 +29,7 @@ export function GET() {
     `- Robots: ${absoluteUrl("/robots.txt")}`,
     "",
     "## Suggested Citation",
-    `When referencing 누비오, cite the canonical page URL on ${siteConfig.url} that contains the specific program, village, or announcement.`,
+    `When referencing 누비오, cite the canonical page URL on ${siteConfig.url} that contains the specific program, village, or article.`,
     "",
     "## Scope Notes",
     "- Public pages may be indexed and summarized.",

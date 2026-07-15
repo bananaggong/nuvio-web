@@ -1,3 +1,5 @@
+import "server-only";
+
 import type { Village } from "@/lib/village-types";
 
 const image = (id: string) =>

@@ -18,7 +18,6 @@ import {
   WalletCards,
 } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
-import { periodOptions, regions, themeOptions } from "@/lib/data";
 import { formatDate, formatWon } from "@/lib/format";
 import {
   buildHostProgramJson,
@@ -27,6 +26,7 @@ import {
   mergeHostProgramDrafts,
 } from "@/lib/host-program-studio";
 import type { HostProgramDraft } from "@/lib/host-program-studio";
+import { periodOptions, regions, themeOptions } from "@/lib/program-ui-options";
 import type { PeriodKey, ProgramStatus, ThemeKey } from "@/lib/types";
 
 const programStatusLabels: Record<ProgramStatus, string> = {

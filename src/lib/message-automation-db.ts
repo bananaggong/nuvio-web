@@ -95,7 +95,7 @@ export function normalizeMessageCampaign(input: unknown): MessageCampaign {
   return {
     id: asString(value.id) || `campaign-${Date.now()}`,
     name: asString(value.name) || "메시지 캠페인",
-    templateId: asString(value.templateId) || "msg-accepted",
+    templateId: asString(value.templateId),
     channel: asChannel(value.channel),
     targetStatus: asTargetStatus(value.targetStatus),
     scheduledAt: asString(value.scheduledAt),
