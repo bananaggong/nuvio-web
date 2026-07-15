@@ -1,6 +1,7 @@
 "use client";
 
 import Image from "next/image";
+import { useRouter } from "next/navigation";
 import { Loader2, Trash2 } from "lucide-react";
 import {
   ChangeEvent,
@@ -33,8 +34,8 @@ export function ReviewWriter({
   programTitle?: string;
   requestToken?: string;
 }) {
+  const router = useRouter();
   const fileInputRef = useRef<HTMLInputElement | null>(null);
-  const [submitted, setSubmitted] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
@@ -86,7 +87,6 @@ export function ReviewWriter({
     }
 
     const files = selectedFiles.slice(0, availableSlots);
-    setSubmitted(false);
     setErrorMessage("");
     setUploading(true);
 
@@ -133,7 +133,6 @@ export function ReviewWriter({
 
   async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    setSubmitted(false);
     setErrorMessage("");
 
     if (rating <= 0) {
@@ -169,10 +168,7 @@ export function ReviewWriter({
         throw new Error(result.error ?? "후기를 저장하지 못했어요.");
       }
 
-      setSubmitted(true);
-      setRating(0);
-      setBody("");
-      setImages([]);
+      router.replace("/mypage/reviews");
     } catch (error) {
       setErrorMessage(
         error instanceof Error
@@ -193,11 +189,6 @@ export function ReviewWriter({
           </h1>
         </div>
 
-        {submitted ? (
-          <div className="mb-[clamp(16px,1.1111vw,21.333px)] rounded-[clamp(6px,0.4167vw,8px)] border border-[#A8D8C7] bg-[#EFFAF5] px-[clamp(18px,1.25vw,24px)] py-[clamp(13px,0.9028vw,17.333px)] text-[clamp(13px,0.9028vw,17.333px)] font-semibold text-[#2D7A5B]">
-            후기가 접수되었어요. 검토 후 공개 여부가 결정됩니다.
-          </div>
-        ) : null}
         {errorMessage ? (
           <div className="mb-[clamp(16px,1.1111vw,21.333px)] rounded-[clamp(6px,0.4167vw,8px)] border border-[#FFD0BB] bg-[#FFF4EE] px-[clamp(18px,1.25vw,24px)] py-[clamp(13px,0.9028vw,17.333px)] text-[clamp(13px,0.9028vw,17.333px)] font-semibold text-[#C24C1A]">
             {errorMessage}

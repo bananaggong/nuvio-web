@@ -294,6 +294,7 @@ test.describe.serial("release critical journeys", () => {
       await participantPage.locator('form button[type="submit"]').click();
       const reviewResponse = await reviewResponsePromise;
       expect(reviewResponse.status(), await reviewResponse.text()).toBe(201);
+      await expect(participantPage).toHaveURL(/\/mypage\/reviews$/u);
       const reviewPayload = (await reviewResponse.json()) as { data?: { id?: string } };
       expect(reviewPayload.data?.id).toBeTruthy();
       state = await updateReleaseE2EState((current) => ({
@@ -327,7 +328,6 @@ test.describe.serial("release critical journeys", () => {
         await sql.end();
       }
 
-      await participantPage.goto("/mypage/reviews");
       await participantPage.getByRole("button", { name: "내가 쓴 후기" }).click();
       await expect(participantPage.getByText(state.reviewBody, { exact: true }).first()).toBeVisible({
         timeout: 30_000,
