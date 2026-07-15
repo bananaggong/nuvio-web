@@ -21,6 +21,7 @@
     "test:e2e:release": "playwright test --config=playwright.release.config.ts",
     "test:e2e:release:headed": "playwright test --config=playwright.release.config.ts --headed",
     "verify:host-program-flow": "node scripts/verify-host-program-flow.mjs",
+    "verify:open-assets": "node scripts/verify-open-launch-assets.mjs",
     "verify:overflow": "node scripts/verify-route-overflow.mjs",
     "db:generate": "drizzle-kit generate",
     "db:push": "drizzle-kit push",

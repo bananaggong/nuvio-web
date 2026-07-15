@@ -7,6 +7,12 @@ import { ChevronLeft, ChevronRight } from "lucide-react";
 import { NuvioEmptyState } from "@/components/nuvio-empty-state";
 import { programPath } from "@/lib/program-routing";
 import type { HomeHeroSlide } from "@/lib/home-hero-db";
+import {
+  OPEN_LAUNCH_BANNER_PATH,
+  OPEN_LAUNCH_DESCRIPTION,
+  OPEN_LAUNCH_PATH,
+  OPEN_LAUNCH_TITLE,
+} from "@/lib/open-launch";
 import type { Program } from "@/lib/types";
 
 type ProgramExplorerProps = {
@@ -14,8 +20,24 @@ type ProgramExplorerProps = {
   programs: Program[];
 };
 
+type ExplorerHeroSlide = HomeHeroSlide & {
+  visualMode?: "content-overlay" | "image-only";
+};
+
 const boseongTeaFieldImage =
   "upload.wikimedia.org/wikipedia/commons/b/b3/Boseong_Green_Tea_Field.jpg";
+
+const openLaunchSlide: ExplorerHeroSlide = {
+  id: "nuvio-open-launch",
+  eyebrow: "",
+  title: OPEN_LAUNCH_TITLE,
+  subtitle: OPEN_LAUNCH_DESCRIPTION,
+  imageUrl: OPEN_LAUNCH_BANNER_PATH,
+  href: OPEN_LAUNCH_PATH,
+  sortOrder: Number.MIN_SAFE_INTEGER,
+  published: true,
+  visualMode: "image-only",
+};
 
 export function ProgramExplorer({
   heroSlides = [],
@@ -27,18 +49,23 @@ export function ProgramExplorer({
   const featuredPrograms = useMemo(() => programs.slice(0, 6), [programs]);
   const slides = useMemo(() => {
     const publishedSlides = heroSlides.filter((slide) => slide.published);
-    if (publishedSlides.length > 0) return publishedSlides;
+    const contentSlides: ExplorerHeroSlide[] =
+      publishedSlides.length > 0
+        ? publishedSlides
+        : featuredPrograms
+            .slice(0, 4)
+            .map<ExplorerHeroSlide>((program, index) => ({
+              id: `program-${program.slug || program.id}`,
+              eyebrow: `${program.region} ${program.city}`,
+              title: program.title,
+              subtitle: program.summary,
+              imageUrl: program.image,
+              href: programPath(program),
+              sortOrder: index,
+              published: true,
+            }));
 
-    return featuredPrograms.slice(0, 4).map<HomeHeroSlide>((program, index) => ({
-      id: `program-${program.slug || program.id}`,
-      eyebrow: `${program.region} ${program.city}`,
-      title: program.title,
-      subtitle: program.summary,
-      imageUrl: program.image,
-      href: programPath(program),
-      sortOrder: index,
-      published: true,
-    }));
+    return [openLaunchSlide, ...contentSlides];
   }, [featuredPrograms, heroSlides]);
 
   const safeActiveIndex =
@@ -95,7 +122,8 @@ export function ProgramExplorer({
     <div className="font-pretendard bg-white">
       <section className="mx-auto w-full px-[2.083vw] pb-[5.833vw] pt-[1.736vw]">
         <div
-          className="group relative mx-auto flex aspect-[1074/420] w-[74.583vw] min-h-[280px] items-center justify-between overflow-hidden rounded-[1.25vw] bg-[#778696] px-[2.361vw] text-white max-md:aspect-[4/5] max-md:w-full max-md:px-5"
+          className="group relative mx-auto aspect-[1074/420] w-[calc(74.583333vw+0.01px)] max-w-[1432px] overflow-hidden rounded-[clamp(8px,1.597vw,30.667px)] bg-white text-white max-md:w-full"
+          data-home-hero-carousel="true"
           onTouchEnd={handleTouchEnd}
           onTouchStart={handleTouchStart}
         >
@@ -105,15 +133,28 @@ export function ProgramExplorer({
               className="object-cover"
               fill
               key={activeSlide.id}
-              priority
-              sizes="(max-width: 768px) 100vw, 75vw"
+              sizes="(max-width: 768px) 100vw, (max-width: 1920px) 74.583333vw, 1432px"
               src={resolveHeroImageUrl(activeSlide.imageUrl)}
+              unoptimized={activeSlide.visualMode === "image-only"}
+              {...(safeActiveIndex === 0
+                ? { preload: true }
+                : { loading: "eager" as const })}
             />
           ) : null}
-          <div className="absolute inset-0 bg-black/40" />
+          {activeSlide?.visualMode === "image-only" ? null : (
+            <div className="absolute inset-0 bg-black/40" />
+          )}
+          {activeSlide?.visualMode === "image-only" ? (
+            <h1 className="sr-only">{activeSlide.title}</h1>
+          ) : null}
           {activeSlide ? (
             <Link
               aria-label={`${activeSlide.title} 자세히 보기`}
+              data-hero-visual-mode={activeSlide.visualMode ?? "content-overlay"}
+              data-home-hero-link="true"
+              data-open-launch-banner={
+                activeSlide.visualMode === "image-only" ? "true" : undefined
+              }
               className="absolute inset-0 z-10"
               href={activeSlide.href}
               onClick={handleHeroClick}
@@ -121,7 +162,7 @@ export function ProgramExplorer({
           ) : null}
           <button
             aria-label="이전 배너"
-            className="pointer-events-none relative z-30 inline-flex size-[3.333vw] min-h-11 min-w-11 items-center justify-center text-[#FFB25F] opacity-0 transition-[color,opacity] hover:text-[#FF9A3D] group-hover:pointer-events-auto group-hover:opacity-100 group-focus-within:pointer-events-auto group-focus-within:opacity-100 max-md:pointer-events-auto max-md:opacity-100"
+            className="pointer-events-none absolute left-[clamp(4px,2.361vw,45.333px)] top-1/2 z-30 inline-flex size-[3.333vw] min-h-11 min-w-11 -translate-y-1/2 items-center justify-center text-[#FFB25F] opacity-0 transition-[color,opacity] hover:text-[#FF9A3D] group-hover:pointer-events-auto group-hover:opacity-100 group-focus-within:pointer-events-auto group-focus-within:opacity-100 max-md:pointer-events-auto max-md:opacity-100"
             disabled={!hasMultipleSlides}
             onClick={showPrevious}
             type="button"
@@ -129,44 +170,46 @@ export function ProgramExplorer({
             <ChevronLeft aria-hidden="true" className="size-[3.75vw] min-h-9 min-w-9" strokeWidth={1.7} />
           </button>
 
-          <div className="pointer-events-none relative z-20 flex min-w-0 flex-col items-center text-center">
-            {activeSlide?.eyebrow ? (
-              <p className="mb-[1.111vw] text-[0.833vw] font-black leading-none text-[#FFB25F] max-md:text-xs">
-                {activeSlide.eyebrow}
+          {activeSlide?.visualMode === "image-only" ? null : (
+            <div className="pointer-events-none absolute inset-0 z-20 flex min-w-0 flex-col items-center justify-center px-[8vw] text-center">
+              {activeSlide?.eyebrow ? (
+                <p className="mb-[1.111vw] text-[0.833vw] font-black leading-none text-[#FFB25F] max-md:mb-1 max-md:text-[10px]">
+                  {activeSlide.eyebrow}
+                </p>
+              ) : null}
+              <h1 className="max-w-[42vw] text-[2.083vw] font-bold leading-[1.45] tracking-normal text-white max-md:max-w-[58vw] max-md:text-sm">
+                {activeSlide?.title ?? "결이 맞는 로컬 라이프를 찾아보세요"}
+              </h1>
+              <p className="mt-[1.944vw] max-w-[38vw] text-[0.972vw] font-semibold leading-[1.5] text-white/85 max-md:mt-1 max-md:max-w-[58vw] max-md:text-[10px]">
+                {activeSlide?.subtitle ??
+                  "가볍게 떠나보고, 나와 맞는 로컬의 시간을 발견해보세요."}
               </p>
-            ) : null}
-            <h1 className="max-w-[42vw] text-[2.083vw] font-bold leading-[1.45] tracking-normal text-white max-md:max-w-[58vw] max-md:text-3xl">
-              {activeSlide?.title ?? "결이 맞는 로컬 라이프를 찾아보세요"}
-            </h1>
-            <p className="mt-[1.944vw] max-w-[38vw] text-[0.972vw] font-semibold leading-[1.5] text-white/85 max-md:max-w-[58vw] max-md:text-sm">
-              {activeSlide?.subtitle ??
-                "가볍게 떠나보고, 나와 맞는 로컬의 시간을 발견해보세요."}
-            </p>
-
-            <div className="pointer-events-auto mt-[6.25vw] flex items-center gap-[0.347vw] max-md:mt-12 max-md:gap-0">
-              {Array.from({ length: Math.max(slides.length, 1) }).map((_, dot) => (
-                <button
-                  aria-label={`${dot + 1}번째 배너 보기`}
-                  className="inline-flex size-11 items-center justify-center rounded-full"
-                  disabled={dot >= slides.length}
-                  key={dot}
-                  onClick={() => showSlide(dot)}
-                  type="button"
-                >
-                  <span
-                    aria-hidden="true"
-                    className={`size-[0.556vw] min-h-2.5 min-w-2.5 rounded-full transition ${
-                      dot === safeActiveIndex ? "bg-[#FFB25F]" : "bg-[#E8E7E2]"
-                    }`}
-                  />
-                </button>
-              ))}
             </div>
+          )}
+
+          <div className="pointer-events-auto absolute bottom-[clamp(8px,5.278vw,101.333px)] left-1/2 z-30 flex -translate-x-1/2 items-center gap-[0.347vw] max-md:gap-0">
+            {slides.map((slide, dot) => (
+              <button
+                aria-current={dot === safeActiveIndex ? "true" : undefined}
+                aria-label={`${dot + 1}번째 배너 보기`}
+                className="inline-flex size-11 items-center justify-center rounded-full"
+                key={slide.id}
+                onClick={() => showSlide(dot)}
+                type="button"
+              >
+                <span
+                  aria-hidden="true"
+                  className={`size-[0.556vw] min-h-2.5 min-w-2.5 rounded-full transition ${
+                    dot === safeActiveIndex ? "bg-[#FFB25F]" : "bg-[#E8E7E2]"
+                  }`}
+                />
+              </button>
+            ))}
           </div>
 
           <button
             aria-label="다음 배너"
-            className="pointer-events-none relative z-30 inline-flex size-[3.333vw] min-h-11 min-w-11 items-center justify-center text-[#FFB25F] opacity-0 transition-[color,opacity] hover:text-[#FF9A3D] group-hover:pointer-events-auto group-hover:opacity-100 group-focus-within:pointer-events-auto group-focus-within:opacity-100 max-md:pointer-events-auto max-md:opacity-100"
+            className="pointer-events-none absolute right-[clamp(4px,2.361vw,45.333px)] top-1/2 z-30 inline-flex size-[3.333vw] min-h-11 min-w-11 -translate-y-1/2 items-center justify-center text-[#FFB25F] opacity-0 transition-[color,opacity] hover:text-[#FF9A3D] group-hover:pointer-events-auto group-hover:opacity-100 group-focus-within:pointer-events-auto group-focus-within:opacity-100 max-md:pointer-events-auto max-md:opacity-100"
             disabled={!hasMultipleSlides}
             onClick={showNext}
             type="button"
