@@ -326,6 +326,7 @@ const nuvioIconSources = {
   settings: "/icons/nuvio/settings.svg",
   summaryCalendar: "/icons/nuvio/summary-calendar.svg",
   summaryMessage: "/icons/nuvio/summary-message.svg",
+  summaryReview: "/icons/nuvio/summary-review.svg",
   user: "/icons/nuvio/user.svg",
 } as const;
 
@@ -564,6 +565,7 @@ function MypageOverview({ context }: { context: MypageContext }) {
           loading={context.loading}
           messageCount={context.unreadMessageCount}
           nickname={context.nickname}
+          reviewCount={context.reviewCount}
           tripCount={context.visibleTrips.length}
         />
         <WalletSummaryCard loading={context.loading} pointCount={0} />
@@ -3610,6 +3612,7 @@ function ProfileSummaryCard({
   loading = false,
   messageCount,
   nickname,
+  reviewCount,
   tripCount,
 }: {
   avatarUrl?: string | null;
@@ -3617,6 +3620,7 @@ function ProfileSummaryCard({
   loading?: boolean;
   messageCount: number;
   nickname: string;
+  reviewCount: number;
   tripCount: number;
 }) {
   if (loading) {
@@ -3627,8 +3631,8 @@ function ProfileSummaryCard({
             <MypageSkeletonBlock className="size-[clamp(54px,3.75vw,72px)] rounded-full" />
             <MypageSkeletonBlock className="h-[clamp(14px,0.9722vw,18.667px)] w-[clamp(64px,4.4444vw,85.333px)]" />
           </div>
-          <div className="grid flex-1 grid-cols-3 gap-y-[clamp(18px,1.25vw,24px)]">
-            {Array.from({ length: 3 }, (_, index) => (
+          <div className="grid flex-1 grid-cols-4 gap-y-[clamp(18px,1.25vw,24px)]">
+            {Array.from({ length: 4 }, (_, index) => (
               <div
                 className="flex flex-col items-center gap-[clamp(8px,0.5556vw,10.667px)]"
                 key={`summary-loading-${index}`}
@@ -3662,7 +3666,7 @@ function ProfileSummaryCard({
           </span>
         </div>
 
-        <div className="grid flex-1 grid-cols-3 gap-y-[clamp(18px,1.25vw,24px)]">
+        <div className="grid flex-1 grid-cols-4 gap-y-[clamp(18px,1.25vw,24px)]">
           <SummaryMetric
             href="/mypage/trips"
             iconName="summaryCalendar"
@@ -3674,6 +3678,12 @@ function ProfileSummaryCard({
             iconName="bookmark"
             label="북마크"
             value={bookmarkCount}
+          />
+          <SummaryMetric
+            href="/mypage/reviews"
+            iconName="summaryReview"
+            label="후기"
+            value={reviewCount}
           />
           <SummaryMetric
             href="/mypage/messages"
