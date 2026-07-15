@@ -17,6 +17,7 @@ const reservedTopLevelSegments = new Set([
   "manifest.json",
   "me",
   "mypage",
+  "open",
   "partners",
   "privacy",
   "robots.txt",
