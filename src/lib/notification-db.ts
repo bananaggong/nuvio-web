@@ -624,7 +624,7 @@ export async function queueReviewSubmittedNotification(input: {
     recipients.map(async (recipient) => {
       const message: NotificationMessage = {
         body: `${authorName}님이 ${programTitle} 후기를 남겼습니다. 검토 후 공개 여부를 결정해 주세요.`,
-        href: "/host/applications?panel=reviews",
+        href: buildHostReviewManagementHref(input.programId),
         metadata: {
           authorName,
           programId: input.programId ?? undefined,
@@ -664,7 +664,7 @@ export async function queueReviewReportCreatedNotification(input: {
     recipients.map(async (recipient) => {
       const message: NotificationMessage = {
         body: `${programTitle} 후기 신고가 접수됐습니다. 신고 사유를 확인해 주세요.`,
-        href: "/host/applications?panel=reviews",
+        href: buildHostReviewManagementHref(input.programId),
         metadata: {
           programId: input.programId ?? undefined,
           programTitle,
@@ -1357,6 +1357,16 @@ function buildHostApplicationManagementHref(input: {
   }
 
   return `/host/programs/${encodeURIComponent(programId)}/applications?applicationId=${applicationId}`;
+}
+
+function buildHostReviewManagementHref(programId?: number | string | null) {
+  const normalizedProgramId = String(programId ?? "").trim();
+
+  if (!normalizedProgramId) {
+    return "/host/applications?panel=reviews";
+  }
+
+  return `/host/programs/${encodeURIComponent(normalizedProgramId)}/applications?panel=reviews`;
 }
 
 async function listHostNotificationRecipients(options: {

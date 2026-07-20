@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import { Suspense } from "react";
-import { OpsConsoleShell } from "@/components/ops-console-shell";
+import { SiteHeader } from "@/components/site-header";
 import { createSeoMetadata } from "@/lib/seo";
 
 export const metadata: Metadata = createSeoMetadata({
@@ -15,7 +15,10 @@ export default function HostLayout({
 }>) {
   return (
     <Suspense fallback={<div className="min-h-screen bg-gray-50" />}>
-      <OpsConsoleShell area="host">{children}</OpsConsoleShell>
+      <div className="min-h-screen bg-white text-[#33241C]">
+        <SiteHeader />
+        <main>{children}</main>
+      </div>
     </Suspense>
   );
 }
