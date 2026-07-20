@@ -9,7 +9,6 @@ import {
   Mail,
   MapPin,
   Phone,
-  Sparkles,
   UserRound,
   type LucideIcon,
 } from "lucide-react";
@@ -278,10 +277,6 @@ export function OnboardingPanel() {
     }
   }
 
-  const welcomeName = displayName.trim() || "누비오 멤버";
-  const intentLabel =
-    selectedIntent === "host" ? "호스트로 시작" : "누비어로 시작";
-
   if (loadingSession) {
     return (
       <div className="min-h-screen bg-[#fbfaf8]">
@@ -299,54 +294,7 @@ export function OnboardingPanel() {
   return (
     <div className="min-h-screen bg-[#fbfaf8]">
       <AuthHeader />
-      <main className="mx-auto grid min-h-[calc(100vh-3.5rem)] w-full max-w-6xl gap-8 px-5 py-8 lg:grid-cols-[360px_minmax(0,560px)] lg:items-center lg:px-8 lg:py-12">
-        <aside className="lg:pb-14">
-          <div className="inline-flex h-10 items-center gap-2 rounded-full border border-[#f2d4c2] bg-white px-4 text-[13px] font-bold text-[#FE701E] shadow-sm">
-            <Sparkles size={16} />
-            NUVIO Start
-          </div>
-          <h1 className="mt-7 text-[34px] font-black leading-tight tracking-normal text-[#2f2018] sm:text-[42px]">
-            {welcomeName}님,
-            <br />
-            이제 시작해볼까요?
-          </h1>
-          <p className="mt-5 max-w-[330px] text-[15px] font-medium leading-7 text-[#748190]">
-            가입 후 바로 프로그램을 신청하거나 채널을 운영할 수 있도록 필요한
-            정보만 빠르게 확인해요.
-          </p>
-
-          <div className="mt-9 space-y-4 border-l border-[#eadfd7] pl-5">
-            {steps.map((item) => {
-              const active = item.id === step;
-              const complete = item.id < step;
-              return (
-                <div className="flex items-center gap-3" key={item.id}>
-                  <span
-                    className={[
-                      "grid size-6 place-items-center rounded-full border text-[11px] font-black",
-                      active
-                        ? "border-[#FE701E] bg-[#FE701E] text-white"
-                        : complete
-                          ? "border-[#86A15C] bg-[#86A15C] text-white"
-                          : "border-[#d8cec5] bg-white text-[#9a8a7e]",
-                    ].join(" ")}
-                  >
-                    {complete ? <CheckCircle2 size={14} /> : item.id}
-                  </span>
-                  <span
-                    className={[
-                      "text-[14px] font-bold",
-                      active ? "text-[#4B3328]" : "text-[#9a8a7e]",
-                    ].join(" ")}
-                  >
-                    {item.label}
-                  </span>
-                </div>
-              );
-            })}
-          </div>
-        </aside>
-
+      <main className="mx-auto flex min-h-[calc(100vh-3.5rem)] w-full max-w-[624px] items-center px-5 py-8 sm:px-8 sm:py-12">
         <section className="w-full">
           {accountEmail ? (
             <div className="mb-3 flex min-h-11 items-center gap-3 rounded-[12px] border border-[#eadfd7] bg-white px-4 text-[13px] font-semibold text-[#748190]">
@@ -364,11 +312,7 @@ export function OnboardingPanel() {
 
             {step === 1 ? (
               <div>
-                <StepHeader
-                  eyebrow="1 / 3"
-                  title="어떤 방식으로 누비오를 시작할까요?"
-                  description="선택한 방식에 맞춰 첫 화면으로 이동해요."
-                />
+                <StepHeader title="어떤 방식으로 누비오를 시작할까요?" />
 
                 <div className="mt-7 grid gap-3">
                   {intentOptions.map((option) => (
@@ -394,11 +338,7 @@ export function OnboardingPanel() {
             {step === 2 ? (
               <div>
                 <BackStepButton onClick={goBack} />
-                <StepHeader
-                  eyebrow="2 / 3"
-                  title="연락 가능한 기본 정보를 확인해요"
-                  description="프로그램 안내와 호스트 운영 알림을 받을 때 사용돼요."
-                />
+                <StepHeader title="연락 가능한 기본 정보를 확인해요" />
 
                 <div className="mt-7 grid gap-4">
                   <TextField
@@ -443,13 +383,9 @@ export function OnboardingPanel() {
             {step === 3 ? (
               <div>
                 <BackStepButton onClick={goBack} />
-                <StepHeader
-                  eyebrow="3 / 3"
-                  title="활동 지역을 확인하면 준비가 끝나요"
-                  description="지역 기반 프로그램과 채널 운영 경험을 더 자연스럽게 이어갈 수 있어요."
-                />
+                <StepHeader title="활동 지역을 확인하면 준비가 끝나요" />
 
-                <div className="mt-7 grid gap-4">
+                <div className="mt-7">
                   <TextField
                     autoComplete="street-address"
                     error={fieldErrors.address}
@@ -459,31 +395,6 @@ export function OnboardingPanel() {
                     placeholder="예: 서울특별시 마포구 / 전남 여수"
                     value={address}
                   />
-
-                  <div className="border-y border-[#f3e7dd] py-4">
-                    <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-                      <div>
-                        <p className="text-[13px] font-bold text-[#9a8a7e]">
-                          시작 방식
-                        </p>
-                        <p className="mt-1 text-[16px] font-black text-[#4B3328]">
-                          {intentLabel}
-                        </p>
-                      </div>
-                      <button
-                        className="inline-flex h-9 w-fit items-center justify-center rounded-[8px] border border-[#d8cec5] px-3 text-[13px] font-bold text-[#748190] transition hover:border-[#FE701E] hover:text-[#FE701E]"
-                        onClick={() => setStep(1)}
-                        type="button"
-                      >
-                        시작 방식 변경
-                      </button>
-                    </div>
-                    <p className="mt-4 text-[13px] font-medium leading-6 text-[#748190]">
-                      {selectedIntent === "host"
-                        ? "완료하면 호스트센터로 이동해 채널을 만들 수 있어요."
-                        : "완료하면 프로그램 탐색 화면으로 이동해 바로 둘러볼 수 있어요."}
-                    </p>
-                  </div>
                 </div>
 
                 {errorMessage ? (
@@ -536,24 +447,12 @@ function StepDots({ current }: { current: OnboardingStep }) {
   );
 }
 
-function StepHeader({
-  description,
-  eyebrow,
-  title,
-}: {
-  description: string;
-  eyebrow: string;
-  title: string;
-}) {
+function StepHeader({ title }: { title: string }) {
   return (
     <header>
-      <p className="text-[13px] font-black text-[#FE701E]">{eyebrow}</p>
-      <h2 className="mt-2 text-[25px] font-black leading-tight tracking-normal text-[#2f2018] sm:text-[28px]">
+      <h2 className="text-[25px] font-black leading-tight tracking-normal text-[#2f2018] sm:text-[28px]">
         {title}
       </h2>
-      <p className="mt-3 text-[14px] font-medium leading-6 text-[#748190]">
-        {description}
-      </p>
     </header>
   );
 }

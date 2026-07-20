@@ -101,8 +101,17 @@ test("optional social providers stay hidden until explicitly configured", () => 
     createSocialProviders("custom:naver").map(({ key }) => key),
     ["google", "kakao", "naver"],
   );
+  assert.equal(
+    createSocialProviders(" CUSTOM:NAVER ").find(({ key }) => key === "naver")
+      ?.provider,
+    "custom:naver",
+  );
   assert.deepEqual(
     createSocialProviders("naver").map(({ key }) => key),
+    ["google", "kakao"],
+  );
+  assert.deepEqual(
+    createSocialProviders("custom:other").map(({ key }) => key),
     ["google", "kakao"],
   );
 });

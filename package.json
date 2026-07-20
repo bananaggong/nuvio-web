@@ -14,7 +14,7 @@
     "audit:async-ops": "node scripts/audit-async-operations.mjs",
     "audit:phone-quality": "node scripts/audit-member-phone-quality.mjs",
     "verify:ops-readiness": "node scripts/verify-ops-readiness-artifacts.mjs && npm run test:async-ops",
-    "test:security": "node --test tests/browser-push-security.test.mjs tests/image-upload-security.test.mjs && tsx --test tests/api-access-matrix.test.ts tests/content-security.test.ts tests/korean-mobile-phone.test.ts tests/member-phone-boundaries.test.ts tests/release-reset-proxy.test.ts tests/request-security.test.ts tests/security-boundaries.test.ts tests/server-error-diagnostics.test.ts",
+    "test:security": "node --test tests/browser-push-security.test.mjs tests/image-upload-security.test.mjs && tsx --test tests/api-access-matrix.test.ts tests/content-security.test.ts tests/korean-mobile-phone.test.ts tests/member-phone-boundaries.test.ts tests/naver-userinfo-route.test.ts tests/release-reset-proxy.test.ts tests/request-security.test.ts tests/security-boundaries.test.ts tests/server-error-diagnostics.test.ts tests/trusted-request-origin.test.ts",
     "pretest:security:e2e": "npm run build",
     "test:security:e2e": "playwright test --config=playwright.security.config.ts",
     "test:security:all": "npm run test:security && npm run test:security:e2e",

@@ -3,6 +3,7 @@ import { type NextRequest, NextResponse } from "next/server";
 import { hasSupabasePublicConfig } from "./lib/supabase/config";
 
 const RELEASE_RESET_RETRY_AFTER_SECONDS = 300;
+const NAVER_USERINFO_ADAPTER_PATH = "/api/auth/naver/userinfo";
 const RELEASE_RESET_STATIC_ASSET_PATHS = new Set([
   "/apple-icon.png",
   "/brand/nuvio-wordmark.svg",
@@ -31,6 +32,10 @@ export function isReleaseResetAllowedPath(pathname: string): boolean {
   );
 }
 
+export function isNaverUserInfoAdapterPath(pathname: string): boolean {
+  return pathname === NAVER_USERINFO_ADAPTER_PATH;
+}
+
 function isReleaseResetModeEnabled(): boolean {
   return process.env.NUVIO_RELEASE_RESET_MODE === "1";
 }
@@ -54,6 +59,10 @@ export async function proxy(request: NextRequest) {
       return createReleaseResetResponse();
     }
 
+    return NextResponse.next({ request });
+  }
+
+  if (isNaverUserInfoAdapterPath(request.nextUrl.pathname)) {
     return NextResponse.next({ request });
   }
 

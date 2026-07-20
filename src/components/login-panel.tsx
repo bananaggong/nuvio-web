@@ -487,12 +487,12 @@ function SocialButton({
   if (providerKey === "naver") {
     return (
       <button
-        className="relative h-12 w-full cursor-pointer rounded-xl bg-[#03C75A] text-white shadow-[0_2px_8px_rgba(0,0,0,0.10)] transition hover:brightness-95 disabled:opacity-60"
+        className="relative h-12 w-full cursor-pointer rounded-xl bg-[#03A94D] text-white shadow-[0_2px_8px_rgba(0,0,0,0.10)] transition hover:brightness-95 disabled:opacity-60"
         disabled={disabled}
         onClick={onClick}
         type="button"
       >
-        <span className="flex items-center justify-center gap-3 text-[15px] font-semibold">
+        <span className="flex items-center justify-center gap-2 text-[15px] font-semibold">
           <span className="flex w-5 shrink-0 items-center justify-center">
             <NaverIcon className="h-5 w-5" />
           </span>

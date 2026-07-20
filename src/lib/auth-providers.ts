@@ -26,9 +26,9 @@ export function createSocialProviders(
       helper: "Kakao OAuth provider",
     },
   ];
-  const naverProvider = naverProviderValue?.trim();
+  const naverProvider = naverProviderValue?.trim().toLowerCase();
 
-  if (naverProvider && /^custom:[a-z0-9][a-z0-9_-]{0,63}$/iu.test(naverProvider)) {
+  if (naverProvider === "custom:naver") {
     providers.push({
       key: "naver",
       label: "Naver",

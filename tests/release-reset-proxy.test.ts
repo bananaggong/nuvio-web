@@ -2,7 +2,12 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import { NextRequest } from "next/server";
 
-import { config, isReleaseResetAllowedPath, proxy } from "../src/proxy";
+import {
+  config,
+  isNaverUserInfoAdapterPath,
+  isReleaseResetAllowedPath,
+  proxy,
+} from "../src/proxy";
 
 const RESET_ENV_NAMES = [
   "NUVIO_RELEASE_RESET_MODE",
@@ -50,6 +55,7 @@ test("release reset allowlist is exact", () => {
 
   for (const pathname of [
     "/api/programs",
+    "/api/auth/naver/userinfo",
     "/api/cron/process-scheduled-messages",
     "/admin",
     "/auth/callback",
@@ -78,6 +84,7 @@ test("release reset mode returns an uncacheable 503 for blocked routes", async (
 
     for (const pathname of [
       "/api/auth/session",
+      "/api/auth/naver/userinfo",
       "/api/cron/process-scheduled-messages",
       "/admin",
       "/auth/callback",
@@ -98,6 +105,18 @@ test("release reset mode returns an uncacheable 503 for blocked routes", async (
     }
   } finally {
     restoreEnvironment(snapshot);
+  }
+});
+
+test("Naver userinfo adapter pass-through matches only the exact path", () => {
+  assert.equal(isNaverUserInfoAdapterPath("/api/auth/naver/userinfo"), true);
+
+  for (const pathname of [
+    "/api/auth/naver/userinfo/",
+    "/api/auth/naver/userinfo-extra",
+    "/api/auth/naver",
+  ]) {
+    assert.equal(isNaverUserInfoAdapterPath(pathname), false, pathname);
   }
 });
 
@@ -165,6 +184,28 @@ test("normal Proxy behavior is unchanged when release reset mode is off", async 
 
     assert.equal(response.status, 200);
     assert.equal(response.headers.get("x-middleware-next"), "1");
+  } finally {
+    restoreEnvironment(snapshot);
+  }
+});
+
+test("Naver userinfo adapter bypasses Supabase session refresh outside reset mode", async () => {
+  const snapshot = snapshotEnvironment();
+
+  try {
+    process.env.NUVIO_RELEASE_RESET_MODE = "0";
+    process.env.NEXT_PUBLIC_SUPABASE_URL = "https://example.supabase.co";
+    process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY = "test-publishable-key";
+
+    const response = await proxy(
+      new NextRequest("https://nuvio.kr/api/auth/naver/userinfo", {
+        headers: { Authorization: "Bearer provider-access-token" },
+      }),
+    );
+
+    assert.equal(response.status, 200);
+    assert.equal(response.headers.get("x-middleware-next"), "1");
+    assert.equal(response.headers.get("set-cookie"), null);
   } finally {
     restoreEnvironment(snapshot);
   }
