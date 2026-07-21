@@ -25,10 +25,12 @@ export function getReleaseE2EDatabaseUrl(): string {
 
 export function getReleaseE2ESupabaseConfig() {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL?.trim();
-  const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY?.trim();
+  const serviceRoleKey =
+    process.env.SUPABASE_SECRET_KEY?.trim() ||
+    process.env.SUPABASE_SERVICE_ROLE_KEY?.trim();
   if (!url || !serviceRoleKey) {
     throw new Error(
-      "Release E2E requires NEXT_PUBLIC_SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY.",
+      "Release E2E requires NEXT_PUBLIC_SUPABASE_URL and SUPABASE_SECRET_KEY.",
     );
   }
 

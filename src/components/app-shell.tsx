@@ -10,7 +10,10 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const isChannelMicrosite = isChannelMicrositePath(pathname);
   const isAuthPage =
-    pathname === "/login" || pathname === "/signup" || pathname === "/onboarding";
+    pathname === "/login" ||
+    pathname === "/signup" ||
+    pathname === "/onboarding" ||
+    pathname === "/account-recovery";
   const isOpsConsole =
     pathname === "/host" ||
     pathname.startsWith("/host/") ||

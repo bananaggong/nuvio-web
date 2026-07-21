@@ -35,6 +35,7 @@ import { ReviewIcon } from "@/components/icons/review-icon";
 import { NuvioEmptyState } from "@/components/nuvio-empty-state";
 import { SupportContactForm } from "@/components/support-contact-form";
 import { UnsavedChangesGuard } from "@/components/unsaved-changes-guard";
+import { getAuthProviderLabel } from "@/lib/auth-provider-labels";
 import type { HostApplication } from "@/lib/host-operations";
 import type {
   HostInquiry,
@@ -2308,7 +2309,7 @@ function MemberInformationForm({
   const isPasswordManagedAccount = isPasswordAuthProvider(
     context.authSession.user?.appMetadata,
   );
-  const socialProviderLabel = getAuthProviderLabel(authProvider);
+  const socialProviderLabel = getAuthProviderLabel(authProvider) ?? "소셜";
   const accountEmail = context.authSession.user?.email ?? profile?.email ?? "";
   const initialEmail = profile?.contactEmail || accountEmail;
   const initialEmailParts = splitEmailAddress(initialEmail);
@@ -5001,13 +5002,6 @@ function isPasswordAuthProvider(
   const providers = getMetadataTextArray(metadata, "providers");
   const provider = getPrimaryAuthProvider(metadata);
   return provider === "email" || providers.includes("email");
-}
-
-function getAuthProviderLabel(provider: string): string {
-  if (provider === "google") return "Google";
-  if (provider === "kakao") return "Kakao";
-  if (provider === "naver") return "Naver";
-  return "이메일";
 }
 
 function getInitial(name: string) {

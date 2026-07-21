@@ -22,16 +22,18 @@ export function getSupabasePublicConfig(): SupabasePublicConfig {
   return { url, publishableKey };
 }
 
-export function getSupabaseServiceRoleKey(): string {
-  const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+export function getSupabaseSecretKey(): string {
+  const secretKey =
+    process.env.SUPABASE_SECRET_KEY?.trim() ||
+    process.env.SUPABASE_SERVICE_ROLE_KEY?.trim();
 
-  if (!serviceRoleKey) {
+  if (!secretKey) {
     throw new Error(
-      "SUPABASE_SERVICE_ROLE_KEY is required for server-side admin operations.",
+      "SUPABASE_SECRET_KEY is required for server-side admin operations.",
     );
   }
 
-  return serviceRoleKey;
+  return secretKey;
 }
 
 function getSupabasePublishableKey(): string {

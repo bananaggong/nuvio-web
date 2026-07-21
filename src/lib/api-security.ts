@@ -25,6 +25,7 @@ export type ApiAuthContext = {
 export type ApiAuthResult = ApiAuthContext | { response: NextResponse };
 
 type RateLimitOptions = {
+  failureMode?: "deny" | "memory";
   identity?: string;
   key: string;
   limit: number;
@@ -239,6 +240,12 @@ export async function applyPersistentRateLimit(
       "X-RateLimit-Reset": String(Math.ceil(row.resetAt.getTime() / 1000)),
     });
   } catch {
+    if (options.failureMode === "deny") {
+      return apiError("Request throttling is temporarily unavailable.", 503, {
+        "Retry-After": "60",
+      });
+    }
+
     return applyRateLimit(request, options);
   }
 }

@@ -85,6 +85,19 @@ function getSignupPath(nextPath: string | null, intent: LoginIntent | null) {
   return query ? `/signup?${query}` : "/signup";
 }
 
+function getAccountRecoveryPath(
+  nextPath: string | null,
+  intent: LoginIntent | null,
+) {
+  const params = new URLSearchParams();
+  if (intent) params.set("intent", intent);
+  if (nextPath) params.set("next", nextPath);
+  const query = params.toString();
+  return query
+    ? `/account-recovery?${query}`
+    : "/account-recovery";
+}
+
 function getOnboardingIntent(
   intent: LoginIntent | null,
 ): "participant" | "host" | null {
@@ -147,6 +160,7 @@ export function LoginPanel({
   const [message, setMessage] = useState("");
   const [errorMessage, setErrorMessage] = useState(authParams.errorMessage);
   const signupPath = getSignupPath(nextPath, intent);
+  const accountRecoveryPath = getAccountRecoveryPath(nextPath, intent);
 
   useEffect(() => {
     let isMounted = true;
@@ -323,13 +337,12 @@ export function LoginPanel({
             </form>
 
             <div className="text-right">
-              <button
+              <Link
                 className="text-[13px] font-medium text-[#888] underline underline-offset-2 hover:text-[#378ADD]"
-                onClick={() => setMessage("이메일/비밀번호 찾기는 준비 중이에요.")}
-                type="button"
+                href={accountRecoveryPath}
               >
-                이메일/비밀번호 찾기
-              </button>
+                가입 계정 찾기
+              </Link>
             </div>
 
             {errorMessage ? (
@@ -441,14 +454,13 @@ export function LoginPanel({
         ) : null}
 
         <div className="fixed bottom-6 left-0 right-0 w-full text-center lg:static lg:mt-8">
-          <button
+          <Link
             className="inline-flex cursor-pointer items-center gap-1 text-[13px] font-medium text-[#aaa] underline underline-offset-2 hover:text-[#378ADD]"
-            onClick={() => setMessage("가입 계정 찾기는 준비 중이에요.")}
-            type="button"
+            href={accountRecoveryPath}
           >
-            어떤 계정으로 가입했는지 모르겠어요
+            가입 계정 찾기
             <QuestionIcon />
-          </button>
+          </Link>
         </div>
       </div>
     </div>
