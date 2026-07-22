@@ -107,6 +107,7 @@ export async function proxy(request: NextRequest) {
       `${request.nextUrl.pathname}${request.nextUrl.search}`,
     );
     const redirectResponse = NextResponse.redirect(loginUrl);
+    redirectResponse.headers.set("Cache-Control", "private, no-store");
 
     for (const cookie of response.cookies.getAll()) {
       redirectResponse.cookies.set(cookie);

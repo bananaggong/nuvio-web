@@ -151,6 +151,7 @@ test("anonymous mypage requests redirect to login with the exact next path", asy
     );
 
     assert.equal(response.status, 307);
+    assert.equal(response.headers.get("cache-control"), "private, no-store");
     const location = new URL(response.headers.get("location") ?? "");
     assert.equal(location.pathname, "/login");
     assert.equal(
