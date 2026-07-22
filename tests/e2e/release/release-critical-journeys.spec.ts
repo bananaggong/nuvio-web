@@ -14,6 +14,22 @@ const e2ePort = Number(process.env.NUVIO_E2E_PORT ?? "3100");
 const origin = `http://127.0.0.1:${e2ePort}`;
 
 test.describe.serial("release critical journeys", () => {
+  test("keeps support public and preserves the anonymous mypage return path", async ({
+    page,
+  }) => {
+    const nextPath =
+      "/mypage/messages?programId=program-1&hostName=%EA%B0%80%EC%9D%B4%EB%93%9C";
+
+    await page.goto(nextPath);
+    const loginUrl = new URL(page.url());
+    expect(loginUrl.pathname).toBe("/login");
+    expect(loginUrl.searchParams.get("next")).toBe(nextPath);
+
+    await page.goto("/support");
+    await expect(page).toHaveURL(/\/support$/u);
+    await expect(page.getByTestId("mypage-side-menu")).toHaveCount(0);
+  });
+
   test("signs up, logs in, and completes participant onboarding", async ({ page }, testInfo) => {
     let state = await readReleaseE2EState();
     await page.goto("/signup?intent=participant");
@@ -95,6 +111,9 @@ test.describe.serial("release critical journeys", () => {
     await page.locator('form button[type="submit"]').click();
     await expect(page).toHaveURL(/\/$/u, { timeout: 30_000 });
     await page.context().storageState({ path: state.participantStoragePath });
+
+    await page.goto("/support");
+    await expect(page.getByTestId("mypage-side-menu")).toHaveCount(1);
 
     const sql = createReleaseE2ESql();
     try {

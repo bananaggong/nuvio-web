@@ -249,6 +249,19 @@ test("authentication failures keep provider and database details server-side", (
   );
 });
 
+test("mypage is server-guarded while support remains public", () => {
+  const mypageLayout = read("src/app/mypage/layout.tsx");
+  const supportPage = read("src/app/support/page.tsx");
+  const mypageComponent = read("src/components/mypage.tsx");
+
+  assert.match(mypageLayout, /getOptionalAuthenticatedUser/u);
+  assert.match(mypageLayout, /redirect\("\/login\?next=%2Fmypage"\)/u);
+  assert.doesNotMatch(supportPage, /redirect\(/u);
+  assert.match(supportPage, /initialSignedIn=\{Boolean\(auth\)\}/u);
+  assert.match(mypageComponent, /sideMenuVisibility="signed-in"/u);
+  assert.match(mypageComponent, /showSideMenu \? \(/u);
+});
+
 function read(path: string): string {
   return readFileSync(new URL(path, root), "utf8");
 }

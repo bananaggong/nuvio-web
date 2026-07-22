@@ -478,9 +478,17 @@ export function MypageSettings() {
   );
 }
 
-export function MypageSupport() {
+export function MypageSupport({
+  initialSignedIn = false,
+}: {
+  initialSignedIn?: boolean;
+}) {
   return (
-    <MypageFrame activeSection="support">
+    <MypageFrame
+      activeSection="support"
+      initialSignedIn={initialSignedIn}
+      sideMenuVisibility="signed-in"
+    >
       {(context) => <SupportContent context={context} />}
     </MypageFrame>
   );
@@ -489,11 +497,15 @@ export function MypageSupport() {
 function MypageFrame({
   activeSection,
   children,
+  initialSignedIn = false,
   showOverview = false,
+  sideMenuVisibility = "always",
 }: {
   activeSection: MypageSection;
   children: (context: MypageContext) => ReactNode;
+  initialSignedIn?: boolean;
   showOverview?: boolean;
+  sideMenuVisibility?: "always" | "signed-in";
 }) {
   const data = useMypageData();
   const context = useMypageContext(data);
@@ -505,6 +517,18 @@ function MypageFrame({
   const topPaddingClass = showOverview
     ? "pt-[clamp(82px,5.6944vw,109.333px)]"
     : "pt-[clamp(32px,2.2222vw,42.667px)]";
+  const signedInForLayout = initialSignedIn || context.signedIn;
+  const showSideMenu =
+    sideMenuVisibility === "always" || signedInForLayout;
+  const contentLayoutClass = [
+    "grid",
+    showOverview ? "mt-[clamp(20px,1.3889vw,26.667px)]" : "",
+    showSideMenu
+      ? "gap-10 lg:grid-cols-[var(--mypage-sidebar)_minmax(0,1fr)] lg:gap-[var(--mypage-gap)]"
+      : "",
+  ]
+    .filter(Boolean)
+    .join(" ");
 
   return (
     <div
@@ -516,18 +540,14 @@ function MypageFrame({
       >
         {showOverview ? <MypageOverview context={context} /> : null}
 
-        <div
-          className={
-            showOverview
-              ? "mt-[clamp(20px,1.3889vw,26.667px)] grid gap-10 lg:grid-cols-[var(--mypage-sidebar)_minmax(0,1fr)] lg:gap-[var(--mypage-gap)]"
-              : "grid gap-10 lg:grid-cols-[var(--mypage-sidebar)_minmax(0,1fr)] lg:gap-[var(--mypage-gap)]"
-          }
-        >
-          <MypageSideMenu
-            activeSection={activeSection}
-            onLogout={logout}
-            signedIn={context.signedIn}
-          />
+        <div className={contentLayoutClass}>
+          {showSideMenu ? (
+            <MypageSideMenu
+              activeSection={activeSection}
+              onLogout={logout}
+              signedIn={signedInForLayout}
+            />
+          ) : null}
           <div className="min-w-0">{children(context)}</div>
         </div>
       </main>
@@ -3818,6 +3838,7 @@ function MypageSideMenu({
   return (
     <aside
       className="flex gap-3 overflow-x-auto pb-2 lg:block lg:space-y-[clamp(13px,0.9028vw,17.333px)] lg:overflow-visible lg:pb-0"
+      data-testid="mypage-side-menu"
       ref={menuRef}
     >
       {visibleSideMenuItems.map((item) => {

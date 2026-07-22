@@ -36,6 +36,10 @@ export function isNaverUserInfoAdapterPath(pathname: string): boolean {
   return pathname === NAVER_USERINFO_ADAPTER_PATH;
 }
 
+export function isProtectedMypagePath(pathname: string): boolean {
+  return pathname === "/mypage" || pathname.startsWith("/mypage/");
+}
+
 function isReleaseResetModeEnabled(): boolean {
   return process.env.NUVIO_RELEASE_RESET_MODE === "1";
 }
@@ -92,7 +96,24 @@ export async function proxy(request: NextRequest) {
     },
   );
 
-  await supabase.auth.getUser();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  if (isProtectedMypagePath(request.nextUrl.pathname) && !user) {
+    const loginUrl = new URL("/login", request.url);
+    loginUrl.searchParams.set(
+      "next",
+      `${request.nextUrl.pathname}${request.nextUrl.search}`,
+    );
+    const redirectResponse = NextResponse.redirect(loginUrl);
+
+    for (const cookie of response.cookies.getAll()) {
+      redirectResponse.cookies.set(cookie);
+    }
+
+    return redirectResponse;
+  }
 
   return response;
 }

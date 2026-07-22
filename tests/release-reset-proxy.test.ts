@@ -5,6 +5,7 @@ import { NextRequest } from "next/server";
 import {
   config,
   isNaverUserInfoAdapterPath,
+  isProtectedMypagePath,
   isReleaseResetAllowedPath,
   proxy,
 } from "../src/proxy";
@@ -117,6 +118,66 @@ test("Naver userinfo adapter pass-through matches only the exact path", () => {
     "/api/auth/naver",
   ]) {
     assert.equal(isNaverUserInfoAdapterPath(pathname), false, pathname);
+  }
+});
+
+test("mypage protection matches only the mypage route tree", () => {
+  for (const pathname of [
+    "/mypage",
+    "/mypage/",
+    "/mypage/messages",
+    "/mypage/member-information/edit",
+  ]) {
+    assert.equal(isProtectedMypagePath(pathname), true, pathname);
+  }
+
+  for (const pathname of ["/", "/mypageish", "/support"]) {
+    assert.equal(isProtectedMypagePath(pathname), false, pathname);
+  }
+});
+
+test("anonymous mypage requests redirect to login with the exact next path", async () => {
+  const snapshot = snapshotEnvironment();
+
+  try {
+    process.env.NUVIO_RELEASE_RESET_MODE = "0";
+    process.env.NEXT_PUBLIC_SUPABASE_URL = "https://example.supabase.co";
+    process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY = "test-publishable-key";
+
+    const response = await proxy(
+      new NextRequest(
+        "https://nuvio.kr/mypage/messages?programId=program-1&hostName=%EA%B0%80%EC%9D%B4%EB%93%9C",
+      ),
+    );
+
+    assert.equal(response.status, 307);
+    const location = new URL(response.headers.get("location") ?? "");
+    assert.equal(location.pathname, "/login");
+    assert.equal(
+      location.searchParams.get("next"),
+      "/mypage/messages?programId=program-1&hostName=%EA%B0%80%EC%9D%B4%EB%93%9C",
+    );
+  } finally {
+    restoreEnvironment(snapshot);
+  }
+});
+
+test("anonymous support requests remain public", async () => {
+  const snapshot = snapshotEnvironment();
+
+  try {
+    process.env.NUVIO_RELEASE_RESET_MODE = "0";
+    process.env.NEXT_PUBLIC_SUPABASE_URL = "https://example.supabase.co";
+    process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY = "test-publishable-key";
+
+    const response = await proxy(
+      new NextRequest("https://nuvio.kr/support"),
+    );
+
+    assert.equal(response.status, 200);
+    assert.equal(response.headers.get("x-middleware-next"), "1");
+  } finally {
+    restoreEnvironment(snapshot);
   }
 });
 
